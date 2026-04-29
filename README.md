@@ -35,7 +35,7 @@ See [ADR-004](https://github.com/lonely-lights/alexandria-legacy/blob/main/docs/
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12+
+- Laravel 13+
 - Node 20+ (for the Inertia/React frontend)
 - A queue worker (Redis recommended) for AI pipelines
 - An AI provider API key (Anthropic, OpenAI, or Google AI) if you want the AI features

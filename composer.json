@@ -1,0 +1,69 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "lonely-lights/alexandria-core",
+    "description": "AI-aware EAV worldbuilding framework for Laravel — the framework half of Alexandria.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "alexandria",
+        "worldbuilding",
+        "eav",
+        "ai",
+        "inertia",
+        "react"
+    ],
+    "homepage": "https://github.com/lonely-lights/alexandria-core",
+    "support": {
+        "issues": "https://github.com/lonely-lights/alexandria-core/issues",
+        "source": "https://github.com/lonely-lights/alexandria-core"
+    },
+    "authors": [
+        {
+            "name": "Andrew K. Hartley",
+            "email": "andrew@lonelylights.com",
+            "homepage": "https://github.com/andrewkhartley"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "illuminate/contracts": "^13.0",
+        "illuminate/support": "^13.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.27",
+        "orchestra/testbench": "^11.0",
+        "pestphp/pest": "^4.0",
+        "pestphp/pest-plugin-laravel": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Alexandria\\Core\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Alexandria\\Core\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Alexandria\\Core\\AlexandriaServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "pest",
+        "lint": "pint",
+        "lint:check": "pint --test"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
