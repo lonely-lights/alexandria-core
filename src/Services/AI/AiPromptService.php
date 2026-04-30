@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Alexandria\Core\Services\AI;
 
 use Alexandria\Core\Models\System\AiPrompt;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\File;
 use RuntimeException;
 
@@ -40,7 +41,12 @@ class AiPromptService
             throw new RuntimeException("Prompt template file not found at: $fullPath");
         }
 
-        $templateContent = File::get($fullPath);
+        try {
+            $templateContent = File::get($fullPath);
+        } catch (FileNotFoundException $e) {
+            // Race condition: file was removed between exists() and get().
+            throw new RuntimeException("Prompt template file disappeared at: $fullPath", previous: $e);
+        }
 
         $placeholders = [];
         $values = [];

@@ -47,9 +47,9 @@ class AiCommandExecutor
         $this->tempIdMap = [];
         $results = ['success' => 0, 'failed' => 0];
 
-        DB::beginTransaction();
-
         try {
+            DB::beginTransaction();
+
             /** @var AiReviewCommand $command */
             foreach ($commands as $command) {
                 try {
@@ -95,7 +95,11 @@ class AiCommandExecutor
             // $results['relationships_failed'] = $relationshipResults['failed'];
 
         } catch (Throwable $e) {
-            DB::rollBack();
+            try {
+                DB::rollBack();
+            } catch (Throwable $rollbackError) {
+                Log::warning('AI Batch rollback also failed', ['exception' => $rollbackError]);
+            }
             Log::critical("AI Batch Execution Transaction Failed for batch $batchId", ['exception' => $e]);
 
             throw new BatchExecutionException(
