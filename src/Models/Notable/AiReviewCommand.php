@@ -42,6 +42,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> forBatch(string $batchId)
  * @method static Builder<static> active()
  * @method static Builder<static> readyForExecution()
+ * @method static AiReviewCommand create(array $attributes = [])
  */
 class AiReviewCommand extends Model
 {

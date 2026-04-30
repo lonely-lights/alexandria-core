@@ -20,8 +20,6 @@ use Illuminate\Validation\ValidationException;
  *
  * Responsible for validating and creating AiReviewCommand records
  * from structured data, typically from an AI's JSON response.
- *
- * @noinspection PhpUndefinedMethodInspection
  */
 class AiCommandFactory
 {
