@@ -13,6 +13,43 @@ use Illuminate\Foundation\Auth\User;
 return [
     /*
     |--------------------------------------------------------------------------
+    | Media Library
+    |--------------------------------------------------------------------------
+    |
+    | Image conversion dimensions for HasAlexandriaMedia. Each registered
+    | collection (page_image, banner, gallery) declares its sizes here.
+    | Override per-app by publishing config/alexandria.php and editing.
+    |
+    */
+    'media' => [
+        'page_image' => [
+            'square' => ['width' => 512, 'height' => 512],
+            'thumb' => ['width' => 128, 'height' => 128],
+            'small' => ['width' => 64, 'height' => 64],
+            'max_upload_size' => 5120,
+        ],
+        'banner' => [
+            'desktop' => ['width' => 1920, 'height' => 400],
+            'mobile' => ['width' => 800, 'height' => 600],
+            'preview' => ['width' => 600, 'height' => 150],
+            'max_upload_size' => 10240,
+        ],
+        'gallery' => [
+            'display' => ['width' => 1200],
+            'thumb' => ['width' => 256, 'height' => 256],
+            'max_upload_size' => 10240,
+        ],
+        'accepted_mimes' => ['image/jpeg', 'image/png', 'image/webp'],
+        'crop_ratios' => [
+            '3:2' => 1.5,
+            '2:3' => 0.667,
+            '16:9' => 1.778,
+            '1:1' => 1.0,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Model Bindings
     |--------------------------------------------------------------------------
     |

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Alexandria\Core\Tests;
 
 use Alexandria\Core\AlexandriaServiceProvider;
+use DateInterval;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use Spatie\Activitylog\ActivitylogServiceProvider;
 use Spatie\Activitylog\Models\Activity;
+use Spatie\MediaLibrary\MediaLibraryServiceProvider;
 use Spatie\Permission\PermissionServiceProvider;
 
 abstract class TestCase extends BaseTestCase
@@ -22,6 +24,7 @@ abstract class TestCase extends BaseTestCase
     {
         return [
             ActivitylogServiceProvider::class,
+            MediaLibraryServiceProvider::class,
             PermissionServiceProvider::class,
             AlexandriaServiceProvider::class,
         ];
@@ -52,7 +55,7 @@ abstract class TestCase extends BaseTestCase
         ]);
         $app['config']->set('permission.teams', false);
         $app['config']->set('permission.cache', [
-            'expiration_time' => \DateInterval::createFromDateString('24 hours'),
+            'expiration_time' => DateInterval::createFromDateString('24 hours'),
             'key' => 'spatie.permission.cache',
             'store' => 'default',
         ]);
