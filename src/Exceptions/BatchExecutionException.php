@@ -9,7 +9,7 @@ use RuntimeException;
 /**
  * Thrown when AiCommandExecutor::executeBatch() fails to commit the surrounding
  * transaction. Wraps the underlying Throwable as $previous so diagnostics are
- * preserved, and narrows the public @throws contract from Throwable down to a
+ * preserved, and narrows the public throws-contract from Throwable down to a
  * specific runtime exception.
  */
 class BatchExecutionException extends RuntimeException {}

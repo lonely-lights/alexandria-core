@@ -163,7 +163,7 @@ class PromptTemplate extends Model
         return $this->versions()->create([
             'version' => $this->version,
             'template' => $this->template,
-            'changed_by' => $changedBy?->id,
+            'changed_by' => $changedBy?->getKey(),
             'change_reason' => $reason,
         ]);
     }
