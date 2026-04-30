@@ -33,7 +33,7 @@ use Illuminate\Support\Carbon;
  * @property int $cache_read_tokens
  * @property int $cache_write_tokens
  * @property int $total_tokens
- * @property float $cost
+ * @property string $cost
  * @property int|null $latency_ms
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -62,7 +62,7 @@ class AiTransaction extends Model
             'cache_read_tokens' => 'integer',
             'cache_write_tokens' => 'integer',
             'total_tokens' => 'integer',
-            'cost' => 'float',
+            'cost' => 'decimal:6',
             'latency_ms' => 'integer',
         ];
     }

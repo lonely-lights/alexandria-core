@@ -9,6 +9,7 @@ declare(strict_types=1);
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\System\AiTransaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
@@ -23,7 +24,7 @@ it('creates a transaction with all columns populated by the factory', function (
         ->and($transaction->total_tokens)->toBeInt();
 });
 
-it('casts token columns to integer and cost to float', function () {
+it('casts token columns to integer and cost to decimal:6 string', function () {
     $transaction = AiTransaction::factory()->create([
         'input_tokens' => 1234,
         'output_tokens' => 567,
@@ -41,13 +42,27 @@ it('casts token columns to integer and cost to float', function () {
         ->and($transaction->cache_read_tokens)->toBeInt()->toBe(12)
         ->and($transaction->cache_write_tokens)->toBeInt()->toBe(34)
         ->and($transaction->total_tokens)->toBeInt()->toBe(1936)
-        ->and($transaction->cost)->toBeFloat()->toBe(0.012345)
+        ->and($transaction->cost)->toBeString()->toBe('0.012345')
         ->and($transaction->latency_ms)->toBeInt()->toBe(1500);
 });
 
 it('source defaults to env at the database level', function () {
-    // Create with explicit nulls/missing source -- migration default kicks in.
-    $transaction = AiTransaction::factory()->create();
+    // Raw insert WITHOUT setting source so the migration column default is the only thing under test.
+    DB::table('ai_transactions')->insert([
+        'provider_name' => 'openai',
+        'model_name' => 'gpt-4o',
+        'input_tokens' => 0,
+        'output_tokens' => 0,
+        'thinking_tokens' => 0,
+        'cache_read_tokens' => 0,
+        'cache_write_tokens' => 0,
+        'total_tokens' => 0,
+        'cost' => 0,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $transaction = AiTransaction::query()->latest('id')->first();
 
     expect($transaction->source)->toBe('env');
 });
