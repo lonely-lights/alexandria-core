@@ -138,7 +138,7 @@ trait HasDynamicRelationships
         // 1. Optional string filters (first list element), e.g. ['limit=10;order=name']
         $rawSuffix = null;
         if (! empty($parameters) && array_is_list($parameters) && isset($parameters[0]) && is_string($parameters[0])) {
-            $rawSuffix = trim((string) $parameters[0], " ;\t\n\r\0\x0B");
+            $rawSuffix = trim($parameters[0], " ;\t\n\r\0\x0B");
         }
 
         // 2. Optional associative filters, e.g. ['limit' => 5, 'order' => 'name']
