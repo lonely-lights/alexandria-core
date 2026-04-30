@@ -59,7 +59,11 @@ class PromptRepository
      */
     public function getByCategory(string $category): Collection
     {
-        return PromptTemplate::active()->category($category)->orderBy('name')->get();
+        return PromptTemplate::query()
+            ->where('is_active', true)
+            ->where('category', $category)
+            ->orderBy('name')
+            ->get();
     }
 
     /**
@@ -69,7 +73,11 @@ class PromptRepository
      */
     public function forContext(string $contextType): Collection
     {
-        return PromptTemplate::active()->forContext($contextType)->orderBy('name')->get();
+        return PromptTemplate::query()
+            ->where('is_active', true)
+            ->where('required_context_type', $contextType)
+            ->orderBy('name')
+            ->get();
     }
 
     /**

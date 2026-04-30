@@ -23,9 +23,9 @@ class DataMarker
     /**
      * The boundary marker characters.
      */
-    private const BOUNDARY_CHAR = '=';
+    private const string BOUNDARY_CHAR = '=';
 
-    private const BOUNDARY_LENGTH = 80;
+    private const int BOUNDARY_LENGTH = 80;
 
     /**
      * Wrap context data with clear boundary markers.

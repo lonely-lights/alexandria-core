@@ -8,49 +8,62 @@ use Illuminate\Support\Carbon;
 /**
  * Concrete subclass that exposes the protected utility helpers so the test
  * suite can exercise them directly without needing a worldbuilding-shaped
- * concrete context.
+ * concrete context. Extracted as a named class (rather than an anonymous
+ * class returned from a helper) so PHPStorm narrows the type once instead
+ * of flagging every method call as a potentially polymorphic dispatch.
  */
-function makeAbstractContextDouble(array $payload = ['greeting' => 'hi']): AbstractContext
+class AbstractContextDouble extends AbstractContext
 {
-    return new class($payload) extends AbstractContext
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    public function __construct(private array $payload) {}
+
+    public function getType(): string
     {
-        public function __construct(private array $payload) {}
+        return 'AbstractContextDouble';
+    }
 
-        public function getType(): string
-        {
-            return 'AbstractContextDouble';
-        }
+    public function getVersion(): string
+    {
+        return '1.0';
+    }
 
-        public function getVersion(): string
-        {
-            return '1.0';
-        }
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return $this->payload;
+    }
 
-        public function toArray(): array
-        {
-            return $this->payload;
-        }
+    public function exposeSanitize(?string $value): ?string
+    {
+        return $this->sanitize($value);
+    }
 
-        public function exposeSanitize(?string $value): ?string
-        {
-            return $this->sanitize($value);
-        }
+    public function exposeTruncate(?string $value, int $maxLength = 1000): ?string
+    {
+        return $this->truncate($value, $maxLength);
+    }
 
-        public function exposeTruncate(?string $value, int $maxLength = 1000): ?string
-        {
-            return $this->truncate($value, $maxLength);
-        }
+    public function exposeFormatDate(?Carbon $date): ?string
+    {
+        return $this->formatDate($date);
+    }
 
-        public function exposeFormatDate(?Carbon $date): ?string
-        {
-            return $this->formatDate($date);
-        }
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    public function replacePayload(array $payload): void
+    {
+        $this->payload = $payload;
+    }
+}
 
-        public function setPayload(array $payload): void
-        {
-            $this->payload = $payload;
-        }
-    };
+function makeAbstractContextDouble(array $payload = ['greeting' => 'hi']): AbstractContextDouble
+{
+    return new AbstractContextDouble($payload);
 }
 
 it('getDescription returns the default value when not overridden', function () {
@@ -89,7 +102,7 @@ it('getCachedArray memoizes the toArray() result; clearCache forces recomputatio
     expect($ctx->getCachedArray())->toBe(['initial' => 1]);
 
     // Mutate underlying payload — cached value should still come back the first time.
-    $ctx->setPayload(['mutated' => 2]);
+    $ctx->replacePayload(['mutated' => 2]);
     expect($ctx->getCachedArray())->toBe(['initial' => 1]);
 
     // After clearing, the recomputed value reflects the mutation.
