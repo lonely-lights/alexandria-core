@@ -8,6 +8,7 @@ use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\Entry;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Entry Factory
@@ -19,8 +20,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  *
  * @extends Factory<Entry>
  *
- * @method Entry create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
- * @method Entry make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method Entry create($attributes = [], ?Model $parent = null)
+ * @method Entry make($attributes = [], ?Model $parent = null)
  * @method Entry createOne($attributes = [])
  * @method Entry makeOne($attributes = [])
  */

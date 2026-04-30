@@ -7,6 +7,7 @@ namespace Alexandria\Core\Database\Factories\System;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\RelationshipBlueprint;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Relationship Blueprint Factory
@@ -23,8 +24,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  *
  * @extends Factory<RelationshipBlueprint>
  *
- * @method RelationshipBlueprint create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
- * @method RelationshipBlueprint make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method RelationshipBlueprint create($attributes = [], ?Model $parent = null)
+ * @method RelationshipBlueprint make($attributes = [], ?Model $parent = null)
  * @method RelationshipBlueprint createOne($attributes = [])
  * @method RelationshipBlueprint makeOne($attributes = [])
  */

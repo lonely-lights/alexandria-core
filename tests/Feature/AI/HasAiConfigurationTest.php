@@ -9,9 +9,6 @@ declare(strict_types=1);
  * getAiInstructionAttribute on BlueprintField) shadow the underlying
  * native columns -- those columns stay for legacy compatibility but
  * reads/writes route through the polymorphic ai_configurations table.
- *
- * @noinspection PhpUndefinedMethodInspection
- * @noinspection PhpUndefinedFieldInspection
  */
 
 use Alexandria\Core\Models\AiConfiguration;

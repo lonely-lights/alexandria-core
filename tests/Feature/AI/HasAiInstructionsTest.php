@@ -12,8 +12,6 @@ declare(strict_types=1);
  * and HasAiConfiguration::getAiInstructions(string $type) is resolved via PHP trait
  * conflict resolution: HasAiInstructions::getAiInstructions is aliased to
  * getPromptInstructions() on Blueprint. Tests use getPromptInstructions().
- *
- * @noinspection PhpUndefinedMethodInspection
  */
 
 use Alexandria\Core\Models\System\Blueprint;

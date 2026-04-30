@@ -28,7 +28,7 @@ return new class extends Migration
             $table->string('creative_model_name')->nullable()->comment('Override creative model for this project');
 
             // Budget Controls
-            $table->decimal('monthly_budget', 10, 2)->nullable()->comment('Monthly cost limit in USD');
+            $table->decimal('monthly_budget', 10)->nullable()->comment('Monthly cost limit in USD');
             $table->decimal('per_request_limit', 8, 4)->nullable()->comment('Max cost per single AI request');
 
             // Behavior Settings

@@ -7,6 +7,7 @@ namespace Alexandria\Core\Database\Factories\System;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\System\Blueprint;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /**
@@ -22,8 +23,8 @@ use Illuminate\Support\Str;
  *
  * @extends Factory<Blueprint>
  *
- * @method Blueprint create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
- * @method Blueprint make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method Blueprint create($attributes = [], ?Model $parent = null)
+ * @method Blueprint make($attributes = [], ?Model $parent = null)
  * @method Blueprint createOne($attributes = [])
  * @method Blueprint makeOne($attributes = [])
  */
