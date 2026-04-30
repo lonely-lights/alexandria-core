@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * @property int $id
@@ -48,6 +50,7 @@ use Illuminate\Support\Carbon;
 class Blueprint extends Model
 {
     use HasFactory;
+    use LogsActivity;
     use SoftDeletes;
 
     protected $guarded = ['id'];
@@ -55,6 +58,15 @@ class Blueprint extends Model
     protected static function newFactory(): BlueprintFactory
     {
         return BlueprintFactory::new();
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'description', 'icon', 'classification', 'show_on_dashboard'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('project');
     }
 
     protected function casts(): array
