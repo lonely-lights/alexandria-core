@@ -3,8 +3,20 @@
 declare(strict_types=1);
 
 /**
- * @noinspection PhpUndefinedMethodInspection
- * @noinspection PhpUndefinedFieldInspection
+ * Pest test file for AiCommandExecutor.
+ *
+ * IDE inspection notes:
+ * - PhpPossiblePolymorphicInvocationInspection: Eloquent factories declare
+ *   `Collection|Model` return types, so PHPStorm widens factory-created
+ *   model variables and warns on every method/property access.
+ * - PhpUnhandledExceptionInspection: AiCommandExecutor::executeBatch is
+ *   typed @throws Throwable; Pest's `it()` blocks can't declare throws.
+ * - PhpExpectationCanBeChainedInspection: Pest plugin prefers
+ *   ->and() chaining; the test prefers explicit statements for clarity.
+ *
+ * @noinspection PhpPossiblePolymorphicInvocationInspection
+ * @noinspection PhpUnhandledExceptionInspection
+ * @noinspection PhpExpectationCanBeChainedInspection
  */
 
 use Alexandria\Core\Models\Framework\Project;
