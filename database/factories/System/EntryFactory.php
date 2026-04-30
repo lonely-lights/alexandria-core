@@ -102,11 +102,16 @@ class EntryFactory extends Factory
 
     /**
      * Create an entry with AI notes.
+     *
+     * The ai_notes column is array-cast, so the value must be an array.
+     * The legacy factory passed a raw string, which Eloquent JSON-encoded
+     * to "\"...\"" -- on read it round-tripped to a string, violating the
+     * cast contract. Wrap in an array shape.
      */
     public function withAiNotes(): static
     {
         return $this->state(fn (array $attributes) => [
-            'ai_notes' => fake()->paragraph(),
+            'ai_notes' => ['note' => fake()->paragraph()],
         ]);
     }
 

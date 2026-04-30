@@ -42,7 +42,11 @@ it('supports parent/child hierarchies', function () {
         ->and($parent->children->first()->id)->toBe($child->id);
 });
 
-it('auto-assigns sort_order on create as max+1 in sibling group', function () {
+it('auto-assigns sort_order as 0-based max+1 in sibling group', function () {
+    // Setting sort_order to null lets the creating event compute it. The
+    // factory default is 0, so without the explicit null override the test
+    // would skip the auto-assign branch entirely. The booted hook coalesces
+    // max() ?? -1 so the first entry lands at 0, matching factory default.
     $project = Project::factory()->create();
     $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
 
@@ -57,7 +61,15 @@ it('auto-assigns sort_order on create as max+1 in sibling group', function () {
         'sort_order' => null,
     ]);
 
-    expect($second->sort_order)->toBeGreaterThan($first->sort_order);
+    expect($first->sort_order)->toBe(0)
+        ->and($second->sort_order)->toBe(1);
+});
+
+it('withAiNotes factory state stores an array (not a JSON-encoded string)', function () {
+    $entry = Entry::factory()->withAiNotes()->create();
+
+    expect($entry->fresh()->ai_notes)->toBeArray()
+        ->and($entry->fresh()->ai_notes)->toHaveKey('note');
 });
 
 it('soft-deletes', function () {

@@ -39,11 +39,16 @@ class Entry extends Model
     protected static function booted(): void
     {
         static::creating(function (Entry $entry): void {
-            $entry->sort_order ??= static::query()
+            // 0-based sort order. When no siblings exist, max() returns null;
+            // null + 1 would silently produce 1, leaving 0 unused and clashing
+            // with factories that default sort_order to 0. Coalesce to -1
+            // first so the first auto-assigned entry in any sibling group is
+            // 0, matching the factory default and Eloquent's column default.
+            $entry->sort_order ??= (static::query()
                 ->where('project_id', $entry->project_id)
                 ->where('blueprint_id', $entry->blueprint_id)
                 ->where('parent_id', $entry->parent_id)
-                ->max('sort_order') + 1;
+                ->max('sort_order') ?? -1) + 1;
 
             if (empty($entry->slug) && ! empty($entry->name)) {
                 $entry->slug = Str::slug($entry->name).'-'.Str::random(6);
