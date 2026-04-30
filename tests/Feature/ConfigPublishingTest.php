@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Alexandria\Core\Models\BlueprintView;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\System\EntryRelationship;
 use Alexandria\Core\Models\System\RelationshipBlueprint;
@@ -24,6 +25,11 @@ it('exposes the EntryRelationship binding via config', function () {
 it('exposes the RelationshipBlueprint binding via config', function () {
     expect(config('alexandria.models.relationship_blueprint'))
         ->toBe(RelationshipBlueprint::class);
+});
+
+it('exposes the BlueprintView binding via config', function () {
+    expect(config('alexandria.models.blueprint_view'))
+        ->toBe(BlueprintView::class);
 });
 
 it('publishes the alexandria config when vendor:publish is run', function () {

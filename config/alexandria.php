@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Alexandria\Core\Models\BlueprintView;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\BlueprintField;
@@ -62,6 +63,7 @@ return [
     'models' => [
         'blueprint' => Blueprint::class,
         'blueprint_field' => BlueprintField::class,
+        'blueprint_view' => BlueprintView::class,
         'entry' => Entry::class,
         'entry_relationship' => EntryRelationship::class,
         'field_value' => FieldValue::class,
