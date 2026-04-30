@@ -31,13 +31,13 @@ class AiConfiguration extends Model
 {
     use HasFactory;
 
-    public const TYPE_BLUEPRINT_INSTRUCTIONS = 'blueprint_instructions';
+    public const string TYPE_BLUEPRINT_INSTRUCTIONS = 'blueprint_instructions';
 
-    public const TYPE_FIELD_INSTRUCTIONS = 'field_instructions';
+    public const string TYPE_FIELD_INSTRUCTIONS = 'field_instructions';
 
-    public const TYPE_PROMPT_TEMPLATE = 'prompt_template';
+    public const string TYPE_PROMPT_TEMPLATE = 'prompt_template';
 
-    public const TYPE_VALIDATION_RULES = 'validation_rules';
+    public const string TYPE_VALIDATION_RULES = 'validation_rules';
 
     protected $fillable = [
         'configurable_type',
