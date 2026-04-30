@@ -6,13 +6,14 @@ namespace Alexandria\Core\Database\Factories\Framework;
 
 use Alexandria\Core\Models\Framework\Project;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /**
  * @extends Factory<Project>
  *
- * @method Project create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
- * @method Project make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method Project create($attributes = [], ?Model $parent = null)
+ * @method Project make($attributes = [], ?Model $parent = null)
  * @method Project createOne($attributes = [])
  * @method Project makeOne($attributes = [])
  */

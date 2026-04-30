@@ -1,7 +1,5 @@
 <?php
 
-/** @noinspection PhpUndefinedMethodInspection */
-
 declare(strict_types=1);
 
 use Alexandria\Core\Models\Notable\Note;

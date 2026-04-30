@@ -25,6 +25,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property-read PromptTemplate $promptTemplate
  * @property-read Model|null $changedByUser
+ *
+ * @method static PromptTemplateVersionFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static PromptTemplateVersion create(array $attributes = [])
  */
 class PromptTemplateVersion extends Model
 {

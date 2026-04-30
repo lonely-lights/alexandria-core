@@ -5,17 +5,11 @@ declare(strict_types=1);
 /**
  * EAV magic-property tests.
  *
- * This file deliberately exercises dynamic property access (e.g. $entry->age,
- * $fresh->is_friendly) -- those names aren't declared on Entry because they
- * come from per-blueprint field definitions at runtime, not from native
- * columns. Suppress the IDE inspections that would otherwise flag every
- * dynamic read.
- *
- * - PhpUndefinedFieldInspection: "Field 'age' not found in Entry"
- * - PhpDynamicFieldDeclarationInspection: "Property accessed via magic method"
- *
- * @noinspection PhpUndefinedFieldInspection
- * @noinspection PhpDynamicFieldDeclarationInspection
+ * Exercises dynamic per-blueprint fields on Entry. Reads/writes go through
+ * the explicit getDynamicAttribute(string) / setDynamicAttribute(string, mixed)
+ * methods on the HasDynamicAttributes trait so static analysis can verify them
+ * (rather than the equivalent $entry->fieldName magic, which trips
+ * PhpUndefinedFieldInspection / PhpDynamicFieldDeclarationInspection).
  */
 
 use Alexandria\Core\Models\Framework\Project;
@@ -50,7 +44,7 @@ it('reads a dynamic integer field after persisting it directly', function () {
     /** @var Entry $fresh */
     $fresh = $entry->fresh()->load('attributes', 'type.fields');
 
-    expect($fresh->age)->toBe(42); // integer cast applied
+    expect($fresh->getDynamicAttribute('age'))->toBe(42); // integer cast applied
 });
 
 it('writes a dynamic text field via attribute assignment', function () {
@@ -63,7 +57,7 @@ it('writes a dynamic text field via attribute assignment', function () {
         'blueprint_id' => $this->blueprint->id,
     ]);
 
-    $entry->occupation = 'Cartographer';
+    $entry->setDynamicAttribute('occupation', 'Cartographer');
 
     expect(FieldValue::query()->where('entry_id', $entry->id)->first()?->value)
         ->toBe('Cartographer');
@@ -86,9 +80,9 @@ it('returns null for an unknown attribute when no native column or field exists'
     ]);
 
     // Eloquent silently returns null for unknown attributes; the trait's
-    // __get falls through to parent::__get for keys that aren't native
-    // columns, relationships, foreign keys, or blueprint fields.
-    expect($entry->doesnt_exist)->toBeNull();
+    // getDynamicAttribute returns null for keys that aren't native columns,
+    // relationships, foreign keys, or blueprint fields.
+    expect($entry->getDynamicAttribute('doesnt_exist'))->toBeNull();
 });
 
 it('casts boolean fields correctly on read', function () {
@@ -101,11 +95,11 @@ it('casts boolean fields correctly on read', function () {
         'blueprint_id' => $this->blueprint->id,
     ]);
 
-    $entry->is_friendly = true;
+    $entry->setDynamicAttribute('is_friendly', true);
 
     /** @var Entry $fresh */
     $fresh = $entry->fresh()->load('attributes', 'type.fields');
-    expect($fresh->is_friendly)->toBeTrue();
+    expect($fresh->getDynamicAttribute('is_friendly'))->toBeTrue();
 });
 
 it('handles multi-value fields by returning an array in insertion order', function () {
@@ -118,14 +112,14 @@ it('handles multi-value fields by returning an array in insertion order', functi
         'blueprint_id' => $this->blueprint->id,
     ]);
 
-    $entry->titles = ['Captain', 'Cartographer', 'Diplomat'];
+    $entry->setDynamicAttribute('titles', ['Captain', 'Cartographer', 'Diplomat']);
 
     // ->toBe() asserts ordered equality. Entry::attributes() explicitly
     // orders by id so insertion order is the read order regardless of
     // the underlying database engine's row-order semantics.
     /** @var Entry $fresh */
     $fresh = $entry->fresh()->load('attributes', 'type.fields');
-    expect($fresh->titles)->toBe(['Captain', 'Cartographer', 'Diplomat']);
+    expect($fresh->getDynamicAttribute('titles'))->toBe(['Captain', 'Cartographer', 'Diplomat']);
 });
 
 it('returns the freshly written value on the same instance after a write', function () {
@@ -146,11 +140,11 @@ it('returns the freshly written value on the same instance after a write', funct
 
     // Pre-load the attributes relation to simulate a form-load pattern.
     $entry->load('attributes', 'type.fields');
-    expect($entry->rank)->toBeNull();
+    expect($entry->getDynamicAttribute('rank'))->toBeNull();
 
     // Write on the same instance.
-    $entry->rank = 'Captain';
+    $entry->setDynamicAttribute('rank', 'Captain');
 
     // Read on the same instance -- without ->fresh().
-    expect($entry->rank)->toBe('Captain');
+    expect($entry->getDynamicAttribute('rank'))->toBe('Captain');
 });

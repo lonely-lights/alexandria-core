@@ -32,6 +32,9 @@ use Illuminate\Support\Carbon;
  * @property-read Model|null $user
  * @property-read AiProvider $provider
  * @property-read UserApiKey|null $activeApiKey
+ *
+ * @method static UserAiSettingFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static UserAiSetting create(array $attributes = [])
  */
 class UserAiSetting extends Model
 {

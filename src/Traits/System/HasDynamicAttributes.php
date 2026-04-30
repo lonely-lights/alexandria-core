@@ -6,11 +6,11 @@ namespace Alexandria\Core\Traits\System;
 
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\FieldValue;
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
+use RuntimeException;
 
 /**
  * Trait HasDynamicAttributes
@@ -140,7 +140,7 @@ trait HasDynamicAttributes
      * @param  string  $key  The name of the attribute (e.g., 'titles').
      * @param  mixed  $value  The value to set (can be a single value or an array).
      *
-     * @throws Exception
+     * @throws RuntimeException when the field name isn't defined on the blueprint.
      */
     public function setDynamicAttribute(string $key, mixed $value): void
     {
@@ -150,7 +150,7 @@ trait HasDynamicAttributes
 
         // If field doesn't exist in blueprint, we can't store it
         if (! $fieldDefinition) {
-            throw new Exception("Field '$key' not found in blueprint '{$this->type?->name}'. Cannot set dynamic attribute.");
+            throw new RuntimeException("Field '$key' not found in blueprint '{$this->type?->name}'. Cannot set dynamic attribute.");
         }
 
         $blueprintFieldId = $fieldDefinition->id;

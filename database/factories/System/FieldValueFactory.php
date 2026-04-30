@@ -8,6 +8,7 @@ use Alexandria\Core\Models\System\BlueprintField;
 use Alexandria\Core\Models\System\Entry;
 use Alexandria\Core\Models\System\FieldValue;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Field Value Factory
@@ -19,8 +20,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  *
  * @extends Factory<FieldValue>
  *
- * @method FieldValue create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
- * @method FieldValue make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method FieldValue create($attributes = [], ?Model $parent = null)
+ * @method FieldValue make($attributes = [], ?Model $parent = null)
  * @method FieldValue createOne($attributes = [])
  * @method FieldValue makeOne($attributes = [])
  */

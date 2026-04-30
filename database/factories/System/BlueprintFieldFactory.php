@@ -7,6 +7,7 @@ namespace Alexandria\Core\Database\Factories\System;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\BlueprintField;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /**
@@ -24,8 +25,8 @@ use Illuminate\Support\Str;
  *
  * @extends Factory<BlueprintField>
  *
- * @method BlueprintField create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
- * @method BlueprintField make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method BlueprintField create($attributes = [], ?Model $parent = null)
+ * @method BlueprintField make($attributes = [], ?Model $parent = null)
  * @method BlueprintField createOne($attributes = [])
  * @method BlueprintField makeOne($attributes = [])
  */

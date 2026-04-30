@@ -24,6 +24,9 @@ use Illuminate\Support\Carbon;
  * @property string|null $description Human-readable description
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ *
+ * @method static PromptContextSchemaFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static PromptContextSchema create(array $attributes = [])
  */
 class PromptContextSchema extends Model
 {

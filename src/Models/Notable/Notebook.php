@@ -43,6 +43,9 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Project> $projects
  * @property-read Collection<int, Blueprint> $blueprints
  * @property-read Collection<int, Entry> $entries
+ *
+ * @method static NotebookFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static Notebook create(array $attributes = [])
  */
 class Notebook extends Model
 {

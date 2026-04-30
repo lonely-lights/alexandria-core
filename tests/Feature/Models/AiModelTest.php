@@ -70,8 +70,8 @@ it('recommendedFirst scope sorts recommended before non-recommended, then by rel
     AiModel::factory()->create(['display_name' => 'Old Rec', 'released_at' => '2024-01-01', 'is_recommended' => true]);
 
     $names = AiModel::recommendedFirst()->pluck('display_name')->all();
-    expect($names[0])->toBe('Old Rec'); // recommended trumps recency
-    expect($names[1])->toBe('New Reg'); // then newest
+    expect($names[0])->toBe('Old Rec') // recommended trumps recency
+        ->and($names[1])->toBe('New Reg'); // then newest
 });
 
 it('cascade-deletes models when provider is hard-deleted', function () {

@@ -13,6 +13,7 @@ it('logs an activity row when an entry is created', function () {
 
     expect(Activity::query()->count())->toBeGreaterThanOrEqual(1);
 
+    /** @var Activity $entryActivity */
     $entryActivity = Activity::query()
         ->where('subject_type', Entry::class)
         ->latest('id')
@@ -29,6 +30,7 @@ it('logs only the configured columns when updating an entry', function () {
 
     $entry->update(['name' => 'Renamed', 'metadata' => ['unrelated' => 'change']]);
 
+    /** @var Activity $activity */
     $activity = Activity::query()->latest('id')->first();
     expect($activity)->not->toBeNull()
         ->and($activity->description)->toBe('updated')

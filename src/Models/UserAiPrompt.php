@@ -23,6 +23,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Model|null $user
+ *
+ * @method static UserAiPromptFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static UserAiPrompt create(array $attributes = [])
  */
 class UserAiPrompt extends Model
 {

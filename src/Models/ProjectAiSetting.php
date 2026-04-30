@@ -31,6 +31,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Project $project
  * @property-read AiProvider|null $provider
+ *
+ * @method static ProjectAiSettingFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static ProjectAiSetting create(array $attributes = [])
  */
 class ProjectAiSetting extends Model
 {

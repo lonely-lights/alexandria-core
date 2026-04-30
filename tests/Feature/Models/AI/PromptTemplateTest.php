@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @noinspection PhpUndefinedMethodInspection
- */
-
 use Alexandria\Core\Models\AI\PromptTemplate;
 use Alexandria\Core\Models\AI\PromptTemplateVersion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -119,7 +115,7 @@ it('scopeActive + scopeCategory + scopeForContext filter correctly', function ()
 
     expect(PromptTemplate::active()->count())->toBe(2)
         ->and(PromptTemplate::category('categorization')->count())->toBe(2)
-        ->and(PromptTemplate::active()->category('categorization')->count())->toBe(1);
+        ->and(PromptTemplate::active()->where('category', 'categorization')->count())->toBe(1);
 });
 
 it('PromptTemplateVersion::diffWith reports added/removed/changed counters', function () {

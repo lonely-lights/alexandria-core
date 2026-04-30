@@ -6,7 +6,6 @@ namespace Alexandria\Core\Models;
 
 use Alexandria\Core\Database\Factories\UserApiKeyFactory;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,6 +36,8 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> active()
  * @method static Builder<static> valid()
  * @method static Builder<static> forProvider(int $providerId)
+ * @method static UserApiKeyFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static UserApiKey create(array $attributes = [])
  */
 class UserApiKey extends Model
 {
@@ -69,21 +70,19 @@ class UserApiKey extends Model
         return $this->belongsTo(AiProvider::class, 'ai_provider_id');
     }
 
-    protected function isExpired(): Attribute
+    public function getIsExpiredAttribute(): bool
     {
-        return Attribute::get(function () {
-            if (! $this->expires_at) {
-                return false;
-            }
+        if (! $this->expires_at) {
+            return false;
+        }
 
-            // The host app's User may expose a `timezone` attribute. Default
-            // to UTC if the user model has no timezone or the relation is
-            // unloaded -- we don't lift the User model in core.
-            $userTimezone = $this->user?->timezone ?? 'UTC';
-            $expiresAt = Carbon::parse($this->expires_at)->endOfDay()->timezone($userTimezone);
+        // The host app's User may expose a `timezone` attribute. Default
+        // to UTC if the user model has no timezone or the relation is
+        // unloaded -- we don't lift the User model in core.
+        $userTimezone = $this->user?->timezone ?? 'UTC';
+        $expiresAt = Carbon::parse($this->expires_at)->endOfDay()->timezone($userTimezone);
 
-            return Carbon::now($userTimezone)->isAfter($expiresAt);
-        });
+        return Carbon::now($userTimezone)->isAfter($expiresAt);
     }
 
     public function isValid(): bool
@@ -91,35 +90,33 @@ class UserApiKey extends Model
         return ! $this->is_expired;
     }
 
-    protected function expirationStatus(): Attribute
+    public function getExpirationStatusAttribute(): ?string
     {
-        return Attribute::get(function () {
-            if (! $this->expires_at) {
-                return __('Never expires');
-            }
-            if ($this->is_expired) {
-                return __('Expired');
-            }
-            $daysUntil = (int) Carbon::today()->diffInDays($this->expires_at->startOfDay());
-            if ($daysUntil === 0) {
-                return __('Expires today');
-            }
-            if ($daysUntil === 1) {
-                return __('Expires tomorrow');
-            }
-            if ($daysUntil <= 7) {
-                return __('Expires in :days days', ['days' => $daysUntil]);
-            }
+        if (! $this->expires_at) {
+            return __('Never expires');
+        }
+        if ($this->is_expired) {
+            return __('Expired');
+        }
+        $daysUntil = (int) Carbon::today()->diffInDays($this->expires_at->startOfDay());
+        if ($daysUntil === 0) {
+            return __('Expires today');
+        }
+        if ($daysUntil === 1) {
+            return __('Expires tomorrow');
+        }
+        if ($daysUntil <= 7) {
+            return __('Expires in :days days', ['days' => $daysUntil]);
+        }
 
-            return __('Expires :date', ['date' => $this->expires_at->format('M j, Y')]);
-        });
+        return __('Expires :date', ['date' => $this->expires_at->format('M j, Y')]);
     }
 
-    protected function lastUsedStatus(): Attribute
+    public function getLastUsedStatusAttribute(): string
     {
-        return Attribute::get(fn () => $this->last_used_at
+        return $this->last_used_at
             ? __('Used :time', ['time' => $this->last_used_at->diffForHumans()])
-            : __('Never used'));
+            : __('Never used');
     }
 
     public function markAsUsed(): void

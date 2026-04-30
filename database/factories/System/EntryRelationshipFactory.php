@@ -7,6 +7,7 @@ namespace Alexandria\Core\Database\Factories\System;
 use Alexandria\Core\Models\System\Entry;
 use Alexandria\Core\Models\System\EntryRelationship;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Entry Relationship Factory
@@ -18,8 +19,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  *
  * @extends Factory<EntryRelationship>
  *
- * @method EntryRelationship create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
- * @method EntryRelationship make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method EntryRelationship create($attributes = [], ?Model $parent = null)
+ * @method EntryRelationship make($attributes = [], ?Model $parent = null)
  * @method EntryRelationship createOne($attributes = [])
  * @method EntryRelationship makeOne($attributes = [])
  */

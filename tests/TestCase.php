@@ -65,11 +65,11 @@ abstract class TestCase extends BaseTestCase
         $app['config']->set('activitylog.enabled', true);
         $app['config']->set('activitylog.delete_records_older_than_days', 365);
         $app['config']->set('activitylog.default_log_name', 'default');
-        $app['config']->set('activitylog.default_auth_driver', null);
+        $app['config']->set('activitylog.default_auth_driver');
         $app['config']->set('activitylog.subject_returns_soft_deleted_models', false);
         $app['config']->set('activitylog.activity_model', Activity::class);
         $app['config']->set('activitylog.table_name', 'activity_log');
-        $app['config']->set('activitylog.database_connection', null);
+        $app['config']->set('activitylog.database_connection');
     }
 
     protected function defineDatabaseMigrations(): void

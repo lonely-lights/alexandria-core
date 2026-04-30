@@ -11,6 +11,12 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 /**
  * @mixin Model
  * @mixin HasMedia
+ *
+ * @property-read string $page_image_url
+ * @property-read string $page_image_thumb_url
+ * @property-read string $banner_desktop_url
+ * @property-read string $banner_mobile_url
+ * @property-read string $banner_preview_url
  */
 trait HasAlexandriaMedia
 {

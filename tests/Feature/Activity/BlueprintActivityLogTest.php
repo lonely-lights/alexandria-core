@@ -13,6 +13,7 @@ it('logs an activity row when a blueprint is created', function () {
 
     expect(Activity::query()->count())->toBe(1);
 
+    /** @var Activity $activity */
     $activity = Activity::query()->first();
     expect($activity->log_name)->toBe('project')
         ->and($activity->description)->toBe('created');
@@ -24,6 +25,7 @@ it('logs only the configured columns when updating', function () {
 
     $blueprint->update(['name' => 'Renamed', 'metadata' => ['unrelated' => 'change']]);
 
+    /** @var Activity $activity */
     $activity = Activity::query()->latest('id')->first();
     expect($activity)->not->toBeNull()
         ->and($activity->description)->toBe('updated')
@@ -44,6 +46,7 @@ it('skips logging when nothing in the configured columns changed', function () {
 it('uses the project log name', function () {
     Blueprint::factory()->create();
 
+    /** @var Activity $activity */
     $activity = Activity::query()->first();
     expect($activity->log_name)->toBe('project');
 });

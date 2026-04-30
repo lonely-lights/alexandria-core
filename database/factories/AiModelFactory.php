@@ -36,7 +36,7 @@ class AiModelFactory extends Factory
             'is_flagship' => false,
             'is_recommended' => false,
             'is_active' => true,
-            'released_at' => fake()->dateTimeBetween('-2 years', 'now'),
+            'released_at' => fake()->dateTimeBetween('-2 years'),
         ];
     }
 
