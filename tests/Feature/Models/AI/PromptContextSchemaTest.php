@@ -52,6 +52,26 @@ it('validate flags missing required properties', function () {
     expect($present['valid'])->toBeTrue();
 });
 
+it('validate flags required properties whose value is null', function () {
+    // Regression: array_key_exists() returned true for ['foo' => null], so a
+    // schema with required: [foo] silently accepted nulls. isset() rejects
+    // both missing-key and null-value cases. No `properties` here so the
+    // type-check loop doesn't fire — we want to assert ONLY the missing/null
+    // required-property error.
+    $schema = PromptContextSchema::factory()->create([
+        'json_schema' => [
+            'required' => ['foo'],
+        ],
+    ]);
+
+    $result = $schema->validate(['foo' => null]);
+
+    expect($result['valid'])->toBeFalse()
+        ->and($result['errors'])->toHaveCount(1)
+        ->and($result['errors'][0])->toContain('foo')
+        ->and($result['errors'][0])->toContain('null');
+});
+
 it('validate flags type mismatches', function () {
     $schema = PromptContextSchema::factory()->create([
         'json_schema' => [
