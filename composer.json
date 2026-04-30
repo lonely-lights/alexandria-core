@@ -38,7 +38,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Alexandria\\Core\\": "src/"
+            "Alexandria\\Core\\": "src/",
+            "Alexandria\\Core\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {

@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Alexandria\Core\Models\Framework;
+
+use Alexandria\Core\Database\Factories\Framework\ProjectFactory;
+use Alexandria\Core\Models\System\Blueprint;
+use Alexandria\Core\Models\System\Entry;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Project extends Model
+{
+    use HasFactory;
+    use SoftDeletes;
+
+    protected $guarded = ['id'];
+
+    protected static function newFactory(): ProjectFactory
+    {
+        return ProjectFactory::new();
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'metadata' => 'array',
+            'use_subdomain' => 'boolean',
+        ];
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(config('alexandria.models.user'), 'owner_id');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(config('alexandria.models.user'), 'creator_id');
+    }
+
+    public function blueprints(): HasMany
+    {
+        return $this->hasMany(Blueprint::class);
+    }
+
+    public function entries(): HasMany
+    {
+        return $this->hasMany(Entry::class);
+    }
+}
