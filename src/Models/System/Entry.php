@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -212,6 +213,9 @@ class Entry extends Model implements HasMedia
      *
      * @throws RuntimeException when the key isn't a known native column AND
      *                          the blueprint has no field with that name
+     * @throws ValidationException when an EAV field
+     *                             value fails the field's
+     *                             validation rules
      */
     public function __set($key, $value)
     {
