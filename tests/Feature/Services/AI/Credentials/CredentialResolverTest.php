@@ -147,6 +147,18 @@ it('default-denies even when an env key happens to be configured', function () {
     (new CredentialResolver)->resolve($user, $provider);
 })->throws(NoApiKeyAvailableException::class, 'env fallback is disabled');
 
+it('default-denies when alexandria.ai.allow_env_fallback is absent from config entirely', function () {
+    // Explicit absence guard: a host app that publishes the config but
+    // forgets to merge in the new ai section shouldn't accidentally allow
+    // env fallback. envFallbackAllowed() reads with default=false.
+    Config::offsetUnset('alexandria.ai.allow_env_fallback');
+
+    $provider = AiProvider::factory()->openai()->create();
+    $user = makeCredentialUser();
+
+    (new CredentialResolver)->resolve($user, $provider);
+})->throws(NoApiKeyAvailableException::class, 'env fallback is disabled');
+
 // ---------------------------------------------------------------------------
 // Filtering: inactive / expired / wrong-provider keys are skipped
 // ---------------------------------------------------------------------------
