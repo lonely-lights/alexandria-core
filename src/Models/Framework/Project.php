@@ -10,6 +10,7 @@ use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\Entry;
+use Alexandria\Core\Traits\AI\HasEavAiIntegration;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
 use Alexandria\Core\Traits\Notable\HasNotes;
 use Illuminate\Database\Eloquent\Collection;
@@ -54,6 +55,7 @@ class Project extends Model implements HasMedia
         HasAlexandriaMedia::registerMediaCollections insteadof InteractsWithMedia;
         HasAlexandriaMedia::registerMediaConversions insteadof InteractsWithMedia;
     }
+    use HasEavAiIntegration;
     use HasFactory;
     use HasNotes;
     use SoftDeletes;
