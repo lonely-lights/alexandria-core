@@ -9,6 +9,7 @@ use Alexandria\Core\Models\AiConfiguration;
 use Alexandria\Core\Models\BlueprintView;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\Note;
+use Alexandria\Core\Traits\AI\HasAiInstructions;
 use Alexandria\Core\Traits\HasAiConfiguration;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
 use Alexandria\Core\Traits\Notable\HasNotes;
@@ -61,6 +62,12 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 class Blueprint extends Model implements HasMedia
 {
     use HasAiConfiguration;
+    use HasAiInstructions {
+        // HasAiConfiguration already defines getAiInstructions(string $type).
+        // Keep that version as the primary; alias the no-arg version for direct use.
+        HasAiConfiguration::getAiInstructions insteadof HasAiInstructions;
+        HasAiInstructions::getAiInstructions as getPromptInstructions;
+    }
     use HasAlexandriaMedia, InteractsWithMedia {
         HasAlexandriaMedia::registerMediaCollections insteadof InteractsWithMedia;
         HasAlexandriaMedia::registerMediaConversions insteadof InteractsWithMedia;
