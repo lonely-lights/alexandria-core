@@ -1,6 +1,9 @@
 <?php
 
 declare(strict_types=1);
+use Alexandria\Core\Models\AI\PromptContextSchema;
+use Alexandria\Core\Models\AI\PromptTemplate;
+use Alexandria\Core\Models\AI\PromptTemplateVersion;
 use Alexandria\Core\Models\AiConfiguration;
 use Alexandria\Core\Models\AiModel;
 use Alexandria\Core\Models\AiProvider;
@@ -8,8 +11,10 @@ use Alexandria\Core\Models\BlueprintView;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
+use Alexandria\Core\Models\System\AiPrompt;
 use Alexandria\Core\Models\System\EntryRelationship;
 use Alexandria\Core\Models\System\RelationshipBlueprint;
+use Alexandria\Core\Models\UserAiPrompt;
 use Alexandria\Core\Models\UserAiSetting;
 use Alexandria\Core\Models\UserApiKey;
 use Illuminate\Foundation\Auth\User;
@@ -72,6 +77,31 @@ it('exposes the UserAiSetting binding via config', function () {
 it('exposes the UserApiKey binding via config', function () {
     expect(config('alexandria.models.user_api_key'))
         ->toBe(UserApiKey::class);
+});
+
+it('exposes the AiPrompt binding via config', function () {
+    expect(config('alexandria.models.ai_prompt'))
+        ->toBe(AiPrompt::class);
+});
+
+it('exposes the UserAiPrompt binding via config', function () {
+    expect(config('alexandria.models.user_ai_prompt'))
+        ->toBe(UserAiPrompt::class);
+});
+
+it('exposes the PromptTemplate binding via config', function () {
+    expect(config('alexandria.models.prompt_template'))
+        ->toBe(PromptTemplate::class);
+});
+
+it('exposes the PromptTemplateVersion binding via config', function () {
+    expect(config('alexandria.models.prompt_template_version'))
+        ->toBe(PromptTemplateVersion::class);
+});
+
+it('exposes the PromptContextSchema binding via config', function () {
+    expect(config('alexandria.models.prompt_context_schema'))
+        ->toBe(PromptContextSchema::class);
 });
 
 it('publishes the alexandria config when vendor:publish is run', function () {
