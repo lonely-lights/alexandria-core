@@ -66,6 +66,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | AI Credential Strategy
+    |--------------------------------------------------------------------------
+    |
+    | Controls how CredentialResolver behaves when a user has no active
+    | UserApiKey for their selected provider.
+    |
+    | allow_env_fallback (default: false)
+    |   - false: Throw NoApiKeyAvailableException — the SaaS-safe default.
+    |     Users without a BYOK key get a clear "set up your API key" error
+    |     rather than silently billing the operator's env-configured key.
+    |   - true: Fall back to ai.providers.<sdk-key>.key from the laravel/ai
+    |     SDK's config — appropriate for self-hosted deployments where the
+    |     operator IS the user, and the env key is theirs.
+    |
+    | Set via the ALEXANDRIA_AI_ALLOW_ENV_FALLBACK env var, or override
+    | per-app by publishing config/alexandria.php.
+    |
+    */
+    'ai' => [
+        'allow_env_fallback' => env('ALEXANDRIA_AI_ALLOW_ENV_FALLBACK', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Model Bindings
     |--------------------------------------------------------------------------
     |
