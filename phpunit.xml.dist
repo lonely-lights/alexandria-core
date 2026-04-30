@@ -25,4 +25,8 @@
             <directory>src</directory>
         </include>
     </source>
+    <php>
+        <env name="DB_CONNECTION" value="testing"/>
+        <env name="APP_KEY" value="base64:WgQGfgfH8XPiL1A6f9uLuQwXp7bF6JtL3eY5sZk0bKE="/>
+    </php>
 </phpunit>
