@@ -10,7 +10,6 @@ use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Models\System\AiTransaction;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\Entry;
-use Alexandria\Core\Services\AI\AiCommandExecutor;
 use Alexandria\Core\Services\AI\AiCommandFactory;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -64,7 +63,7 @@ it('persists pending command rows under a single batch_id and logs an AiTransact
     Bus::fake([ExecuteAiCommandsJob::class]);
 
     $project = Project::factory()->create();
-    $blueprint = Blueprint::factory()->forProject($project)->create();
+    Blueprint::factory()->forProject($project)->create();
     $user = makeAuthUserForProcessJob(42);
 
     $commands = [
@@ -79,17 +78,20 @@ it('persists pending command rows under a single batch_id and logs an AiTransact
         ],
     ];
 
-    (new ProcessAiCommandsJob($commands, $user, $project, makeDto()))
-        ->handle(new AiCommandFactory, new AiCommandExecutor);
+    $job = new ProcessAiCommandsJob($commands, $user, $project, makeDto());
+    $job->handle(new AiCommandFactory);
 
     $rows = AiReviewCommand::query()->get();
     expect($rows)->toHaveCount(1)
         ->and($rows->pluck('batch_id')->unique())->toHaveCount(1);
 
+    /** @var AiReviewCommand $firstRow */
+    $firstRow = $rows->first();
+
     $tx = AiTransaction::query()->first();
     expect($tx)->not->toBeNull()
         ->and($tx->user_id)->toBe(42)
-        ->and($tx->batch_id)->toBe($rows->first()->batch_id)
+        ->and($tx->batch_id)->toBe($firstRow->batch_id)
         ->and($tx->context)->toBe('process_ai_commands')
         ->and($tx->model_name)->toBe('gemini-2.5-pro')
         ->and($tx->input_tokens)->toBe(1000)
@@ -118,8 +120,8 @@ it('auto-approves safe commands like create_entry and queues ExecuteAiCommandsJo
         ],
     ];
 
-    (new ProcessAiCommandsJob($commands, makeAuthUserForProcessJob(), $project, makeDto()))
-        ->handle(new AiCommandFactory, new AiCommandExecutor);
+    $job = new ProcessAiCommandsJob($commands, makeAuthUserForProcessJob(), $project, makeDto());
+    $job->handle(new AiCommandFactory);
 
     expect(AiReviewCommand::query()->first()->status)->toBe('approved');
 
@@ -145,8 +147,8 @@ it('leaves risky commands pending when nothing else qualifies', function () {
         ],
     ];
 
-    (new ProcessAiCommandsJob($commands, makeAuthUserForProcessJob(), $project, makeDto()))
-        ->handle(new AiCommandFactory, new AiCommandExecutor);
+    $job = new ProcessAiCommandsJob($commands, makeAuthUserForProcessJob(), $project, makeDto());
+    $job->handle(new AiCommandFactory);
 
     expect(AiReviewCommand::query()->first()->status)->toBe('pending');
 });
@@ -170,8 +172,8 @@ it('does not dispatch ExecuteAiCommandsJob when zero commands were auto-approved
         ],
     ];
 
-    (new ProcessAiCommandsJob($commands, makeAuthUserForProcessJob(), $project, makeDto()))
-        ->handle(new AiCommandFactory, new AiCommandExecutor);
+    $job = new ProcessAiCommandsJob($commands, makeAuthUserForProcessJob(), $project, makeDto());
+    $job->handle(new AiCommandFactory);
 
     Bus::assertNotDispatched(ExecuteAiCommandsJob::class);
 });
@@ -184,11 +186,11 @@ it('catches and logs without bubbling when createBatchFromJson throws', function
     // Empty commandsData triggers MalformedAiResponseException inside the factory.
     $job = new ProcessAiCommandsJob([], makeAuthUserForProcessJob(), $project, makeDto());
 
-    expect(fn () => $job->handle(new AiCommandFactory, new AiCommandExecutor))
-        ->not->toThrow(Throwable::class);
-
-    expect(AiReviewCommand::query()->count())->toBe(0)
+    expect(fn () => $job->handle(new AiCommandFactory))
+        ->not->toThrow(Throwable::class)
+        ->and(AiReviewCommand::query()->count())->toBe(0)
         ->and(AiTransaction::query()->count())->toBe(0);
+
     Bus::assertNotDispatched(ExecuteAiCommandsJob::class);
 });
 
@@ -224,12 +226,11 @@ it('rolls back the entire batch when a mid-batch command throws ValidationExcept
 
     $job = new ProcessAiCommandsJob($commands, makeAuthUserForProcessJob(42), $project, makeDto());
 
-    // Job swallows the exception — does not bubble.
-    expect(fn () => $job->handle(new AiCommandFactory, new AiCommandExecutor))
-        ->not->toThrow(Throwable::class);
-
-    // Critical: zero rows persisted — the index-0 insert was rolled back.
-    expect(AiReviewCommand::query()->count())->toBe(0)
+    // Job swallows the exception — does not bubble. Critical: zero rows
+    // persisted — the index-0 insert was rolled back.
+    expect(fn () => $job->handle(new AiCommandFactory))
+        ->not->toThrow(Throwable::class)
+        ->and(AiReviewCommand::query()->count())->toBe(0)
         ->and(AiTransaction::query()->count())->toBe(0);
 
     Bus::assertNotDispatched(ExecuteAiCommandsJob::class);

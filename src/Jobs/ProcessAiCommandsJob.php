@@ -8,9 +8,7 @@ use Alexandria\Core\DTO\AiResponseDTO;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Models\System\AiTransaction;
-use Alexandria\Core\Services\AI\AiCommandExecutor;
 use Alexandria\Core\Services\AI\AiCommandFactory;
-use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,6 +17,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Persist a raw AI command batch, log the transaction, auto-approve safe
@@ -52,7 +51,7 @@ class ProcessAiCommandsJob implements ShouldQueue
         public AiResponseDTO $dto
     ) {}
 
-    public function handle(AiCommandFactory $commandFactory, AiCommandExecutor $commandExecutor): void
+    public function handle(AiCommandFactory $commandFactory): void
     {
         Log::info('ProcessAiCommandsJob: Starting job execution', [
             'user_id' => $this->user->getAuthIdentifier(),
@@ -116,7 +115,7 @@ class ProcessAiCommandsJob implements ShouldQueue
             // 4. Execute auto-approved commands in a separate job.
             $this->queueApprovedCommandsExecution($batchId);
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             Log::error('ProcessAiCommandsJob failed to create commands.', [
                 'user_id' => $this->user->getAuthIdentifier(),
                 'error' => $e->getMessage(),

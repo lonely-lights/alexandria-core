@@ -70,8 +70,8 @@ it('persists pending commands plus an AiTransaction tagged with the EAV context'
         ],
     ];
 
-    (new ProcessEavAiCommandsJob($commands, $user, $project, makeDtoForEavJob()))
-        ->handle(new AiCommandFactory);
+    $job = new ProcessEavAiCommandsJob($commands, $user, $project, makeDtoForEavJob());
+    $job->handle(new AiCommandFactory);
 
     $row = AiReviewCommand::query()->first();
     expect($row)->not->toBeNull()
@@ -95,9 +95,9 @@ it('catches and logs without bubbling when the factory throws', function () {
     // Empty array triggers MalformedAiResponseException inside the factory.
     $job = new ProcessEavAiCommandsJob([], makeAuthUserForEavJob(), $project, makeDtoForEavJob());
 
-    expect(fn () => $job->handle(new AiCommandFactory))->not->toThrow(Throwable::class);
-
-    expect(AiReviewCommand::query()->count())->toBe(0)
+    expect(fn () => $job->handle(new AiCommandFactory))
+        ->not->toThrow(Throwable::class)
+        ->and(AiReviewCommand::query()->count())->toBe(0)
         ->and(AiTransaction::query()->count())->toBe(0);
 });
 
@@ -127,8 +127,8 @@ it('rolls back the entire batch when a mid-batch command throws ValidationExcept
 
     $job = new ProcessEavAiCommandsJob($commands, makeAuthUserForEavJob(99), $project, makeDtoForEavJob());
 
-    expect(fn () => $job->handle(new AiCommandFactory))->not->toThrow(Throwable::class);
-
-    expect(AiReviewCommand::query()->count())->toBe(0)
+    expect(fn () => $job->handle(new AiCommandFactory))
+        ->not->toThrow(Throwable::class)
+        ->and(AiReviewCommand::query()->count())->toBe(0)
         ->and(AiTransaction::query()->count())->toBe(0);
 });

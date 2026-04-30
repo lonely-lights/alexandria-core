@@ -8,7 +8,6 @@ use Alexandria\Core\DTO\AiResponseDTO;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\System\AiTransaction;
 use Alexandria\Core\Services\AI\AiCommandFactory;
-use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -17,6 +16,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Project-scoped variant of {@see ProcessAiCommandsJob}: persists pending
@@ -83,7 +83,7 @@ class ProcessEavAiCommandsJob implements ShouldQueue
 
             Log::info("Successfully created EAV AI command batch $batchId for user {$this->user->getAuthIdentifier()} and project {$this->project->id}.");
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             Log::error('ProcessEavAiCommandsJob failed to create commands.', [
                 'user_id' => $this->user->getAuthIdentifier(),
                 'project_id' => $this->project->id,

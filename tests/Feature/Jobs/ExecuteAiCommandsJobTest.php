@@ -53,8 +53,8 @@ it('runs the executor against the given batch and marks approved commands as exe
             ],
         ]);
 
-    (new ExecuteAiCommandsJob($batchId, makeAuthUserForExecuteJob()))
-        ->handle(new AiCommandExecutor);
+    $job = new ExecuteAiCommandsJob($batchId, makeAuthUserForExecuteJob());
+    $job->handle(new AiCommandExecutor);
 
     expect($command->fresh()->status)->toBe('executed')
         ->and(Entry::query()->where('name', 'Boromir')->exists())->toBeTrue();
@@ -76,7 +76,8 @@ it('swallows executor exceptions so the job does not bubble back to the worker',
             ],
         ]);
 
-    expect(fn () => (new ExecuteAiCommandsJob($batchId, makeAuthUserForExecuteJob()))
-        ->handle(new AiCommandExecutor))
+    $job = new ExecuteAiCommandsJob($batchId, makeAuthUserForExecuteJob());
+
+    expect(fn () => $job->handle(new AiCommandExecutor))
         ->not->toThrow(Throwable::class);
 });
