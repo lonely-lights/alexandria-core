@@ -39,8 +39,13 @@ return new class extends Migration
                 ->comment('Whether project uses custom subdomain routing');
 
             // Project Owner and Creator
-            $table->unsignedBigInteger('owner_id')->nullable();
-            $table->unsignedBigInteger('creator_id')->nullable();
+            // No FK constraint: the users table is owned by the host app, not core.
+            // Relationship enforcement happens at the model layer via
+            // belongsTo(config('alexandria.models.user')) per ADR-006.
+            $table->unsignedBigInteger('owner_id')->nullable()
+                ->comment('FK to host app user table (model-layer relationship; no schema constraint)');
+            $table->unsignedBigInteger('creator_id')->nullable()
+                ->comment('FK to host app user table (model-layer relationship; no schema constraint)');
 
             // Descriptive Fields
             $table->string('logline', 1000)
