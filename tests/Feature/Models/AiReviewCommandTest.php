@@ -83,6 +83,24 @@ it('isReadyForExecution() returns false when status is rejected', function () {
     expect($command->isReadyForExecution())->toBeFalse();
 });
 
+it('isReadyForExecution() returns false when status is executed', function () {
+    $command = AiReviewCommand::factory()->executed()->create([
+        'is_active' => true,
+        'action_type' => 'create_entry',
+    ]);
+
+    expect($command->isReadyForExecution())->toBeFalse();
+});
+
+it('isReadyForExecution() returns false when status is failed', function () {
+    $command = AiReviewCommand::factory()->failed()->create([
+        'is_active' => true,
+        'action_type' => 'create_entry',
+    ]);
+
+    expect($command->isReadyForExecution())->toBeFalse();
+});
+
 it('isReadyForExecution() returns false when action_type is null', function () {
     $command = AiReviewCommand::factory()->approved()->malformed()->create([
         'is_active' => true,

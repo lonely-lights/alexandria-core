@@ -25,7 +25,7 @@ class AiReviewCommandFactory extends Factory
     {
         return [
             'batch_id' => fake()->uuid(),
-            'user_id' => fake()->randomNumber(5),
+            'user_id' => fake()->numberBetween(1, 99999),
             'project_id' => null,
             'context' => null,
             'action_type' => fake()->randomElement([
@@ -63,7 +63,10 @@ class AiReviewCommandFactory extends Factory
 
     public function executed(): self
     {
-        return $this->state(fn () => ['status' => 'executed']);
+        return $this->state(fn () => [
+            'status' => 'executed',
+            'executed_at' => now(),
+        ]);
     }
 
     public function failed(): self
