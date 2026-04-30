@@ -1,0 +1,56 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Alexandria\Core\Models;
+
+use Alexandria\Core\Database\Factories\ProjectSortingPromptFactory;
+use Alexandria\Core\Models\Framework\Project;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+
+/**
+ * Per-project, user-editable preamble that the BlueprintClassifierAgent
+ * prepends to its system instructions when the project has a default+active
+ * prompt configured. is_default tracks the active fallback per project;
+ * is_active gates inclusion.
+ *
+ * @property int $id
+ * @property int $project_id
+ * @property string $name
+ * @property string $instructions
+ * @property bool $is_default
+ * @property bool $is_active
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Project $project
+ *
+ * @method static ProjectSortingPromptFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static ProjectSortingPrompt create(array $attributes = [])
+ */
+class ProjectSortingPrompt extends Model
+{
+    use HasFactory;
+
+    protected $guarded = ['id'];
+
+    protected static function newFactory(): ProjectSortingPromptFactory
+    {
+        return ProjectSortingPromptFactory::new();
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'is_default' => 'boolean',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+}
