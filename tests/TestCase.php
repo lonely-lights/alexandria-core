@@ -12,6 +12,7 @@ use Spatie\Activitylog\ActivitylogServiceProvider;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\MediaLibrary\MediaLibraryServiceProvider;
 use Spatie\Permission\PermissionServiceProvider;
+use Spatie\Tags\TagsServiceProvider;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -26,6 +27,7 @@ abstract class TestCase extends BaseTestCase
             ActivitylogServiceProvider::class,
             MediaLibraryServiceProvider::class,
             PermissionServiceProvider::class,
+            TagsServiceProvider::class,
             AlexandriaServiceProvider::class,
         ];
     }
