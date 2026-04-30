@@ -191,3 +191,46 @@ it('catches and logs without bubbling when createBatchFromJson throws', function
         ->and(AiTransaction::query()->count())->toBe(0);
     Bus::assertNotDispatched(ExecuteAiCommandsJob::class);
 });
+
+it('rolls back the entire batch when a mid-batch command throws ValidationException', function () {
+    // The factory persists commands one-by-one in a foreach loop. Without the
+    // outer DB transaction in handle(), command index 0 would commit before
+    // index 1's ValidationException leaves an orphan AiReviewCommand row under
+    // a batch_id with no AiTransaction companion. Wrapping the factory call
+    // in DB::transaction() rolls index 0 back when index 1 throws.
+    Bus::fake([ExecuteAiCommandsJob::class]);
+
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+
+    $commands = [
+        // Index 0: valid create_entry — would persist if not rolled back.
+        [
+            'action_type' => 'create_entry',
+            'reasoning' => 'safe-first',
+            'payload' => [
+                'model_class' => Entry::class,
+                'attributes' => ['blueprint_id' => $blueprint->id, 'name' => 'Frodo'],
+            ],
+        ],
+        // Index 1: missing required `payload` array — Validator will fail
+        // and throw ValidationException inside createBatchFromJson.
+        [
+            'action_type' => 'create_entry',
+            'reasoning' => 'broken',
+            // 'payload' deliberately omitted
+        ],
+    ];
+
+    $job = new ProcessAiCommandsJob($commands, makeAuthUserForProcessJob(42), $project, makeDto());
+
+    // Job swallows the exception — does not bubble.
+    expect(fn () => $job->handle(new AiCommandFactory, new AiCommandExecutor))
+        ->not->toThrow(Throwable::class);
+
+    // Critical: zero rows persisted — the index-0 insert was rolled back.
+    expect(AiReviewCommand::query()->count())->toBe(0)
+        ->and(AiTransaction::query()->count())->toBe(0);
+
+    Bus::assertNotDispatched(ExecuteAiCommandsJob::class);
+});

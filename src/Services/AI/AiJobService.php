@@ -28,13 +28,20 @@ class AiJobService
     protected ?int $actingUserId = null;
 
     /**
-     * Set the acting user ID for broadcasts.
+     * Return a clone of this service scoped to the given acting user ID.
+     *
+     * Immutable on purpose: if a host app ever binds AiJobService as a
+     * singleton, mutating $actingUserId on the shared instance would leak
+     * state across notes / users. Each call site gets its own scoped clone
+     * and the original instance stays neutral. Existing fluent call sites
+     * keep working because they use the return value.
      */
     public function forUser(int $userId): static
     {
-        $this->actingUserId = $userId;
+        $clone = clone $this;
+        $clone->actingUserId = $userId;
 
-        return $this;
+        return $clone;
     }
 
     /**

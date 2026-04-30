@@ -26,6 +26,11 @@ use Throwable;
  * BatchExecutionException (a RuntimeException) but downstream action services
  * can surface arbitrary errors during a transactional batch; we want this job
  * to log and exit cleanly rather than re-queue forever on poison pills.
+ *
+ * Queue routing: this job is left on the host app's default queue. Legacy used
+ * `->onQueue('ai')` in the constructor; we deliberately dropped that so host
+ * apps that want a dedicated AI worker can opt in at the dispatch site via
+ * `Job::dispatch(...)->onQueue('ai')`.
  */
 class ExecuteAiCommandsJob implements ShouldQueue
 {

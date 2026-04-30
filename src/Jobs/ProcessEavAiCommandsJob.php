@@ -15,6 +15,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -27,6 +28,11 @@ use Illuminate\Support\Facades\Log;
  * user implementation. AiTransaction columns are mapped to the core schema —
  * legacy used a single `token_usage` column that no longer exists, and
  * AiResponseDTO does not expose providerName, so 'unknown' is recorded.
+ *
+ * Queue routing: this job is left on the host app's default queue. Legacy used
+ * `->onQueue('ai')` in the constructor; we deliberately dropped that so host
+ * apps that want a dedicated AI worker can opt in at the dispatch site via
+ * `Job::dispatch(...)->onQueue('ai')`.
  */
 class ProcessEavAiCommandsJob implements ShouldQueue
 {
@@ -45,26 +51,34 @@ class ProcessEavAiCommandsJob implements ShouldQueue
     public function handle(AiCommandFactory $commandFactory): void
     {
         try {
-            // 1. Use the factory to create the pending commands.
-            $batchId = $commandFactory->createBatchFromJson($this->commandsData, $this->user, $this->project);
+            // Persist the pending commands + transaction log atomically.
+            // AiCommandFactory::createBatchFromJson processes commands in a
+            // foreach loop; if command index N throws, rows 0..N-1 are already
+            // inserted. Wrapping in a DB transaction rolls those partial writes
+            // back so we never leave orphan AiReviewCommand rows under a
+            // batch_id with no AiTransaction companion.
+            $batchId = DB::transaction(function () use ($commandFactory): string {
+                $batchId = $commandFactory->createBatchFromJson($this->commandsData, $this->user, $this->project);
 
-            // 2. Create the transaction log with the final cost and token data.
-            AiTransaction::create([
-                'user_id' => $this->user->getAuthIdentifier(),
-                'batch_id' => $batchId,
-                'provider_name' => 'unknown',
-                'model_name' => $this->dto->modelName,
-                'context' => 'process_eav_ai_commands',
-                'input_tokens' => $this->dto->inputTokens,
-                'output_tokens' => $this->dto->outputTokens,
-                'thinking_tokens' => $this->dto->thinkingTokens,
-                'cache_read_tokens' => $this->dto->cacheReadTokens,
-                'cache_write_tokens' => $this->dto->cacheWriteTokens,
-                'total_tokens' => $this->dto->totalTokens,
-                'cost' => $this->dto->cost,
-            ]);
+                AiTransaction::create([
+                    'user_id' => $this->user->getAuthIdentifier(),
+                    'batch_id' => $batchId,
+                    'provider_name' => 'unknown',
+                    'model_name' => $this->dto->modelName,
+                    'context' => 'process_eav_ai_commands',
+                    'input_tokens' => $this->dto->inputTokens,
+                    'output_tokens' => $this->dto->outputTokens,
+                    'thinking_tokens' => $this->dto->thinkingTokens,
+                    'cache_read_tokens' => $this->dto->cacheReadTokens,
+                    'cache_write_tokens' => $this->dto->cacheWriteTokens,
+                    'total_tokens' => $this->dto->totalTokens,
+                    'cost' => $this->dto->cost,
+                ]);
 
-            // 3. Notify the user that the plan is ready.
+                return $batchId;
+            });
+
+            // Notify the user that the plan is ready.
             // broadcast(new \App\Events\AiPlanReady($this->user, $batchId));
 
             Log::info("Successfully created EAV AI command batch $batchId for user {$this->user->getAuthIdentifier()} and project {$this->project->id}.");

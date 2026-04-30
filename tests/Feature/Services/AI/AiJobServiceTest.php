@@ -10,10 +10,16 @@ use Illuminate\Support\Facades\Event;
 
 uses(RefreshDatabase::class);
 
-it('returns the same instance from forUser to support fluent chaining', function () {
+it('returns a fresh clone from forUser so singleton bindings cannot bleed state', function () {
     $service = new AiJobService;
 
-    expect($service->forUser(42))->toBe($service);
+    $scoped = $service->forUser(42);
+
+    // Immutable contract: each call site gets its own scoped instance, the
+    // original stays neutral. Protects host apps that bind AiJobService as a
+    // singleton from cross-call state leaks.
+    expect($scoped)->toBeInstanceOf(AiJobService::class)
+        ->and($scoped)->not->toBe($service);
 });
 
 it('updateNoteWithError stamps error metadata, resets row status, and broadcasts failure', function () {
@@ -110,11 +116,39 @@ it('markNoteAsCompleted clears errors, stamps completed_at, and broadcasts compl
     );
 });
 
-it('falls back to the note user_id for the broadcast channel when forUser was not called', function () {
+it('uses the explicit forUser id on the dispatched event payload', function () {
     Event::fake([NoteAiStatusUpdated::class]);
 
+    // Note user_id is 314, but forUser(777) overrides it for the broadcast.
+    // This pins the contract that forUser() actually wins when set.
     $note = Note::factory()->create([
         'user_id' => 314,
+        'ai_notes' => null,
+    ]);
+
+    (new AiJobService)
+        ->forUser(777)
+        ->markNoteAsCompleted($note);
+
+    Event::assertDispatched(
+        NoteAiStatusUpdated::class,
+        fn (NoteAiStatusUpdated $e): bool => $e->userId === 777
+    );
+});
+
+it('falls back to the note user_id when forUser was skipped (chain through NoteAiStatusUpdated)', function () {
+    Event::fake([NoteAiStatusUpdated::class]);
+
+    // This test verifies the fallthrough lives in NoteAiStatusUpdated, not in
+    // AiJobService. AiJobService passes $this->actingUserId (null when forUser
+    // was skipped) into the event constructor; the event then defaults to
+    // $note->user_id via `$userId ?? $note->user_id`. Asserting the event
+    // payload alone can't distinguish "service passed 999 explicitly" from
+    // "service passed null and event defaulted" — but here forUser() is never
+    // called, so the only way userId can land at 999 is via the event-level
+    // fallback. That's the contract being pinned.
+    $note = Note::factory()->create([
+        'user_id' => 999,
         'ai_notes' => null,
     ]);
 
@@ -122,6 +156,6 @@ it('falls back to the note user_id for the broadcast channel when forUser was no
 
     Event::assertDispatched(
         NoteAiStatusUpdated::class,
-        fn (NoteAiStatusUpdated $e): bool => $e->userId === 314
+        fn (NoteAiStatusUpdated $e): bool => $e->userId === 999
     );
 });

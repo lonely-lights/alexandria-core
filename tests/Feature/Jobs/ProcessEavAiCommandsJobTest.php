@@ -100,3 +100,35 @@ it('catches and logs without bubbling when the factory throws', function () {
     expect(AiReviewCommand::query()->count())->toBe(0)
         ->and(AiTransaction::query()->count())->toBe(0);
 });
+
+it('rolls back the entire batch when a mid-batch command throws ValidationException', function () {
+    // Same partial-write rollback contract as ProcessAiCommandsJob: factory
+    // persists commands one-by-one, so without a DB transaction the index-0
+    // row would orphan when index 1 throws.
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+
+    $commands = [
+        // Index 0: valid create_entry.
+        [
+            'action_type' => 'create_entry',
+            'reasoning' => 'safe-first',
+            'payload' => [
+                'model_class' => Entry::class,
+                'attributes' => ['blueprint_id' => $blueprint->id, 'name' => 'Eowyn'],
+            ],
+        ],
+        // Index 1: missing required `payload` — ValidationException.
+        [
+            'action_type' => 'create_entry',
+            'reasoning' => 'broken',
+        ],
+    ];
+
+    $job = new ProcessEavAiCommandsJob($commands, makeAuthUserForEavJob(99), $project, makeDtoForEavJob());
+
+    expect(fn () => $job->handle(new AiCommandFactory))->not->toThrow(Throwable::class);
+
+    expect(AiReviewCommand::query()->count())->toBe(0)
+        ->and(AiTransaction::query()->count())->toBe(0);
+});

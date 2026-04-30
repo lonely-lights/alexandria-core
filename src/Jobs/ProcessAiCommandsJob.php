@@ -17,6 +17,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -31,6 +32,11 @@ use Illuminate\Support\Facades\Log;
  * AiTransaction columns are mapped to the core schema (input/output/thinking/
  * cache_read/cache_write/total_tokens + cost). Legacy used a single
  * `token_usage` column that no longer exists.
+ *
+ * Queue routing: this job is left on the host app's default queue. Legacy used
+ * `->onQueue('ai')` in the constructor; we deliberately dropped that so host
+ * apps that want a dedicated AI worker can opt in at the dispatch site via
+ * `Job::dispatch(...)->onQueue('ai')`.
  */
 class ProcessAiCommandsJob implements ShouldQueue
 {
@@ -55,48 +61,59 @@ class ProcessAiCommandsJob implements ShouldQueue
         ]);
 
         try {
-            // 1. Use the factory to create the pending commands.
-            Log::info('ProcessAiCommandsJob: Calling createBatchFromJson', [
-                'user_id' => $this->user->getAuthIdentifier(),
-                'commands' => $this->commandsData,
-            ]);
-
-            $batchId = $commandFactory->createBatchFromJson($this->commandsData, $this->user, $this->context);
-
-            Log::info('ProcessAiCommandsJob: Factory returned batch ID', [
-                'user_id' => $this->user->getAuthIdentifier(),
-                'batch_id' => $batchId,
-            ]);
-
-            // 2. Create the transaction log with the final cost and token data.
+            // 1. Persist the pending commands + transaction log atomically.
+            //    AiCommandFactory::createBatchFromJson processes commands in a
+            //    foreach loop. If command index N throws (e.g. ValidationException),
+            //    rows 0..N-1 are already inserted. Wrapping the factory call in a
+            //    DB transaction rolls those partial writes back so we never leave
+            //    orphan AiReviewCommand rows under a batch_id with no AiTransaction
+            //    companion.
+            //
             //    Provider is left as 'unknown' here because AiResponseDTO does not
             //    expose providerName; callers that need attribution should set
             //    `metadata['provider']` on the DTO and a follow-up CT can plumb
             //    it through.
-            AiTransaction::create([
-                'user_id' => $this->user->getAuthIdentifier(),
-                'batch_id' => $batchId,
-                'provider_name' => 'unknown',
-                'model_name' => $this->dto->modelName,
-                'context' => 'process_ai_commands',
-                'input_tokens' => $this->dto->inputTokens,
-                'output_tokens' => $this->dto->outputTokens,
-                'thinking_tokens' => $this->dto->thinkingTokens,
-                'cache_read_tokens' => $this->dto->cacheReadTokens,
-                'cache_write_tokens' => $this->dto->cacheWriteTokens,
-                'total_tokens' => $this->dto->totalTokens,
-                'cost' => $this->dto->cost,
-            ]);
+            $batchId = DB::transaction(function () use ($commandFactory): string {
+                Log::info('ProcessAiCommandsJob: Calling createBatchFromJson', [
+                    'user_id' => $this->user->getAuthIdentifier(),
+                    'commands' => $this->commandsData,
+                ]);
 
-            // 3. Notify the user that the plan is ready.
+                $batchId = $commandFactory->createBatchFromJson($this->commandsData, $this->user, $this->context);
+
+                Log::info('ProcessAiCommandsJob: Factory returned batch ID', [
+                    'user_id' => $this->user->getAuthIdentifier(),
+                    'batch_id' => $batchId,
+                ]);
+
+                AiTransaction::create([
+                    'user_id' => $this->user->getAuthIdentifier(),
+                    'batch_id' => $batchId,
+                    'provider_name' => 'unknown',
+                    'model_name' => $this->dto->modelName,
+                    'context' => 'process_ai_commands',
+                    'input_tokens' => $this->dto->inputTokens,
+                    'output_tokens' => $this->dto->outputTokens,
+                    'thinking_tokens' => $this->dto->thinkingTokens,
+                    'cache_read_tokens' => $this->dto->cacheReadTokens,
+                    'cache_write_tokens' => $this->dto->cacheWriteTokens,
+                    'total_tokens' => $this->dto->totalTokens,
+                    'cost' => $this->dto->cost,
+                ]);
+
+                return $batchId;
+            });
+
+            // 2. Notify the user that the plan is ready.
             // broadcast(new \App\Events\AiPlanReady($this->user, $batchId));
 
             Log::info("Successfully created AI command batch $batchId for user {$this->user->getAuthIdentifier()}.");
 
-            // 4. Auto-approve safe commands, leave risky ones for manual approval
+            // 3. Auto-approve safe commands, leave risky ones for manual approval.
+            //    Runs after commit so we only ever touch already-persisted rows.
             $this->autoApproveCommands($batchId);
 
-            // 5. Execute auto-approved commands in a separate job
+            // 4. Execute auto-approved commands in a separate job.
             $this->queueApprovedCommandsExecution($batchId);
 
         } catch (Exception $e) {
@@ -116,47 +133,41 @@ class ProcessAiCommandsJob implements ShouldQueue
      */
     private function autoApproveCommands(string $batchId): void
     {
-        try {
-            // Get all pending commands to evaluate for auto-approval
-            $pendingCommands = AiReviewCommand::query()
-                ->where('batch_id', $batchId)
-                ->where('status', 'pending')
-                ->get();
+        // No inner try/catch: any DB-constraint failure here propagates to the
+        // outer handle() catch where it's logged with full context. Swallowing
+        // it here would leave the batch in a half-approved state with no
+        // surfaced error.
+        $pendingCommands = AiReviewCommand::query()
+            ->where('batch_id', $batchId)
+            ->where('status', 'pending')
+            ->get();
 
-            $autoApprovedCount = 0;
-            $requiresApprovalCount = 0;
+        $autoApprovedCount = 0;
+        $requiresApprovalCount = 0;
 
-            foreach ($pendingCommands as $command) {
-                if ($this->shouldAutoApprove($command)) {
-                    $command->update(['status' => 'approved']);
-                    $autoApprovedCount++;
-                } else {
-                    $requiresApprovalCount++;
-                }
+        foreach ($pendingCommands as $command) {
+            if ($this->shouldAutoApprove($command)) {
+                $command->update(['status' => 'approved']);
+                $autoApprovedCount++;
+            } else {
+                $requiresApprovalCount++;
             }
+        }
 
-            Log::info('ProcessAiCommandsJob: Command approval analysis', [
+        Log::info('ProcessAiCommandsJob: Command approval analysis', [
+            'batch_id' => $batchId,
+            'user_id' => $this->user->getAuthIdentifier(),
+            'auto_approved' => $autoApprovedCount,
+            'requires_approval' => $requiresApprovalCount,
+        ]);
+
+        if ($requiresApprovalCount > 0) {
+            Log::info('ProcessAiCommandsJob: Commands require manual approval', [
                 'batch_id' => $batchId,
                 'user_id' => $this->user->getAuthIdentifier(),
-                'auto_approved' => $autoApprovedCount,
-                'requires_approval' => $requiresApprovalCount,
+                'pending_approval_count' => $requiresApprovalCount,
             ]);
-
-            if ($requiresApprovalCount > 0) {
-                Log::info('ProcessAiCommandsJob: Commands require manual approval', [
-                    'batch_id' => $batchId,
-                    'user_id' => $this->user->getAuthIdentifier(),
-                    'pending_approval_count' => $requiresApprovalCount,
-                ]);
-                // TODO: Notify user that commands require manual approval
-            }
-
-        } catch (Exception $e) {
-            Log::error('ProcessAiCommandsJob: Auto-approval failed', [
-                'batch_id' => $batchId,
-                'user_id' => $this->user->getAuthIdentifier(),
-                'error' => $e->getMessage(),
-            ]);
+            // TODO: Notify user that commands require manual approval
         }
     }
 
