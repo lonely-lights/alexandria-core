@@ -147,14 +147,10 @@ class AiCommandFactory
                 'command_data' => $commandData,
             ]);
 
-            // Throw a ValidationException with a clear error message.
-            throw new ValidationException(
-                $validator,
-                response: response()->json([
-                    'message' => "AI response for command at index $index is malformed.",
-                    'errors' => $validator->errors(),
-                ], 422)
-            );
+            // The validator already exposes field-level errors; the contextual
+            // message was decorative and the response() factory is unsafe in
+            // queue/CLI contexts.
+            throw new ValidationException($validator);
         }
 
         // Validate action-specific payload structure

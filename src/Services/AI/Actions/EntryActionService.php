@@ -60,13 +60,7 @@ class EntryActionService
         ]);
 
         if ($validator->fails()) {
-            throw new ValidationException(
-                $validator,
-                response: response()->json([
-                    'message' => "Invalid payload for create_entry action at command index $index.",
-                    'errors' => $validator->errors(),
-                ], 422)
-            );
+            throw new ValidationException($validator);
         }
 
         // Additional validation for entry-specific requirements
@@ -87,13 +81,7 @@ class EntryActionService
         ]);
 
         if ($validator->fails()) {
-            throw new ValidationException(
-                $validator,
-                response: response()->json([
-                    'message' => "Invalid payload for update_entry action at command index $index.",
-                    'errors' => $validator->errors(),
-                ], 422)
-            );
+            throw new ValidationException($validator);
         }
     }
 
@@ -381,13 +369,7 @@ class EntryActionService
             ]);
 
             if ($blueprintValidator->fails()) {
-                throw new ValidationException(
-                    $blueprintValidator,
-                    response: response()->json([
-                        'message' => "Invalid blueprint_id for create_entry action at command index $index.",
-                        'errors' => $blueprintValidator->errors(),
-                    ], 422)
-                );
+                throw new ValidationException($blueprintValidator);
             }
         }
     }

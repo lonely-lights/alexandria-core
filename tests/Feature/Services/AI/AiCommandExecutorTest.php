@@ -271,6 +271,63 @@ it('skips the one-to-many attach_relationship path because no core model impleme
 // create_relationship — direct entry_relationships row
 // ---------------------------------------------------------------------------
 
+it('chains create_entry (temp_id) → create_relationship by resolving the temp_id into the new entry id', function () {
+    $batchId = (string) Str::uuid();
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+
+    // The child entry pre-exists; only the parent gets created in the batch.
+    $existingChild = Entry::factory()->inProjectWithBlueprint($project, $blueprint)->create();
+
+    // Command 1: create_entry with temp_id — this is the row whose new id
+    // must be threaded into command 2 via tempIdMap.
+    $createCmd = AiReviewCommand::factory()->forBatch($batchId)->approved()->create([
+        'action_type' => 'create_entry',
+        'payload' => [
+            'model_class' => Entry::class,
+            'temp_id' => 'temp_alice',
+            'attributes' => [
+                'blueprint_id' => $blueprint->id,
+                'project_id' => $project->id,
+                'name' => 'Alice',
+            ],
+        ],
+    ]);
+
+    // Command 2: create_relationship referencing the temp_id from command 1
+    // via parent_entry_temp_id (which executeCommand resolves into parent_entry_id).
+    $relCmd = AiReviewCommand::factory()->forBatch($batchId)->approved()->create([
+        'action_type' => 'create_relationship',
+        'payload' => [
+            'parent_entry_temp_id' => 'temp_alice',
+            'child_entry_id' => $existingChild->id,
+            'relationship_type' => 'mentor',
+            'parent_label' => 'Mentor',
+            'child_label' => 'Apprentice',
+        ],
+    ]);
+
+    $result = (new AiCommandExecutor)->executeBatch($batchId);
+
+    expect($result)->toBe(['success' => 2, 'failed' => 0]);
+
+    $createCmd->refresh();
+    $relCmd->refresh();
+    expect($createCmd->status)->toBe('executed')
+        ->and($relCmd->status)->toBe('executed');
+
+    $alice = Entry::query()->where('name', 'Alice')->firstOrFail();
+
+    $row = EntryRelationship::query()
+        ->where('parent_entry_id', $alice->id)
+        ->where('child_entry_id', $existingChild->id)
+        ->firstOrFail();
+
+    expect($row->relationship_type)->toBe('mentor')
+        ->and($row->parent_label)->toBe('Mentor')
+        ->and($row->child_label)->toBe('Apprentice');
+});
+
 it('creates an entry_relationships row with the supplied parent/child IDs and metadata', function () {
     $batchId = (string) Str::uuid();
     $project = Project::factory()->create();

@@ -54,7 +54,7 @@ class AiCommandExecutor
                     $this->executeCommand($command);
                     $command->update(['status' => 'executed', 'executed_at' => now()]);
                     $results['success']++;
-                } catch (Exception $e) {
+                } catch (Throwable $e) {
                     $command->update([
                         'status' => 'failed',
                         'failure_reason' => $e->getMessage(),
@@ -92,7 +92,7 @@ class AiCommandExecutor
             // $results['relationships_created'] = $relationshipResults['created'];
             // $results['relationships_failed'] = $relationshipResults['failed'];
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
             Log::critical("AI Batch Execution Transaction Failed for batch $batchId", ['exception' => $e]);
 
@@ -121,6 +121,9 @@ class AiCommandExecutor
         }
         if (isset($payload['parent_model_id'])) {
             $payload['parent_model_id'] = $this->resolveId($payload['parent_model_id']);
+        }
+        if (isset($payload['parent_id'])) {
+            $payload['parent_id'] = $this->resolveId($payload['parent_id']);
         }
         if (isset($payload['model_id'])) {
             $payload['model_id'] = $this->resolveId($payload['model_id']);
@@ -200,10 +203,12 @@ class AiCommandExecutor
     {
         $payload = $command->payload;
 
-        // One-to-Many: setting a parent_id on the child
+        // One-to-Many: setting a parent_id on the child.
+        // executeCommand() pre-resolves child_model_id and parent_id, so we
+        // consume the payload values directly here.
         if (isset($payload['child_model_class'])) {
-            $childId = $this->resolveId($payload['child_model_id']);
-            $parentId = $this->resolveId($payload['parent_id']);
+            $childId = $payload['child_model_id'];
+            $parentId = $payload['parent_id'];
             $child = $payload['child_model_class']::findOrFail($childId);
             $parentForeignKey = Str::snake(class_basename($child->findParentModel())).'_id'; // Assumes a convention
             $child->update([$parentForeignKey => $parentId]);
@@ -211,11 +216,12 @@ class AiCommandExecutor
             return;
         }
 
-        // Many-to-Many: using attach() on a relationship
+        // Many-to-Many: using attach() on a relationship.
+        // executeCommand() pre-resolves parent_model_id and child_model_id.
         $parentClass = $payload['parent_model_class'];
-        $parentId = $this->resolveId($payload['parent_model_id']);
+        $parentId = $payload['parent_model_id'];
         $relationshipName = $payload['relationship_name'];
-        $childId = $this->resolveId($payload['child_model_id']);
+        $childId = $payload['child_model_id'];
 
         $parent = $parentClass::findOrFail($parentId);
         $relationship = $parent->{$relationshipName}();

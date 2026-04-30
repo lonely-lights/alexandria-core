@@ -60,13 +60,7 @@ class NoteActionService
         ]);
 
         if ($validator->fails()) {
-            throw new ValidationException(
-                $validator,
-                response: response()->json([
-                    'message' => "Invalid payload for create_note action at command index $index.",
-                    'errors' => $validator->errors(),
-                ], 422)
-            );
+            throw new ValidationException($validator);
         }
     }
 
@@ -85,13 +79,7 @@ class NoteActionService
         ]);
 
         if ($validator->fails()) {
-            throw new ValidationException(
-                $validator,
-                response: response()->json([
-                    'message' => "Invalid payload for copy_note action at command index $index.",
-                    'errors' => $validator->errors(),
-                ], 422)
-            );
+            throw new ValidationException($validator);
         }
     }
 
@@ -111,13 +99,7 @@ class NoteActionService
         ]);
 
         if ($validator->fails()) {
-            throw new ValidationException(
-                $validator,
-                response: response()->json([
-                    'message' => "Invalid payload for move_note action at command index $index.",
-                    'errors' => $validator->errors(),
-                ], 422)
-            );
+            throw new ValidationException($validator);
         }
     }
 
@@ -136,13 +118,7 @@ class NoteActionService
         ]);
 
         if ($validator->fails()) {
-            throw new ValidationException(
-                $validator,
-                response: response()->json([
-                    'message' => "Invalid payload for transfer_note action at command index $index.",
-                    'errors' => $validator->errors(),
-                ], 422)
-            );
+            throw new ValidationException($validator);
         }
     }
 
