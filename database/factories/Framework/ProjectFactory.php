@@ -10,6 +10,11 @@ use Illuminate\Support\Str;
 
 /**
  * @extends Factory<Project>
+ *
+ * @method Project create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method Project make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method Project createOne($attributes = [])
+ * @method Project makeOne($attributes = [])
  */
 class ProjectFactory extends Factory
 {

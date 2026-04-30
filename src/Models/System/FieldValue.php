@@ -17,6 +17,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $value
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read Entry $entry
+ * @property-read BlueprintField $blueprintField
  */
 class FieldValue extends Model
 {

@@ -23,6 +23,11 @@ use Illuminate\Support\Str;
  * - entry_reference: Reference to another entry
  *
  * @extends Factory<BlueprintField>
+ *
+ * @method BlueprintField create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method BlueprintField make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method BlueprintField createOne($attributes = [])
+ * @method BlueprintField makeOne($attributes = [])
  */
 class BlueprintFieldFactory extends Factory
 {

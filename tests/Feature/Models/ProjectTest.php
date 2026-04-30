@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Alexandria\Core\Models\Framework\Project;
-use Illuminate\Database\Eloquent\Model;
+use Alexandria\Core\Tests\Support\FakeUserModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -33,16 +33,6 @@ it('returns null owner when owner_id is null (nullable FK contract)', function (
         ->and($project->owner)->toBeNull()
         ->and($project->creator)->toBeNull();
 });
-
-/**
- * Sentinel Eloquent model used to verify config-driven user resolution.
- * If Project's owner() relationship ignored config and hardcoded the default
- * User class, this test would fail because the related model would not match.
- */
-class FakeUserModel extends Model
-{
-    protected $table = 'users';
-}
 
 it('resolves owner relationship through config (ADR-006)', function () {
     config()->set('alexandria.models.user', FakeUserModel::class);

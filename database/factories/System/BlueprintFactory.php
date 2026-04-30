@@ -21,6 +21,11 @@ use Illuminate\Support\Str;
  * - 'relationship': Relationship entries (Character Relationship, etc.)
  *
  * @extends Factory<Blueprint>
+ *
+ * @method Blueprint create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method Blueprint make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method Blueprint createOne($attributes = [])
+ * @method Blueprint makeOne($attributes = [])
  */
 class BlueprintFactory extends Factory
 {
@@ -46,7 +51,7 @@ class BlueprintFactory extends Factory
             // content_renderer omitted -- the migration default ('content') applies.
             // Tests that need a specific renderer override it explicitly.
             'description' => fake()->optional(0.6)->sentence(),
-            'icon' => fake()->optional(0.5)->randomElement(['heroicon-user', 'heroicon-map-pin', 'heroicon-book-open', 'heroicon-star']),
+            'icon' => fake()->optional()->randomElement(['heroicon-user', 'heroicon-map-pin', 'heroicon-book-open', 'heroicon-star']),
             'show_on_dashboard' => true,
             'is_linkable' => true,
             'is_hub' => false,

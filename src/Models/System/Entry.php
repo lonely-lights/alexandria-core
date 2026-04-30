@@ -9,6 +9,7 @@ use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Traits\System\HasDynamicAttributes;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +36,11 @@ use Illuminate\Support\Str;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ * @property-read Project $project
+ * @property-read Blueprint|null $type
+ * @property-read static|null $parent
+ * @property-read Collection<int, static> $children
+ * @property-read Collection<int, FieldValue> $attributes
  */
 class Entry extends Model
 {

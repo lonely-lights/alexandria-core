@@ -29,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property-read string|null $target_blueprint_slug
  * @property-read bool $is_type_field
+ * @property-read Blueprint $blueprint
  */
 class BlueprintField extends Model
 {

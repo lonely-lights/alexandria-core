@@ -18,6 +18,11 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  * Each FieldValue stores a single value for an Entry's dynamic field.
  *
  * @extends Factory<FieldValue>
+ *
+ * @method FieldValue create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method FieldValue make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method FieldValue createOne($attributes = [])
+ * @method FieldValue makeOne($attributes = [])
  */
 class FieldValueFactory extends Factory
 {

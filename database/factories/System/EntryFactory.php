@@ -18,6 +18,11 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  * Each entry belongs to a Project and follows a Blueprint schema.
  *
  * @extends Factory<Entry>
+ *
+ * @method Entry create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method Entry make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method Entry createOne($attributes = [])
+ * @method Entry makeOne($attributes = [])
  */
 class EntryFactory extends Factory
 {

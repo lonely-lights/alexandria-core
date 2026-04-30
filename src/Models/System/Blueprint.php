@@ -7,6 +7,7 @@ namespace Alexandria\Core\Models\System;
 use Alexandria\Core\Database\Factories\System\BlueprintFactory;
 use Alexandria\Core\Models\Framework\Project;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,6 +38,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ * @property-read Project $project
+ * @property-read Collection<int, BlueprintField> $fields
+ * @property-read Collection<int, Entry> $entries
  */
 class Blueprint extends Model
 {
