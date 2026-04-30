@@ -6,6 +6,7 @@ namespace Alexandria\Core\Models\System;
 
 use Alexandria\Core\Database\Factories\System\BlueprintFactory;
 use Alexandria\Core\Models\Framework\Project;
+use Alexandria\Core\Traits\HasAlexandriaMedia;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,6 +17,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property int $id
@@ -47,8 +50,12 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static Builder<static> standard()
  * @method static Builder<static> list()
  */
-class Blueprint extends Model
+class Blueprint extends Model implements HasMedia
 {
+    use HasAlexandriaMedia, InteractsWithMedia {
+        HasAlexandriaMedia::registerMediaCollections insteadof InteractsWithMedia;
+        HasAlexandriaMedia::registerMediaConversions insteadof InteractsWithMedia;
+    }
     use HasFactory;
     use LogsActivity;
     use SoftDeletes;

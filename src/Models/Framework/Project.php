@@ -7,6 +7,7 @@ namespace Alexandria\Core\Models\Framework;
 use Alexandria\Core\Database\Factories\Framework\ProjectFactory;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\Entry;
+use Alexandria\Core\Traits\HasAlexandriaMedia;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property int $id
@@ -34,8 +37,12 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Blueprint> $blueprints
  * @property-read Collection<int, Entry> $entries
  */
-class Project extends Model
+class Project extends Model implements HasMedia
 {
+    use HasAlexandriaMedia, InteractsWithMedia {
+        HasAlexandriaMedia::registerMediaCollections insteadof InteractsWithMedia;
+        HasAlexandriaMedia::registerMediaConversions insteadof InteractsWithMedia;
+    }
     use HasFactory;
     use SoftDeletes;
 

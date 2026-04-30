@@ -6,6 +6,7 @@ namespace Alexandria\Core\Models\System;
 
 use Alexandria\Core\Database\Factories\System\EntryFactory;
 use Alexandria\Core\Models\Framework\Project;
+use Alexandria\Core\Traits\HasAlexandriaMedia;
 use Alexandria\Core\Traits\System\HasDynamicAttributes;
 use Alexandria\Core\Traits\System\HasDynamicRelationships;
 use BadMethodCallException;
@@ -21,6 +22,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property int $id
@@ -51,8 +54,12 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static Builder<static> active()
  * @method static Builder<static> archived()
  */
-class Entry extends Model
+class Entry extends Model implements HasMedia
 {
+    use HasAlexandriaMedia, InteractsWithMedia {
+        HasAlexandriaMedia::registerMediaCollections insteadof InteractsWithMedia;
+        HasAlexandriaMedia::registerMediaConversions insteadof InteractsWithMedia;
+    }
     use HasDynamicAttributes;
     use HasDynamicRelationships;
     use HasFactory;
