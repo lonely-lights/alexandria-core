@@ -34,7 +34,7 @@ class EavAiService
             .'which lands in CT5d. The trait method is in place so callers can compile, '
             .'but the AI call surface is not yet wired. (note=%d, user=%s, project=%d)',
             $note->id,
-            (string) $user->getAuthIdentifier(),
+            $user->getAuthIdentifier(),
             $project->id,
         ));
     }
