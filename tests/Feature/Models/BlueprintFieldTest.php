@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * @noinspection PhpUndefinedFieldInspection
+ */
+
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\BlueprintField;
 use Illuminate\Foundation\Testing\RefreshDatabase;

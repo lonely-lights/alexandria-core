@@ -5,7 +5,6 @@ declare(strict_types=1);
 /**
  * HasNotes polymorphic-relation tests across Project / Blueprint / Entry.
  *
- * @noinspection PhpUndefinedMethodInspection
  * @noinspection PhpUndefinedFieldInspection
  */
 

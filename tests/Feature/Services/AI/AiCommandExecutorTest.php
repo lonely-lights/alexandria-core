@@ -5,17 +5,12 @@ declare(strict_types=1);
 /**
  * Pest test file for AiCommandExecutor.
  *
- * Eloquent factory ->create() returns a Collection|Model union, which makes
- * every $model->id / $model->blueprints() flag "Potentially polymorphic call."
- * AiCommandExecutor::executeBatch is @throws Throwable, which propagates as
- * "Unhandled Throwable" through every it() closure (Pest closures can't
- * declare throws). The Pest plugin also nags about chained ->and()
- * expectations being preferred over multiple expect() statements. None of
- * these are real bugs — the targeted @noinspection IDs (Php{PossiblePoly-
- * morphicInvocation,UnhandledException,ExpectationCanBeChained}Inspection)
- * didn't register with PHPStorm, so suppress wholesale at file level.
+ * Eloquent factory ->create() returns Collection|Model union, factory()
+ * results are widened, and AiCommandExecutor::executeBatch is @throws
+ * Throwable which Pest closures can't declare. None of the flagged
+ * sites are real bugs.
  *
- * @noinspection ALL
+ * @noinspection PhpUnhandledExceptionInspection
  */
 
 use Alexandria\Core\Models\Framework\Project;
@@ -75,9 +70,8 @@ it('executes a single approved create_entry, marks it executed, and stamps execu
 
     $command->refresh();
     expect($command->status)->toBe('executed')
-        ->and($command->executed_at)->not->toBeNull();
-
-    expect(Entry::query()->where('name', 'Aragorn')->exists())->toBeTrue();
+        ->and($command->executed_at)->not->toBeNull()
+        ->and(Entry::query()->where('name', 'Aragorn')->exists())->toBeTrue();
 });
 
 // ---------------------------------------------------------------------------
@@ -117,13 +111,12 @@ it('executes a mixed batch (create_entry + create_relationship) successfully', f
 
     $result = (new AiCommandExecutor)->executeBatch($batchId);
 
-    expect($result)->toBe(['success' => 2, 'failed' => 0]);
-
-    expect(EntryRelationship::query()
-        ->where('parent_entry_id', $aragorn->id)
-        ->where('child_entry_id', $arwen->id)
-        ->where('relationship_type', 'spouse')
-        ->exists())->toBeTrue();
+    expect($result)->toBe(['success' => 2, 'failed' => 0])
+        ->and(EntryRelationship::query()
+            ->where('parent_entry_id', $aragorn->id)
+            ->where('child_entry_id', $arwen->id)
+            ->where('relationship_type', 'spouse')
+            ->exists())->toBeTrue();
 });
 
 // ---------------------------------------------------------------------------
@@ -164,9 +157,8 @@ it('marks an individually-failing command as failed but still executes others', 
 
     expect($bad->status)->toBe('failed')
         ->and($bad->failure_reason)->not->toBeEmpty()
-        ->and($good->status)->toBe('executed');
-
-    expect(Entry::query()->where('name', 'SurvivedSibling')->exists())->toBeTrue();
+        ->and($good->status)->toBe('executed')
+        ->and(Entry::query()->where('name', 'SurvivedSibling')->exists())->toBeTrue();
 });
 
 // ---------------------------------------------------------------------------

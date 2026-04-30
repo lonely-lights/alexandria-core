@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 /**
- * @noinspection PhpUndefinedMethodInspection
- * @noinspection PhpUndefinedFieldInspection
+ * @noinspection PhpUnhandledExceptionInspection
  */
 
 use Alexandria\Core\Models\Framework\Project;

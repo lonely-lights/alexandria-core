@@ -115,7 +115,7 @@ it('scopeActive + scopeCategory + scopeForContext filter correctly', function ()
 
     expect(PromptTemplate::active()->count())->toBe(2)
         ->and(PromptTemplate::category('categorization')->count())->toBe(2)
-        ->and(PromptTemplate::active()->category('categorization')->count())->toBe(1);
+        ->and(PromptTemplate::active()->where('category', 'categorization')->count())->toBe(1);
 });
 
 it('PromptTemplateVersion::diffWith reports added/removed/changed counters', function () {
