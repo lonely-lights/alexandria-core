@@ -7,14 +7,35 @@ namespace Alexandria\Core\Models\System;
 use Alexandria\Core\Database\Factories\System\EntryFactory;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Traits\System\HasDynamicAttributes;
+use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property int $project_id
+ * @property int $blueprint_id
+ * @property string $name
+ * @property string $slug
+ * @property string|null $summary
+ * @property string|null $content
+ * @property int $sort_order
+ * @property int|null $parent_id
+ * @property bool $is_stub
+ * @property array<string, mixed>|null $metadata
+ * @property array<string, mixed>|null $ai_notes
+ * @property Carbon|null $archived_at
+ * @property int|null $cascade_archived_by
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ */
 class Entry extends Model
 {
     use HasDynamicAttributes;
@@ -146,8 +167,8 @@ class Entry extends Model
      * Magic setter that routes native columns through Eloquent and
      * everything else through the EAV setter.
      *
-     * @throws \Exception when the key isn't a known native column AND
-     *                    the blueprint has no field with that name
+     * @throws Exception when the key isn't a known native column AND
+     *                   the blueprint has no field with that name
      */
     public function __set($key, $value)
     {

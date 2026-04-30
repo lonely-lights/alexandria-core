@@ -8,7 +8,16 @@ use Alexandria\Core\Database\Factories\System\FieldValueFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $entry_id
+ * @property int $blueprint_field_id
+ * @property string|null $value
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 class FieldValue extends Model
 {
     use HasFactory;

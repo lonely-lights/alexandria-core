@@ -12,7 +12,32 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $project_id
+ * @property string $name
+ * @property string $slug
+ * @property string|null $description
+ * @property string|null $icon
+ * @property bool $show_on_dashboard
+ * @property bool $is_linkable
+ * @property bool $is_hub
+ * @property string $classification
+ * @property string $list_selection_mode
+ * @property array<string, mixed>|null $infobox_schema
+ * @property string $content_renderer
+ * @property array<string, mixed>|null $metadata
+ * @property bool $show_tree_view
+ * @property bool $enable_timeline
+ * @property array<int, array<string, mixed>>|null $views
+ * @property string|null $ai_prompt_instructions
+ * @property bool $allow_ai_sorting
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ */
 class Blueprint extends Model
 {
     use HasFactory;

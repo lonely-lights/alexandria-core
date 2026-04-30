@@ -65,7 +65,7 @@ class BlueprintFieldFactory extends Factory
     {
         return $this->state(fn () => [
             'blueprint_id' => $blueprint->id,
-            'sort_order' => BlueprintField::where('blueprint_id', $blueprint->id)->count(),
+            'sort_order' => BlueprintField::query()->where('blueprint_id', $blueprint->id)->count(),
         ]);
     }
 
