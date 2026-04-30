@@ -96,9 +96,9 @@ it('cascades delete when the parent Project is deleted', function () {
     $project = Project::factory()->create();
     ProjectSortingPrompt::factory()->forProject($project)->count(3)->create();
 
-    expect(ProjectSortingPrompt::where('project_id', $project->id)->count())->toBe(3);
+    expect(ProjectSortingPrompt::query()->where('project_id', $project->id)->count())->toBe(3);
 
     $project->forceDelete();
 
-    expect(ProjectSortingPrompt::where('project_id', $project->id)->count())->toBe(0);
+    expect(ProjectSortingPrompt::query()->where('project_id', $project->id)->count())->toBe(0);
 });
