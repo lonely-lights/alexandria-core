@@ -23,6 +23,17 @@ class Entry extends Model
 
     protected $guarded = ['id'];
 
+    /**
+     * Process-level cache of native column listings keyed by table name.
+     * `__set` consults this to decide whether an assigned key is a native
+     * column (route to Eloquent) or a dynamic EAV field (route to the
+     * trait). Without it, every __set fires a SHOW COLUMNS / PRAGMA
+     * table_info query, compounding to N×fields queries on bulk saves.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private static array $nativeColumnsCache = [];
+
     protected static function newFactory(): EntryFactory
     {
         return EntryFactory::new();
@@ -80,7 +91,10 @@ class Entry extends Model
 
     public function attributes(): HasMany
     {
-        return $this->hasMany(FieldValue::class);
+        // ORDER BY id keeps multi-value field order deterministic across reads.
+        // Insertion order in HasDynamicAttributes::setDynamicAttribute is the
+        // user's intent; relying on undefined SQL row order would be brittle.
+        return $this->hasMany(FieldValue::class)->orderBy('id');
     }
 
     public function scopeActive(Builder $query): Builder
@@ -137,12 +151,33 @@ class Entry extends Model
      */
     public function __set($key, $value)
     {
-        if ($this->getConnection()->getSchemaBuilder()->hasColumn($this->getTable(), $key) || $this->hasSetMutator($key)) {
+        if ($this->isNativeColumn($key)
+            || $this->hasSetMutator($key)
+            || $this->hasAttributeSetMutator($key)
+        ) {
             parent::__set($key, $value);
 
             return;
         }
 
         $this->setDynamicAttribute($key, $value);
+    }
+
+    /**
+     * Return true if `$key` is a native column on this model's table.
+     * Caches the column listing per process so __set doesn't fire a
+     * schema-introspection query on every assignment.
+     */
+    private function isNativeColumn(string $key): bool
+    {
+        $table = $this->getTable();
+
+        if (! isset(self::$nativeColumnsCache[$table])) {
+            self::$nativeColumnsCache[$table] = $this->getConnection()
+                ->getSchemaBuilder()
+                ->getColumnListing($table);
+        }
+
+        return in_array($key, self::$nativeColumnsCache[$table], true);
     }
 }

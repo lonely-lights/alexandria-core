@@ -93,7 +93,7 @@ it('casts boolean fields correctly on read', function () {
     expect($fresh->is_friendly)->toBeTrue();
 });
 
-it('handles multi-value fields by returning an array', function () {
+it('handles multi-value fields by returning an array in insertion order', function () {
     $field = BlueprintField::factory()->text()->create([
         'blueprint_id' => $this->blueprint->id,
         'name' => 'titles',
@@ -105,6 +105,36 @@ it('handles multi-value fields by returning an array', function () {
 
     $entry->titles = ['Captain', 'Cartographer', 'Diplomat'];
 
+    // ->toBe() asserts ordered equality. Entry::attributes() explicitly
+    // orders by id so insertion order is the read order regardless of
+    // the underlying database engine's row-order semantics.
     $fresh = $entry->fresh()->load('attributes', 'type.fields');
     expect($fresh->titles)->toBe(['Captain', 'Cartographer', 'Diplomat']);
+});
+
+it('returns the freshly written value on the same instance after a write', function () {
+    // Regression test: with a pre-loaded attributes relation, writing a
+    // dynamic field on the same instance must reflect on the next read --
+    // not return the stale pre-write value. setDynamicAttribute now clears
+    // both attributesCache AND the `attributes` relation so the next read
+    // refetches from the database. Without this, the form-save pattern
+    // (load then write then read) silently returned pre-write data.
+    BlueprintField::factory()->text()->create([
+        'blueprint_id' => $this->blueprint->id,
+        'name' => 'rank',
+    ]);
+    $entry = Entry::factory()->create([
+        'project_id' => $this->project->id,
+        'blueprint_id' => $this->blueprint->id,
+    ]);
+
+    // Pre-load the attributes relation to simulate a form-load pattern.
+    $entry->load('attributes', 'type.fields');
+    expect($entry->rank)->toBeNull();
+
+    // Write on the same instance.
+    $entry->rank = 'Captain';
+
+    // Read on the same instance -- without ->fresh().
+    expect($entry->rank)->toBe('Captain');
 });

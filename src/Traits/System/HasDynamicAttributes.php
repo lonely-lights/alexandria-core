@@ -147,7 +147,8 @@ trait HasDynamicAttributes
 
         // If the incoming value is null or an empty array, our work is done
         if (is_null($value) || (is_array($value) && empty($value))) {
-            $this->attributesCache = null; // Invalidate the cache
+            $this->attributesCache = null;
+            $this->unsetRelation('attributes');
 
             return;
         }
@@ -194,8 +195,13 @@ trait HasDynamicAttributes
             FieldValue::insert($recordsToInsert);
         }
 
-        // Invalidate the cache to force a reload with the new data on the next 'get'
+        // Invalidate the cache to force a reload with the new data on the next 'get'.
+        // Also unset the loaded `attributes` relation: loadAttributes() prefers the
+        // pre-loaded relation when present, so a stale relation cache would mask
+        // the freshly-written rows on a write-then-read sequence on the same
+        // instance (the common form-save pattern).
         $this->attributesCache = null;
+        $this->unsetRelation('attributes');
     }
 
     /**
