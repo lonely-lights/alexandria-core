@@ -97,7 +97,7 @@ it('toDto calculates cost from the matching AiModel row', function () {
 
     $dto = AgentResponseAdapter::toDto($response, 'gpt-test-1');
 
-    $expectedCost = $aiModel->calculateCost(1_000_000, 500_000, 0, 0);
+    $expectedCost = $aiModel->calculateCost(1_000_000, 500_000);
     expect($dto->cost)->toBe($expectedCost)
         ->and($dto->cost)->toBeGreaterThan(0.0);
 });
@@ -144,7 +144,6 @@ it('calculateCost charges genuine cache writes at write pricing on small prompts
         inputTokens: 50,
         outputTokens: 0,
         cacheWriteTokens: 30,
-        cacheReadTokens: 0,
     );
 
     // Expected: input(50) + cache_write(30 * 1.25) = 50 + 37.5 = 87.5
@@ -165,7 +164,6 @@ it('calculateCost downgrades to read pricing when cache_write vastly exceeds inp
         inputTokens: 5,
         outputTokens: 0,
         cacheWriteTokens: 1000,
-        cacheReadTokens: 0,
     );
 
     // 5 < 1000 * 0.1 → misreport branch fires → cache_write priced at 0.1x.
