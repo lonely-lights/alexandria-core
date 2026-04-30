@@ -1748,7 +1748,7 @@ After this plan ships:
 
 1. **Plan: EntryRelationship + RelationshipBlueprint + HasDynamicRelationships trait.** Adds the relationship side of EAV (entries connecting to entries via typed relationships).
 2. **Plan: View registry.** Lifts `blueprint_views` table + view registration system + Inertia/React page resolution per ADR-003.
-3. **Plan: AI subsystem.** Lifts AI provider abstraction (OpenAI, Google, Anthropic), categorization orchestrator, prompts. Spec from ADR-005's auth model + AI mandate.
+3. **Plan: AI subsystem.** Lifts AI provider abstraction (OpenAI, Google, Anthropic via `laravel/ai`), `PromptService`, `DataMarker`, `AbstractContext`. Concrete agents and the `EavAiCategorizationOrchestrator` live in `alexandria-app`, not core (see ADR-010).
 4. **Plan: Media library.** Spatie media wiring + the `HasAlexandriaMedia` trait (media cascade Entry → Blueprint → Project).
 5. **Plan: Permissions + activity log.** Spatie wiring for project-scoped roles.
 6. **Plan: Notes subsystem.** Lift the Notable models + `HasNotes` trait + AI-enhanced note workflow.
