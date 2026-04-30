@@ -107,4 +107,39 @@ class AiModel extends Model
             ? 'N/A'
             : '$'.number_format((float) $this->output_price_per_million, 2).'/1M');
     }
+
+    /**
+     * Calculate estimated cost including Anthropic prompt cache pricing.
+     *
+     * Anthropic cache pricing: writes at 1.25x, reads at 0.1x input price.
+     * The SDK reports all cached tokens as cache_write (even reads), so we
+     * apply read pricing (0.1x) when cache_read is 0 but cache_write > 0
+     * with low input tokens — indicating a cache hit misreported as a write.
+     */
+    public function calculateCost(int $inputTokens, int $outputTokens, int $cacheWriteTokens = 0, int $cacheReadTokens = 0): float
+    {
+        $inputPrice = (float) ($this->input_price_per_million ?? 0);
+
+        $inputCost = ($inputTokens / 1_000_000) * $inputPrice;
+        $outputCost = ($outputTokens / 1_000_000) * (float) ($this->output_price_per_million ?? 0);
+
+        // When cache_read is reported correctly, use exact pricing.
+        // When only cache_write is reported (SDK limitation on some providers),
+        // we apply read pricing IF the cacheWrite count vastly exceeds the
+        // input tokens — that ratio proves the cache was actually hit (you
+        // can't write more cache tokens than the prompt actually contained).
+        // Genuine first writes on small prompts (e.g. 50 input + 30 cache_write)
+        // stay at write pricing.
+        $cacheReadCost = ($cacheReadTokens / 1_000_000) * ($inputPrice * 0.1);
+        $likelyMisreportedRead = $cacheReadTokens === 0
+            && $cacheWriteTokens > 0
+            && $inputTokens < ($cacheWriteTokens * 0.1);
+        $cacheWriteCost = ($cacheWriteTokens / 1_000_000) * (
+            $likelyMisreportedRead
+                ? $inputPrice * 0.1   // Likely a cache read misreported as write
+                : $inputPrice * 1.25  // Genuine first write
+        );
+
+        return $inputCost + $outputCost + $cacheWriteCost + $cacheReadCost;
+    }
 }
