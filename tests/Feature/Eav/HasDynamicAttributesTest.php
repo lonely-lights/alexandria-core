@@ -31,6 +31,7 @@ it('reads a dynamic integer field after persisting it directly', function () {
         'value' => '42',
     ]);
 
+    /** @var Entry $fresh */
     $fresh = $entry->fresh()->load('attributes', 'type.fields');
 
     expect($fresh->age)->toBe(42); // integer cast applied
@@ -48,7 +49,7 @@ it('writes a dynamic text field via attribute assignment', function () {
 
     $entry->occupation = 'Cartographer';
 
-    expect(FieldValue::where('entry_id', $entry->id)->first()->value)
+    expect(FieldValue::query()->where('entry_id', $entry->id)->first()?->value)
         ->toBe('Cartographer');
 });
 
@@ -68,13 +69,10 @@ it('returns null for an unknown attribute when no native column or field exists'
         'blueprint_id' => $this->blueprint->id,
     ]);
 
-    // Pest converts PHP "Undefined property" warnings to errors. Wrap in
-    // try/catch and assert the value is null OR the warning is thrown -
-    // either is acceptable for an undefined-attribute lookup. The trait's
-    // __get falls through to parent::__get which warns, but Eloquent
-    // silently returns null in many cases.
-    @$value = $entry->doesnt_exist;
-    expect($value)->toBeNull();
+    // Eloquent silently returns null for unknown attributes; the trait's
+    // __get falls through to parent::__get for keys that aren't native
+    // columns, relationships, foreign keys, or blueprint fields.
+    expect($entry->doesnt_exist)->toBeNull();
 });
 
 it('casts boolean fields correctly on read', function () {
@@ -89,12 +87,13 @@ it('casts boolean fields correctly on read', function () {
 
     $entry->is_friendly = true;
 
+    /** @var Entry $fresh */
     $fresh = $entry->fresh()->load('attributes', 'type.fields');
     expect($fresh->is_friendly)->toBeTrue();
 });
 
 it('handles multi-value fields by returning an array in insertion order', function () {
-    $field = BlueprintField::factory()->text()->create([
+    BlueprintField::factory()->text()->create([
         'blueprint_id' => $this->blueprint->id,
         'name' => 'titles',
     ]);
@@ -108,6 +107,7 @@ it('handles multi-value fields by returning an array in insertion order', functi
     // ->toBe() asserts ordered equality. Entry::attributes() explicitly
     // orders by id so insertion order is the read order regardless of
     // the underlying database engine's row-order semantics.
+    /** @var Entry $fresh */
     $fresh = $entry->fresh()->load('attributes', 'type.fields');
     expect($fresh->titles)->toBe(['Captain', 'Cartographer', 'Diplomat']);
 });

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Traits\System;
 
+use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\FieldValue;
 use Exception;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
@@ -21,6 +23,18 @@ use Illuminate\Support\Facades\Validator;
  * Performance: Uses in-memory caching, bulk inserts, and eager loading support
  * Type Casting: integer, boolean, float, date, json, text
  * Features: Multi-value fields, validation integration, automatic casting
+ *
+ * The using class must be an Eloquent Model with:
+ * - `type` BelongsTo relationship to a Blueprint (with `fields` HasMany)
+ * - `attributes` HasMany relationship to FieldValue
+ * - `parent` BelongsTo self relationship (for getInheritedAttribute only)
+ *
+ * @mixin Model
+ *
+ * @property-read Blueprint|null $type
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, FieldValue> $attributes
+ * @property-read static|null $parent
+ * @property int|null $parent_id
  */
 trait HasDynamicAttributes
 {
@@ -109,7 +123,9 @@ trait HasDynamicAttributes
             'float' => (float) $rawValue,
             'date' => Carbon::parse($rawValue),
             'json', 'temporal' => json_decode($rawValue, true),
-            'stardate' => $rawValue, // ISS seconds stored as numeric string
+            // 'stardate' falls through to default: ISS seconds are stored as a
+            // numeric string and the stardate plugin (deferred) does its own
+            // parsing; no cast needed at this layer.
             default => $rawValue,
         };
     }
@@ -141,7 +157,8 @@ trait HasDynamicAttributes
         $blueprintFieldId = $fieldDefinition->id;
 
         // Delete all existing field values for this blueprint field
-        FieldValue::where('entry_id', $this->id)
+        FieldValue::query()
+            ->where('entry_id', $this->id)
             ->where('blueprint_field_id', $blueprintFieldId)
             ->delete();
 
@@ -192,7 +209,7 @@ trait HasDynamicAttributes
 
         // Perform a single, efficient bulk insert for all new values
         if (! empty($recordsToInsert)) {
-            FieldValue::insert($recordsToInsert);
+            FieldValue::query()->insert($recordsToInsert);
         }
 
         // Invalidate the cache to force a reload with the new data on the next 'get'.
@@ -227,7 +244,10 @@ trait HasDynamicAttributes
                 return null;
             }
 
-            $current = $current->parent ?? self::find($current->parent_id);
+            // Walk to the next ancestor. Prefer the loaded `parent` relation;
+            // fall back to a fresh DB lookup via the using class's query builder
+            // (works regardless of which Model subclass mixes in this trait).
+            $current = $current->parent ?? $current->newQuery()->find($current->parent_id);
             if (! $current) {
                 return null;
             }
