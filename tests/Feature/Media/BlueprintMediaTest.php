@@ -2,17 +2,10 @@
 
 declare(strict_types=1);
 
-/**
- * Blueprint media-library tests. Same trait-method-via-Collection|Model
- * issue as ProjectMediaTest -- see that file's docblock for context.
- *
- * @noinspection PhpUndefinedMethodInspection
- * @noinspection PhpUndefinedFieldInspection
- */
-
 use Alexandria\Core\Models\System\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\MediaCollections\MediaCollection;
 
 uses(RefreshDatabase::class);
 
@@ -26,8 +19,11 @@ it('registers the three media collections with correct singleFile flags', functi
 
     expect($collections->pluck('name')->all())->toContain('page_image', 'banner', 'gallery');
 
+    /** @var MediaCollection $pageImage */
     $pageImage = $collections->firstWhere('name', 'page_image');
+    /** @var MediaCollection $banner */
     $banner = $collections->firstWhere('name', 'banner');
+    /** @var MediaCollection $gallery */
     $gallery = $collections->firstWhere('name', 'gallery');
 
     expect($pageImage->singleFile)->toBeTrue()

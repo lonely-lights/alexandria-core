@@ -367,7 +367,7 @@ it('persists dynamic (EAV) attributes through updateEntry', function () {
 
     $entry->refresh();
     expect($entry->summary)->toBe('Heir of Isildur.')
-        ->and($entry->biography)->toBe('Crowned king of Gondor at the end of the Third Age.');
+        ->and($entry->getDynamicAttribute('biography'))->toBe('Crowned king of Gondor at the end of the Third Age.');
 });
 
 // ---------------------------------------------------------------------------

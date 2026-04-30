@@ -12,7 +12,6 @@ use Alexandria\Core\Traits\Notable\HasNotes;
 use Alexandria\Core\Traits\System\HasDynamicAttributes;
 use Alexandria\Core\Traits\System\HasDynamicRelationships;
 use BadMethodCallException;
-use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\MediaLibrary\HasMedia;
@@ -210,8 +210,8 @@ class Entry extends Model implements HasMedia
      * Magic setter that routes native columns through Eloquent and
      * everything else through the EAV setter.
      *
-     * @throws Exception when the key isn't a known native column AND
-     *                   the blueprint has no field with that name
+     * @throws RuntimeException when the key isn't a known native column AND
+     *                          the blueprint has no field with that name
      */
     public function __set($key, $value)
     {

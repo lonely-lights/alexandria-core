@@ -2,22 +2,10 @@
 
 declare(strict_types=1);
 
-/**
- * Project media-library tests.
- *
- * The HasAlexandriaMedia trait + Spatie's InteractsWithMedia provide the
- * media collection methods (getRegisteredMediaCollections, hasPageImage,
- * hasBanner, plus the *_url accessors). PHPStorm widens factory return
- * types to Collection|Model and can't trace trait methods through the
- * union, so suppress the inspections at file level.
- *
- * @noinspection PhpUndefinedMethodInspection
- * @noinspection PhpUndefinedFieldInspection
- */
-
 use Alexandria\Core\Models\Framework\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\MediaCollections\MediaCollection;
 
 uses(RefreshDatabase::class);
 
@@ -40,8 +28,11 @@ it('marks page_image and banner as singleFile', function () {
     $project = Project::factory()->create();
 
     $collections = $project->getRegisteredMediaCollections();
+    /** @var MediaCollection $pageImage */
     $pageImage = $collections->firstWhere('name', 'page_image');
+    /** @var MediaCollection $banner */
     $banner = $collections->firstWhere('name', 'banner');
+    /** @var MediaCollection $gallery */
     $gallery = $collections->firstWhere('name', 'gallery');
 
     expect($pageImage->singleFile)->toBeTrue()
