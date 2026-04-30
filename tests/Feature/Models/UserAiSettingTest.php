@@ -47,6 +47,11 @@ it('clearLegacyApiKey nulls all four legacy fields', function () {
         'api_key_expires_at' => now()->addYear(),
         'api_key_created_at' => now(),
     ]);
+
+    // The method is @deprecated -- this test deliberately exercises it
+    // to lock the legacy-clear behavior in place until the legacy fields
+    // can be dropped from the schema.
+    /** @noinspection PhpDeprecationInspection */
     $setting->clearLegacyApiKey();
 
     /** @var UserAiSetting $fresh */

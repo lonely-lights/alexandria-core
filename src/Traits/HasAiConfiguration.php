@@ -31,6 +31,13 @@ trait HasAiConfiguration
 
     /**
      * Get AI configuration by type.
+     *
+     * ofType / active / byPriority are scopes on AiConfiguration that
+     * Eloquent magic-proxies through the MorphMany relation to the
+     * underlying Builder. PHPStorm can't statically resolve that path,
+     * so the inspection is suppressed locally.
+     *
+     * @noinspection PhpUndefinedMethodInspection
      */
     public function getAiConfiguration(string $type): ?AiConfiguration
     {
