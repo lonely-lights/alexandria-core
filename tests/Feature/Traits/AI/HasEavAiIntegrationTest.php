@@ -57,13 +57,22 @@ it('delegates autoCompleteEntries through the service and returns matches', func
 // categorizeNoteWithAi delegates to the service which throws
 // ---------------------------------------------------------------------------
 
-it('throws LogicException from categorizeNoteWithAi (delegates to service)', function () {
+it('throws RuntimeException from categorizeNoteWithAi (delegates to service)', function () {
     $project = Project::factory()->create();
     $note = Note::factory()->create();
     $user = makeTraitUser();
 
     $project->categorizeNoteWithAi($note, $user);
-})->throws(LogicException::class, 'EavAiService::categorizeNote requires EavAiCategorizationOrchestrator');
+})->throws(RuntimeException::class, 'EavAiService::categorizeNote requires EavAiCategorizationOrchestrator');
+
+it('delegates suggestEntriesFromText through the service and returns the stub array', function () {
+    $project = Project::factory()->create();
+    $user = makeTraitUser();
+
+    $result = $project->suggestEntriesFromText('Some narrative text mentioning Aragorn.', $user);
+
+    expect($result)->toBe([]);
+});
 
 // ---------------------------------------------------------------------------
 // suggestEntryRelationships

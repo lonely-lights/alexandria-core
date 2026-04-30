@@ -27,7 +27,7 @@ trait HasEavAiIntegration
     /**
      * Start AI categorization for a note within this project.
      *
-     * @throws \LogicException until the orchestrator (CT5d) is integrated
+     * @throws \RuntimeException until the orchestrator (CT5d) is integrated
      */
     public function categorizeNoteWithAi(Note $note, Authenticatable $user): void
     {
@@ -39,7 +39,7 @@ trait HasEavAiIntegration
      *
      * @return array<int, array<string, mixed>>
      *
-     * @throws \LogicException until the orchestrator (CT5d) is integrated
+     * @throws \RuntimeException until the orchestrator (CT5d) is integrated
      */
     public function suggestEntriesFromText(string $text, Authenticatable $user): array
     {

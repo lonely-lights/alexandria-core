@@ -25,13 +25,13 @@ function makeEavAiServiceUser(int $id = 1): GenericUser
 // categorizeNote — deferred to CT5d
 // ---------------------------------------------------------------------------
 
-it('throws LogicException from categorizeNote until the orchestrator (CT5d) is integrated', function () {
+it('throws RuntimeException from categorizeNote until the orchestrator (CT5d) is integrated', function () {
     $project = Project::factory()->create();
     $note = Note::factory()->create();
     $user = makeEavAiServiceUser();
 
     (new EavAiService)->categorizeNote($note, $user, $project);
-})->throws(LogicException::class, 'EavAiService::categorizeNote requires EavAiCategorizationOrchestrator');
+})->throws(RuntimeException::class, 'EavAiService::categorizeNote requires EavAiCategorizationOrchestrator');
 
 // ---------------------------------------------------------------------------
 // suggestEntries — stubbed
