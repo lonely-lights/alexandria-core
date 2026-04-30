@@ -5,13 +5,19 @@ declare(strict_types=1);
 /**
  * Dynamic-relationship magic tests.
  *
- * Suppress IDE undefined-field/method warnings on dynamic relationship
- * accesses (e.g. $entry->parentScenes, $entry->characters()) -- those
- * names are runtime-resolved through __call into the trait, so static
- * analysis cannot verify them.
+ * Suppress IDE warnings on:
+ * - dynamic relationship accesses (e.g. $entry->parentScenes,
+ *   $entry->characters()) -- runtime-resolved through __call into the trait
+ * - the trait's own public methods (addRelationship, removeRelationship,
+ *   getDynamicRelationship, callDynamicRelationship, parentRelationships,
+ *   childRelationships) when called on factory-created Entry instances
+ *   that PHPStorm widens to Collection|Model
+ *
+ * Static analysis can't fully verify either; the tests exercise the magic.
  *
  * @noinspection PhpUndefinedFieldInspection
  * @noinspection PhpUndefinedMethodInspection
+ * @noinspection PhpDynamicFieldDeclarationInspection
  */
 
 use Alexandria\Core\Models\Framework\Project;
