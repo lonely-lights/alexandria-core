@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Services\AI;
 
+use Alexandria\Core\Exceptions\BatchExecutionException;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Services\AI\Actions\EntryActionService;
 use Alexandria\Core\Services\AI\Actions\NoteActionService;
@@ -29,7 +30,7 @@ class AiCommandExecutor
     }
 
     /**
-     * @throws Throwable
+     * @throws BatchExecutionException
      */
     public function executeBatch(string $batchId): array
     {
@@ -97,7 +98,10 @@ class AiCommandExecutor
             DB::rollBack();
             Log::critical("AI Batch Execution Transaction Failed for batch $batchId", ['exception' => $e]);
 
-            throw $e;
+            throw new BatchExecutionException(
+                "AI batch execution failed: {$e->getMessage()}",
+                previous: $e,
+            );
         }
 
         return $results;

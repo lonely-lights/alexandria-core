@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Traits\Notable;
 
+use Alexandria\Core\Models\Notable\NotablePivot;
 use Alexandria\Core\Models\Notable\Note;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -29,7 +30,9 @@ trait HasNotes
             config('notable-ai.notableModel', Note::class),
             config('notable-ai.notable.morphName', 'notable'),
             config('notable-ai.notable.tableName', 'notables')
-        )->withPivot(['processing_status', 'processed_at']);
+        )
+            ->using(NotablePivot::class)
+            ->withPivot(['processing_status', 'processed_at']);
     }
 
     /**

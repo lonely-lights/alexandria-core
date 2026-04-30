@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Services\AI;
 
+use Alexandria\Core\Exceptions\MalformedAiResponseException;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Services\AI\Actions\EntryActionService;
@@ -42,7 +43,7 @@ class AiCommandFactory
      * @param  Project|null  $context  The project context for this batch.
      * @return string The UUID of the created batch.
      *
-     * @throws ValidationException|Exception
+     * @throws ValidationException|MalformedAiResponseException
      */
     public function createBatchFromJson(array $commandsData, Authenticatable $user, ?Project $context = null): string
     {
@@ -62,7 +63,7 @@ class AiCommandFactory
         }
 
         if (empty($actualCommands)) {
-            throw new Exception('AI response did not contain a valid array of commands.');
+            throw new MalformedAiResponseException('AI response did not contain a valid array of commands.');
         }
 
         // Now, loop over the correctly identified array of commands.
@@ -102,6 +103,18 @@ class AiCommandFactory
                     'action_type' => $commandData['action_type'],
                 ]);
 
+            } catch (ValidationException $e) {
+                Log::error('AiCommandFactory: Command processing failed', [
+                    'batch_id' => $batchId,
+                    'command_index' => $index,
+                    'action_type' => $commandData['action_type'] ?? 'missing',
+                    'error' => $e->getMessage(),
+                    'command_data' => $commandData,
+                ]);
+
+                // Validation errors propagate untouched so callers can surface
+                // field-level error bags to the user.
+                throw $e;
             } catch (Exception $e) {
                 Log::error('AiCommandFactory: Command processing failed', [
                     'batch_id' => $batchId,
@@ -111,8 +124,10 @@ class AiCommandFactory
                     'command_data' => $commandData,
                 ]);
 
-                // Re-throw to maintain error handling behavior
-                throw $e;
+                throw new MalformedAiResponseException(
+                    "Command at index $index failed processing: {$e->getMessage()}",
+                    previous: $e,
+                );
             }
         }
 

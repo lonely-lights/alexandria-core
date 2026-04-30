@@ -45,6 +45,7 @@ use Spatie\Tags\HasTags;
  * @property-read Collection<int, Blueprint> $blueprints
  * @property-read Collection<int, Blueprint> $pendingBlueprints
  * @property-read Collection<int, Blueprint> $processedBlueprints
+ * @property-read NotablePivot $pivot
  * @property mixed $tags
  *
  * @method static NoteFactory factory(int|callable|array|null $count = null, array $state = [])
@@ -128,7 +129,9 @@ class Note extends Model
             Blueprint::class,
             config('notable-ai.notable.morphName', 'notable'),
             config('notable-ai.notable.tableName', 'notables')
-        )->withPivot(['processing_status', 'processed_at']);
+        )
+            ->using(NotablePivot::class)
+            ->withPivot(['processing_status', 'processed_at']);
     }
 
     /**

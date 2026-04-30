@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Alexandria\Core\Exceptions\MalformedAiResponseException;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Models\System\Blueprint;
@@ -181,7 +182,7 @@ it("accepts commands nested under the 'suggestions' key for older prompts", func
 
 it('throws when the commands array is empty', function () {
     (new AiCommandFactory)->createBatchFromJson([], makeAuthUser());
-})->throws(Exception::class, 'AI response did not contain a valid array of commands.');
+})->throws(MalformedAiResponseException::class, 'AI response did not contain a valid array of commands.');
 
 // ---------------------------------------------------------------------------
 // validateCommandStructure — basic structural validation

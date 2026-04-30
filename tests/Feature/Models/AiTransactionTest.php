@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @noinspection PhpUndefinedFieldInspection
- */
-
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\System\AiTransaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;

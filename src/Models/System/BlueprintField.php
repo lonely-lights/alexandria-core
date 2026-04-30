@@ -31,7 +31,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property-read string|null $target_blueprint_slug
+ * @property-read string|null $targetBlueprintSlug
  * @property-read bool $is_type_field
+ * @property-read bool $isTypeField
  * @property-read Blueprint $blueprint
  * @property-read Collection<int, AiConfiguration> $aiConfigurations
  *

@@ -6,6 +6,7 @@ declare(strict_types=1);
  * Pest test file for AiCommandExecutor.
  */
 
+use Alexandria\Core\Exceptions\BatchExecutionException;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Models\Notable\Note;
@@ -165,7 +166,11 @@ it('rolls back the transaction when the outer commit phase fails', function () {
     // production code path that triggers it without heavy mocking. Skipping
     // until a deferred-relationship processor lands and gives us a concrete
     // failure surface.
-    expect(true)->toBeTrue();
+    //
+    // When this test is unblocked, assert that the wrapper exception is
+    // BatchExecutionException::class (the original Throwable is preserved
+    // as $previous) — see AiCommandExecutor::executeBatch().
+    expect(BatchExecutionException::class)->toBe(BatchExecutionException::class);
 })->skip('TODO: needs deferred-relationship processor integration to exercise outer rollback path.');
 
 // ---------------------------------------------------------------------------
