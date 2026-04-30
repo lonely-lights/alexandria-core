@@ -28,7 +28,7 @@ class AiPromptService
      */
     public function render(string $key, array $data): string
     {
-        $prompt = AiPrompt::query()->where('key', $key)->active()->first();
+        $prompt = AiPrompt::active()->where('key', $key)->first();
 
         if (! $prompt) {
             throw new Exception("No active AI prompt found for key '$key'.");
@@ -47,7 +47,7 @@ class AiPromptService
 
         foreach ($data as $placeholderKey => $value) {
             // e.g. 'note_id' becomes '[NOTE_ID]'
-            $placeholders[] = '['.strtoupper((string) $placeholderKey).']';
+            $placeholders[] = '['.strtoupper($placeholderKey).']';
             $values[] = (string) $value;
         }
 

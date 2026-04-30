@@ -31,6 +31,7 @@ class AiCommandExecutor
 
     /**
      * @throws BatchExecutionException
+     * @throws Throwable
      */
     public function executeBatch(string $batchId): array
     {
