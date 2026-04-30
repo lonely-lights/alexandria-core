@@ -10,6 +10,7 @@ use Alexandria\Core\Models\AiProvider;
 use Alexandria\Core\Models\BlueprintView;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
+use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
 use Alexandria\Core\Models\System\AiPrompt;
@@ -87,6 +88,7 @@ return [
         'entry' => Entry::class,
         'entry_relationship' => EntryRelationship::class,
         'field_value' => FieldValue::class,
+        'note' => Note::class,
         'project' => Project::class,
         'project_ai_instruction' => ProjectAiInstruction::class,
         'project_ai_setting' => ProjectAiSetting::class,
