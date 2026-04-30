@@ -301,9 +301,14 @@ class NoteActionService
     /**
      * Resolve temporary ID to actual ID.
      *
+     * Return type is widened to `string|int` because the temp ID map (populated
+     * by EntryActionService) can store `'rel_' . $relationshipId` strings for
+     * relationship-classification blueprints. Under strict_types, returning a
+     * string from an int-declared method would TypeError at runtime.
+     *
      * @throws Exception
      */
-    private function resolveId(string|int $id, array $tempIdMap): int
+    private function resolveId(string|int $id, array $tempIdMap): string|int
     {
         if (is_int($id)) {
             return $id;
@@ -318,9 +323,14 @@ class NoteActionService
     /**
      * Handle direct copy note (current AI format).
      *
+     * Receives `$tempIdMap` by reference so the new note's id can be threaded
+     * back to subsequent commands in the batch when the payload includes a
+     * `temp_id`. Without this, chained copy-then-reference command sequences
+     * would lose the new note's id.
+     *
      * @throws Exception
      */
-    private function handleDirectCopyNote(array $payload, array $tempIdMap): void
+    private function handleDirectCopyNote(array $payload, array &$tempIdMap): void
     {
         $noteId = $payload['note_id'];
         $targetModelClass = $payload['target_model_class'];
@@ -358,6 +368,12 @@ class NoteActionService
 
         // Attach the copied note to the destination model
         $destinationModel->notes()->attach($newNote->id);
+
+        // Thread the new note's id into the temp map so chained commands can
+        // reference it.
+        if (isset($payload['temp_id'])) {
+            $tempIdMap[$payload['temp_id']] = $newNote->id;
+        }
     }
 
     /**

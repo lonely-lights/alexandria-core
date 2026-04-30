@@ -7,7 +7,6 @@ namespace Alexandria\Core\Services\AI\Actions;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Traits\InjectsCommandContext;
 use Exception;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -122,12 +121,15 @@ class EntryActionService
             return;
         }
 
-        // Inject context (project_id, user_id, etc.) if model supports it
+        // Inject context (project_id, user_id, etc.) if model supports it.
+        // Uses direct property access on the Eloquent model rather than
+        // Arr::has/Arr::get — both work for top-level attributes via ArrayAccess
+        // but property access is the idiomatic and less fragile path.
         if (in_array(InjectsCommandContext::class, class_uses_recursive($modelClass), true)) {
             $requiredKeys = $modelClass::getRequiredContextKeys();
             foreach ($requiredKeys as $modelAttribute => $commandProperty) {
-                if (Arr::has($command, $commandProperty)) {
-                    $attributes[$modelAttribute] = Arr::get($command, $commandProperty);
+                if (isset($command->{$commandProperty})) {
+                    $attributes[$modelAttribute] = $command->{$commandProperty};
                 }
             }
         }
@@ -239,6 +241,10 @@ class EntryActionService
     /**
      * Update an existing entry.
      *
+     * Native columns and EAV (dynamic) attributes must be persisted via different
+     * paths — `update()` only honors native columns and silently drops anything
+     * else. Mirrors the same split as createEntry.
+     *
      * @throws Exception
      */
     public function updateEntry(AiReviewCommand $command, array $tempIdMap): void
@@ -257,12 +263,50 @@ class EntryActionService
         // Resolve any temp IDs in the update attributes
         $attributes = $this->resolveTempIdsInAttributes($payload['attributes'], $tempIdMap);
 
-        $model->update($attributes);
+        // Separate native columns from dynamic (EAV) attributes — `update()` only
+        // writes native columns, so dynamic fields would silently fail otherwise.
+        $nativeColumns = $this->getNativeEntryColumns();
+        $nativeAttributes = [];
+        $dynamicAttributes = [];
+
+        foreach ($attributes as $key => $value) {
+            if (in_array($key, $nativeColumns, true)) {
+                $nativeAttributes[$key] = $value;
+            } else {
+                $dynamicAttributes[$key] = $value;
+            }
+        }
+
+        if (! empty($nativeAttributes)) {
+            $model->update($nativeAttributes);
+        }
+
+        // EAV (dynamic) attributes are persisted by the HasDynamicAttributes
+        // setter directly on assignment (it writes to field_values), so an
+        // explicit save() afterwards is not strictly required — but we call it
+        // anyway to match createEntry's pattern and absorb any pending mutator
+        // changes the host app might layer on.
+        if (! empty($dynamicAttributes)) {
+            foreach ($dynamicAttributes as $key => $value) {
+                try {
+                    $model->{$key} = $value;
+                } catch (Exception $e) {
+                    Log::warning('EntryActionService: Failed to set dynamic attribute on update', [
+                        'command_id' => $command->id,
+                        'entry_id' => $model->id,
+                        'attribute' => $key,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+            $model->save();
+        }
 
         Log::info('EntryActionService: Entry updated successfully', [
             'command_id' => $command->id,
             'entry_id' => $model->id,
-            'updated_attributes' => array_keys($attributes),
+            'native_attributes' => array_keys($nativeAttributes),
+            'dynamic_attributes' => array_keys($dynamicAttributes),
         ]);
     }
 
@@ -326,8 +370,14 @@ class EntryActionService
     {
         // Check for blueprint_id if this is an Entry model
         if (isset($attributes['blueprint_id'])) {
+            // Resolve the actual table name from the configured Blueprint model
+            // so host apps that override `alexandria.models.blueprint` with a
+            // class using a different table get correct validation.
+            $blueprintClass = $this->blueprintModel();
+            $blueprintTable = (new $blueprintClass)->getTable();
+
             $blueprintValidator = Validator::make($attributes, [
-                'blueprint_id' => ['required', 'integer', 'exists:blueprints,id'],
+                'blueprint_id' => ['required', 'integer', "exists:$blueprintTable,id"],
             ]);
 
             if ($blueprintValidator->fails()) {
@@ -476,9 +526,14 @@ class EntryActionService
     /**
      * Resolve a temporary ID to an actual ID.
      *
+     * Return type is widened to `string|int` because the temp ID map can store
+     * `'rel_' . $relationshipId` strings for relationship-classification blueprints
+     * (see handleCreateRelationshipEntry). Under strict_types, returning a string
+     * from an int-declared method would TypeError at runtime.
+     *
      * @throws Exception
      */
-    private function resolveId(string|int $id, array $tempIdMap): int
+    private function resolveId(string|int $id, array $tempIdMap): string|int
     {
         if (is_int($id)) {
             return $id;

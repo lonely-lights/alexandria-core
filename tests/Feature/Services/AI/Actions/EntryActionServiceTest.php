@@ -341,6 +341,37 @@ it('resolves temp IDs in updateEntry attributes', function () {
     expect($entry->parent_id)->toBe($newParent->id);
 });
 
+it('persists dynamic (EAV) attributes through updateEntry', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+    BlueprintField::factory()->forBlueprint($blueprint)->textarea()->named('biography')->create();
+
+    $entry = Entry::factory()
+        ->inProjectWithBlueprint($project, $blueprint)
+        ->create(['name' => 'Aragorn']);
+
+    // Seed an existing dynamic value so we can assert it is overwritten.
+    $entry->biography = 'Raised in Rivendell as Estel.';
+
+    $command = AiReviewCommand::factory()->create([
+        'action_type' => 'update_entry',
+        'payload' => [
+            'model_class' => Entry::class,
+            'model_id' => $entry->id,
+            'attributes' => [
+                'summary' => 'Heir of Isildur.', // native column
+                'biography' => 'Crowned king of Gondor at the end of the Third Age.', // EAV field
+            ],
+        ],
+    ]);
+
+    (new EntryActionService)->updateEntry($command, []);
+
+    $entry->refresh();
+    expect($entry->summary)->toBe('Heir of Isildur.')
+        ->and($entry->biography)->toBe('Crowned king of Gondor at the end of the Third Age.');
+});
+
 // ---------------------------------------------------------------------------
 // integrateField
 // ---------------------------------------------------------------------------
