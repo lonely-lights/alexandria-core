@@ -6,6 +6,8 @@ namespace Alexandria\Core\Models\Framework;
 
 use Alexandria\Core\Database\Factories\Framework\ProjectFactory;
 use Alexandria\Core\Models\Notable\Note;
+use Alexandria\Core\Models\ProjectAiInstruction;
+use Alexandria\Core\Models\ProjectAiSetting;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\Entry;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Spatie\MediaLibrary\HasMedia;
@@ -39,6 +42,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, Blueprint> $blueprints
  * @property-read Collection<int, Entry> $entries
  * @property-read Collection<int, Note> $notes
+ * @property-read ProjectAiSetting|null $aiSettings
+ * @property-read Collection<int, ProjectAiInstruction> $aiInstructions
  */
 class Project extends Model implements HasMedia
 {
@@ -83,5 +88,15 @@ class Project extends Model implements HasMedia
     public function entries(): HasMany
     {
         return $this->hasMany(Entry::class);
+    }
+
+    public function aiSettings(): HasOne
+    {
+        return $this->hasOne(ProjectAiSetting::class);
+    }
+
+    public function aiInstructions(): HasMany
+    {
+        return $this->hasMany(ProjectAiInstruction::class);
     }
 }

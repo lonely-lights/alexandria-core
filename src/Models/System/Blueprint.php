@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Alexandria\Core\Models\System;
 
 use Alexandria\Core\Database\Factories\System\BlueprintFactory;
+use Alexandria\Core\Models\AiConfiguration;
 use Alexandria\Core\Models\BlueprintView;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\Note;
+use Alexandria\Core\Traits\AI\HasAiInstructions;
+use Alexandria\Core\Traits\HasAiConfiguration;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
 use Alexandria\Core\Traits\Notable\HasNotes;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,12 +54,20 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, Entry> $entries
  * @property-read Collection<int, Note> $notes
  * @property-read Collection<int, BlueprintView> $blueprintViews
+ * @property-read Collection<int, AiConfiguration> $aiConfigurations
  *
  * @method static Builder<static> standard()
  * @method static Builder<static> list()
  */
 class Blueprint extends Model implements HasMedia
 {
+    use HasAiConfiguration;
+    use HasAiInstructions {
+        // HasAiConfiguration already defines getAiInstructions(string $type).
+        // Keep that version as the primary; alias the no-arg version for direct use.
+        HasAiConfiguration::getAiInstructions insteadof HasAiInstructions;
+        HasAiInstructions::getAiInstructions as getPromptInstructions;
+    }
     use HasAlexandriaMedia, InteractsWithMedia {
         HasAlexandriaMedia::registerMediaCollections insteadof InteractsWithMedia;
         HasAlexandriaMedia::registerMediaConversions insteadof InteractsWithMedia;

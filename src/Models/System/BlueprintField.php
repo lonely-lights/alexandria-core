@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Alexandria\Core\Models\System;
 
 use Alexandria\Core\Database\Factories\System\BlueprintFieldFactory;
+use Alexandria\Core\Models\AiConfiguration;
+use Alexandria\Core\Traits\HasAiConfiguration;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,9 +33,11 @@ use Illuminate\Support\Carbon;
  * @property-read string|null $target_blueprint_slug
  * @property-read bool $is_type_field
  * @property-read Blueprint $blueprint
+ * @property-read Collection<int, AiConfiguration> $aiConfigurations
  */
 class BlueprintField extends Model
 {
+    use HasAiConfiguration;
     use HasFactory;
     use SoftDeletes;
 
