@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Services\AI\Actions;
 
+use Alexandria\Core\Exceptions\AiActionException;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Traits\InjectsCommandContext;
 use Exception;
@@ -90,7 +91,7 @@ class EntryActionService
     /**
      * Create a new entry.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     public function createEntry(AiReviewCommand $command, array &$tempIdMap): void
     {
@@ -235,7 +236,7 @@ class EntryActionService
      * paths — `update()` only honors native columns and silently drops anything
      * else. Mirrors the same split as createEntry.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     public function updateEntry(AiReviewCommand $command, array $tempIdMap): void
     {
@@ -303,14 +304,14 @@ class EntryActionService
     /**
      * Integrate field content from AI analysis into an entry.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     public function integrateField(AiReviewCommand $command, array $tempIdMap): void
     {
         $payload = $command->payload;
 
         if (! isset($payload['entry_id']) || ! isset($payload['field_name']) || ! isset($payload['proposed_value'])) {
-            throw new Exception('integrate_field command requires entry_id, field_name, and proposed_value');
+            throw new AiActionException('integrate_field command requires entry_id, field_name, and proposed_value');
         }
 
         $fieldName = $payload['field_name'];
@@ -335,7 +336,7 @@ class EntryActionService
             'enhance' => $this->enhanceFieldContent($entry->getAttributeValue($fieldName), $proposedValue),
             'append' => $this->appendToField($entry->getAttributeValue($fieldName), $proposedValue),
             'merge' => $this->mergeFieldContent($entry->getAttributeValue($fieldName), $proposedValue),
-            default => throw new Exception("Unsupported integration operation: $operation")
+            default => throw new AiActionException("Unsupported integration operation: $operation")
         };
 
         // Update the entry
@@ -395,7 +396,7 @@ class EntryActionService
     /**
      * Handle creation of relationship Blueprints by creating entries in entry_relationships table.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     private function handleCreateRelationshipEntry(AiReviewCommand $command, array &$tempIdMap): void
     {
@@ -414,7 +415,7 @@ class EntryActionService
         $childEntryId = $attributes['child_entry_id'] ?? null;
 
         if (! $parentEntryId || ! $childEntryId) {
-            throw new Exception('Relationship entry creation requires parent_entry_id and child_entry_id');
+            throw new AiActionException('Relationship entry creation requires parent_entry_id and child_entry_id');
         }
 
         // Get the Blueprint to determine the relationship_type
@@ -461,7 +462,7 @@ class EntryActionService
     /**
      * Resolve temporary IDs in attributes array.
      *
-     * @throws Exception if a temp_id pattern is detected but not in the map (indicates wrong command order)
+     * @throws AiActionException if a temp_id pattern is detected but not in the map (indicates wrong command order)
      */
     private function resolveTempIdsInAttributes(array $attributes, array $tempIdMap): array
     {
@@ -495,7 +496,7 @@ class EntryActionService
                     }
 
                     if ($looksLikeTempId) {
-                        throw new Exception(
+                        throw new AiActionException(
                             "Unresolved temp_id reference: '$value' for attribute '$key'. ".
                             'This usually means commands are in wrong dependency order - parent entries must be created before children. '.
                             'Available temp_ids: '.implode(', ', array_keys($tempIdMap))
@@ -516,7 +517,7 @@ class EntryActionService
      * (see handleCreateRelationshipEntry). Under strict_types, returning a string
      * from an int-declared method would TypeError at runtime.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     private function resolveId(string|int $id, array $tempIdMap): string|int
     {
@@ -531,7 +532,7 @@ class EntryActionService
         }
 
         if (! isset($tempIdMap[$tempId])) {
-            throw new Exception("Unresolved temporary ID: $id (cleaned: $tempId)");
+            throw new AiActionException("Unresolved temporary ID: $id (cleaned: $tempId)");
         }
 
         return $tempIdMap[$tempId];

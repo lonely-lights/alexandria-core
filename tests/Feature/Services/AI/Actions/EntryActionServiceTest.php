@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @noinspection PhpUndefinedMethodInspection
- * @noinspection PhpUndefinedFieldInspection
- */
-
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Models\System\Blueprint;
@@ -206,7 +201,8 @@ it('maps parent_entry_id to native parent_id during createEntry', function () {
 it('sets dynamic (EAV) attributes after the model is saved', function () {
     $project = Project::factory()->create();
     $blueprint = Blueprint::factory()->forProject($project)->create();
-    $bioField = BlueprintField::factory()->forBlueprint($blueprint)->textarea()->named('biography')->create();
+    // Side-effect: registers `biography` as a dynamic field on the blueprint — assignment dropped.
+    BlueprintField::factory()->forBlueprint($blueprint)->textarea()->named('biography')->create();
 
     $command = AiReviewCommand::factory()->create([
         'action_type' => 'create_entry',
@@ -224,6 +220,7 @@ it('sets dynamic (EAV) attributes after the model is saved', function () {
     $tempIdMap = [];
     (new EntryActionService)->createEntry($command, $tempIdMap);
 
+    /** @var Entry $entry */
     $entry = Entry::query()->where('name', 'Aragorn')->first();
 
     expect($entry)->not->toBeNull()
@@ -346,6 +343,7 @@ it('persists dynamic (EAV) attributes through updateEntry', function () {
     $blueprint = Blueprint::factory()->forProject($project)->create();
     BlueprintField::factory()->forBlueprint($blueprint)->textarea()->named('biography')->create();
 
+    /** @var Entry $entry */
     $entry = Entry::factory()
         ->inProjectWithBlueprint($project, $blueprint)
         ->create(['name' => 'Aragorn']);

@@ -90,13 +90,11 @@ class RelationshipBlueprint extends Model
         }
 
         $haystack = strtolower($content);
-        foreach ($this->context_triggers as $trigger) {
-            if (str_contains($haystack, strtolower($trigger))) {
-                return true;
-            }
-        }
 
-        return false;
+        return array_any(
+            $this->context_triggers,
+            fn (string $trigger): bool => str_contains($haystack, strtolower($trigger)),
+        );
     }
 
     /**

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Services\AI\Actions;
 
+use Alexandria\Core\Exceptions\AiActionException;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
-use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -129,7 +129,7 @@ class NoteActionService
     /**
      * Create a new note and attach it to the specified target.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     public function createNote(AiReviewCommand $command, array &$tempIdMap): void
     {
@@ -153,7 +153,7 @@ class NoteActionService
         $targetModel = $targetModelClass::findOrFail($targetModelId);
 
         if (! method_exists($targetModel, 'notes')) {
-            throw new Exception("Model '$targetModelClass' does not have a 'notes' relationship.");
+            throw new AiActionException("Model '$targetModelClass' does not have a 'notes' relationship.");
         }
 
         $targetModel->notes()->attach($note->id);
@@ -162,7 +162,7 @@ class NoteActionService
     /**
      * Transfer a note to a new target by automatically detecting and updating its current attachment.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     public function transferNote(AiReviewCommand $command, array $tempIdMap): void
     {
@@ -180,7 +180,7 @@ class NoteActionService
             ->get();
 
         if ($currentAttachments->isEmpty()) {
-            throw new Exception("Cannot transfer note #$noteId. It is not currently attached to any model.");
+            throw new AiActionException("Cannot transfer note #$noteId. It is not currently attached to any model.");
         }
 
         // For simplicity, move the first attachment found (most notes should only have one)
@@ -222,7 +222,7 @@ class NoteActionService
     /**
      * Move a note from one model to another.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     public function moveNote(AiReviewCommand $command, array $tempIdMap): void
     {
@@ -232,7 +232,7 @@ class NoteActionService
         $destModelId = $this->resolveId($payload['destination_model_id'], $tempIdMap);
 
         if (! isset($payload['source_model_class']) || ! isset($payload['source_model_id'])) {
-            throw new Exception("Move Note command requires 'source_model_class' and 'source_model_id'.");
+            throw new AiActionException("Move Note command requires 'source_model_class' and 'source_model_id'.");
         }
 
         $sourceModelClass = $payload['source_model_class'];
@@ -252,14 +252,14 @@ class NoteActionService
             ]);
         } else {
             // If it doesn't exist, we can't move it. This is an error condition.
-            throw new Exception("Cannot move note #$noteId. It is not attached to the specified source model ($sourceModelClass #$sourceModelId).");
+            throw new AiActionException("Cannot move note #$noteId. It is not attached to the specified source model ($sourceModelClass #$sourceModelId).");
         }
     }
 
     /**
      * Copy a note to another model (supports multiple formats).
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     public function copyNote(AiReviewCommand $command, array &$tempIdMap): void
     {
@@ -286,7 +286,7 @@ class NoteActionService
      * relationship-classification blueprints. Under strict_types, returning a
      * string from an int-declared method would TypeError at runtime.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     private function resolveId(string|int $id, array $tempIdMap): string|int
     {
@@ -294,7 +294,7 @@ class NoteActionService
             return $id;
         }
         if (! isset($tempIdMap[$id])) {
-            throw new Exception("Unresolved temporary ID: $id");
+            throw new AiActionException("Unresolved temporary ID: $id");
         }
 
         return $tempIdMap[$id];
@@ -308,7 +308,7 @@ class NoteActionService
      * `temp_id`. Without this, chained copy-then-reference command sequences
      * would lose the new note's id.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     private function handleDirectCopyNote(array $payload, array &$tempIdMap): void
     {
@@ -359,7 +359,7 @@ class NoteActionService
     /**
      * Handle Stage 1 → Stage 2 Blueprint copying.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     private function handleBlueprintCopy(AiReviewCommand $command): void
     {
@@ -380,13 +380,13 @@ class NoteActionService
         }
 
         if (! $project) {
-            throw new Exception('Project context required for Blueprint copying');
+            throw new AiActionException('Project context required for Blueprint copying');
         }
 
         // Verify Blueprint exists in project
         $blueprint = $project->blueprints()->where('slug', $targetBlueprintSlug)->first();
         if (! $blueprint) {
-            throw new Exception("Blueprint '$targetBlueprintSlug' not found in project");
+            throw new AiActionException("Blueprint '$targetBlueprintSlug' not found in project");
         }
 
         // TODO: Implement Stage 2 AI processing for Blueprint copying
@@ -400,7 +400,7 @@ class NoteActionService
     /**
      * Handle legacy copy note functionality.
      *
-     * @throws Exception
+     * @throws AiActionException
      */
     private function handleLegacyCopyNote(array $payload, AiReviewCommand $command): void
     {

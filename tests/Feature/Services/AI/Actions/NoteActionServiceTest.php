@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @noinspection PhpUndefinedMethodInspection
- * @noinspection PhpUndefinedFieldInspection
- */
-
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Models\Notable\Note;
@@ -328,7 +323,8 @@ it('throws when source_model_class/source_model_id are missing from payload', fu
 
 it('does not throw when copying via target_blueprint format (Stage 2 deferred warning path)', function () {
     $project = Project::factory()->create();
-    $blueprint = Blueprint::factory()->forProject($project)->create([
+    // Side-effect: row creation is required for the slug lookup below — assignment dropped.
+    Blueprint::factory()->forProject($project)->create([
         'slug' => 'characters',
     ]);
     $note = Note::factory()->create();
