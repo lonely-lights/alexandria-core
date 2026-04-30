@@ -13,6 +13,7 @@ use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
+use Alexandria\Core\Models\ProjectSortingPrompt;
 use Alexandria\Core\Models\System\AiPrompt;
 use Alexandria\Core\Models\System\AiTransaction;
 use Alexandria\Core\Models\System\Blueprint;
@@ -116,6 +117,7 @@ return [
         'project' => Project::class,
         'project_ai_instruction' => ProjectAiInstruction::class,
         'project_ai_setting' => ProjectAiSetting::class,
+        'project_sorting_prompt' => ProjectSortingPrompt::class,
         'prompt_context_schema' => PromptContextSchema::class,
         'prompt_template' => PromptTemplate::class,
         'prompt_template_version' => PromptTemplateVersion::class,
