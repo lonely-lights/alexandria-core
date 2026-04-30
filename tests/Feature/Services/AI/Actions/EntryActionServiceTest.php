@@ -224,7 +224,7 @@ it('sets dynamic (EAV) attributes after the model is saved', function () {
     $entry = Entry::query()->where('name', 'Aragorn')->first();
 
     expect($entry)->not->toBeNull()
-        ->and($entry->biography)->toBe('Raised in Rivendell as Estel.');
+        ->and($entry->getDynamicAttribute('biography'))->toBe('Raised in Rivendell as Estel.');
 });
 
 it('creates an entry_relationships row for relationship-classification blueprints', function () {
@@ -349,7 +349,7 @@ it('persists dynamic (EAV) attributes through updateEntry', function () {
         ->create(['name' => 'Aragorn']);
 
     // Seed an existing dynamic value so we can assert it is overwritten.
-    $entry->biography = 'Raised in Rivendell as Estel.';
+    $entry->setDynamicAttribute('biography', 'Raised in Rivendell as Estel.');
 
     $command = AiReviewCommand::factory()->create([
         'action_type' => 'update_entry',
