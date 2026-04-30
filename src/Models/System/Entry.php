@@ -228,6 +228,15 @@ class Entry extends Model
      * Eloquent __call handles defined relationships, scopes, and
      * macros. If it throws BadMethodCallException, we route to the
      * HasDynamicRelationships trait's callDynamicRelationship.
+     *
+     * Edge case: if a defined scope's body itself raises
+     * BadMethodCallException for a domain reason (e.g. calls a helper
+     * that doesn't exist), the catch here will silently route to
+     * callDynamicRelationship and the developer will see an empty
+     * Builder result instead of an error. PHP fatal Errors propagate
+     * normally because we don't catch Error / Throwable. If you add
+     * scopes or macros and start seeing surprising empty results,
+     * check whether they're throwing BadMethodCallException.
      */
     public function __call($method, $parameters)
     {

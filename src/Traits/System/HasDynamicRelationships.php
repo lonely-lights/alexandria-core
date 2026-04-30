@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 
 /**
  * HasDynamicRelationships
@@ -175,63 +174,54 @@ trait HasDynamicRelationships
         return $this->repo()->queryForKey($this, $methodWithFilters);
     }
 
-    // Query & Helper Logic
-
-    /**
-     * Centralized logic to build the relationship query.
-     *
-     * This supports querying for inverse relationships by detecting a 'parent'
-     * prefix in the key (e.g., 'parentLocations' will find entries that list
-     * the current model as their child).
-     *
-     * @param  string  $key  The relationship name (e.g., "characters" or "parentLocations").
-     */
-    protected function getRelationshipQuery(string $key): Builder
-    {
-        if (Str::startsWith($key, 'parent')) {
-            // 'parentLocations' -> 'locations'
-            $relationshipType = Str::snake(Str::after($key, 'parent'));
-            $foreignKey = 'parent_entry_id';
-            $localKey = 'child_entry_id';
-        } else {
-            // 'characters' -> 'characters'
-            $relationshipType = Str::snake($key);
-            $foreignKey = 'child_entry_id';
-            $localKey = 'parent_entry_id';
-        }
-
-        return Entry::query()
-            ->whereIn('id', function ($query) use ($relationshipType, $foreignKey, $localKey) {
-                $query->select($foreignKey)
-                    ->from('entry_relationships')
-                    ->where($localKey, $this->id)
-                    ->where('relationship_type', $relationshipType);
-            });
-    }
-
     // Write Helpers
 
     /**
      * A developer-friendly helper to create a directional relationship.
      *
+     * Clears `$dynamicRelationshipCache` on this instance + unsets the
+     * loaded `parentRelationships`/`childRelationships` relations so a
+     * subsequent `getDynamicRelationship()` re-fetches the freshly written
+     * row instead of returning the pre-write cached Collection.
+     *
      * @param  Entry  $child  The entry to relate to.
      * @param  string  $relationshipType  The snake_case name of the relationship.
-     * @param  array  $metadata  Optional data for the relationship pivot.
+     * @param  array<string, mixed>  $metadata  Optional data for the relationship pivot.
      */
     public function addRelationship(Entry $child, string $relationshipType, array $metadata = []): EntryRelationship
     {
-        return $this->writer()->add($this, $child, $relationshipType, $metadata);
+        $rel = $this->writer()->add($this, $child, $relationshipType, $metadata);
+        $this->invalidateDynamicRelationshipCache();
+
+        return $rel;
     }
 
     /**
      * A developer-friendly helper to remove a directional relationship.
+     * Cache invalidation parallels addRelationship -- without it, a
+     * write-then-read on the same instance returns the stale pre-delete
+     * Collection.
      *
      * @param  Entry  $child  The related entry.
      * @param  string  $relationshipType  The snake_case name of the relationship.
      */
     public function removeRelationship(Entry $child, string $relationshipType): bool
     {
-        return $this->writer()->remove($this, $child, $relationshipType);
+        $removed = $this->writer()->remove($this, $child, $relationshipType);
+        $this->invalidateDynamicRelationshipCache();
+
+        return $removed;
+    }
+
+    /**
+     * Reset the in-memory dynamic-relationship cache and any loaded edge
+     * relations so subsequent reads reflect freshly-written data.
+     */
+    protected function invalidateDynamicRelationshipCache(): void
+    {
+        $this->dynamicRelationshipCache = [];
+        $this->unsetRelation('parentRelationships');
+        $this->unsetRelation('childRelationships');
     }
 
     // Standard Eloquent Relationships

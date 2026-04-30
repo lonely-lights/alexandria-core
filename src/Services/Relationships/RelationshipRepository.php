@@ -41,11 +41,15 @@ readonly class RelationshipRepository
         $localKey = $k->direction === 'incoming' ? 'child_entry_id' : 'parent_entry_id'; // where current sits
 
         // Subquery: pick the "other side" entry ids for the given relationship_type slug.
+        // The raw `from('entry_relationships')` bypasses EntryRelationship's SoftDeletes
+        // global scope, so we filter `deleted_at IS NULL` explicitly -- otherwise
+        // soft-deleted rows leak into dynamic-relationship reads.
         $builder = Entry::query()->whereIn('id', function ($q) use ($k, $entry, $foreignKey, $localKey) {
             $q->select($foreignKey)
                 ->from('entry_relationships')
                 ->where($localKey, $entry->id)
-                ->where('relationship_type', $k->slug);
+                ->where('relationship_type', $k->slug)
+                ->whereNull('deleted_at');
         });
 
         // Lightweight, portable filters.

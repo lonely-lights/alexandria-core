@@ -110,9 +110,12 @@ it('Entry::__call routes undefined method calls to callDynamicRelationship', fun
     // callDynamicRelationship which returns a Builder.
     $query = $character->home();
 
+    // Assign once -- Builder::get() executes a query each call, so reusing
+    // $results is meaningfully faster than chaining ->get() twice.
+    $results = $query->get();
     expect($query)->toBeInstanceOf(Builder::class)
-        ->and($query->get())->toHaveCount(1)
-        ->and($query->get()->first()->id)->toBe($loc->id);
+        ->and($results)->toHaveCount(1)
+        ->and($results->first()->id)->toBe($loc->id);
 });
 
 it('childRelationships and parentRelationships HasMany relations resolve', function () {
@@ -123,4 +126,33 @@ it('childRelationships and parentRelationships HasMany relations resolve', funct
 
     expect($a->parentRelationships()->count())->toBe(1)
         ->and($b->childRelationships()->count())->toBe(1);
+});
+
+it('addRelationship invalidates the dynamic relationship cache on the same instance', function () {
+    // Regression test: without cache invalidation, getDynamicRelationship()
+    // returned the pre-write Collection because $dynamicRelationshipCache
+    // was keyed by raw key string and never reset on write. The trait now
+    // clears both the cache + the loaded edge relations in addRelationship.
+    $character = Entry::factory()->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
+    $loc1 = Entry::factory()->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
+    $loc2 = Entry::factory()->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
+
+    $character->addRelationship($loc1, 'home');
+    expect($character->getDynamicRelationship('home'))->toHaveCount(1);
+
+    // Write a second relationship on the same instance -- without cache
+    // invalidation, the next read would still return only loc1.
+    $character->addRelationship($loc2, 'home');
+    expect($character->getDynamicRelationship('home'))->toHaveCount(2);
+});
+
+it('removeRelationship invalidates the dynamic relationship cache on the same instance', function () {
+    $character = Entry::factory()->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
+    $loc = Entry::factory()->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
+
+    $character->addRelationship($loc, 'home');
+    expect($character->getDynamicRelationship('home'))->toHaveCount(1);
+
+    $character->removeRelationship($loc, 'home');
+    expect($character->getDynamicRelationship('home'))->toHaveCount(0);
 });
