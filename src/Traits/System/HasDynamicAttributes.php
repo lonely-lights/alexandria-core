@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 /**
@@ -141,6 +142,7 @@ trait HasDynamicAttributes
      * @param  mixed  $value  The value to set (can be a single value or an array).
      *
      * @throws RuntimeException when the field name isn't defined on the blueprint.
+     * @throws ValidationException when the value violates the field's validation rules.
      */
     public function setDynamicAttribute(string $key, mixed $value): void
     {
