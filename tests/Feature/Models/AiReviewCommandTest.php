@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @noinspection PhpUndefinedFieldInspection
- */
-
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -157,15 +153,15 @@ it('forBatch() scope filters by batch_id', function () {
     AiReviewCommand::factory()->forBatch($batchA)->count(2)->create();
     AiReviewCommand::factory()->forBatch($batchB)->count(3)->create();
 
-    expect(AiReviewCommand::query()->forBatch($batchA)->count())->toBe(2)
-        ->and(AiReviewCommand::query()->forBatch($batchB)->count())->toBe(3);
+    expect(AiReviewCommand::forBatch($batchA)->count())->toBe(2)
+        ->and(AiReviewCommand::forBatch($batchB)->count())->toBe(3);
 });
 
 it('active() scope filters is_active=true', function () {
     AiReviewCommand::factory()->count(2)->create(['is_active' => true]);
     AiReviewCommand::factory()->inactive()->count(3)->create();
 
-    expect(AiReviewCommand::query()->active()->count())->toBe(2);
+    expect(AiReviewCommand::active()->count())->toBe(2);
 });
 
 it('readyForExecution() scope returns only active+approved+non-null-action_type rows', function () {
@@ -188,7 +184,7 @@ it('readyForExecution() scope returns only active+approved+non-null-action_type 
         'is_active' => true,
     ]);
 
-    expect(AiReviewCommand::query()->readyForExecution()->count())->toBe(1);
+    expect(AiReviewCommand::readyForExecution()->count())->toBe(1);
 });
 
 it('project() BelongsTo relationship resolves to a Project', function () {

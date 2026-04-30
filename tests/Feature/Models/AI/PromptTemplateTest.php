@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @noinspection PhpUndefinedMethodInspection
- */
-
 use Alexandria\Core\Models\AI\PromptTemplate;
 use Alexandria\Core\Models\AI\PromptTemplateVersion;
 use Illuminate\Foundation\Testing\RefreshDatabase;

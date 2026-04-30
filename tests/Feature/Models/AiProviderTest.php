@@ -36,11 +36,13 @@ it('analystModels returns analyst + general models, recommended first', function
     AiModel::factory()->forProvider($provider)->create(['display_name' => 'General', 'category' => 'general']);
 
     $models = $provider->analystModels()->get();
+    /** @var AiModel $first */
+    $first = $models->first();
 
     expect($models->pluck('display_name')->all())
         ->toContain('Analyst A', 'Analyst Rec', 'General')
         ->and($models->pluck('display_name')->all())->not->toContain('Creative')
-        ->and($models->first()->display_name)->toBe('Analyst Rec'); // recommended first
+        ->and($first->display_name)->toBe('Analyst Rec'); // recommended first
 });
 
 it('creativeModels returns creative + general models', function () {
