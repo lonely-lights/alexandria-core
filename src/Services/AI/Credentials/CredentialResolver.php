@@ -35,7 +35,7 @@ class CredentialResolver
      *
      * @var array<string, string>
      */
-    protected const SDK_PROVIDER_MAP = [
+    protected const array SDK_PROVIDER_MAP = [
         'openai' => 'openai',
         'anthropic' => 'anthropic',
         'google' => 'gemini',
@@ -67,16 +67,16 @@ class CredentialResolver
         // 2/3. No user key — check the fallback flag.
         if (! $this->envFallbackAllowed()) {
             throw new NoApiKeyAvailableException(
-                "No active API key found for user (provider: {$provider->slug}) "
+                "No active API key found for user (provider: $provider->slug) "
                 .'and env fallback is disabled. Set alexandria.ai.allow_env_fallback=true '
                 .'to permit operator-supplied keys, or have the user add their own.'
             );
         }
 
-        $envKey = Config::get("ai.providers.{$sdkProviderKey}.key");
+        $envKey = Config::get("ai.providers.$sdkProviderKey.key");
         if (! is_string($envKey) || $envKey === '') {
             throw new NoApiKeyAvailableException(
-                "Env fallback allowed, but no key configured at ai.providers.{$sdkProviderKey}.key"
+                "Env fallback allowed, but no key configured at ai.providers.$sdkProviderKey.key"
             );
         }
 
@@ -114,11 +114,10 @@ class CredentialResolver
         /** @var class-string<UserApiKey> $userApiKeyClass */
         $userApiKeyClass = config('alexandria.models.user_api_key');
 
-        return $userApiKeyClass::query()
+        return $userApiKeyClass::valid()
             ->where('user_id', $user->getAuthIdentifier())
             ->where('ai_provider_id', $provider->id)
             ->where('is_active', true)
-            ->valid()
             ->first();
     }
 }

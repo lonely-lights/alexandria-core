@@ -103,7 +103,7 @@ it('returns an env-source credential when the user has no key and fallback is al
 
 it('throws when env fallback is allowed but no key is configured for the provider', function () {
     Config::set('alexandria.ai.allow_env_fallback', true);
-    Config::set('ai.providers.openai.key', null);
+    Config::offsetUnset('ai.providers.openai.key');
 
     $provider = AiProvider::factory()->openai()->create();
     $user = makeCredentialUser();
@@ -238,7 +238,7 @@ it("skips another user's key and falls through", function () {
     Config::set('ai.providers.openai.key', 'sk-env-fallback');
 
     $provider = AiProvider::factory()->openai()->create();
-    $userA = makeCredentialUser(1);
+    $userA = makeCredentialUser();
     $userB = makeCredentialUser(2);
 
     UserApiKey::factory()
