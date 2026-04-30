@@ -161,19 +161,19 @@ class UserApiKey extends Model
         return implode(' - ', $parts);
     }
 
-    protected function scopeActive(Builder $query): Builder
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    protected function scopeValid(Builder $query): Builder
+    public function scopeValid(Builder $query): Builder
     {
         return $query->where(function ($q) {
             $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
         });
     }
 
-    protected function scopeForProvider(Builder $query, int $providerId): Builder
+    public function scopeForProvider(Builder $query, int $providerId): Builder
     {
         return $query->where('ai_provider_id', $providerId);
     }
