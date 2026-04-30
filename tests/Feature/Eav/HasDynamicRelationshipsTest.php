@@ -92,8 +92,11 @@ it('parent prefix in callDynamicRelationship resolves the inverse direction', fu
 it('callDynamicRelationship applies the limit filter', function () {
     $character = Entry::factory()->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
 
-    foreach (range(1, 5) as $_) {
-        $loc = Entry::factory()->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
+    $locations = Entry::factory()
+        ->count(5)
+        ->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
+
+    foreach ($locations as $loc) {
         $character->addRelationship($loc, 'home');
     }
 
@@ -111,7 +114,11 @@ it('Entry::__call routes undefined method calls to callDynamicRelationship', fun
 
     // Calling $character->home() is not a defined method or relation;
     // __call should catch the BadMethodCallException and route to
-    // callDynamicRelationship which returns a Builder.
+    // callDynamicRelationship which returns a Builder. Going through the
+    // explicit API here would bypass exactly the path under test, so we
+    // call the magic directly — PhpStorm can't statically know about
+    // arbitrary blueprint-defined relationships.
+    /** @noinspection PhpUndefinedMethodInspection */
     $query = $character->home();
 
     // Assign once -- Builder::get() executes a query each call, so reusing
