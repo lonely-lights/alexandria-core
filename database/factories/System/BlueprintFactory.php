@@ -43,7 +43,8 @@ class BlueprintFactory extends Factory
             'name' => ucwords($name),
             'slug' => Str::slug($name),
             'classification' => 'standard',
-            'content_renderer' => 'default',
+            // content_renderer omitted -- the migration default ('content') applies.
+            // Tests that need a specific renderer override it explicitly.
             'description' => fake()->optional(0.6)->sentence(),
             'icon' => fake()->optional(0.5)->randomElement(['heroicon-user', 'heroicon-map-pin', 'heroicon-book-open', 'heroicon-star']),
             'show_on_dashboard' => true,
