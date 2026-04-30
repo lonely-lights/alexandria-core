@@ -48,17 +48,27 @@ php artisan vendor:publish --tag=alexandria-config
 php artisan migrate
 ```
 
-Then wire the Vite alias in your host app's `vite.config.ts`:
+### Frontend integration
+
+`alexandria-core` ships TypeScript and React components under `resources/js/`. Consumer apps wire a `@alexandria/*` path alias across Vite, `tsconfig.json`, and Tailwind 4's `@source` scanner so utility classes used in core components end up in the bundle. DaisyUI 5 is the supported component layer.
+
+The full recipe — including the DaisyUI 4 → 5 token rename table — lives in [`docs/integration/frontend-setup.md`](docs/integration/frontend-setup.md). Minimal version:
 
 ```ts
+// vite.config.ts
 resolve: {
-  alias: {
-    '@alexandria': path.resolve(__dirname, 'vendor/lonely-lights/alexandria-core/resources/js'),
-  },
+    alias: {
+        '@alexandria': resolve(__dirname, 'vendor/lonely-lights/alexandria-core/resources/js'),
+    },
 },
 ```
 
-Update your Inertia bootstrap (`resources/js/app.tsx`) to resolve pages from `@alexandria/pages/...`. Full setup walkthrough lives in [`INSTALL.md`](INSTALL.md) (added at Stage 4).
+```css
+/* app.css */
+@source '../../vendor/lonely-lights/alexandria-core/resources/js/**/*.{ts,tsx}';
+```
+
+Update your Inertia bootstrap (`resources/js/app.tsx`) to resolve pages from `@alexandria/pages/...` once the page surface lands at FE-B. Full setup walkthrough will graduate to a top-level [`INSTALL.md`](INSTALL.md) at Stage 4.
 
 ## Sibling packages
 
