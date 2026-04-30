@@ -37,6 +37,8 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> active()
  * @method static Builder<static> valid()
  * @method static Builder<static> forProvider(int $providerId)
+ * @method static UserApiKeyFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static UserApiKey create(array $attributes = [])
  */
 class UserApiKey extends Model
 {

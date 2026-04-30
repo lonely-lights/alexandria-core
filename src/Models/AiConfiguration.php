@@ -26,6 +26,8 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> ofType(string $type)
  * @method static Builder<static> active()
  * @method static Builder<static> byPriority()
+ * @method static AiConfigurationFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static AiConfiguration create(array $attributes = [])
  */
 class AiConfiguration extends Model
 {

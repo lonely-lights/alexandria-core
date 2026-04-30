@@ -44,6 +44,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, Note> $notes
  * @property-read ProjectAiSetting|null $aiSettings
  * @property-read Collection<int, ProjectAiInstruction> $aiInstructions
+ *
+ * @method static ProjectFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static Project create(array $attributes = [])
  */
 class Project extends Model implements HasMedia
 {

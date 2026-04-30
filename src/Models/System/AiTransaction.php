@@ -39,6 +39,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read User|null $user
  * @property-read Project|null $project
+ *
+ * @method static AiTransactionFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static AiTransaction create(array $attributes = [])
  */
 class AiTransaction extends Model
 {

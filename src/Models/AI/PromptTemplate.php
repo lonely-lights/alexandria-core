@@ -37,6 +37,8 @@ use InvalidArgumentException;
  * @method static Builder<static> active()
  * @method static Builder<static> category(string $category)
  * @method static Builder<static> forContext(string $contextType)
+ * @method static PromptTemplateFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static PromptTemplate create(array $attributes = [])
  */
 class PromptTemplate extends Model
 {

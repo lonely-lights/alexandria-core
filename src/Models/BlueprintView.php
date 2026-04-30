@@ -23,6 +23,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Blueprint $blueprint
+ *
+ * @method static BlueprintViewFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static BlueprintView create(array $attributes = [])
  */
 class BlueprintView extends Model
 {

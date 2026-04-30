@@ -56,6 +56,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  *
  * @method static Builder<static> active()
  * @method static Builder<static> archived()
+ * @method static EntryFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static Entry create(array $attributes = [])
  */
 class Entry extends Model implements HasMedia
 {

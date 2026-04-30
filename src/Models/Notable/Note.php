@@ -46,6 +46,9 @@ use Spatie\Tags\HasTags;
  * @property-read Collection<int, Blueprint> $pendingBlueprints
  * @property-read Collection<int, Blueprint> $processedBlueprints
  * @property mixed $tags
+ *
+ * @method static NoteFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static Note create(array $attributes = [])
  */
 class Note extends Model
 {

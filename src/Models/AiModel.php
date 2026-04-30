@@ -38,6 +38,8 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> active()
  * @method static Builder<static> category(string $category)
  * @method static Builder<static> recommendedFirst()
+ * @method static AiModelFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static AiModel create(array $attributes = [])
  */
 class AiModel extends Model
 {

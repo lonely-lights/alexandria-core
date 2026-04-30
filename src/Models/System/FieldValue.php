@@ -19,6 +19,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Entry $entry
  * @property-read BlueprintField $blueprintField
+ *
+ * @method static FieldValueFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static FieldValue create(array $attributes = [])
  */
 class FieldValue extends Model
 {

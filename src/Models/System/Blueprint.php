@@ -58,6 +58,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  *
  * @method static Builder<static> standard()
  * @method static Builder<static> list()
+ * @method static BlueprintFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static Blueprint create(array $attributes = [])
  */
 class Blueprint extends Model implements HasMedia
 {

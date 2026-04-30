@@ -25,6 +25,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Note $note
  * @property-read Model|null $editor
+ *
+ * @method static NoteHistoryFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static NoteHistory create(array $attributes = [])
  */
 class NoteHistory extends Model
 {

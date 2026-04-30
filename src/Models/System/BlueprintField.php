@@ -34,6 +34,9 @@ use Illuminate\Support\Carbon;
  * @property-read bool $is_type_field
  * @property-read Blueprint $blueprint
  * @property-read Collection<int, AiConfiguration> $aiConfigurations
+ *
+ * @method static BlueprintFieldFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static BlueprintField create(array $attributes = [])
  */
 class BlueprintField extends Model
 {

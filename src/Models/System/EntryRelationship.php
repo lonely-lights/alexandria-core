@@ -42,6 +42,8 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> ofType(string $typeSlug)
  * @method static Builder<static> active()
  * @method static Builder<static> archived()
+ * @method static EntryRelationshipFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static EntryRelationship create(array $attributes = [])
  */
 class EntryRelationship extends Model
 {

@@ -30,6 +30,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property-read Blueprint $fromBlueprint
  * @property-read Blueprint $toBlueprint
+ *
+ * @method static RelationshipBlueprintFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static RelationshipBlueprint create(array $attributes = [])
  */
 class RelationshipBlueprint extends Model
 {

@@ -27,6 +27,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Note $note
+ *
+ * @method static NoteLinkFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static NoteLink create(array $attributes = [])
  */
 class NoteLink extends Model
 {

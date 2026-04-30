@@ -25,6 +25,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Project $project
+ *
+ * @method static ProjectAiInstructionFactory factory(int|callable|array|null $count = null, array $state = [])
+ * @method static ProjectAiInstruction create(array $attributes = [])
  */
 class ProjectAiInstruction extends Model
 {
