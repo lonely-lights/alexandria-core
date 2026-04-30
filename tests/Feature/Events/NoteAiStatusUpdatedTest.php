@@ -94,3 +94,28 @@ it('implements ShouldBroadcast', function () {
 
     expect($event)->toBeInstanceOf(ShouldBroadcast::class);
 });
+
+it('throws when neither $userId nor $note->user_id is set', function () {
+    // user_id is bare bigint per ADR-006 (host owns the users table), so
+    // it can legitimately be null. Without a userId override, we'd otherwise
+    // broadcast to "user." which silently reaches no subscribers — fail loud.
+    $note = Note::factory()->create(['user_id' => null]);
+
+    new NoteAiStatusUpdated($note, 'queued');
+})->throws(RuntimeException::class, 'cannot derive a broadcast channel');
+
+it('returns null ai_notes in broadcast payload when the note has been deleted', function () {
+    // Realistic queued-broadcast race: dispatch fires before the worker,
+    // the note gets deleted in between, the worker calls broadcastWith().
+    // ->fresh()?->ai_notes returns null instead of fataling on null->prop.
+    $note = Note::factory()->create(['user_id' => 7, 'ai_notes' => ['stale' => true]]);
+    $event = new NoteAiStatusUpdated($note, 'completed');
+
+    $note->forceDelete();
+
+    $payload = $event->broadcastWith();
+
+    expect($payload['note_id'])->toBe($note->id)
+        ->and($payload['status'])->toBe('completed')
+        ->and($payload['ai_notes'])->toBeNull();
+});

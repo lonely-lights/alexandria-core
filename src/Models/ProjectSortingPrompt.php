@@ -34,6 +34,8 @@ class ProjectSortingPrompt extends Model
 {
     use HasFactory;
 
+    protected $table = 'project_sorting_prompts';
+
     protected $guarded = ['id'];
 
     protected static function newFactory(): ProjectSortingPromptFactory

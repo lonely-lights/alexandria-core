@@ -19,7 +19,9 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->index(['project_id', 'is_default']);
+            // Composite covers the orchestrator's primary lookup:
+            // WHERE project_id = ? AND is_default = 1 AND is_active = 1
+            $table->index(['project_id', 'is_default', 'is_active']);
         });
     }
 
