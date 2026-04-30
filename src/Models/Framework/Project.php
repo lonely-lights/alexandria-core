@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Alexandria\Core\Models\Framework;
 
 use Alexandria\Core\Database\Factories\Framework\ProjectFactory;
+use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\Entry;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
+use Alexandria\Core\Traits\Notable\HasNotes;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,6 +38,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Model|null $creator
  * @property-read Collection<int, Blueprint> $blueprints
  * @property-read Collection<int, Entry> $entries
+ * @property-read Collection<int, Note> $notes
  */
 class Project extends Model implements HasMedia
 {
@@ -44,6 +47,7 @@ class Project extends Model implements HasMedia
         HasAlexandriaMedia::registerMediaConversions insteadof InteractsWithMedia;
     }
     use HasFactory;
+    use HasNotes;
     use SoftDeletes;
 
     protected $guarded = ['id'];
