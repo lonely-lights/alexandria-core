@@ -1,0 +1,254 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Alexandria\Core\Traits\System;
+
+use Alexandria\Core\Models\System\Entry;
+use Alexandria\Core\Models\System\EntryRelationship;
+use Alexandria\Core\Services\Relationships\RelationshipRepository;
+use Alexandria\Core\Services\Relationships\RelationshipWriter;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
+
+/**
+ * HasDynamicRelationships
+ *
+ * Provides dynamic relationship functionality for the EAV system, enabling entries
+ * to have user-defined relationships that work seamlessly with Eloquent.
+ *
+ * What this trait does:
+ *  - Exposes "dynamic" relationship accessors via magic helpers:
+ *      $entry->getDynamicRelationship('characters')   // Collection<Entry> (outgoing)
+ *      $entry->callDynamicRelationship('parentScenes', []) // Builder (incoming)
+ *  - Keeps normal Eloquent relationships for edges:
+ *      parentRelationships(): edges where $this is parent (outgoing)
+ *      childRelationships(): edges where $this is child  (incoming)
+ *  - Delegates query building and writes to services:
+ *      RelationshipRepository, RelationshipWriter
+ *
+ * Parsing convention (enforced by RelationshipKeyParser):
+ *  - "parentXxx"   → incoming, slug = snake_case('Xxx')
+ *  - "xxx"         → outgoing, slug = snake_case('xxx')
+ *  - optional filters: ;limit=10;order=name;dir=desc
+ *
+ * Performance: In-memory cache, lazy-loaded services, efficient queries
+ * Caching: Caches resolved dynamic collections per request on the instance, keyed by the raw key string
+ *
+ * @mixin Model
+ *
+ * @property int $id
+ * @property-read Collection<int, EntryRelationship> $childRelationships
+ * @property-read Collection<int, EntryRelationship> $parentRelationships
+ */
+trait HasDynamicRelationships
+{
+    /**
+     * In-memory cache for dynamic relationship collections to prevent redundant queries.
+     * The key is the relationship name (e.g., 'characters').
+     */
+    protected array $dynamicRelationshipCache = [];
+
+    // Cached Service Instances
+
+    private ?RelationshipRepository $relRepo = null;
+
+    private ?RelationshipWriter $relWriter = null;
+
+    /**
+     * Lazy-load and cache the RelationshipRepository instance.
+     */
+    protected function repo(): RelationshipRepository
+    {
+        return $this->relRepo ??= app(RelationshipRepository::class);
+    }
+
+    /**
+     * Lazy-load and cache the RelationshipWriter instance.
+     */
+    protected function writer(): RelationshipWriter
+    {
+        return $this->relWriter ??= app(RelationshipWriter::class);
+    }
+
+    // Core Getters (Magic Methods)
+
+    /**
+     * Return a cached Collection of related Entries for a given dynamic key.
+     * Example:
+     *   $entry->getDynamicRelationship('characters');
+     *   $entry->getDynamicRelationship('parentScenes;limit=10;order=name');
+     */
+    public function getDynamicRelationship(string $key): Collection
+    {
+        if (isset($this->dynamicRelationshipCache[$key])) {
+            return $this->dynamicRelationshipCache[$key];
+        }
+
+        return $this->dynamicRelationshipCache[$key] = $this->repo()->getForKey($this, $key);
+    }
+
+    /**
+     * Build a query for a dynamic relationship key, with optional inline filters.
+     *
+     * The `$method` is the raw relationship key (it may ALREADY include filters),
+     * e.g.:
+     *   - 'characters'
+     *   - 'parentScenes'
+     *   - 'characters;order=name'
+     *
+     * You can supply additional filters via `$parameters` in ONE of two forms:
+     *
+     *   1) A single STRING of semicolon-delimited pairs:
+     *        $entry->callDynamicRelationship('characters', ['limit=10;order=name']);
+     *
+     *   2) An ASSOCIATIVE ARRAY of filters:
+     *        $entry->callDynamicRelationship('parentScenes', ['limit' => 5, 'order' => 'priority', 'dir' => 'desc']);
+     *
+     * Mixed usage is supported: if both `$method` and `$parameters` specify the same
+     * filter key, the value that appears LATER in the final composed key wins.
+     * This implementation appends the string-supplied filters first, then the
+     * associative filters—so associative values take precedence.
+     *
+     * Examples (final composed key → behavior):
+     *   callDynamicRelationship('parentScenes')
+     *     → 'parentScenes'
+     *
+     *   callDynamicRelationship('characters', ['limit=10;order=name'])
+     *     → 'characters;limit=10;order=name'
+     *
+     *   callDynamicRelationship('characters;order=priority', ['limit' => 3])
+     *     → 'characters;order=priority;limit=3'
+     *
+     * Notes:
+     * - This method only composes the raw key string; parsing/validation happens in
+     *   RelationshipKeyParser, which the repository uses.
+     * - We ensure exactly one ';' between the base key and appended filters, and
+     *   avoid duplicating semicolons.
+     *
+     * @param  string  $method  Raw dynamic key (may already include filters after a ';').
+     * @param  array  $parameters  Either [ 'k=v;…' ] OR [ 'k' => 'v', … ].
+     */
+    public function callDynamicRelationship(string $method, array $parameters): Builder
+    {
+        $methodWithFilters = $method;
+
+        // 1. Optional string filters (first list element), e.g. ['limit=10;order=name']
+        $rawSuffix = null;
+        if (! empty($parameters) && array_is_list($parameters) && isset($parameters[0]) && is_string($parameters[0])) {
+            $rawSuffix = trim((string) $parameters[0], " ;\t\n\r\0\x0B");
+        }
+
+        // 2. Optional associative filters, e.g. ['limit' => 5, 'order' => 'name']
+        $assocSuffix = null;
+        if (! empty($parameters) && ! array_is_list($parameters)) {
+            $pairs = [];
+            foreach ($parameters as $k => $v) {
+                if ($k === '' || $v === null || $v === '') {
+                    continue;
+                }
+                $pairs[] = "$k=$v";
+            }
+            if ($pairs) {
+                $assocSuffix = implode(';', $pairs);
+            }
+        }
+
+        // 3. Compose suffix: string filters first, then assoc (assoc takes precedence on duplicate keys)
+        $suffix = '';
+        if (! empty($rawSuffix)) {
+            $suffix = $rawSuffix;
+        }
+        if (! empty($assocSuffix)) {
+            $suffix .= ($suffix !== '' ? ';' : '').$assocSuffix;
+        }
+
+        // 4. Append with a single separator, avoiding ';;'
+        if ($suffix !== '') {
+            $sep = str_ends_with($methodWithFilters, ';') ? '' : ';';
+            $methodWithFilters .= $sep.$suffix;
+        }
+
+        return $this->repo()->queryForKey($this, $methodWithFilters);
+    }
+
+    // Query & Helper Logic
+
+    /**
+     * Centralized logic to build the relationship query.
+     *
+     * This supports querying for inverse relationships by detecting a 'parent'
+     * prefix in the key (e.g., 'parentLocations' will find entries that list
+     * the current model as their child).
+     *
+     * @param  string  $key  The relationship name (e.g., "characters" or "parentLocations").
+     */
+    protected function getRelationshipQuery(string $key): Builder
+    {
+        if (Str::startsWith($key, 'parent')) {
+            // 'parentLocations' -> 'locations'
+            $relationshipType = Str::snake(Str::after($key, 'parent'));
+            $foreignKey = 'parent_entry_id';
+            $localKey = 'child_entry_id';
+        } else {
+            // 'characters' -> 'characters'
+            $relationshipType = Str::snake($key);
+            $foreignKey = 'child_entry_id';
+            $localKey = 'parent_entry_id';
+        }
+
+        return Entry::query()
+            ->whereIn('id', function ($query) use ($relationshipType, $foreignKey, $localKey) {
+                $query->select($foreignKey)
+                    ->from('entry_relationships')
+                    ->where($localKey, $this->id)
+                    ->where('relationship_type', $relationshipType);
+            });
+    }
+
+    // Write Helpers
+
+    /**
+     * A developer-friendly helper to create a directional relationship.
+     *
+     * @param  Entry  $child  The entry to relate to.
+     * @param  string  $relationshipType  The snake_case name of the relationship.
+     * @param  array  $metadata  Optional data for the relationship pivot.
+     */
+    public function addRelationship(Entry $child, string $relationshipType, array $metadata = []): EntryRelationship
+    {
+        return $this->writer()->add($this, $child, $relationshipType, $metadata);
+    }
+
+    /**
+     * A developer-friendly helper to remove a directional relationship.
+     *
+     * @param  Entry  $child  The related entry.
+     * @param  string  $relationshipType  The snake_case name of the relationship.
+     */
+    public function removeRelationship(Entry $child, string $relationshipType): bool
+    {
+        return $this->writer()->remove($this, $child, $relationshipType);
+    }
+
+    // Standard Eloquent Relationships
+
+    /**
+     * Defines the relationship for all connections where this entry is the CHILD.
+     */
+    public function childRelationships(): HasMany
+    {
+        return $this->hasMany(EntryRelationship::class, 'child_entry_id');
+    }
+
+    /**
+     * Defines the relationship for all connections where this entry is the PARENT.
+     */
+    public function parentRelationships(): HasMany
+    {
+        return $this->hasMany(EntryRelationship::class, 'parent_entry_id');
+    }
+}

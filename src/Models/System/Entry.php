@@ -7,6 +7,8 @@ namespace Alexandria\Core\Models\System;
 use Alexandria\Core\Database\Factories\System\EntryFactory;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Traits\System\HasDynamicAttributes;
+use Alexandria\Core\Traits\System\HasDynamicRelationships;
+use BadMethodCallException;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -41,6 +43,8 @@ use Illuminate\Support\Str;
  * @property-read static|null $parent
  * @property-read Collection<int, static> $children
  * @property-read Collection<int, FieldValue> $attributes
+ * @property-read Collection<int, EntryRelationship> $childRelationships
+ * @property-read Collection<int, EntryRelationship> $parentRelationships
  *
  * @method static Builder<static> active()
  * @method static Builder<static> archived()
@@ -48,6 +52,7 @@ use Illuminate\Support\Str;
 class Entry extends Model
 {
     use HasDynamicAttributes;
+    use HasDynamicRelationships;
     use HasFactory;
     use SoftDeletes;
 
@@ -213,5 +218,23 @@ class Entry extends Model
         }
 
         return in_array($key, self::$nativeColumnsCache[$table], true);
+    }
+
+    /**
+     * Magic method to handle calls to undefined methods.
+     *
+     * The entry point for accessing dynamic relationships as methods,
+     * e.g. $entry->characters() or $entry->parentScenes(). The parent
+     * Eloquent __call handles defined relationships, scopes, and
+     * macros. If it throws BadMethodCallException, we route to the
+     * HasDynamicRelationships trait's callDynamicRelationship.
+     */
+    public function __call($method, $parameters)
+    {
+        try {
+            return parent::__call($method, $parameters);
+        } catch (BadMethodCallException) {
+            return $this->callDynamicRelationship($method, $parameters);
+        }
     }
 }
