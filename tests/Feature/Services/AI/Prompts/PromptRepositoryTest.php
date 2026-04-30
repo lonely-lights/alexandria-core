@@ -49,13 +49,13 @@ it('getByCategory returns active rows for that category, sorted by name', functi
     expect($keys)->toBe(['b.two', 'b.one']);
 });
 
-it('getByContextType filters via the forContext scope', function () {
+it('forContext filters via the forContext scope', function () {
     PromptTemplate::factory()->create(['required_context_type' => 'CtxA', 'name' => 'one']);
     PromptTemplate::factory()->create(['required_context_type' => 'CtxA', 'name' => 'two']);
     PromptTemplate::factory()->create(['required_context_type' => 'CtxB', 'name' => 'three']);
 
-    expect((new PromptRepository)->getByContextType('CtxA'))->toHaveCount(2)
-        ->and((new PromptRepository)->getByContextType('CtxZ'))->toHaveCount(0);
+    expect((new PromptRepository)->forContext('CtxA'))->toHaveCount(2)
+        ->and((new PromptRepository)->forContext('CtxZ'))->toHaveCount(0);
 });
 
 it('create persists a new template via mass assignment', function () {

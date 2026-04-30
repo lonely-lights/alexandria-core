@@ -69,18 +69,24 @@ DATA;
     /**
      * Extract the JSON data from a wrapped data block.
      *
-     * Useful for testing and validation.
+     * Useful for testing and validation. The regex anchors on the literal
+     * `=== BEGIN DATA CONTEXT ===` header rather than a bare `---` separator
+     * so that a context payload whose JSON happens to contain `---\n` (e.g.
+     * markdown horizontal rules in free-text fields) does not mis-parse.
      *
      * @param  string  $wrapped  The wrapped data block
      * @return array<string, mixed>|null The extracted data or null if parsing fails
      */
     public function unwrap(string $wrapped): ?array
     {
-        // Find content between the dashed separator and the end boundary
-        $pattern = '/---\s*\n(.*?)\n={'.self::BOUNDARY_LENGTH.'}/s';
+        // Anchor on the BEGIN header, then find the JSON section that sits
+        // between the `---` separator and the closing run of `=` characters.
+        // The non-greedy (?<json>.*?) stops at the first 5+ `=` line — far
+        // harder to forge than a bare `---`.
+        $pattern = '/=== BEGIN DATA CONTEXT ===.*?\n---\s*\n(?<json>.*?)\n={5,}/s';
 
         if (preg_match($pattern, $wrapped, $matches)) {
-            $json = trim($matches[1]);
+            $json = trim($matches['json']);
 
             return json_decode($json, true);
         }

@@ -67,7 +67,7 @@ class PromptRepository
      *
      * @return Collection<int, PromptTemplate>
      */
-    public function getByContextType(string $contextType): Collection
+    public function forContext(string $contextType): Collection
     {
         return PromptTemplate::active()->forContext($contextType)->orderBy('name')->get();
     }
@@ -146,6 +146,6 @@ class PromptRepository
     {
         $template = $this->findByKey($key);
 
-        return $template->versions()->limit($limit)->get();
+        return $template->versions()->orderByDesc('version')->limit($limit)->get();
     }
 }

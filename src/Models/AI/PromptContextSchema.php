@@ -82,11 +82,12 @@ class PromptContextSchema extends Model
         $errors = [];
         $schema = $this->json_schema;
 
-        // Check required properties
+        // Check required properties — isset() rejects both missing keys AND null values,
+        // closing the gap where ['foo' => null] previously satisfied a `required: [foo]` rule.
         if (isset($schema['required']) && is_array($schema['required'])) {
             foreach ($schema['required'] as $required) {
-                if (! array_key_exists($required, $data)) {
-                    $errors[] = __('Missing required property: :property', ['property' => $required]);
+                if (! isset($data[$required])) {
+                    $errors[] = __('Missing or null required property: :property', ['property' => $required]);
                 }
             }
         }

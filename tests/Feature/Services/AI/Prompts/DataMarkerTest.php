@@ -60,6 +60,22 @@ it('unwrap returns null when the input does not contain a recognizable data bloc
     expect((new DataMarker)->unwrap('totally unrelated text'))->toBeNull();
 });
 
+it('unwrap round-trips when a context payload embeds the --- separator inside its JSON', function () {
+    // Regression: the previous regex matched the FIRST `---\n` it saw, so a
+    // free-text field whose JSON encoded as `Section 1\n---\nSection 2` was
+    // mis-parsed. The header-anchored regex skips past the metadata block and
+    // captures everything up to the closing `=` boundary, so embedded `---`
+    // lines round-trip correctly.
+    $payload = [
+        'description' => "Section 1\n---\nSection 2\n---\nSection 3",
+        'count' => 7,
+    ];
+    $marker = new DataMarker;
+    $wrapped = $marker->wrap(makeTestContext('EmbeddedDashContext', '1.0', $payload));
+
+    expect($marker->unwrap($wrapped))->toBe($payload);
+});
+
 it('extractMetadata pulls Type / Schema Version / Generated lines', function () {
     $marker = new DataMarker;
     $wrapped = $marker->wrap(makeTestContext('MetaCtx', '3.1', ['x' => 1]));
