@@ -8,6 +8,7 @@ use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Services\AI\EavAiService;
 use Illuminate\Contracts\Auth\Authenticatable;
+use RuntimeException;
 
 /**
  * Project-level convenience facade for the EAV AI integration. Delegates
@@ -27,7 +28,7 @@ trait HasEavAiIntegration
     /**
      * Start AI categorization for a note within this project.
      *
-     * @throws \RuntimeException until the orchestrator (CT5d) is integrated
+     * @throws RuntimeException until the orchestrator (CT5d) is integrated
      */
     public function categorizeNoteWithAi(Note $note, Authenticatable $user): void
     {
@@ -39,7 +40,7 @@ trait HasEavAiIntegration
      *
      * @return array<int, array<string, mixed>>
      *
-     * @throws \RuntimeException until the orchestrator (CT5d) is integrated
+     * @throws RuntimeException until the orchestrator (CT5d) is integrated
      */
     public function suggestEntriesFromText(string $text, Authenticatable $user): array
     {
