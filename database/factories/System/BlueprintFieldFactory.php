@@ -32,11 +32,6 @@ class BlueprintFieldFactory extends Factory
     protected $model = BlueprintField::class;
 
     /**
-     * Track sort order per blueprint for sequential ordering.
-     */
-    protected static array $sortOrders = [];
-
-    /**
      * Define the model's default state.
      *
      * @return array<string, mixed>
@@ -60,19 +55,17 @@ class BlueprintFieldFactory extends Factory
 
     /**
      * Create a field for a specific blueprint.
+     *
+     * Computes sort_order from the database at row-creation time, which means
+     * sequential calls produce 0, 1, 2, ... without leaking state between
+     * tests. (A previous static-counter implementation leaked sort orders
+     * across tests in the same Pest process and was replaced.)
      */
     public function forBlueprint(Blueprint $blueprint): static
     {
-        // Track and increment sort order per blueprint
-        $blueprintId = $blueprint->id;
-        if (! isset(static::$sortOrders[$blueprintId])) {
-            static::$sortOrders[$blueprintId] = 0;
-        }
-        $sortOrder = static::$sortOrders[$blueprintId]++;
-
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'blueprint_id' => $blueprint->id,
-            'sort_order' => $sortOrder,
+            'sort_order' => BlueprintField::where('blueprint_id', $blueprint->id)->count(),
         ]);
     }
 
@@ -184,13 +177,5 @@ class BlueprintFieldFactory extends Factory
             'label' => 'Description',
             'type' => 'textarea',
         ]);
-    }
-
-    /**
-     * Reset sort order tracking (call between test runs if needed).
-     */
-    public static function resetSortOrders(): void
-    {
-        static::$sortOrders = [];
     }
 }

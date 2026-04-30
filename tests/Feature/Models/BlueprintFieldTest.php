@@ -45,12 +45,37 @@ it('returns null targetBlueprintSlug when validation_rules has no target', funct
     expect($field->targetBlueprintSlug)->toBeNull();
 });
 
-it('exposes is_type_field accessor from validation_rules', function () {
+it('isTypeField is true only for entry_reference fields with the flag set', function () {
     $field = BlueprintField::factory()->create([
+        'type' => 'entry_reference',
         'validation_rules' => ['is_type_field' => true],
     ]);
 
     expect($field->isTypeField)->toBeTrue();
+});
+
+it('isTypeField is false for non-entry_reference fields even when the flag is set', function () {
+    // The accessor gates on type === 'entry_reference'. A text/integer/etc
+    // field with is_type_field=true must NOT report as a type field, because
+    // the EAV layer expects type-classifier fields to point at another entry.
+    $field = BlueprintField::factory()->create([
+        'type' => 'text',
+        'validation_rules' => ['is_type_field' => true],
+    ]);
+
+    expect($field->isTypeField)->toBeFalse();
+});
+
+it('forBlueprint factory state assigns sequential sort_order from the database', function () {
+    $blueprint = Blueprint::factory()->create();
+
+    $first = BlueprintField::factory()->forBlueprint($blueprint)->create();
+    $second = BlueprintField::factory()->forBlueprint($blueprint)->create();
+    $third = BlueprintField::factory()->forBlueprint($blueprint)->create();
+
+    expect($first->sort_order)->toBe(0)
+        ->and($second->sort_order)->toBe(1)
+        ->and($third->sort_order)->toBe(2);
 });
 
 it('soft-deletes a field', function () {
