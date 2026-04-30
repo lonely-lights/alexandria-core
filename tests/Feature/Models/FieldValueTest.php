@@ -31,7 +31,7 @@ it('allows multi-value fields (no unique constraint on entry+field)', function (
     FieldValue::factory()->create(['entry_id' => $entry->id, 'blueprint_field_id' => $field->id, 'value' => 'A']);
     FieldValue::factory()->create(['entry_id' => $entry->id, 'blueprint_field_id' => $field->id, 'value' => 'B']);
 
-    expect(FieldValue::where('entry_id', $entry->id)->count())->toBe(2);
+    expect(FieldValue::query()->where('entry_id', $entry->id)->count())->toBe(2);
 });
 
 it('belongs to an entry and a blueprint field', function () {
@@ -50,7 +50,7 @@ it('cascade-deletes when its entry is deleted', function () {
 
     $entry->forceDelete();
 
-    expect(FieldValue::where('entry_id', $entry->id)->count())->toBe(0);
+    expect(FieldValue::query()->where('entry_id', $entry->id)->count())->toBe(0);
 });
 
 it('touches its entry on save', function () {
@@ -62,5 +62,7 @@ it('touches its entry on save', function () {
 
     FieldValue::factory()->create(['entry_id' => $entry->id, 'blueprint_field_id' => $field->id]);
 
-    expect($entry->fresh()->updated_at->gt($originalUpdatedAt))->toBeTrue();
+    /** @var Entry $fresh */
+    $fresh = $entry->fresh();
+    expect($fresh->updated_at->gt($originalUpdatedAt))->toBeTrue();
 });

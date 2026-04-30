@@ -93,7 +93,6 @@ trait HasDynamicAttributes
 
         $this->loadMissing('type.fields');
         $fieldDefinition = $this->type?->fields->firstWhere('name', $key);
-        /** @var string $dataType */
         $dataType = $fieldDefinition?->type ?? 'text';
 
         // Map over the group of field values and cast each one individually

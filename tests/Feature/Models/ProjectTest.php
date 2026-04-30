@@ -23,7 +23,10 @@ it('creates a project with a slug and name', function () {
 it('soft-deletes a project', function () {
     $project = Project::factory()->create();
     $project->delete();
-    expect($project->fresh()?->trashed())->toBeTrue();
+
+    /** @var Project $fresh */
+    $fresh = $project->fresh();
+    expect($fresh->trashed())->toBeTrue();
 });
 
 it('returns null owner when owner_id is null (nullable FK contract)', function () {

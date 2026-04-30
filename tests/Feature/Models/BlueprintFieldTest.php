@@ -82,7 +82,9 @@ it('soft-deletes a field', function () {
     $field = BlueprintField::factory()->create();
     $field->delete();
 
-    expect($field->fresh()?->trashed())->toBeTrue();
+    /** @var BlueprintField $fresh */
+    $fresh = $field->fresh();
+    expect($fresh->trashed())->toBeTrue();
 });
 
 it('touches its blueprint when saved', function () {
@@ -93,5 +95,7 @@ it('touches its blueprint when saved', function () {
 
     BlueprintField::factory()->create(['blueprint_id' => $blueprint->id]);
 
-    expect($blueprint->fresh()->updated_at->gt($originalUpdatedAt))->toBeTrue();
+    /** @var Blueprint $fresh */
+    $fresh = $blueprint->fresh();
+    expect($fresh->updated_at->gt($originalUpdatedAt))->toBeTrue();
 });

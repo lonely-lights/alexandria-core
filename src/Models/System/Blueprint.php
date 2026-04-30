@@ -41,6 +41,9 @@ use Illuminate\Support\Carbon;
  * @property-read Project $project
  * @property-read Collection<int, BlueprintField> $fields
  * @property-read Collection<int, Entry> $entries
+ *
+ * @method static Builder<static> standard()
+ * @method static Builder<static> list()
  */
 class Blueprint extends Model
 {

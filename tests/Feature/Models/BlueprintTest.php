@@ -31,7 +31,9 @@ it('soft-deletes a blueprint', function () {
     $blueprint = Blueprint::factory()->create();
     $blueprint->delete();
 
-    expect($blueprint->fresh()?->trashed())->toBeTrue();
+    /** @var Blueprint $fresh */
+    $fresh = $blueprint->fresh();
+    expect($fresh->trashed())->toBeTrue();
 });
 
 it('exposes the standard scope', function () {

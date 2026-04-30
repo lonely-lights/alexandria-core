@@ -41,6 +41,9 @@ use Illuminate\Support\Str;
  * @property-read static|null $parent
  * @property-read Collection<int, static> $children
  * @property-read Collection<int, FieldValue> $attributes
+ *
+ * @method static Builder<static> active()
+ * @method static Builder<static> archived()
  */
 class Entry extends Model
 {
@@ -145,7 +148,11 @@ class Entry extends Model
     public function __get($key)
     {
         // 1. Native attribute or accessor.
-        if (array_key_exists($key, $this->attributes) || $this->hasGetMutator($key)) {
+        // Use getAttributes() (the raw attribute array accessor) rather than
+        // the magic property $this->attributes -- the latter shadows
+        // Eloquent's raw attribute storage with the EAV `attributes` HasMany
+        // relation, so static type-checkers see a Collection, not an array.
+        if (array_key_exists($key, $this->getAttributes()) || $this->hasGetMutator($key)) {
             return parent::__get($key);
         }
 

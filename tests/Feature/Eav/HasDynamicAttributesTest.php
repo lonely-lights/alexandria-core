@@ -2,6 +2,18 @@
 
 declare(strict_types=1);
 
+/**
+ * EAV magic-property tests.
+ *
+ * This file deliberately exercises dynamic property access (e.g. $entry->age,
+ * $fresh->is_friendly) -- those names aren't declared on Entry because they
+ * come from per-blueprint field definitions at runtime, not from native
+ * columns. Suppress the IDE inspection that would otherwise flag every
+ * dynamic read as an undefined-field access.
+ *
+ * @noinspection PhpUndefinedFieldInspection
+ */
+
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\BlueprintField;

@@ -68,14 +68,19 @@ it('auto-assigns sort_order as 0-based max+1 in sibling group', function () {
 it('withAiNotes factory state stores an array (not a JSON-encoded string)', function () {
     $entry = Entry::factory()->withAiNotes()->create();
 
-    expect($entry->fresh()->ai_notes)->toBeArray()
-        ->and($entry->fresh()->ai_notes)->toHaveKey('note');
+    /** @var Entry $fresh */
+    $fresh = $entry->fresh();
+    expect($fresh->ai_notes)->toBeArray()
+        ->and($fresh->ai_notes)->toHaveKey('note');
 });
 
 it('soft-deletes', function () {
     $entry = Entry::factory()->create();
     $entry->delete();
-    expect($entry->fresh()?->trashed())->toBeTrue();
+
+    /** @var Entry $fresh */
+    $fresh = $entry->fresh();
+    expect($fresh->trashed())->toBeTrue();
 });
 
 it('exposes active and archived scopes', function () {
