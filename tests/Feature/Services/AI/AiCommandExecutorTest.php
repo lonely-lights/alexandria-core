@@ -5,18 +5,17 @@ declare(strict_types=1);
 /**
  * Pest test file for AiCommandExecutor.
  *
- * IDE inspection notes:
- * - PhpPossiblePolymorphicInvocationInspection: Eloquent factories declare
- *   `Collection|Model` return types, so PHPStorm widens factory-created
- *   model variables and warns on every method/property access.
- * - PhpUnhandledExceptionInspection: AiCommandExecutor::executeBatch is
- *   typed @throws Throwable; Pest's `it()` blocks can't declare throws.
- * - PhpExpectationCanBeChainedInspection: Pest plugin prefers
- *   ->and() chaining; the test prefers explicit statements for clarity.
+ * Eloquent factory ->create() returns a Collection|Model union, which makes
+ * every $model->id / $model->blueprints() flag "Potentially polymorphic call."
+ * AiCommandExecutor::executeBatch is @throws Throwable, which propagates as
+ * "Unhandled Throwable" through every it() closure (Pest closures can't
+ * declare throws). The Pest plugin also nags about chained ->and()
+ * expectations being preferred over multiple expect() statements. None of
+ * these are real bugs — the targeted @noinspection IDs (Php{PossiblePoly-
+ * morphicInvocation,UnhandledException,ExpectationCanBeChained}Inspection)
+ * didn't register with PHPStorm, so suppress wholesale at file level.
  *
- * @noinspection PhpPossiblePolymorphicInvocationInspection
- * @noinspection PhpUnhandledExceptionInspection
- * @noinspection PhpExpectationCanBeChainedInspection
+ * @noinspection ALL
  */
 
 use Alexandria\Core\Models\Framework\Project;
