@@ -117,8 +117,13 @@ no longer touches `tailwind.config.js`):
 > `"browser": "./daisyui.css"`, and rolldown picks up that condition
 > when loading the plugin. Pointing at the JS entry directly
 > (`daisyui/index.js`) sidesteps the resolution. Same applies to
-> `daisyui/theme/index.js` below. Drop the `/index.js` suffix once
-> daisyui or `@tailwindcss/vite` ships a fix.
+> `daisyui/theme/index.js` below.
+>
+> Tracked upstream: [vitejs/vite#22323](https://github.com/vitejs/vite/issues/22323)
+> (Closed — maintainers consider it a DaisyUI package-exports issue.)
+> Drop the `/index.js` suffix once either Vite reverts the resolver
+> behavior or DaisyUI ships a fix to its `browser`/`main`/`exports`
+> fields.
 
 The `--default` and `--prefersdark` modifiers replace DaisyUI 4's
 `darkTheme:` and the boolean-flagged theme objects. Built-in `light`
