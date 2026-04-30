@@ -6,6 +6,7 @@ namespace Alexandria\Core\Models\System;
 
 use Alexandria\Core\Database\Factories\System\EntryFactory;
 use Alexandria\Core\Models\Framework\Project;
+use Alexandria\Core\Traits\System\HasDynamicAttributes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +17,7 @@ use Illuminate\Support\Str;
 
 class Entry extends Model
 {
+    use HasDynamicAttributes;
     use HasFactory;
     use SoftDeletes;
 
@@ -89,5 +91,58 @@ class Entry extends Model
     public function scopeArchived(Builder $query): Builder
     {
         return $query->whereNotNull('archived_at');
+    }
+
+    /**
+     * Magic getter that resolves attributes through the EAV chain:
+     * 1. Native column / accessor on this model
+     * 2. Defined Eloquent relationship method
+     * 3. Foreign key column (_id suffix)
+     * 4. Dynamic EAV field via the blueprint's field definitions
+     * 5. Fall through to parent (which throws "Undefined property")
+     */
+    public function __get($key)
+    {
+        // 1. Native attribute or accessor.
+        if (array_key_exists($key, $this->attributes) || $this->hasGetMutator($key)) {
+            return parent::__get($key);
+        }
+
+        // 2. Defined relationship method.
+        if (method_exists($this, $key)) {
+            return parent::__get($key);
+        }
+
+        // 3. Foreign key columns are always Eloquent's job.
+        if (str_ends_with($key, '_id')) {
+            return parent::__get($key);
+        }
+
+        // 4. EAV: look up the blueprint's field definitions.
+        $this->loadMissing('type.fields');
+        if ($this->type?->fields->contains('name', $key)) {
+            return $this->getDynamicAttribute($key);
+        }
+
+        // 5. Default Eloquent behavior (will throw for invalid keys).
+        return parent::__get($key);
+    }
+
+    /**
+     * Magic setter that routes native columns through Eloquent and
+     * everything else through the EAV setter.
+     *
+     * @throws \Exception when the key isn't a known native column AND
+     *                    the blueprint has no field with that name
+     */
+    public function __set($key, $value)
+    {
+        if ($this->getConnection()->getSchemaBuilder()->hasColumn($this->getTable(), $key) || $this->hasSetMutator($key)) {
+            parent::__set($key, $value);
+
+            return;
+        }
+
+        $this->setDynamicAttribute($key, $value);
     }
 }
