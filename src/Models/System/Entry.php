@@ -6,7 +6,9 @@ namespace Alexandria\Core\Models\System;
 
 use Alexandria\Core\Database\Factories\System\EntryFactory;
 use Alexandria\Core\Models\Framework\Project;
+use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
+use Alexandria\Core\Traits\Notable\HasNotes;
 use Alexandria\Core\Traits\System\HasDynamicAttributes;
 use Alexandria\Core\Traits\System\HasDynamicRelationships;
 use BadMethodCallException;
@@ -50,6 +52,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, FieldValue> $attributes
  * @property-read Collection<int, EntryRelationship> $childRelationships
  * @property-read Collection<int, EntryRelationship> $parentRelationships
+ * @property-read Collection<int, Note> $notes
  *
  * @method static Builder<static> active()
  * @method static Builder<static> archived()
@@ -63,6 +66,7 @@ class Entry extends Model implements HasMedia
     use HasDynamicAttributes;
     use HasDynamicRelationships;
     use HasFactory;
+    use HasNotes;
     use LogsActivity;
     use SoftDeletes;
 

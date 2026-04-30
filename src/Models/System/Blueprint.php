@@ -6,7 +6,9 @@ namespace Alexandria\Core\Models\System;
 
 use Alexandria\Core\Database\Factories\System\BlueprintFactory;
 use Alexandria\Core\Models\Framework\Project;
+use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
+use Alexandria\Core\Traits\Notable\HasNotes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -46,6 +48,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Project $project
  * @property-read Collection<int, BlueprintField> $fields
  * @property-read Collection<int, Entry> $entries
+ * @property-read Collection<int, Note> $notes
  *
  * @method static Builder<static> standard()
  * @method static Builder<static> list()
@@ -57,6 +60,7 @@ class Blueprint extends Model implements HasMedia
         HasAlexandriaMedia::registerMediaConversions insteadof InteractsWithMedia;
     }
     use HasFactory;
+    use HasNotes;
     use LogsActivity;
     use SoftDeletes;
 
