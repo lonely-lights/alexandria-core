@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @noinspection PhpUnhandledExceptionInspection
- */
-
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Models\System\Blueprint;

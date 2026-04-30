@@ -4,13 +4,6 @@ declare(strict_types=1);
 
 /**
  * Pest test file for AiCommandExecutor.
- *
- * Eloquent factory ->create() returns Collection|Model union, factory()
- * results are widened, and AiCommandExecutor::executeBatch is @throws
- * Throwable which Pest closures can't declare. None of the flagged
- * sites are real bugs.
- *
- * @noinspection PhpUnhandledExceptionInspection
  */
 
 use Alexandria\Core\Models\Framework\Project;
