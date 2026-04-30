@@ -44,7 +44,7 @@ class AgentResponseAdapter
 
         return new AiResponseDTO(
             content: $response->text,
-            totalTokens: $inputTokens + $outputTokens,
+            totalTokens: $inputTokens + $outputTokens + $usage->reasoningTokens,
             cost: $cost,
             modelName: $modelName,
             inputTokens: $inputTokens,
@@ -77,7 +77,7 @@ class AgentResponseAdapter
         // Fall back to parsing raw text
         $rawContent = trim($response->text);
 
-        if (preg_match('/```(?:json)?\s*\n?(.*?)\n?\s*```/s', $rawContent, $matches)) {
+        if (preg_match('/```(?:json)?\s*\n?(.*?)\n?\s*```/is', $rawContent, $matches)) {
             $rawContent = trim($matches[1]);
         }
 

@@ -124,13 +124,20 @@ class AiModel extends Model
         $outputCost = ($outputTokens / 1_000_000) * (float) ($this->output_price_per_million ?? 0);
 
         // When cache_read is reported correctly, use exact pricing.
-        // When only cache_write is reported (SDK limitation), use read pricing
-        // since input_tokens being near-zero proves the cache was hit.
+        // When only cache_write is reported (SDK limitation on some providers),
+        // we apply read pricing IF the cacheWrite count vastly exceeds the
+        // input tokens — that ratio proves the cache was actually hit (you
+        // can't write more cache tokens than the prompt actually contained).
+        // Genuine first writes on small prompts (e.g. 50 input + 30 cache_write)
+        // stay at write pricing.
         $cacheReadCost = ($cacheReadTokens / 1_000_000) * ($inputPrice * 0.1);
+        $likelyMisreportedRead = $cacheReadTokens === 0
+            && $cacheWriteTokens > 0
+            && $inputTokens < ($cacheWriteTokens * 0.1);
         $cacheWriteCost = ($cacheWriteTokens / 1_000_000) * (
-            $cacheReadTokens > 0 || $inputTokens > 100
-                ? $inputPrice * 1.25  // Genuine first write
-                : $inputPrice * 0.1   // Likely a cache read misreported as write
+            $likelyMisreportedRead
+                ? $inputPrice * 0.1   // Likely a cache read misreported as write
+                : $inputPrice * 1.25  // Genuine first write
         );
 
         return $inputCost + $outputCost + $cacheWriteCost + $cacheReadCost;

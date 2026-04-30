@@ -111,7 +111,9 @@ it('toDto includes reasoning tokens for Gemini-style responses', function () {
 
     $dto = AgentResponseAdapter::toDto($response, 'gemini-2.5');
 
-    expect($dto->thinkingTokens)->toBe(200);
+    expect($dto->thinkingTokens)->toBe(200)
+        // totalTokens must include reasoning tokens — Gemini bills for them.
+        ->and($dto->totalTokens)->toBe(100 + 50 + 200);
 });
 
 it('toDto includes cache tokens for Anthropic prompt caching', function () {
@@ -126,6 +128,49 @@ it('toDto includes cache tokens for Anthropic prompt caching', function () {
 
     expect($dto->cacheReadTokens)->toBe(200)
         ->and($dto->cacheWriteTokens)->toBe(100);
+});
+
+it('calculateCost charges genuine cache writes at write pricing on small prompts', function () {
+    // Regression: a 50-token prompt with 30 cache_write tokens (small ratio,
+    // 30 < 50) is a legitimate first-write — should bill at 1.25x, NOT
+    // misfire the cache-misreport heuristic.
+    $provider = AiProvider::factory()->create();
+    $aiModel = AiModel::factory()->forProvider($provider)->create([
+        'input_price_per_million' => 1_000_000.0, // $1 per token for clean math
+        'output_price_per_million' => 0.0,
+    ]);
+
+    $cost = $aiModel->calculateCost(
+        inputTokens: 50,
+        outputTokens: 0,
+        cacheWriteTokens: 30,
+        cacheReadTokens: 0,
+    );
+
+    // Expected: input(50) + cache_write(30 * 1.25) = 50 + 37.5 = 87.5
+    // If the heuristic mis-fires (charges at 0.1x): 50 + 30 * 0.1 = 53.0
+    expect($cost)->toBe(87.5);
+});
+
+it('calculateCost downgrades to read pricing when cache_write vastly exceeds input tokens', function () {
+    // The misreport case: 5 input tokens but 1000 cache_write reported is
+    // physically a cache READ that the SDK miscategorized.
+    $provider = AiProvider::factory()->create();
+    $aiModel = AiModel::factory()->forProvider($provider)->create([
+        'input_price_per_million' => 1_000_000.0,
+        'output_price_per_million' => 0.0,
+    ]);
+
+    $cost = $aiModel->calculateCost(
+        inputTokens: 5,
+        outputTokens: 0,
+        cacheWriteTokens: 1000,
+        cacheReadTokens: 0,
+    );
+
+    // 5 < 1000 * 0.1 → misreport branch fires → cache_write priced at 0.1x.
+    // Expected: input(5) + cache_write(1000 * 0.1) = 5 + 100 = 105.
+    expect($cost)->toBe(105.0);
 });
 
 // ---------------------------------------------------------------------------
@@ -168,6 +213,14 @@ it('extractStructuredArray returns the top-level array when the key is absent', 
     $result = AgentResponseAdapter::extractStructuredArray($response, 'whatever');
 
     expect($result)->toBe([1, 2, 3]);
+});
+
+it('extractStructuredArray strips uppercase JSON code fences (case-insensitive)', function () {
+    $response = makeAgentResponse(text: "```JSON\n{\"items\": [7, 8, 9]}\n```");
+
+    $result = AgentResponseAdapter::extractStructuredArray($response, 'items');
+
+    expect($result)->toBe([7, 8, 9]);
 });
 
 it('extractStructuredArray returns an empty array when the JSON is malformed', function () {
