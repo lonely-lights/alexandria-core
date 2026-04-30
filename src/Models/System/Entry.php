@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * @property int $id
@@ -54,6 +56,7 @@ class Entry extends Model
     use HasDynamicAttributes;
     use HasDynamicRelationships;
     use HasFactory;
+    use LogsActivity;
     use SoftDeletes;
 
     protected $guarded = ['id'];
@@ -72,6 +75,15 @@ class Entry extends Model
     protected static function newFactory(): EntryFactory
     {
         return EntryFactory::new();
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'summary', 'content', 'sort_order', 'parent_id'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('project');
     }
 
     protected function casts(): array
