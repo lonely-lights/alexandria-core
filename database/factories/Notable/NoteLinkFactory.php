@@ -7,12 +7,13 @@ namespace Alexandria\Core\Database\Factories\Notable;
 use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\Notable\NoteLink;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<NoteLink>
  *
- * @method NoteLink create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
- * @method NoteLink make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method NoteLink create($attributes = [], ?Model $parent = null)
+ * @method NoteLink make($attributes = [], ?Model $parent = null)
  * @method NoteLink createOne($attributes = [])
  * @method NoteLink makeOne($attributes = [])
  */

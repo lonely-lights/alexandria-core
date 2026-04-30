@@ -7,12 +7,13 @@ namespace Alexandria\Core\Database\Factories\Notable;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\Notebook;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<Notebook>
  *
- * @method Notebook create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
- * @method Notebook make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method Notebook create($attributes = [], ?Model $parent = null)
+ * @method Notebook make($attributes = [], ?Model $parent = null)
  * @method Notebook createOne($attributes = [])
  * @method Notebook makeOne($attributes = [])
  */

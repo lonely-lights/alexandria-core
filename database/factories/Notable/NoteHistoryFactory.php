@@ -7,12 +7,13 @@ namespace Alexandria\Core\Database\Factories\Notable;
 use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\Notable\NoteHistory;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<NoteHistory>
  *
- * @method NoteHistory create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
- * @method NoteHistory make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method NoteHistory create($attributes = [], ?Model $parent = null)
+ * @method NoteHistory make($attributes = [], ?Model $parent = null)
  * @method NoteHistory createOne($attributes = [])
  * @method NoteHistory makeOne($attributes = [])
  */

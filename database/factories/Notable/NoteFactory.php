@@ -6,12 +6,13 @@ namespace Alexandria\Core\Database\Factories\Notable;
 
 use Alexandria\Core\Models\Notable\Note;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @extends Factory<Note>
  *
- * @method Note create($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
- * @method Note make($attributes = [], ?\Illuminate\Database\Eloquent\Model $parent = null)
+ * @method Note create($attributes = [], ?Model $parent = null)
+ * @method Note make($attributes = [], ?Model $parent = null)
  * @method Note createOne($attributes = [])
  * @method Note makeOne($attributes = [])
  */
