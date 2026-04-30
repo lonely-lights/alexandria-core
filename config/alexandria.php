@@ -9,6 +9,7 @@ use Alexandria\Core\Models\AiModel;
 use Alexandria\Core\Models\AiProvider;
 use Alexandria\Core\Models\BlueprintView;
 use Alexandria\Core\Models\Framework\Project;
+use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
 use Alexandria\Core\Models\System\AiPrompt;
@@ -78,6 +79,7 @@ return [
         'ai_model' => AiModel::class,
         'ai_prompt' => AiPrompt::class,
         'ai_provider' => AiProvider::class,
+        'ai_review_command' => AiReviewCommand::class,
         'ai_transaction' => AiTransaction::class,
         'blueprint' => Blueprint::class,
         'blueprint_field' => BlueprintField::class,

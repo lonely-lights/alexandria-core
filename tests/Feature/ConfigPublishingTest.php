@@ -9,6 +9,7 @@ use Alexandria\Core\Models\AiModel;
 use Alexandria\Core\Models\AiProvider;
 use Alexandria\Core\Models\BlueprintView;
 use Alexandria\Core\Models\Framework\Project;
+use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
 use Alexandria\Core\Models\System\AiPrompt;
@@ -88,6 +89,11 @@ it('exposes the AiPrompt binding via config', function () {
 it('exposes the AiTransaction binding via config', function () {
     expect(config('alexandria.models.ai_transaction'))
         ->toBe(AiTransaction::class);
+});
+
+it('exposes the AiReviewCommand binding via config', function () {
+    expect(config('alexandria.models.ai_review_command'))
+        ->toBe(AiReviewCommand::class);
 });
 
 it('exposes the UserAiPrompt binding via config', function () {
