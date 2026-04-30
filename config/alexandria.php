@@ -12,6 +12,7 @@ use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
 use Alexandria\Core\Models\System\AiPrompt;
+use Alexandria\Core\Models\System\AiTransaction;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\BlueprintField;
 use Alexandria\Core\Models\System\Entry;
@@ -77,6 +78,7 @@ return [
         'ai_model' => AiModel::class,
         'ai_prompt' => AiPrompt::class,
         'ai_provider' => AiProvider::class,
+        'ai_transaction' => AiTransaction::class,
         'blueprint' => Blueprint::class,
         'blueprint_field' => BlueprintField::class,
         'blueprint_view' => BlueprintView::class,

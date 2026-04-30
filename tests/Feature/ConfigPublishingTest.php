@@ -12,6 +12,7 @@ use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
 use Alexandria\Core\Models\System\AiPrompt;
+use Alexandria\Core\Models\System\AiTransaction;
 use Alexandria\Core\Models\System\EntryRelationship;
 use Alexandria\Core\Models\System\RelationshipBlueprint;
 use Alexandria\Core\Models\UserAiPrompt;
@@ -82,6 +83,11 @@ it('exposes the UserApiKey binding via config', function () {
 it('exposes the AiPrompt binding via config', function () {
     expect(config('alexandria.models.ai_prompt'))
         ->toBe(AiPrompt::class);
+});
+
+it('exposes the AiTransaction binding via config', function () {
+    expect(config('alexandria.models.ai_transaction'))
+        ->toBe(AiTransaction::class);
 });
 
 it('exposes the UserAiPrompt binding via config', function () {
