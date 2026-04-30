@@ -2,6 +2,14 @@
 
 declare(strict_types=1);
 
+/**
+ * Blueprint media-library tests. Same trait-method-via-Collection|Model
+ * issue as ProjectMediaTest -- see that file's docblock for context.
+ *
+ * @noinspection PhpUndefinedMethodInspection
+ * @noinspection PhpUndefinedFieldInspection
+ */
+
 use Alexandria\Core\Models\System\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\MediaLibrary\HasMedia;
