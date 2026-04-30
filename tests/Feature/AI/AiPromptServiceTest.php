@@ -10,7 +10,7 @@ uses(RefreshDatabase::class);
 
 it('throws when no active prompt is registered for the key', function () {
     (new AiPromptService)->render('does.not.exist', []);
-})->throws(Exception::class, "No active AI prompt found for key 'does.not.exist'");
+})->throws(RuntimeException::class, "No active AI prompt found for key 'does.not.exist'");
 
 it('throws when the prompt row exists but the template file is missing', function () {
     AiPrompt::factory()->create([
@@ -19,7 +19,7 @@ it('throws when the prompt row exists but the template file is missing', functio
     ]);
 
     (new AiPromptService)->render('missing.file', []);
-})->throws(Exception::class, 'Prompt template file not found');
+})->throws(RuntimeException::class, 'Prompt template file not found');
 
 it('substitutes UPPERCASE-bracketed placeholders', function () {
     $tempDir = resource_path('prompts');
@@ -52,4 +52,4 @@ it('only renders prompts whose status is active', function () {
     ]);
 
     (new AiPromptService)->render('inactive.test', []);
-})->throws(Exception::class, 'No active AI prompt found');
+})->throws(RuntimeException::class, 'No active AI prompt found');

@@ -5,19 +5,13 @@ declare(strict_types=1);
 /**
  * Dynamic-relationship magic tests.
  *
- * Suppress IDE warnings on:
- * - dynamic relationship accesses (e.g. $entry->parentScenes,
- *   $entry->characters()) -- runtime-resolved through __call into the trait
- * - the trait's own public methods (addRelationship, removeRelationship,
- *   getDynamicRelationship, callDynamicRelationship, parentRelationships,
- *   childRelationships) when called on factory-created Entry instances
- *   that PHPStorm widens to Collection|Model
+ * Exercises runtime-resolved dynamic relationship accesses on Entry
+ * (e.g. $entry->parentScenes, $entry->characters()) routed through __call
+ * into HasDynamicRelationships, plus the trait's own public methods
+ * (addRelationship, removeRelationship, getDynamicRelationship,
+ * callDynamicRelationship, parentRelationships, childRelationships).
  *
- * Static analysis can't fully verify either; the tests exercise the magic.
- *
- * @noinspection PhpUndefinedFieldInspection
- * @noinspection PhpUndefinedMethodInspection
- * @noinspection PhpDynamicFieldDeclarationInspection
+ * Static analysis can't fully verify the magic; the tests do.
  */
 
 use Alexandria\Core\Models\Framework\Project;
@@ -88,14 +82,17 @@ it('parent prefix in callDynamicRelationship resolves the inverse direction', fu
     // Now from the location's side, parentHome should find the character.
     $parents = $loc->callDynamicRelationship('parentHome', [])->get();
 
+    /** @var Entry $firstParent */
+    $firstParent = $parents->first();
+
     expect($parents)->toHaveCount(1)
-        ->and($parents->first()->id)->toBe($character->id);
+        ->and($firstParent->id)->toBe($character->id);
 });
 
 it('callDynamicRelationship applies the limit filter', function () {
     $character = Entry::factory()->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
 
-    foreach (range(1, 5) as $i) {
+    foreach (range(1, 5) as $_) {
         $loc = Entry::factory()->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
         $character->addRelationship($loc, 'home');
     }
@@ -106,6 +103,7 @@ it('callDynamicRelationship applies the limit filter', function () {
 });
 
 it('Entry::__call routes undefined method calls to callDynamicRelationship', function () {
+    /** @var Entry $character */
     $character = Entry::factory()->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
     $loc = Entry::factory()->create(['project_id' => $this->project->id, 'blueprint_id' => $this->blueprint->id]);
 
