@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Alexandria\Core\Models\System;
 
 use Alexandria\Core\Database\Factories\System\BlueprintFactory;
+use Alexandria\Core\Models\BlueprintView;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
@@ -49,6 +50,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, BlueprintField> $fields
  * @property-read Collection<int, Entry> $entries
  * @property-read Collection<int, Note> $notes
+ * @property-read Collection<int, BlueprintView> $blueprintViews
  *
  * @method static Builder<static> standard()
  * @method static Builder<static> list()
@@ -108,6 +110,11 @@ class Blueprint extends Model implements HasMedia
     public function entries(): HasMany
     {
         return $this->hasMany(Entry::class);
+    }
+
+    public function blueprintViews(): HasMany
+    {
+        return $this->hasMany(BlueprintView::class);
     }
 
     public function scopeStandard(Builder $query): Builder
