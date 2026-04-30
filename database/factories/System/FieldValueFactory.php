@@ -73,13 +73,24 @@ class FieldValueFactory extends Factory
 
     /**
      * Set a specific value.
+     *
+     * Coerces the input to a storage-safe string:
+     * - null becomes SQL NULL (not the empty string).
+     * - bool becomes 'true' / 'false' (matches booleanValue()).
+     * - array becomes a JSON-encoded string (callers wanting EAV multi-value
+     *   semantics should create multiple FieldValue rows instead).
+     * - everything else is cast to string.
      */
     public function withValue(mixed $value): static
     {
-        // Convert non-string values to string for storage
-        $stringValue = is_bool($value) ? ($value ? 'true' : 'false') : (string) $value;
+        $stringValue = match (true) {
+            $value === null => null,
+            is_bool($value) => $value ? 'true' : 'false',
+            is_array($value) => json_encode($value),
+            default => (string) $value,
+        };
 
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'value' => $stringValue,
         ]);
     }
