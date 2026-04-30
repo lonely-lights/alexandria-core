@@ -8,10 +8,14 @@ declare(strict_types=1);
  * This file deliberately exercises dynamic property access (e.g. $entry->age,
  * $fresh->is_friendly) -- those names aren't declared on Entry because they
  * come from per-blueprint field definitions at runtime, not from native
- * columns. Suppress the IDE inspection that would otherwise flag every
- * dynamic read as an undefined-field access.
+ * columns. Suppress the IDE inspections that would otherwise flag every
+ * dynamic read.
+ *
+ * - PhpUndefinedFieldInspection: "Field 'age' not found in Entry"
+ * - PhpDynamicFieldDeclarationInspection: "Property accessed via magic method"
  *
  * @noinspection PhpUndefinedFieldInspection
+ * @noinspection PhpDynamicFieldDeclarationInspection
  */
 
 use Alexandria\Core\Models\Framework\Project;
