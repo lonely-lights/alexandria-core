@@ -60,6 +60,7 @@ class EntryActionService
         ]);
 
         if ($validator->fails()) {
+            $validator->errors()->add('_command_index', (string) $index);
             throw new ValidationException($validator);
         }
 
@@ -81,6 +82,7 @@ class EntryActionService
         ]);
 
         if ($validator->fails()) {
+            $validator->errors()->add('_command_index', (string) $index);
             throw new ValidationException($validator);
         }
     }
@@ -369,6 +371,7 @@ class EntryActionService
             ]);
 
             if ($blueprintValidator->fails()) {
+                $blueprintValidator->errors()->add('_command_index', (string) $index);
                 throw new ValidationException($blueprintValidator);
             }
         }

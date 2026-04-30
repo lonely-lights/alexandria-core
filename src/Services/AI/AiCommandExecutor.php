@@ -33,7 +33,8 @@ class AiCommandExecutor
      */
     public function executeBatch(string $batchId): array
     {
-        $commands = AiReviewCommand::where('batch_id', $batchId)
+        $commands = AiReviewCommand::query()
+            ->where('batch_id', $batchId)
             ->where('status', 'approved')
             ->orderBy('id')
             ->get();

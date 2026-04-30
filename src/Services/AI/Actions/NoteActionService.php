@@ -60,6 +60,7 @@ class NoteActionService
         ]);
 
         if ($validator->fails()) {
+            $validator->errors()->add('_command_index', (string) $index);
             throw new ValidationException($validator);
         }
     }
@@ -79,6 +80,7 @@ class NoteActionService
         ]);
 
         if ($validator->fails()) {
+            $validator->errors()->add('_command_index', (string) $index);
             throw new ValidationException($validator);
         }
     }
@@ -99,6 +101,7 @@ class NoteActionService
         ]);
 
         if ($validator->fails()) {
+            $validator->errors()->add('_command_index', (string) $index);
             throw new ValidationException($validator);
         }
     }
@@ -118,6 +121,7 @@ class NoteActionService
         ]);
 
         if ($validator->fails()) {
+            $validator->errors()->add('_command_index', (string) $index);
             throw new ValidationException($validator);
         }
     }
@@ -160,7 +164,7 @@ class NoteActionService
      *
      * @throws Exception
      */
-    public function transferNote(AiReviewCommand $command, array &$tempIdMap): void
+    public function transferNote(AiReviewCommand $command, array $tempIdMap): void
     {
         $payload = $command->payload;
         $noteId = $payload['note_id'];
@@ -220,7 +224,7 @@ class NoteActionService
      *
      * @throws Exception
      */
-    public function moveNote(AiReviewCommand $command, array &$tempIdMap): void
+    public function moveNote(AiReviewCommand $command, array $tempIdMap): void
     {
         $payload = $command->payload;
         $noteId = $payload['note_id'];

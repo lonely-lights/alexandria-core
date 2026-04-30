@@ -20,6 +20,8 @@ use Illuminate\Validation\ValidationException;
  *
  * Responsible for validating and creating AiReviewCommand records
  * from structured data, typically from an AI's JSON response.
+ *
+ * @noinspection PhpUndefinedMethodInspection
  */
 class AiCommandFactory
 {
@@ -38,7 +40,7 @@ class AiCommandFactory
      *
      * @param  array  $commandsData  The array of command objects from the AI.
      * @param  Authenticatable  $user  The user who initiated the request.
-     *                                 // Authenticatable contract is host-agnostic; we only need ->id.
+     *                                 // Authenticatable contract is host-agnostic; getAuthIdentifier() returns the primary key.
      * @param  Project|null  $context  The project context for this batch.
      * @return string The UUID of the created batch.
      *
@@ -86,7 +88,7 @@ class AiCommandFactory
 
                 // 2. Create the command record in the database.
                 $command = AiReviewCommand::create([
-                    'user_id' => $user->id,
+                    'user_id' => $user->getAuthIdentifier(),
                     'batch_id' => $batchId,
                     'status' => 'pending',
                     'context' => $contextData,
@@ -171,12 +173,9 @@ class AiCommandFactory
             'copy_note' => $this->noteActionService->validateCopyNote($payload, $index),
             'move_note' => $this->noteActionService->validateMoveNote($payload, $index),
             'transfer_note' => $this->noteActionService->validateTransferNote($payload, $index),
-            // Entry operations (new names)
-            'create_entry' => $this->entryActionService->validateCreateEntry($payload, $index),
-            'update_entry' => $this->entryActionService->validateUpdateEntry($payload, $index),
-            // Entry operations (backward compatibility)
-            'create_model' => $this->entryActionService->validateCreateEntry($payload, $index),
-            'update_model' => $this->entryActionService->validateUpdateEntry($payload, $index),
+            // Entry operations (new names + backward-compat aliases)
+            'create_entry', 'create_model' => $this->entryActionService->validateCreateEntry($payload, $index),
+            'update_entry', 'update_model' => $this->entryActionService->validateUpdateEntry($payload, $index),
             // Note: create_relationship removed - relationships now deferred to final processing
             default => null // No specific validation for other action types
         };
