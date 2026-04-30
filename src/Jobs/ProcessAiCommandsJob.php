@@ -1,0 +1,234 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Alexandria\Core\Jobs;
+
+use Alexandria\Core\DTO\AiResponseDTO;
+use Alexandria\Core\Models\Framework\Project;
+use Alexandria\Core\Models\Notable\AiReviewCommand;
+use Alexandria\Core\Models\System\AiTransaction;
+use Alexandria\Core\Services\AI\AiCommandExecutor;
+use Alexandria\Core\Services\AI\AiCommandFactory;
+use Exception;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Persist a raw AI command batch, log the transaction, auto-approve safe
+ * commands, and queue {@see ExecuteAiCommandsJob} when at least one command
+ * was auto-approved.
+ *
+ * The user is typed as {@see Authenticatable} so host apps can plug their own
+ * user implementation. We only ever read `getAuthIdentifier()` for log /
+ * persistence context — the job never persists a user reference.
+ *
+ * AiTransaction columns are mapped to the core schema (input/output/thinking/
+ * cache_read/cache_write/total_tokens + cost). Legacy used a single
+ * `token_usage` column that no longer exists.
+ */
+class ProcessAiCommandsJob implements ShouldQueue
+{
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
+
+    public function __construct(
+        public array $commandsData,
+        public Authenticatable $user,
+        public Project $context,
+        public AiResponseDTO $dto
+    ) {}
+
+    public function handle(AiCommandFactory $commandFactory, AiCommandExecutor $commandExecutor): void
+    {
+        Log::info('ProcessAiCommandsJob: Starting job execution', [
+            'user_id' => $this->user->getAuthIdentifier(),
+            'command_count' => count($this->commandsData),
+            'context_type' => get_class($this->context),
+        ]);
+
+        try {
+            // 1. Use the factory to create the pending commands.
+            Log::info('ProcessAiCommandsJob: Calling createBatchFromJson', [
+                'user_id' => $this->user->getAuthIdentifier(),
+                'commands' => $this->commandsData,
+            ]);
+
+            $batchId = $commandFactory->createBatchFromJson($this->commandsData, $this->user, $this->context);
+
+            Log::info('ProcessAiCommandsJob: Factory returned batch ID', [
+                'user_id' => $this->user->getAuthIdentifier(),
+                'batch_id' => $batchId,
+            ]);
+
+            // 2. Create the transaction log with the final cost and token data.
+            //    Provider is left as 'unknown' here because AiResponseDTO does not
+            //    expose providerName; callers that need attribution should set
+            //    `metadata['provider']` on the DTO and a follow-up CT can plumb
+            //    it through.
+            AiTransaction::create([
+                'user_id' => $this->user->getAuthIdentifier(),
+                'batch_id' => $batchId,
+                'provider_name' => 'unknown',
+                'model_name' => $this->dto->modelName,
+                'context' => 'process_ai_commands',
+                'input_tokens' => $this->dto->inputTokens,
+                'output_tokens' => $this->dto->outputTokens,
+                'thinking_tokens' => $this->dto->thinkingTokens,
+                'cache_read_tokens' => $this->dto->cacheReadTokens,
+                'cache_write_tokens' => $this->dto->cacheWriteTokens,
+                'total_tokens' => $this->dto->totalTokens,
+                'cost' => $this->dto->cost,
+            ]);
+
+            // 3. Notify the user that the plan is ready.
+            // broadcast(new \App\Events\AiPlanReady($this->user, $batchId));
+
+            Log::info("Successfully created AI command batch $batchId for user {$this->user->getAuthIdentifier()}.");
+
+            // 4. Auto-approve safe commands, leave risky ones for manual approval
+            $this->autoApproveCommands($batchId);
+
+            // 5. Execute auto-approved commands in a separate job
+            $this->queueApprovedCommandsExecution($batchId);
+
+        } catch (Exception $e) {
+            Log::error('ProcessAiCommandsJob failed to create commands.', [
+                'user_id' => $this->user->getAuthIdentifier(),
+                'error' => $e->getMessage(),
+            ]);
+            // Notify the user of the failure.
+            // broadcast(new \App\Events\AiPlanFailed($this->user, $e->getMessage()));
+        }
+    }
+
+    /**
+     * Auto-approve commands that don't require manual review.
+     * Safe commands (note operations, simple attachments) are auto-approved.
+     * Destructive commands (deletes, moves with multiple targets) require manual approval.
+     */
+    private function autoApproveCommands(string $batchId): void
+    {
+        try {
+            // Get all pending commands to evaluate for auto-approval
+            $pendingCommands = AiReviewCommand::query()
+                ->where('batch_id', $batchId)
+                ->where('status', 'pending')
+                ->get();
+
+            $autoApprovedCount = 0;
+            $requiresApprovalCount = 0;
+
+            foreach ($pendingCommands as $command) {
+                if ($this->shouldAutoApprove($command)) {
+                    $command->update(['status' => 'approved']);
+                    $autoApprovedCount++;
+                } else {
+                    $requiresApprovalCount++;
+                }
+            }
+
+            Log::info('ProcessAiCommandsJob: Command approval analysis', [
+                'batch_id' => $batchId,
+                'user_id' => $this->user->getAuthIdentifier(),
+                'auto_approved' => $autoApprovedCount,
+                'requires_approval' => $requiresApprovalCount,
+            ]);
+
+            if ($requiresApprovalCount > 0) {
+                Log::info('ProcessAiCommandsJob: Commands require manual approval', [
+                    'batch_id' => $batchId,
+                    'user_id' => $this->user->getAuthIdentifier(),
+                    'pending_approval_count' => $requiresApprovalCount,
+                ]);
+                // TODO: Notify user that commands require manual approval
+            }
+
+        } catch (Exception $e) {
+            Log::error('ProcessAiCommandsJob: Auto-approval failed', [
+                'batch_id' => $batchId,
+                'user_id' => $this->user->getAuthIdentifier(),
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Queue execution of approved commands in a separate job.
+     */
+    private function queueApprovedCommandsExecution(string $batchId): void
+    {
+        $approvedCount = AiReviewCommand::query()
+            ->where('batch_id', $batchId)
+            ->where('status', 'approved')
+            ->count();
+
+        if ($approvedCount > 0) {
+            Log::info('ProcessAiCommandsJob: Queueing execution job for approved commands', [
+                'batch_id' => $batchId,
+                'user_id' => $this->user->getAuthIdentifier(),
+                'approved_count' => $approvedCount,
+            ]);
+
+            // Queue the execution in a separate job
+            ExecuteAiCommandsJob::dispatch($batchId, $this->user);
+        } else {
+            Log::info('ProcessAiCommandsJob: No approved commands to execute', [
+                'batch_id' => $batchId,
+                'user_id' => $this->user->getAuthIdentifier(),
+            ]);
+        }
+    }
+
+    /**
+     * Determine if a command should be auto-approved based on its risk level.
+     * Safe operations are auto-approved, potentially destructive ones require manual review.
+     */
+    private function shouldAutoApprove(AiReviewCommand $command): bool
+    {
+        $actionType = $command->action_type;
+
+        // Safe operations that create new data without modifying existing
+        $safeOperations = [
+            'create_note',      // Creating new notes is safe
+            'copy_note',        // Copying creates new data
+            'create_entry',     // Creating new entries is safe
+            'create_model',     // Backward compat for create_entry
+            'integrate_field',  // Copying note content to a field is safe
+            'attach_relationship', // Creating links between entries is safe
+        ];
+
+        // Risky operations that modify or delete existing data
+        $riskyOperations = [
+            'transfer_note',    // Moving can lose data if destination is wrong
+            'move_note',        // Moving can lose data
+            'delete_note',      // Deleting is destructive
+            'update_note',      // Updating existing content could lose data
+            'update_entry',     // Modifying existing entries is risky
+            'update_model',     // Backward compat for update_entry
+        ];
+
+        if (in_array($actionType, $safeOperations, true)) {
+            return true;
+        }
+
+        if (in_array($actionType, $riskyOperations, true)) {
+            return false;
+        }
+
+        // Unknown action types require manual approval
+        Log::warning('ProcessAiCommandsJob: Unknown action type requires manual approval', [
+            'action_type' => $actionType,
+            'command_id' => $command->id,
+        ]);
+
+        return false;
+    }
+}
