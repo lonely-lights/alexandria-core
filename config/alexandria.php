@@ -1,6 +1,9 @@
 <?php
 
 declare(strict_types=1);
+use Alexandria\Core\Models\AI\PromptContextSchema;
+use Alexandria\Core\Models\AI\PromptTemplate;
+use Alexandria\Core\Models\AI\PromptTemplateVersion;
 use Alexandria\Core\Models\AiConfiguration;
 use Alexandria\Core\Models\AiModel;
 use Alexandria\Core\Models\AiProvider;
@@ -8,12 +11,14 @@ use Alexandria\Core\Models\BlueprintView;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
+use Alexandria\Core\Models\System\AiPrompt;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\BlueprintField;
 use Alexandria\Core\Models\System\Entry;
 use Alexandria\Core\Models\System\EntryRelationship;
 use Alexandria\Core\Models\System\FieldValue;
 use Alexandria\Core\Models\System\RelationshipBlueprint;
+use Alexandria\Core\Models\UserAiPrompt;
 use Alexandria\Core\Models\UserAiSetting;
 use Alexandria\Core\Models\UserApiKey;
 use Illuminate\Foundation\Auth\User;
@@ -70,6 +75,7 @@ return [
     'models' => [
         'ai_configuration' => AiConfiguration::class,
         'ai_model' => AiModel::class,
+        'ai_prompt' => AiPrompt::class,
         'ai_provider' => AiProvider::class,
         'blueprint' => Blueprint::class,
         'blueprint_field' => BlueprintField::class,
@@ -80,8 +86,12 @@ return [
         'project' => Project::class,
         'project_ai_instruction' => ProjectAiInstruction::class,
         'project_ai_setting' => ProjectAiSetting::class,
+        'prompt_context_schema' => PromptContextSchema::class,
+        'prompt_template' => PromptTemplate::class,
+        'prompt_template_version' => PromptTemplateVersion::class,
         'relationship_blueprint' => RelationshipBlueprint::class,
         'user' => User::class,
+        'user_ai_prompt' => UserAiPrompt::class,
         'user_ai_setting' => UserAiSetting::class,
         'user_api_key' => UserApiKey::class,
     ],
