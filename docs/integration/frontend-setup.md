@@ -1,11 +1,12 @@
 # Frontend integration
 
-> **Status:** Stage 1 / FE-B complete. Path-alias plumbing and the
+> **Status:** Stage 1 / FE-D complete. Path-alias plumbing, the
 > framework-generic TypeScript surface (types, lib utilities, config
-> registries, generic hooks) are now in place. Subsequent FE slices
-> lift the React component, layout, and page surface. Consumers do
-> not need to revisit this recipe — the alias keeps working as core
-> grows.
+> registries, generic hooks), the theme system (FE-C), and the
+> stateless UI + form primitives (FE-D) are now in place. Subsequent
+> FE slices lift the layout and page surface. Consumers do not need
+> to revisit this recipe — the alias keeps working as core grows;
+> install the additional peer deps below as new primitives land.
 
 `alexandria-core` ships TypeScript and React components alongside the
 PHP package, under `resources/js/`. Composer packages cannot publish to
@@ -43,9 +44,12 @@ backwards-compatible.
 | Package | Used by | Recommended version |
 |---|---|---|
 | `react` | hooks, `lib/hoverPosition` (React.CSSProperties) | `^19.2.4` |
-| `@inertiajs/react` | `types/index.d.ts` (PageProps declaration merge) | `^2.3.18` |
+| `react-dom` | `Modal`, `DropdownMenu`, `ToastProvider` (`createPortal`) | `^19.2.4` |
+| `@types/react-dom` (dev) | type-checking `createPortal` | `^19.2.0` |
+| `@inertiajs/react` | `types/index.d.ts` (PageProps declaration merge), `ToastProvider` (`usePage`) | `^2.3.18` |
+| `@floating-ui/react` | `Tooltip` (positioning + interactions) | `^0.27.19` |
 | `clsx` | `lib/utils.ts` (`cn` helper) | `^2.1.1` |
-| `gsap` | `hooks/useEnterAnimation` | `^3.14.2` |
+| `gsap` | `hooks/useEnterAnimation`, `Modal`, `HeroRotator` | `^3.14.2` |
 | `sortablejs` | `hooks/useSortableReorder` | `^1.15.6` |
 | `@types/sortablejs` (dev) | type-checking `useSortableReorder` | `^1.15.9` |
 
