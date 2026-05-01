@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
+use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 
 class AlexandriaServiceProvider extends ServiceProvider
@@ -15,7 +16,8 @@ class AlexandriaServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/alexandria.php', 'alexandria');
-        $this->mergeConfigFrom(__DIR__.'/../config/fortify.php', 'fortify');
+
+        $this->forceFortifyFeatures();
     }
 
     public function boot(): void
@@ -29,6 +31,31 @@ class AlexandriaServiceProvider extends ServiceProvider
         }
 
         $this->bindFortifyViews();
+    }
+
+    /**
+     * Override Fortify's default 6-feature config with WIRE-B.1's 3-feature
+     * subset. Fortify's service provider auto-discovers before ours and
+     * primes config/fortify.features with all 6 defaults via
+     * mergeConfigFrom; that can't replace an existing array key, so we
+     * use config()->set() to clobber it. This must run in register()
+     * (not boot()) because Fortify's boot() registers its routes by
+     * reading config('fortify.features') — by the time our boot() runs,
+     * the unwanted routes (update-passwords, update-profile-information,
+     * two-factor-authentication) are already registered. Our register()
+     * runs after Fortify's register() (alphabetical service-provider
+     * order), so the override lands before any boot() phase.
+     *
+     * WIRE-B.4 (2FA) and WIRE-E (settings) re-enable the appropriate
+     * features.
+     */
+    private function forceFortifyFeatures(): void
+    {
+        config()->set('fortify.features', [
+            Features::registration(),
+            Features::resetPasswords(),
+            Features::emailVerification(),
+        ]);
     }
 
     /**
