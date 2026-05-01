@@ -1,19 +1,23 @@
 # Frontend integration
 
-> **Status:** Stage 1 / FE-F2 complete. Path-alias plumbing, the
-> framework-generic TypeScript surface (types, lib utilities, config
-> registries, generic hooks), the theme system (FE-C), the stateless
-> UI + form primitives (FE-D), the navigation chrome + layout shell
-> (FE-E — `AppLayout`, `Navbar`, `Sidebar`, `BottomNav`,
-> `CommandPalette`, `ThemePicker`, `useCmdK`), the Fortify auth pages
-> (FE-F1), the rich-text editor surface (FE-H — `RichTextEditor`,
-> `AiWritingModal`, `tiptap-bio-editor/` subtree), and the Account
+> **Status:** Stage 1 frontend extraction complete (FE-A through
+> FE-H all merged). Path-alias plumbing, the framework-generic
+> TypeScript surface (types, lib utilities, config registries,
+> generic hooks), the theme system (FE-C), the stateless UI + form
+> primitives (FE-D), the navigation chrome + layout shell (FE-E —
+> `AppLayout`, `Navbar`, `Sidebar`, `BottomNav`, `CommandPalette`,
+> `ThemePicker`, `useCmdK`), the Fortify auth pages (FE-F1), the
+> rich-text editor surface (FE-H — `RichTextEditor`,
+> `AiWritingModal`, `tiptap-bio-editor/` subtree), the Account
 > Settings page + six framework-generic sections (FE-F2 — `Account`,
 > `ProfileSection`, `PreferencesSection`, `LinksSection`,
-> `AiSections`, `PrivacySections`) are now in place.
-> Consumers do not need to revisit this recipe — the alias keeps
-> working as core grows; install the additional peer deps below as
-> new primitives land. No new peer deps at FE-F2.
+> `AiSections`, `PrivacySections`), and the media library UI
+> (FE-G — `MediaSection`, `ImageUploader`, `GalleryGrid`,
+> `MediaMetadataForm`, `BannerPreview`, `CropModal`) are all in
+> place. Consumers do not need to revisit this recipe — the alias
+> keeps working as core grows; install the additional peer deps
+> below as new primitives land. FE-G adds one peer dep
+> (`cropperjs`).
 
 `alexandria-core` ships TypeScript and React components alongside the
 PHP package, under `resources/js/`. Composer packages cannot publish to
@@ -69,6 +73,7 @@ backwards-compatible.
 | `@tiptap/extension-underline` | `RichTextEditor` | `^3.14.0` |
 | `@tiptap/pm` | `tiptap-bio-editor/extensions/entry-link` (`Plugin`, `PluginKey`) | `^3.14.0` |
 | `@tiptap/suggestion` | transitive peer of `@tiptap/extension-mention`'s `suggestion` plugin | `^3.14.0` |
+| `cropperjs` | `components/media/CropModal` (image crop interaction) | `^2.1.0` |
 
 `RichTextEditor` and the `tiptap-bio-editor/` subtree call several
 backend endpoints — consumer apps must expose these (or override the
@@ -140,6 +145,39 @@ When the slot is omitted, the `account` sub-section renders a
 "managed by the consumer app" placeholder. The app is expected to
 own `PUT /account/email`, `PUT /account/password`, and any
 account-deletion endpoint it exposes.
+
+The media library UI (`components/media/`, FE-G) wraps Spatie Media
+Library and assumes a per-model REST surface keyed by a polymorphic
+`{modelType}` slug — one of `projects`, `blueprints`, `entries`
+(see `MediaModelType` in `types/media.ts`; consumer apps that want
+to expose other owners should extend the union). The components
+hit:
+
+- `GET /api/v1/{modelType}/{modelId}/media` — list of
+  `MediaItem[]` for the owner. Used by `MediaSection` on mount /
+  refresh.
+- `POST /api/v1/{modelType}/{modelId}/media/{collection}` —
+  multipart upload with `image` + `alt_text` + optional `caption`.
+  `{collection}` is one of `page_image`, `banner`, `gallery`.
+  Returns `201` with the new `MediaItem` JSON.
+- `PUT /api/v1/{modelType}/{modelId}/media/{mediaId}` — metadata
+  update (`alt_text`, `caption`). Used by `MediaMetadataForm`.
+- `PUT /api/v1/{modelType}/{modelId}/media/{mediaId}/crop` —
+  apply crop with `{ x, y, width, height }` in source pixels.
+  Used by `CropModal`.
+- `POST /api/v1/{modelType}/{modelId}/media/{mediaId}/promote` —
+  promote a gallery image into the `page_image` or `banner`
+  collection (`{ target: 'page_image' | 'banner' }`). Used by
+  `GalleryGrid` for in-place re-assignment.
+- `DELETE /api/v1/{modelType}/{modelId}/media/{mediaId}` —
+  remove a media item. Used by `BannerPreview`, `GalleryGrid`,
+  and `MediaSection`.
+
+The PHP side of this contract is owned by the consumer app —
+core ships the `HasAlexandriaMedia` trait (Spatie wrapper with
+the `page_image`, `banner`, `gallery` collections + standard
+conversions), but routes / controllers / form-request validation
+live in the consuming application.
 
 Notes on what core deliberately does **not** depend on:
 
