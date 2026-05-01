@@ -24,6 +24,14 @@ class AlexandriaServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/alexandria.php', 'alexandria');
 
+        // mergeConfigFrom correctly overrides scalar keys (home, guard,
+        // passwords, etc.) — Laravel's mergeConfig recurses arrays but for
+        // string keys at the top level the original wins. Numeric-keyed
+        // arrays (like 'features') get concatenated rather than replaced,
+        // which is why forceFortifyFeatures() still has to use
+        // config()->set() to clobber the features list.
+        $this->mergeConfigFrom(__DIR__.'/../config/fortify.php', 'fortify');
+
         $this->forceFortifyFeatures();
     }
 
