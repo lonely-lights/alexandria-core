@@ -1,5 +1,4 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import type { FormEvent } from 'react';
 
 import ModeToggle from '../components/theme/ModeToggle';
 import Logo from '../components/ui/Logo';
@@ -29,11 +28,6 @@ export default function Welcome({ loginUrl, registerUrl }: WelcomeProps) {
 
     const logoutForm = useForm({});
 
-    const submitLogout = (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        logoutForm.post('/logout');
-    };
-
     return (
         <>
             <Head title="Welcome" />
@@ -54,15 +48,14 @@ export default function Welcome({ loginUrl, registerUrl }: WelcomeProps) {
                                         {user.name}
                                     </span>
                                 </p>
-                                <form onSubmit={submitLogout}>
-                                    <button
-                                        type="submit"
-                                        className="btn btn-ghost btn-sm"
-                                        disabled={logoutForm.processing}
-                                    >
-                                        Sign out
-                                    </button>
-                                </form>
+                                <button
+                                    type="button"
+                                    onClick={() => logoutForm.post('/logout')}
+                                    className="btn btn-ghost btn-sm"
+                                    disabled={logoutForm.processing}
+                                >
+                                    Sign out
+                                </button>
                             </div>
                         ) : (
                             <div className="mt-6 flex gap-3">
