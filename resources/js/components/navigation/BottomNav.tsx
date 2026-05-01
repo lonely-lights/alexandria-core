@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import type { BottomNavTab, UserMenuItem, UserMenuItemDivider } from '../../types/navigation';
 
 function isDivider(item: UserMenuItem): item is UserMenuItemDivider {
-    return 'divider' in item && item.divider === true;
+    return 'divider' in item && item.divider;
 }
 
 interface BottomNavProps {
