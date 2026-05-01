@@ -7,7 +7,7 @@ import ThemePicker from '../theme/ThemePicker';
 import type { UserMenuItem, UserMenuItemDivider, UserMenuItemRow } from '../../types/navigation';
 
 function isDivider(item: UserMenuItem): item is UserMenuItemDivider {
-    return 'divider' in item && item.divider === true;
+    return 'divider' in item && item.divider;
 }
 
 interface NavbarProps {
@@ -165,7 +165,7 @@ export default function Navbar({
                             {/* Search Button */}
                             {showSearch && (
                                 <Tooltip
-                                    content={`Search (${typeof navigator !== 'undefined' && navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl+'}K)`}
+                                    content={`Search (${typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac') ? '⌘' : 'Ctrl+'}K)`}
                                     placement="bottom"
                                 >
                                     <button
