@@ -1,0 +1,484 @@
+/* Thought Fragments motif layer.
+   Active when <html data-theme="tf-dark"> or "tf-light". */
+
+[data-theme^="tf"] {
+    --tf-handwriting: 'Caveat', 'Comic Sans MS', cursive;
+}
+
+/* Grid paper ambient background — horizontal + vertical lines, for
+   blueprint-style grids. */
+[data-theme^="tf"] .grid-paper {
+    background-image:
+        linear-gradient(rgba(251,191,36,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(251,191,36,.045) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+[data-theme="tf-light"] .grid-paper {
+    background-image:
+        linear-gradient(rgba(139,90,43,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(139,90,43,.08) 1px, transparent 1px);
+}
+
+/* Ruled paper — parallel lines tilted 23° above horizontal, rising
+   to the right. Tileable via repeating-linear-gradient; a 157deg
+   direction is perpendicular to 23° forward-slash lines. Gives notes
+   pages a hand-ruled-notebook feel without shouting. */
+[data-theme^="tf"] .ruled-paper {
+    background-image: repeating-linear-gradient(
+        157deg,
+        transparent 0,
+        transparent 27px,
+        rgba(251,191,36,.05) 27px,
+        rgba(251,191,36,.05) 28px
+    );
+}
+[data-theme="tf-light"] .ruled-paper {
+    background-image: repeating-linear-gradient(
+        157deg,
+        transparent 0,
+        transparent 27px,
+        rgba(139,90,43,.08) 27px,
+        rgba(139,90,43,.08) 28px
+    );
+}
+
+/* Cursive + ruled SVG overlay — hidden on non-tf themes so the
+   notebook ambience is a Paper-family signature only. The actual
+   lines/cursive pattern lives in the component's inline SVG so both
+   share one coordinate system (see NotesDashboard.tsx → RuledCursiveBg). */
+[data-theme^="tf"] .cursive-overlay { display: block; }
+html:not([data-theme^="tf"]) .cursive-overlay { display: none; }
+
+/* Blueprint-paper grid overlay — engineering/architectural feel for
+   the Blueprints section. Same scoping as the notebook overlay so the
+   ambient motif stays tf-only. See BlueprintGridBg.tsx. */
+[data-theme^="tf"] .grid-overlay { display: block; }
+html:not([data-theme^="tf"]) .grid-overlay { display: none; }
+
+/* Neural-constellation overlay for AI surfaces — scattered dots with
+   faint connecting lines, faint pulses. See NeuralConstellationBg.tsx. */
+[data-theme^="tf"] .neural-overlay { display: block; }
+html:not([data-theme^="tf"]) .neural-overlay { display: none; }
+
+/* Top-down fade for page-background SVG overlays. The full SVG still
+   renders; the mask clips the visible pixels to the top band. 33vh
+   height + this mask gives "strong at the top, gone at the bottom"
+   regardless of how tall the content happens to be.
+
+   Both the standard (`mask-image`) and legacy WebKit properties are
+   set so Chrome, Firefox, and Safari all apply the fade. */
+.bg-fade-out {
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+}
+
+/* Sticky note. Real content stays in the accessibility tree. */
+[data-theme^="tf"] .sticky-note {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    padding: 14px 16px;
+    font-family: var(--tf-handwriting);
+    font-size: 18px;
+    line-height: 1.3;
+    box-shadow: 4px 6px 0 var(--tf-shadow);
+    color: #2b1d0f;
+}
+[data-theme^="tf"] .sticky-note--yellow   { background: var(--tf-paper-yellow); }
+[data-theme^="tf"] .sticky-note--sage     { background: var(--tf-paper-sage);   color: #1f2d24; }
+[data-theme^="tf"] .sticky-note--coral    { background: var(--tf-paper-coral);  color: #2b1510; }
+[data-theme^="tf"] .sticky-note--lavender { background: var(--tf-paper-lavender); color: #1f1930; }
+[data-theme^="tf"] .sticky-note--cream    { background: var(--tf-paper-cream); }
+
+/* Tape-style small label (card tag). */
+[data-theme^="tf"] .tape-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    font-family: var(--tf-handwriting);
+    font-size: 13px;
+    box-shadow: 2px 2px 0 var(--tf-shadow);
+    color: #2b1d0f;
+}
+[data-theme^="tf"] .tape-tag--yellow   { background: var(--tf-paper-yellow); transform: rotate(-2deg); }
+[data-theme^="tf"] .tape-tag--sage     { background: var(--tf-paper-sage);   transform: rotate(2deg);  color: #1f2d24; }
+[data-theme^="tf"] .tape-tag--coral    { background: var(--tf-paper-coral);  transform: rotate(-2deg); color: #2b1510; }
+[data-theme^="tf"] .tape-tag--lavender { background: var(--tf-paper-lavender); transform: rotate(2deg); color: #1f1930; }
+
+/* Pencil-dashed path (SVG stroke). */
+[data-theme^="tf"] .pencil-path {
+    stroke: var(--tf-pencil);
+    stroke-width: 1.2;
+    stroke-dasharray: 3 4;
+    fill: none;
+    opacity: .55;
+}
+
+/* Offset-shadow button style (paper-tape feel).
+   ─────
+   Shadow anatomy mirrors .paper-card: ::before is the offset shadow
+   with an independent, larger border-radius for the bevel; ::after
+   paints the paper surface above it so the shadow only pokes out at
+   the bottom-right. Shadow color is derived from the paper tint
+   itself (color-mix 35% paper + 65% deep warm brown) so the drop
+   reads as a darker sibling of the button face. */
+[data-theme^="tf"] .btn-offset,
+[data-theme^="tf"] .btn.paper-action {
+    position: relative;
+    isolation: isolate;
+    background: transparent !important;
+    color: #1a1210 !important;
+    border: none !important;
+    box-shadow: none !important;
+    transition: transform .12s ease;
+}
+[data-theme^="tf"] .btn-offset::before,
+[data-theme^="tf"] .btn.paper-action::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--paper-action-shadow-radius, 14px);
+    background: color-mix(in srgb, var(--tf-paper-yellow) 35%, #2b1810);
+    transform: translate(3px, 3px);
+    z-index: -1;
+    transition: transform .12s ease;
+}
+[data-theme^="tf"] .btn-offset::after,
+[data-theme^="tf"] .btn.paper-action::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--tf-paper-yellow);
+    z-index: -1;
+}
+[data-theme^="tf"] .btn-offset:hover,
+[data-theme^="tf"] .btn.paper-action:hover {
+    background: transparent !important;
+    transform: translate(-1px, -1px);
+}
+[data-theme^="tf"] .btn-offset:hover::before,
+[data-theme^="tf"] .btn.paper-action:hover::before {
+    transform: translate(5px, 5px);
+}
+[data-theme^="tf"] .btn-offset:active,
+[data-theme^="tf"] .btn.paper-action:active {
+    transform: translate(2px, 2px);
+}
+[data-theme^="tf"] .btn-offset:active::before,
+[data-theme^="tf"] .btn.paper-action:active::before {
+    transform: translate(1px, 1px);
+}
+
+[data-theme^="tf"] .btn-offset:focus-visible,
+[data-theme^="tf"] .btn-dashed:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-theme^="tf"] .btn-offset,
+    [data-theme^="tf"] .btn-offset:hover,
+    [data-theme^="tf"] .btn-offset:active,
+    [data-theme^="tf"] .btn.paper-action,
+    [data-theme^="tf"] .btn.paper-action:hover,
+    [data-theme^="tf"] .btn.paper-action:active { transform: none; }
+    [data-theme^="tf"] .btn-offset::before,
+    [data-theme^="tf"] .btn-offset:hover::before,
+    [data-theme^="tf"] .btn-offset:active::before,
+    [data-theme^="tf"] .btn.paper-action::before,
+    [data-theme^="tf"] .btn.paper-action:hover::before,
+    [data-theme^="tf"] .btn.paper-action:active::before { transform: translate(3px, 3px); }
+}
+
+/* Dashed ghost button. */
+[data-theme^="tf"] .btn-dashed {
+    background: transparent;
+    color: hsl(var(--bc));
+    border: 1px dashed var(--tf-tape-shadow);
+}
+
+/* Paper card — a card-sized variant of sticky-note for in-app surfaces
+   (notes dashboard, workflow cards, etc). Keeps the UI font for
+   readability — unlike .sticky-note which forces handwriting.
+   ─────
+   Shadow anatomy: the offset shadow is drawn via ::before (not
+   box-shadow) so its radius can be larger than the card's own radius,
+   matching the paper-board "bevel" treatment. The paper surface itself
+   is painted via ::after so the ::before pseudo can sit at z-index: -1
+   underneath without being clipped by the element's own background.
+   Host rules still win color — !important on bg/border overrides any
+   Tailwind utilities applied alongside paper-card-- variants. */
+[data-theme^="tf"] .paper-card {
+    position: relative;
+    isolation: isolate;
+    background: transparent !important;
+    color: #2b1d0f;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    transition: transform .12s ease;
+    /* Default (cream) surface + shadow-tint. Overridden by .paper-card--* */
+    --paper-card-bg: var(--tf-paper-cream);
+    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-cream) 35%, #2b1810);
+}
+[data-theme^="tf"] .paper-card::before {
+    /* Offset shadow — radius is independent via --paper-card-shadow-radius
+       so an element with a 12px (rounded-xl) radius can cast a 16px
+       shadow, giving the edge a cleaner proportional curve. */
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--paper-card-shadow-radius, 16px);
+    background: var(--paper-card-shadow-color);
+    transform: translate(3px, 4px);
+    z-index: -1;
+    transition: transform .12s ease;
+}
+[data-theme^="tf"] .paper-card::after {
+    /* Paper surface — covers the shadow within the element bounds so
+       the ::before offset only pokes out on the bottom/right. Button
+       text & icons paint on top (they're non-positioned in-flow
+       content, above negative-z pseudos). */
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--paper-card-bg);
+    z-index: -1;
+}
+[data-theme^="tf"] .paper-card--yellow {
+    --paper-card-bg: var(--tf-paper-yellow);
+    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-yellow) 35%, #2b1810);
+}
+[data-theme^="tf"] .paper-card--sage {
+    color: #1f2d24;
+    --paper-card-bg: var(--tf-paper-sage);
+    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-sage) 35%, #0f2519);
+}
+[data-theme^="tf"] .paper-card--coral {
+    color: #2b1510;
+    --paper-card-bg: var(--tf-paper-coral);
+    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-coral) 35%, #2b0f07);
+}
+[data-theme^="tf"] .paper-card--lavender {
+    color: #1f1930;
+    --paper-card-bg: var(--tf-paper-lavender);
+    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-lavender) 35%, #0f0a1f);
+}
+[data-theme^="tf"] .paper-card--cream {
+    --paper-card-bg: var(--tf-paper-cream);
+    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-cream) 35%, #2b1810);
+}
+
+/* Paper cards always sit on a warm light tint, regardless of mode.
+   DaisyUI's base-content tracks the theme's BC (near-white on tf-dark),
+   so nested text-base-content utilities need a local override to keep
+   contrast readable against paper. */
+[data-theme^="tf"] .paper-card,
+[data-theme^="tf"] .paper-card * { --paper-ink: #2b1d0f; }
+[data-theme^="tf"] .paper-card--sage,
+[data-theme^="tf"] .paper-card--sage * { --paper-ink: #1f2d24; }
+[data-theme^="tf"] .paper-card--coral,
+[data-theme^="tf"] .paper-card--coral * { --paper-ink: #2b1510; }
+[data-theme^="tf"] .paper-card--lavender,
+[data-theme^="tf"] .paper-card--lavender * { --paper-ink: #1f1930; }
+
+[data-theme^="tf"] .paper-card .text-base-content\/40 { color: color-mix(in srgb, var(--paper-ink) 62%, transparent) !important; }
+[data-theme^="tf"] .paper-card .text-base-content\/50 { color: color-mix(in srgb, var(--paper-ink) 72%, transparent) !important; }
+[data-theme^="tf"] .paper-card .text-base-content\/60 { color: color-mix(in srgb, var(--paper-ink) 82%, transparent) !important; }
+[data-theme^="tf"] .paper-card .text-base-content\/70 { color: color-mix(in srgb, var(--paper-ink) 92%, transparent) !important; }
+
+/* Semantic accents (warning/info/primary/etc) can't be trusted to
+   contrast against the paper — e.g. text-warning on --tf-paper-yellow
+   is yellow-on-yellow. Remap to paper-ink for any semantic text or
+   /10 bg utility used inside a paper-card. */
+[data-theme^="tf"] .paper-card .text-warning,
+[data-theme^="tf"] .paper-card .text-info,
+[data-theme^="tf"] .paper-card .text-primary,
+[data-theme^="tf"] .paper-card .text-secondary,
+[data-theme^="tf"] .paper-card .text-accent,
+[data-theme^="tf"] .paper-card .text-success,
+[data-theme^="tf"] .paper-card .text-error { color: var(--paper-ink) !important; }
+
+[data-theme^="tf"] .paper-card .bg-warning\/10,
+[data-theme^="tf"] .paper-card .bg-info\/10,
+[data-theme^="tf"] .paper-card .bg-primary\/10,
+[data-theme^="tf"] .paper-card .bg-secondary\/10,
+[data-theme^="tf"] .paper-card .bg-accent\/10,
+[data-theme^="tf"] .paper-card .bg-success\/10,
+[data-theme^="tf"] .paper-card .bg-error\/10 {
+    background-color: color-mix(in srgb, var(--paper-ink) 14%, transparent) !important;
+}
+
+/* Hover lift only applies to actually-interactive paper-cards (buttons
+   and links). Plain container usage (e.g. a list wrapper) stays still.
+   The card itself nudges up-left while the ::before shadow slides
+   down-right — the combined motion doubles the apparent offset without
+   stretching the shadow's shape. */
+[data-theme^="tf"] button.paper-card:hover,
+[data-theme^="tf"] a.paper-card:hover {
+    transform: translate(-1px, -1px);
+}
+[data-theme^="tf"] button.paper-card:hover::before,
+[data-theme^="tf"] a.paper-card:hover::before {
+    transform: translate(5px, 6px);
+}
+[data-theme^="tf"] button.paper-card:active {
+    transform: translate(1px, 1px);
+}
+[data-theme^="tf"] button.paper-card:active::before {
+    transform: translate(2px, 3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-theme^="tf"] .paper-card,
+    [data-theme^="tf"] .paper-card:hover,
+    [data-theme^="tf"] button.paper-card:active { transform: none; }
+    [data-theme^="tf"] .paper-card::before,
+    [data-theme^="tf"] .paper-card:hover::before,
+    [data-theme^="tf"] button.paper-card:active::before { transform: translate(3px, 4px); }
+}
+
+/* Paper-board: the container element wrapping a paper-table. The
+   shadow is drawn via a ::before pseudo-element (not box-shadow) so
+   its corner radius can be larger than the host's radius — an element
+   with 16px radius gets a shadow with 20px radius, giving the offset
+   edge a cleaner, more proportional curve.
+   ─────
+   Host requirements:
+     • no overflow clipping on the root element (move overflow-x-auto /
+       overflow-hidden to an inner wrapper when scrolling is needed)
+     • the host keeps its own rounded-* + bg-* classes; the shadow
+       renders behind it thanks to the z-index: -1 pseudo.
+   isolation: isolate traps the -1 z-index inside this element's
+   stacking context so it doesn't slip behind the page body. */
+[data-theme^="tf"] .paper-board {
+    position: relative;
+    isolation: isolate;
+    border-color: transparent !important;
+}
+[data-theme^="tf"] .paper-board::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--paper-board-shadow-radius, 20px);
+    /* Host can override --paper-board-shadow-color (e.g. to tint the
+       shadow with a card-specific color like the secondary infobox).
+       Falls back to the generic tape-shadow. */
+    background: var(--paper-board-shadow-color, var(--tf-tape-shadow));
+    transform: translate(3px, 4px);
+    z-index: -1;
+}
+
+/* Paper-styled data tables. Rows are solid bright paper (not just
+   tinted) — the whole table should read as a stack of paper. Text
+   inside rows is always paper-ink regardless of theme mode, and
+   base-content opacity utilities get remapped so they stay
+   readable against the warm background (same mechanic as paper-card). */
+/* ────────────────────────────────────────────────────────────────────
+   Paper-stripe pattern — theme-adaptive striped list.
+   Shared by .paper-table (native HTML table on Notes tab) and
+   .paper-stripe (div-based lists on the Notes Dashboard).
+
+   Light mode: warm paper — cream body, yellow/cream zebra, yellow
+     header that matches the .btn-offset / .paper-action button family.
+   Dark mode:  subtle white-overlay zebra sitting on the theme's dark
+     base — no forced paper tint, so the panel feels native to dark.
+
+   Both surfaces (table + div-list) render identically per theme.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Shared transitions */
+[data-theme^="tf"] .paper-table tbody tr,
+[data-theme^="tf"] .paper-stripe__body > * {
+    transition: background-color .12s ease, box-shadow .12s ease;
+}
+
+/* ── LIGHT MODE (warm paper) ───────────────────────────────────────── */
+
+[data-theme="tf-light"] .paper-table thead tr,
+[data-theme="tf-light"] .paper-stripe__head {
+    background-color: var(--tf-paper-yellow) !important;
+    border-bottom-color: var(--tf-tape-shadow) !important;
+}
+[data-theme="tf-light"] .paper-table thead th,
+[data-theme="tf-light"] .paper-table thead th *,
+[data-theme="tf-light"] .paper-stripe__head,
+[data-theme="tf-light"] .paper-stripe__head * { color: #1a1210 !important; }
+
+[data-theme="tf-light"] .paper-table tbody tr:nth-child(odd),
+[data-theme="tf-light"] .paper-stripe__body > *:nth-child(odd) {
+    background-color: var(--tf-paper-cream);
+}
+[data-theme="tf-light"] .paper-table tbody tr:nth-child(even),
+[data-theme="tf-light"] .paper-stripe__body > *:nth-child(even) {
+    background-color: color-mix(in srgb, var(--tf-paper-yellow) 28%, var(--tf-paper-cream));
+}
+
+/* Ink remapping — cream bg needs dark text; base-content opacity
+   utilities get recomputed against paper-ink so descriptions don't
+   wash out. */
+[data-theme="tf-light"] .paper-table tbody td,
+[data-theme="tf-light"] .paper-table tbody td *,
+[data-theme="tf-light"] .paper-stripe__body > *,
+[data-theme="tf-light"] .paper-stripe__body > * * { color: #2b1d0f; }
+[data-theme="tf-light"] .paper-table tbody td .text-base-content\/30,
+[data-theme="tf-light"] .paper-stripe__body > * .text-base-content\/30 { color: color-mix(in srgb, #2b1d0f 45%, transparent) !important; }
+[data-theme="tf-light"] .paper-table tbody td .text-base-content\/40,
+[data-theme="tf-light"] .paper-stripe__body > * .text-base-content\/40 { color: color-mix(in srgb, #2b1d0f 55%, transparent) !important; }
+[data-theme="tf-light"] .paper-table tbody td .text-base-content\/50,
+[data-theme="tf-light"] .paper-stripe__body > * .text-base-content\/50 { color: color-mix(in srgb, #2b1d0f 68%, transparent) !important; }
+[data-theme="tf-light"] .paper-table tbody td .text-base-content\/60,
+[data-theme="tf-light"] .paper-stripe__body > * .text-base-content\/60 { color: color-mix(in srgb, #2b1d0f 78%, transparent) !important; }
+[data-theme="tf-light"] .paper-table tbody td .text-base-content\/70,
+[data-theme="tf-light"] .paper-stripe__body > * .text-base-content\/70 { color: color-mix(in srgb, #2b1d0f 88%, transparent) !important; }
+[data-theme="tf-light"] .paper-table tbody td .text-primary,
+[data-theme="tf-light"] .paper-table tbody td .text-warning,
+[data-theme="tf-light"] .paper-table tbody td .text-info,
+[data-theme="tf-light"] .paper-table tbody td .text-success,
+[data-theme="tf-light"] .paper-table tbody td .text-error,
+[data-theme="tf-light"] .paper-stripe__body > * .text-primary,
+[data-theme="tf-light"] .paper-stripe__body > * .text-warning,
+[data-theme="tf-light"] .paper-stripe__body > * .text-info,
+[data-theme="tf-light"] .paper-stripe__body > * .text-success,
+[data-theme="tf-light"] .paper-stripe__body > * .text-error { color: #2b1d0f !important; }
+
+[data-theme="tf-light"] .paper-table tbody tr:hover,
+[data-theme="tf-light"] .paper-stripe__body > *:hover {
+    background-color: color-mix(in srgb, var(--tf-paper-yellow) 55%, var(--tf-paper-cream)) !important;
+    box-shadow: inset 0 0 0 1px var(--tf-tape-shadow);
+}
+
+/* ── DARK MODE (white-overlay zebra on theme base) ─────────────────── */
+
+[data-theme="tf-dark"] .paper-table thead tr,
+[data-theme="tf-dark"] .paper-stripe__head {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid hsl(var(--bc) / 0.15);
+}
+
+[data-theme="tf-dark"] .paper-table tbody tr:nth-child(even),
+[data-theme="tf-dark"] .paper-stripe__body > *:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.025);
+}
+
+[data-theme="tf-dark"] .paper-table tbody tr:hover,
+[data-theme="tf-dark"] .paper-stripe__body > *:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Pin-board frame. */
+[data-theme^="tf"] .pin-board {
+    background: hsl(var(--b2));
+    border: 1px solid var(--tf-rule);
+    border-radius: 16px;
+    box-shadow: inset 0 0 80px rgba(0,0,0,.18);
+}
+[data-theme="tf-light"] .pin-board {
+    box-shadow: inset 0 0 40px rgba(139,90,43,.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-theme^="tf"] .btn-offset,
+    [data-theme^="tf"] .btn-offset:hover,
+    [data-theme^="tf"] .btn-offset:active { transform: none; }
+}
