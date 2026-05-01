@@ -1,20 +1,19 @@
 # Frontend integration
 
-> **Status:** Stage 1 / FE-H complete. Path-alias plumbing, the
+> **Status:** Stage 1 / FE-F2 complete. Path-alias plumbing, the
 > framework-generic TypeScript surface (types, lib utilities, config
 > registries, generic hooks), the theme system (FE-C), the stateless
 > UI + form primitives (FE-D), the navigation chrome + layout shell
 > (FE-E — `AppLayout`, `Navbar`, `Sidebar`, `BottomNav`,
 > `CommandPalette`, `ThemePicker`, `useCmdK`), the Fortify auth pages
-> (FE-F1), and the rich-text editor surface (FE-H — `RichTextEditor`,
-> `AiWritingModal`, `tiptap-bio-editor/` subtree) are now in place.
+> (FE-F1), the rich-text editor surface (FE-H — `RichTextEditor`,
+> `AiWritingModal`, `tiptap-bio-editor/` subtree), and the Account
+> Settings page + six framework-generic sections (FE-F2 — `Account`,
+> `ProfileSection`, `PreferencesSection`, `LinksSection`,
+> `AiSections`, `PrivacySections`) are now in place.
 > Consumers do not need to revisit this recipe — the alias keeps
 > working as core grows; install the additional peer deps below as
-> new primitives land. New peer deps at this stage: the Tiptap 3
-> family (`@tiptap/core`, `@tiptap/react`, `@tiptap/starter-kit`,
-> `@tiptap/extension-link`, `@tiptap/extension-mention`,
-> `@tiptap/extension-placeholder`, `@tiptap/extension-underline`,
-> `@tiptap/pm`, `@tiptap/suggestion`).
+> new primitives land. No new peer deps at FE-F2.
 
 `alexandria-core` ships TypeScript and React components alongside the
 PHP package, under `resources/js/`. Composer packages cannot publish to
@@ -85,6 +84,62 @@ endpoint via the relevant prop):
   the `createEntryLinkExtension` factory).
 - `GET`/`POST`/`DELETE` `/api/v1/ai/prompts[/{id}]` — saved-prompt
   CRUD used by the AI writing modal.
+
+The Account Settings page (`pages/Settings/Account.tsx`, FE-F2) hits a
+broader set of `/account/*` routes — consumer apps should expose the
+following Fortify-paired surface alongside Fortify's own auth routes:
+
+- `PUT /account/profile` — profile fields incl. bio (HTML/wiki markup
+  from `RichTextEditor`).
+- `PUT /account/username`, `POST /account/username/check`,
+  `POST /account/username/revert` — username change + availability
+  check + revert recent change.
+- `POST/DELETE /account/avatar`, `POST/DELETE /account/banner` —
+  media upload / removal (Spatie Media Library payload).
+- `PUT /account/avatar-ring` — avatar-ring decoration selection.
+- `PUT /account/preferences` — bulk + partial preference updates
+  (theme, font size, notifications, accessibility).
+- `POST/PUT/DELETE /account/links[/{id}]` — profile-link CRUD.
+- `PUT /account/field-visibility` — field-level privacy.
+- `POST/PUT/DELETE /account/privacy-lists[/{id}]` — privacy lists CRUD.
+- `POST/PUT/DELETE /account/ai/keys[/{id}]` — BYOK API-key CRUD,
+  paired with core's `CredentialResolver` + `UserApiKey` model.
+- `POST /account/ai/keys/validate` — pre-save provider key validation.
+- `PUT /account/ai/keys/{id}/activate` — activate a stored key.
+- `PUT /account/ai/models` — per-task model selection (analyst /
+  creative / image / video).
+- `PUT /account/ai/preferences` — AI response style + assistant flags.
+
+The Settings page deliberately does **not** ship email-change,
+password-change, or account-deletion UI in core — those flows often
+need to interleave with billing, paid-tier reactivation, or app-
+specific data-handling flows, which are SaaS concerns per ADR-010.
+Consumer apps render their own AccountManagementSection by passing
+an `accountManagementSlot` render-prop:
+
+```tsx
+import Account from '@alexandria/pages/Settings/Account';
+import AccountManagementSection from '@/components/Settings/AccountManagementSection';
+
+export default function Settings() {
+    return (
+        <Account
+            accountManagementSlot={({ email, emailVerified }) => (
+                <AccountManagementSection email={email} emailVerified={emailVerified} />
+            )}
+            applyViewPreferences={(prefs) => {
+                // Mirror onto <html> as data-* attributes for optimistic UI.
+                // Implementation lives APP-side (FE-B audit / ADR-008).
+            }}
+        />
+    );
+}
+```
+
+When the slot is omitted, the `account` sub-section renders a
+"managed by the consumer app" placeholder. The app is expected to
+own `PUT /account/email`, `PUT /account/password`, and any
+account-deletion endpoint it exposes.
 
 Notes on what core deliberately does **not** depend on:
 
