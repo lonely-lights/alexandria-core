@@ -1,0 +1,332 @@
+import { usePage } from '@inertiajs/react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
+import type { SharedProps } from '../../types/index';
+import AvatarWithRing from '../ui/AvatarWithRing';
+import Tooltip from '../ui/Tooltip';
+import ThemePicker from '../theme/ThemePicker';
+import type { UserMenuItem, UserMenuItemDivider, UserMenuItemRow } from '../../types/navigation';
+
+function isDivider(item: UserMenuItem): item is UserMenuItemDivider {
+    return 'divider' in item && item.divider;
+}
+
+interface NavbarProps {
+    /** Toggles the Sidebar drawer. */
+    onMenuToggle: () => void;
+
+    /**
+     * Optional brand label rendered next to the hamburger. Pass an empty
+     * string or `null` to suppress entirely. Defaults to "Alexandria".
+     *
+     * For more control (logo image, two-tone wordmark, etc.) pass `brandSlot`
+     * instead.
+     */
+    brand?: string | null;
+
+    /** Custom brand slot. Overrides `brand` when supplied. */
+    brandSlot?: ReactNode;
+
+    /**
+     * Optional search-trigger handler. When supplied, a search button
+     * appears between `extraActions` and the user dropdown. Defaults to
+     * dispatching the global `alexandria-core:command-palette-toggle`
+     * event so palette hosts wired through `useCmdK` open without needing
+     * to share state.
+     */
+    onSearchToggle?: () => void;
+
+    /** Hides the search button outright. Takes priority over `onSearchToggle`. */
+    showSearch?: boolean;
+
+    /**
+     * Slot for app-specific actions rendered between the search button and
+     * the user dropdown — e.g. a notes-drawer toggle, a notifications bell.
+     */
+    extraActions?: ReactNode;
+
+    /**
+     * Items rendered in the user dropdown menu. When omitted, a default set
+     * is used: Profile, Settings, Theme picker, Logout. Pass an empty array
+     * to render nothing but the theme picker.
+     *
+     * The dropdown ALWAYS renders the embedded `<ThemePicker />` between the
+     * `userMenuItems` block and the optional `userMenuFooter` slot.
+     */
+    userMenuItems?: UserMenuItem[];
+
+    /**
+     * Optional footer slot rendered below the theme picker (e.g. Support
+     * link, API status indicator).
+     */
+    userMenuFooter?: ReactNode;
+
+    /** Custom guest-mode (logged-out) action area. Defaults to Login + Register
+     *  buttons pointing at /login and /register. */
+    guestActions?: ReactNode;
+}
+
+/**
+ * Top navigation bar with scroll-shadow chrome, hamburger toggle, search
+ * button, embedded `ThemePicker`, user dropdown and guest actions.
+ *
+ * The chrome is core; the menu items, search behaviour, and any extra
+ * action buttons are consumer-supplied via slots/props. The component
+ * still pulls `auth` from Inertia's shared props so it can render the
+ * user avatar without further wiring.
+ */
+export default function Navbar({
+    onMenuToggle,
+    brand = 'Alexandria',
+    brandSlot,
+    onSearchToggle,
+    showSearch = true,
+    extraActions,
+    userMenuItems,
+    userMenuFooter,
+    guestActions,
+}: NavbarProps) {
+    const { auth } = usePage<SharedProps>().props;
+    const user = auth?.user ?? null;
+    const [scrolled, setScrolled] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 20);
+
+        window.addEventListener('scroll', handleScroll);
+
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setDropdownOpen(false);
+            }
+        }
+
+        if (dropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [dropdownOpen]);
+
+    function handleSearchClick() {
+        if (onSearchToggle) {
+            onSearchToggle();
+            return;
+        }
+        window.dispatchEvent(new CustomEvent('alexandria-core:command-palette-toggle'));
+    }
+
+    return (
+        <nav
+            ref={(el) => {
+                if (el) {
+                    document.documentElement.style.setProperty('--navbar-height', `${el.offsetHeight}px`);
+                }
+            }}
+            className={`fixed top-0 z-20 w-full px-2 py-2 navbar backdrop-blur-lg border-b transition-all duration-300 overflow-visible ${
+                scrolled
+                    ? 'bg-base-300/70 border-base-content/10 shadow-lg'
+                    : 'bg-base-300/30 border-transparent'
+            }`}
+        >
+            <div className="container mx-auto max-w-7xl justify-between px-2">
+                <div className="flex flex-1 items-center">
+                    {/* Hamburger Menu Button */}
+                    <button
+                        onClick={onMenuToggle}
+                        className="btn btn-ghost btn-circle mr-2"
+                        aria-label="Open sidebar"
+                    >
+                        <i className="fas fa-bars text-xl" />
+                    </button>
+
+                    {/* Brand */}
+                    <a href="/" className="flex items-center">
+                        {brandSlot ?? (brand ? (
+                            <span className="ml-4 hidden font-serif text-xl font-semibold text-base-content sm:inline">
+                                {brand}
+                            </span>
+                        ) : null)}
+                    </a>
+                </div>
+
+                {/* Spacer */}
+                <div className="flex-1" />
+
+                {/* Right Side */}
+                <div className="flex flex-1 items-center justify-end gap-3">
+                    {user ? (
+                        <>
+                            {/* Search Button */}
+                            {showSearch && (
+                                <Tooltip
+                                    content={`Search (${typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac') ? '⌘' : 'Ctrl+'}K)`}
+                                    placement="bottom"
+                                >
+                                    <button
+                                        onClick={handleSearchClick}
+                                        className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary/60 text-primary-content transition-colors hover:bg-primary/80"
+                                        aria-label="Search (⌘K)"
+                                    >
+                                        <i className="fa-light fa-magnifying-glass" />
+                                    </button>
+                                </Tooltip>
+                            )}
+
+                            {extraActions}
+
+                            {/* User Button + Dropdown */}
+                            <div className="relative min-w-0" ref={dropdownRef}>
+                                <button
+                                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                                    className="inline-flex min-w-0 max-w-full items-center gap-4 overflow-hidden rounded-md px-3 py-1 text-sm font-medium text-base-content transition-all duration-300 hover:bg-base-content/10 focus:outline-none"
+                                >
+                                    <AvatarWithRing
+                                        src={user.has_avatar ? user.avatar_thumb_url : null}
+                                        alt={user.name}
+                                        initials={(user.display_name ?? user.name).charAt(0).toUpperCase()}
+                                        size={32}
+                                        ring={user.avatar_ring_slug ?? 'none'}
+                                        ringSettings={user.avatar_ring_settings as never}
+                                        ringThickness={4}
+                                    />
+                                    <span className="flex min-w-0 flex-col items-start leading-none">
+                                        <span className="truncate max-w-[180px]">
+                                            {user.display_name ?? user.name}
+                                        </span>
+                                        <span className="truncate max-w-[180px] text-xs text-base-content/50">
+                                            @{user.name}
+                                        </span>
+                                    </span>
+                                    <svg
+                                        className="h-4 w-4 flex-shrink-0 text-base-content/40"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        strokeWidth="1.5"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"
+                                        />
+                                    </svg>
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {dropdownOpen && (
+                                    <div className="absolute right-0 top-full z-50 mt-2 w-56">
+                                        <div className="mt-1 rounded-md bg-base-300 p-1 text-base-content shadow-md">
+                                            {/* Header */}
+                                            <div className="px-2 py-1.5 text-sm font-semibold">
+                                                <span>My Account</span>
+                                            </div>
+
+                                            <div className="-mx-1 my-1 h-px bg-base-content/10" />
+
+                                            {(userMenuItems ?? []).map((item, idx) => {
+                                                if (isDivider(item)) {
+                                                    return (
+                                                        <div
+                                                            key={`div-${idx}`}
+                                                            className="-mx-1 my-1 h-px bg-base-content/10"
+                                                        />
+                                                    );
+                                                }
+                                                return renderMenuRow(item, idx);
+                                            })}
+
+                                            <div className="-mx-1 my-1 h-px bg-base-content/10" />
+
+                                            <ThemePicker />
+
+                                            {userMenuFooter && (
+                                                <>
+                                                    <div className="-mx-1 my-1 h-px bg-base-content/10" />
+                                                    {userMenuFooter}
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        guestActions ?? <DefaultGuestActions />
+                    )}
+                </div>
+            </div>
+        </nav>
+    );
+}
+
+function DefaultGuestActions() {
+    return (
+        <div className="inline-flex items-center" role="group" aria-label="Button group">
+            <a
+                href="/register"
+                className="btn btn-neutral mr-2 hidden rounded-full border-none hover:bg-neutral md:inline-flex"
+            >
+                <i className="fas fa-user-plus" />
+                Register
+            </a>
+            <a href="/login" className="btn btn-primary gap-2 rounded-full">
+                <i className="fas fa-user" />
+                <span>Login</span>
+            </a>
+        </div>
+    );
+}
+
+function renderMenuRow(item: UserMenuItemRow, idx: number): ReactNode {
+    const baseClass = 'relative flex select-none items-center rounded px-2 py-1.5 text-sm outline-none transition-colors';
+
+    if (item.disabled) {
+        return (
+            <span
+                key={`item-${idx}`}
+                className={`${baseClass} cursor-default opacity-50`}
+            >
+                {renderMenuIcon(item.icon)}
+                <span>{item.label}</span>
+                {item.shortcut && (
+                    <span className="ml-auto text-xs tracking-widest opacity-80">{item.shortcut}</span>
+                )}
+            </span>
+        );
+    }
+
+    const hoverClass = item.danger
+        ? 'hover:bg-error hover:text-error-content'
+        : 'hover:bg-primary hover:text-primary-content';
+
+    return (
+        <a
+            key={`item-${idx}`}
+            href={item.href}
+            onClick={item.onClick}
+            className={`${baseClass} ${hoverClass}`}
+        >
+            {renderMenuIcon(item.icon)}
+            <span>{item.label}</span>
+            {item.shortcut && (
+                <span className="ml-auto text-xs tracking-widest opacity-80">{item.shortcut}</span>
+            )}
+        </a>
+    );
+}
+
+function renderMenuIcon(icon: string | ReactNode | undefined): ReactNode {
+    if (icon == null) return null;
+    if (typeof icon === 'string') {
+        const cls = icon.includes(' ') ? icon : `fa-solid ${icon}`;
+        return <i className={`${cls} mr-2 h-4 w-4`} />;
+    }
+    return <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">{icon}</span>;
+}
