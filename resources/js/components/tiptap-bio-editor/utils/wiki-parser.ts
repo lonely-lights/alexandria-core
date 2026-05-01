@@ -31,7 +31,7 @@ interface ListItem {
  * Parse wiki markup to HTML, suitable for feeding into TipTap's setContent().
  */
 export function parseWikiToHtml(wiki: string): string {
-    if (!wiki || typeof wiki !== 'string') {
+    if (!wiki) {
         return '';
     }
 

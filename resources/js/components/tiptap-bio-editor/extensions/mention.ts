@@ -51,10 +51,12 @@ export default function createMentionExtension(options: MentionExtensionOptions 
         HTMLAttributes: {
             class: 'mention mention-user text-primary font-medium cursor-pointer hover:underline',
         },
+        // noinspection JSUnusedGlobalSymbols — consumed by Tiptap MentionExtension via .configure()
         renderText({ node }: { node: PMNode }): string {
             const attrs = node.attrs as MentionAttrs;
             return `@${attrs.label ?? attrs.id ?? ''}`;
         },
+        // noinspection JSUnusedGlobalSymbols — consumed by Tiptap MentionExtension via .configure()
         renderHTML({ options: opts, node }: { options: { HTMLAttributes: Record<string, unknown> }; node: PMNode }) {
             const attrs = node.attrs as MentionAttrs;
             const username = attrs.label ?? attrs.id ?? '';
@@ -108,6 +110,7 @@ export default function createMentionExtension(options: MentionExtensionOptions 
                 let popup: HTMLDivElement | null = null;
 
                 return {
+                    // noinspection JSUnusedGlobalSymbols — Tiptap suggestion render() lifecycle callback
                     onStart: (props: MentionSuggestionProps) => {
                         popup = document.createElement('div');
                         popup.className = 'tiptap-mention-popup';
@@ -139,6 +142,7 @@ export default function createMentionExtension(options: MentionExtensionOptions 
                         return false;
                     },
 
+                    // noinspection JSUnusedGlobalSymbols — Tiptap suggestion render() lifecycle callback
                     onExit: () => {
                         popup?.remove();
                         component = null;
