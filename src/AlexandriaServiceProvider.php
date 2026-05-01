@@ -4,9 +4,16 @@ declare(strict_types=1);
 
 namespace Alexandria\Core;
 
+use Alexandria\Core\Actions\Fortify\CreateNewUser;
+use Alexandria\Core\Actions\Fortify\ResetUserPassword;
+use Alexandria\Core\Actions\Fortify\UpdateUserPassword;
+use Alexandria\Core\Actions\Fortify\UpdateUserProfileInformation;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -30,6 +37,7 @@ class AlexandriaServiceProvider extends ServiceProvider
             ], 'alexandria-config');
         }
 
+        $this->bindFortifyActions();
         $this->bindFortifyViews();
     }
 
@@ -56,6 +64,28 @@ class AlexandriaServiceProvider extends ServiceProvider
             Features::resetPasswords(),
             Features::emailVerification(),
         ]);
+    }
+
+    /**
+     * Wire Fortify's action callbacks + the login rate limiter.
+     * UpdateUserPassword and UpdateUserProfileInformation are inert
+     * until WIRE-E re-enables their features; binding now means that
+     * step is a one-line feature flip.
+     */
+    private function bindFortifyActions(): void
+    {
+        Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+        Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
+        Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
+
+        RateLimiter::for('login', function (Request $request) {
+            $throttleKey = Str::transliterate(
+                Str::lower($request->input(Fortify::username())).'|'.$request->ip()
+            );
+
+            return Limit::perMinute(5)->by($throttleKey);
+        });
     }
 
     /**
