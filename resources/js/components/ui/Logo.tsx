@@ -3,6 +3,23 @@ interface LogoProps {
     className?: string;
 }
 
+/**
+ * Generic placeholder brand mark.
+ *
+ * Consumer apps SHOULD override this — `Logo` is the symbol auth
+ * pages and the sidebar render in their brand slot, and shipping
+ * a real brand mark is an app-side concern. The placeholder is a
+ * theme-aware geometric mark (no embedded gradient ids, uses
+ * DaisyUI's primary/base-100 tokens) that renders cleanly under
+ * any consumer theme but is obviously not "the" brand.
+ *
+ * Override paths:
+ *   1. Publish + replace this file via your app's resources/js
+ *      tree (via @alexandria alias shadowing).
+ *   2. Pass your own `<Logo />` equivalent into the auth page
+ *      / sidebar slots — e.g.
+ *      `<AppLayout sidebarLogo={<MyBrandLogo />} ... />`.
+ */
 export default function Logo({ size = '2.5em', className }: LogoProps) {
     return (
         <svg
@@ -13,31 +30,32 @@ export default function Logo({ size = '2.5em', className }: LogoProps) {
             height={size}
             aria-hidden="true"
         >
-            <defs>
-                <linearGradient id="vivid-sky-blue" x1="0" x2="0" y1="0" y2="100" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#6ef" />
-                    <stop offset="100%" stopColor="#0cf" />
-                </linearGradient>
-                <linearGradient id="mikado-yellow" x1="0" x2="0" y1="0" y2="100" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#fd6" />
-                    <stop offset="100%" stopColor="#fb1" />
-                </linearGradient>
-            </defs>
-            <path
-                d="M 63.333333,2.3333333 V 13 c 0,1.028333 -1.318333,1.62 -1.833333,1.833333 -6.445,2.666667 -7.666667,6.4 -7.666667,9.833334 0,3.433333 2.305,6.73 6,9 3.923334,2.41 8.261667,4.43 14.333334,7 11.596666,4.91 25.833333,13.825 25.833333,31.166666 0,14.11 -9.411667,23.216667 -18.833333,26.5 C 78.668333,99.205 75.828333,100 73.333333,100 h -6.666666 c -2.805,0 -3.5,-1.111667 -3.5,-2 0,-0.783333 0.17,-1.003333 1.333333,-1.833333 3.176667,-2.395 4.993333,-4.173334 6,-5.166667 1.501667,-1.458333 2.586667,-2.651667 4.166667,-4.5 0.24,-0.28 0.935,-0.85 1.675,-0.983333 0.851666,-0.151667 3.601666,-1.6 5.491666,-3.35 2.468334,-2.286667 4.45,-5.495 4.5,-10.333334 0.05,-4.91 -3.516666,-10.87 -10,-14.833333 C 72.001667,54.351667 63.188333,50.975 58.5,48.833333 48.48,44.255 40,35.436667 40,24.5 40,20.926667 40.221667,15.4 46.333333,9 c 6.283334,-6.58 13.505,-8.16666667 14.833334,-8.16666667 1.181666,0 2.166666,0.24833337 2.166666,1.49999997 z"
-                fill="url(#vivid-sky-blue)"
+            {/* Outer rounded square (theme primary) */}
+            <rect
+                x="6"
+                y="6"
+                width="88"
+                height="88"
+                rx="20"
+                ry="20"
+                className="fill-primary"
             />
-            <path
-                d="M 66.666667,6.6666667 C 66.666667,3.0016667 69.688333,0 73.333333,0 76.978333,0 80,3.015 80,6.6666667 V 36.5 c 0,1.193333 -0.591667,2 -1.666667,2 -0.798333,0 -2,-0.833333 -2,-0.833333 l -8.666666,-3.833334 c 0,0 -1,-0.57 -1,-1.333333 z"
-                fill="url(#mikado-yellow)"
+            {/* Inner notch (theme base-100) */}
+            <rect
+                x="22"
+                y="22"
+                width="56"
+                height="56"
+                rx="10"
+                ry="10"
+                className="fill-base-100"
             />
-            <path
-                d="M 13.333333,60 C 13.333333,74.73 25.266667,86.666667 40,86.666667 54.733333,86.666667 66.666667,74.73 66.666667,60 v -1.166667 c 0,-0.833333 0.828333,-1.666666 1.666666,-1.666666 0.828334,0 4.745,2.073333 6,2.833333 1.255,0.76 5.333334,3.185 5.333334,5.166667 C 77.775,82.693333 62.088333,100 40,100 17.911667,100 0,82.095 0,60 0,59.095 0,27.538333 0,26.666667 0,22.998333 3.0066667,20 6.6666667,20 c 3.6600003,0 6.6666663,3.003333 6.6666663,6.666667 z"
-                fill="url(#mikado-yellow)"
-            />
-            <path
-                d="m 40,50 c 5.523333,0 10,4.476667 10,10 0,5.523333 -4.476667,10 -10,10 -5.523333,0 -10,-4.476667 -10,-10 0,-5.523333 4.476667,-10 10,-10 z"
-                fill="url(#vivid-sky-blue)"
+            {/* Center dot (theme primary) */}
+            <circle
+                cx="50"
+                cy="50"
+                r="12"
+                className="fill-primary"
             />
         </svg>
     );
