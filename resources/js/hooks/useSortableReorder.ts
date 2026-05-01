@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
-import Sortable from 'sortablejs';
+import Sortable, { type SortableEvent } from 'sortablejs';
 
 /**
  * Wire SortableJS to a container ref for drag-to-reorder interactions.
@@ -29,7 +29,7 @@ export function useSortableReorder(
             handle: '.drag-handle',
             animation: 150,
             ghostClass: 'opacity-30',
-            onEnd: (evt) => {
+            onEnd: (evt: SortableEvent) => {
                 const { oldIndex, newIndex, from, item } = evt;
                 if (oldIndex == null || newIndex == null) return;
                 // Revert SortableJS's DOM mutation so React remains the

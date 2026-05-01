@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 /**
  * Compute smart positioning for a hover card based on viewport quadrant.
  * - Horizontal: left-align if trigger is in left half, right-align if in right half
@@ -7,7 +9,7 @@ export function computeHoverPosition(
     triggerRect: DOMRect,
     cardWidth: number,
     gap = 8,
-): React.CSSProperties {
+): CSSProperties {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
