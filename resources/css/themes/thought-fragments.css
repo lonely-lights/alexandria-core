@@ -5,6 +5,35 @@
     --tf-handwriting: 'Caveat', 'Comic Sans MS', cursive;
 }
 
+/* Per-theme paper palette tokens. Legacy declared these inside
+   tailwind.config.js DaisyUI theme blocks (Tailwind 3 syntax);
+   Tailwind 4's DaisyUI theme plugin only accepts standard --color-*
+   tokens, so the --tf-* customs are declared here alongside the
+   styling that uses them. */
+[data-theme="tf-dark"] {
+    --tf-pencil: #d4a017;
+    --tf-rule: #2a1f1c;
+    --tf-shadow: rgba(0, 0, 0, 0.35);
+    --tf-tape-shadow: #5b4226;
+    --tf-paper-yellow: #ffd166;
+    --tf-paper-sage: #a8d5ba;
+    --tf-paper-coral: #f4a88a;
+    --tf-paper-lavender: #b9a3e3;
+    --tf-paper-cream: #fff8e7;
+}
+
+[data-theme="tf-light"] {
+    --tf-pencil: #8b5a2b;
+    --tf-rule: #d8cfb8;
+    --tf-shadow: rgba(40, 20, 0, 0.15);
+    --tf-tape-shadow: #c5a567;
+    --tf-paper-yellow: #f2bd47;
+    --tf-paper-sage: #8dbfa3;
+    --tf-paper-coral: #d87b5a;
+    --tf-paper-lavender: #9b7fd4;
+    --tf-paper-cream: #fff8e7;
+}
+
 /* Grid paper ambient background — horizontal + vertical lines, for
    blueprint-style grids. */
 [data-theme^="tf"] .grid-paper {
