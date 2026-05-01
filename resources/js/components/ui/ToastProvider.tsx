@@ -11,7 +11,7 @@ import {
 import { usePage } from '@inertiajs/react';
 import { createPortal } from 'react-dom';
 import { useToast, type Toast, type ToastOptions, type ToastPosition, type ToastType } from '../../hooks/useToast';
-import type { SharedProps } from '../../types/index.d';
+import type { SharedProps } from '@alexandria/types';
 
 interface ToastContextValue {
     toasts: Toast[];
