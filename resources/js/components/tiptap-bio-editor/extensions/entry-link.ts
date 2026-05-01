@@ -1,5 +1,7 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import type { Node as PMNode } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import type { EditorView } from '@tiptap/pm/view';
 
 /**
  * Entry Link Extension for TipTap
@@ -10,7 +12,30 @@ import { Plugin, PluginKey } from '@tiptap/pm/state';
 
 const EntryLinkPluginKey = new PluginKey('entryLink');
 
-export default function createEntryLinkExtension(options = {}) {
+export interface EntryLinkSearchResult {
+    id: number | string;
+    name: string;
+    slug?: string | null;
+    blueprint_slug?: string | null;
+    blueprint_name?: string | null;
+    blueprint_icon?: string | null;
+}
+
+export interface EntryLinkOptions {
+    searchEndpoint?: string;
+    projectId?: number | string | null;
+    onSelect?: (item: EntryLinkSearchResult) => void;
+}
+
+interface EntryLinkAttrs {
+    id: string | number | null;
+    name: string | null;
+    displayText: string | null;
+    slug: string | null;
+    blueprintSlug: string | null;
+}
+
+export default function createEntryLinkExtension(options: EntryLinkOptions = {}) {
     const {
         searchEndpoint = '/api/v1/entries/search',
         projectId = null,
@@ -18,12 +43,12 @@ export default function createEntryLinkExtension(options = {}) {
     } = options;
 
     // State for the suggestion popup
-    let popup = null;
+    let popup: HTMLDivElement | null = null;
     let selectedIndex = 0;
-    let items = [];
+    let items: EntryLinkSearchResult[] = [];
     let query = '';
     let active = false;
-    let startPos = null;
+    let startPos: number | null = null;
 
     return Node.create({
         name: 'entryLink',
@@ -60,23 +85,23 @@ export default function createEntryLinkExtension(options = {}) {
             return [
                 {
                     tag: 'a[data-type="entry-link"]',
-                    getAttrs: (element) => ({
-                        id: element.getAttribute('data-id'),
-                        name: element.getAttribute('data-name'),
-                        displayText: element.textContent,
-                        slug: element.getAttribute('data-slug'),
-                        blueprintSlug: element.getAttribute('data-blueprint-slug'),
-                    }),
+                    getAttrs: (element: HTMLElement | string) => {
+                        if (typeof element === 'string') return false;
+                        return {
+                            id: element.getAttribute('data-id'),
+                            name: element.getAttribute('data-name'),
+                            displayText: element.textContent,
+                            slug: element.getAttribute('data-slug'),
+                            blueprintSlug: element.getAttribute('data-blueprint-slug'),
+                        };
+                    },
                 },
             ];
         },
 
-        /**
-         * @param {{ node: import('@tiptap/pm/model').Node, HTMLAttributes: Record<string, any> }} props
-         */
-        renderHTML({ node, HTMLAttributes }) {
-            const attrs = node.attrs;
-            const display = attrs.displayText || attrs.name;
+        renderHTML({ node, HTMLAttributes }: { node: PMNode; HTMLAttributes: Record<string, unknown> }) {
+            const attrs = node.attrs as EntryLinkAttrs;
+            const display = attrs.displayText || attrs.name || '';
             return [
                 'a',
                 mergeAttributes(HTMLAttributes, {
@@ -94,13 +119,10 @@ export default function createEntryLinkExtension(options = {}) {
             ];
         },
 
-        /**
-         * @param {{ node: import('@tiptap/pm/model').Node }} props
-         */
-        renderText({ node }) {
-            const attrs = node.attrs;
-            const name = attrs.name || '';
-            const displayText = attrs.displayText || '';
+        renderText({ node }: { node: PMNode }): string {
+            const attrs = node.attrs as EntryLinkAttrs;
+            const name = attrs.name ?? '';
+            const displayText = attrs.displayText ?? '';
 
             if (displayText && displayText !== name) {
                 return `[[${name}|${displayText}]]`;
@@ -109,6 +131,9 @@ export default function createEntryLinkExtension(options = {}) {
         },
 
         addProseMirrorPlugins() {
+            // Capture the extension instance so the inline handlers below
+            // can reach `this.editor` and `this.type` without losing
+            // typing under method-shorthand `this` rebinding.
             const extension = this;
 
             return [
@@ -122,13 +147,7 @@ export default function createEntryLinkExtension(options = {}) {
                     // ProseMirror contract — `to` is required even when
                     // unused.
                     props: {
-                        /**
-                         * @param {import('@tiptap/pm/view').EditorView} view
-                         * @param {number} from
-                         * @param {number} _to
-                         * @param {string} text
-                         */
-                        handleTextInput(view, from, _to, text) {
+                        handleTextInput(view: EditorView, from: number, _to: number, text: string): boolean {
                             const { state } = view;
 
                             // Check if we're starting a new [[ sequence
@@ -145,7 +164,7 @@ export default function createEntryLinkExtension(options = {}) {
                             }
 
                             // If suggestion is active, update the query
-                            if (active) {
+                            if (active && startPos !== null) {
                                 if (text === ']') {
                                     // Check if we're closing with ]]
                                     const textBefore = state.doc.textBetween(startPos, from);
@@ -156,17 +175,13 @@ export default function createEntryLinkExtension(options = {}) {
                                 }
 
                                 query += text;
-                                void updateSuggestions(view);
+                                void updateSuggestions();
                             }
 
                             return false;
                         },
 
-                        /**
-                         * @param {import('@tiptap/pm/view').EditorView} view
-                         * @param {KeyboardEvent} event
-                         */
-                        handleKeyDown(view, event) {
+                        handleKeyDown(view: EditorView, event: KeyboardEvent): boolean {
                             if (!active) return false;
 
                             switch (event.key) {
@@ -196,7 +211,7 @@ export default function createEntryLinkExtension(options = {}) {
                                 case 'Backspace':
                                     if (query.length > 0) {
                                         query = query.slice(0, -1);
-                                        void updateSuggestions(view);
+                                        void updateSuggestions();
                                     } else {
                                         hidePopup();
                                     }
@@ -207,7 +222,7 @@ export default function createEntryLinkExtension(options = {}) {
                             }
                         },
 
-                        handleClick() {
+                        handleClick(): boolean {
                             if (active) {
                                 hidePopup();
                             }
@@ -217,10 +232,7 @@ export default function createEntryLinkExtension(options = {}) {
                 }),
             ];
 
-            /**
-             * @param {import('@tiptap/pm/view').EditorView} view
-             */
-            function showPopup(view) {
+            function showPopup(view: EditorView): void {
                 if (popup) {
                     popup.remove();
                 }
@@ -230,10 +242,10 @@ export default function createEntryLinkExtension(options = {}) {
                 document.body.appendChild(popup);
 
                 updatePopupPosition(view);
-                void updateSuggestions(view);
+                void updateSuggestions();
             }
 
-            function hidePopup() {
+            function hidePopup(): void {
                 active = false;
                 query = '';
                 startPos = null;
@@ -246,10 +258,7 @@ export default function createEntryLinkExtension(options = {}) {
                 }
             }
 
-            /**
-             * @param {import('@tiptap/pm/view').EditorView} view
-             */
-            function updatePopupPosition(view) {
+            function updatePopupPosition(view: EditorView): void {
                 if (!popup || !view) return;
 
                 const coords = view.coordsAtPos(view.state.selection.from);
@@ -257,15 +266,7 @@ export default function createEntryLinkExtension(options = {}) {
                 popup.style.top = `${coords.bottom + 8}px`;
             }
 
-            /**
-             * The view parameter is currently unused but retained because
-             * future enhancements (re-positioning the popup mid-query) will
-             * need it; callers already pass it in.
-             *
-             * @param {import('@tiptap/pm/view').EditorView} _view
-             */
-            // eslint-disable-next-line no-unused-vars
-            async function updateSuggestions(_view) {
+            async function updateSuggestions(): Promise<void> {
                 if (!active) return;
 
                 // Show loading state
@@ -298,7 +299,7 @@ export default function createEntryLinkExtension(options = {}) {
                     }
 
                     const data = await response.json();
-                    items = data.data || [];
+                    items = (data.data as EntryLinkSearchResult[] | undefined) ?? [];
                     selectedIndex = 0;
                     renderPopup();
                 } catch (error) {
@@ -308,14 +309,14 @@ export default function createEntryLinkExtension(options = {}) {
                 }
             }
 
-            function clearPopup() {
+            function clearPopup(): void {
                 if (!popup) return;
                 while (popup.firstChild) {
                     popup.removeChild(popup.firstChild);
                 }
             }
 
-            function renderPopup(message = null) {
+            function renderPopup(message: string | null = null): void {
                 if (!popup) return;
 
                 clearPopup();
@@ -340,14 +341,17 @@ export default function createEntryLinkExtension(options = {}) {
                     const button = createEntryButton(item, index === selectedIndex);
                     button.addEventListener('click', (e) => {
                         e.preventDefault();
-                        const view = extension.editor.view;
-                        selectEntry(view, item);
+                        if (extension.editor) {
+                            selectEntry(extension.editor.view, item);
+                        }
                     });
-                    popup.appendChild(button);
+                    if (popup) {
+                        popup.appendChild(button);
+                    }
                 });
             }
 
-            function createEntryButton(item, isSelected) {
+            function createEntryButton(item: EntryLinkSearchResult, isSelected: boolean): HTMLButtonElement {
                 const button = document.createElement('button');
                 button.type = 'button';
                 button.className = `w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
@@ -383,7 +387,7 @@ export default function createEntryLinkExtension(options = {}) {
                 return button;
             }
 
-            function selectEntry(view, entry) {
+            function selectEntry(view: EditorView, entry: EntryLinkSearchResult): void {
                 if (!view || !entry || startPos === null) return;
 
                 const { state, dispatch } = view;

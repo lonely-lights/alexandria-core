@@ -1,3 +1,5 @@
+import type { Editor } from '@tiptap/core';
+
 /**
  * Wiki Serializer - Converts TipTap document to Alexandria wiki markup
  *
@@ -16,22 +18,41 @@
  */
 
 /**
- * Serialize a TipTap editor's content to wiki markup
- * @param {import('@tiptap/core').Editor} editor - The TipTap editor instance
- * @returns {string} Wiki markup string
+ * Shape of a TipTap JSON document/node. The Tiptap public type is `JSONContent`,
+ * but it isn't re-exported from `@tiptap/core` cleanly enough for our needs;
+ * we restate the relevant subset locally.
  */
-export function serializeToWiki(editor) {
-    const json = editor.getJSON();
+interface WikiNode {
+    type?: string;
+    text?: string;
+    attrs?: Record<string, unknown>;
+    marks?: WikiMark[];
+    content?: WikiNode[];
+}
+
+interface WikiMark {
+    type: string;
+    attrs?: Record<string, unknown>;
+}
+
+interface SerializeContext {
+    inList?: boolean;
+    listMarker?: string;
+    listDepth?: number;
+}
+
+/**
+ * Serialize a TipTap editor's content to wiki markup.
+ */
+export function serializeToWiki(editor: Editor): string {
+    const json = editor.getJSON() as WikiNode;
     return serializeNode(json);
 }
 
 /**
- * Serialize a TipTap JSON node to wiki markup
- * @param {Object} node - TipTap JSON node
- * @param {Object} context - Serialization context (list type, depth, etc.)
- * @returns {string} Wiki markup string
+ * Serialize a TipTap JSON node to wiki markup.
  */
-function serializeNode(node, context = {}) {
+function serializeNode(node: WikiNode | undefined, context: SerializeContext = {}): string {
     if (!node) return '';
 
     switch (node.type) {
@@ -54,22 +75,22 @@ function serializeNode(node, context = {}) {
             return serializeListItem(node, context);
 
         case 'text':
-            return serializeText(node, context);
+            return serializeText(node);
 
         case 'hardBreak':
             return '\n';
 
         case 'image':
-            return serializeImage(node, context);
+            return serializeImage(node);
 
         case 'youtube':
-            return serializeYoutube(node, context);
+            return serializeYoutube(node);
 
         case 'mention':
-            return serializeMention(node, context);
+            return serializeMention(node);
 
         case 'entryLink':
-            return serializeEntryLink(node, context);
+            return serializeEntryLink(node);
 
         default:
             // For unknown nodes, try to serialize children
@@ -81,16 +102,14 @@ function serializeNode(node, context = {}) {
 }
 
 /**
- * Serialize an array of child nodes
+ * Serialize an array of child nodes.
  */
-function serializeChildren(children, context) {
+function serializeChildren(children: WikiNode[] | undefined, context: SerializeContext): string {
     if (!children || !Array.isArray(children)) return '';
 
-    const results = [];
-    for (let i = 0; i < children.length; i++) {
-        const child = children[i];
-        const result = serializeNode(child, context);
-        results.push(result);
+    const results: string[] = [];
+    for (const child of children) {
+        results.push(serializeNode(child, context));
     }
 
     // Join with appropriate separator based on context
@@ -103,35 +122,34 @@ function serializeChildren(children, context) {
 }
 
 /**
- * Serialize a paragraph node
+ * Serialize a paragraph node.
  */
-function serializeParagraph(node, context) {
+function serializeParagraph(node: WikiNode, context: SerializeContext): string {
     if (!node.content) return '';
     return serializeInlineContent(node.content, context);
 }
 
 /**
- * Serialize a heading node
- * H2 = ==, H3 = ===, etc.
+ * Serialize a heading node. H2 = ==, H3 = ===, etc.
  */
-function serializeHeading(node, context) {
-    const level = node.attrs?.level || 2;
+function serializeHeading(node: WikiNode, context: SerializeContext): string {
+    const level = (node.attrs?.level as number | undefined) ?? 2;
     const marker = '='.repeat(level);
     const content = node.content ? serializeInlineContent(node.content, context) : '';
     return `${marker} ${content} ${marker}`;
 }
 
 /**
- * Serialize a list (bullet or ordered)
+ * Serialize a list (bullet or ordered).
  */
-function serializeList(node, marker, context) {
+function serializeList(node: WikiNode, marker: string, context: SerializeContext): string {
     if (!node.content) return '';
 
-    const depth = (context.listDepth || 0) + 1;
-    const items = [];
+    const depth = (context.listDepth ?? 0) + 1;
+    const items: string[] = [];
 
     for (const item of node.content) {
-        const itemContext = {
+        const itemContext: SerializeContext = {
             ...context,
             inList: true,
             listMarker: marker,
@@ -144,17 +162,17 @@ function serializeList(node, marker, context) {
 }
 
 /**
- * Serialize a list item
+ * Serialize a list item.
  */
-function serializeListItem(node, context) {
-    const marker = context.listMarker || '*';
-    const depth = context.listDepth || 1;
+function serializeListItem(node: WikiNode, context: SerializeContext): string {
+    const marker = context.listMarker ?? '*';
+    const depth = context.listDepth ?? 1;
     const prefix = marker.repeat(depth) + ' ';
 
     if (!node.content) return prefix;
 
     // List items can contain paragraphs or nested lists
-    const parts = [];
+    const parts: string[] = [];
     for (const child of node.content) {
         if (child.type === 'paragraph') {
             parts.push(prefix + serializeInlineContent(child.content, context));
@@ -170,18 +188,18 @@ function serializeListItem(node, context) {
 }
 
 /**
- * Serialize inline content (text with marks)
+ * Serialize inline content (text with marks).
  */
-function serializeInlineContent(content, context) {
+function serializeInlineContent(content: WikiNode[] | undefined, context: SerializeContext): string {
     if (!content || !Array.isArray(content)) return '';
-    return content.map(node => serializeNode(node, context)).join('');
+    return content.map((node) => serializeNode(node, context)).join('');
 }
 
 /**
- * Serialize a text node with its marks (bold, italic, underline, link, etc.)
+ * Serialize a text node with its marks (bold, italic, underline, link, etc.).
  */
-function serializeText(node) {
-    let text = node.text || '';
+function serializeText(node: WikiNode): string {
+    let text = node.text ?? '';
 
     if (!node.marks || node.marks.length === 0) {
         return text;
@@ -191,14 +209,14 @@ function serializeText(node) {
     const marks = [...node.marks];
 
     // Check for formatting marks
-    const hasBold = marks.some(m => m.type === 'bold');
-    const hasItalic = marks.some(m => m.type === 'italic');
-    const hasUnderline = marks.some(m => m.type === 'underline');
-    const hasLink = marks.find(m => m.type === 'link');
+    const hasBold = marks.some((m) => m.type === 'bold');
+    const hasItalic = marks.some((m) => m.type === 'italic');
+    const hasUnderline = marks.some((m) => m.type === 'underline');
+    const linkMark = marks.find((m) => m.type === 'link');
 
     // Apply link first (outermost)
-    if (hasLink) {
-        const href = hasLink.attrs?.href || '';
+    if (linkMark) {
+        const href = (linkMark.attrs?.href as string | undefined) ?? '';
         // Use simple format: [url text] or just url if text matches
         if (text === href) {
             text = href;
@@ -225,11 +243,11 @@ function serializeText(node) {
 }
 
 /**
- * Serialize an image node
+ * Serialize an image node.
  */
-function serializeImage(node) {
-    const src = node.attrs?.src || '';
-    const alt = node.attrs?.alt || '';
+function serializeImage(node: WikiNode): string {
+    const src = (node.attrs?.src as string | undefined) ?? '';
+    const alt = (node.attrs?.alt as string | undefined) ?? '';
 
     if (alt) {
         return `[[Image:${src}|${alt}]]`;
@@ -238,31 +256,30 @@ function serializeImage(node) {
 }
 
 /**
- * Serialize a YouTube embed
+ * Serialize a YouTube embed.
  */
-function serializeYoutube(node) {
-    const src = node.attrs?.src || '';
+function serializeYoutube(node: WikiNode): string {
+    const src = (node.attrs?.src as string | undefined) ?? '';
     return `[[YouTube:${src}]]`;
 }
 
 /**
- * Serialize a user mention (@username)
+ * Serialize a user mention (@username).
  */
-function serializeMention(node) {
-    const label = node.attrs?.label || node.attrs?.id || '';
+function serializeMention(node: WikiNode): string {
+    const label = (node.attrs?.label as string | undefined) ?? (node.attrs?.id as string | undefined) ?? '';
     return `@${label}`;
 }
 
 /**
- * Serialize an entry link ([[Entry Name]])
+ * Serialize an entry link ([[Entry Name]]).
  */
-function serializeEntryLink(node) {
-    const name = node.attrs?.name || node.attrs?.label || '';
-    const displayText = node.attrs?.displayText || '';
+function serializeEntryLink(node: WikiNode): string {
+    const name = (node.attrs?.name as string | undefined) ?? (node.attrs?.label as string | undefined) ?? '';
+    const displayText = (node.attrs?.displayText as string | undefined) ?? '';
 
     if (displayText && displayText !== name) {
         return `[[${name}|${displayText}]]`;
     }
     return `[[${name}]]`;
 }
-

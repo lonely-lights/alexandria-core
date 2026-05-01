@@ -1,10 +1,42 @@
+import type { Editor } from '@tiptap/core';
+
 /**
  * Tier-based toolbar configurations for TipTap bio editor
  *
  * TODO: Image support will be re-added with display options (inline, float, gallery, etc.)
  * See feature backlog for image implementation plans.
  */
-export const tierPresets = {
+
+export type EditorTier = 'free' | 'premium' | 'pro';
+
+export interface ToolbarPreset {
+    extensions: string[];
+    toolbar: string[];
+}
+
+/**
+ * Component-side hooks expected by toolbar button actions whose work
+ * involves opening a modal or invoking a non-Tiptap behavior. Consumer
+ * components implement these; they are declared here so the action
+ * signatures are statically typed.
+ */
+export interface ToolbarComponent {
+    openLinkModal: () => void;
+    insertMention: () => void;
+    insertEntryLink: () => void;
+}
+
+export interface ToolbarButton {
+    icon: string;
+    title: string;
+    description: string;
+    shortcut: string | null;
+    shortcutMac: string | null;
+    action: (editor: Editor, component: ToolbarComponent) => void;
+    isActive: (editor: Editor) => boolean;
+}
+
+export const tierPresets: Record<EditorTier, ToolbarPreset> = {
     free: {
         extensions: ['bold', 'italic', 'underline', 'link', 'bulletList', 'orderedList'],
         toolbar: ['bold', 'italic', 'underline', 'link', 'divider', 'bulletList', 'orderedList'],
@@ -19,7 +51,7 @@ export const tierPresets = {
     },
 };
 
-export const toolbarButtons = {
+export const toolbarButtons: Record<string, ToolbarButton> = {
     bold: {
         icon: 'fa-bold',
         title: 'Bold',
@@ -53,7 +85,7 @@ export const toolbarButtons = {
         description: 'Insert or edit a hyperlink',
         shortcut: 'Ctrl+K',
         shortcutMac: '⌘+K',
-        action: (editor, component) => component.openLinkModal(),
+        action: (_editor, component) => component.openLinkModal(),
         isActive: (editor) => editor.isActive('link'),
     },
     bulletList: {
@@ -98,7 +130,7 @@ export const toolbarButtons = {
         description: 'Mention a user with @username',
         shortcut: null,
         shortcutMac: null,
-        action: (editor, component) => component.insertMention(),
+        action: (_editor, component) => component.insertMention(),
         isActive: () => false,
     },
     entryLink: {
@@ -107,11 +139,11 @@ export const toolbarButtons = {
         description: 'Link to an entry with [[Page Name]]',
         shortcut: null,
         shortcutMac: null,
-        action: (editor, component) => component.insertEntryLink(),
+        action: (_editor, component) => component.insertEntryLink(),
         isActive: () => false,
     },
 };
 
-export function getPresetForTier(tier) {
-    return tierPresets[tier] || tierPresets.free;
+export function getPresetForTier(tier: EditorTier): ToolbarPreset {
+    return tierPresets[tier] ?? tierPresets.free;
 }

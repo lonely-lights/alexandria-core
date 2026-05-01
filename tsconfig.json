@@ -11,7 +11,7 @@
         "noFallthroughCasesInSwitch": true,
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "allowJs": true,
+        "allowJs": false,
         "isolatedModules": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,

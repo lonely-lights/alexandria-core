@@ -20,12 +20,17 @@
  * - [[YouTube:url]] → <div data-youtube-video="url"></div>
  */
 
+type ListType = 'bullet' | 'ordered';
+
+interface ListItem {
+    depth: number;
+    content: string;
+}
+
 /**
- * Parse wiki markup to HTML
- * @param {string} wiki - Wiki markup string
- * @returns {string} HTML string suitable for TipTap
+ * Parse wiki markup to HTML, suitable for feeding into TipTap's setContent().
  */
-export function parseWikiToHtml(wiki) {
+export function parseWikiToHtml(wiki: string): string {
     if (!wiki || typeof wiki !== 'string') {
         return '';
     }
@@ -55,7 +60,7 @@ export function parseWikiToHtml(wiki) {
 /**
  * Process headings: == Text == → <h2>Text</h2>
  */
-function processHeadings(text) {
+function processHeadings(text: string): string {
     // H6 to H2 (process longer markers first)
     for (let level = 6; level >= 2; level--) {
         const marker = '='.repeat(level);
@@ -66,13 +71,13 @@ function processHeadings(text) {
 }
 
 /**
- * Process bullet and ordered lists
+ * Process bullet and ordered lists.
  */
-function processLists(text) {
+function processLists(text: string): string {
     const lines = text.split('\n');
-    const result = [];
-    let currentList = null;
-    let currentType = null;
+    const result: string[] = [];
+    let currentList: ListItem[] | null = null;
+    let currentType: ListType | null = null;
 
     for (const line of lines) {
         const bulletMatch = line.match(/^(\*+)\s*(.*)$/);
@@ -83,7 +88,7 @@ function processLists(text) {
             const content = bulletMatch[2];
 
             if (currentType !== 'bullet' || !currentList) {
-                if (currentList) {
+                if (currentList && currentType) {
                     result.push(closeList(currentList, currentType));
                 }
                 currentList = [];
@@ -96,7 +101,7 @@ function processLists(text) {
             const content = orderedMatch[2];
 
             if (currentType !== 'ordered' || !currentList) {
-                if (currentList) {
+                if (currentList && currentType) {
                     result.push(closeList(currentList, currentType));
                 }
                 currentList = [];
@@ -105,7 +110,7 @@ function processLists(text) {
 
             currentList.push({ depth, content });
         } else {
-            if (currentList) {
+            if (currentList && currentType) {
                 result.push(closeList(currentList, currentType));
                 currentList = null;
                 currentType = null;
@@ -114,7 +119,7 @@ function processLists(text) {
         }
     }
 
-    if (currentList) {
+    if (currentList && currentType) {
         result.push(closeList(currentList, currentType));
     }
 
@@ -122,19 +127,19 @@ function processLists(text) {
 }
 
 /**
- * Close a list and generate HTML
+ * Close a list and generate HTML.
  */
-function closeList(items, type) {
+function closeList(items: ListItem[], type: ListType): string {
     const tag = type === 'bullet' ? 'ul' : 'ol';
-    const listItems = items.map(item => `<li>${item.content}</li>`).join('');
+    const listItems = items.map((item) => `<li>${item.content}</li>`).join('');
     return `<${tag}>${listItems}</${tag}>`;
 }
 
 /**
  * Process images: [[Image:url]] or [[Image:url|alt]]
  */
-function processImages(text) {
-    return text.replace(/\[\[Image:([^|]+?)(?:\|([^]+?))?\]\]/g, (match, src, alt) => {
+function processImages(text: string): string {
+    return text.replace(/\[\[Image:([^|]+?)(?:\|([^]+?))?\]\]/g, (_match, src: string, alt?: string) => {
         const altText = alt ? escapeHtml(alt) : '';
         return `<img src="${escapeHtml(src)}" alt="${altText}">`;
     });
@@ -143,8 +148,8 @@ function processImages(text) {
 /**
  * Process YouTube embeds: [[YouTube:url]]
  */
-function processYoutube(text) {
-    return text.replace(/\[\[YouTube:([^]+?)\]\]/g, (match, src) => {
+function processYoutube(text: string): string {
+    return text.replace(/\[\[YouTube:([^]+?)\]\]/g, (_match, src: string) => {
         return `<div data-youtube-video data-src="${escapeHtml(src)}"></div>`;
     });
 }
@@ -152,8 +157,8 @@ function processYoutube(text) {
 /**
  * Process entry links: [[Entry Name]] or [[Entry Name|Display Text]]
  */
-function processEntryLinks(text) {
-    return text.replace(/\[\[([^|]+?)(?:\|([^]+?))?\]\]/g, (match, name, displayText) => {
+function processEntryLinks(text: string): string {
+    return text.replace(/\[\[([^|]+?)(?:\|([^]+?))?\]\]/g, (_match, name: string, displayText?: string) => {
         const display = displayText || name;
         // Use a span with data attributes that TipTap can recognize
         return `<a data-type="entry-link" data-name="${escapeHtml(name)}" class="entry-link">${escapeHtml(display)}</a>`;
@@ -163,9 +168,9 @@ function processEntryLinks(text) {
 /**
  * Process user mentions: @username
  */
-function processMentions(text) {
+function processMentions(text: string): string {
     // Match @username (alphanumeric and underscores, 2-30 chars)
-    return text.replace(/@([a-zA-Z0-9_]{2,30})(?![a-zA-Z0-9_])/g, (match, username) => {
+    return text.replace(/@([a-zA-Z0-9_]{2,30})(?![a-zA-Z0-9_])/g, (_match, username: string) => {
         return `<a href="/u/${username.toLowerCase()}" data-type="mention" data-id="${escapeHtml(username)}" data-label="${escapeHtml(username)}" class="mention">@${escapeHtml(username)}</a>`;
     });
 }
@@ -173,9 +178,9 @@ function processMentions(text) {
 /**
  * Process external links: [url text] or bare URLs
  */
-function processExternalLinks(text) {
+function processExternalLinks(text: string): string {
     // Process [url text] format
-    text = text.replace(/\[(\S+)\s+([^]+?)\]/g, (match, url, linkText) => {
+    text = text.replace(/\[(\S+)\s+([^]+?)\]/g, (_match, url: string, linkText: string) => {
         return `<a href="${escapeHtml(url)}" rel="noopener noreferrer nofollow">${escapeHtml(linkText)}</a>`;
     });
 
@@ -185,7 +190,7 @@ function processExternalLinks(text) {
 /**
  * Process bold, italic, and underline: '''bold''', ''italic'', __underline__, '''''both'''''
  */
-function processBoldItalic(text) {
+function processBoldItalic(text: string): string {
     // Bold+Italic first (5 quotes)
     text = text.replace(/'''''(.+?)'''''/g, '<strong><em>$1</em></strong>');
 
@@ -202,14 +207,14 @@ function processBoldItalic(text) {
 }
 
 /**
- * Process paragraphs: wrap text blocks in <p> tags
+ * Process paragraphs: wrap text blocks in <p> tags.
  */
-function processParagraphs(text) {
+function processParagraphs(text: string): string {
     // Split by double newlines
     const blocks = text.split(/\n{2,}/);
 
     return blocks
-        .map(block => {
+        .map((block) => {
             block = block.trim();
             if (!block) return '';
 
@@ -229,14 +234,14 @@ function processParagraphs(text) {
 
             return `<p>${block}</p>`;
         })
-        .filter(block => block)
+        .filter((block) => block)
         .join('');
 }
 
 /**
- * Escape HTML special characters
+ * Escape HTML special characters.
  */
-function escapeHtml(text) {
+function escapeHtml(text: string): string {
     if (!text) return '';
     return text
         .replace(/&/g, '&amp;')
