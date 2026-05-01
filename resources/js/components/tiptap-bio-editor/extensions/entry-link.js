@@ -71,28 +71,36 @@ export default function createEntryLinkExtension(options = {}) {
             ];
         },
 
+        /**
+         * @param {{ node: import('@tiptap/pm/model').Node, HTMLAttributes: Record<string, any> }} props
+         */
         renderHTML({ node, HTMLAttributes }) {
-            const display = node.attrs.displayText || node.attrs.name;
+            const attrs = node.attrs;
+            const display = attrs.displayText || attrs.name;
             return [
                 'a',
                 mergeAttributes(HTMLAttributes, {
                     'data-type': 'entry-link',
-                    'data-id': node.attrs.id,
-                    'data-name': node.attrs.name,
-                    'data-slug': node.attrs.slug,
-                    'data-blueprint-slug': node.attrs.blueprintSlug,
+                    'data-id': attrs.id,
+                    'data-name': attrs.name,
+                    'data-slug': attrs.slug,
+                    'data-blueprint-slug': attrs.blueprintSlug,
                     'class': 'entry-link text-primary font-medium cursor-pointer hover:underline',
-                    'href': node.attrs.slug && node.attrs.blueprintSlug
-                        ? `/entries/${node.attrs.blueprintSlug}/${node.attrs.slug}`
+                    'href': attrs.slug && attrs.blueprintSlug
+                        ? `/entries/${attrs.blueprintSlug}/${attrs.slug}`
                         : '#',
                 }),
                 display,
             ];
         },
 
+        /**
+         * @param {{ node: import('@tiptap/pm/model').Node }} props
+         */
         renderText({ node }) {
-            const name = node.attrs.name || '';
-            const displayText = node.attrs.displayText || '';
+            const attrs = node.attrs;
+            const name = attrs.name || '';
+            const displayText = attrs.displayText || '';
 
             if (displayText && displayText !== name) {
                 return `[[${name}|${displayText}]]`;
@@ -107,8 +115,20 @@ export default function createEntryLinkExtension(options = {}) {
                 new Plugin({
                     key: EntryLinkPluginKey,
 
+                    // Plugin handlers below are referenced by ProseMirror via the
+                    // plugin spec; the IDE can't always trace that, so don't
+                    // remove them as "unused". The 4-argument handleTextInput
+                    // signature (view, from, to, text) is part of the
+                    // ProseMirror contract — `to` is required even when
+                    // unused.
                     props: {
-                        handleTextInput(view, from, to, text) {
+                        /**
+                         * @param {import('@tiptap/pm/view').EditorView} view
+                         * @param {number} from
+                         * @param {number} _to
+                         * @param {string} text
+                         */
+                        handleTextInput(view, from, _to, text) {
                             const { state } = view;
 
                             // Check if we're starting a new [[ sequence
@@ -136,12 +156,16 @@ export default function createEntryLinkExtension(options = {}) {
                                 }
 
                                 query += text;
-                                updateSuggestions(view);
+                                void updateSuggestions(view);
                             }
 
                             return false;
                         },
 
+                        /**
+                         * @param {import('@tiptap/pm/view').EditorView} view
+                         * @param {KeyboardEvent} event
+                         */
                         handleKeyDown(view, event) {
                             if (!active) return false;
 
@@ -172,7 +196,7 @@ export default function createEntryLinkExtension(options = {}) {
                                 case 'Backspace':
                                     if (query.length > 0) {
                                         query = query.slice(0, -1);
-                                        updateSuggestions(view);
+                                        void updateSuggestions(view);
                                     } else {
                                         hidePopup();
                                     }
@@ -193,6 +217,9 @@ export default function createEntryLinkExtension(options = {}) {
                 }),
             ];
 
+            /**
+             * @param {import('@tiptap/pm/view').EditorView} view
+             */
             function showPopup(view) {
                 if (popup) {
                     popup.remove();
@@ -203,7 +230,7 @@ export default function createEntryLinkExtension(options = {}) {
                 document.body.appendChild(popup);
 
                 updatePopupPosition(view);
-                updateSuggestions(view);
+                void updateSuggestions(view);
             }
 
             function hidePopup() {
@@ -219,6 +246,9 @@ export default function createEntryLinkExtension(options = {}) {
                 }
             }
 
+            /**
+             * @param {import('@tiptap/pm/view').EditorView} view
+             */
             function updatePopupPosition(view) {
                 if (!popup || !view) return;
 
@@ -227,7 +257,15 @@ export default function createEntryLinkExtension(options = {}) {
                 popup.style.top = `${coords.bottom + 8}px`;
             }
 
-            async function updateSuggestions(view) {
+            /**
+             * The view parameter is currently unused but retained because
+             * future enhancements (re-positioning the popup mid-query) will
+             * need it; callers already pass it in.
+             *
+             * @param {import('@tiptap/pm/view').EditorView} _view
+             */
+            // eslint-disable-next-line no-unused-vars
+            async function updateSuggestions(_view) {
                 if (!active) return;
 
                 // Show loading state

@@ -9,23 +9,31 @@ export default function createMentionExtension(options = {}) {
         onSelect = () => {},
     } = options;
 
-    /** @type {import('@tiptap/extension-mention').MentionOptions} */
+    /** @type {Partial<import('@tiptap/extension-mention').MentionOptions>} */
     const mentionConfig = {
         HTMLAttributes: {
             class: 'mention mention-user text-primary font-medium cursor-pointer hover:underline',
         },
+        /**
+         * @param {{ node: import('@tiptap/pm/model').Node }} props
+         */
         renderText({ node }) {
-            return `@${node.attrs.label ?? node.attrs.id}`;
+            const attrs = node.attrs;
+            return `@${attrs.label ?? attrs.id}`;
         },
+        /**
+         * @param {{ options: import('@tiptap/extension-mention').MentionOptions, node: import('@tiptap/pm/model').Node }} props
+         */
         renderHTML({ options, node }) {
-            const username = node.attrs.label ?? node.attrs.id;
+            const attrs = node.attrs;
+            const username = attrs.label ?? attrs.id;
             return [
                 'a',
                 {
                     ...options.HTMLAttributes,
                     'data-type': 'mention',
-                    'data-id': node.attrs.id,
-                    'data-label': node.attrs.label,
+                    'data-id': attrs.id,
+                    'data-label': attrs.label,
                     'href': `/u/${(username || '').toLowerCase()}`,
                 },
                 `@${username}`,

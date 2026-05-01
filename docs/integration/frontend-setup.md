@@ -63,11 +63,11 @@ backwards-compatible.
 | `@types/sortablejs` (dev) | type-checking `useSortableReorder` | `^1.15.9` |
 | `@tiptap/core` | `RichTextEditor`, `tiptap-bio-editor/extensions/entry-link`, `tiptap-bio-editor/utils/wiki-serializer` | `^3.14.0` |
 | `@tiptap/react` | `RichTextEditor` (`useEditor`, `EditorContent`) | `^3.20.5` |
-| `@tiptap/starter-kit` | `RichTextEditor`, `tiptap-bio-editor/index` | `^3.14.0` |
-| `@tiptap/extension-link` | `RichTextEditor`, `tiptap-bio-editor/index` | `^3.14.0` |
+| `@tiptap/starter-kit` | `RichTextEditor` | `^3.14.0` |
+| `@tiptap/extension-link` | `RichTextEditor` | `^3.14.0` |
 | `@tiptap/extension-mention` | `tiptap-bio-editor/extensions/mention` | `^3.14.0` |
-| `@tiptap/extension-placeholder` | `RichTextEditor`, `tiptap-bio-editor/index` | `^3.14.0` |
-| `@tiptap/extension-underline` | `RichTextEditor`, `tiptap-bio-editor/index` | `^3.14.0` |
+| `@tiptap/extension-placeholder` | `RichTextEditor` | `^3.14.0` |
+| `@tiptap/extension-underline` | `RichTextEditor` | `^3.14.0` |
 | `@tiptap/pm` | `tiptap-bio-editor/extensions/entry-link` (`Plugin`, `PluginKey`) | `^3.14.0` |
 | `@tiptap/suggestion` | transitive peer of `@tiptap/extension-mention`'s `suggestion` plugin | `^3.14.0` |
 
@@ -81,8 +81,8 @@ endpoint via the relevant prop):
 - `GET /api/v1/users/search?q=…&limit=…` — `@mention` autocomplete.
   Override via the `mentionSearchEndpoint` prop.
 - `GET /api/v1/entries/search?q=…&limit=…&project_id=…` —
-  `[[entry-link]]` autocomplete (only when entry-links are enabled
-  via the standalone subtree entrypoint).
+  `[[entry-link]]` autocomplete (when entry-links are enabled via
+  the `createEntryLinkExtension` factory).
 - `GET`/`POST`/`DELETE` `/api/v1/ai/prompts[/{id}]` — saved-prompt
   CRUD used by the AI writing modal.
 
