@@ -1,15 +1,20 @@
 # Frontend integration
 
-> **Status:** Stage 1 / FE-E complete. Path-alias plumbing, the
+> **Status:** Stage 1 / FE-H complete. Path-alias plumbing, the
 > framework-generic TypeScript surface (types, lib utilities, config
 > registries, generic hooks), the theme system (FE-C), the stateless
-> UI + form primitives (FE-D), and the navigation chrome + layout
-> shell (FE-E — `AppLayout`, `Navbar`, `Sidebar`, `BottomNav`,
-> `CommandPalette`, `ThemePicker`, `useCmdK`) are now in place.
+> UI + form primitives (FE-D), the navigation chrome + layout shell
+> (FE-E — `AppLayout`, `Navbar`, `Sidebar`, `BottomNav`,
+> `CommandPalette`, `ThemePicker`, `useCmdK`), the Fortify auth pages
+> (FE-F1), and the rich-text editor surface (FE-H — `RichTextEditor`,
+> `AiWritingModal`, `tiptap-bio-editor/` subtree) are now in place.
 > Consumers do not need to revisit this recipe — the alias keeps
 > working as core grows; install the additional peer deps below as
-> new primitives land. New peer dep at this stage:
-> `@headlessui/react`.
+> new primitives land. New peer deps at this stage: the Tiptap 3
+> family (`@tiptap/core`, `@tiptap/react`, `@tiptap/starter-kit`,
+> `@tiptap/extension-link`, `@tiptap/extension-mention`,
+> `@tiptap/extension-placeholder`, `@tiptap/extension-underline`,
+> `@tiptap/pm`, `@tiptap/suggestion`).
 
 `alexandria-core` ships TypeScript and React components alongside the
 PHP package, under `resources/js/`. Composer packages cannot publish to
@@ -56,6 +61,30 @@ backwards-compatible.
 | `gsap` | `hooks/useEnterAnimation`, `Modal`, `HeroRotator`, `CommandPalette` | `^3.14.2` |
 | `sortablejs` | `hooks/useSortableReorder` | `^1.15.6` |
 | `@types/sortablejs` (dev) | type-checking `useSortableReorder` | `^1.15.9` |
+| `@tiptap/core` | `RichTextEditor`, `tiptap-bio-editor/extensions/entry-link`, `tiptap-bio-editor/utils/wiki-serializer` | `^3.14.0` |
+| `@tiptap/react` | `RichTextEditor` (`useEditor`, `EditorContent`) | `^3.20.5` |
+| `@tiptap/starter-kit` | `RichTextEditor`, `tiptap-bio-editor/index` | `^3.14.0` |
+| `@tiptap/extension-link` | `RichTextEditor`, `tiptap-bio-editor/index` | `^3.14.0` |
+| `@tiptap/extension-mention` | `tiptap-bio-editor/extensions/mention` | `^3.14.0` |
+| `@tiptap/extension-placeholder` | `RichTextEditor`, `tiptap-bio-editor/index` | `^3.14.0` |
+| `@tiptap/extension-underline` | `RichTextEditor`, `tiptap-bio-editor/index` | `^3.14.0` |
+| `@tiptap/pm` | `tiptap-bio-editor/extensions/entry-link` (`Plugin`, `PluginKey`) | `^3.14.0` |
+| `@tiptap/suggestion` | transitive peer of `@tiptap/extension-mention`'s `suggestion` plugin | `^3.14.0` |
+
+`RichTextEditor` and the `tiptap-bio-editor/` subtree call several
+backend endpoints — consumer apps must expose these (or override the
+endpoint via the relevant prop):
+
+- `POST /api/v1/ai/write` — AI writing-assistant action when
+  `enableAi` is set. Body `{ action, text, prompt, project_id,
+  instruction_id }`, response `{ result: string }` (wiki markup).
+- `GET /api/v1/users/search?q=…&limit=…` — `@mention` autocomplete.
+  Override via the `mentionSearchEndpoint` prop.
+- `GET /api/v1/entries/search?q=…&limit=…&project_id=…` —
+  `[[entry-link]]` autocomplete (only when entry-links are enabled
+  via the standalone subtree entrypoint).
+- `GET`/`POST`/`DELETE` `/api/v1/ai/prompts[/{id}]` — saved-prompt
+  CRUD used by the AI writing modal.
 
 Notes on what core deliberately does **not** depend on:
 
