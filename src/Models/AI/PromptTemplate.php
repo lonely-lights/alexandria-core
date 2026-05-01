@@ -39,6 +39,7 @@ use InvalidArgumentException;
  * @method static Builder<static> forContext(string $contextType)
  * @method static PromptTemplateFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static PromptTemplate create(array $attributes = [])
+ * @method static PromptTemplate updateOrCreate(array $attributes = [], array $values = [])
  */
 class PromptTemplate extends Model
 {

@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @method static PromptContextSchemaFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static PromptContextSchema create(array $attributes = [])
  * @method static PromptContextSchema firstOrCreate(array $attributes = [], array $values = [])
+ * @method static PromptContextSchema updateOrCreate(array $attributes = [], array $values = [])
  */
 class PromptContextSchema extends Model
 {
