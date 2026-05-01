@@ -92,7 +92,7 @@ export default function Sidebar({
                     </nav>
 
                     {/* Profile Link */}
-                    {auth && userMenuLink && (
+                    {auth?.user && userMenuLink && (
                         <>
                             <div className="divider my-1 h-px" />
                             <a
@@ -100,9 +100,9 @@ export default function Sidebar({
                                 className="flex items-center gap-4 rounded-lg px-2 py-1.5 transition-colors hover:bg-base-300"
                             >
                                 <AvatarWithRing
-                                    src={auth.user.has_avatar ? auth.user.avatar_thumb_url : null}
-                                    alt={auth.user.display_name ?? auth.user.name}
-                                    initials={(auth.user.display_name ?? auth.user.name).charAt(0).toUpperCase()}
+                                    src={auth.user.has_avatar && auth.user.avatar_thumb_url ? auth.user.avatar_thumb_url : null}
+                                    alt={auth.user.display_name ?? auth.user.name ?? 'User'}
+                                    initials={(auth.user.display_name ?? auth.user.name ?? 'U').charAt(0).toUpperCase()}
                                     size={32}
                                     ring={auth.user.avatar_ring_slug ?? 'none'}
                                     ringSettings={auth.user.avatar_ring_settings as never}
@@ -110,11 +110,13 @@ export default function Sidebar({
                                 />
                                 <div className="flex flex-col">
                                     <span className="text-sm font-medium leading-tight">
-                                        {auth.user.display_name ?? auth.user.name}
+                                        {auth.user.display_name ?? auth.user.name ?? 'User'}
                                     </span>
-                                    <span className="text-xs leading-tight text-base-content/60">
-                                        @{auth.user.name}
-                                    </span>
+                                    {auth.user.display_name && auth.user.name && (
+                                        <span className="text-xs leading-tight text-base-content/60">
+                                            @{auth.user.name}
+                                        </span>
+                                    )}
                                 </div>
                             </a>
                         </>

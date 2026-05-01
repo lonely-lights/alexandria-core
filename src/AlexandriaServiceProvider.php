@@ -24,7 +24,7 @@ class AlexandriaServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/alexandria.php', 'alexandria');
 
-        $this->forceFortifyFeatures();
+        $this->forceFortifyDefaults();
     }
 
     public function boot(): void
@@ -42,23 +42,29 @@ class AlexandriaServiceProvider extends ServiceProvider
     }
 
     /**
-     * Override Fortify's default 6-feature config with WIRE-B.1's 3-feature
-     * subset. Fortify's service provider auto-discovers before ours and
-     * primes config/fortify.features with all 6 defaults via
-     * mergeConfigFrom; that can't replace an existing array key, so we
-     * use config()->set() to clobber it. This must run in register()
-     * (not boot()) because Fortify's boot() registers its routes by
-     * reading config('fortify.features') — by the time our boot() runs,
-     * the unwanted routes (update-passwords, update-profile-information,
-     * two-factor-authentication) are already registered. Our register()
-     * runs after Fortify's register() (alphabetical service-provider
-     * order), so the override lands before any boot() phase.
+     * Override Fortify's defaults with core's preferred values.
+     *
+     * Why config()->set() instead of mergeConfigFrom: Fortify's service
+     * provider auto-discovers before ours and primes config/fortify.* via
+     * its own mergeConfigFrom. Laravel's mergeConfigFrom is "merge our
+     * defaults INTO current config, current wins for shared keys" — so a
+     * later provider can't override a prior provider's values that way.
+     * config()->set() does a hard set and lands regardless of order.
+     *
+     * Must run in register() (not boot()): Fortify's boot() registers its
+     * routes by reading config('fortify.features') and config('fortify.home')
+     * — by the time our boot() runs, unwanted routes are already on the
+     * router. Our register() runs after Fortify's register() (alphabetical
+     * service-provider order), so the override lands before any boot()
+     * phase.
      *
      * WIRE-B.4 (2FA) and WIRE-E (settings) re-enable the appropriate
-     * features.
+     * features. Consumers who want a different post-login home publish
+     * their own config or override fortify.home in their own provider.
      */
-    private function forceFortifyFeatures(): void
+    private function forceFortifyDefaults(): void
     {
+        config()->set('fortify.home', '/dashboard');
         config()->set('fortify.features', [
             Features::registration(),
             Features::resetPasswords(),

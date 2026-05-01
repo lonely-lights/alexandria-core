@@ -187,9 +187,9 @@ export default function Navbar({
                                     className="inline-flex min-w-0 max-w-full items-center gap-4 overflow-hidden rounded-md px-3 py-1 text-sm font-medium text-base-content transition-all duration-300 hover:bg-base-content/10 focus:outline-none"
                                 >
                                     <AvatarWithRing
-                                        src={user.has_avatar ? user.avatar_thumb_url : null}
-                                        alt={user.name}
-                                        initials={(user.display_name ?? user.name).charAt(0).toUpperCase()}
+                                        src={user.has_avatar && user.avatar_thumb_url ? user.avatar_thumb_url : null}
+                                        alt={user.name ?? 'User'}
+                                        initials={(user.display_name ?? user.name ?? 'U').charAt(0).toUpperCase()}
                                         size={32}
                                         ring={user.avatar_ring_slug ?? 'none'}
                                         ringSettings={user.avatar_ring_settings as never}
@@ -197,11 +197,13 @@ export default function Navbar({
                                     />
                                     <span className="flex min-w-0 flex-col items-start leading-none">
                                         <span className="truncate max-w-[180px]">
-                                            {user.display_name ?? user.name}
+                                            {user.display_name ?? user.name ?? 'User'}
                                         </span>
-                                        <span className="truncate max-w-[180px] text-xs text-base-content/50">
-                                            @{user.name}
-                                        </span>
+                                        {user.display_name && user.name && (
+                                            <span className="truncate max-w-[180px] text-xs text-base-content/50">
+                                                @{user.name}
+                                            </span>
+                                        )}
                                     </span>
                                     <svg
                                         className="h-4 w-4 flex-shrink-0 text-base-content/40"
