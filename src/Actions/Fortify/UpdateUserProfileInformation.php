@@ -6,6 +6,7 @@ namespace Alexandria\Core\Actions\Fortify;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\UpdatesUserProfileInformation;
@@ -17,7 +18,7 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
      *
      * @param  array<string, string>  $input
      */
-    public function update(Authenticatable $user, array $input): void
+    public function update(Authenticatable&Model $user, array $input): void
     {
         $userClass = config('alexandria.models.user');
         $table = (new $userClass)->getTable();
@@ -49,7 +50,7 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
      *
      * @param  array<string, string>  $input
      */
-    private function updateVerifiedUser(Authenticatable&MustVerifyEmail $user, array $input): void
+    private function updateVerifiedUser(Authenticatable&Model&MustVerifyEmail $user, array $input): void
     {
         $user->forceFill([
             'name' => $input['name'],

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Alexandria\Core\Actions\Fortify;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
@@ -18,7 +19,7 @@ class ResetUserPassword implements ResetsUserPasswords
      *
      * @param  array<string, string>  $input
      */
-    public function reset(Authenticatable $user, array $input): void
+    public function reset(Authenticatable&Model $user, array $input): void
     {
         Validator::make($input, [
             'password' => $this->passwordRules(),

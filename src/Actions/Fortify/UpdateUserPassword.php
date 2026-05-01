@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Alexandria\Core\Actions\Fortify;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\UpdatesUserPasswords;
@@ -18,7 +19,7 @@ class UpdateUserPassword implements UpdatesUserPasswords
      *
      * @param  array<string, string>  $input
      */
-    public function update(Authenticatable $user, array $input): void
+    public function update(Authenticatable&Model $user, array $input): void
     {
         Validator::make($input, [
             'current_password' => ['required', 'string', 'current_password:web'],
