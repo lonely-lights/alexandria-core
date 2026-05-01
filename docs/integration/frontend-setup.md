@@ -335,6 +335,61 @@ core only depend on standard DaisyUI semantic tokens (`primary`,
 
 ---
 
+## Icon font (Font Awesome)
+
+Alexandria's auth pages use Font Awesome 6 solid classes (`<i class="fa-solid fa-*">`). Consumers register Font Awesome themselves — the framework doesn't pin a license-bound dependency. Pick the path that matches your license.
+
+### Free
+
+```bash
+npm install @fortawesome/fontawesome-free@^6
+```
+
+In `resources/css/app.css`:
+
+```css
+@import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
+@import '@fortawesome/fontawesome-free/css/solid.min.css';
+```
+
+### Pro
+
+Pro requires authenticating against Font Awesome's private npm registry. One-time setup in `.npmrc` (project-local OR `~/.npmrc`):
+
+```
+@fortawesome:registry=https://npm.fontawesome.com/
+//npm.fontawesome.com/:_authToken=YOUR_FA_PRO_TOKEN
+```
+
+(Get the token from <https://fontawesome.com/account>.) **Keep `.npmrc` containing the token out of git** — verify your `.gitignore` covers it.
+
+Install:
+
+```bash
+npm install @fortawesome/fontawesome-pro@^6
+```
+
+In `resources/css/app.css`:
+
+```css
+@import '@fortawesome/fontawesome-pro/css/fontawesome.min.css';
+@import '@fortawesome/fontawesome-pro/css/solid.min.css';
+
+/* Optional Pro-only families: */
+@import '@fortawesome/fontawesome-pro/css/light.min.css';
+@import '@fortawesome/fontawesome-pro/css/thin.min.css';
+@import '@fortawesome/fontawesome-pro/css/duotone.min.css';
+@import '@fortawesome/fontawesome-pro/css/sharp-solid.min.css';
+```
+
+Pro additionally provides `light`, `thin`, `duotone`, and `sharp-*` families. The auth pages only use `fa-solid` so those imports are optional unless the consumer's own pages use the additional families.
+
+### Switching between Free and Pro
+
+Both packages expose the same `fa-solid` classes, so switching is just: uninstall one, install the other, swap the import paths. No code changes needed in any page.
+
+---
+
 ## Verification
 
 Once FE-B has shipped some content and you have wired all four pieces
