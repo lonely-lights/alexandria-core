@@ -1,10 +1,11 @@
 # Frontend integration
 
-> **Status:** Stage 1 / FE-A complete. The path-alias plumbing described
-> here is in place; the `resources/js/` directory is scaffolded but not
-> yet populated. FE-B onwards lifts the actual TypeScript/React surface
-> (types, lib, hooks, components, layouts, pages). Once those land,
-> consumers do not need to revisit this recipe — the alias keeps working.
+> **Status:** Stage 1 / FE-B complete. Path-alias plumbing and the
+> framework-generic TypeScript surface (types, lib utilities, config
+> registries, generic hooks) are now in place. Subsequent FE slices
+> lift the React component, layout, and page surface. Consumers do
+> not need to revisit this recipe — the alias keeps working as core
+> grows.
 
 `alexandria-core` ships TypeScript and React components alongside the
 PHP package, under `resources/js/`. Composer packages cannot publish to
@@ -29,6 +30,37 @@ truth.
 `alexandria-core` itself does not ship a `package.json` — versions are
 the consumer app's responsibility. The combinations above are what the
 extraction was tested against.
+
+---
+
+## Required peer dependencies
+
+`alexandria-core`'s TypeScript surface imports a handful of npm packages
+that the consumer app must install. Versions below match what legacy was
+tested against and are the floor we recommend; newer minors should be
+backwards-compatible.
+
+| Package | Used by | Recommended version |
+|---|---|---|
+| `react` | hooks, `lib/hoverPosition` (React.CSSProperties) | `^19.2.4` |
+| `@inertiajs/react` | `types/index.d.ts` (PageProps declaration merge) | `^2.3.18` |
+| `clsx` | `lib/utils.ts` (`cn` helper) | `^2.1.1` |
+| `gsap` | `hooks/useEnterAnimation` | `^3.14.2` |
+| `sortablejs` | `hooks/useSortableReorder` | `^1.15.6` |
+| `@types/sortablejs` (dev) | type-checking `useSortableReorder` | `^1.15.9` |
+
+Notes on what core deliberately does **not** depend on:
+
+- **No `tailwind-merge`.** `cn()` is just `clsx`. DaisyUI's component
+  classes generally don't conflict with Tailwind utilities, so the
+  added merge step isn't worth the bundle cost. Consumers that want
+  Tailwind class-conflict resolution can wrap or replace `cn` in their
+  own app code.
+- **No `dayjs`.** `formatDate()` uses native `Intl.DateTimeFormat` —
+  zero runtime dependency.
+- **No `@dnd-kit/*`.** `useSortableReorder` is a thin SortableJS
+  wrapper, not a dnd-kit hook. SortableJS is smaller and the existing
+  reorder UX is built around it.
 
 ---
 
