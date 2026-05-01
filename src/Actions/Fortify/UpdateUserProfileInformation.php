@@ -30,11 +30,12 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
                 'string',
                 'email',
                 'max:255',
-                Rule::unique($table)->ignore($user->id),
+                Rule::unique($table)->ignore($user->getKey()),
             ],
         ])->validateWithBag('updateProfileInformation');
 
-        if ($input['email'] !== $user->email && $user instanceof MustVerifyEmail) {
+        if ($input['email'] !== $user->getAttribute('email') && $user instanceof MustVerifyEmail) {
+            /** @var Authenticatable&Model&MustVerifyEmail $user */
             $this->updateVerifiedUser($user, $input);
         } else {
             $user->forceFill([
