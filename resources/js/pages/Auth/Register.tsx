@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import Logo from '@alexandria/components/ui/Logo';
+import PasswordRulesPopover from '@alexandria/components/form/PasswordRulesPopover';
 import { ThemeProvider } from '@alexandria/hooks/useTheme';
 import ModeToggle from '@alexandria/components/theme/ModeToggle';
 
@@ -34,6 +35,12 @@ export default function Register({
         e.preventDefault();
         form.post('/register');
     };
+
+    // PasswordRulesPopover anchor + focus state for live rule feedback.
+    // Callback ref pattern (useState, not useRef) avoids React 19's
+    // react-hooks/refs rule against reading .current during render.
+    const [passwordEl, setPasswordEl] = useState<HTMLInputElement | null>(null);
+    const [passwordFocused, setPasswordFocused] = useState(false);
 
     // ── Live availability checks ─────────────────────────────────────────
     const [usernameStatus, setUsernameStatus] = useState<AvailabilityState>({ status: 'idle', message: null });
@@ -302,15 +309,23 @@ export default function Register({
                                         <i className="fa-solid fa-lock" aria-hidden="true" />
                                     </div>
                                     <input
+                                        ref={setPasswordEl}
                                         type="password"
                                         id="password"
                                         name="password"
                                         value={form.data.password}
                                         onChange={(e) => form.setData('password', e.target.value)}
+                                        onFocus={() => setPasswordFocused(true)}
+                                        onBlur={() => setPasswordFocused(false)}
                                         required
                                         autoComplete="new-password"
                                         placeholder="••••••••"
                                         className="input input-bordered w-full pl-12 bg-base-200/50 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                    />
+                                    <PasswordRulesPopover
+                                        value={form.data.password}
+                                        open={passwordFocused}
+                                        anchor={passwordEl}
                                     />
                                 </div>
                             </div>
