@@ -4,6 +4,7 @@ import Navbar from '../components/navigation/Navbar';
 import Sidebar from '../components/navigation/Sidebar';
 import BottomNav from '../components/navigation/BottomNav';
 import { ToastProvider } from '../components/ui/ToastProvider';
+import Logo from '../components/ui/Logo';
 import { ThemeProvider } from '../hooks/useTheme';
 import type { BottomNavTab, UserMenuItem } from '../types/navigation';
 
@@ -160,7 +161,7 @@ export default function AppLayout({
                     open={sidebarOpen}
                     onClose={() => setSidebarOpen(false)}
                     brand={sidebarBrand}
-                    logoSlot={sidebarLogo}
+                    logoSlot={sidebarLogo ?? <Logo size="2em" />}
                     body={sidebarBody}
                     userMenuLink={sidebarUserLink}
                 />
