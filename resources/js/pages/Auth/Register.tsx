@@ -1,6 +1,8 @@
 import { Head, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import Logo from '@alexandria/components/ui/Logo';
+import PasswordRulesPopover, { evaluatePasswordRules } from '@alexandria/components/form/PasswordRulesPopover';
+import { ToastProvider, useToastContext } from '@alexandria/components/ui/ToastProvider';
 import { ThemeProvider } from '@alexandria/hooks/useTheme';
 import ModeToggle from '@alexandria/components/theme/ModeToggle';
 
@@ -16,12 +18,26 @@ interface RegisterProps {
     privacyUrl: string;
 }
 
-export default function Register({
+export default function Register(props: RegisterProps) {
+    // ToastProvider must wrap RegisterForm so the form body can call
+    // useToastContext(). ThemeProvider stays outside so theme tokens
+    // resolve before the toast renders into the portal.
+    return (
+        <ThemeProvider>
+            <ToastProvider>
+                <RegisterForm {...props} />
+            </ToastProvider>
+        </ThemeProvider>
+    );
+}
+
+function RegisterForm({
     copy,
     loginUrl,
     termsUrl,
     privacyUrl,
 }: RegisterProps) {
+    const { show: showToast } = useToastContext();
     const form = useForm({
         name: '',
         email: '',
@@ -34,6 +50,22 @@ export default function Register({
         e.preventDefault();
         form.post('/register');
     };
+
+    // PasswordRulesPopover anchor + focus state for live rule feedback.
+    // Callback ref pattern (useState, not useRef) avoids React 19's
+    // react-hooks/refs rule against reading .current during render.
+    // Tracking focus on both fields so the popover stays open (showing
+    // the 'Passwords match' rule) while the user is typing in confirm.
+    const [passwordEl, setPasswordEl] = useState<HTMLInputElement | null>(null);
+    const [passwordFocused, setPasswordFocused] = useState(false);
+    const [confirmationFocused, setConfirmationFocused] = useState(false);
+
+    // All-rules-passed flag drives the success border on BOTH password
+    // inputs. Same predicate as the popover so the visual-state stays
+    // in sync with the rule list the user sees.
+    const passwordsValid = evaluatePasswordRules(form.data.password, {
+        confirmation: form.data.password_confirmation,
+    }).allPassed;
 
     // ── Live availability checks ─────────────────────────────────────────
     const [usernameStatus, setUsernameStatus] = useState<AvailabilityState>({ status: 'idle', message: null });
@@ -111,6 +143,35 @@ export default function Register({
         }, 500);
     }, [form.data.email]);
 
+    // Fire a toast whenever the username availability check resolves to
+    // an actionable state (skip 'checking'/'idle' to avoid noise). The
+    // input still shows a status icon — the toast just replaces the
+    // inline message row that used to live below it (which caused
+    // layout shifts as the user typed).
+    useEffect(() => {
+        if (usernameStatus.status === 'available') {
+            showToast(usernameStatus.message ?? 'Username is available.', {
+                type: 'success',
+            });
+        } else if (usernameStatus.status === 'taken') {
+            showToast(usernameStatus.message ?? 'Username is already in use.', {
+                type: 'warning',
+            });
+        }
+    }, [usernameStatus.status, usernameStatus.message, showToast]);
+
+    useEffect(() => {
+        if (emailStatus.status === 'available') {
+            showToast(emailStatus.message ?? 'Email is available.', {
+                type: 'success',
+            });
+        } else if (emailStatus.status === 'taken') {
+            showToast(emailStatus.message ?? 'Email is already registered.', {
+                type: 'warning',
+            });
+        }
+    }, [emailStatus.status, emailStatus.message, showToast]);
+
     // Build the terms agreement line by replacing :terms_of_service / :privacy_policy placeholders.
     const agreeTemplate = copy['agree_terms_privacy'] ?? 'I agree to the :terms_of_service and :privacy_policy.';
     const termsLabel = copy['terms_of_service'] ?? 'Terms of Service';
@@ -119,7 +180,7 @@ export default function Register({
     const agreeParts = agreeTemplate.split(termsRegex);
 
     return (
-        <ThemeProvider>
+        <>
             <Head title={copy['enlist'] ?? 'Register'} />
 
             <div className="min-h-screen flex bg-base-100 text-base-content font-sans">
@@ -250,15 +311,20 @@ export default function Register({
                                         placeholder="letters, numbers, dashes, underscores"
                                         className={`input input-bordered w-full pl-12 pr-10 bg-base-200/50 transition-all ${
                                             usernameStatus.status === 'available'
-                                                ? 'border-success focus:border-success focus:ring-2 focus:ring-success/20'
+                                                ? 'border-success focus:border-success focus:outline-success'
                                                 : usernameStatus.status === 'taken'
-                                                    ? 'border-error focus:border-error focus:ring-2 focus:ring-error/20'
-                                                    : 'border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                                                    ? 'border-error focus:border-error focus:outline-error'
+                                                    : 'border-base-300 focus:border-primary focus:outline-primary'
                                         }`}
                                     />
                                     <AvailabilityIndicator state={usernameStatus} />
                                 </div>
-                                <AvailabilityMessage state={usernameStatus} fallback="3–30 characters. This will be your unique identifier." />
+                                {/* Static helper — the live availability
+                                    state surfaces via toast (no layout
+                                    shift) plus the icon inside the input. */}
+                                <p className="text-xs text-base-content/60">
+                                    3–30 characters. This will be your unique identifier.
+                                </p>
                             </div>
 
                             {/* Email */}
@@ -281,15 +347,14 @@ export default function Register({
                                         placeholder="you@example.com"
                                         className={`input input-bordered w-full pl-12 pr-10 bg-base-200/50 transition-all ${
                                             emailStatus.status === 'available'
-                                                ? 'border-success focus:border-success focus:ring-2 focus:ring-success/20'
+                                                ? 'border-success focus:border-success focus:outline-success'
                                                 : emailStatus.status === 'taken'
-                                                    ? 'border-error focus:border-error focus:ring-2 focus:ring-error/20'
-                                                    : 'border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                                                    ? 'border-error focus:border-error focus:outline-error'
+                                                    : 'border-base-300 focus:border-primary focus:outline-primary'
                                         }`}
                                     />
                                     <AvailabilityIndicator state={emailStatus} />
                                 </div>
-                                <AvailabilityMessage state={emailStatus} />
                             </div>
 
                             {/* Password */}
@@ -302,15 +367,28 @@ export default function Register({
                                         <i className="fa-solid fa-lock" aria-hidden="true" />
                                     </div>
                                     <input
+                                        ref={setPasswordEl}
                                         type="password"
                                         id="password"
                                         name="password"
                                         value={form.data.password}
                                         onChange={(e) => form.setData('password', e.target.value)}
+                                        onFocus={() => setPasswordFocused(true)}
+                                        onBlur={() => setPasswordFocused(false)}
                                         required
                                         autoComplete="new-password"
                                         placeholder="••••••••"
-                                        className="input input-bordered w-full pl-12 bg-base-200/50 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        className={`input input-bordered w-full pl-12 bg-base-200/50 transition-all ${
+                                            passwordsValid
+                                                ? 'border-success focus:border-success focus:outline-success'
+                                                : 'border-base-300 focus:border-primary focus:outline-primary'
+                                        }`}
+                                    />
+                                    <PasswordRulesPopover
+                                        value={form.data.password}
+                                        confirmation={form.data.password_confirmation}
+                                        open={passwordFocused || confirmationFocused}
+                                        anchor={passwordEl}
                                     />
                                 </div>
                             </div>
@@ -330,10 +408,16 @@ export default function Register({
                                         name="password_confirmation"
                                         value={form.data.password_confirmation}
                                         onChange={(e) => form.setData('password_confirmation', e.target.value)}
+                                        onFocus={() => setConfirmationFocused(true)}
+                                        onBlur={() => setConfirmationFocused(false)}
                                         required
                                         autoComplete="new-password"
                                         placeholder="••••••••"
-                                        className="input input-bordered w-full pl-12 bg-base-200/50 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        className={`input input-bordered w-full pl-12 bg-base-200/50 transition-all ${
+                                            passwordsValid
+                                                ? 'border-success focus:border-success focus:outline-success'
+                                                : 'border-base-300 focus:border-primary focus:outline-primary'
+                                        }`}
                                     />
                                 </div>
                             </div>
@@ -381,11 +465,19 @@ export default function Register({
                                 </label>
                             </div>
 
-                            {/* Submit */}
+                            {/* Submit — gated on all client-side checks
+                                resolving green. Server still re-validates,
+                                so this is a UX gate, not a security one. */}
                             <button
                                 type="submit"
-                                disabled={form.processing}
-                                className="w-full inline-flex items-center justify-center gap-2 font-bold text-sm disabled:opacity-50"
+                                disabled={
+                                    form.processing ||
+                                    usernameStatus.status !== 'available' ||
+                                    emailStatus.status !== 'available' ||
+                                    !passwordsValid ||
+                                    !form.data.terms
+                                }
+                                className="w-full inline-flex items-center justify-center gap-2 font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <span className="btn-offset w-full px-7 py-4 rounded-lg inline-flex items-center justify-center gap-2">
                                     <span>{copy['enlist']}</span>
@@ -407,7 +499,7 @@ export default function Register({
                     </div>
                 </div>
             </div>
-        </ThemeProvider>
+        </>
     );
 }
 
@@ -428,15 +520,3 @@ function AvailabilityIndicator({ state }: { state: AvailabilityState }) {
     );
 }
 
-function AvailabilityMessage({ state, fallback }: { state: AvailabilityState; fallback?: string }) {
-    if (state.status === 'checking') {
-        return <p className="text-xs text-base-content/50">Checking availability…</p>;
-    }
-    if (state.status === 'available') {
-        return <p className="text-xs text-success">{state.message ?? 'Available'}</p>;
-    }
-    if (state.status === 'taken') {
-        return <p className="text-xs text-error">{state.message ?? 'Already in use'}</p>;
-    }
-    return fallback ? <p className="text-xs text-base-content/60">{fallback}</p> : null;
-}
