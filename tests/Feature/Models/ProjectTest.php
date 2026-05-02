@@ -45,3 +45,57 @@ it('resolves owner relationship through config (ADR-006)', function () {
     expect($project->owner()->getRelated())->toBeInstanceOf(FakeUserModel::class)
         ->and($project->creator()->getRelated())->toBeInstanceOf(FakeUserModel::class);
 });
+
+it('exposes a users BelongsToMany relation that resolves through config (ADR-006)', function () {
+    config()->set('alexandria.models.user', FakeUserModel::class);
+
+    $project = Project::factory()->create();
+
+    expect($project->users()->getRelated())->toBeInstanceOf(FakeUserModel::class)
+        ->and($project->users()->getTable())->toBe('project_user')
+        ->and($project->users)->toBeEmpty();
+});
+
+it('inserts pivot rows on project_user with project_id + user_id + role_id', function () {
+    $project = Project::factory()->create();
+    // Insert directly into roles to avoid Spatie's PermissionRegistrar
+    // boot dependencies — we just need a row with an id this FK can target.
+    $roleId = DB::table('roles')->insertGetId([
+        'name' => 'editor',
+        'guard_name' => 'web',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    DB::table('project_user')->insert([
+        'project_id' => $project->id,
+        'user_id' => 99,
+        'role_id' => $roleId,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    expect(DB::table('project_user')->count())->toBe(1);
+});
+
+it('cascades pivot rows when a project is force-deleted', function () {
+    $project = Project::factory()->create();
+    $roleId = DB::table('roles')->insertGetId([
+        'name' => 'viewer',
+        'guard_name' => 'web',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    DB::table('project_user')->insert([
+        'project_id' => $project->id,
+        'user_id' => 99,
+        'role_id' => $roleId,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $project->forceDelete();
+
+    expect(DB::table('project_user')->count())->toBe(0);
+});
