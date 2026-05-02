@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\Entry;
-use Alexandria\Core\Models\System\EntryHistory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -101,9 +100,10 @@ it('tracks outgoing mentions via mentionedEntries pivot', function () {
 
     $source->mentionedEntries()->attach($target->id, ['mention_count' => 3]);
 
+    $first = $source->mentionedEntries->first();
     expect($source->mentionedEntries)->toHaveCount(1)
-        ->and($source->mentionedEntries->first()->id)->toBe($target->id)
-        ->and($source->mentionedEntries->first()->pivot->mention_count)->toBe(3);
+        ->and($first->id)->toBe($target->id)
+        ->and($first->getAttribute('pivot')->mention_count)->toBe(3);
 });
 
 it('resolves incoming mentions via mentioningEntries (inverse)', function () {
@@ -163,7 +163,6 @@ it('records a history row when a trackable field changes', function () {
     $entry->update(['name' => 'Updated']);
 
     expect($entry->histories)->toHaveCount(1);
-    /** @var EntryHistory $history */
     $history = $entry->histories->first();
     expect($history->change_type)->toBe('field_update')
         ->and($history->field_name)->toBe('name')
