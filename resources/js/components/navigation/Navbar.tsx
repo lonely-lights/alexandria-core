@@ -134,7 +134,7 @@ export default function Navbar({
                     : 'bg-base-300/30 border-transparent'
             }`}
         >
-            <div className="container mx-auto max-w-7xl justify-between px-2">
+            <div className="container mx-auto flex max-w-7xl items-center justify-between px-2">
                 <div className="flex flex-1 items-center">
                     {/* Hamburger Menu Button */}
                     <button
