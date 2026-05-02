@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Database\Seeders\Permissions;
 
+use Alexandria\Core\Models\Permissions\Permission;
+use Alexandria\Core\Models\Permissions\Role;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**

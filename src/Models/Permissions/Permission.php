@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Models\Permissions;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 
@@ -22,11 +23,12 @@ use Spatie\Permission\Models\Permission as SpatiePermission;
  * @property array|null $style
  * @property string|null $icon
  * @property array|null $icon_style
+ * @property-read RolePermissionCategory|null $category
  *
- * @method static Permission where(string $column, mixed $value)
- * @method static Permission first()
- *
- * @mixin Eloquent
+ * @method static Permission create(array $attributes = [])
+ * @method static Permission firstOrCreate(array $attributes, array $values = [])
+ * @method static Builder<Permission> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<Permission> query()
  */
 class Permission extends SpatiePermission
 {

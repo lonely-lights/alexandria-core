@@ -7,19 +7,19 @@ namespace Alexandria\Core\Models\Permissions;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Spatie\Permission\Models\Role;
 
 /**
- * App\Models\Bridge\Permissions\RolePermissionCategory
- *
- * @method static Builder|RolePermissionCategory where(string $column, mixed $value)
- *
- * @mixin Eloquent
+ * RolePermissionCategory — grouping vocabulary used by the admin
+ * UI when listing roles and permissions.
  *
  * @property int $id
  * @property string $name
  * @property string $slug
  * @property string $type
+ *
+ * @method static RolePermissionCategory create(array $attributes = [])
+ * @method static Builder<RolePermissionCategory> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<RolePermissionCategory> query()
  */
 class RolePermissionCategory extends Model
 {

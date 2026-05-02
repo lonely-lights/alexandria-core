@@ -38,7 +38,7 @@ it('AiModelSeeder seeds models when providers exist', function () {
 
     // Sanity: lots of models, all linked to known providers.
     expect(AiModel::query()->count())->toBeGreaterThan(20)
-        ->and(AiModel::query()->whereNull('provider_id')->count())->toBe(0);
+        ->and(AiModel::query()->whereNull('ai_provider_id')->count())->toBe(0);
 });
 
 it('AiPromptsSeeder creates the framework prompt rows', function () {
