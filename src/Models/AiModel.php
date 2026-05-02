@@ -40,6 +40,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> recommendedFirst()
  * @method static AiModelFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static AiModel create(array $attributes = [])
+ * @method static AiModel updateOrCreate(array $attributes, array $values = [])
+ * @method static Builder<AiModel> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<AiModel> query()
  */
 class AiModel extends Model
 {

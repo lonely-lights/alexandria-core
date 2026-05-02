@@ -26,6 +26,9 @@ use Illuminate\Support\Carbon;
  *
  * @method static AiProviderFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static AiProvider create(array $attributes = [])
+ * @method static AiProvider updateOrCreate(array $attributes, array $values = [])
+ * @method static Builder<AiProvider> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<AiProvider> query()
  */
 class AiProvider extends Model
 {

@@ -29,6 +29,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> active()
  * @method static AiPromptFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static AiPrompt create(array $attributes = [])
+ * @method static AiPrompt updateOrCreate(array $attributes, array $values = [])
+ * @method static Builder<AiPrompt> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<AiPrompt> query()
  */
 class AiPrompt extends Model
 {
