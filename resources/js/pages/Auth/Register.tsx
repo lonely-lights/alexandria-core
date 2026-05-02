@@ -465,11 +465,19 @@ function RegisterForm({
                                 </label>
                             </div>
 
-                            {/* Submit */}
+                            {/* Submit — gated on all client-side checks
+                                resolving green. Server still re-validates,
+                                so this is a UX gate, not a security one. */}
                             <button
                                 type="submit"
-                                disabled={form.processing}
-                                className="w-full inline-flex items-center justify-center gap-2 font-bold text-sm disabled:opacity-50"
+                                disabled={
+                                    form.processing ||
+                                    usernameStatus.status !== 'available' ||
+                                    emailStatus.status !== 'available' ||
+                                    !passwordsValid ||
+                                    !form.data.terms
+                                }
+                                className="w-full inline-flex items-center justify-center gap-2 font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <span className="btn-offset w-full px-7 py-4 rounded-lg inline-flex items-center justify-center gap-2">
                                     <span>{copy['enlist']}</span>
