@@ -1,0 +1,41 @@
+/* Shared motif utilities. Paper is the sole theme family; this file
+   holds layout-agnostic helpers (scroll reveal, node-graph pulse). */
+
+/* Reveal on scroll (IntersectionObserver adds .revealed). */
+.reveal-up {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity .8s cubic-bezier(.4,0,.2,1), transform .8s cubic-bezier(.4,0,.2,1);
+}
+.reveal-up.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+.reveal-scale {
+    opacity: 0;
+    transform: scale(.96);
+    transition: opacity .8s ease, transform .8s ease;
+}
+.reveal-scale.revealed {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Node-graph pulse — theme-agnostic so it can appear on any family.
+   Used by hero-rotator panels + anywhere a network/constellation
+   visualization wants a breathing effect on its larger nodes. */
+@keyframes node-pulse {
+    0%, 100% { opacity: .55; transform: scale(1); }
+    50%      { opacity: 1;  transform: scale(1.25); }
+}
+.node-graph circle.pulse {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: node-pulse 3s ease-in-out infinite;
+}
+
+/* Reduced motion — respected everywhere. */
+@media (prefers-reduced-motion: reduce) {
+    .reveal-up, .reveal-scale { opacity: 1; transform: none; transition: none; }
+    .node-graph circle.pulse { animation: none; }
+}
