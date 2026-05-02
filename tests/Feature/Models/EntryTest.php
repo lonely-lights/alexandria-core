@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\Entry;
+use Alexandria\Core\Models\System\EntryHistory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -147,4 +148,57 @@ it('cascades mention rows when an entry is force-deleted', function () {
     $target->forceDelete();
 
     expect(DB::table('entry_mentions')->count())->toBe(0);
+});
+
+it('records a history row when a trackable field changes', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $entry = Entry::factory()->create([
+        'project_id' => $project->id,
+        'blueprint_id' => $blueprint->id,
+        'name' => 'Original',
+    ]);
+
+    $entry->update(['name' => 'Updated']);
+
+    expect($entry->histories)->toHaveCount(1);
+    /** @var EntryHistory $history */
+    $history = $entry->histories->first();
+    expect($history->change_type)->toBe('field_update')
+        ->and($history->field_name)->toBe('name')
+        ->and($history->previous_value)->toBe('Original')
+        ->and($history->new_value)->toBe('Updated')
+        ->and($history->change_summary)->toBe('Updated Name');
+});
+
+it('does NOT record history for non-trackable field changes', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $entry = Entry::factory()->create([
+        'project_id' => $project->id,
+        'blueprint_id' => $blueprint->id,
+    ]);
+
+    $entry->update(['updated_at' => now()->addDay()]);
+
+    expect($entry->histories)->toHaveCount(0);
+});
+
+it('cascades history rows when an entry is deleted', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $entry = Entry::factory()->create([
+        'project_id' => $project->id,
+        'blueprint_id' => $blueprint->id,
+    ]);
+
+    $entry->update(['name' => 'changed']);
+    expect($entry->histories)->toHaveCount(1);
+
+    $entry->forceDelete();
+
+    expect(DB::table('entry_histories')->count())->toBe(0);
 });

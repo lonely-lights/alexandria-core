@@ -7,6 +7,7 @@ namespace Alexandria\Core\Models\System;
 use Alexandria\Core\Database\Factories\System\EntryFactory;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\Note;
+use Alexandria\Core\Services\Entries\EntryHistoryService;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
 use Alexandria\Core\Traits\Notable\HasNotes;
 use Alexandria\Core\Traits\System\HasDynamicAttributes;
@@ -129,6 +130,10 @@ class Entry extends Model implements HasMedia
                 $entry->slug = Str::slug($entry->name).'-'.Str::random(6);
             }
         });
+
+        static::updating(function (Entry $entry): void {
+            app(EntryHistoryService::class)->recordFieldChanges($entry);
+        });
     }
 
     public function project(): BelongsTo
@@ -157,6 +162,15 @@ class Entry extends Model implements HasMedia
         // Insertion order in HasDynamicAttributes::setDynamicAttribute is the
         // user's intent; relying on undefined SQL row order would be brittle.
         return $this->hasMany(FieldValue::class)->orderBy('id');
+    }
+
+    /**
+     * Audit-trail records for this entry. Newest first; recordFieldChanges()
+     * inserts a row per dirty trackable field on every update.
+     */
+    public function histories(): HasMany
+    {
+        return $this->hasMany(EntryHistory::class, 'entry_id')->latest();
     }
 
     /**
