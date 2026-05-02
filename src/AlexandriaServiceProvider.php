@@ -106,29 +106,27 @@ class AlexandriaServiceProvider extends ServiceProvider
     private function bindFortifyViews(): void
     {
         $copy = $this->authCopy();
+        $legalUrls = $this->legalUrls();
 
         Fortify::loginView(fn () => Inertia::render('Auth/Login', [
             'copy' => $copy,
             'registerUrl' => Route::has('register') ? route('register') : null,
             'forgotPasswordUrl' => Route::has('password.request') ? route('password.request') : null,
             'canResetPassword' => Route::has('password.request'),
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            ...$legalUrls,
             'status' => session('status'),
         ]));
 
         Fortify::registerView(fn () => Inertia::render('Auth/Register', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            ...$legalUrls,
         ]));
 
         Fortify::requestPasswordResetLinkView(fn () => Inertia::render('Auth/ForgotPassword', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            ...$legalUrls,
             'status' => session('status'),
         ]));
 
@@ -137,23 +135,40 @@ class AlexandriaServiceProvider extends ServiceProvider
             'token' => $request->route('token'),
             'email' => $request->email,
             'loginUrl' => route('login'),
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            ...$legalUrls,
         ]));
 
         Fortify::verifyEmailView(fn () => Inertia::render('Auth/VerifyEmail', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            ...$legalUrls,
             'status' => session('status'),
         ]));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('Auth/ConfirmPassword', [
             'copy' => $copy,
+            ...$legalUrls,
+        ]));
+    }
+
+    /**
+     * Resolve termsUrl + privacyUrl props passed to every Fortify view
+     * callback. The route names live in the consumer app (per ADR-008
+     * — legal pages can be brand-specific) so static analysis can't
+     * trace them; the Route::has() guard makes resolution runtime-safe
+     * when the consumer hasn't registered them yet.
+     *
+     * @noinspection PhpRouteMissingInspection — legal.terms / legal.privacy
+     *               are consumer-app-defined; PhpStorm can't see them from core.
+     *
+     * @return array{termsUrl: string, privacyUrl: string}
+     */
+    private function legalUrls(): array
+    {
+        return [
             'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
             'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
-        ]));
+        ];
     }
 
     /**
