@@ -39,6 +39,8 @@ class AlexandriaServiceProvider extends ServiceProvider
 
         $this->bindFortifyActions();
         $this->bindFortifyViews();
+
+        $this->loadRoutesFrom(__DIR__.'/../routes/auth.php');
     }
 
     /**
