@@ -39,8 +39,11 @@ export default function Register({
     // PasswordRulesPopover anchor + focus state for live rule feedback.
     // Callback ref pattern (useState, not useRef) avoids React 19's
     // react-hooks/refs rule against reading .current during render.
+    // Tracking focus on both fields so the popover stays open (showing
+    // the 'Passwords match' rule) while the user is typing in confirm.
     const [passwordEl, setPasswordEl] = useState<HTMLInputElement | null>(null);
     const [passwordFocused, setPasswordFocused] = useState(false);
+    const [confirmationFocused, setConfirmationFocused] = useState(false);
 
     // ── Live availability checks ─────────────────────────────────────────
     const [usernameStatus, setUsernameStatus] = useState<AvailabilityState>({ status: 'idle', message: null });
@@ -324,7 +327,8 @@ export default function Register({
                                     />
                                     <PasswordRulesPopover
                                         value={form.data.password}
-                                        open={passwordFocused}
+                                        confirmation={form.data.password_confirmation}
+                                        open={passwordFocused || confirmationFocused}
                                         anchor={passwordEl}
                                     />
                                 </div>
@@ -345,6 +349,8 @@ export default function Register({
                                         name="password_confirmation"
                                         value={form.data.password_confirmation}
                                         onChange={(e) => form.setData('password_confirmation', e.target.value)}
+                                        onFocus={() => setConfirmationFocused(true)}
+                                        onBlur={() => setConfirmationFocused(false)}
                                         required
                                         autoComplete="new-password"
                                         placeholder="••••••••"

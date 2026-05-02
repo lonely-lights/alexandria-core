@@ -29,6 +29,14 @@ interface PasswordRulesPopoverProps {
     /** The DOM element the popover anchors to (the input itself). */
     anchor: HTMLElement | null;
     /**
+     * Optional password-confirmation value. When supplied AND non-empty,
+     * adds a 'Passwords match' rule below the standard ruleset. Pass the
+     * live value of the confirm-password field. Empty / undefined hides
+     * the row so the popover doesn't show a noisy false-negative on
+     * first focus before the user has typed in the confirmation field.
+     */
+    confirmation?: string;
+    /**
      * Rules list. Defaults to Laravel's `Password::default()` ruleset
      * (min 8 chars, plus one of each: uppercase, lowercase, digit,
      * special). Override to match your app's actual server-side rules.
@@ -96,6 +104,7 @@ export default function PasswordRulesPopover({
     value,
     open,
     anchor,
+    confirmation,
     rules = defaultPasswordRules,
     placement = 'right',
 }: PasswordRulesPopoverProps) {
@@ -124,14 +133,27 @@ export default function PasswordRulesPopover({
         ],
     });
 
-    const evaluatedRules = useMemo(
-        () =>
-            rules.map((rule) => ({
-                ...rule,
-                passed: rule.passes(value),
-            })),
-        [rules, value],
-    );
+    const evaluatedRules = useMemo(() => {
+        const base = rules.map((rule) => ({
+            ...rule,
+            passed: rule.passes(value),
+        }));
+
+        // Append the match rule only when the confirmation prop is set
+        // and the user has actually typed in the confirm field — otherwise
+        // it shows red on first focus before the user has had a chance to
+        // type, which reads as a false alarm.
+        if (confirmation !== undefined && confirmation.length > 0) {
+            base.push({
+                id: 'match',
+                label: 'Passwords match',
+                passes: () => false, // unused; the predicate already ran
+                passed: value === confirmation,
+            });
+        }
+
+        return base;
+    }, [rules, value, confirmation]);
 
     if (!open || !anchor) {
         return null;
