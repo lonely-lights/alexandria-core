@@ -90,3 +90,61 @@ it('exposes active and archived scopes', function () {
     expect(Entry::active()->count())->toBe(1)
         ->and(Entry::archived()->count())->toBe(1);
 });
+
+it('tracks outgoing mentions via mentionedEntries pivot', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $source = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+    $target = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+
+    $source->mentionedEntries()->attach($target->id, ['mention_count' => 3]);
+
+    expect($source->mentionedEntries)->toHaveCount(1)
+        ->and($source->mentionedEntries->first()->id)->toBe($target->id)
+        ->and($source->mentionedEntries->first()->pivot->mention_count)->toBe(3);
+});
+
+it('resolves incoming mentions via mentioningEntries (inverse)', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $source = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+    $target = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+
+    $source->mentionedEntries()->attach($target->id, ['mention_count' => 1]);
+
+    expect($target->mentioningEntries)->toHaveCount(1)
+        ->and($target->mentioningEntries->first()->id)->toBe($source->id);
+});
+
+it('orders mentioned entries by mention_count descending', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $source = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+    $low = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+    $high = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+
+    $source->mentionedEntries()->attach([
+        $low->id => ['mention_count' => 1],
+        $high->id => ['mention_count' => 5],
+    ]);
+
+    expect($source->mentionedEntries->pluck('id')->all())
+        ->toEqual([$high->id, $low->id]);
+});
+
+it('cascades mention rows when an entry is force-deleted', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $source = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+    $target = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+
+    $source->mentionedEntries()->attach($target->id, ['mention_count' => 2]);
+
+    $target->forceDelete();
+
+    expect(DB::table('entry_mentions')->count())->toBe(0);
+});

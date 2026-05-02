@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -156,6 +157,28 @@ class Entry extends Model implements HasMedia
         // Insertion order in HasDynamicAttributes::setDynamicAttribute is the
         // user's intent; relying on undefined SQL row order would be brittle.
         return $this->hasMany(FieldValue::class)->orderBy('id');
+    }
+
+    /**
+     * Entries that THIS entry mentions in its content (outgoing links).
+     * Pivot's mention_count drives importance ranking — orderBy DESC so
+     * heavily-referenced targets surface first.
+     */
+    public function mentionedEntries(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'entry_mentions', 'source_entry_id', 'target_entry_id')
+            ->withPivot('mention_count')
+            ->orderBy('mention_count', 'desc');
+    }
+
+    /**
+     * Entries that mention THIS entry in their content (incoming links).
+     */
+    public function mentioningEntries(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'entry_mentions', 'target_entry_id', 'source_entry_id')
+            ->withPivot('mention_count')
+            ->orderBy('mention_count', 'desc');
     }
 
     public function scopeActive(Builder $query): Builder
