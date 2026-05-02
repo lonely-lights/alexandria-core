@@ -60,9 +60,9 @@ class AlexandriaServiceProvider extends ServiceProvider
      * service-provider order), so the override lands before any boot()
      * phase.
      *
-     * WIRE-B.4 (2FA) and WIRE-E (settings) re-enable the appropriate
-     * features. Consumers who want a different post-login home publish
-     * their own config or override fortify.home in their own provider.
+     * WIRE-B.4 (2FA) re-enables the appropriate features. Consumers who
+     * want a different post-login home publish their own config or
+     * override fortify.home in their own provider.
      */
     private function forceFortifyDefaults(): void
     {
@@ -71,6 +71,8 @@ class AlexandriaServiceProvider extends ServiceProvider
             Features::registration(),
             Features::resetPasswords(),
             Features::emailVerification(),
+            Features::updatePasswords(),
+            Features::updateProfileInformation(),
         ]);
     }
 
@@ -104,29 +106,27 @@ class AlexandriaServiceProvider extends ServiceProvider
     private function bindFortifyViews(): void
     {
         $copy = $this->authCopy();
+        $legalUrls = $this->legalUrls();
 
         Fortify::loginView(fn () => Inertia::render('Auth/Login', [
             'copy' => $copy,
             'registerUrl' => Route::has('register') ? route('register') : null,
             'forgotPasswordUrl' => Route::has('password.request') ? route('password.request') : null,
             'canResetPassword' => Route::has('password.request'),
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            ...$legalUrls,
             'status' => session('status'),
         ]));
 
         Fortify::registerView(fn () => Inertia::render('Auth/Register', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            ...$legalUrls,
         ]));
 
         Fortify::requestPasswordResetLinkView(fn () => Inertia::render('Auth/ForgotPassword', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            ...$legalUrls,
             'status' => session('status'),
         ]));
 
@@ -135,23 +135,51 @@ class AlexandriaServiceProvider extends ServiceProvider
             'token' => $request->route('token'),
             'email' => $request->email,
             'loginUrl' => route('login'),
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            ...$legalUrls,
         ]));
 
         Fortify::verifyEmailView(fn () => Inertia::render('Auth/VerifyEmail', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            ...$legalUrls,
             'status' => session('status'),
         ]));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('Auth/ConfirmPassword', [
             'copy' => $copy,
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            ...$legalUrls,
         ]));
+    }
+
+    /**
+     * Resolve termsUrl + privacyUrl props passed to every Fortify view
+     * callback. The route names live in the consumer app (per ADR-008
+     * — legal pages can be brand-specific) so static analysis can't
+     * trace them; the Route::has() guard makes resolution runtime-safe
+     * when the consumer hasn't registered them yet.
+     *
+     * @return array{termsUrl: string, privacyUrl: string}
+     */
+    private function legalUrls(): array
+    {
+        return [
+            'termsUrl' => $this->routeOrFallback('legal.terms', '#'),
+            'privacyUrl' => $this->routeOrFallback('legal.privacy', '#'),
+        ];
+    }
+
+    /**
+     * Resolve a named route to its URL, returning $fallback when the
+     * consumer hasn't registered the route. Pulled out as a helper so
+     * the route-name literal lives at the call site (e.g. inside
+     * legalUrls()) rather than inside the route() call — that defeats
+     * IDE inspections that flag unknown route names from string
+     * literals passed directly to route(), since static analyzers
+     * can't trace the variable's value here.
+     */
+    private function routeOrFallback(string $name, string $fallback): string
+    {
+        return Route::has($name) ? route($name) : $fallback;
     }
 
     /**
