@@ -170,7 +170,7 @@ export default function ResetPassword({
                                         autoFocus
                                         autoComplete="username"
                                         placeholder="you@example.com"
-                                        className="input input-bordered w-full pl-12 bg-base-200/50 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        className="input input-bordered w-full pl-12 bg-base-200/50 border-base-300 focus:border-primary focus:outline-primary transition-all"
                                     />
                                 </div>
                             </div>
@@ -193,7 +193,7 @@ export default function ResetPassword({
                                         required
                                         autoComplete="new-password"
                                         placeholder="••••••••"
-                                        className="input input-bordered w-full pl-12 bg-base-200/50 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        className="input input-bordered w-full pl-12 bg-base-200/50 border-base-300 focus:border-primary focus:outline-primary transition-all"
                                     />
                                 </div>
                             </div>
@@ -216,7 +216,7 @@ export default function ResetPassword({
                                         required
                                         autoComplete="new-password"
                                         placeholder="••••••••"
-                                        className="input input-bordered w-full pl-12 bg-base-200/50 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        className="input input-bordered w-full pl-12 bg-base-200/50 border-base-300 focus:border-primary focus:outline-primary transition-all"
                                     />
                                 </div>
                             </div>

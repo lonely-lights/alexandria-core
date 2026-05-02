@@ -311,10 +311,10 @@ function RegisterForm({
                                         placeholder="letters, numbers, dashes, underscores"
                                         className={`input input-bordered w-full pl-12 pr-10 bg-base-200/50 transition-all ${
                                             usernameStatus.status === 'available'
-                                                ? 'border-success focus:border-success focus:ring-2 focus:ring-success/20'
+                                                ? 'border-success focus:border-success focus:outline-success'
                                                 : usernameStatus.status === 'taken'
-                                                    ? 'border-error focus:border-error focus:ring-2 focus:ring-error/20'
-                                                    : 'border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                                                    ? 'border-error focus:border-error focus:outline-error'
+                                                    : 'border-base-300 focus:border-primary focus:outline-primary'
                                         }`}
                                     />
                                     <AvailabilityIndicator state={usernameStatus} />
@@ -347,10 +347,10 @@ function RegisterForm({
                                         placeholder="you@example.com"
                                         className={`input input-bordered w-full pl-12 pr-10 bg-base-200/50 transition-all ${
                                             emailStatus.status === 'available'
-                                                ? 'border-success focus:border-success focus:ring-2 focus:ring-success/20'
+                                                ? 'border-success focus:border-success focus:outline-success'
                                                 : emailStatus.status === 'taken'
-                                                    ? 'border-error focus:border-error focus:ring-2 focus:ring-error/20'
-                                                    : 'border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                                                    ? 'border-error focus:border-error focus:outline-error'
+                                                    : 'border-base-300 focus:border-primary focus:outline-primary'
                                         }`}
                                     />
                                     <AvailabilityIndicator state={emailStatus} />
@@ -380,8 +380,8 @@ function RegisterForm({
                                         placeholder="••••••••"
                                         className={`input input-bordered w-full pl-12 bg-base-200/50 transition-all ${
                                             passwordsValid
-                                                ? 'border-success focus:border-success focus:ring-2 focus:ring-success/20'
-                                                : 'border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                                                ? 'border-success focus:border-success focus:outline-success'
+                                                : 'border-base-300 focus:border-primary focus:outline-primary'
                                         }`}
                                     />
                                     <PasswordRulesPopover
@@ -415,8 +415,8 @@ function RegisterForm({
                                         placeholder="••••••••"
                                         className={`input input-bordered w-full pl-12 bg-base-200/50 transition-all ${
                                             passwordsValid
-                                                ? 'border-success focus:border-success focus:ring-2 focus:ring-success/20'
-                                                : 'border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                                                ? 'border-success focus:border-success focus:outline-success'
+                                                : 'border-base-300 focus:border-primary focus:outline-primary'
                                         }`}
                                     />
                                 </div>
