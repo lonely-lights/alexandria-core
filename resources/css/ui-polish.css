@@ -1,7 +1,3 @@
-/* noinspection CssUnresolvedCustomProperty — DaisyUI 5 declares
-   --color-* tokens via its @plugin "daisyui/theme/..." blocks in the
-   consumer's app.css, which PhpStorm's CSS inspector can't trace. */
-
 /*
  * Generic UI polish lifted from alexandria-legacy/resources/css/app.css.
  * Cross-browser hygiene that any Alexandria consumer benefits from:
