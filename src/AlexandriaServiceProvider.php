@@ -60,9 +60,9 @@ class AlexandriaServiceProvider extends ServiceProvider
      * service-provider order), so the override lands before any boot()
      * phase.
      *
-     * WIRE-B.4 (2FA) and WIRE-E (settings) re-enable the appropriate
-     * features. Consumers who want a different post-login home publish
-     * their own config or override fortify.home in their own provider.
+     * WIRE-B.4 (2FA) re-enables the appropriate features. Consumers who
+     * want a different post-login home publish their own config or
+     * override fortify.home in their own provider.
      */
     private function forceFortifyDefaults(): void
     {
@@ -71,6 +71,8 @@ class AlexandriaServiceProvider extends ServiceProvider
             Features::registration(),
             Features::resetPasswords(),
             Features::emailVerification(),
+            Features::updatePasswords(),
+            Features::updateProfileInformation(),
         ]);
     }
 
