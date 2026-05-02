@@ -1,3 +1,7 @@
+/* noinspection CssUnresolvedCustomProperty — DaisyUI 5 declares
+   --color-* tokens via its @plugin "daisyui/theme/..." blocks in the
+   consumer's app.css, which PhpStorm's CSS inspector can't trace. */
+
 /* Thought Fragments motif layer.
    Active when <html data-theme="tf-dark"> or "tf-light". */
 
