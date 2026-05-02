@@ -39,6 +39,8 @@ class AlexandriaServiceProvider extends ServiceProvider
 
         $this->bindFortifyActions();
         $this->bindFortifyViews();
+
+        $this->loadRoutesFrom(__DIR__.'/../routes/auth.php');
     }
 
     /**
@@ -108,23 +110,23 @@ class AlexandriaServiceProvider extends ServiceProvider
             'registerUrl' => Route::has('register') ? route('register') : null,
             'forgotPasswordUrl' => Route::has('password.request') ? route('password.request') : null,
             'canResetPassword' => Route::has('password.request'),
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
             'status' => session('status'),
         ]));
 
         Fortify::registerView(fn () => Inertia::render('Auth/Register', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
         ]));
 
         Fortify::requestPasswordResetLinkView(fn () => Inertia::render('Auth/ForgotPassword', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
             'status' => session('status'),
         ]));
 
@@ -133,22 +135,22 @@ class AlexandriaServiceProvider extends ServiceProvider
             'token' => $request->route('token'),
             'email' => $request->email,
             'loginUrl' => route('login'),
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
         ]));
 
         Fortify::verifyEmailView(fn () => Inertia::render('Auth/VerifyEmail', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
             'status' => session('status'),
         ]));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('Auth/ConfirmPassword', [
             'copy' => $copy,
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
         ]));
     }
 
@@ -169,15 +171,15 @@ class AlexandriaServiceProvider extends ServiceProvider
             'email' => 'Email',
             'password' => 'Password',
             'remember_me' => 'Remember me',
-            'login' => 'Sign in',
+            'login' => 'Log in',
             'forgot_password' => 'Forgot password?',
             'have_account' => "Don't have an account?",
-            'enlist' => 'Sign up',
-            'registration.intro' => 'Create your account.',
-            'name' => 'Name',
-            'signup' => 'Create account',
-            'already_registered' => 'Already registered?',
-            'agree_terms_privacy' => 'By signing up, you agree to our Terms of Service and Privacy Policy.',
+            'enlist' => 'Enlist',
+            'registration.intro' => 'Create your account and start building. Every idea finds a home.',
+            'name' => 'Username',
+            'signup' => 'Enlist',
+            'already_registered' => 'Already have an account?',
+            'agree_terms_privacy' => 'I agree to the :terms_of_service and :privacy_policy.',
             'forgot_password.intro' => 'Enter your email and we\'ll send you a reset link.',
             'email_reset_link' => 'Email reset link',
             'reset_password' => 'Reset password',
@@ -185,7 +187,7 @@ class AlexandriaServiceProvider extends ServiceProvider
             'verification_sent' => 'A new verification link has been sent.',
             'resend_verification' => 'Resend verification email',
             'confirm_password.intro' => 'Please confirm your password to continue.',
-            'confirm_password' => 'Confirm password',
+            'confirm_password' => 'Confirm Password',
             'terms_of_service' => 'Terms of Service',
             'privacy_policy' => 'Privacy Policy',
         ];

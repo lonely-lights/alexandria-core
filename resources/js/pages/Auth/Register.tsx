@@ -194,10 +194,6 @@ export default function Register({
                             <p className="font-serif text-2xl xl:text-3xl leading-tight italic text-base-content/85">
                                 "A story isn't one idea. It's thousands."
                             </p>
-                            <footer className="flex items-center gap-3 text-base-content/50">
-                                <div className="w-10 h-px bg-primary/50" />
-                                <span className="text-sm tracking-wide">welcome in</span>
-                            </footer>
                         </blockquote>
                     </div>
                 </div>
