@@ -47,6 +47,14 @@ interface PasswordRulesPopoverProps {
 }
 
 /**
+ * A rule paired with the live result of running its predicate against
+ * a current input value. Returned by evaluatePasswordRules().
+ */
+export interface EvaluatedPasswordRule extends PasswordRule {
+    passed: boolean;
+}
+
+/**
  * Default rules matching Laravel's Password::default() shape — same
  * server-side validation that ResetUserPassword + UpdateUserPassword
  * apply. Consumers with stricter rules should pass their own list.
@@ -78,6 +86,52 @@ export const defaultPasswordRules: PasswordRule[] = [
         passes: (v) => /[^A-Za-z0-9]/.test(v),
     },
 ];
+
+/**
+ * Run the password rules against a value (and optional confirmation)
+ * and return both the per-rule results and an `allPassed` aggregate.
+ *
+ * Exported so consumers can drive their own UI off the same predicate
+ * the popover uses — e.g. flipping the input border to a success
+ * variant once every rule passes. Behaviour mirrors what the popover
+ * renders: when `confirmation` is provided AND non-empty, a synthetic
+ * `match` rule joins the list. Empty confirmation means the match
+ * rule is omitted entirely (so a fresh focus on an empty confirm
+ * field doesn't poison `allPassed`).
+ */
+export function evaluatePasswordRules(
+    value: string,
+    options: { confirmation?: string; rules?: PasswordRule[] } = {},
+): { rules: EvaluatedPasswordRule[]; allPassed: boolean } {
+    const { confirmation, rules = defaultPasswordRules } = options;
+
+    const evaluated: EvaluatedPasswordRule[] = rules.map((rule) => ({
+        ...rule,
+        passed: rule.passes(value),
+    }));
+
+    if (confirmation !== undefined && confirmation.length > 0) {
+        evaluated.push({
+            id: 'match',
+            label: 'Passwords match',
+            passes: () => false, // unused; the predicate already ran
+            passed: value === confirmation,
+        });
+    }
+
+    // allPassed only counts when the user has actually typed something
+    // and every standard rule + the match rule (if applicable) is met.
+    const allPassed =
+        value.length > 0 &&
+        evaluated.every((rule) => rule.passed) &&
+        // If a confirmation prop was passed at all, require the match
+        // rule too. Empty confirmation means consumer hasn't asked us
+        // to validate matching yet, so we don't gate on it.
+        (confirmation === undefined ||
+            (confirmation.length > 0 && value === confirmation));
+
+    return { rules: evaluated, allPassed };
+}
 
 /**
  * Non-intrusive password-rules feedback popover. Anchored to a password
@@ -133,27 +187,10 @@ export default function PasswordRulesPopover({
         ],
     });
 
-    const evaluatedRules = useMemo(() => {
-        const base = rules.map((rule) => ({
-            ...rule,
-            passed: rule.passes(value),
-        }));
-
-        // Append the match rule only when the confirmation prop is set
-        // and the user has actually typed in the confirm field — otherwise
-        // it shows red on first focus before the user has had a chance to
-        // type, which reads as a false alarm.
-        if (confirmation !== undefined && confirmation.length > 0) {
-            base.push({
-                id: 'match',
-                label: 'Passwords match',
-                passes: () => false, // unused; the predicate already ran
-                passed: value === confirmation,
-            });
-        }
-
-        return base;
-    }, [rules, value, confirmation]);
+    const evaluatedRules = useMemo(
+        () => evaluatePasswordRules(value, { confirmation, rules }).rules,
+        [rules, value, confirmation],
+    );
 
     if (!open || !anchor) {
         return null;

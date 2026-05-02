@@ -1,7 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import Logo from '@alexandria/components/ui/Logo';
-import PasswordRulesPopover from '@alexandria/components/form/PasswordRulesPopover';
+import PasswordRulesPopover, { evaluatePasswordRules } from '@alexandria/components/form/PasswordRulesPopover';
 import { ThemeProvider } from '@alexandria/hooks/useTheme';
 import ModeToggle from '@alexandria/components/theme/ModeToggle';
 
@@ -44,6 +44,13 @@ export default function Register({
     const [passwordEl, setPasswordEl] = useState<HTMLInputElement | null>(null);
     const [passwordFocused, setPasswordFocused] = useState(false);
     const [confirmationFocused, setConfirmationFocused] = useState(false);
+
+    // All-rules-passed flag drives the success border on BOTH password
+    // inputs. Same predicate as the popover so the visual-state stays
+    // in sync with the rule list the user sees.
+    const passwordsValid = evaluatePasswordRules(form.data.password, {
+        confirmation: form.data.password_confirmation,
+    }).allPassed;
 
     // ── Live availability checks ─────────────────────────────────────────
     const [usernameStatus, setUsernameStatus] = useState<AvailabilityState>({ status: 'idle', message: null });
@@ -323,7 +330,11 @@ export default function Register({
                                         required
                                         autoComplete="new-password"
                                         placeholder="••••••••"
-                                        className="input input-bordered w-full pl-12 bg-base-200/50 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        className={`input input-bordered w-full pl-12 bg-base-200/50 transition-all ${
+                                            passwordsValid
+                                                ? 'border-success focus:border-success focus:ring-2 focus:ring-success/20'
+                                                : 'border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                                        }`}
                                     />
                                     <PasswordRulesPopover
                                         value={form.data.password}
@@ -354,7 +365,11 @@ export default function Register({
                                         required
                                         autoComplete="new-password"
                                         placeholder="••••••••"
-                                        className="input input-bordered w-full pl-12 bg-base-200/50 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        className={`input input-bordered w-full pl-12 bg-base-200/50 transition-all ${
+                                            passwordsValid
+                                                ? 'border-success focus:border-success focus:ring-2 focus:ring-success/20'
+                                                : 'border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20'
+                                        }`}
                                     />
                                 </div>
                             </div>
