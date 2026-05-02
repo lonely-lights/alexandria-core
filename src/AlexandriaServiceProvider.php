@@ -108,23 +108,23 @@ class AlexandriaServiceProvider extends ServiceProvider
             'registerUrl' => Route::has('register') ? route('register') : null,
             'forgotPasswordUrl' => Route::has('password.request') ? route('password.request') : null,
             'canResetPassword' => Route::has('password.request'),
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
             'status' => session('status'),
         ]));
 
         Fortify::registerView(fn () => Inertia::render('Auth/Register', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
         ]));
 
         Fortify::requestPasswordResetLinkView(fn () => Inertia::render('Auth/ForgotPassword', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
             'status' => session('status'),
         ]));
 
@@ -133,22 +133,22 @@ class AlexandriaServiceProvider extends ServiceProvider
             'token' => $request->route('token'),
             'email' => $request->email,
             'loginUrl' => route('login'),
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
         ]));
 
         Fortify::verifyEmailView(fn () => Inertia::render('Auth/VerifyEmail', [
             'copy' => $copy,
             'loginUrl' => route('login'),
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
             'status' => session('status'),
         ]));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('Auth/ConfirmPassword', [
             'copy' => $copy,
-            'termsUrl' => '#',
-            'privacyUrl' => '#',
+            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
+            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
         ]));
     }
 
