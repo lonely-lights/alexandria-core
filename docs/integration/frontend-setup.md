@@ -339,7 +339,20 @@ core only depend on standard DaisyUI semantic tokens (`primary`,
 
 Alexandria's auth pages use Font Awesome 6 solid classes (`<i class="fa-solid fa-*">`). Consumers register Font Awesome themselves — the framework doesn't pin a license-bound dependency. Pick the path that matches your license.
 
-### Free
+### Pro via Kit (recommended for Pro consumers)
+
+Font Awesome Pro is only sold through Kit packages now. A Kit is a CDN-hosted bundle you configure in your FA account (which families, which icons, which version). Wire it as a `<script>` in your blade template's `<head>`:
+
+```blade
+<link rel="preconnect" href="https://kit.fontawesome.com">
+<script src="https://kit.fontawesome.com/YOUR_KIT_ID.js" crossorigin="anonymous"></script>
+```
+
+Get the Kit ID from <https://fontawesome.com/account>. Kits include all the FA Pro families you've enabled (solid, regular, light, thin, duotone, sharp-*, etc.) — no per-family CSS imports needed. No `npm install`, no `.npmrc`, no `@import` in `app.css`.
+
+The kit script auto-replaces `<i>` elements with inline SVGs at runtime, so the icon classes in core's auth pages render the same way.
+
+### Free (npm)
 
 ```bash
 npm install @fortawesome/fontawesome-free@^6
@@ -352,9 +365,9 @@ In `resources/css/app.css`:
 @import '@fortawesome/fontawesome-free/css/solid.min.css';
 ```
 
-### Pro
+### Pro (npm)
 
-Pro requires authenticating against Font Awesome's private npm registry. One-time setup in `.npmrc` (project-local OR `~/.npmrc`):
+If you have a Pro license that includes the **npm package** (older licenses — new Pro licenses are kit-only) and prefer self-hosting over the kit CDN, this path requires authenticating against Font Awesome's private npm registry. One-time setup in `.npmrc` (project-local OR `~/.npmrc`):
 
 ```
 @fortawesome:registry=https://npm.fontawesome.com/
@@ -384,9 +397,9 @@ In `resources/css/app.css`:
 
 Pro additionally provides `light`, `thin`, `duotone`, and `sharp-*` families. The auth pages only use `fa-solid` so those imports are optional unless the consumer's own pages use the additional families.
 
-### Switching between Free and Pro
+### Switching between paths
 
-Both packages expose the same `fa-solid` classes, so switching is just: uninstall one, install the other, swap the import paths. No code changes needed in any page.
+All three paths expose the same `fa-solid` classes, so switching is just an `app.blade.php` / `app.css` / `package.json` adjustment. No code changes needed in any page. Pro Kit ↔ Pro npm ↔ Free npm all render the FA classes identically.
 
 ---
 
