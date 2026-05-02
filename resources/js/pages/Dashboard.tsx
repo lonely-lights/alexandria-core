@@ -30,6 +30,12 @@ export default function Dashboard() {
                     >
                         Dashboard
                     </Link>
+                    <Link
+                        href="/account"
+                        className="btn btn-ghost btn-sm justify-start"
+                    >
+                        Account
+                    </Link>
                 </nav>
             }
         >
