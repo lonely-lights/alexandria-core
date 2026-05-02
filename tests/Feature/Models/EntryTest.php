@@ -90,3 +90,114 @@ it('exposes active and archived scopes', function () {
     expect(Entry::active()->count())->toBe(1)
         ->and(Entry::archived()->count())->toBe(1);
 });
+
+it('tracks outgoing mentions via mentionedEntries pivot', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $source = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+    $target = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+
+    $source->mentionedEntries()->attach($target->id, ['mention_count' => 3]);
+
+    $first = $source->mentionedEntries->first();
+    expect($source->mentionedEntries)->toHaveCount(1)
+        ->and($first->id)->toBe($target->id)
+        ->and($first->getAttribute('pivot')->mention_count)->toBe(3);
+});
+
+it('resolves incoming mentions via mentioningEntries (inverse)', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $source = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+    $target = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+
+    $source->mentionedEntries()->attach($target->id, ['mention_count' => 1]);
+
+    expect($target->mentioningEntries)->toHaveCount(1)
+        ->and($target->mentioningEntries->first()->id)->toBe($source->id);
+});
+
+it('orders mentioned entries by mention_count descending', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $source = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+    $low = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+    $high = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+
+    $source->mentionedEntries()->attach([
+        $low->id => ['mention_count' => 1],
+        $high->id => ['mention_count' => 5],
+    ]);
+
+    expect($source->mentionedEntries->pluck('id')->all())
+        ->toEqual([$high->id, $low->id]);
+});
+
+it('cascades mention rows when an entry is force-deleted', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $source = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+    $target = Entry::factory()->create(['project_id' => $project->id, 'blueprint_id' => $blueprint->id]);
+
+    $source->mentionedEntries()->attach($target->id, ['mention_count' => 2]);
+
+    $target->forceDelete();
+
+    expect(DB::table('entry_mentions')->count())->toBe(0);
+});
+
+it('records a history row when a trackable field changes', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $entry = Entry::factory()->create([
+        'project_id' => $project->id,
+        'blueprint_id' => $blueprint->id,
+        'name' => 'Original',
+    ]);
+
+    $entry->update(['name' => 'Updated']);
+
+    expect($entry->histories)->toHaveCount(1);
+    $history = $entry->histories->first();
+    expect($history->change_type)->toBe('field_update')
+        ->and($history->field_name)->toBe('name')
+        ->and($history->previous_value)->toBe('Original')
+        ->and($history->new_value)->toBe('Updated')
+        ->and($history->change_summary)->toBe('Updated Name');
+});
+
+it('does NOT record history for non-trackable field changes', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $entry = Entry::factory()->create([
+        'project_id' => $project->id,
+        'blueprint_id' => $blueprint->id,
+    ]);
+
+    $entry->update(['updated_at' => now()->addDay()]);
+
+    expect($entry->histories)->toHaveCount(0);
+});
+
+it('cascades history rows when an entry is deleted', function () {
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->create(['project_id' => $project->id]);
+
+    $entry = Entry::factory()->create([
+        'project_id' => $project->id,
+        'blueprint_id' => $blueprint->id,
+    ]);
+
+    $entry->update(['name' => 'changed']);
+    expect($entry->histories)->toHaveCount(1);
+
+    $entry->forceDelete();
+
+    expect(DB::table('entry_histories')->count())->toBe(0);
+});

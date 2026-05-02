@@ -7,6 +7,7 @@ namespace Alexandria\Core\Models\System;
 use Alexandria\Core\Database\Factories\System\EntryFactory;
 use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\Note;
+use Alexandria\Core\Services\Entries\EntryHistoryService;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
 use Alexandria\Core\Traits\Notable\HasNotes;
 use Alexandria\Core\Traits\System\HasDynamicAttributes;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -54,6 +56,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, EntryRelationship> $childRelationships
  * @property-read Collection<int, EntryRelationship> $parentRelationships
  * @property-read Collection<int, Note> $notes
+ * @property-read Collection<int, static> $mentionedEntries
+ * @property-read Collection<int, static> $mentioningEntries
+ * @property-read Collection<int, EntryHistory> $histories
  *
  * @method static Builder<static> active()
  * @method static Builder<static> archived()
@@ -128,6 +133,10 @@ class Entry extends Model implements HasMedia
                 $entry->slug = Str::slug($entry->name).'-'.Str::random(6);
             }
         });
+
+        static::updating(function (Entry $entry): void {
+            app(EntryHistoryService::class)->recordFieldChanges($entry);
+        });
     }
 
     public function project(): BelongsTo
@@ -156,6 +165,37 @@ class Entry extends Model implements HasMedia
         // Insertion order in HasDynamicAttributes::setDynamicAttribute is the
         // user's intent; relying on undefined SQL row order would be brittle.
         return $this->hasMany(FieldValue::class)->orderBy('id');
+    }
+
+    /**
+     * Audit-trail records for this entry. Newest first; recordFieldChanges()
+     * inserts a row per dirty trackable field on every update.
+     */
+    public function histories(): HasMany
+    {
+        return $this->hasMany(EntryHistory::class, 'entry_id')->latest();
+    }
+
+    /**
+     * Entries that THIS entry mentions in its content (outgoing links).
+     * Pivot's mention_count drives importance ranking — orderBy DESC so
+     * heavily-referenced targets surface first.
+     */
+    public function mentionedEntries(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'entry_mentions', 'source_entry_id', 'target_entry_id')
+            ->withPivot('mention_count')
+            ->orderBy('mention_count', 'desc');
+    }
+
+    /**
+     * Entries that mention THIS entry in their content (incoming links).
+     */
+    public function mentioningEntries(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'entry_mentions', 'target_entry_id', 'source_entry_id')
+            ->withPivot('mention_count')
+            ->orderBy('mention_count', 'desc');
     }
 
     public function scopeActive(Builder $query): Builder

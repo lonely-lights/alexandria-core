@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -45,6 +46,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, Note> $notes
  * @property-read ProjectAiSetting|null $aiSettings
  * @property-read Collection<int, ProjectAiInstruction> $aiInstructions
+ * @property-read Collection<int, Model> $users
  *
  * @method static ProjectFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static Project create(array $attributes = [])
@@ -103,5 +105,21 @@ class Project extends Model implements HasMedia
     public function aiInstructions(): HasMany
     {
         return $this->hasMany(ProjectAiInstruction::class);
+    }
+
+    /**
+     * Project members. The pivot stores (user_id, role_id) so a user
+     * can hold multiple roles per project — pivot rows are NOT unique
+     * on (project_id, user_id) alone. Resolve the User class through
+     * config per ADR-006.
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            config('alexandria.models.user'),
+            'project_user',
+            'project_id',
+            'user_id',
+        )->withPivot('role_id')->withTimestamps();
     }
 }
