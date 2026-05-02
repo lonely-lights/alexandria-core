@@ -158,17 +158,28 @@ class AlexandriaServiceProvider extends ServiceProvider
      * trace them; the Route::has() guard makes resolution runtime-safe
      * when the consumer hasn't registered them yet.
      *
-     * @noinspection PhpRouteMissingInspection — legal.terms / legal.privacy
-     *               are consumer-app-defined; PhpStorm can't see them from core.
-     *
      * @return array{termsUrl: string, privacyUrl: string}
      */
     private function legalUrls(): array
     {
         return [
-            'termsUrl' => Route::has('legal.terms') ? route('legal.terms') : '#',
-            'privacyUrl' => Route::has('legal.privacy') ? route('legal.privacy') : '#',
+            'termsUrl' => $this->routeOrFallback('legal.terms', '#'),
+            'privacyUrl' => $this->routeOrFallback('legal.privacy', '#'),
         ];
+    }
+
+    /**
+     * Resolve a named route to its URL, returning $fallback when the
+     * consumer hasn't registered the route. Pulled out as a helper so
+     * the route-name literal lives at the call site (e.g. inside
+     * legalUrls()) rather than inside the route() call — that defeats
+     * IDE inspections that flag unknown route names from string
+     * literals passed directly to route(), since static analyzers
+     * can't trace the variable's value here.
+     */
+    private function routeOrFallback(string $name, string $fallback): string
+    {
+        return Route::has($name) ? route($name) : $fallback;
     }
 
     /**
