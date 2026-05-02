@@ -175,7 +175,7 @@ class AlexandriaServiceProvider extends ServiceProvider
             'forgot_password' => 'Forgot password?',
             'have_account' => "Don't have an account?",
             'enlist' => 'Enlist',
-            'registration.intro' => "Don't just predict the future — help us shape it. Register now and join a community committed to innovation and creative problem-solving!",
+            'registration.intro' => 'Create your account and start building. Every idea finds a home.',
             'name' => 'Username',
             'signup' => 'Enlist',
             'already_registered' => 'Already have an account?',
