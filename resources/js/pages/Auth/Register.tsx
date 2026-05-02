@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import Logo from '@alexandria/components/ui/Logo';
 import PasswordRulesPopover, { evaluatePasswordRules } from '@alexandria/components/form/PasswordRulesPopover';
+import { ToastProvider, useToastContext } from '@alexandria/components/ui/ToastProvider';
 import { ThemeProvider } from '@alexandria/hooks/useTheme';
 import ModeToggle from '@alexandria/components/theme/ModeToggle';
 
@@ -17,12 +18,26 @@ interface RegisterProps {
     privacyUrl: string;
 }
 
-export default function Register({
+export default function Register(props: RegisterProps) {
+    // ToastProvider must wrap RegisterForm so the form body can call
+    // useToastContext(). ThemeProvider stays outside so theme tokens
+    // resolve before the toast renders into the portal.
+    return (
+        <ThemeProvider>
+            <ToastProvider>
+                <RegisterForm {...props} />
+            </ToastProvider>
+        </ThemeProvider>
+    );
+}
+
+function RegisterForm({
     copy,
     loginUrl,
     termsUrl,
     privacyUrl,
 }: RegisterProps) {
+    const { show: showToast } = useToastContext();
     const form = useForm({
         name: '',
         email: '',
@@ -128,6 +143,35 @@ export default function Register({
         }, 500);
     }, [form.data.email]);
 
+    // Fire a toast whenever the username availability check resolves to
+    // an actionable state (skip 'checking'/'idle' to avoid noise). The
+    // input still shows a status icon — the toast just replaces the
+    // inline message row that used to live below it (which caused
+    // layout shifts as the user typed).
+    useEffect(() => {
+        if (usernameStatus.status === 'available') {
+            showToast(usernameStatus.message ?? 'Username is available.', {
+                type: 'success',
+            });
+        } else if (usernameStatus.status === 'taken') {
+            showToast(usernameStatus.message ?? 'Username is already in use.', {
+                type: 'warning',
+            });
+        }
+    }, [usernameStatus.status, usernameStatus.message, showToast]);
+
+    useEffect(() => {
+        if (emailStatus.status === 'available') {
+            showToast(emailStatus.message ?? 'Email is available.', {
+                type: 'success',
+            });
+        } else if (emailStatus.status === 'taken') {
+            showToast(emailStatus.message ?? 'Email is already registered.', {
+                type: 'warning',
+            });
+        }
+    }, [emailStatus.status, emailStatus.message, showToast]);
+
     // Build the terms agreement line by replacing :terms_of_service / :privacy_policy placeholders.
     const agreeTemplate = copy['agree_terms_privacy'] ?? 'I agree to the :terms_of_service and :privacy_policy.';
     const termsLabel = copy['terms_of_service'] ?? 'Terms of Service';
@@ -136,7 +180,7 @@ export default function Register({
     const agreeParts = agreeTemplate.split(termsRegex);
 
     return (
-        <ThemeProvider>
+        <>
             <Head title={copy['enlist'] ?? 'Register'} />
 
             <div className="min-h-screen flex bg-base-100 text-base-content font-sans">
@@ -275,7 +319,12 @@ export default function Register({
                                     />
                                     <AvailabilityIndicator state={usernameStatus} />
                                 </div>
-                                <AvailabilityMessage state={usernameStatus} fallback="3–30 characters. This will be your unique identifier." />
+                                {/* Static helper — the live availability
+                                    state surfaces via toast (no layout
+                                    shift) plus the icon inside the input. */}
+                                <p className="text-xs text-base-content/60">
+                                    3–30 characters. This will be your unique identifier.
+                                </p>
                             </div>
 
                             {/* Email */}
@@ -306,7 +355,6 @@ export default function Register({
                                     />
                                     <AvailabilityIndicator state={emailStatus} />
                                 </div>
-                                <AvailabilityMessage state={emailStatus} />
                             </div>
 
                             {/* Password */}
@@ -443,7 +491,7 @@ export default function Register({
                     </div>
                 </div>
             </div>
-        </ThemeProvider>
+        </>
     );
 }
 
@@ -464,15 +512,3 @@ function AvailabilityIndicator({ state }: { state: AvailabilityState }) {
     );
 }
 
-function AvailabilityMessage({ state, fallback }: { state: AvailabilityState; fallback?: string }) {
-    if (state.status === 'checking') {
-        return <p className="text-xs text-base-content/50">Checking availability…</p>;
-    }
-    if (state.status === 'available') {
-        return <p className="text-xs text-success">{state.message ?? 'Available'}</p>;
-    }
-    if (state.status === 'taken') {
-        return <p className="text-xs text-error">{state.message ?? 'Already in use'}</p>;
-    }
-    return fallback ? <p className="text-xs text-base-content/60">{fallback}</p> : null;
-}
