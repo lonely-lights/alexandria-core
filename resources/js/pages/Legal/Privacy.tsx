@@ -1,56 +1,94 @@
-import { Head, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 
-import AppLayout from '../../layouts/AppLayout';
-
-interface SharedProps {
-    name?: string;
-    [key: string]: unknown;
-}
+import LegalPage, {
+    BulletList,
+    LegalSection,
+    SubHeading,
+} from '../../components/legal/LegalPage';
 
 interface PrivacyProps {
-    /** Translated copy keys (Arr::dot of lang/en/app/legal.php) */
-    copy?: Record<string, string>;
+    copy: Record<string, string>;
 }
 
-export default function Privacy({ copy = {} }: PrivacyProps) {
-    const page = usePage<SharedProps>();
-    const appName = page.props.name ?? 'Alexandria';
-    const title = copy['privacy.title'] ?? 'Privacy Policy';
-    const lastUpdated = copy['privacy.last_updated'] ?? '';
-    const placeholderTitle = copy['placeholder.title'] ?? 'Placeholder content';
-    const placeholderDescription =
-        copy['placeholder.description'] ??
-        'The Privacy Policy text has not been provided yet. Replace this placeholder with your real privacy policy — see docs/integration/frontend-setup.md for the override-via-pull-up pattern.';
-    const back = copy['back'] ?? 'Go back';
+export default function Privacy() {
+    const { copy } = usePage<{ props: PrivacyProps }>()
+        .props as unknown as PrivacyProps;
 
     return (
-        <AppLayout title={title}>
-            <Head title={title} />
-            <main className="container mx-auto max-w-3xl px-4 py-12">
-                <button
-                    type="button"
-                    onClick={() => window.history.back()}
-                    className="link link-primary text-sm"
-                >
-                    ← {back}
-                </button>
-
-                <h1 className="font-serif mt-6 text-4xl font-bold">{title}</h1>
-                {lastUpdated && (
-                    <p className="text-base-content/60 mt-2 text-sm">
-                        {lastUpdated}
-                    </p>
-                )}
-
-                <div className="prose prose-base mt-8 max-w-none">
-                    <h2>{placeholderTitle}</h2>
-                    <p>{placeholderDescription}</p>
-                </div>
-
-                <p className="text-base-content/40 mt-12 text-xs">
-                    {appName}
+        <LegalPage
+            copy={copy}
+            titleKey="privacy.title"
+            lastUpdatedKey="privacy.last_updated"
+            defaultTitle="Privacy Policy"
+        >
+            <LegalSection n="1" heading="Information We Collect">
+                <p>
+                    We collect information you provide directly to us, such as
+                    when you create an account, create content, or contact us
+                    for support.
                 </p>
-            </main>
-        </AppLayout>
+
+                <SubHeading>Personal Information</SubHeading>
+                <BulletList
+                    items={[
+                        'Account information (username, email, password)',
+                        'Profile information (display name, avatar, bio)',
+                        'Content you create (projects, entries, notes)',
+                    ]}
+                />
+
+                <SubHeading>Automatically Collected Information</SubHeading>
+                <BulletList
+                    items={[
+                        'Log data (IP address, browser type, pages visited)',
+                        'Device information',
+                        'Usage patterns',
+                    ]}
+                />
+            </LegalSection>
+
+            <LegalSection n="2" heading="How We Use Your Information">
+                <p>We use the information we collect to:</p>
+                <BulletList
+                    items={[
+                        'Provide, maintain, and improve our services',
+                        'Process transactions and send related information',
+                        'Send technical notices, updates, and support messages',
+                        'Respond to your comments, questions, and requests',
+                    ]}
+                />
+            </LegalSection>
+
+            <LegalSection n="3" heading="Information Sharing">
+                <p>
+                    We do not sell, trade, or otherwise transfer your personal
+                    information to outside parties except as described in
+                    this policy.
+                </p>
+            </LegalSection>
+
+            <LegalSection n="4" heading="Data Security">
+                <p>
+                    We implement appropriate security measures to protect
+                    your personal information against unauthorized access,
+                    alteration, disclosure, or destruction.
+                </p>
+            </LegalSection>
+
+            <LegalSection n="5" heading="Your Rights">
+                <p>
+                    You have the right to access, update, or delete your
+                    personal information at any time through your account
+                    settings.
+                </p>
+            </LegalSection>
+
+            <LegalSection n="6" heading="Contact Us">
+                <p>
+                    If you have questions about this Privacy Policy, please
+                    contact us.
+                </p>
+            </LegalSection>
+        </LegalPage>
     );
 }

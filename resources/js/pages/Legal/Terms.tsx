@@ -1,56 +1,72 @@
-import { Head, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 
-import AppLayout from '../../layouts/AppLayout';
-
-interface SharedProps {
-    name?: string;
-    [key: string]: unknown;
-}
+import LegalPage, {
+    LegalSection,
+} from '../../components/legal/LegalPage';
 
 interface TermsProps {
-    /** Translated copy keys (Arr::dot of lang/en/app/legal.php) */
-    copy?: Record<string, string>;
+    copy: Record<string, string>;
 }
 
-export default function Terms({ copy = {} }: TermsProps) {
-    const page = usePage<SharedProps>();
-    const appName = page.props.name ?? 'Alexandria';
-    const title = copy['terms.title'] ?? 'Terms of Service';
-    const lastUpdated = copy['terms.last_updated'] ?? '';
-    const placeholderTitle = copy['placeholder.title'] ?? 'Placeholder content';
-    const placeholderDescription =
-        copy['placeholder.description'] ??
-        'The Terms of Service text has not been provided yet. Replace this placeholder with your real terms — see docs/integration/frontend-setup.md for the override-via-pull-up pattern.';
-    const back = copy['back'] ?? 'Go back';
+export default function Terms() {
+    const { copy } = usePage<{ props: TermsProps }>()
+        .props as unknown as TermsProps;
 
     return (
-        <AppLayout title={title}>
-            <Head title={title} />
-            <main className="container mx-auto max-w-3xl px-4 py-12">
-                <button
-                    type="button"
-                    onClick={() => window.history.back()}
-                    className="link link-primary text-sm"
-                >
-                    ← {back}
-                </button>
-
-                <h1 className="font-serif mt-6 text-4xl font-bold">{title}</h1>
-                {lastUpdated && (
-                    <p className="text-base-content/60 mt-2 text-sm">
-                        {lastUpdated}
-                    </p>
-                )}
-
-                <div className="prose prose-base mt-8 max-w-none">
-                    <h2>{placeholderTitle}</h2>
-                    <p>{placeholderDescription}</p>
-                </div>
-
-                <p className="text-base-content/40 mt-12 text-xs">
-                    {appName}
+        <LegalPage
+            copy={copy}
+            titleKey="terms.title"
+            lastUpdatedKey="terms.last_updated"
+            defaultTitle="Terms of Service"
+        >
+            <LegalSection n="1" heading="Acceptance of Terms">
+                <p>
+                    By accessing and using Alexandria, you accept and agree to
+                    be bound by the terms and provisions of this agreement.
                 </p>
-            </main>
-        </AppLayout>
+            </LegalSection>
+
+            <LegalSection n="2" heading="Use License">
+                <p>
+                    Permission is granted to temporarily use Alexandria for
+                    personal, non-commercial transitory viewing only.
+                </p>
+            </LegalSection>
+
+            <LegalSection n="3" heading="User Content">
+                <p>
+                    You retain ownership of any content you create using
+                    Alexandria. By using our service, you grant us a license to
+                    host and display your content as necessary to provide the
+                    service.
+                </p>
+            </LegalSection>
+
+            <LegalSection n="4" heading="Disclaimer">
+                <p>
+                    The materials on Alexandria are provided on an &apos;as
+                    is&apos; basis. Alexandria makes no warranties, expressed
+                    or implied, and hereby disclaims and negates all other
+                    warranties.
+                </p>
+            </LegalSection>
+
+            <LegalSection n="5" heading="Limitations">
+                <p>
+                    In no event shall Alexandria or its suppliers be liable
+                    for any damages arising out of the use or inability to
+                    use the materials on Alexandria.
+                </p>
+            </LegalSection>
+
+            <LegalSection n="6" heading="Revisions">
+                <p>
+                    Alexandria may revise these terms of service at any time
+                    without notice. By using this website you are agreeing to
+                    be bound by the then current version of these terms of
+                    service.
+                </p>
+            </LegalSection>
+        </LegalPage>
     );
 }
