@@ -24,19 +24,24 @@ use Illuminate\Support\Str;
 class EntryHistoryService
 {
     /**
-     * The fields that should be tracked for changes.
+     * Entry columns whose mutations record an audit-trail row. Virtual
+     * property (PHP 8.4 hook) so subclasses override with a get-hook
+     * rather than mutating an inherited array — keeps the list a true
+     * compile-time constant per instance.
      *
-     * @var array<string>
+     * @var list<string>
      */
-    protected array $trackableFields = [
-        'name',
-        'slug',
-        'summary',
-        'content',
-        'sort_order',
-        'metadata',
-        'parent_id',
-    ];
+    public array $trackableFields {
+        get => [
+            'name',
+            'slug',
+            'summary',
+            'content',
+            'sort_order',
+            'metadata',
+            'parent_id',
+        ];
+    }
 
     /**
      * Record changes to core entry fields.
@@ -51,7 +56,7 @@ class EntryHistoryService
         $userId = auth()->check() ? auth()->id() : null;
         $batchId = Str::uuid()->toString();
 
-        foreach ($this->getTrackableFields() as $field) {
+        foreach ($this->trackableFields as $field) {
             if ($entry->isDirty($field)) {
                 $oldValue = $entry->getOriginal($field);
                 $newValue = $entry->getAttribute($field);
@@ -100,16 +105,6 @@ class EntryHistoryService
         }
 
         return "Updated $fieldName";
-    }
-
-    /**
-     * Get the list of trackable fields.
-     *
-     * @return array<string>
-     */
-    public function getTrackableFields(): array
-    {
-        return $this->trackableFields;
     }
 
     /**

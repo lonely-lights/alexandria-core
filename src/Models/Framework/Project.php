@@ -46,6 +46,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, Note> $notes
  * @property-read ProjectAiSetting|null $aiSettings
  * @property-read Collection<int, ProjectAiInstruction> $aiInstructions
+ * @property-read Collection<int, Model> $users
  *
  * @method static ProjectFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static Project create(array $attributes = [])

@@ -56,6 +56,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, EntryRelationship> $childRelationships
  * @property-read Collection<int, EntryRelationship> $parentRelationships
  * @property-read Collection<int, Note> $notes
+ * @property-read Collection<int, static> $mentionedEntries
+ * @property-read Collection<int, static> $mentioningEntries
+ * @property-read Collection<int, EntryHistory> $histories
  *
  * @method static Builder<static> active()
  * @method static Builder<static> archived()

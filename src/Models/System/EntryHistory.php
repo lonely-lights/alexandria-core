@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Alexandria\Core\Models\System;
 
 use Alexandria\Core\Database\Factories\System\EntryHistoryFactory;
-use Eloquent;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -51,7 +51,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Entry $entry Entry being tracked
- * @property-read User|null $user User who made change (null for system)
+ * @property-read Authenticatable|null $user User who made change (null for system); resolves through config('alexandria.models.user') per ADR-006
  * @property-read string $changeTypeName Human-readable change type (accessor)
  * @property-read string $formattedPreviousValue Formatted previous value (accessor)
  * @property-read string $formattedNewValue Formatted new value (accessor)
@@ -61,7 +61,6 @@ use Illuminate\Support\Carbon;
  * @method static Builder|EntryHistory byUser(int $userId) Filter by user
  *
  * @mixin Builder
- * @mixin Eloquent
  */
 class EntryHistory extends Model
 {
@@ -84,7 +83,7 @@ class EntryHistory extends Model
     /**
      * Available change types
      */
-    public const CHANGE_TYPES = [
+    public const array CHANGE_TYPES = [
         'field_update' => 'Field Update',
         'attribute_update' => 'Attribute Update',
         'metadata_update' => 'Metadata Update',
