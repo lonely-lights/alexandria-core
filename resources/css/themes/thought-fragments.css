@@ -3,6 +3,16 @@
 
 [data-theme^="tf"] {
     --tf-handwriting: 'Caveat', 'Comic Sans MS', cursive;
+
+    /* Defaults for the paper-action / paper-card / paper-board shadow
+       radius + color tokens. Each rule that uses them does
+       var(--name, fallback) so these declarations exist primarily so
+       static analysis (PhpStorm CSS inspector) sees the tokens declared.
+       Consumers can override per-host or per-theme. */
+    --paper-action-shadow-radius: 14px;
+    --paper-card-shadow-radius: 16px;
+    --paper-board-shadow-radius: 20px;
+    --paper-board-shadow-color: var(--tf-tape-shadow);
 }
 
 /* Per-theme paper palette tokens. Legacy declared these inside
@@ -107,7 +117,7 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     width: fit-content;
     max-width: 100%;
     padding: 14px 16px;
-    font-family: var(--tf-handwriting);
+    font-family: var(--tf-handwriting), cursive;
     font-size: 18px;
     line-height: 1.3;
     box-shadow: 4px 6px 0 var(--tf-shadow);
@@ -123,7 +133,7 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 [data-theme^="tf"] .tape-tag {
     display: inline-block;
     padding: 2px 8px;
-    font-family: var(--tf-handwriting);
+    font-family: var(--tf-handwriting), cursive;
     font-size: 13px;
     box-shadow: 2px 2px 0 var(--tf-shadow);
     color: #2b1d0f;
@@ -222,7 +232,7 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 /* Dashed ghost button. */
 [data-theme^="tf"] .btn-dashed {
     background: transparent;
-    color: hsl(var(--bc));
+    color: var(--color-base-content);
     border: 1px dashed var(--tf-tape-shadow);
 }
 
@@ -482,7 +492,7 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 [data-theme="tf-dark"] .paper-table thead tr,
 [data-theme="tf-dark"] .paper-stripe__head {
     background-color: rgba(255, 255, 255, 0.05);
-    border-bottom: 1px solid hsl(var(--bc) / 0.15);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-base-content) 15%, transparent);
 }
 
 [data-theme="tf-dark"] .paper-table tbody tr:nth-child(even),
@@ -497,7 +507,7 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 
 /* Pin-board frame. */
 [data-theme^="tf"] .pin-board {
-    background: hsl(var(--b2));
+    background: var(--color-base-200);
     border: 1px solid var(--tf-rule);
     border-radius: 16px;
     box-shadow: inset 0 0 80px rgba(0,0,0,.18);
