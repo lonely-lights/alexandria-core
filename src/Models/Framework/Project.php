@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\Tags\HasTags;
 
 /**
  * @property int $id
@@ -61,6 +62,7 @@ class Project extends Model implements HasMedia
     use HasEavAiIntegration;
     use HasFactory;
     use HasNotes;
+    use HasTags;
     use SoftDeletes;
 
     protected $guarded = ['id'];
