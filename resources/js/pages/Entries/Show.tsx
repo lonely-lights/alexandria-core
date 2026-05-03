@@ -4,6 +4,7 @@ import { useCmdK } from '@alexandria/hooks/useCmdK';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import CommandPalette from '@alexandria/components/search/CommandPalette';
+import { projectSearch } from '@alexandria/lib/projectSearch';
 import MentionAwareContent from '@alexandria/components/ui/MentionAwareContent';
 import ActionButton from '@alexandria/components/ui/ActionButton';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
@@ -473,7 +474,7 @@ export default function EntryShow() {
             <CommandPalette
                 open={searchOpen}
                 onClose={() => setSearchOpen(false)}
-                projectSlug={project.slug}
+                onSearch={projectSearch(project.slug)}
             />
         </AppLayout>
     );

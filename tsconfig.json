@@ -20,7 +20,9 @@
         "lib": ["ESNext", "DOM", "DOM.Iterable"],
         "types": ["react"],
         "paths": {
-            "@alexandria/*": ["./resources/js/*"]
+            "@alexandria/*": ["./resources/js/*"],
+            "@lonely-lights/stardate": ["../packages/stardate/resources/js/stardate.ts"],
+            "@stardate/glyphs": ["../packages/stardate/resources/js/StardateGlyphs.tsx"]
         },
         "baseUrl": "."
     },
