@@ -383,11 +383,9 @@ export default function EntriesTab({ projectId, blueprintId, blueprintName, view
                             placeholder="Search entries..."
                         />
                     </div>
-                    {meta && (
-                        <span className="badge badge-ghost badge-sm">
-                            {meta.total} {meta.total === 1 ? 'entry' : 'entries'}
-                        </span>
-                    )}
+                    <span className="badge badge-ghost badge-sm">
+                        {meta?.total ?? 0} {meta?.total === 1 ? 'entry' : 'entries'}
+                    </span>
                 </div>
                 <div className="flex items-center gap-2">
                     {/* View selector */}

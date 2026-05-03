@@ -8,7 +8,12 @@ interface PaginationProps {
 }
 
 export default function Pagination({ currentPage, lastPage, from, to, total, onPageChange }: PaginationProps) {
-    if (lastPage <= 1) return null;
+    // Hide entirely when there's nothing to paginate. `lastPage` may
+    // arrive null/undefined from a failed or empty API response, in
+    // which case `<= 1` is false (NaN comparison) — explicit checks
+    // cover that path. `total === 0` covers the legitimate "search
+    // returned zero results" case.
+    if (!total || total === 0 || !lastPage || lastPage <= 1) return null;
 
     return (
         <div className="flex items-center justify-between rounded-2xl border border-base-300 bg-base-100 px-4 py-3">
