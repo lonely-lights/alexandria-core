@@ -190,7 +190,11 @@ export default function GraphCanvas({ nodes, edges, layout, onNodeClick }: Graph
             minZoom={0.2}
             maxZoom={3}
             cy={(cy: Core) => {
-                cy.removeListener('tap', 'node');
+                // Clear the prior listener before re-binding so the
+                // tap handler doesn't stack on every re-render.
+                // cy.off replaces the deprecated cy.removeListener
+                // (cytoscape ≥3.30).
+                cy.off('tap', 'node');
                 cy.on('tap', 'node', (evt: EventObject) => {
                     const n = evt.target.data('node') as GraphNodeData | undefined;
                     if (n && onNodeClick) onNodeClick(n);
