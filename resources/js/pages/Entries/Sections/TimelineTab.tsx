@@ -216,37 +216,50 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
                                 const top = LANE_PADDING + item.row * ITEM_ROW_HEIGHT;
                                 const isHovered = hoveredEntry === item.entry.id;
 
+                                // Both range and point entries render as
+                                // dot + label so the entry-side Timeline tab
+                                // matches the blueprint-side TimelineView's
+                                // affordance. Range entries get a thin
+                                // horizontal bar drawn behind the dot to
+                                // visualise duration without forcing the
+                                // label inside a pill that shrinks to nothing
+                                // on small ranges.
                                 return (
                                     <div
                                         key={item.entry.id}
-                                        className="group absolute"
+                                        className={`group absolute ${isHovered ? 'z-30' : 'z-10'}`}
                                         style={{ left, top }}
                                         onMouseEnter={() => setHoveredEntry(item.entry.id)}
                                         onMouseLeave={() => setHoveredEntry(null)}
                                     >
-                                        {isRange ? (
-                                            <Tooltip content={<EntryTooltipContent entry={item.entry} fmtDate={fmtSmart} />} placement="top" delay={200}>
-                                                <a
-                                                    href={item.entry.url}
-                                                    className={`flex h-6 items-center rounded-full bg-primary px-2 transition-all hover:brightness-110 ${isHovered ? 'ring-2 ring-primary/50 brightness-110' : ''}`}
-                                                    style={{ width }}
-                                                >
-                                                    <span className="truncate text-[10px] font-medium text-base-content">{item.entry.name}</span>
-                                                </a>
-                                            </Tooltip>
-                                        ) : (
-                                            <Tooltip content={<EntryTooltipContent entry={item.entry} fmtDate={fmtSmart} />} placement="top" delay={200}>
-                                                <a
-                                                    href={item.entry.url}
-                                                    className={`relative flex items-center gap-1.5 ${isHovered ? 'z-30' : 'z-10'}`}
-                                                >
-                                                    <div className={`h-3 w-3 rounded-full border-2 border-base-100 bg-primary shadow-sm transition-transform ${isHovered ? 'scale-150' : ''}`} />
-                                                    <span className={`whitespace-nowrap text-[10px] font-medium transition-opacity ${isHovered ? 'opacity-100' : 'opacity-70'}`}>
-                                                        {item.entry.name}
-                                                    </span>
-                                                </a>
-                                            </Tooltip>
+                                        {isRange && width > 0 && (
+                                            <span
+                                                className="pointer-events-none absolute left-1.5 top-[5px] h-0.5 rounded-full bg-primary/60"
+                                                style={{ width }}
+                                                aria-hidden="true"
+                                            />
                                         )}
+                                        {isRange && width > 4 && (
+                                            <span
+                                                className="pointer-events-none absolute h-3 w-3 rounded-full border-2 border-base-100 bg-primary shadow-sm"
+                                                style={{ left: width, top: 0 }}
+                                                aria-hidden="true"
+                                            />
+                                        )}
+                                        <Tooltip content={<EntryTooltipContent entry={item.entry} fmtDate={fmtSmart} />} placement="top" delay={200}>
+                                            <a
+                                                href={item.entry.url}
+                                                className="relative flex items-center gap-1.5 no-underline text-inherit hover:text-inherit"
+                                            >
+                                                <span
+                                                    className={`h-3 w-3 flex-shrink-0 rounded-full border-2 border-base-100 bg-primary shadow-sm transition-transform ${isHovered ? 'scale-150' : ''}`}
+                                                    aria-hidden="true"
+                                                />
+                                                <span className={`whitespace-nowrap text-[10px] font-medium transition-opacity ${isHovered ? 'opacity-100' : 'opacity-70'}`}>
+                                                    {item.entry.name}
+                                                </span>
+                                            </a>
+                                        </Tooltip>
                                     </div>
                                 );
                             })}
