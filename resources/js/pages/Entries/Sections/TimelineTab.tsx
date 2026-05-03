@@ -234,15 +234,15 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
                                     >
                                         {isRange && width > 0 && (
                                             <span
-                                                className="pointer-events-none absolute left-1.5 top-[5px] h-0.5 rounded-full bg-primary/60"
+                                                className="pointer-events-none absolute left-1.5 top-4 h-0.5 rounded-full bg-primary/60"
                                                 style={{ width }}
                                                 aria-hidden="true"
                                             />
                                         )}
                                         {isRange && width > 4 && (
                                             <span
-                                                className="pointer-events-none absolute h-3 w-3 rounded-full border-2 border-base-100 bg-primary shadow-sm"
-                                                style={{ left: width, top: 0 }}
+                                                className="pointer-events-none absolute h-2 w-2 rounded-full bg-primary/80"
+                                                style={{ left: width - 4, top: 14 }}
                                                 aria-hidden="true"
                                             />
                                         )}
