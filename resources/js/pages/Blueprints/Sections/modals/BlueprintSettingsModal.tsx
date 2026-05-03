@@ -1018,8 +1018,15 @@ function BlueprintRelationshipsPanel({ blueprint, relationshipBlueprints, refere
     const connectedIds = new Set(connected.map((r) => r.id));
     const unused = relationshipBlueprints.filter((r) => !connectedIds.has(r.id));
 
-    // Derive project slug from the current URL
-    const projectSlug = window.location.pathname.split('/')[2] ?? '';
+    // Derive project slug from the current URL.
+    // typeof check guards SSR — `window` doesn't exist in Node.js
+    // when Inertia renders the page server-side. The slug is only
+    // used to build link hrefs (rendered as plain anchors); empty
+    // is harmless during SSR since no one clicks links in the
+    // server-rendered HTML.
+    const projectSlug = typeof window !== 'undefined'
+        ? window.location.pathname.split('/')[2] ?? ''
+        : '';
 
     function RelCard({ rb, isActive }: { rb: SiblingBlueprint; isActive: boolean }) {
         const icon = rb.icon ? (rb.icon.includes(' ') ? rb.icon : `fa-solid ${rb.icon}`) : 'fa-solid fa-diagram-project';
