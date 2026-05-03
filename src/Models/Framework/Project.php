@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -75,6 +76,21 @@ class Project extends Model implements HasMedia
             'metadata' => 'array',
             'use_subdomain' => 'boolean',
         ];
+    }
+
+    /**
+     * Auto-generate slug from name on create when none was supplied.
+     * Lighter equivalent of legacy's spatie/laravel-sluggable HasSlug
+     * trait — same intent ("no slug? generate from name"), no extra
+     * package dependency.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Project $project): void {
+            if (empty($project->slug) && ! empty($project->name)) {
+                $project->slug = Str::slug($project->name);
+            }
+        });
     }
 
     public function owner(): BelongsTo
