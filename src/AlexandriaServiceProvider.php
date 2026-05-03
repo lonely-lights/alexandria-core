@@ -23,7 +23,7 @@ class AlexandriaServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigDeepFrom(__DIR__.'/../config/alexandria.php', 'alexandria');
+        $this->mergeConfigDeepFrom(__DIR__.'/../config/alexandria.php');
 
         $this->forceFortifyDefaults();
     }
@@ -44,13 +44,13 @@ class AlexandriaServiceProvider extends ServiceProvider
      * replace wholesale rather than merge by index. See
      * ConfigDeepMerge for the merge contract + rationale.
      */
-    private function mergeConfigDeepFrom(string $path, string $key): void
+    private function mergeConfigDeepFrom(string $path): void
     {
         $packageDefaults = require $path;
-        $consumerOverrides = $this->app['config']->get($key, []);
+        $consumerOverrides = $this->app['config']->get('alexandria', []);
 
         $this->app['config']->set(
-            $key,
+            'alexandria',
             ConfigDeepMerge::merge($packageDefaults, $consumerOverrides),
         );
     }
@@ -191,13 +191,13 @@ class AlexandriaServiceProvider extends ServiceProvider
     private function legalUrls(): array
     {
         return [
-            'termsUrl' => $this->routeOrFallback('legal.terms', '#'),
-            'privacyUrl' => $this->routeOrFallback('legal.privacy', '#'),
+            'termsUrl' => $this->routeOrHashFallback('legal.terms'),
+            'privacyUrl' => $this->routeOrHashFallback('legal.privacy'),
         ];
     }
 
     /**
-     * Resolve a named route to its URL, returning $fallback when the
+     * Resolve a named route to its URL, falling back to '#' when the
      * consumer hasn't registered the route. Pulled out as a helper so
      * the route-name literal lives at the call site (e.g. inside
      * legalUrls()) rather than inside the route() call — that defeats
@@ -205,9 +205,9 @@ class AlexandriaServiceProvider extends ServiceProvider
      * literals passed directly to route(), since static analyzers
      * can't trace the variable's value here.
      */
-    private function routeOrFallback(string $name, string $fallback): string
+    private function routeOrHashFallback(string $name): string
     {
-        return Route::has($name) ? route($name) : $fallback;
+        return Route::has($name) ? route($name) : '#';
     }
 
     /**

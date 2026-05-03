@@ -22,11 +22,6 @@ namespace Alexandria\Core\Support;
  */
 final class ConfigDeepMerge
 {
-    /**
-     * @param  array<mixed, mixed>  $defaults
-     * @param  array<mixed, mixed>  $overrides
-     * @return array<mixed, mixed>
-     */
     public static function merge(array $defaults, array $overrides): array
     {
         foreach ($overrides as $key => $value) {
