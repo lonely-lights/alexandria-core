@@ -276,11 +276,21 @@ class Entry extends Model implements HasMedia
     {
         $this->loadMissing('project', 'type');
 
-        if (! Route::has('entries.show')) {
+        // The entries.show route lives in the consumer app's routes
+        // (per ADR-008 — view routes are SaaS-side). PhpStorm's
+        // Laravel Idea plugin only scans the current project's route
+        // files, so a literal route('entries.show', ...) call from
+        // here in vendored core code lights up "Unknown route name".
+        // Hoist the name to a variable to defeat the static check;
+        // Route::has guards the runtime resolution and the consumer
+        // app registers the route in routes/web.php (VL-C.2).
+        $routeName = 'entries.show';
+
+        if (! Route::has($routeName)) {
             return '#';
         }
 
-        return route('entries.show', [
+        return route($routeName, [
             'project' => $this->project,
             'blueprint' => $this->type,
             'entry' => $this,
