@@ -69,8 +69,11 @@ class RelationshipKeyParser
                 if ($pair === '') {
                     continue;
                 }
-                [$k, $v] = array_map('trim', array_pad(explode('=', $pair, 2), 2, null));
-                if ($k === null || $k === '' || $v === null) {
+                // PHP 8.1+ deprecates trim(null); pad with '' so a
+                // missing value lands as empty string and the
+                // explicit '' check below rejects it.
+                [$k, $v] = array_map('trim', array_pad(explode('=', $pair, 2), 2, ''));
+                if ($k === '' || $v === '') {
                     throw new InvalidArgumentException("Bad filter in key `$raw`: `$pair`");
                 }
                 $filters[$k] = $v;
