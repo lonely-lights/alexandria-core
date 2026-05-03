@@ -1,13 +1,10 @@
-// NOTE: `BlueprintViewEntry` lives in the views registry slice
-// (`lib/views/types`) which has not yet been extracted into core.
-// Until that lands, declare a structural placeholder here so the
-// public Blueprint shape stays stable for consumers.
-export interface BlueprintViewEntry {
-    id: number;
-    name: string;
-    type: string;
-    [key: string]: unknown;
-}
+// `BlueprintViewEntry` lives in the views registry slice
+// (`lib/views/types`) — that's the canonical shape used by every
+// view-rendering surface (ViewToggle, useBlueprintViews, the
+// kanban/graph/timeline panels). Re-export here so consumers
+// importing the public Blueprint shape get the same type without
+// having to reach into lib/views.
+export type { BlueprintViewEntry } from '../lib/views/types';
 
 export interface BlueprintField {
     id: number | null;
