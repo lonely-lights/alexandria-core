@@ -15,7 +15,7 @@ export function TreeActivationPanel({ blueprint, project }: {
     blueprint: BlueprintDetail;
     project: { slug: string };
 }) {
-    const [enabled, setEnabled] = useState<boolean>(!!blueprint.show_tree_view);
+    const [enabled, setEnabled] = useState<boolean>(blueprint.show_tree_view);
     const [saving, setSaving] = useState(false);
 
     function handleToggle(next: boolean) {

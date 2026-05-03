@@ -5,6 +5,7 @@ import gsap from 'gsap';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import StatsBar from '@alexandria/components/projects/StatsBar';
 import CommandPalette from '@alexandria/components/search/CommandPalette';
+import { projectSearch } from '@alexandria/lib/projectSearch';
 import DashboardTab from './Sections/DashboardTab';
 import ActivityTab from './Sections/ActivityTab';
 import SettingsTab from './Sections/SettingsTab';
@@ -262,7 +263,7 @@ export default function ProjectShow() {
             <CommandPalette
                 open={searchOpen}
                 onClose={() => setSearchOpen(false)}
-                projectSlug={project.slug}
+                onSearch={projectSearch(project.slug)}
             />
         </AppLayout>
     );

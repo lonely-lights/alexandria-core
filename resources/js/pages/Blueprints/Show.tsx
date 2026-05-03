@@ -10,6 +10,7 @@ import ActionButton from '@alexandria/components/ui/ActionButton';
 import IconTile from '@alexandria/components/ui/IconTile';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import CommandPalette from '@alexandria/components/search/CommandPalette';
+import { projectSearch } from '@alexandria/lib/projectSearch';
 import BlueprintGridBg from '@alexandria/components/backgrounds/BlueprintGridBg';
 import ViewToggle from '@alexandria/lib/views/ViewToggle';
 import { useBlueprintViews } from '@alexandria/lib/views/useBlueprintViews';
@@ -349,7 +350,7 @@ export default function BlueprintShow() {
             <CommandPalette
                 open={searchOpen}
                 onClose={() => setSearchOpen(false)}
-                projectSlug={project.slug}
+                onSearch={projectSearch(project.slug)}
             />
         </AppLayout>
     );
