@@ -101,7 +101,13 @@ export function ColumnConfigModal({ open, onClose, columns, sortableColumns, ava
     const sortableInstance = useRef<Sortable | null>(null);
 
     useEffect(() => {
-        if (!open || !sortableRef.current) return;
+        // Only attach Sortable when the columns panel is mounted.
+        // The modal swaps panels in-place via activeMenu; navigating
+        // away from 'columns' unmounts the ref'd div, and coming back
+        // mounts a fresh DOM node. Including activeMenu in the dep
+        // array ensures we rebind to the new node instead of leaving
+        // the old (now-detached) instance dangling.
+        if (!open || activeMenu !== 'columns' || !sortableRef.current) return;
 
         sortableInstance.current = Sortable.create(sortableRef.current, {
             handle: '.drag-handle',
@@ -123,7 +129,7 @@ export function ColumnConfigModal({ open, onClose, columns, sortableColumns, ava
             sortableInstance.current?.destroy();
             sortableInstance.current = null;
         };
-    }, [open, localColumns.length]);
+    }, [open, activeMenu, localColumns.length]);
 
     function removeColumn(key: string) {
         if (localColumns.length <= 1) return;
