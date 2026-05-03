@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
 import { useDateFormatters } from '@alexandria/lib/formatDate';
 import {
-    ZOOM_INDEX, PX_PER_UNIT, ITEM_ROW_HEIGHT, LANE_PADDING, MIN_LABEL_PX,
+    ZOOM_INDEX, PX_PER_UNIT, ITEM_ROW_HEIGHT, LANE_PADDING,
     gridUnitYears,
     layoutItems, formatEntryDate, parseYear,
     type DateFmt,
@@ -211,8 +211,14 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
                             {items.map((item) => {
                                 const left = dateToPos(item.entry.start_date!);
                                 const isRange = !!item.entry.end_date;
-                                const rawWidth = isRange ? dateToPos(item.entry.end_date!) - left : 0;
-                                const width = isRange ? Math.max(rawWidth, MIN_LABEL_PX) : 0;
+                                // Width = real pixel distance between start
+                                // and end. The legacy MIN_LABEL_PX padding
+                                // was only there because ranges used to
+                                // render as a pill that needed to be wide
+                                // enough to fit the label text — now the
+                                // label sits next to the start dot and the
+                                // bar represents actual duration only.
+                                const width = isRange ? Math.max(dateToPos(item.entry.end_date!) - left, 2) : 0;
                                 const top = LANE_PADDING + item.row * ITEM_ROW_HEIGHT;
                                 const isHovered = hoveredEntry === item.entry.id;
 
