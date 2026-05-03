@@ -387,7 +387,13 @@ function UsernameChangeModal({ open, currentUsername, usernameStatus, onClose, o
     const isSame = newUsername === currentUsername;
     const isValid = /^[a-zA-Z0-9_-]*$/.test(newUsername) && newUsername.length <= 30;
 
-    const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+    // typeof check guards SSR — `document` doesn't exist in Node.js
+    // when Inertia renders the page server-side. The csrfToken is
+    // only used inside fetch() handlers that fire client-side, so
+    // an empty fallback during SSR is harmless.
+    const csrfToken = typeof document !== 'undefined'
+        ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''
+        : '';
 
     const checkAvailability = useCallback((username: string) => {
         if (!username || username === currentUsername) {
