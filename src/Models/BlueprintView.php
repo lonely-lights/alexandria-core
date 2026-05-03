@@ -26,6 +26,8 @@ use Illuminate\Support\Carbon;
  *
  * @method static BlueprintViewFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static BlueprintView create(array $attributes = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static> query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
  */
 class BlueprintView extends Model
 {
