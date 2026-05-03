@@ -13,6 +13,7 @@ use Alexandria\Core\Models\System\Entry;
 use Alexandria\Core\Traits\AI\HasEavAiIntegration;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
 use Alexandria\Core\Traits\Notable\HasNotes;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -49,9 +50,16 @@ use Spatie\Tags\HasTags;
  * @property-read ProjectAiSetting|null $aiSettings
  * @property-read Collection<int, ProjectAiInstruction> $aiInstructions
  * @property-read Collection<int, Model> $users
+ * @property-read int|null $entries_count Loaded by withCount('entries')
+ * @property-read int|null $users_count Loaded by withCount('users')
+ * @property-read int|null $blueprints_count Loaded by withCount('blueprints')
+ * @property-read int|null $notes_count Loaded by withCount('notes')
  *
  * @method static ProjectFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static Project create(array $attributes = [])
+ * @method static Builder<static> query()
+ * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
  */
 class Project extends Model implements HasMedia
 {

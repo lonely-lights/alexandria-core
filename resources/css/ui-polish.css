@@ -13,6 +13,22 @@
  */
 
 /* ====================================================================== */
+/* Restore v3 button cursor.                                              */
+/* Tailwind v4 changed the default cursor on <button> to `default` (the   */
+/* browser default) instead of v3's `pointer`. "Click target should show  */
+/* a finger" is universal in our UI — keeping the v3 behaviour app-wide   */
+/* is clearer than dotting cursor-pointer utilities through every         */
+/* component. :not(:disabled) preserves the not-allowed cursor on         */
+/* disabled controls.                                                     */
+/* ====================================================================== */
+button:not(:disabled),
+[role='button']:not(:disabled),
+.btn:not(:disabled) {
+    cursor: pointer;
+}
+
+
+/* ====================================================================== */
 /* Toggle — visible border even when unchecked. base-300 is too close     */
 /* to base-100/200 on both tf-dark and tf-light to register as a border;  */
 /* using base-content at 45% opacity gives clear definition regardless    */

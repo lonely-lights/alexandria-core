@@ -64,6 +64,10 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @method static Builder<static> archived()
  * @method static EntryFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static Entry create(array $attributes = [])
+ * @method static Builder<static> query()
+ * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static Builder<static> latest(string $column = 'created_at')
  */
 class Entry extends Model implements HasMedia
 {
