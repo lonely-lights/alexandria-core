@@ -135,13 +135,45 @@ class Entry extends Model implements HasMedia
                 ->max('sort_order') ?? -1) + 1;
 
             if (empty($entry->slug) && ! empty($entry->name)) {
-                $entry->slug = Str::slug($entry->name).'-'.Str::random(6);
+                $entry->slug = static::generateUniqueSlug(
+                    $entry->name,
+                    $entry->project_id,
+                    $entry->blueprint_id,
+                );
             }
         });
 
         static::updating(function (Entry $entry): void {
             app(EntryHistoryService::class)->recordFieldChanges($entry);
         });
+    }
+
+    /**
+     * Generate a slug that's unique within (project_id, blueprint_id).
+     *
+     * Matches the entries table's unique index. Tries the bare slug
+     * first, then `-2`, `-3`, ... until it finds an unused value —
+     * same shape Spatie's HasSlug generates. We don't use HasSlug
+     * directly because spatie/laravel-sluggable v4 has Testbench
+     * config issues; this is a small enough loop to inline.
+     */
+    private static function generateUniqueSlug(string $name, int $projectId, int $blueprintId): string
+    {
+        $base = Str::slug($name);
+        $slug = $base;
+        $i = 2;
+
+        while (
+            static::query()
+                ->where('project_id', $projectId)
+                ->where('blueprint_id', $blueprintId)
+                ->where('slug', $slug)
+                ->exists()
+        ) {
+            $slug = $base.'-'.$i++;
+        }
+
+        return $slug;
     }
 
     public function project(): BelongsTo
