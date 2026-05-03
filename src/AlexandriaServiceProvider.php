@@ -8,6 +8,7 @@ use Alexandria\Core\Actions\Fortify\CreateNewUser;
 use Alexandria\Core\Actions\Fortify\ResetUserPassword;
 use Alexandria\Core\Actions\Fortify\UpdateUserPassword;
 use Alexandria\Core\Actions\Fortify\UpdateUserProfileInformation;
+use Alexandria\Core\Support\ConfigDeepMerge;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -22,9 +23,36 @@ class AlexandriaServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/alexandria.php', 'alexandria');
+        $this->mergeConfigDeepFrom(__DIR__.'/../config/alexandria.php', 'alexandria');
 
         $this->forceFortifyDefaults();
+    }
+
+    /**
+     * Recursive variant of Laravel's mergeConfigFrom.
+     *
+     * Laravel's built-in is shallow: only top-level keys are merged.
+     * That breaks the override-via-pull-up pattern for our nested
+     * config — a consumer who publishes config/alexandria.php to tweak
+     * one entry under `models.*` would lose every other key in `models`,
+     * `media`, `slots`, etc., and have to manually backfill new keys
+     * forever.
+     *
+     * Deep merge means consumers publish only the keys they care about
+     * (or just the leaves they want to override), and core's defaults
+     * fill in the rest at runtime. Consumer wins on conflict; lists
+     * replace wholesale rather than merge by index. See
+     * ConfigDeepMerge for the merge contract + rationale.
+     */
+    private function mergeConfigDeepFrom(string $path, string $key): void
+    {
+        $packageDefaults = require $path;
+        $consumerOverrides = $this->app['config']->get($key, []);
+
+        $this->app['config']->set(
+            $key,
+            ConfigDeepMerge::merge($packageDefaults, $consumerOverrides),
+        );
     }
 
     public function boot(): void
