@@ -112,6 +112,19 @@ class Project extends Model implements HasMedia
         return $this->belongsTo(config('alexandria.models.user'), 'owner_id');
     }
 
+    /**
+     * Project-wide toggle for cascading the project's media (page
+     * image, banner) down to blueprints + entries that don't have
+     * their own. Defaults true; consumers turn it off via
+     * `metadata->inherit_media_downward = false` when each blueprint
+     * brings its own art and the project's image shouldn't bleed
+     * through the gaps.
+     */
+    public function inheritMediaDownward(): bool
+    {
+        return (bool) ($this->metadata['inherit_media_downward'] ?? true);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(config('alexandria.models.user'), 'creator_id');

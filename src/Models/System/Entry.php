@@ -246,6 +246,111 @@ class Entry extends Model implements HasMedia
     }
 
     /**
+     * Whether this entry has a thumbnail image (alias of hasPageImage
+     * — Spatie's `thumb` conversion of the page_image collection is
+     * how the navbar avatar / row thumbnail is rendered).
+     */
+    public function hasThumbnail(): bool
+    {
+        return $this->hasPageImage();
+    }
+
+    public function getThumbnailUrlAttribute(): ?string
+    {
+        return $this->getFirstMediaUrl('page_image', 'thumb') ?: null;
+    }
+
+    public function getThumbnailThumbUrlAttribute(): ?string
+    {
+        return $this->getFirstMediaUrl('page_image', 'small') ?: null;
+    }
+
+    /**
+     * Resolve a media URL on any HasMedia model with a conversion
+     * fallback. Returns the conversion URL when both available and
+     * present; otherwise the original collection URL; otherwise null.
+     */
+    private function mediaUrlForCollection(?HasMedia $model, string $collection, ?string $conversion): ?string
+    {
+        if (! $model) {
+            return null;
+        }
+
+        $url = $conversion
+            ? ($model->getFirstMediaUrl($collection, $conversion) ?: $model->getFirstMediaUrl($collection))
+            : $model->getFirstMediaUrl($collection);
+
+        return $url !== '' ? $url : null;
+    }
+
+    /**
+     * Effective page image URL — Entry → Blueprint → Project cascade.
+     * Returns null if no level has art or if the project has disabled
+     * inherit_media_downward (entry's own image always wins regardless
+     * of the toggle). Callers iterating over many entries should
+     * eager-load `type` and `project` to avoid N+1.
+     */
+    public function effectivePageImageUrl(?string $conversion = null): ?string
+    {
+        if ($this->hasPageImage()) {
+            return $this->mediaUrlForCollection($this, 'page_image', $conversion);
+        }
+
+        $this->loadMissing('type', 'project');
+
+        if (! $this->project?->inheritMediaDownward()) {
+            return null;
+        }
+
+        if ($this->type?->hasPageImage()) {
+            return $this->mediaUrlForCollection($this->type, 'page_image', $conversion);
+        }
+
+        if ($this->project?->hasPageImage()) {
+            return $this->mediaUrlForCollection($this->project, 'page_image', $conversion);
+        }
+
+        return null;
+    }
+
+    public function hasEffectivePageImage(): bool
+    {
+        return $this->effectivePageImageUrl() !== null;
+    }
+
+    /**
+     * Effective banner URL — Entry → Blueprint → Project cascade.
+     * Same gating rules as effectivePageImageUrl.
+     */
+    public function effectiveBannerUrl(?string $conversion = null): ?string
+    {
+        if ($this->hasBanner()) {
+            return $this->mediaUrlForCollection($this, 'banner', $conversion);
+        }
+
+        $this->loadMissing('type', 'project');
+
+        if (! $this->project?->inheritMediaDownward()) {
+            return null;
+        }
+
+        if ($this->type?->hasBanner()) {
+            return $this->mediaUrlForCollection($this->type, 'banner', $conversion);
+        }
+
+        if ($this->project?->hasBanner()) {
+            return $this->mediaUrlForCollection($this->project, 'banner', $conversion);
+        }
+
+        return null;
+    }
+
+    public function hasEffectiveBanner(): bool
+    {
+        return $this->effectiveBannerUrl() !== null;
+    }
+
+    /**
      * Whether this entry has a renderable detail page.
      *
      * Two gates: the parent blueprint must allow pages
