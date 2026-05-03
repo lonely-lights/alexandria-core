@@ -57,6 +57,10 @@ use Spatie\Tags\HasTags;
  *
  * @method static ProjectFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static Project create(array $attributes = [])
+ * @method static Project|null find($id, $columns = ['*'])
+ * @method static Project findOrFail($id, $columns = ['*'])
+ * @method static Project firstOrFail($columns = ['*'])
+ * @method static Project|null first($columns = ['*'])
  * @method static Builder<static> query()
  * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
  * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
