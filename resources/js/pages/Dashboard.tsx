@@ -92,7 +92,7 @@ export default function Dashboard() {
             <div className="mb-5 flex items-center justify-between gap-3">
                 <div className="flex items-baseline gap-3">
                     <h2 className="font-serif text-2xl md:text-3xl font-bold tracking-tight">Projects</h2>
-                    <span className="text-xs text-base-content/50">
+                    <span className="badge badge-sm badge-ghost">
                         {projects.length} {projects.length === 1 ? 'world' : 'worlds'}
                     </span>
                 </div>
