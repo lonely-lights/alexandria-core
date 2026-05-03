@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -210,6 +211,48 @@ class Entry extends Model implements HasMedia
     public function scopeArchived(Builder $query): Builder
     {
         return $query->whereNotNull('archived_at');
+    }
+
+    /**
+     * Whether this entry has a renderable detail page.
+     *
+     * Two gates: the parent blueprint must allow pages
+     * (is_linkable=true), AND this specific entry must not be a
+     * stub. Lifted from legacy.
+     */
+    public function hasPage(): bool
+    {
+        $this->loadMissing('type');
+
+        if (! $this->type?->is_linkable) {
+            return false;
+        }
+
+        return ! $this->is_stub;
+    }
+
+    /**
+     * Canonical entry URL — `/p/{project}/{blueprint}/{entry}`.
+     *
+     * Returns '#' if the entries.show route hasn't been registered
+     * yet (VL-C lands it). Lets InternalLinkProcessor render
+     * `[[entry]]` markup safely on pages that load before VL-C
+     * wires the route. Once entries.show is registered, the
+     * fallback never fires.
+     */
+    public function getSluggableUrl(): string
+    {
+        $this->loadMissing('project', 'type');
+
+        if (! Route::has('entries.show')) {
+            return '#';
+        }
+
+        return route('entries.show', [
+            'project' => $this->project,
+            'blueprint' => $this->type,
+            'entry' => $this,
+        ]);
     }
 
     /**
