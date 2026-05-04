@@ -29,6 +29,11 @@ use Illuminate\Support\Carbon;
  *
  * @method static ProjectSortingPromptFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static ProjectSortingPrompt create(array $attributes = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static> query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static ProjectSortingPrompt|null find(mixed $id, array|string $columns = ['*'])
+ * @method static ProjectSortingPrompt findOrFail(mixed $id, array|string $columns = ['*'])
  */
 class ProjectSortingPrompt extends Model
 {
