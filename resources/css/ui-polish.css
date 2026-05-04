@@ -106,3 +106,68 @@ button:not(:disabled),
 .scrollbar-subtle::-webkit-scrollbar-thumb { background-color: color-mix(in srgb, var(--color-base-content) 20%, transparent); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
 .scrollbar-subtle::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--color-base-content) 40%, transparent); }
 .scrollbar-subtle::-webkit-scrollbar-corner { background: transparent; }
+
+/* ----------------------------------------------------------------------
+   TipTap / ProseMirror editor surface
+   ----------------------------------------------------------------------
+   Targeted styles for `.tiptap-editor .ProseMirror` because:
+   - Tiptap renders the content into a `.ProseMirror` div with no
+     intrinsic min-height, so without this the editor collapses to a
+     single line until the user types.
+   - The placeholder is rendered via Placeholder extension as a `::before`
+     pseudo-element on the empty paragraph; needs the float + colour
+     setup below to look right.
+   - Mention + entry-link nodes get a subtle pill background so they
+     read as inline tokens rather than plain text.
+*/
+.tiptap-editor .ProseMirror {
+    outline: none;
+    min-height: 8rem;
+    padding: 1rem;
+}
+.tiptap-editor .ProseMirror p { margin-bottom: 0.5rem; }
+.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    color: color-mix(in srgb, var(--color-base-content) 40%, transparent);
+}
+.tiptap-editor .ProseMirror h2 {
+    font-family: 'Libre Baskerville', serif;
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-base-content) 20%, transparent);
+}
+.tiptap-editor .ProseMirror h3 {
+    font-family: 'Libre Baskerville', serif;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+.tiptap-editor .ProseMirror > h2:first-child,
+.tiptap-editor .ProseMirror > h3:first-child { margin-top: 0; }
+.tiptap-editor .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; }
+.tiptap-editor .ProseMirror ol { list-style-type: decimal; padding-left: 1.5rem; }
+.tiptap-editor .ProseMirror a { color: var(--color-primary); text-decoration: underline; }
+.tiptap-editor .ProseMirror a.mention { text-decoration: none; }
+.tiptap-editor .ProseMirror .mention {
+    background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.25rem;
+}
+.tiptap-editor .ProseMirror .entry-link {
+    background-color: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.25rem;
+    color: var(--color-primary);
+    text-decoration: none;
+}
+.tiptap-editor .ProseMirror .entry-link:hover { text-decoration: underline; }
+.tiptap-mention-popup { position: fixed; z-index: 9999; }
