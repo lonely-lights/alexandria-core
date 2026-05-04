@@ -115,7 +115,7 @@ export default function EntryForm({
                         <div className="overflow-hidden bg-base-200" style={{ borderRadius: 'inherit' }}>
                             <div
                                 className="relative border-b border-base-content/10 px-8 py-6"
-                                style={{ background: 'linear-gradient(135deg, oklch(var(--p) / 0.12), oklch(var(--s) / 0.08), oklch(var(--b2) / 0.5))' }}
+                                style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 12%, transparent), color-mix(in srgb, var(--color-secondary) 8%, transparent), color-mix(in srgb, var(--color-base-200) 50%, transparent))' }}
                             >
                                 <div className="flex items-center gap-5">
                                     <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-base-100 shadow-md ring-1 ring-base-content/5">
@@ -181,7 +181,7 @@ export default function EntryForm({
                             <div className="overflow-hidden bg-base-200" style={{ borderRadius: 'inherit' }}>
                                 <div
                                     className="flex items-center gap-2 border-b border-base-content/10 px-4 py-3 text-secondary-content"
-                                    style={{ background: 'linear-gradient(90deg, oklch(var(--s) / 0.8), oklch(var(--s) / 0.6))' }}
+                                    style={{ background: 'linear-gradient(90deg, color-mix(in srgb, var(--color-secondary) 80%, transparent), color-mix(in srgb, var(--color-secondary) 60%, transparent))' }}
                                 >
                                     <i className="fa-solid fa-layer-group text-xs text-secondary-content/60" />
                                     <h3 className="text-xs font-semibold">Fields</h3>
@@ -219,7 +219,7 @@ export default function EntryForm({
                             <div className="overflow-hidden bg-base-200" style={{ borderRadius: 'inherit' }}>
                                 <div
                                     className="flex items-center gap-2 border-b border-base-content/10 px-4 py-3 text-accent-content"
-                                    style={{ background: 'linear-gradient(90deg, oklch(var(--a) / 0.8), oklch(var(--a) / 0.6))' }}
+                                    style={{ background: 'linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 80%, transparent), color-mix(in srgb, var(--color-accent) 60%, transparent))' }}
                                 >
                                     <i className="fa-solid fa-photo-film text-xs text-accent-content/60" />
                                     <h3 className="text-xs font-semibold">Media</h3>
@@ -304,7 +304,7 @@ function TemporalFieldEditor({ field, records, onChange }: {
             <div className="overflow-hidden bg-base-200" style={{ borderRadius: 'inherit' }}>
                 <div
                     className="flex items-center gap-2 border-b border-base-content/10 px-5 py-3 text-secondary-content"
-                    style={{ background: 'linear-gradient(90deg, oklch(var(--s) / 0.8), oklch(var(--s) / 0.6))' }}
+                    style={{ background: 'linear-gradient(90deg, color-mix(in srgb, var(--color-secondary) 80%, transparent), color-mix(in srgb, var(--color-secondary) 60%, transparent))' }}
                 >
                     <i className="fa-solid fa-timeline text-xs text-secondary-content/60" />
                     <h3 className="text-xs font-semibold">{field.label}</h3>

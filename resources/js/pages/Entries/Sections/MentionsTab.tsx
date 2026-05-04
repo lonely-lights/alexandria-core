@@ -65,7 +65,7 @@ function MentionGroupCard({ blueprintName, items, icon }: { blueprintName: strin
             <div className="overflow-hidden bg-base-200" style={{ borderRadius: 'inherit' }}>
                 <div
                     className="flex items-center gap-2 border-b border-base-300 px-5 py-3 text-primary-content"
-                    style={{ background: 'linear-gradient(90deg, oklch(var(--p) / 0.8), oklch(var(--p) / 0.6))' }}
+                    style={{ background: 'linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 80%, transparent), color-mix(in srgb, var(--color-primary) 60%, transparent))' }}
                 >
                     <i className={`${icon} text-xs text-primary-content/60`} />
                     <h3 className="text-sm font-semibold">{blueprintName}</h3>
