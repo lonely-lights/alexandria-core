@@ -12,6 +12,12 @@
  * colors instead of legacy's HSL component triplets behind --bc / --p.
  */
 
+/* Pull in the a11y/appearance data-* attribute rules (font-size scale,
+ * reduced-motion, compact, high-contrast, dyslexia-friendly font, focus
+ * indicators) so consumer apps don't have to add a separate @import — a
+ * single ui-polish.css import covers both layers. */
+@import './view-preferences.css';
+
 /* ====================================================================== */
 /* Restore v3 button cursor.                                              */
 /* Tailwind v4 changed the default cursor on <button> to `default` (the   */

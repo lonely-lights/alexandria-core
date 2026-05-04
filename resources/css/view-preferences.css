@@ -1,0 +1,90 @@
+/* ====================================================================== */
+/* View preferences — a11y and appearance effects keyed to data-* attrs  */
+/* on <html>. All mutually compatible with theme + motif layers.         */
+/* ====================================================================== */
+
+/* Font size — scales root font-size so all rem-based Tailwind spacing
+   and typography cascades. Default body stays at 16px (browser default). */
+html[data-font-size="small"]   { font-size: 14px; }
+html[data-font-size="default"] { font-size: 16px; }
+html[data-font-size="large"]   { font-size: 18px; }
+html[data-font-size="x-large"] { font-size: 20px; }
+
+/* Reduced motion — disables all animations/transitions regardless of OS
+   preference. Complements @media (prefers-reduced-motion: reduce) so users
+   can override either direction. */
+html[data-reduced-motion="true"] *,
+html[data-reduced-motion="true"] *::before,
+html[data-reduced-motion="true"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+}
+
+/* Compact mode — scales down padding on common app surfaces. Conservative:
+   we only touch heavy containers, not every element. Narrow this further if
+   it feels too aggressive in the wild. */
+html[data-compact="true"] .card-body { padding: 0.75rem 1rem !important; }
+html[data-compact="true"] .p-8 { padding: 1.25rem !important; }
+html[data-compact="true"] .p-7 { padding: 1rem !important; }
+html[data-compact="true"] .p-6 { padding: 1rem !important; }
+html[data-compact="true"] .py-12 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
+html[data-compact="true"] .py-16 { padding-top: 2rem !important; padding-bottom: 2rem !important; }
+html[data-compact="true"] .py-20 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+html[data-compact="true"] .py-24 { padding-top: 3.5rem !important; padding-bottom: 3.5rem !important; }
+html[data-compact="true"] .lg\:py-24 { padding-top: 3.5rem !important; padding-bottom: 3.5rem !important; }
+html[data-compact="true"] .gap-8 { gap: 1.5rem !important; }
+html[data-compact="true"] .space-y-6 > * + * { margin-top: 1rem !important; }
+html[data-compact="true"] .space-y-8 > * + * { margin-top: 1.5rem !important; }
+
+/* High contrast — boost faded text opacity, strengthen borders. */
+html[data-high-contrast="true"] .text-base-content\/40,
+html[data-high-contrast="true"] .text-base-content\/50,
+html[data-high-contrast="true"] .text-base-content\/60,
+html[data-high-contrast="true"] .text-base-content\/70 {
+    color: var(--color-base-content) !important;
+    opacity: 0.9 !important;
+}
+html[data-high-contrast="true"] .border-base-content\/5,
+html[data-high-contrast="true"] .border-base-content\/10 {
+    border-color: color-mix(in srgb, var(--color-base-content) 35%, transparent) !important;
+}
+
+/* Enhanced focus rings — thicker + more saturated for keyboard users who
+   want clearer indicators. */
+html[data-focus-indicators="enhanced"] *:focus-visible {
+    outline: 3px solid var(--color-primary) !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-primary) 25%, transparent) !important;
+    border-radius: 4px;
+}
+
+/* Dyslexia-friendly font — Atkinson Hyperlegible everywhere, including
+   headings. The `.font-serif` override is necessary because Tailwind's
+   `font-serif` utility sets an explicit font-family that would otherwise
+   beat inherited values. Headings, hand-written pencil font (Caveat), and
+   any `.font-sans` variants all fall under the hyperlegible swap. */
+html[data-dyslexia="true"],
+html[data-dyslexia="true"] body {
+    font-family: 'Atkinson Hyperlegible', 'Open Sans', system-ui, sans-serif !important;
+}
+html[data-dyslexia="true"] .font-serif,
+html[data-dyslexia="true"] .font-sans,
+html[data-dyslexia="true"] h1,
+html[data-dyslexia="true"] h2,
+html[data-dyslexia="true"] h3,
+html[data-dyslexia="true"] h4,
+html[data-dyslexia="true"] h5,
+html[data-dyslexia="true"] h6,
+html[data-dyslexia="true"] input,
+html[data-dyslexia="true"] textarea,
+html[data-dyslexia="true"] select,
+html[data-dyslexia="true"] button,
+html[data-dyslexia="true"] blockquote {
+    font-family: 'Atkinson Hyperlegible', 'Open Sans', system-ui, sans-serif !important;
+}
+/* FontAwesome icons: their own class rules (.fa-solid, .fa-regular, etc.)
+   set font-family explicitly, so they aren't affected by the selectors above. */
