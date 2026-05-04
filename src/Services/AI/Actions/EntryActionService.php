@@ -8,6 +8,7 @@ use Alexandria\Core\Exceptions\AiActionException;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Traits\InjectsCommandContext;
 use Exception;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -113,14 +114,17 @@ class EntryActionService
         }
 
         // Inject context (project_id, user_id, etc.) if model supports it.
-        // Uses direct property access on the Eloquent model rather than
-        // Arr::has/Arr::get — both work for top-level attributes via ArrayAccess
-        // but property access is the idiomatic and less fragile path.
+        // Uses Arr::has/Arr::get against the AiReviewCommand instance so
+        // dot-notation paths like "context.project_id" reach into the JSON
+        // `context` column. Direct property access doesn't parse dots —
+        // an earlier refactor switched to it and silently dropped the
+        // injection, leaving Entry::generateUniqueSlug to crash on null
+        // project_id whenever the AI executor materialized a new entry.
         if (in_array(InjectsCommandContext::class, class_uses_recursive($modelClass), true)) {
             $requiredKeys = $modelClass::getRequiredContextKeys();
             foreach ($requiredKeys as $modelAttribute => $commandProperty) {
-                if (isset($command->{$commandProperty})) {
-                    $attributes[$modelAttribute] = $command->{$commandProperty};
+                if (Arr::has($command, $commandProperty)) {
+                    $attributes[$modelAttribute] = Arr::get($command, $commandProperty);
                 }
             }
         }

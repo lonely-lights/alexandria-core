@@ -9,6 +9,7 @@ use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Services\Entries\EntryHistoryService;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
+use Alexandria\Core\Traits\InjectsCommandContext;
 use Alexandria\Core\Traits\Notable\HasNotes;
 use Alexandria\Core\Traits\System\HasDynamicAttributes;
 use Alexandria\Core\Traits\System\HasDynamicRelationships;
@@ -89,8 +90,24 @@ class Entry extends Model implements HasMedia
     use HasDynamicRelationships;
     use HasFactory;
     use HasNotes;
+    use InjectsCommandContext;
     use LogsActivity;
     use SoftDeletes;
+
+    /**
+     * Pull project_id off the AiReviewCommand's `context` JSON when the
+     * AI executor materializes the entry. Without this the orchestrator-
+     * built command doesn't carry project_id and generateUniqueSlug fails
+     * with "Argument #2 (\$projectId) must be of type int, null given".
+     *
+     * @return array<string, string>
+     */
+    public static function getRequiredContextKeys(): array
+    {
+        return [
+            'project_id' => 'context.project_id',
+        ];
+    }
 
     protected $guarded = ['id'];
 
