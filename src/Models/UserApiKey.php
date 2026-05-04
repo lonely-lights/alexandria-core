@@ -36,6 +36,11 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> active()
  * @method static Builder<static> valid()
  * @method static Builder<static> forProvider(int $providerId)
+ * @method static Builder<static> query()
+ * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static UserApiKey|null find(mixed $id, array $columns = ['*'])
+ * @method static UserApiKey findOrFail(mixed $id, array $columns = ['*'])
  * @method static UserApiKeyFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static UserApiKey create(array $attributes = [])
  */
