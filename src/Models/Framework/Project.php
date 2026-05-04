@@ -151,6 +151,16 @@ class Project extends Model implements HasMedia
     }
 
     /**
+     * AI transactions logged against this project (text/image/audio
+     * generations, embeddings, etc.). Used by the project dashboard's
+     * "AI usage this month" badge and by the AI tab's history view.
+     */
+    public function aiTransactions(): HasMany
+    {
+        return $this->hasMany(\Alexandria\Core\Models\System\AiTransaction::class);
+    }
+
+    /**
      * Project members. The pivot stores (user_id, role_id) so a user
      * can hold multiple roles per project — pivot rows are NOT unique
      * on (project_id, user_id) alone. Resolve the User class through
