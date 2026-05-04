@@ -70,6 +70,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @method static Builder<static> query()
  * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
  * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static Builder<static> whereHas(string $relation, \Closure|null $callback = null, string $operator = '>=', int $count = 1)
+ * @method static Builder<static> whereNotNull(string|array $columns)
  * @method static Builder<static> latest(string $column = 'created_at')
  */
 class Entry extends Model implements HasMedia

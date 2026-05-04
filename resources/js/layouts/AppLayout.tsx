@@ -4,6 +4,7 @@ import Navbar from '../components/navigation/Navbar';
 import Sidebar from '../components/navigation/Sidebar';
 import BottomNav from '../components/navigation/BottomNav';
 import CommandPalette from '../components/search/CommandPalette';
+import NotesDrawer from '../components/notes/NotesDrawer';
 import { projectSearch } from '../lib/projectSearch';
 import { ToastProvider } from '../components/ui/ToastProvider';
 import Logo from '../components/ui/Logo';
@@ -72,10 +73,12 @@ interface AppLayoutProps {
      *  `null` to hide the search button. */
     onSearchToggle?: (() => void) | null;
 
-    /** Notes-toggle handler for the navbar's notes button. When supplied,
-     *  the Notes icon appears between Search and the user dropdown.
-     *  Consumer wires this to its notes-drawer state. */
-    onNotesToggle?: () => void;
+    /** Notes-toggle handler for the navbar's notes button. When omitted
+     *  AND a `currentProject` is in shared props, AppLayout auto-wires
+     *  the button to its built-in NotesDrawer state. Pass an explicit
+     *  function to override, or `null` to suppress the button entirely
+     *  even on project pages. */
+    onNotesToggle?: (() => void) | null;
 
     // ────────────────────────────────────────────────────────────────────
     // Bottom-nav slots
@@ -147,6 +150,33 @@ export default function AppLayout({
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [paletteOpen, setPaletteOpen] = useState(false);
     const { currentProject } = usePage<SharedProps>().props;
+    const url = usePage().url;
+
+    // Auto-wire the navbar's Notes button only on project-scoped routes
+    // (/p/{slug}/...). On the dedicated Notes (/notes/{slug}) or AI
+    // (/ai/{slug}) surfaces, the drawer would be redundant — the page
+    // itself IS the notes / AI experience — so suppress the navbar
+    // toggle there. Default handler dispatches the global
+    // `alexandria:open-notes` event that NotesDrawer listens for —
+    // drawer state lives entirely inside the drawer, so the layout
+    // only has to fire the open signal with the current project context.
+    // Consumer can override with an explicit function, or pass null to
+    // suppress the button entirely.
+    const isProjectScope = url.startsWith('/p/');
+    const resolvedNotesToggle = onNotesToggle === null
+        ? undefined
+        : onNotesToggle ?? (currentProject && isProjectScope
+            ? () => window.dispatchEvent(new CustomEvent('alexandria:open-notes', {
+                detail: {
+                    projectId: currentProject.id,
+                    projectSlug: currentProject.slug,
+                    contextType: 'project',
+                    contextId: currentProject.id,
+                    contextLabel: currentProject.name,
+                    contextSlug: currentProject.slug,
+                },
+            }))
+            : undefined);
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -206,7 +236,7 @@ export default function AppLayout({
                         brandSlot={navbarBrandSlot}
                         onSearchToggle={onSearchToggle ?? undefined}
                         showSearch={showSearch}
-                        onNotesToggle={onNotesToggle}
+                        onNotesToggle={resolvedNotesToggle}
                         extraActions={extraNavbarActions}
                         userMenuItems={userMenuItems}
                         userMenuFooter={userMenuFooter}
@@ -236,6 +266,12 @@ export default function AppLayout({
                         onSearch={projectSearch(currentProject.slug)}
                     />
                 )}
+
+                {/* NotesDrawer manages its own state through the global
+                    `alexandria:open-notes` event. Mount only on /p/{...}
+                    routes so the dedicated Notes / AI dashboards aren't
+                    shadowed by a redundant slide-up drawer. */}
+                {currentProject && isProjectScope && <NotesDrawer />}
 
                 {extras}
             </ToastProvider>

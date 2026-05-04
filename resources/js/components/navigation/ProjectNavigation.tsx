@@ -121,11 +121,11 @@ export default function ProjectNavigation({
                 </span>
             </div>
 
-            <a href={`/p/${project.slug}/notes`} className="btn btn-ghost btn-sm justify-start">
+            <a href={`/notes/${project.slug}`} className="btn btn-ghost btn-sm justify-start">
                 <i className="fa-solid fa-note-sticky fa-fw w-5" />
                 <span>Notes</span>
             </a>
-            <a href={`/p/${project.slug}/notes#notebooks`} className="btn btn-ghost btn-sm justify-start">
+            <a href={`/notes/${project.slug}#notebooks`} className="btn btn-ghost btn-sm justify-start">
                 <i className="fa-solid fa-book fa-fw w-5" />
                 <span>Notebooks</span>
             </a>
