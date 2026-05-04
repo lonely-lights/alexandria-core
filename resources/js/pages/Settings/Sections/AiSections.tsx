@@ -458,7 +458,7 @@ function PreferencesSection({ preferences, onDataChanged }: {
         <div className="space-y-6">
             <div className="form-control">
                 <label className="label"><span className="label-text font-semibold">Response Length</span></label>
-                <select value={responseLength} onChange={(e) => setResponseLength(e.target.value)} className="select select-bordered rounded-xl focus:select-primary">
+                <select value={responseLength} onChange={(e) => setResponseLength(e.target.value)} className="select select-bordered w-full rounded-xl focus:select-primary">
                     <option value="concise">Concise</option>
                     <option value="balanced">Balanced</option>
                     <option value="detailed">Detailed</option>

@@ -1,4 +1,4 @@
-import { router, useForm } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import Select from '@alexandria/components/form/Select';
 import Toggle from '@alexandria/components/form/Toggle';
 import { useTheme } from '@alexandria/hooks/useTheme';
@@ -379,15 +379,22 @@ function AccessibilitySection({
         reduced_motion: preferences.reduced_motion as boolean,
     });
 
-    function save(key: string, value: string | number | boolean | null) {
-        router.put('/account/preferences', { [key]: value }, {
-            preserveScroll: true, preserveState: true, preserveUrl: true, only: ['auth'],
-        });
+    function handleSubmit(e: SyntheticEvent) {
+        e.preventDefault();
+        form.put('/account/preferences');
     }
+
+    const saveButton = (
+        <div className="flex justify-end pt-2">
+            <button type="submit" className="btn btn-primary rounded-xl" disabled={form.processing}>
+                {form.processing ? <><span className="loading loading-spinner loading-sm" /> Saving...</> : 'Save Accessibility'}
+            </button>
+        </div>
+    );
 
     if (subsection === 'visual') {
         return (
-            <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
                 <Toggle
                     label="High Contrast"
                     description="Boost contrast for better visibility"
@@ -395,7 +402,6 @@ function AccessibilitySection({
                     onChange={(v) => {
                         form.setData('high_contrast', v);
                         applyViewPreferences({ high_contrast: v });
-                        save('high_contrast', v);
                     }}
                 />
                 <Select
@@ -406,7 +412,6 @@ function AccessibilitySection({
                     onChange={(e) => {
                         form.setData('focus_indicators', e.target.value);
                         applyViewPreferences({ focus_indicators: e.target.value });
-                        save('focus_indicators', e.target.value);
                     }}
                 />
                 <Toggle
@@ -416,16 +421,16 @@ function AccessibilitySection({
                     onChange={(v) => {
                         form.setData('dyslexia_friendly_font', v);
                         applyViewPreferences({ dyslexia_friendly_font: v });
-                        save('dyslexia_friendly_font', v);
                     }}
                 />
-            </div>
+                {saveButton}
+            </form>
         );
     }
 
     if (subsection === 'motion') {
         return (
-            <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
                 <Toggle
                     label="Reduce Motion"
                     description="Minimize animations and transitions across the app"
@@ -433,31 +438,32 @@ function AccessibilitySection({
                     onChange={(v) => {
                         form.setData('reduced_motion', v);
                         applyViewPreferences({ reduced_motion: v });
-                        save('reduced_motion', v);
                     }}
                 />
                 <p className="text-xs text-base-content/50">
                     Your operating system&apos;s reduce-motion setting is also respected automatically.
                 </p>
-            </div>
+                {saveButton}
+            </form>
         );
     }
 
     // subsection === 'assistive'
     return (
-        <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
             <Toggle
                 label="Screen Reader Mode"
                 description="Optimize the interface for screen readers"
                 checked={form.data.screen_reader_mode}
-                onChange={(v) => { form.setData('screen_reader_mode', v); save('screen_reader_mode', v); }}
+                onChange={(v) => form.setData('screen_reader_mode', v)}
             />
             <Toggle
                 label="Keyboard Shortcuts"
                 description="Enable keyboard shortcuts for common actions"
                 checked={form.data.keyboard_shortcuts}
-                onChange={(v) => { form.setData('keyboard_shortcuts', v); save('keyboard_shortcuts', v); }}
+                onChange={(v) => form.setData('keyboard_shortcuts', v)}
             />
-        </div>
+            {saveButton}
+        </form>
     );
 }
