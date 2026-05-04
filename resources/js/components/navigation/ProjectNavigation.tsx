@@ -142,15 +142,15 @@ export default function ProjectNavigation({
                 </button>
                 {aiOpen && (
                     <div className="ml-5 mt-0.5 space-y-0.5 border-l-2 border-base-300 pl-2">
-                        <a href={`/p/${project.slug}/ai/queue`} className="btn btn-ghost btn-xs h-7 w-full justify-start">
+                        <a href={`/ai/${project.slug}/queue`} className="btn btn-ghost btn-xs h-7 w-full justify-start">
                             <i className="fa-solid fa-route fa-fw w-4 text-warning" />
                             <span>Note Queue</span>
                         </a>
-                        <a href={`/p/${project.slug}/ai/batches`} className="btn btn-ghost btn-xs h-7 w-full justify-start">
+                        <a href={`/ai/${project.slug}/batches`} className="btn btn-ghost btn-xs h-7 w-full justify-start">
                             <i className="fa-solid fa-terminal fa-fw w-4 text-secondary" />
                             <span>Commands</span>
                         </a>
-                        <a href={`/p/${project.slug}/ai/models`} className="btn btn-ghost btn-xs h-7 w-full justify-start">
+                        <a href={`/ai/${project.slug}/models`} className="btn btn-ghost btn-xs h-7 w-full justify-start">
                             <i className="fa-solid fa-microchip fa-fw w-4 text-info" />
                             <span>Models</span>
                         </a>
