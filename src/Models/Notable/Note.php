@@ -50,6 +50,11 @@ use Spatie\Tags\HasTags;
  *
  * @method static NoteFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static Note create(array $attributes = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static> query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> onlyTrashed()
  */
 class Note extends Model
 {
