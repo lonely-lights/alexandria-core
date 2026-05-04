@@ -8,6 +8,7 @@ use Alexandria\Core\Database\Factories\Framework\ProjectFactory;
 use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
+use Alexandria\Core\Models\System\AiTransaction;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\Entry;
 use Alexandria\Core\Traits\AI\HasEavAiIntegration;
@@ -49,7 +50,11 @@ use Spatie\Tags\HasTags;
  * @property-read Collection<int, Note> $notes
  * @property-read ProjectAiSetting|null $aiSettings
  * @property-read Collection<int, ProjectAiInstruction> $aiInstructions
+ * @property-read Collection<int, AiTransaction> $aiTransactions
  * @property-read Collection<int, Model> $users
+ * @property-read string|null $page_image_url
+ * @property-read string|null $page_image_thumb_url
+ * @property-read string|null $banner_desktop_url
  * @property-read int|null $entries_count Loaded by withCount('entries')
  * @property-read int|null $users_count Loaded by withCount('users')
  * @property-read int|null $blueprints_count Loaded by withCount('blueprints')
@@ -157,7 +162,7 @@ class Project extends Model implements HasMedia
      */
     public function aiTransactions(): HasMany
     {
-        return $this->hasMany(\Alexandria\Core\Models\System\AiTransaction::class);
+        return $this->hasMany(AiTransaction::class);
     }
 
     /**
