@@ -78,8 +78,13 @@ function AppearanceSection({ preferences, options, applyViewPreferences }: { pre
     // Derived selection state from the theme store (always authoritative).
     const activeModeKey: 'light' | 'dark' | 'system' = theme?.followSystem ? 'system' : (theme?.mode ?? 'dark');
 
+    function handleSubmit(e: SyntheticEvent) {
+        e.preventDefault();
+        form.put('/account/preferences');
+    }
+
     return (
-        <div className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-8">
             {/* Color mode */}
             <div className="form-control">
                 <div className="label">
@@ -133,9 +138,6 @@ function AppearanceSection({ preferences, options, applyViewPreferences }: { pre
                                 onClick={() => {
                                     form.setData('font_size', val);
                                     applyViewPreferences({ font_size: val });
-                                    router.put('/account/preferences', { font_size: val }, {
-                                        preserveScroll: true, preserveState: true, preserveUrl: true, only: ['auth'],
-                                    });
                                 }}
                                 className={`flex flex-col items-center gap-1 rounded-2xl border-2 p-4 transition-all ${
                                     selected ? 'border-primary bg-primary/10' : 'border-base-content/10 hover:border-base-content/30'
@@ -158,9 +160,6 @@ function AppearanceSection({ preferences, options, applyViewPreferences }: { pre
                     onChange={(v) => {
                         form.setData('reduced_motion', v);
                         applyViewPreferences({ reduced_motion: v });
-                        router.put('/account/preferences', { reduced_motion: v }, {
-                            preserveScroll: true, preserveState: true, preserveUrl: true, only: ['auth'],
-                        });
                     }}
                 />
                 <Toggle
@@ -170,13 +169,17 @@ function AppearanceSection({ preferences, options, applyViewPreferences }: { pre
                     onChange={(v) => {
                         form.setData('compact_mode', v);
                         applyViewPreferences({ compact_mode: v });
-                        router.put('/account/preferences', { compact_mode: v }, {
-                            preserveScroll: true, preserveState: true, preserveUrl: true, only: ['auth'],
-                        });
                     }}
                 />
             </div>
-        </div>
+
+            {/* Save */}
+            <div className="flex justify-end pt-2">
+                <button type="submit" className="btn btn-primary rounded-xl" disabled={form.processing}>
+                    {form.processing ? <><span className="loading loading-spinner loading-sm" /> Saving...</> : 'Save Appearance'}
+                </button>
+            </div>
+        </form>
     );
 }
 
