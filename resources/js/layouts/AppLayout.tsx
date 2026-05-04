@@ -5,6 +5,7 @@ import Sidebar from '../components/navigation/Sidebar';
 import BottomNav from '../components/navigation/BottomNav';
 import CommandPalette from '../components/search/CommandPalette';
 import NotesDrawer from '../components/notes/NotesDrawer';
+import PageTransition from '../components/ui/PageTransition';
 import { projectSearch } from '../lib/projectSearch';
 import { ToastProvider } from '../components/ui/ToastProvider';
 import Logo from '../components/ui/Logo';
@@ -272,6 +273,13 @@ export default function AppLayout({
                     routes so the dedicated Notes / AI dashboards aren't
                     shadowed by a redundant slide-up drawer. */}
                 {currentProject && isProjectScope && <NotesDrawer />}
+
+                {/* PageTransition listens for `alexandria:transition-close`
+                    events and resolves the Promise returned by
+                    triggerPageTransition(). Without it mounted, any caller
+                    awaiting that helper hangs forever — the SortingHistory
+                    modal's blueprint/entry links are the canonical example. */}
+                <PageTransition />
 
                 {extras}
             </ToastProvider>
