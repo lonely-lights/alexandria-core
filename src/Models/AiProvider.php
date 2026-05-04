@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, AiModel> $models
  * @property-read Collection<int, AiModel> $activeModels
+ * @property-read int|null $models_count Loaded by withCount('models')
  *
  * @method static AiProviderFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static AiProvider create(array $attributes = [])
