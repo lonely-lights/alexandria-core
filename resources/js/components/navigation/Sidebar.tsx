@@ -3,6 +3,8 @@ import { Transition } from '@headlessui/react';
 import { Fragment, type ReactNode } from 'react';
 import type { SharedProps } from '../../types/index';
 import AvatarWithRing from '../ui/AvatarWithRing';
+import ProjectNavigation, { NoProjectState, type SidebarBlueprint } from './ProjectNavigation';
+import type { ProjectSummary } from '../../types/models';
 
 interface SidebarProps {
     /** Open / closed state — controlled by the consumer (typically AppLayout). */
@@ -23,10 +25,11 @@ interface SidebarProps {
     logoSlot?: ReactNode;
 
     /**
-     * The body of the sidebar — typically a stack of navigation links keyed
-     * to the consumer app's domain (project switcher, blueprint links,
-     * AI hub, archive, etc.). Core renders zero opinions about what lives
-     * here.
+     * Override slot for the sidebar body. When omitted, Sidebar renders
+     * a default `<ProjectNavigation />` driven by Inertia shared props
+     * (`projects` + `currentProject`) — that gives consumers the legacy
+     * Alexandria sidebar (project switcher, blueprint links, AI hub,
+     * archive) for free. Pass a custom node to opt out.
      */
     body?: ReactNode;
 
@@ -56,7 +59,28 @@ export default function Sidebar({
     body,
     userMenuLink = '/account',
 }: SidebarProps) {
-    const { auth } = usePage<SharedProps>().props;
+    const { auth, projects, currentProject } = usePage<SharedProps>().props;
+    const typedProject = currentProject as
+        | (ProjectSummary & { is_route_project?: boolean; blueprints?: SidebarBlueprint[] })
+        | null;
+
+    // Default sidebar body: render ProjectNavigation against shared props
+    // when there's a current project, the empty-state CTA when the user
+    // has no projects yet, or a no-op when the consumer explicitly opted
+    // out by passing `body={null}`. Consumers wanting a custom sidebar
+    // pass their own `body={...}` to skip this default entirely.
+    const resolvedBody: ReactNode = body !== undefined
+        ? body
+        : typedProject
+            ? (
+                <ProjectNavigation
+                    project={typedProject}
+                    projects={projects ?? []}
+                    blueprints={typedProject.blueprints ?? []}
+                    isRouteProject={typedProject.is_route_project ?? true}
+                />
+            )
+            : (projects && projects.length === 0 ? <NoProjectState /> : null);
 
     return (
         <>
@@ -88,7 +112,7 @@ export default function Sidebar({
 
                     {/* Body */}
                     <nav className="mt-2 flex flex-1 flex-col space-y-0.5 overflow-y-auto">
-                        {body}
+                        {resolvedBody}
                     </nav>
 
                     {/* Profile Link */}

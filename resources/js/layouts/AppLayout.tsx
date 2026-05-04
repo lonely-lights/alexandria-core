@@ -1,12 +1,15 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useState, useEffect, type ReactNode } from 'react';
 import Navbar from '../components/navigation/Navbar';
 import Sidebar from '../components/navigation/Sidebar';
 import BottomNav from '../components/navigation/BottomNav';
+import CommandPalette from '../components/search/CommandPalette';
+import { projectSearch } from '../lib/projectSearch';
 import { ToastProvider } from '../components/ui/ToastProvider';
 import Logo from '../components/ui/Logo';
 import { ThemeProvider } from '../hooks/useTheme';
 import type { BottomNavTab, UserMenuItem } from '../types/navigation';
+import type { SharedProps } from '../types/index';
 
 interface AppLayoutProps {
     /** The page content. */
@@ -69,6 +72,11 @@ interface AppLayoutProps {
      *  `null` to hide the search button. */
     onSearchToggle?: (() => void) | null;
 
+    /** Notes-toggle handler for the navbar's notes button. When supplied,
+     *  the Notes icon appears between Search and the user dropdown.
+     *  Consumer wires this to its notes-drawer state. */
+    onNotesToggle?: () => void;
+
     // ────────────────────────────────────────────────────────────────────
     // Bottom-nav slots
     // ────────────────────────────────────────────────────────────────────
@@ -128,6 +136,7 @@ export default function AppLayout({
     extraNavbarActions,
     navbarGuestActions,
     onSearchToggle,
+    onNotesToggle,
 
     bottomNavTabs,
     bottomNavMore,
@@ -136,6 +145,8 @@ export default function AppLayout({
     extras,
 }: AppLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [paletteOpen, setPaletteOpen] = useState(false);
+    const { currentProject } = usePage<SharedProps>().props;
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -147,6 +158,28 @@ export default function AppLayout({
         document.addEventListener('keydown', handleEscape);
 
         return () => document.removeEventListener('keydown', handleEscape);
+    }, []);
+
+    // Listen for the global command-palette-toggle event so the navbar
+    // search button (which dispatches it) opens the palette regardless
+    // of where it lives in the tree. Cmd+K binding is also handled here
+    // for the same reason.
+    useEffect(() => {
+        const open = () => setPaletteOpen(true);
+        const handleKey = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                setPaletteOpen(true);
+            }
+        };
+
+        window.addEventListener('alexandria-core:command-palette-toggle', open);
+        window.addEventListener('keydown', handleKey);
+
+        return () => {
+            window.removeEventListener('alexandria-core:command-palette-toggle', open);
+            window.removeEventListener('keydown', handleKey);
+        };
     }, []);
 
     const showBottomNav = !!bottomNavTabs && bottomNavTabs.length > 0;
@@ -173,6 +206,7 @@ export default function AppLayout({
                         brandSlot={navbarBrandSlot}
                         onSearchToggle={onSearchToggle ?? undefined}
                         showSearch={showSearch}
+                        onNotesToggle={onNotesToggle}
                         extraActions={extraNavbarActions}
                         userMenuItems={userMenuItems}
                         userMenuFooter={userMenuFooter}
@@ -187,6 +221,19 @@ export default function AppLayout({
                         tabs={bottomNavTabs}
                         moreMenu={bottomNavMore}
                         moreMenuExtras={bottomNavMoreExtras}
+                    />
+                )}
+
+                {/* Mount CommandPalette globally when there's a current
+                    project to search against — wires Cmd+K + the navbar
+                    search button to /p/{slug}/search through the
+                    projectSearch helper. Per-page mounts (e.g. legacy's
+                    Show pages) are no longer required. */}
+                {currentProject && (
+                    <CommandPalette
+                        open={paletteOpen}
+                        onClose={() => setPaletteOpen(false)}
+                        onSearch={projectSearch(currentProject.slug)}
                     />
                 )}
 
