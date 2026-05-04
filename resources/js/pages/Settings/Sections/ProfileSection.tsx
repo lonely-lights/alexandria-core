@@ -126,7 +126,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                             {/* Username */}
                             <FieldRow label="Username" hint="@mentions & URL">
                                 <div className="flex items-stretch gap-2">
-                                    <div className="flex flex-1 items-center rounded-2xl bg-base-300/50 px-4 py-3">
+                                    <div className="flex h-12 flex-1 items-center rounded-2xl bg-base-300/50 px-5">
                                         <span className="mr-1 text-base-content/40">@</span>
                                         <span className="truncate font-mono font-medium">{profile.username}</span>
                                     </div>
@@ -134,7 +134,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                         <button
                                             type="button"
                                             onClick={() => setShowUsernameModal(true)}
-                                            className="btn btn-ghost rounded-2xl bg-primary/10 hover:bg-primary/20 text-primary"
+                                            className="btn btn-ghost h-12 min-h-12 rounded-2xl bg-primary/10 hover:bg-primary/20 text-primary"
                                         >
                                             <i className="fa-solid fa-pen text-xs" />
                                             Change
@@ -143,7 +143,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                         <button
                                             type="button"
                                             onClick={() => setShowUsernameModal(true)}
-                                            className="btn btn-ghost rounded-2xl text-base-content/50"
+                                            className="btn btn-ghost h-12 min-h-12 rounded-2xl text-base-content/50"
                                         >
                                             <i className="fa-solid fa-font text-xs" />
                                             Edit Case
@@ -169,7 +169,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                     type="text"
                                     value={form.data.display_name}
                                     onChange={(e) => form.setData('display_name', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl focus:input-primary"
+                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
                                     placeholder="How you want to be called"
                                     maxLength={255}
                                 />
@@ -192,7 +192,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                     type="text"
                                     value={form.data.custom_pronouns}
                                     onChange={(e) => form.setData('custom_pronouns', e.target.value)}
-                                    className="input input-bordered mt-2 h-10 w-full rounded-2xl text-sm focus:input-primary"
+                                    className="input input-bordered mt-2 h-10 w-full rounded-2xl pl-5 text-sm focus:input-primary"
                                     placeholder="Custom pronouns"
                                     maxLength={50}
                                 />
@@ -219,7 +219,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                     type="text"
                                     value={form.data.tagline}
                                     onChange={(e) => form.setData('tagline', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl focus:input-primary"
+                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
                                     placeholder="A short one-liner about you"
                                     maxLength={150}
                                 />
@@ -262,7 +262,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                     type="text"
                                     value={form.data.location}
                                     onChange={(e) => form.setData('location', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl focus:input-primary"
+                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
                                     placeholder="City, Country"
                                     maxLength={100}
                                 />
@@ -275,7 +275,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                     type="url"
                                     value={form.data.website}
                                     onChange={(e) => form.setData('website', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl focus:input-primary"
+                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
                                     placeholder="https://example.com"
                                     maxLength={255}
                                 />
