@@ -69,6 +69,11 @@ interface AppLayoutProps {
      *  `null` to hide the search button. */
     onSearchToggle?: (() => void) | null;
 
+    /** Notes-toggle handler for the navbar's notes button. When supplied,
+     *  the Notes icon appears between Search and the user dropdown.
+     *  Consumer wires this to its notes-drawer state. */
+    onNotesToggle?: () => void;
+
     // ────────────────────────────────────────────────────────────────────
     // Bottom-nav slots
     // ────────────────────────────────────────────────────────────────────
@@ -128,6 +133,7 @@ export default function AppLayout({
     extraNavbarActions,
     navbarGuestActions,
     onSearchToggle,
+    onNotesToggle,
 
     bottomNavTabs,
     bottomNavMore,
@@ -173,6 +179,7 @@ export default function AppLayout({
                         brandSlot={navbarBrandSlot}
                         onSearchToggle={onSearchToggle ?? undefined}
                         showSearch={showSearch}
+                        onNotesToggle={onNotesToggle}
                         extraActions={extraNavbarActions}
                         userMenuItems={userMenuItems}
                         userMenuFooter={userMenuFooter}

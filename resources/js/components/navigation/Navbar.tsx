@@ -39,6 +39,14 @@ interface NavbarProps {
     showSearch?: boolean;
 
     /**
+     * Notes drawer toggle. When supplied, a Notes button appears between
+     * the search button and `extraActions`. Consumer wires this to its
+     * Notes drawer state (typically AppLayout-managed). When omitted, the
+     * Notes button is suppressed.
+     */
+    onNotesToggle?: () => void;
+
+    /**
      * Slot for app-specific actions rendered between the search button and
      * the user dropdown — e.g. a notes-drawer toggle, a notifications bell.
      */
@@ -80,6 +88,7 @@ export default function Navbar({
     brandSlot,
     onSearchToggle,
     showSearch = true,
+    onNotesToggle,
     extraActions,
     userMenuItems,
     userMenuFooter,
@@ -174,6 +183,19 @@ export default function Navbar({
                                         aria-label="Search (⌘K)"
                                     >
                                         <i className="fa-light fa-magnifying-glass" />
+                                    </button>
+                                </Tooltip>
+                            )}
+
+                            {/* Notes Button */}
+                            {onNotesToggle && (
+                                <Tooltip content="Notes" placement="bottom">
+                                    <button
+                                        onClick={onNotesToggle}
+                                        className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full bg-base-200 text-base-content/70 transition-colors hover:bg-base-300 hover:text-base-content"
+                                        aria-label="Notes"
+                                    >
+                                        <i className="fa-solid fa-note-sticky" />
                                     </button>
                                 </Tooltip>
                             )}
