@@ -55,6 +55,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, Note> $notes
  * @property-read Collection<int, BlueprintView> $blueprintViews
  * @property-read Collection<int, AiConfiguration> $aiConfigurations
+ * @property-read int|null $entries_count Loaded by withCount('entries')
+ * @property-read int|null $fields_count Loaded by withCount('fields')
  *
  * @method static Builder<static> standard()
  * @method static Builder<static> list()

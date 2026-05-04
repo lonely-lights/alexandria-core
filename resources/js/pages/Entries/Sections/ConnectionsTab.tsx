@@ -61,7 +61,7 @@ function ConnectionSectionCard({ section }: { section: ConnectionSection }) {
                 {/* Section header */}
                 <div
                     className="flex items-start gap-2 border-b border-base-300 px-5 py-3 text-secondary-content"
-                    style={{ background: 'linear-gradient(90deg, oklch(var(--s) / 0.8), oklch(var(--s) / 0.6))' }}
+                    style={{ background: 'linear-gradient(90deg, color-mix(in srgb, var(--color-secondary) 80%, transparent), color-mix(in srgb, var(--color-secondary) 60%, transparent))' }}
                 >
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">

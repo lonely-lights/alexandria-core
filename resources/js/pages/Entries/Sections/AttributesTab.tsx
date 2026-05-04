@@ -88,7 +88,7 @@ function SimpleCard({ properties }: { properties: DynamicProperty[] }) {
             <div className="overflow-hidden bg-base-200" style={{ borderRadius: 'inherit' }}>
                 <div
                     className="flex items-center gap-2 border-b border-base-300 px-5 py-3 text-primary-content"
-                    style={{ background: 'linear-gradient(90deg, oklch(var(--p) / 0.8), oklch(var(--p) / 0.6))' }}
+                    style={{ background: 'linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 80%, transparent), color-mix(in srgb, var(--color-primary) 60%, transparent))' }}
                 >
                     <i className="fa-solid fa-list text-xs text-primary-content/60" />
                     <h3 className="text-sm font-semibold">Attributes</h3>
@@ -136,7 +136,7 @@ function TemporalCard({ prop }: { prop: DynamicProperty }) {
             <div className="overflow-hidden bg-base-200" style={{ borderRadius: 'inherit' }}>
                 <div
                     className="flex items-center gap-2 border-b border-base-300 px-5 py-3"
-                    style={{ background: 'linear-gradient(90deg, oklch(var(--s) / 0.8), oklch(var(--s) / 0.6))' }}
+                    style={{ background: 'linear-gradient(90deg, color-mix(in srgb, var(--color-secondary) 80%, transparent), color-mix(in srgb, var(--color-secondary) 60%, transparent))' }}
                 >
                     <i className="fa-solid fa-timeline text-xs text-secondary-content/60" />
                     <h3 className="text-sm font-semibold text-secondary-content">{prop.label}</h3>

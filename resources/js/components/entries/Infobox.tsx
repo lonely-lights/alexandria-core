@@ -97,7 +97,7 @@ export default function Infobox({ blocks, entryName }: InfoboxProps) {
     // infobox shadow relates to its own fill color — same mechanic the
     // Notes dashboard uses for its color-coded shortcut cards.
     const shadowStyle = {
-        '--paper-board-shadow-color': 'color-mix(in srgb, oklch(var(--s)) 55%, #000 45%)',
+        '--paper-board-shadow-color': 'color-mix(in srgb, var(--color-secondary) 55%, #000 45%)',
     } as CSSProperties;
 
     return (

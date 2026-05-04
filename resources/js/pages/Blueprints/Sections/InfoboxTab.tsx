@@ -389,7 +389,7 @@ function BlockEditor({ block, fields, relationshipBlueprints, onChange, onClose 
         <div className="overflow-hidden rounded-2xl border border-primary/30 bg-base-200 shadow-sm">
             <div
                 className="flex items-center justify-between border-b border-base-content/5 px-4 py-3"
-                style={{ background: 'linear-gradient(90deg, oklch(var(--p) / 0.8), oklch(var(--p) / 0.6))' }}
+                style={{ background: 'linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 80%, transparent), color-mix(in srgb, var(--color-primary) 60%, transparent))' }}
             >
                 <h3 className="flex items-center gap-2 text-xs font-semibold text-primary-content">
                     <i className={`${config.icon} text-primary-content/60`} />
