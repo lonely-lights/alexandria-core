@@ -142,6 +142,18 @@ class EntryActionService
             ]);
         }
 
+        // The seeded prompt's JSON examples write "priority": 1 alongside the
+        // entry attributes, but the entries schema column is `sort_order`.
+        // Without this alias the value falls into the EAV dynamic-attribute
+        // bucket, where it can't bind because no blueprint defines a
+        // priority field — so it silently dropped on every AI-created entry.
+        // Map it so the AI's intent ("priority 1") lands on the actual
+        // sort_order column instead.
+        if (isset($attributes['priority']) && ! isset($attributes['sort_order'])) {
+            $attributes['sort_order'] = $attributes['priority'];
+            unset($attributes['priority']);
+        }
+
         // Separate native columns from dynamic (EAV) attributes
         // Dynamic attributes require the entry to exist first (need entry ID for FieldValue records)
         $nativeColumns = $this->getNativeEntryColumns();
