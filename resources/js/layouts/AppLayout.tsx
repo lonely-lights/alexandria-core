@@ -4,7 +4,8 @@ import Navbar from '../components/navigation/Navbar';
 import Sidebar from '../components/navigation/Sidebar';
 import BottomNav from '../components/navigation/BottomNav';
 import CommandPalette from '../components/search/CommandPalette';
-import NotesDrawer from '../components/notes/NotesDrawer';
+import NotesDrawer, { openNotesDrawer } from '../components/notes/NotesDrawer';
+import type { NotesContext } from '../components/notes/NotesDrawer';
 import PageTransition from '../components/ui/PageTransition';
 import { projectSearch } from '../lib/projectSearch';
 import { ToastProvider } from '../components/ui/ToastProvider';
@@ -150,8 +151,54 @@ export default function AppLayout({
 }: AppLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [paletteOpen, setPaletteOpen] = useState(false);
-    const { currentProject } = usePage<SharedProps>().props;
+    const pageProps = usePage<SharedProps>().props;
+    const { currentProject } = pageProps;
     const url = usePage().url;
+
+    // Inertia ships the page's bound blueprint/entry as shared props on
+    // the show routes so the drawer can scope its notes list to that
+    // notable. Without these, /p/{project}/{blueprint} pages would still
+    // see all project notes — exact bug we hit before this lift.
+    const pageBlueprint = (pageProps as Record<string, unknown>).blueprint as
+        | { id: number; name: string; slug: string }
+        | undefined;
+    const pageEntry = (pageProps as Record<string, unknown>).entry as
+        | { id: number; name: string; slug: string }
+        | undefined;
+
+    function buildNotesContext(extra: Partial<NotesContext> = {}): NotesContext | null {
+        if (!currentProject) return null;
+        const base = {
+            projectId: currentProject.id,
+            projectSlug: currentProject.slug,
+            ...extra,
+        };
+        if (pageEntry?.id) {
+            return {
+                ...base,
+                contextType: 'entry',
+                contextId: pageEntry.id,
+                contextLabel: pageEntry.name,
+                contextSlug: pageEntry.slug,
+            } as NotesContext;
+        }
+        if (pageBlueprint?.id) {
+            return {
+                ...base,
+                contextType: 'blueprint',
+                contextId: pageBlueprint.id,
+                contextLabel: pageBlueprint.name,
+                contextSlug: pageBlueprint.slug,
+            } as NotesContext;
+        }
+        return {
+            ...base,
+            contextType: 'project',
+            contextId: currentProject.id,
+            contextLabel: currentProject.name,
+            contextSlug: currentProject.slug,
+        } as NotesContext;
+    }
 
     // Auto-wire the navbar's Notes button only on project-scoped routes
     // (/p/{slug}/...). On the dedicated Notes (/notes/{slug}) or AI
@@ -167,17 +214,30 @@ export default function AppLayout({
     const resolvedNotesToggle = onNotesToggle === null
         ? undefined
         : onNotesToggle ?? (currentProject && isProjectScope
-            ? () => window.dispatchEvent(new CustomEvent('alexandria:open-notes', {
-                detail: {
-                    projectId: currentProject.id,
-                    projectSlug: currentProject.slug,
-                    contextType: 'project',
-                    contextId: currentProject.id,
-                    contextLabel: currentProject.name,
-                    contextSlug: currentProject.slug,
-                },
-            }))
+            ? () => {
+                const ctx = buildNotesContext();
+                if (ctx) openNotesDrawer(ctx);
+            }
             : undefined);
+
+    // Auto-open the notes drawer when arriving via Sorting History.
+    // The chip stashes the note id in sessionStorage before navigating;
+    // we drain it once the destination page has its blueprint/entry
+    // shared props in hand so the drawer scopes to the right notable
+    // and pre-selects the note row.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const stored = sessionStorage.getItem('alexandria:open_note');
+        if (!stored || !currentProject?.id) return;
+        sessionStorage.removeItem('alexandria:open_note');
+        const noteId = parseInt(stored, 10);
+        if (Number.isNaN(noteId)) return;
+        const t = setTimeout(() => {
+            const ctx = buildNotesContext({ preSelectNoteId: noteId });
+            if (ctx) openNotesDrawer(ctx);
+        }, 100);
+        return () => clearTimeout(t);
+    }, [currentProject?.id, pageBlueprint?.id, pageEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
