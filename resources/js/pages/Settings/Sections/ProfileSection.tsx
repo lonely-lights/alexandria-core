@@ -58,6 +58,7 @@ const SECTION_META: Record<string, { icon: string; title: string; subtitle: stri
 
 export default function ProfileSection({ profile, usernameStatus, options, activeSection = 'identity', onPreviewChange }: ProfileSectionProps) {
     const [showUsernameModal, setShowUsernameModal] = useState(false);
+    const locationPlaceholder = useRotatingPlaceholder(LOCATION_HINTS, 2200);
     const form = useForm({
         display_name: profile.display_name ?? '',
         pronouns: profile.pronouns,
@@ -257,13 +258,13 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                     {activeSection === 'details' && (
                         <>
                             {/* Location */}
-                            <FieldRow label="Location" hint="City, Country">
+                            <FieldRow label="Location" hint="Anywhere — real or imagined">
                                 <input
                                     type="text"
                                     value={form.data.location}
                                     onChange={(e) => form.setData('location', e.target.value)}
                                     className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
-                                    placeholder="City, Country"
+                                    placeholder={locationPlaceholder}
                                     maxLength={100}
                                 />
                                 {form.errors.location && <p className="mt-1 text-sm text-error">{form.errors.location}</p>}
@@ -836,7 +837,7 @@ function BirthdayVisibilityPicker({ month, day, year, value, onChange }: {
     }
 
     return (
-        <div>
+        <div className="pb-4">
             <label className="label">
                 <span className="label-text font-semibold">Show Birthday As</span>
             </label>
@@ -877,4 +878,41 @@ function FieldRow({ label, hint, children }: { label: string; hint?: string; chi
             <div className="flex-1">{children}</div>
         </div>
     );
+}
+
+/* ── Rotating placeholder hook ──
+ * Cycles through a list of strings on a fixed interval. Used by the
+ * Location field to suggest both real and imagined places (Shackleton
+ * Crater, Ankh-Morpork, etc.) instead of pinning the placeholder to a
+ * generic "City, Country" template that boxes users into one shape.
+ */
+const LOCATION_HINTS = [
+    'Brooklyn, NY',
+    'Shackleton Crater',
+    'Reykjavík, Iceland',
+    'Ankh-Morpork',
+    'Port Townsend, WA',
+    'Lothlórien',
+    'Marrakech, Morocco',
+    'A houseboat in Sausalito',
+    'Hobbiton',
+    'Edinburgh, Scotland',
+    'Aboard the TARDIS',
+    'Kyoto, Japan',
+    'Off the grid',
+];
+
+function useRotatingPlaceholder(values: readonly string[], intervalMs: number): string {
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        if (values.length <= 1) return;
+        const id = setInterval(() => {
+            setIndex((i) => (i + 1) % values.length);
+        }, intervalMs);
+
+        return () => clearInterval(id);
+    }, [values, intervalMs]);
+
+    return values[index];
 }

@@ -85,7 +85,7 @@ export default function LinksSection({ links: initialLinks, platforms, onLinksCh
                 <button
                     type="button"
                     onClick={() => setShowAddForm(true)}
-                    className="btn btn-ghost w-full gap-2 rounded-2xl border-2 border-dashed border-base-300 text-base-content/50 transition-all hover:border-primary/30 hover:text-primary"
+                    className="btn btn-ghost w-full gap-2 rounded-2xl border-2 border-dashed border-base-content/30 bg-base-200/50 text-base-content/80 transition-all hover:border-primary hover:bg-primary/10 hover:text-primary"
                 >
                     <i className="fa-solid fa-plus" />
                     Add Link
