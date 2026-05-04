@@ -42,7 +42,10 @@ use Illuminate\Support\Carbon;
  * @method static AiModel create(array $attributes = [])
  * @method static AiModel updateOrCreate(array $attributes, array $values = [])
  * @method static Builder<AiModel> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<AiModel> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
  * @method static Builder<AiModel> query()
+ * @method static AiModel|null find(mixed $id, array $columns = ['*'])
+ * @method static AiModel findOrFail(mixed $id, array $columns = ['*'])
  */
 class AiModel extends Model
 {

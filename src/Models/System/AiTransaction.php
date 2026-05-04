@@ -42,6 +42,11 @@ use Illuminate\Support\Carbon;
  *
  * @method static AiTransactionFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static AiTransaction create(array $attributes = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static> query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereMonth(string $column, mixed $value, string $boolean = 'and')
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereYear(string $column, mixed $value, string $boolean = 'and')
  */
 class AiTransaction extends Model
 {
