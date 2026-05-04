@@ -177,3 +177,82 @@ button:not(:disabled),
 }
 .tiptap-editor .ProseMirror .entry-link:hover { text-decoration: underline; }
 .tiptap-mention-popup { position: fixed; z-index: 9999; }
+
+/* ----------------------------------------------------------------------
+   Server-rendered wiki/prose content surface
+   ----------------------------------------------------------------------
+   ContentRendererService converts wiki markup → HTML at request time.
+   The output uses serif-styled `.wiki-h2`/`h3`/`h4`/`h5`/`h6` headings,
+   `.wiki-table-wrapper`/`.wiki-table` for tables, and `<a class="link">`
+   for processor-generated links. These selectors paint that output so
+   it matches legacy's typography + readable link styling.
+
+   Two scopes:
+   - `.entry-summary-links a.link` — the EntryHeader summary block (a
+     dense one-paragraph blurb at the top of every entry page). Dashed
+     underline style differentiates it from the body's prose links.
+   - `.prose ...` — the body content area. `.prose` is Tailwind's
+     typography utility plus our own wiki-class augmentations.
+*/
+
+.entry-summary-links a.link {
+    @apply text-primary/70 underline decoration-dashed decoration-2 underline-offset-4 transition-all duration-200;
+}
+.entry-summary-links a.link:hover {
+    @apply text-primary/90 decoration-solid;
+}
+
+.prose h1,
+.prose .wiki-h2,
+.prose .wiki-h3,
+.prose .wiki-h4,
+.prose .wiki-h5,
+.prose .wiki-h6 {
+    @apply font-serif;
+}
+.prose > .wiki-h2:first-child,
+.prose > .wiki-h3:first-child,
+.prose > .wiki-h4:first-child,
+.prose > .wiki-h5:first-child,
+.prose > .wiki-h6:first-child {
+    @apply mt-0;
+}
+.prose .wiki-h2 {
+    @apply text-3xl font-bold mt-8 mb-4 pb-2 overflow-hidden;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-base-content) 20%, transparent);
+}
+.prose .wiki-h3 { @apply text-2xl font-bold mt-6 mb-3; }
+.prose .wiki-h4 { @apply text-xl font-bold mt-4 mb-2; }
+.prose .wiki-h5 { @apply text-lg font-semibold mt-4 mb-2; }
+.prose .wiki-h6 { @apply text-base font-semibold mt-4 mb-2; }
+
+.prose blockquote p:first-of-type::before { content: ''; }
+.prose blockquote p:last-of-type::after { content: ''; }
+
+.prose a {
+    @apply text-primary/70 underline decoration-dashed decoration-2 underline-offset-4 transition-all duration-200;
+}
+.prose a:hover {
+    @apply text-primary/90 decoration-solid;
+}
+
+.wiki-table-wrapper {
+    @apply rounded-xl overflow-hidden my-8;
+    border: 1px solid color-mix(in srgb, var(--color-base-content) 10%, transparent);
+}
+.wiki-table { @apply w-full border-collapse text-sm; }
+.wiki-table th {
+    @apply px-4 py-2.5 text-left text-xs font-semibold;
+    background-color: color-mix(in srgb, var(--color-base-200) 70%, transparent);
+    color: color-mix(in srgb, var(--color-base-content) 70%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-base-content) 10%, transparent);
+}
+.wiki-table td {
+    @apply px-4 py-2 text-sm;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-base-content) 5%, transparent);
+}
+.wiki-table tbody tr:nth-child(even) td { background-color: color-mix(in srgb, var(--color-base-200) 20%, transparent); }
+.wiki-table tbody tr:hover td { background-color: color-mix(in srgb, var(--color-base-200) 40%, transparent); }
+.wiki-table tbody tr:last-child td { border-bottom: 0; }
+.wiki-table th:not(:last-child),
+.wiki-table td:not(:last-child) { border-right: 1px solid color-mix(in srgb, var(--color-base-content) 5%, transparent); }
