@@ -837,7 +837,7 @@ function BirthdayVisibilityPicker({ month, day, year, value, onChange }: {
     }
 
     return (
-        <div className="pb-4">
+        <div className="mb-8">
             <label className="label">
                 <span className="label-text font-semibold">Show Birthday As</span>
             </label>
