@@ -60,6 +60,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, static> $mentionedEntries
  * @property-read Collection<int, static> $mentioningEntries
  * @property-read Collection<int, EntryHistory> $histories
+ * @property-read string|null $thumbnail_url
+ * @property-read string|null $thumbnail_thumb_url
  *
  * @method static Builder<static> active()
  * @method static Builder<static> archived()

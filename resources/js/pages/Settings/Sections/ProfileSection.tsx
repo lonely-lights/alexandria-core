@@ -58,6 +58,7 @@ const SECTION_META: Record<string, { icon: string; title: string; subtitle: stri
 
 export default function ProfileSection({ profile, usernameStatus, options, activeSection = 'identity', onPreviewChange }: ProfileSectionProps) {
     const [showUsernameModal, setShowUsernameModal] = useState(false);
+    const locationPlaceholder = useRotatingPlaceholder(LOCATION_HINTS, 2200);
     const form = useForm({
         display_name: profile.display_name ?? '',
         pronouns: profile.pronouns,
@@ -126,7 +127,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                             {/* Username */}
                             <FieldRow label="Username" hint="@mentions & URL">
                                 <div className="flex items-stretch gap-2">
-                                    <div className="flex flex-1 items-center rounded-2xl bg-base-300/50 px-4 py-3">
+                                    <div className="flex h-12 flex-1 items-center rounded-2xl bg-base-300/50 px-5">
                                         <span className="mr-1 text-base-content/40">@</span>
                                         <span className="truncate font-mono font-medium">{profile.username}</span>
                                     </div>
@@ -134,7 +135,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                         <button
                                             type="button"
                                             onClick={() => setShowUsernameModal(true)}
-                                            className="btn btn-ghost rounded-2xl bg-primary/10 hover:bg-primary/20 text-primary"
+                                            className="btn btn-ghost h-12 min-h-12 rounded-2xl bg-primary/10 hover:bg-primary/20 text-primary"
                                         >
                                             <i className="fa-solid fa-pen text-xs" />
                                             Change
@@ -143,7 +144,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                         <button
                                             type="button"
                                             onClick={() => setShowUsernameModal(true)}
-                                            className="btn btn-ghost rounded-2xl text-base-content/50"
+                                            className="btn btn-ghost h-12 min-h-12 rounded-2xl text-base-content/50"
                                         >
                                             <i className="fa-solid fa-font text-xs" />
                                             Edit Case
@@ -169,7 +170,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                     type="text"
                                     value={form.data.display_name}
                                     onChange={(e) => form.setData('display_name', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl focus:input-primary"
+                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
                                     placeholder="How you want to be called"
                                     maxLength={255}
                                 />
@@ -192,7 +193,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                     type="text"
                                     value={form.data.custom_pronouns}
                                     onChange={(e) => form.setData('custom_pronouns', e.target.value)}
-                                    className="input input-bordered mt-2 h-10 w-full rounded-2xl text-sm focus:input-primary"
+                                    className="input input-bordered mt-2 h-10 w-full rounded-2xl pl-5 text-sm focus:input-primary"
                                     placeholder="Custom pronouns"
                                     maxLength={50}
                                 />
@@ -219,7 +220,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                     type="text"
                                     value={form.data.tagline}
                                     onChange={(e) => form.setData('tagline', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl focus:input-primary"
+                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
                                     placeholder="A short one-liner about you"
                                     maxLength={150}
                                 />
@@ -257,13 +258,13 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                     {activeSection === 'details' && (
                         <>
                             {/* Location */}
-                            <FieldRow label="Location" hint="City, Country">
+                            <FieldRow label="Location" hint="Anywhere — real or imagined">
                                 <input
                                     type="text"
                                     value={form.data.location}
                                     onChange={(e) => form.setData('location', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl focus:input-primary"
-                                    placeholder="City, Country"
+                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
+                                    placeholder={locationPlaceholder}
                                     maxLength={100}
                                 />
                                 {form.errors.location && <p className="mt-1 text-sm text-error">{form.errors.location}</p>}
@@ -275,7 +276,7 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
                                     type="url"
                                     value={form.data.website}
                                     onChange={(e) => form.setData('website', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl focus:input-primary"
+                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
                                     placeholder="https://example.com"
                                     maxLength={255}
                                 />
@@ -836,7 +837,7 @@ function BirthdayVisibilityPicker({ month, day, year, value, onChange }: {
     }
 
     return (
-        <div>
+        <div className="mb-12">
             <label className="label">
                 <span className="label-text font-semibold">Show Birthday As</span>
             </label>
@@ -877,4 +878,41 @@ function FieldRow({ label, hint, children }: { label: string; hint?: string; chi
             <div className="flex-1">{children}</div>
         </div>
     );
+}
+
+/* ── Rotating placeholder hook ──
+ * Cycles through a list of strings on a fixed interval. Used by the
+ * Location field to suggest both real and imagined places (Shackleton
+ * Crater, Ankh-Morpork, etc.) instead of pinning the placeholder to a
+ * generic "City, Country" template that boxes users into one shape.
+ */
+const LOCATION_HINTS = [
+    'Brooklyn, NY',
+    'Shackleton Crater',
+    'Reykjavík, Iceland',
+    'Ankh-Morpork',
+    'Port Townsend, WA',
+    'Lothlórien',
+    'Marrakech, Morocco',
+    'A houseboat in Sausalito',
+    'Hobbiton',
+    'Edinburgh, Scotland',
+    'Aboard the TARDIS',
+    'Kyoto, Japan',
+    'Off the grid',
+];
+
+function useRotatingPlaceholder(values: readonly string[], intervalMs: number): string {
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        if (values.length <= 1) return;
+        const id = setInterval(() => {
+            setIndex((i) => (i + 1) % values.length);
+        }, intervalMs);
+
+        return () => clearInterval(id);
+    }, [values, intervalMs]);
+
+    return values[index];
 }

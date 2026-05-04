@@ -1,4 +1,4 @@
-import { useEditor, EditorContent, type Editor } from '@tiptap/react';
+import { useEditor, useEditorState, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import LinkExtension from '@tiptap/extension-link';
@@ -198,6 +198,13 @@ export default function RichTextEditor({
     const editor = useEditor({
         extensions,
         content: parseWikiToHtml(value),
+        // Tiptap React >=3.21 disables auto re-render on transactions by
+        // default for perf. Without this, pressing Ctrl+B (or any
+        // keyboard shortcut that toggles a mark/node) flips the editor
+        // state but the toolbar buttons don't update isActive() until
+        // some other React re-render comes along. Re-enable the v3.20
+        // behavior so the toolbar tracks the cursor's mark set live.
+        shouldRerenderOnTransaction: true,
         onUpdate: ({ editor: e }) => {
             if (isExternalUpdate.current) return;
 
@@ -210,6 +217,35 @@ export default function RichTextEditor({
         onBlur: () => setIsFocused(false),
         onTransaction: () => setEditorState((n) => n + 1),
     });
+
+    // Subscribe to per-button active states via useEditorState. Tiptap
+    // React 3.21+ defers parent re-renders on transactions for perf;
+    // the manual setEditorState above covers most cases but storedMarks
+    // changes (Ctrl+B with collapsed cursor adds 'bold' to the next-
+    // typed-char queue) only flip the toolbar reactively when each
+    // button's isActive read is wired through useEditorState's
+    // selector-based subscription. Reading the dictionary by key in
+    // the toolbar render below replaces the direct btn.isActive(editor)
+    // calls.
+    const buttonActiveStates = useEditorState({
+        editor,
+        selector: ({ editor: e }) => {
+            if (!e) return {} as Record<string, boolean>;
+
+            return {
+                bold: e.isActive('bold'),
+                italic: e.isActive('italic'),
+                underline: e.isActive('underline'),
+                link: e.isActive('link'),
+                bulletList: e.isActive('bulletList'),
+                orderedList: e.isActive('orderedList'),
+                heading2: e.isActive('heading', { level: 2 }),
+                heading3: e.isActive('heading', { level: 3 }),
+                mention: false,
+                entryLink: false,
+            } as Record<string, boolean>;
+        },
+    }) ?? ({} as Record<string, boolean>);
 
     // Sync external value changes back to editor
     useEffect(() => {
@@ -396,7 +432,7 @@ export default function RichTextEditor({
 
                             const btn = BUTTONS[item];
                             if (!btn) return null;
-                            const active = !codeView && btn.isActive(editor);
+                            const active = !codeView && (buttonActiveStates[item] ?? btn.isActive(editor));
 
                             return (
                                 <Tooltip key={item} content={btn.title}>

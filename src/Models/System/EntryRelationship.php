@@ -42,6 +42,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> ofType(string $typeSlug)
  * @method static Builder<static> active()
  * @method static Builder<static> archived()
+ * @method static Builder<static> query()
+ * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
  * @method static EntryRelationshipFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static EntryRelationship create(array $attributes = [])
  */

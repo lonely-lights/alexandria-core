@@ -738,7 +738,12 @@ function TimelineItemHorizontal({
                 {isStub ? (
                     <span>{dotAndLabel}</span>
                 ) : (
-                    <a href={entry.url}>{dotAndLabel}</a>
+                    <a
+                        href={entry.url}
+                        className="no-underline text-inherit hover:text-inherit"
+                    >
+                        {dotAndLabel}
+                    </a>
                 )}
             </Tooltip>
         </div>
@@ -981,7 +986,12 @@ function TimelineItemVertical({
                 {isStub ? (
                     <span>{dotAndLabel}</span>
                 ) : (
-                    <a href={entry.url}>{dotAndLabel}</a>
+                    <a
+                        href={entry.url}
+                        className="no-underline text-inherit hover:text-inherit"
+                    >
+                        {dotAndLabel}
+                    </a>
                 )}
             </Tooltip>
         </div>
