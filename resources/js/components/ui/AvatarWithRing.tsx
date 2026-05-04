@@ -68,14 +68,23 @@ export default function AvatarWithRing({
                             <div
                                 className="h-full w-full"
                                 style={{
-                                    backgroundColor: `oklch(var(--${ringSettings?.color ?? 'p'}) / ${(ringSettings?.opacity ?? 50) / 100})`,
+                                    // DaisyUI 5: --color-primary etc. ship as full
+                                    // oklch() strings (not legacy v4's HSL components
+                                    // behind --p / --s / --a), so use the v5 name
+                                    // directly and color-mix in transparent for the
+                                    // opacity blend. Map legacy v4 short slugs
+                                    // ('p'/'s'/'a') to v5 names so existing DB
+                                    // settings keep working without a migration.
+                                    backgroundColor: solidRingColor(ringSettings?.color, ringSettings?.opacity),
                                 }}
                             />
                         ) : (
                             <div
                                 className="absolute inset-[-50%] h-[200%] w-[200%]"
                                 style={{
-                                    background: gradient ?? 'conic-gradient(from 0deg, oklch(var(--p)), oklch(var(--s)), oklch(var(--a)), oklch(var(--p)))',
+                                    background: gradient
+                                        ? translateLegacyDaisyTokens(gradient)
+                                        : 'conic-gradient(from 0deg, var(--color-primary), var(--color-secondary), var(--color-accent), var(--color-primary))',
                                     ...(isAnimated ? {
                                         animation: `avatar-ring-spin ${ringSettings?.animation_duration ?? 3}s linear infinite`,
                                     } : {}),
@@ -112,4 +121,58 @@ export default function AvatarWithRing({
             </div>
         </div>
     );
+}
+
+/* ── DaisyUI v4 → v5 token shims ──
+ * AvatarRing seed data was authored against DaisyUI 4 (CSS vars
+ * --p/--s/--a holding raw HSL components consumed via oklch(...)).
+ * DaisyUI 5 ships fully-formed oklch strings under --color-primary
+ * /--color-secondary/--color-accent, so wrapping them in oklch()
+ * again produces invalid CSS (oklch(oklch(...))) — solid + gradient
+ * + animated + rainbow rings all rendered as transparent. Translate
+ * on read so existing DB rows keep working without a migration. */
+
+const TOKEN_MAP: Record<string, string> = {
+    p: '--color-primary',
+    s: '--color-secondary',
+    a: '--color-accent',
+    n: '--color-neutral',
+    b1: '--color-base-100',
+    b2: '--color-base-200',
+    b3: '--color-base-300',
+    bc: '--color-base-content',
+    primary: '--color-primary',
+    secondary: '--color-secondary',
+    accent: '--color-accent',
+    neutral: '--color-neutral',
+};
+
+function resolveTokenName(slug: string): string {
+    return TOKEN_MAP[slug] ?? `--color-${slug}`;
+}
+
+function solidRingColor(slug: string | undefined, opacity: number | undefined): string {
+    const cssVar = `var(${resolveTokenName(slug ?? 'primary')})`;
+    const pct = Math.max(0, Math.min(100, opacity ?? 50));
+
+    return `color-mix(in srgb, ${cssVar} ${pct}%, transparent)`;
+}
+
+/**
+ * Rewrite a DB-stored CSS string (gradient etc.) from the v4
+ * `oklch(var(--X))` form to the v5 `var(--color-X)` form. No-op for
+ * strings already authored against v5.
+ */
+function translateLegacyDaisyTokens(css: string): string {
+    return css.replace(/oklch\(\s*var\(--(\w+)\)\s*(\/\s*[^)]+)?\)/g, (_match, slug, alpha) => {
+        const v5Var = `var(${resolveTokenName(slug)})`;
+
+        if (!alpha) {
+            return v5Var;
+        }
+        // Preserve `oklch(var(--p) / 50%)` -> color-mix opacity blend.
+        const pct = alpha.replace(/[\s/]/g, '');
+
+        return `color-mix(in srgb, ${v5Var} ${pct}, transparent)`;
+    });
 }
