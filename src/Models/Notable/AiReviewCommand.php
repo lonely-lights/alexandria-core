@@ -44,6 +44,11 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> readyForExecution()
  * @method static AiReviewCommandFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static AiReviewCommand create(array $attributes = [])
+ * @method static Builder<static> query()
+ * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static AiReviewCommand|null find(mixed $id, array|string $columns = ['*'])
+ * @method static AiReviewCommand findOrFail(mixed $id, array|string $columns = ['*'])
  */
 class AiReviewCommand extends Model
 {
