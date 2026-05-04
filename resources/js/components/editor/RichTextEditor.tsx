@@ -198,6 +198,13 @@ export default function RichTextEditor({
     const editor = useEditor({
         extensions,
         content: parseWikiToHtml(value),
+        // Tiptap React >=3.21 disables auto re-render on transactions by
+        // default for perf. Without this, pressing Ctrl+B (or any
+        // keyboard shortcut that toggles a mark/node) flips the editor
+        // state but the toolbar buttons don't update isActive() until
+        // some other React re-render comes along. Re-enable the v3.20
+        // behavior so the toolbar tracks the cursor's mark set live.
+        shouldRerenderOnTransaction: true,
         onUpdate: ({ editor: e }) => {
             if (isExternalUpdate.current) return;
 
