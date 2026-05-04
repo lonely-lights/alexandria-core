@@ -82,6 +82,52 @@ interface NavbarProps {
  * still pulls `auth` from Inertia's shared props so it can render the
  * user avatar without further wiring.
  */
+/**
+ * Default user-dropdown items rendered when the consumer doesn't pass
+ * its own `userMenuItems`. Mirrors legacy's surface: Profile, Settings,
+ * Keyboard shortcuts, divider (theme picker injects between this and
+ * the footer), Support, API (disabled placeholder), Log out. Logout
+ * routes to the Fortify POST endpoint via the form-submit pattern in
+ * the click handler below.
+ */
+const DEFAULT_USER_MENU_ITEMS: UserMenuItem[] = [
+    { label: 'Profile', href: '/account', icon: 'fa-solid fa-user', shortcut: '⇧⌘P' },
+    { label: 'Settings', href: '/account', icon: 'fa-solid fa-gear', shortcut: '⌘S' },
+    { label: 'Keyboard shortcuts', href: '/account', icon: 'fa-solid fa-keyboard', shortcut: '⌘K' },
+];
+
+const DEFAULT_USER_MENU_FOOTER_ITEMS: UserMenuItem[] = [
+    { divider: true },
+    { label: 'Support', href: '/support', icon: 'fa-solid fa-life-ring' },
+    { label: 'API', href: '#', icon: 'fa-solid fa-circle-nodes', disabled: true },
+    { divider: true },
+    {
+        label: 'Log out',
+        href: '/logout',
+        icon: 'fa-solid fa-arrow-right-from-bracket',
+        shortcut: '⇧⌘Q',
+        onClick: (event) => {
+            event.preventDefault();
+            // Submit a POST to /logout — Fortify's destroy endpoint is
+            // POST-protected, so we mimic the auth form pattern by
+            // synthesizing a one-shot form submit.
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/logout';
+            const csrfMeta = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]');
+            if (csrfMeta) {
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = csrfMeta.content;
+                form.appendChild(csrf);
+            }
+            document.body.appendChild(form);
+            form.submit();
+        },
+    },
+];
+
 export default function Navbar({
     onMenuToggle,
     brand = 'Alexandria',
@@ -94,6 +140,12 @@ export default function Navbar({
     userMenuFooter,
     guestActions,
 }: NavbarProps) {
+    // Resolve menu items: consumer-supplied wins, otherwise stitch the
+    // default Profile/Settings/Shortcuts head with the Support/API/Log
+    // out tail. Dropdown body always renders ThemePicker between this
+    // resolved list and the optional userMenuFooter slot.
+    const resolvedMenuItems: UserMenuItem[] = userMenuItems
+        ?? [...DEFAULT_USER_MENU_ITEMS, ...DEFAULT_USER_MENU_FOOTER_ITEMS];
     const { auth } = usePage<SharedProps>().props;
     const user = auth?.user ?? null;
     const [scrolled, setScrolled] = useState(false);
@@ -254,7 +306,7 @@ export default function Navbar({
 
                                             <div className="-mx-1 my-1 h-px bg-base-content/10" />
 
-                                            {(userMenuItems ?? []).map((item, idx) => {
+                                            {resolvedMenuItems.map((item, idx) => {
                                                 if (isDivider(item)) {
                                                     return (
                                                         <div
