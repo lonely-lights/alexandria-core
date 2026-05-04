@@ -65,6 +65,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @method static Builder<static> query()
  * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
  * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static Blueprint findOrFail(mixed $id, array|string $columns = ['*'])
+ * @method static Blueprint|null find(mixed $id, array|string $columns = ['*'])
  */
 class Blueprint extends Model implements HasMedia
 {

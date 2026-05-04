@@ -73,6 +73,11 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @method static Builder<static> whereHas(string $relation, \Closure|null $callback = null, string $operator = '>=', int $count = 1)
  * @method static Builder<static> whereNotNull(string|array $columns)
  * @method static Builder<static> latest(string $column = 'created_at')
+ * @method static Builder<static> when(mixed $value, callable|null $callback = null, callable|null $default = null)
+ * @method static Builder<static> with(array|string $relations, string|\Closure|null $callback = null)
+ * @method static Builder<static> orderBy(string $column, string $direction = 'asc')
+ * @method static Entry|null find(mixed $id, array|string $columns = ['*'])
+ * @method static Entry findOrFail(mixed $id, array|string $columns = ['*'])
  */
 class Entry extends Model implements HasMedia
 {
@@ -183,6 +188,26 @@ class Entry extends Model implements HasMedia
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Soft-archive the entry (sets archived_at to now). Pairs with the
+     * `active()` scope which filters archived entries out of default
+     * listings. Use unarchive() to restore.
+     */
+    public function archive(): void
+    {
+        $this->update(['archived_at' => now()]);
+    }
+
+    public function unarchive(): void
+    {
+        $this->update(['archived_at' => null]);
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
     }
 
     public function type(): BelongsTo
