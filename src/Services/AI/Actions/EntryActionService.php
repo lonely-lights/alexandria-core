@@ -8,6 +8,7 @@ use Alexandria\Core\Exceptions\AiActionException;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Traits\InjectsCommandContext;
 use Exception;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -113,14 +114,17 @@ class EntryActionService
         }
 
         // Inject context (project_id, user_id, etc.) if model supports it.
-        // Uses direct property access on the Eloquent model rather than
-        // Arr::has/Arr::get — both work for top-level attributes via ArrayAccess
-        // but property access is the idiomatic and less fragile path.
+        // Uses Arr::has/Arr::get against the AiReviewCommand instance so
+        // dot-notation paths like "context.project_id" reach into the JSON
+        // `context` column. Direct property access doesn't parse dots —
+        // an earlier refactor switched to it and silently dropped the
+        // injection, leaving Entry::generateUniqueSlug to crash on null
+        // project_id whenever the AI executor materialized a new entry.
         if (in_array(InjectsCommandContext::class, class_uses_recursive($modelClass), true)) {
             $requiredKeys = $modelClass::getRequiredContextKeys();
             foreach ($requiredKeys as $modelAttribute => $commandProperty) {
-                if (isset($command->{$commandProperty})) {
-                    $attributes[$modelAttribute] = $command->{$commandProperty};
+                if (Arr::has($command, $commandProperty)) {
+                    $attributes[$modelAttribute] = Arr::get($command, $commandProperty);
                 }
             }
         }
@@ -136,6 +140,18 @@ class EntryActionService
                 'command_id' => $command->id,
                 'parent_id' => $attributes['parent_id'],
             ]);
+        }
+
+        // The seeded prompt's JSON examples write "priority": 1 alongside the
+        // entry attributes, but the entries schema column is `sort_order`.
+        // Without this alias the value falls into the EAV dynamic-attribute
+        // bucket, where it can't bind because no blueprint defines a
+        // priority field — so it silently dropped on every AI-created entry.
+        // Map it so the AI's intent ("priority 1") lands on the actual
+        // sort_order column instead.
+        if (isset($attributes['priority']) && ! isset($attributes['sort_order'])) {
+            $attributes['sort_order'] = $attributes['priority'];
+            unset($attributes['priority']);
         }
 
         // Separate native columns from dynamic (EAV) attributes

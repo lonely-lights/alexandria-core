@@ -58,13 +58,15 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read int|null $entries_count Loaded by withCount('entries')
  * @property-read int|null $fields_count Loaded by withCount('fields')
  *
- * @method static Builder<static> standard()
- * @method static Builder<static> list()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> standard()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> list()
  * @method static BlueprintFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static Blueprint create(array $attributes = [])
- * @method static Builder<static> query()
- * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
- * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static Blueprint findOrFail(mixed $id, array|string $columns = ['*'])
+ * @method static Blueprint|null find(mixed $id, array|string $columns = ['*'])
  */
 class Blueprint extends Model implements HasMedia
 {

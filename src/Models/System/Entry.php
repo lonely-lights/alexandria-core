@@ -9,6 +9,7 @@ use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Services\Entries\EntryHistoryService;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
+use Alexandria\Core\Traits\InjectsCommandContext;
 use Alexandria\Core\Traits\Notable\HasNotes;
 use Alexandria\Core\Traits\System\HasDynamicAttributes;
 use Alexandria\Core\Traits\System\HasDynamicRelationships;
@@ -63,16 +64,21 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read string|null $thumbnail_url
  * @property-read string|null $thumbnail_thumb_url
  *
- * @method static Builder<static> active()
- * @method static Builder<static> archived()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> archived()
  * @method static EntryFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static Entry create(array $attributes = [])
- * @method static Builder<static> query()
- * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
- * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
- * @method static Builder<static> whereHas(string $relation, \Closure|null $callback = null, string $operator = '>=', int $count = 1)
- * @method static Builder<static> whereNotNull(string|array $columns)
- * @method static Builder<static> latest(string $column = 'created_at')
+ * @method static \Illuminate\Database\Eloquent\Builder<static> query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereHas(string $relation, \Closure|null $callback = null, string $operator = '>=', int $count = 1)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereNotNull(string|array $columns)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> latest(string $column = 'created_at')
+ * @method static \Illuminate\Database\Eloquent\Builder<static> when(mixed $value, callable|null $callback = null, callable|null $default = null)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> with(array|string $relations, string|\Closure|null $callback = null)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> orderBy(string $column, string $direction = 'asc')
+ * @method static Entry|null find(mixed $id, array|string $columns = ['*'])
+ * @method static Entry findOrFail(mixed $id, array|string $columns = ['*'])
  */
 class Entry extends Model implements HasMedia
 {
@@ -84,8 +90,24 @@ class Entry extends Model implements HasMedia
     use HasDynamicRelationships;
     use HasFactory;
     use HasNotes;
+    use InjectsCommandContext;
     use LogsActivity;
     use SoftDeletes;
+
+    /**
+     * Pull project_id off the AiReviewCommand's `context` JSON when the
+     * AI executor materializes the entry. Without this the orchestrator-
+     * built command doesn't carry project_id and generateUniqueSlug fails
+     * with "Argument #2 (\$projectId) must be of type int, null given".
+     *
+     * @return array<string, string>
+     */
+    public static function getRequiredContextKeys(): array
+    {
+        return [
+            'project_id' => 'context.project_id',
+        ];
+    }
 
     protected $guarded = ['id'];
 
@@ -183,6 +205,26 @@ class Entry extends Model implements HasMedia
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Soft-archive the entry (sets archived_at to now). Pairs with the
+     * `active()` scope which filters archived entries out of default
+     * listings. Use unarchive() to restore.
+     */
+    public function archive(): void
+    {
+        $this->update(['archived_at' => now()]);
+    }
+
+    public function unarchive(): void
+    {
+        $this->update(['archived_at' => null]);
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
     }
 
     public function type(): BelongsTo

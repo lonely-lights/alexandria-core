@@ -55,6 +55,9 @@ use Spatie\Tags\HasTags;
  * @method static \Illuminate\Database\Eloquent\Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
  * @method static \Illuminate\Database\Eloquent\Builder<static> withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static> onlyTrashed()
+ * @method static Note|null first(array|string $columns = ['*'])
+ * @method static Note|null find(mixed $id, array|string $columns = ['*'])
+ * @method static Note findOrFail(mixed $id, array|string $columns = ['*'])
  */
 class Note extends Model
 {
