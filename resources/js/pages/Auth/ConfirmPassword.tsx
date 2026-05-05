@@ -149,7 +149,7 @@ export default function ConfirmPassword({
                             {/* Password */}
                             <div className="space-y-2">
                                 <label htmlFor="password" className="block text-sm font-medium text-base-content/80">
-                                    {copy['password']}
+                                    {copy['fields.password']}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
@@ -197,11 +197,11 @@ export default function ConfirmPassword({
                         {/* Terms footer */}
                         <p className="text-center text-xs text-base-content/40 pt-4">
                             <a href={termsUrl} className="underline hover:text-base-content/60 transition-colors">
-                                {copy['terms_of_service']}
+                                {copy['legal.terms_of_service']}
                             </a>
                             {' · '}
                             <a href={privacyUrl} className="underline hover:text-base-content/60 transition-colors">
-                                {copy['privacy_policy']}
+                                {copy['legal.privacy_policy']}
                             </a>
                         </p>
                     </div>

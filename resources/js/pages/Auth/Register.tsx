@@ -173,15 +173,15 @@ function RegisterForm({
     }, [emailStatus.status, emailStatus.message, showToast]);
 
     // Build the terms agreement line by replacing :terms_of_service / :privacy_policy placeholders.
-    const agreeTemplate = copy['agree_terms_privacy'] ?? 'I agree to the :terms_of_service and :privacy_policy.';
-    const termsLabel = copy['terms_of_service'] ?? 'Terms of Service';
-    const privacyLabel = copy['privacy_policy'] ?? 'Privacy Policy';
+    const agreeTemplate = copy['actions.agree_terms_privacy'] ?? 'I agree to the :terms_of_service and :privacy_policy.';
+    const termsLabel = copy['legal.terms_of_service'] ?? 'Terms of Service';
+    const privacyLabel = copy['legal.privacy_policy'] ?? 'Privacy Policy';
     const termsRegex = /(:terms_of_service|:privacy_policy)/g;
     const agreeParts = agreeTemplate.split(termsRegex);
 
     return (
         <>
-            <Head title={copy['enlist'] ?? 'Register'} />
+            <Head title={copy['actions.enlist'] ?? 'Register'} />
 
             <div className="min-h-screen flex bg-base-100 text-base-content font-sans">
                 {/* LEFT PANEL — Atmospheric brand side (hidden on mobile) */}
@@ -293,7 +293,7 @@ function RegisterForm({
                             {/* Name */}
                             <div className="space-y-2">
                                 <label htmlFor="name" className="block text-sm font-medium text-base-content/80">
-                                    {copy['name']}
+                                    {copy['fields.name']}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
@@ -330,7 +330,7 @@ function RegisterForm({
                             {/* Email */}
                             <div className="space-y-2">
                                 <label htmlFor="email" className="block text-sm font-medium text-base-content/80">
-                                    {copy['email']}
+                                    {copy['fields.email']}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
@@ -360,7 +360,7 @@ function RegisterForm({
                             {/* Password */}
                             <div className="space-y-2">
                                 <label htmlFor="password" className="block text-sm font-medium text-base-content/80">
-                                    {copy['password']}
+                                    {copy['fields.password']}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
@@ -396,7 +396,7 @@ function RegisterForm({
                             {/* Confirm Password */}
                             <div className="space-y-2">
                                 <label htmlFor="password_confirmation" className="block text-sm font-medium text-base-content/80">
-                                    {copy['confirm_password']}
+                                    {copy['actions.confirm_password']}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
@@ -480,7 +480,7 @@ function RegisterForm({
                                 className="w-full inline-flex items-center justify-center gap-2 font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <span className="btn-offset w-full px-7 py-4 rounded-lg inline-flex items-center justify-center gap-2">
-                                    <span>{copy['enlist']}</span>
+                                    <span>{copy['actions.enlist']}</span>
                                     <span aria-hidden="true">→</span>
                                 </span>
                             </button>
@@ -488,12 +488,12 @@ function RegisterForm({
 
                         {/* Sign-in link */}
                         <p className="text-center text-base-content/60">
-                            {copy['already_registered']}{' '}
+                            {copy['actions.already_registered']}{' '}
                             <a
                                 href={loginUrl}
                                 className="font-semibold text-primary hover:text-primary/80 transition-colors"
                             >
-                                {copy['login']}
+                                {copy['actions.login']}
                             </a>
                         </p>
                     </div>

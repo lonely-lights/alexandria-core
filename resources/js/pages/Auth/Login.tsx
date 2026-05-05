@@ -131,7 +131,7 @@ export default function Login({
                             {/* Email */}
                             <div className="space-y-2">
                                 <label htmlFor="email" className="block text-sm font-medium text-base-content/80">
-                                    {copy['email']}
+                                    {copy['fields.email']}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
@@ -158,14 +158,14 @@ export default function Login({
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <label htmlFor="password" className="block text-sm font-medium text-base-content/80">
-                                        {copy['password']}
+                                        {copy['fields.password']}
                                     </label>
                                     {canResetPassword && forgotPasswordUrl && (
                                         <a
                                             href={forgotPasswordUrl}
                                             className="text-sm text-primary hover:text-primary/80 transition-colors"
                                         >
-                                            {copy['forgot_password']}
+                                            {copy['actions.forgot_password']}
                                         </a>
                                     )}
                                 </div>
@@ -199,7 +199,7 @@ export default function Login({
                                     className="checkbox checkbox-primary checkbox-sm"
                                 />
                                 <label htmlFor="remember" className="text-sm text-base-content/70 cursor-pointer select-none">
-                                    {copy['remember_me']}
+                                    {copy['fields.remember_me']}
                                 </label>
                             </div>
 
@@ -210,7 +210,7 @@ export default function Login({
                                 className="w-full inline-flex items-center justify-center gap-2 font-bold text-sm disabled:opacity-50"
                             >
                                 <span className="btn-offset w-full px-7 py-4 rounded-lg inline-flex items-center justify-center gap-2">
-                                    <span>{copy['login']}</span>
+                                    <span>{copy['actions.login']}</span>
                                     <span aria-hidden="true">→</span>
                                 </span>
                             </button>
@@ -229,12 +229,12 @@ export default function Login({
                         {/* Sign-up link */}
                         {registerUrl && (
                             <p className="text-center text-base-content/60">
-                                {copy['have_account']}{' '}
+                                {copy['actions.have_account']}{' '}
                                 <a
                                     href={registerUrl}
                                     className="font-semibold text-primary hover:text-primary/80 transition-colors"
                                 >
-                                    {copy['signup']}
+                                    {copy['actions.signup']}
                                 </a>
                             </p>
                         )}
@@ -243,11 +243,11 @@ export default function Login({
                         <p className="text-center text-xs text-base-content/40 pt-4">
                             {copy['login.agree_terms']}{' '}
                             <a href={termsUrl} className="underline hover:text-base-content/60 transition-colors">
-                                {copy['terms_of_service']}
+                                {copy['legal.terms_of_service']}
                             </a>{' '}
                             {copy['login.and']}{' '}
                             <a href={privacyUrl} className="underline hover:text-base-content/60 transition-colors">
-                                {copy['privacy_policy']}
+                                {copy['legal.privacy_policy']}
                             </a>
                             .
                         </p>

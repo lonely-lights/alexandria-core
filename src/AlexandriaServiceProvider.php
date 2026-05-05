@@ -242,7 +242,7 @@ class AlexandriaServiceProvider extends ServiceProvider
         $flat = [];
 
         foreach ($translations as $key => $value) {
-            $compositeKey = $prefix === '' ? $key : "{$prefix}.{$key}";
+            $compositeKey = $prefix === '' ? $key : "$prefix.$key";
 
             if (is_array($value)) {
                 $flat = [...$flat, ...$this->flattenTranslations($value, $compositeKey)];

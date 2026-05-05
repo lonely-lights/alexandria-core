@@ -139,7 +139,7 @@ export default function VerifyEmail({
                         {/* Status message */}
                         {status === 'verification-link-sent' && (
                             <div className="rounded-lg bg-success/10 border border-success/20 p-4 text-success text-sm">
-                                {copy['verification_sent']}
+                                {copy['actions.verification_sent']}
                             </div>
                         )}
 
@@ -152,7 +152,7 @@ export default function VerifyEmail({
                                     className="w-full inline-flex items-center justify-center gap-2 font-bold text-sm disabled:opacity-50"
                                 >
                                     <span className="btn-offset w-full px-7 py-4 rounded-lg inline-flex items-center justify-center gap-2">
-                                        <span>{copy['resend_verification']}</span>
+                                        <span>{copy['actions.resend_verification']}</span>
                                         <span aria-hidden="true">→</span>
                                     </span>
                                 </button>
@@ -172,11 +172,11 @@ export default function VerifyEmail({
                         {/* Terms footer */}
                         <p className="text-center text-xs text-base-content/40 pt-4">
                             <a href={termsUrl} className="underline hover:text-base-content/60 transition-colors">
-                                {copy['terms_of_service']}
+                                {copy['legal.terms_of_service']}
                             </a>
                             {' · '}
                             <a href={privacyUrl} className="underline hover:text-base-content/60 transition-colors">
-                                {copy['privacy_policy']}
+                                {copy['legal.privacy_policy']}
                             </a>
                         </p>
                     </div>
