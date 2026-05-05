@@ -35,7 +35,7 @@ export default function ResetPassword({
 
     return (
         <ThemeProvider>
-            <Head title={copy['reset_password']} />
+            <Head title={copy['actions.reset_password']} />
 
             <div className="min-h-screen flex bg-base-100 text-base-content font-sans">
                 {/* LEFT PANEL — Atmospheric brand side (hidden on mobile) */}
@@ -154,7 +154,7 @@ export default function ResetPassword({
                             {/* Email */}
                             <div className="space-y-2">
                                 <label htmlFor="email" className="block text-sm font-medium text-base-content/80">
-                                    {copy['email']}
+                                    {copy['fields.email']}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
@@ -178,7 +178,7 @@ export default function ResetPassword({
                             {/* Password */}
                             <div className="space-y-2">
                                 <label htmlFor="password" className="block text-sm font-medium text-base-content/80">
-                                    {copy['password']}
+                                    {copy['fields.password']}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
@@ -201,7 +201,7 @@ export default function ResetPassword({
                             {/* Confirm Password */}
                             <div className="space-y-2">
                                 <label htmlFor="password_confirmation" className="block text-sm font-medium text-base-content/80">
-                                    {copy['confirm_password']}
+                                    {copy['actions.confirm_password']}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
@@ -228,7 +228,7 @@ export default function ResetPassword({
                                 className="w-full inline-flex items-center justify-center gap-2 font-bold text-sm disabled:opacity-50"
                             >
                                 <span className="btn-offset w-full px-7 py-4 rounded-lg inline-flex items-center justify-center gap-2">
-                                    <span>{copy['reset_password']}</span>
+                                    <span>{copy['actions.reset_password']}</span>
                                     <span aria-hidden="true">→</span>
                                 </span>
                             </button>
@@ -249,11 +249,11 @@ export default function ResetPassword({
                         <p className="text-center text-xs text-base-content/40 pt-4">
                             {copy['login.agree_terms']}{' '}
                             <a href={termsUrl} className="underline hover:text-base-content/60 transition-colors">
-                                {copy['terms_of_service']}
+                                {copy['legal.terms_of_service']}
                             </a>{' '}
                             {copy['login.and']}{' '}
                             <a href={privacyUrl} className="underline hover:text-base-content/60 transition-colors">
-                                {copy['privacy_policy']}
+                                {copy['legal.privacy_policy']}
                             </a>
                             .
                         </p>

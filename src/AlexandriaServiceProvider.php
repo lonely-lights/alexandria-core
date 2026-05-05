@@ -11,6 +11,7 @@ use Alexandria\Core\Actions\Fortify\UpdateUserProfileInformation;
 use Alexandria\Core\Support\ConfigDeepMerge;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -31,18 +32,12 @@ class AlexandriaServiceProvider extends ServiceProvider
     /**
      * Recursive variant of Laravel's mergeConfigFrom.
      *
-     * Laravel's built-in is shallow: only top-level keys are merged.
-     * That breaks the override-via-pull-up pattern for our nested
-     * config — a consumer who publishes config/alexandria.php to tweak
-     * one entry under `models.*` would lose every other key in `models`,
-     * `media`, `slots`, etc., and have to manually backfill new keys
-     * forever.
-     *
-     * Deep merge means consumers publish only the keys they care about
-     * (or just the leaves they want to override), and core's defaults
-     * fill in the rest at runtime. Consumer wins on conflict; lists
-     * replace wholesale rather than merge by index. See
-     * ConfigDeepMerge for the merge contract + rationale.
+     * Laravel's built-in is shallow — only top-level keys merge, so a
+     * consumer who publishes config/alexandria.php to tweak one entry
+     * under `models.*` would lose every other key under it. Deep merge
+     * lets consumers publish only the leaves they want to override and
+     * core's defaults fill in the rest. Consumer wins on conflict; lists
+     * replace wholesale. See ConfigDeepMerge for the merge contract.
      */
     private function mergeConfigDeepFrom(string $path): void
     {
@@ -58,11 +53,16 @@ class AlexandriaServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadTranslationsFrom(__DIR__.'/../lang', 'alexandria');
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/alexandria.php' => config_path('alexandria.php'),
             ], 'alexandria-config');
+
+            $this->publishes([
+                __DIR__.'/../lang' => $this->app->langPath('vendor/alexandria'),
+            ], 'alexandria-translations');
         }
 
         $this->bindFortifyActions();
@@ -74,23 +74,19 @@ class AlexandriaServiceProvider extends ServiceProvider
     /**
      * Override Fortify's defaults with core's preferred values.
      *
-     * Why config()->set() instead of mergeConfigFrom: Fortify's service
-     * provider auto-discovers before ours and primes config/fortify.* via
-     * its own mergeConfigFrom. Laravel's mergeConfigFrom is "merge our
-     * defaults INTO current config, current wins for shared keys" — so a
-     * later provider can't override a prior provider's values that way.
-     * config()->set() does a hard set and lands regardless of order.
+     * Uses config()->set instead of mergeConfigFrom: Fortify auto-discovers
+     * before us and primes config/fortify.* via its own mergeConfigFrom.
+     * Laravel's mergeConfigFrom is "merge our defaults INTO current, current
+     * wins" — so a later provider can't override a prior provider's values
+     * that way. config()->set lands regardless of order.
      *
-     * Must run in register() (not boot()): Fortify's boot() registers its
-     * routes by reading config('fortify.features') and config('fortify.home')
-     * — by the time our boot() runs, unwanted routes are already on the
-     * router. Our register() runs after Fortify's register() (alphabetical
-     * service-provider order), so the override lands before any boot()
-     * phase.
+     * Must run in register(), not boot(): Fortify's boot() registers routes
+     * by reading config('fortify.features') and config('fortify.home').
+     * Our register() runs after Fortify's register() (alphabetical service-
+     * provider order), so the override lands before any boot() phase.
      *
-     * WIRE-B.4 (2FA) re-enables the appropriate features. Consumers who
-     * want a different post-login home publish their own config or
-     * override fortify.home in their own provider.
+     * Consumers wanting a different post-login home publish their own config
+     * or override fortify.home in their own provider.
      */
     private function forceFortifyDefaults(): void
     {
@@ -101,14 +97,15 @@ class AlexandriaServiceProvider extends ServiceProvider
             Features::emailVerification(),
             Features::updatePasswords(),
             Features::updateProfileInformation(),
+            Features::twoFactorAuthentication([
+                'confirm' => true,
+                'confirmPassword' => true,
+            ]),
         ]);
     }
 
     /**
      * Wire Fortify's action callbacks + the login rate limiter.
-     * UpdateUserPassword and UpdateUserProfileInformation are inert
-     * until WIRE-E re-enables their features; binding now means that
-     * step is a one-line feature flip.
      */
     private function bindFortifyActions(): void
     {
@@ -127,9 +124,9 @@ class AlexandriaServiceProvider extends ServiceProvider
     }
 
     /**
-     * Wire Fortify view callbacks so the 6 FE-F1 auth pages render at
-     * their canonical Fortify URLs. Submit handlers use Fortify defaults
-     * for B.1; WIRE-B.2 lifts custom Action classes from legacy.
+     * Wire Fortify view callbacks so each auth page renders its Inertia
+     * component at Fortify's canonical URLs. Submit handlers route to the
+     * Action classes bound in bindFortifyActions().
      */
     private function bindFortifyViews(): void
     {
@@ -177,14 +174,18 @@ class AlexandriaServiceProvider extends ServiceProvider
             'copy' => $copy,
             ...$legalUrls,
         ]));
+
+        Fortify::twoFactorChallengeView(fn () => Inertia::render('Auth/TwoFactorChallenge', [
+            'copy' => $copy,
+            ...$legalUrls,
+        ]));
     }
 
     /**
      * Resolve termsUrl + privacyUrl props passed to every Fortify view
      * callback. The route names live in the consumer app (per ADR-008
-     * — legal pages can be brand-specific) so static analysis can't
-     * trace them; the Route::has() guard makes resolution runtime-safe
-     * when the consumer hasn't registered them yet.
+     * — legal pages can be brand-specific) so the Route::has() guard
+     * keeps resolution runtime-safe when consumers haven't registered them.
      *
      * @return array{termsUrl: string, privacyUrl: string}
      */
@@ -198,12 +199,9 @@ class AlexandriaServiceProvider extends ServiceProvider
 
     /**
      * Resolve a named route to its URL, falling back to '#' when the
-     * consumer hasn't registered the route. Pulled out as a helper so
-     * the route-name literal lives at the call site (e.g. inside
-     * legalUrls()) rather than inside the route() call — that defeats
-     * IDE inspections that flag unknown route names from string
-     * literals passed directly to route(), since static analyzers
-     * can't trace the variable's value here.
+     * consumer hasn't registered it. The route-name literal lives at the
+     * call site so IDE inspections can flag unknown routes — passing
+     * variables to route() defeats those inspections.
      */
     private function routeOrHashFallback(string $name): string
     {
@@ -211,41 +209,50 @@ class AlexandriaServiceProvider extends ServiceProvider
     }
 
     /**
-     * Inline English auth copy for B.1. Translation files come in a later
-     * WIRE sub-slice (lang/en/auth.php scaffold).
+     * Auth copy resolved from the alexandria translation namespace
+     * (lang/en/auth.php in core, or lang/vendor/alexandria/en/auth.php
+     * if the consumer published + customised). Returns the flattened
+     * dot-keyed array the React auth pages consume — e.g.
+     * `copy['login.welcome_back']` resolves to the `login.welcome_back`
+     * leaf.
+     *
+     * Consumers override individual strings by publishing the
+     * `alexandria-translations` tag and editing the published files;
+     * the package-namespaced lookup falls back to core's defaults for
+     * any key the consumer hasn't customised.
      *
      * @return array<string, string>
      */
     private function authCopy(): array
     {
-        return [
-            'login.welcome_back' => 'Welcome back',
-            'login.intro' => 'Sign in to continue.',
-            'login.or' => 'or',
-            'login.agree_terms' => 'By signing in, you agree to our',
-            'login.and' => 'and',
-            'email' => 'Email',
-            'password' => 'Password',
-            'remember_me' => 'Remember me',
-            'login' => 'Log in',
-            'forgot_password' => 'Forgot password?',
-            'have_account' => "Don't have an account?",
-            'enlist' => 'Enlist',
-            'registration.intro' => 'Create your account and start building. Every idea finds a home.',
-            'name' => 'Username',
-            'signup' => 'Enlist',
-            'already_registered' => 'Already have an account?',
-            'agree_terms_privacy' => 'I agree to the :terms_of_service and :privacy_policy.',
-            'forgot_password.intro' => 'Enter your email and we\'ll send you a reset link.',
-            'email_reset_link' => 'Email reset link',
-            'reset_password' => 'Reset password',
-            'verification.intro' => 'A verification link has been sent. Click the link in the email to confirm your address.',
-            'verification_sent' => 'A new verification link has been sent.',
-            'resend_verification' => 'Resend verification email',
-            'confirm_password.intro' => 'Please confirm your password to continue.',
-            'confirm_password' => 'Confirm Password',
-            'terms_of_service' => 'Terms of Service',
-            'privacy_policy' => 'Privacy Policy',
-        ];
+        return $this->flattenTranslations(Lang::get('alexandria::auth'));
+    }
+
+    /**
+     * Recursively flatten a nested translation array into dot-keyed
+     * leaves. lang/en/auth.php groups by section (login.*, registration.*,
+     * etc.) for editor ergonomics; the React side expects a flat
+     * `copy[key]` lookup.
+     *
+     * @param  array<string, mixed>  $translations
+     * @return array<string, string>
+     */
+    private function flattenTranslations(array $translations, string $prefix = ''): array
+    {
+        $flat = [];
+
+        foreach ($translations as $key => $value) {
+            $compositeKey = $prefix === '' ? $key : "$prefix.$key";
+
+            if (is_array($value)) {
+                $flat = [...$flat, ...$this->flattenTranslations($value, $compositeKey)];
+
+                continue;
+            }
+
+            $flat[$compositeKey] = $value;
+        }
+
+        return $flat;
     }
 }

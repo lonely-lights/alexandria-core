@@ -153,7 +153,7 @@ export default function ForgotPassword({
                             {/* Email */}
                             <div className="space-y-2">
                                 <label htmlFor="email" className="block text-sm font-medium text-base-content/80">
-                                    {copy['email']}
+                                    {copy['fields.email']}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
@@ -183,7 +183,7 @@ export default function ForgotPassword({
                                 className="w-full inline-flex items-center justify-center gap-2 font-bold text-sm disabled:opacity-50"
                             >
                                 <span className="btn-offset w-full px-7 py-4 rounded-lg inline-flex items-center justify-center gap-2">
-                                    <span>{copy['email_reset_link']}</span>
+                                    <span>{copy['actions.email_reset_link']}</span>
                                     <span aria-hidden="true">→</span>
                                 </span>
                             </button>
@@ -196,7 +196,7 @@ export default function ForgotPassword({
                                 href={loginUrl}
                                 className="font-semibold text-primary hover:text-primary/80 transition-colors"
                             >
-                                {copy['login']}
+                                {copy['actions.login']}
                             </a>
                         </p>
 
@@ -204,11 +204,11 @@ export default function ForgotPassword({
                         <p className="text-center text-xs text-base-content/40 pt-4">
                             {copy['login.agree_terms']}{' '}
                             <a href={termsUrl} className="underline hover:text-base-content/60 transition-colors">
-                                {copy['terms_of_service']}
+                                {copy['legal.terms_of_service']}
                             </a>{' '}
                             {copy['login.and']}{' '}
                             <a href={privacyUrl} className="underline hover:text-base-content/60 transition-colors">
-                                {copy['privacy_policy']}
+                                {copy['legal.privacy_policy']}
                             </a>
                             .
                         </p>
