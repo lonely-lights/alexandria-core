@@ -7,82 +7,44 @@ namespace Alexandria\Core\Models\System;
 use Alexandria\Core\Database\Factories\System\EntryHistoryFactory;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Entry History Model - Complete Audit Trail
+ * Audit-trail row for an Entry change. user_id is nullable to support
+ * system/AI-driven edits; resolved through config('alexandria.models.user')
+ * per ADR-006.
  *
- * Maintains a complete audit trail of all changes to entries, including core fields,
- * dynamic attributes (via FieldValue changes), and metadata updates. Supports both
- * manual user edits and AI-driven modifications.
- *
- * Change Types:
- * - 'field_update': Core entry fields (name, slug, summary, content)
- * - 'attribute_update': Dynamic attributes via FieldValue (automatically tracked)
- * - 'metadata_update': Changes to metadata JSON column
- * - 'bulk_update': Multiple changes in one operation
- *
- * User Attribution:
- * - user_id is nullable to support system/AI changes
- * - Set to null automatically when user is deleted (foreign key: set null on delete)
- *
- * Automatic Tracking:
- * - FieldValue model automatically creates history records on create/update/delete
- * - Context field stores additional metadata (timestamp, action, field_value_id, etc.)
- *
- * @REVIEWED 2025-11-23 - Claude Code
- * Batch: 1.2 - EAV Core Models
- * Focus: History tracking, change types, user attribution, accessors
- * Cross-Refs: Batch 1.1 (entry_histories migration), FieldValue model (auto-tracking)
- * Issues: None
- *
- * @property int $id Primary key
- * @property int $entry_id Foreign key to entries table
- * @property int|null $user_id Foreign key to users table (null for system/AI changes)
- * @property string $change_type Enum: field_update, attribute_update, metadata_update, bulk_update
- * @property string|null $field_name Name of field that changed
- * @property string|null $previous_value Old value (TEXT)
- * @property string|null $new_value New value (TEXT)
- * @property string|null $change_summary Human-readable description
- * @property array|null $context Additional change metadata (JSON)
+ * @property int $id
+ * @property int $entry_id
+ * @property int|null $user_id
+ * @property string $change_type
+ * @property string|null $field_name
+ * @property string|null $previous_value
+ * @property string|null $new_value
+ * @property string|null $change_summary
+ * @property array<string, mixed>|null $context
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Entry $entry Entry being tracked
- * @property-read Authenticatable|null $user User who made change (null for system); resolves through config('alexandria.models.user') per ADR-006
- * @property-read string $changeTypeName Human-readable change type (accessor)
- * @property-read string $formattedPreviousValue Formatted previous value (accessor)
- * @property-read string $formattedNewValue Formatted new value (accessor)
+ * @property-read Entry $entry
+ * @property-read Authenticatable|null $user
+ * @property-read string $change_type_name
+ * @property-read string $formatted_previous_value
+ * @property-read string $formatted_new_value
  *
- * @method static Builder|EntryHistory recent(int $limit = 20) Get recent changes
- * @method static Builder|EntryHistory ofType(string $changeType) Filter by change type
- * @method static Builder|EntryHistory byUser(int $userId) Filter by user
- *
- * @mixin Builder
+ * @method static Builder<static> recent(int $limit = 20)
+ * @method static Builder<static> ofType(string $changeType)
+ * @method static Builder<static> byUser(int $userId)
+ * @method static EntryHistoryFactory factory(int|callable|array|null $count = null, array $state = [])
  */
 class EntryHistory extends Model
 {
     /** @use HasFactory<EntryHistoryFactory> */
     use HasFactory;
 
-    protected $table = 'entry_histories';
-
-    protected $guarded = [];
-
-    protected static function newFactory(): EntryHistoryFactory
-    {
-        return EntryHistoryFactory::new();
-    }
-
-    protected $casts = [
-        'context' => 'array',
-    ];
-
-    /**
-     * Available change types
-     */
     public const array CHANGE_TYPES = [
         'field_update' => 'Field Update',
         'attribute_update' => 'Attribute Update',
@@ -90,88 +52,76 @@ class EntryHistory extends Model
         'bulk_update' => 'Bulk Update',
     ];
 
-    /**
-     * Get the entry this history record belongs to.
-     */
+    protected $table = 'entry_histories';
+
+    protected $guarded = ['id'];
+
+    protected static function newFactory(): EntryHistoryFactory
+    {
+        return EntryHistoryFactory::new();
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'context' => 'array',
+        ];
+    }
+
     public function entry(): BelongsTo
     {
         return $this->belongsTo(Entry::class, 'entry_id');
     }
 
-    /**
-     * Get the user who made this change.
-     *
-     * Resolves the User class through config('alexandria.models.user')
-     * per ADR-006 — User lives in the consumer app, not core.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(config('alexandria.models.user'));
     }
 
-    /**
-     * Get human-readable change type name.
-     */
-    public function getChangeTypeNameAttribute(): string
+    protected function changeTypeName(): Attribute
     {
-        return self::CHANGE_TYPES[$this->change_type] ?? ucfirst(str_replace('_', ' ', $this->change_type));
+        return Attribute::get(fn (): string => self::CHANGE_TYPES[$this->change_type]
+            ?? ucfirst(str_replace('_', ' ', $this->change_type)));
+    }
+
+    protected function formattedPreviousValue(): Attribute
+    {
+        return Attribute::get(fn (): string => $this->formatStoredValue($this->previous_value));
+    }
+
+    protected function formattedNewValue(): Attribute
+    {
+        return Attribute::get(fn (): string => $this->formatStoredValue($this->new_value));
     }
 
     /**
-     * Get formatted previous value for display.
+     * Render a stored value: pretty JSON if it round-trips, else raw text,
+     * else '(empty)' for null. Shared between previous/new accessors.
      */
-    public function getFormattedPreviousValueAttribute(): string
+    private function formatStoredValue(?string $stored): string
     {
-        if (is_null($this->previous_value)) {
+        if ($stored === null) {
             return '(empty)';
         }
 
-        // Try to decode as JSON first
-        $decoded = json_decode($this->previous_value, true);
+        $decoded = json_decode($stored, true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
             return json_encode($decoded, JSON_PRETTY_PRINT);
         }
 
-        return $this->previous_value;
+        return $stored;
     }
 
-    /**
-     * Get formatted new value for display.
-     */
-    public function getFormattedNewValueAttribute(): string
-    {
-        if (is_null($this->new_value)) {
-            return '(empty)';
-        }
-
-        // Try to decode as JSON first
-        $decoded = json_decode($this->new_value, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            return json_encode($decoded, JSON_PRETTY_PRINT);
-        }
-
-        return $this->new_value;
-    }
-
-    /**
-     * Scope to get recent changes.
-     */
     public function scopeRecent(Builder $query, int $limit = 20): Builder
     {
-        return $query->orderBy('created_at', 'desc')->limit($limit);
+        return $query->orderByDesc('created_at')->limit($limit);
     }
 
-    /**
-     * Scope to filter by change type.
-     */
     public function scopeOfType(Builder $query, string $changeType): Builder
     {
         return $query->where('change_type', $changeType);
     }
 
-    /**
-     * Scope to filter by user.
-     */
     public function scopeByUser(Builder $query, int $userId): Builder
     {
         return $query->where('user_id', $userId);

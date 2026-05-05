@@ -14,7 +14,6 @@ use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
 use Alexandria\Core\Models\ProjectSortingPrompt;
-use Alexandria\Core\Models\System\AiPrompt;
 use Alexandria\Core\Models\System\AiTransaction;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\BlueprintField;
@@ -103,7 +102,6 @@ return [
     'models' => [
         'ai_configuration' => AiConfiguration::class,
         'ai_model' => AiModel::class,
-        'ai_prompt' => AiPrompt::class,
         'ai_provider' => AiProvider::class,
         'ai_review_command' => AiReviewCommand::class,
         'ai_transaction' => AiTransaction::class,

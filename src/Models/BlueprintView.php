@@ -6,6 +6,7 @@ namespace Alexandria\Core\Models;
 
 use Alexandria\Core\Database\Factories\BlueprintViewFactory;
 use Alexandria\Core\Models\System\Blueprint;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,8 +27,8 @@ use Illuminate\Support\Carbon;
  *
  * @method static BlueprintViewFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static BlueprintView create(array $attributes = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static> query()
- * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<static> query()
+ * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
  */
 class BlueprintView extends Model
 {

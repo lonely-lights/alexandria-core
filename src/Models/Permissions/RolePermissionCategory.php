@@ -9,8 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * RolePermissionCategory — grouping vocabulary used by the admin
- * UI when listing roles and permissions.
+ * Grouping vocabulary used by the admin UI when listing roles + permissions.
  *
  * @property int $id
  * @property string $name
@@ -23,29 +22,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class RolePermissionCategory extends Model
 {
-    // ##########################################################
-    // Model Attribute Configuration
-    // ##########################################################
-
-    // Change URL to Slug
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
-
-    // Data Mapping
-    public string $modelDescription = 'This is a grouping used for roles and permissions.';
-
-    // Columns
     protected $fillable = [
         'name',
         'slug',
         'type',
     ];
 
-    // ##########################################################
-    // Relationships
-    // ##########################################################
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 
     public function roles(): HasMany
     {

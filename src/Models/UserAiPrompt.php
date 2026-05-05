@@ -31,13 +31,7 @@ class UserAiPrompt extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-        'label',
-        'prompt',
-        'action',
-        'sort_order',
-    ];
+    protected $guarded = ['id'];
 
     protected static function newFactory(): UserAiPromptFactory
     {

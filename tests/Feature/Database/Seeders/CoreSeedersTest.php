@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Alexandria\Core\Database\Seeders\AiModelSeeder;
-use Alexandria\Core\Database\Seeders\AiPromptsSeeder;
 use Alexandria\Core\Database\Seeders\AiProviderSeeder;
 use Alexandria\Core\Database\Seeders\Permissions\PermissionSeeder;
 use Alexandria\Core\Database\Seeders\Permissions\RolePermissionCategorySeeder;
@@ -11,7 +10,6 @@ use Alexandria\Core\Database\Seeders\RoleAndPermissionSeeder;
 use Alexandria\Core\Models\AiModel;
 use Alexandria\Core\Models\AiProvider;
 use Alexandria\Core\Models\Permissions\RolePermissionCategory;
-use Alexandria\Core\Models\System\AiPrompt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -39,12 +37,6 @@ it('AiModelSeeder seeds models when providers exist', function () {
     // Sanity: lots of models, all linked to known providers.
     expect(AiModel::query()->count())->toBeGreaterThan(20)
         ->and(AiModel::query()->whereNull('ai_provider_id')->count())->toBe(0);
-});
-
-it('AiPromptsSeeder creates the framework prompt rows', function () {
-    (new AiPromptsSeeder)->run();
-
-    expect(AiPrompt::query()->count())->toBeGreaterThan(0);
 });
 
 it('RolePermissionCategorySeeder creates the 8 default categories', function () {

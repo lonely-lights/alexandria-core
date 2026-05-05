@@ -6,6 +6,7 @@ namespace Alexandria\Core\Models\System;
 
 use Alexandria\Core\Database\Factories\System\AiTransactionFactory;
 use Alexandria\Core\Models\Framework\Project;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,11 +43,11 @@ use Illuminate\Support\Carbon;
  *
  * @method static AiTransactionFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static AiTransaction create(array $attributes = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static> query()
- * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
- * @method static \Illuminate\Database\Eloquent\Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
- * @method static \Illuminate\Database\Eloquent\Builder<static> whereMonth(string $column, mixed $value, string $boolean = 'and')
- * @method static \Illuminate\Database\Eloquent\Builder<static> whereYear(string $column, mixed $value, string $boolean = 'and')
+ * @method static Builder<static> query()
+ * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static Builder<static> whereMonth(string $column, mixed $value, string $boolean = 'and')
+ * @method static Builder<static> whereYear(string $column, mixed $value, string $boolean = 'and')
  */
 class AiTransaction extends Model
 {
