@@ -9,10 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 
 /**
- * Permission Model
- *
- * Represents a permission in the application's authorization system.
- *
  * @property int $id
  * @property string $name
  * @property string|null $display_name
@@ -33,23 +29,6 @@ use Spatie\Permission\Models\Permission as SpatiePermission;
  */
 class Permission extends SpatiePermission
 {
-    // Use
-
-    // ##########################################################
-    // Model Configuration
-    // ##########################################################
-
-    // Route Key Name
-    public function getRouteKeyName(): string
-    {
-        return 'name';
-    }
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'guard_name',
@@ -58,18 +37,10 @@ class Permission extends SpatiePermission
         'sort_order',
     ];
 
-    /**
-     * Boot the model.
-     */
-    protected static function boot(): void
+    public function getRouteKeyName(): string
     {
-        parent::boot();
-
+        return 'name';
     }
-
-    // ##########################################################
-    // Relationships
-    // ##########################################################
 
     public function category(): BelongsTo
     {
