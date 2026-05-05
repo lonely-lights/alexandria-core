@@ -40,7 +40,15 @@ See [ADR-004](https://github.com/lonely-lights/alexandria-legacy/blob/main/docs/
 - A queue worker (Redis recommended) for AI pipelines
 - An AI provider API key (Anthropic, OpenAI, or Google AI) if you want the AI features
 
-## Installation
+## Documentation
+
+- **[`INSTALL.md`](INSTALL.md)** — fresh-environment setup, from `laravel new` through to a running Alexandria install
+- **[`CONFIGURATION.md`](CONFIGURATION.md)** — every config key + environment variable, including how the AI architecture keeps the user as the author
+- **[`docs/EXTENDING.md`](docs/EXTENDING.md)** — override-points catalog (config publish, model swaps, page overrides, layout hooks, service-provider extension)
+- **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — how to file issues, submit PRs, and what we welcome
+- **[`AGENTS.md`](AGENTS.md)** — guidance for AI coding assistants working in this repo
+
+## Installation (TL;DR)
 
 ```bash
 composer require lonely-lights/alexandria-core
@@ -48,27 +56,7 @@ php artisan vendor:publish --tag=alexandria-config
 php artisan migrate
 ```
 
-### Frontend integration
-
-`alexandria-core` ships TypeScript and React components under `resources/js/`. Consumer apps wire a `@alexandria/*` path alias across Vite, `tsconfig.json`, and Tailwind 4's `@source` scanner so utility classes used in core components end up in the bundle. DaisyUI 5 is the supported component layer.
-
-The full recipe — including the DaisyUI 4 → 5 token rename table — lives in [`docs/integration/frontend-setup.md`](docs/integration/frontend-setup.md). Minimal version:
-
-```ts
-// vite.config.ts
-resolve: {
-    alias: {
-        '@alexandria': resolve(__dirname, 'vendor/lonely-lights/alexandria-core/resources/js'),
-    },
-},
-```
-
-```css
-/* app.css */
-@source '../../vendor/lonely-lights/alexandria-core/resources/js/**/*.{ts,tsx}';
-```
-
-Update your Inertia bootstrap (`resources/js/app.tsx`) to resolve pages from `@alexandria/pages/...` once the page surface lands at FE-B. Full setup walkthrough will graduate to a top-level [`INSTALL.md`](INSTALL.md) at Stage 4.
+For the full walkthrough including frontend Vite/Tailwind wiring, Reverb broadcasting, and queue worker setup, see [`INSTALL.md`](INSTALL.md).
 
 ## Sibling packages
 
