@@ -52,10 +52,14 @@ readonly class RelationshipRepository
                 ->whereNull('deleted_at');
         });
 
-        // Lightweight, portable filters.
+        // Allowlist filter values — `order` and `dir` are pulled from a parsed
+        // raw key under user control, so they MUST NOT reach the SQL builder
+        // unvalidated.
         if (isset($k->filters['order'])) {
-            $dir = $k->filters['dir'] ?? 'asc';
-            $field = $k->filters['order']; // 'name' | 'priority'
+            $field = in_array($k->filters['order'], ['name', 'priority'], true)
+                ? $k->filters['order']
+                : 'name';
+            $dir = ($k->filters['dir'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
             $builder->orderBy($field, $dir);
         }
 
