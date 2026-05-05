@@ -132,7 +132,6 @@ The keys (default class in parens):
 |---|---|
 | `ai_configuration` | `Alexandria\Core\Models\AiConfiguration` |
 | `ai_model` | `Alexandria\Core\Models\AiModel` |
-| `ai_prompt` | `Alexandria\Core\Models\System\AiPrompt` |
 | `ai_provider` | `Alexandria\Core\Models\AiProvider` |
 | `ai_review_command` | `Alexandria\Core\Models\Notable\AiReviewCommand` |
 | `ai_transaction` | `Alexandria\Core\Models\System\AiTransaction` |

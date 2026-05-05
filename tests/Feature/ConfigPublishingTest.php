@@ -13,7 +13,6 @@ use Alexandria\Core\Models\Notable\AiReviewCommand;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
 use Alexandria\Core\Models\ProjectSortingPrompt;
-use Alexandria\Core\Models\System\AiPrompt;
 use Alexandria\Core\Models\System\AiTransaction;
 use Alexandria\Core\Models\System\EntryRelationship;
 use Alexandria\Core\Models\System\RelationshipBlueprint;
@@ -85,11 +84,6 @@ it('exposes the UserAiSetting binding via config', function () {
 it('exposes the UserApiKey binding via config', function () {
     expect(config('alexandria.models.user_api_key'))
         ->toBe(UserApiKey::class);
-});
-
-it('exposes the AiPrompt binding via config', function () {
-    expect(config('alexandria.models.ai_prompt'))
-        ->toBe(AiPrompt::class);
 });
 
 it('exposes the AiTransaction binding via config', function () {
