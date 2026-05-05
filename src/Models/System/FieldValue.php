@@ -28,6 +28,16 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
  * @method static FieldValue|null find(mixed $id, array|string $columns = ['*'])
  * @method static FieldValue findOrFail(mixed $id, array|string $columns = ['*'])
+ * @method static Builder<static>|FieldValue newModelQuery()
+ * @method static Builder<static>|FieldValue newQuery()
+ * @method static Builder<static>|FieldValue whereBlueprintFieldId($value)
+ * @method static Builder<static>|FieldValue whereCreatedAt($value)
+ * @method static Builder<static>|FieldValue whereEntryId($value)
+ * @method static Builder<static>|FieldValue whereId($value)
+ * @method static Builder<static>|FieldValue whereUpdatedAt($value)
+ * @method static Builder<static>|FieldValue whereValue($value)
+ *
+ * @mixin \Eloquent
  */
 class FieldValue extends Model
 {
