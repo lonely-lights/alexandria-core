@@ -11,22 +11,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Config;
 
 /**
- * Resolves which API credential to use for a given user + provider. Supports
- * three modes:
- *   1. BYOK override: user has an active UserApiKey for the provider.
- *   2. Env fallback (allowed): no user key, alexandria.ai.allow_env_fallback
- *      is true. Reads ai.providers.<sdkKey>.key from app config.
- *   3. Default-deny (SaaS): no user key AND fallback disabled (the default).
- *      Throws NoApiKeyAvailableException so SaaS callers can return a clear
- *      "set up your API key" error to the user, instead of silently billing
- *      the operator's key.
- *
- * Provider slug mapping: Alexandria stores 'google' but the laravel/ai SDK
- * uses 'gemini' as the config key — getSdkProviderKey handles the swap.
- *
- * Replaces legacy App\Services\AI\UserAiContext, which mutated SDK config
- * at runtime. The new pattern returns a typed ResolvedCredential value
- * object that callers pass through to the SDK without touching its config.
+ * Resolves which API credential to use for a given user + provider — BYOK first, env fallback if allowed, otherwise throws.
  */
 class CredentialResolver
 {

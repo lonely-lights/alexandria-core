@@ -7,16 +7,7 @@ namespace Alexandria\Core\Services\AI\Prompts\Builders;
 use Alexandria\Core\Services\AI\Prompts\Contexts\ContextInterface;
 
 /**
- * Data Marker
- *
- * Wraps context data with clear, unambiguous boundary markers.
- * These markers are designed to be:
- * 1. Clearly distinguishable from prompt instructions
- * 2. Machine-parseable for validation
- * 3. Self-documenting for AI review
- *
- * The boundaries ensure that AI models can clearly distinguish
- * between the instructional prompt and the data being analyzed.
+ * Wraps context JSON with boundary markers so AI models can distinguish data from instructions.
  */
 class DataMarker
 {
@@ -133,25 +124,23 @@ DATA;
         $errors = [];
 
         if (! str_contains($wrapped, '=== BEGIN DATA CONTEXT')) {
-            $errors[] = __('Missing BEGIN DATA CONTEXT marker.');
+            $errors[] = 'Missing BEGIN DATA CONTEXT marker.';
         }
 
         if (! str_contains($wrapped, '=== END DATA CONTEXT')) {
-            $errors[] = __('Missing END DATA CONTEXT marker.');
+            $errors[] = 'Missing END DATA CONTEXT marker.';
         }
 
         if (! str_contains($wrapped, 'Type:')) {
-            $errors[] = __('Missing Type metadata.');
+            $errors[] = 'Missing Type metadata.';
         }
 
         if (! str_contains($wrapped, 'Schema Version:')) {
-            $errors[] = __('Missing Schema Version metadata.');
+            $errors[] = 'Missing Schema Version metadata.';
         }
 
-        // Try to extract and parse JSON
-        $data = $this->unwrap($wrapped);
-        if ($data === null) {
-            $errors[] = __('Could not parse JSON data from wrapped block.');
+        if ($this->unwrap($wrapped) === null) {
+            $errors[] = 'Could not parse JSON data from wrapped block.';
         }
 
         return [

@@ -63,7 +63,7 @@ it('throws RuntimeException from categorizeNoteWithAi (delegates to service)', f
     $user = makeTraitUser();
 
     $project->categorizeNoteWithAi($note, $user);
-})->throws(RuntimeException::class, 'EavAiService::categorizeNote requires EavAiCategorizationOrchestrator');
+})->throws(RuntimeException::class, 'EavAiService::categorizeNote requires a host-app orchestrator binding');
 
 it('delegates suggestEntriesFromText through the service and returns the stub array', function () {
     $project = Project::factory()->create();

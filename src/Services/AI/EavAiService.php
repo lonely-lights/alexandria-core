@@ -11,28 +11,17 @@ use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * EAV AI integration entry point. Most methods delegate to the
- * EavAiCategorizationOrchestrator (lands in CT5d). Until then, the
- * AI-dependent methods throw a clear RuntimeException so callers get a
- * direct error rather than silent no-ops. autoCompleteEntries works
- * standalone — no AI involved.
- *
- * The constructor accepts the orchestrator as an optional dependency
- * that's null today; CT5d will swap it in via the container binding.
+ * EAV AI integration entry point — host apps bind a real orchestrator; this stub throws until they do.
  */
 class EavAiService
 {
     /**
-     * Classify a note within an EAV project. Routes to the orchestrator.
-     *
-     * @throws RuntimeException until the orchestrator is integrated (CT5d)
+     * @throws RuntimeException — host app must bind a concrete orchestrator
      */
     public function categorizeNote(Note $note, Authenticatable $user, Project $project): void
     {
         throw new RuntimeException(sprintf(
-            'EavAiService::categorizeNote requires EavAiCategorizationOrchestrator, '
-            .'which lands in CT5d. The trait method is in place so callers can compile, '
-            .'but the AI call surface is not yet wired. (note=%d, user=%s, project=%d)',
+            'EavAiService::categorizeNote requires a host-app orchestrator binding (note=%d, user=%s, project=%d)',
             $note->id,
             $user->getAuthIdentifier(),
             $project->id,

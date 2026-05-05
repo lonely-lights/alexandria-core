@@ -208,41 +208,7 @@ class EntryActionService
             ]);
         }
 
-        // @DEFERRED_RELATIONSHIPS - PHASE 1: Store Relationship Metadata
-        // If the command payload contains 'ai_notes' with relationship data, it should be
-        // stored on the created entry for later processing. This is intentionally deferred
-        // because relationship targets may not exist yet (temp IDs need to be resolved first).
-        //
-        // IMPLEMENTATION PLAN:
-        // 1. Check if $payload['ai_notes'] exists and contains relationship data
-        // 2. Store ai_notes on the entry model (ensure Entry model has ai_notes JSON field)
-        // 3. Log that relationship metadata was stored for later processing
-        //
-        // Expected ai_notes structure:
-        // {
-        //   "relationships": [
-        //     {
-        //       "type": "parent_child",
-        //       "target_temp_id": "temp_123",
-        //       "relationship_name": "parent",
-        //       "metadata": {"role": "mother"}
-        //     }
-        //   ]
-        // }
-        //
-        // TEST SCENARIOS:
-        // - Entry created with ai_notes → Should save to database
-        // - Entry created without ai_notes → Should complete normally
-        // - ai_notes with invalid JSON → Should log warning and continue
-        //
-        // Example:
-        // if (isset($payload['ai_notes']) && !empty($payload['ai_notes'])) {
-        //     $model->update(['ai_notes' => $payload['ai_notes']]);
-        //     Log::info('EntryActionService: Stored relationship metadata for deferred processing', [
-        //         'entry_id' => $model->id,
-        //         'relationship_count' => count($payload['ai_notes']['relationships'] ?? [])
-        //     ]);
-        // }
+        // TODO(deferred-relationships): persist payload.ai_notes on the new entry for phase-2 processing.
     }
 
     /**
