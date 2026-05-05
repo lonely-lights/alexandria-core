@@ -45,8 +45,8 @@ See [ADR-004](https://github.com/lonely-lights/alexandria-legacy/blob/main/docs/
 - **[`INSTALL.md`](INSTALL.md)** — fresh-environment setup, from `laravel new` through to a running Alexandria install
 - **[`CONFIGURATION.md`](CONFIGURATION.md)** — every config key + environment variable, including how the AI architecture keeps the user as the author
 - **[`docs/EXTENDING.md`](docs/EXTENDING.md)** — override-points catalog (config publish, model swaps, page overrides, layout hooks, service-provider extension)
-- **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — how to file issues, submit PRs, and what we welcome
-- **[`AGENTS.md`](AGENTS.md)** — guidance for AI coding assistants working in this repo
+
+This package is the framework half — extension and customization happen in the consumer app. For contributing guidance and AI-assistant instructions, see [`alexandria-app`'s `CONTRIBUTING.md`](https://github.com/lonely-lights/alexandria-app/blob/main/CONTRIBUTING.md) and [`AGENTS.md`](https://github.com/lonely-lights/alexandria-app/blob/main/AGENTS.md). Bug reports and missing extension points belong on this repo's issue tracker; everything else routes through the app.
 
 ## Installation (TL;DR)
 
