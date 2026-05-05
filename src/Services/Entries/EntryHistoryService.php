@@ -9,26 +9,11 @@ use Alexandria\Core\Models\System\EntryHistory;
 use Illuminate\Support\Str;
 
 /**
- * Entry History Service
- *
- * Handles recording and tracking changes to Entry models, creating audit trail
- * records in the entry_histories table. This service centralizes all history
- * tracking logic to keep the Entry model focused on data structure.
- *
- * Features:
- * - Tracks changes to core entry fields
- * - Generates human-readable change summaries
- * - Records user attribution and context
- * - Handles JSON/array field serialization
+ * Records mutations of tracked Entry columns into entry_histories audit rows.
  */
 class EntryHistoryService
 {
     /**
-     * Entry columns whose mutations record an audit-trail row. Virtual
-     * property (PHP 8.4 hook) so subclasses override with a get-hook
-     * rather than mutating an inherited array — keeps the list a true
-     * compile-time constant per instance.
-     *
      * @var list<string>
      */
     public array $trackableFields {
@@ -81,17 +66,6 @@ class EntryHistoryService
         }
     }
 
-    /**
-     * Generate a human-readable summary of the change.
-     *
-     * Creates a concise, user-friendly description of what changed
-     * (e.g., "Set Name", "Cleared Summary", "Updated Content").
-     *
-     * @param  string  $field  The field name that changed
-     * @param  mixed  $oldValue  The previous value
-     * @param  mixed  $newValue  The new value
-     * @return string Human-readable change summary
-     */
     public function generateChangeSummary(string $field, mixed $oldValue, mixed $newValue): string
     {
         $fieldName = ucfirst(str_replace('_', ' ', $field));

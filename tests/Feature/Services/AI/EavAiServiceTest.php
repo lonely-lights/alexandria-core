@@ -22,16 +22,16 @@ function makeEavAiServiceUser(int $id = 1): GenericUser
 }
 
 // ---------------------------------------------------------------------------
-// categorizeNote — deferred to CT5d
+// categorizeNote — host app must bind a real orchestrator
 // ---------------------------------------------------------------------------
 
-it('throws RuntimeException from categorizeNote until the orchestrator (CT5d) is integrated', function () {
+it('throws RuntimeException from categorizeNote until a host-app orchestrator is bound', function () {
     $project = Project::factory()->create();
     $note = Note::factory()->create();
     $user = makeEavAiServiceUser();
 
     (new EavAiService)->categorizeNote($note, $user, $project);
-})->throws(RuntimeException::class, 'EavAiService::categorizeNote requires EavAiCategorizationOrchestrator');
+})->throws(RuntimeException::class, 'EavAiService::categorizeNote requires a host-app orchestrator binding');
 
 // ---------------------------------------------------------------------------
 // suggestEntries — stubbed

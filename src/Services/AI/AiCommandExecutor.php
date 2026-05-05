@@ -67,32 +67,7 @@ class AiCommandExecutor
             }
             DB::commit();
 
-            // @DEFERRED_RELATIONSHIPS - PHASE 2: Process Deferred Relationships
-            // After all entries are created and temp IDs are resolved, process any relationship
-            // metadata stored in ai_notes fields. This is the second stage of AI processing.
-            //
-            // IMPLEMENTATION PLAN:
-            // 1. Check if any executed commands have ai_notes with relationship data
-            // 2. Call DeferredRelationshipProcessor::processBatch($batchId, $this->tempIdMap)
-            // 3. Log relationship processing results separately
-            // 4. Update $results array with relationship statistics
-            //
-            // TEST SCENARIOS:
-            // - Batch with parent-child entry relationships → Should create hierarchy
-            // - Batch with character-location associations → Should create pivot records
-            // - Batch with invalid relationship references → Should skip gracefully
-            // - Batch with no relationships → Should complete without errors
-            //
-            // EDGE CASES:
-            // - Circular relationship references (A→B→A)
-            // - Relationships to entries outside the batch
-            // - Multiple relationships between same entry pair
-            //
-            // Example:
-            // $relationshipProcessor = app(DeferredRelationshipProcessor::class);
-            // $relationshipResults = $relationshipProcessor->processBatch($batchId, $this->tempIdMap);
-            // $results['relationships_created'] = $relationshipResults['created'];
-            // $results['relationships_failed'] = $relationshipResults['failed'];
+            // TODO(deferred-relationships): post-execution pass to materialize ai_notes relationships using $this->tempIdMap.
 
         } catch (Throwable $e) {
             try {

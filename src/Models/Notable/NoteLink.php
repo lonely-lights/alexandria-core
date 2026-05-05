@@ -30,6 +30,22 @@ use Illuminate\Support\Carbon;
  *
  * @method static NoteLinkFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static NoteLink create(array $attributes = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink whereFaviconUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink whereImageUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink whereNoteId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink whereSiteName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink whereTitle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|NoteLink whereUrl($value)
+ *
+ * @mixin \Eloquent
  */
 class NoteLink extends Model
 {

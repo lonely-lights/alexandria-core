@@ -15,17 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Prompt Service
- *
- * Main service for building prompts with context data.
- * This service ensures clean separation between prompt templates
- * (instructions) and data context (the information being analyzed).
- *
- * Usage:
- * ```php
- * $context = new ProjectCategorizationContext($project, $note);
- * $prompt = app(PromptService::class)->build('notes.categorize.project_level', $context);
- * ```
+ * Builds prompts by merging a stored template with a typed context — see EXTENDING.md for usage.
  */
 readonly class PromptService
 {

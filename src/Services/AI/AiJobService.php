@@ -8,20 +8,7 @@ use Alexandria\Core\Events\NoteAiStatusUpdated;
 use Alexandria\Core\Models\Notable\Note;
 
 /**
- * Shared service for AI categorization jobs.
- *
- * Extracts common functionality used by note-categorization jobs:
- *   - tracking the acting user id for broadcasts (host apps may dispatch
- *     these jobs from queue/CLI contexts where there's no auth user)
- *   - mutating the `ai_notes` JSON blob in a consistent shape
- *   - dispatching {@see NoteAiStatusUpdated} so connected clients can
- *     reflect status transitions in real time
- *
- * The `notes.status` enum (active/archived/submitted/integrated) is
- * separate from the `ai_notes['status']` lifecycle key
- * (processing/completed/failed). Failure resets the row's enum back to
- * 'active' so the user can re-submit, while success leaves it whatever
- * the caller set (typically 'submitted' or 'integrated').
+ * Shared service for AI categorization jobs — tracks acting user, mutates `ai_notes`, dispatches NoteAiStatusUpdated.
  */
 class AiJobService
 {
