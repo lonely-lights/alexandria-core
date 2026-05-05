@@ -6,6 +6,7 @@ namespace Alexandria\Core\Models\Notable;
 
 use Alexandria\Core\Database\Factories\Notable\NoteFactory;
 use Alexandria\Core\Models\System\Blueprint;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -50,11 +51,11 @@ use Spatie\Tags\HasTags;
  *
  * @method static NoteFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static Note create(array $attributes = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static> query()
- * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
- * @method static \Illuminate\Database\Eloquent\Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
- * @method static \Illuminate\Database\Eloquent\Builder<static> withTrashed(bool $withTrashed = true)
- * @method static \Illuminate\Database\Eloquent\Builder<static> onlyTrashed()
+ * @method static Builder<static> query()
+ * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static Builder<static> withTrashed(bool $withTrashed = true)
+ * @method static Builder<static> onlyTrashed()
  * @method static Note|null first(array|string $columns = ['*'])
  * @method static Note|null find(mixed $id, array|string $columns = ['*'])
  * @method static Note findOrFail(mixed $id, array|string $columns = ['*'])

@@ -7,6 +7,7 @@ namespace Alexandria\Core\Models\System;
 use Alexandria\Core\Database\Factories\System\BlueprintFieldFactory;
 use Alexandria\Core\Models\AiConfiguration;
 use Alexandria\Core\Traits\HasAiConfiguration;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -39,9 +40,9 @@ use Illuminate\Support\Carbon;
  *
  * @method static BlueprintFieldFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static BlueprintField create(array $attributes = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static> query()
- * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
- * @method static \Illuminate\Database\Eloquent\Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static Builder<static> query()
+ * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
  */
 class BlueprintField extends Model
 {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Alexandria\Core\Models\System;
 
 use Alexandria\Core\Database\Factories\System\FieldValueFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,9 +23,9 @@ use Illuminate\Support\Carbon;
  *
  * @method static FieldValueFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static FieldValue create(array $attributes = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static> query()
- * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
- * @method static \Illuminate\Database\Eloquent\Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static Builder<static> query()
+ * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
  * @method static FieldValue|null find(mixed $id, array|string $columns = ['*'])
  * @method static FieldValue findOrFail(mixed $id, array|string $columns = ['*'])
  */
