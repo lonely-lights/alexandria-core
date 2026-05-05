@@ -8,46 +8,27 @@ use Illuminate\Support\Carbon;
 use JsonSerializable;
 
 /**
- * Abstract Context
- *
- * Base class for prompt contexts with common functionality.
- * Extend this class to create specific context types.
+ * Base class for prompt contexts — provides toArray caching, JSON serialization, and string-sanitization helpers.
  */
 abstract class AbstractContext implements ContextInterface, JsonSerializable
 {
     /**
-     * Cache for the toArray() result to avoid recomputation.
-     *
      * @var array<string, mixed>|null
      */
     protected ?array $cachedArray = null;
 
-    /**
-     * {@inheritdoc}
-     */
     abstract public function getType(): string;
 
-    /**
-     * {@inheritdoc}
-     */
     abstract public function getVersion(): string;
 
-    /**
-     * {@inheritdoc}
-     */
     abstract public function toArray(): array;
 
-    /**
-     * {@inheritdoc}
-     */
     public function getDescription(): string
     {
         return 'Context data for AI prompt processing';
     }
 
     /**
-     * Get the cached array representation, computing if needed.
-     *
      * @return array<string, mixed>
      */
     public function getCachedArray(): array
@@ -59,9 +40,6 @@ abstract class AbstractContext implements ContextInterface, JsonSerializable
         return $this->cachedArray;
     }
 
-    /**
-     * Clear the cached array (useful if underlying data changes).
-     */
     public function clearCache(): self
     {
         $this->cachedArray = null;
@@ -69,9 +47,6 @@ abstract class AbstractContext implements ContextInterface, JsonSerializable
         return $this;
     }
 
-    /**
-     * Convert to JSON string.
-     */
     public function toJson(int $options = 0): string
     {
         $defaultOptions = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
@@ -80,8 +55,6 @@ abstract class AbstractContext implements ContextInterface, JsonSerializable
     }
 
     /**
-     * Implement JsonSerializable.
-     *
      * @return array<string, mixed>
      */
     public function jsonSerialize(): array
@@ -90,8 +63,6 @@ abstract class AbstractContext implements ContextInterface, JsonSerializable
     }
 
     /**
-     * Get metadata about this context for debugging/logging.
-     *
      * @return array<string, mixed>
      */
     public function getMetadata(): array
@@ -105,9 +76,7 @@ abstract class AbstractContext implements ContextInterface, JsonSerializable
     }
 
     /**
-     * Sanitize a string value for safe inclusion in prompts.
-     *
-     * Removes or escapes characters that could cause issues.
+     * Strip control characters (except newline/tab) from a prompt-bound string.
      */
     protected function sanitize(?string $value): ?string
     {
@@ -115,13 +84,9 @@ abstract class AbstractContext implements ContextInterface, JsonSerializable
             return null;
         }
 
-        // Remove null bytes and other control characters (except newlines/tabs)
         return preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $value);
     }
 
-    /**
-     * Truncate a string to a maximum length with ellipsis.
-     */
     protected function truncate(?string $value, int $maxLength = 1000): ?string
     {
         if ($value === null || mb_strlen($value) <= $maxLength) {
@@ -131,9 +96,6 @@ abstract class AbstractContext implements ContextInterface, JsonSerializable
         return mb_substr($value, 0, $maxLength - 3).'...';
     }
 
-    /**
-     * Format a Carbon date for consistent output.
-     */
     protected function formatDate(?Carbon $date): ?string
     {
         return $date?->toIso8601String();

@@ -15,22 +15,11 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Service for handling all entry-related AI actions.
- * Consolidates validation and execution logic for entry operations.
- *
- * Note: Methods in this service are called dynamically by AiCommandFactory and AiCommandExecutor
- * via match() statements, so IDE may show them as "unused" but they are actively used.
- *
- * Model classes are resolved via config('alexandria.models.*') so host apps that
- * extend Blueprint or Entry get their override automatically. The user-supplied
- * `model_class` strings on payloads are NOT config-driven by design — those come
- * from runtime payloads, not from the package.
+ * Validates and executes entry-related AI actions — methods are dispatched dynamically by AiCommandFactory/Executor.
  */
 class EntryActionService
 {
     /**
-     * Resolve the configured Blueprint model class.
-     *
      * @return class-string
      */
     private function blueprintModel(): string
@@ -39,8 +28,6 @@ class EntryActionService
     }
 
     /**
-     * Resolve the configured Entry model class.
-     *
      * @return class-string
      */
     private function entryModel(): string

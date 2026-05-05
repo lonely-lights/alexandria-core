@@ -9,22 +9,10 @@ use Laravel\Ai\Responses\AgentResponse;
 use Laravel\Ai\Responses\StructuredAgentResponse;
 
 /**
- * Bridges Laravel AI SDK's AgentResponse to Alexandria's AiResponseDTO.
- *
- * This adapter allows the existing command pipeline (ProcessAiCommandsJob,
- * AiTransaction logging, etc.) to work with SDK responses without modifying
- * the downstream consumers.
+ * Bridges laravel/ai's AgentResponse to Alexandria's AiResponseDTO so the command pipeline stays SDK-agnostic.
  */
 class AgentResponseAdapter
 {
-    /**
-     * Convert an AgentResponse from the Laravel AI SDK into our AiResponseDTO.
-     *
-     * Cost is calculated from the AiModel pricing table when a matching model
-     * is found. Falls back to 0 if no pricing data is available. The model
-     * class is resolved through the alexandria.models.ai_model config binding
-     * so host apps that swap the model in for a subclass keep the override.
-     */
     public static function toDto(AgentResponse $response, string $modelName = 'unknown'): AiResponseDTO
     {
         $usage = $response->usage;

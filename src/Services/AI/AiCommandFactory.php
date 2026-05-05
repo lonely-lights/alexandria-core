@@ -17,10 +17,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Class AiCommandFactory
- *
- * Responsible for validating and creating AiReviewCommand records
- * from structured data, typically from an AI's JSON response.
+ * Validates AI JSON command data and persists it as AiReviewCommand records keyed by a batch UUID.
  */
 class AiCommandFactory
 {
@@ -35,13 +32,7 @@ class AiCommandFactory
     }
 
     /**
-     * Creates a batch of AiReviewCommand records from a decoded JSON array.
-     *
-     * @param  array  $commandsData  The array of command objects from the AI.
-     * @param  Authenticatable  $user  The user who initiated the request.
-     *                                 // Authenticatable contract is host-agnostic; getAuthIdentifier() returns the primary key.
-     * @param  Project|null  $context  The project context for this batch.
-     * @return string The UUID of the created batch.
+     * Persist a JSON command array as a batch of AiReviewCommand rows; returns the batch UUID.
      *
      * @throws ValidationException|MalformedAiResponseException
      */

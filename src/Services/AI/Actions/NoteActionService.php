@@ -12,22 +12,11 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Service for handling all note-related AI actions.
- * Consolidates validation and execution logic for note operations.
- *
- * Note: Methods in this service are called dynamically by AiCommandFactory and AiCommandExecutor
- * via match() statements, so IDE may show them as "unused" but they are actively used.
- *
- * Note and Project model classes are resolved via config('alexandria.models.*') so
- * host apps that extend either get their override automatically. The user-supplied
- * `target_model_class` / `source_model_class` strings on payloads are NOT
- * config-driven by design — they come from runtime payloads, not the package.
+ * Validates and executes note-related AI actions — methods are dispatched dynamically by AiCommandFactory/Executor.
  */
 class NoteActionService
 {
     /**
-     * Resolve the configured Note model class.
-     *
      * @return class-string
      */
     private function noteModel(): string
@@ -36,8 +25,6 @@ class NoteActionService
     }
 
     /**
-     * Resolve the configured Project model class.
-     *
      * @return class-string
      */
     private function projectModel(): string
