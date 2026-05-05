@@ -27,6 +27,74 @@ Two cross-collection knobs:
 
 Any conversion smaller than the source is generated; conversions larger than the source are skipped automatically.
 
+### Where media files are stored
+
+Alexandria uses Spatie Media Library, which writes to whichever Laravel disk you've configured. **No Alexandria-specific config — it's pure Laravel filesystems.** The relevant `.env` knob is `FILESYSTEM_DISK`:
+
+```dotenv
+FILESYSTEM_DISK=local   # default — writes under storage/app/private
+# FILESYSTEM_DISK=public  # public-facing media (avatars, banners) under storage/app/public
+# FILESYSTEM_DISK=s3      # S3-compatible cloud storage (R2, B2, Wasabi, MinIO all use the s3 driver)
+```
+
+#### Public-facing media (avatars, banners) — required step
+
+Public-facing media collections (`avatar`, `banner`, `gallery`) need a public URL. Laravel ships a symlink convention: `public/storage` → `storage/app/public`. Run once after install:
+
+```bash
+php artisan storage:link
+```
+
+Without this, avatar/banner URLs will 404 on first request. The error is silent in `local` disk mode and very confusing — always run `storage:link`.
+
+#### Per-collection disk (cloud-storage subset of media)
+
+If you want avatars on `local` but blueprints on `s3` (cheap operational separation), override the disk per media collection in your User / Blueprint model:
+
+```php
+public function registerMediaCollections(): void
+{
+    $this->addMediaCollection('avatar')
+        ->useDisk('public')          // local + symlink
+        ->singleFile();
+
+    $this->addMediaCollection('blueprint_gallery')
+        ->useDisk('s3');             // cloud
+}
+```
+
+Spatie picks the disk per collection, falls back to `FILESYSTEM_DISK` when not specified.
+
+#### Cloud storage (S3 / R2 / Cloudflare / Wasabi)
+
+S3-compatible providers all use the same `s3` driver. Set credentials in `.env`:
+
+```dotenv
+FILESYSTEM_DISK=s3
+
+AWS_ACCESS_KEY_ID=your-key
+AWS_SECRET_ACCESS_KEY=your-secret
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=alexandria-prod
+AWS_USE_PATH_STYLE_ENDPOINT=false
+
+# Cloudflare R2 needs a custom endpoint:
+# AWS_ENDPOINT=https://<accountid>.r2.cloudflarestorage.com
+# AWS_USE_PATH_STYLE_ENDPOINT=true
+```
+
+Then install the AWS SDK:
+
+```bash
+composer require league/flysystem-aws-s3-v3 "^3.0"
+```
+
+Laravel's `config/filesystems.php` already has the `s3` disk wired — no further config changes needed.
+
+#### Fixtures (for local seeding)
+
+The `MediaSeeder` in the optional `alexandria-undaunted-seeders` submodule references fixture image paths under `Alexandria/fixtures/N/...`. If you're seeding local content, ensure the fixture directory is present alongside the seeder source. This only applies when running `php artisan local:seed` — `db:seed` doesn't touch fixtures.
+
 ---
 
 ## `alexandria.ai`

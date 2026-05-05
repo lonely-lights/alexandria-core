@@ -17,7 +17,7 @@ return new class extends Migration
             // this package cannot reference the host application's users table.
             $table->unsignedBigInteger('user_id')->nullable()->after('id');
             $table->string('title');
-            $table->dateTime('note_date')->default(DB::raw('CURRENT_DATE'));
+            $table->dateTime('note_date')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->longText('text');
             $table->enum('status', ['active', 'archived', 'submitted', 'integrated'])->default('active');
             $table->string('type')->nullable();

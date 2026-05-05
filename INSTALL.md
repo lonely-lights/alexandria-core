@@ -13,8 +13,63 @@ For environment variables and config keys, see [`CONFIGURATION.md`](CONFIGURATIO
 - Composer 2.x
 - Node 20 or newer
 - A queue worker (Redis recommended; database driver works for development)
-- PostgreSQL 16+ or MySQL 8+ (PostgreSQL is what the package is developed against)
+- A supported database (see [Database choice](#database-choice) below) — **PostgreSQL 16+**, **MySQL 8+**, or **SQLite** (development/testing).
 - An AI provider API key if you want the AI features — Anthropic, OpenAI, or Google AI. Optional; the EAV/notes/views surface works without it.
+
+---
+
+## Database choice
+
+Alexandria's migrations use Laravel's schema builder, which abstracts most differences across DBs. Pick whichever fits your deployment.
+
+### `.env` examples
+
+**PostgreSQL** (recommended for production — what the package is developed against):
+
+```dotenv
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=alexandria
+DB_USERNAME=alexandria
+DB_PASSWORD=
+```
+
+**MySQL** (8.0+ required for native `JSON` column type):
+
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=alexandria
+DB_USERNAME=alexandria
+DB_PASSWORD=
+```
+
+**SQLite** (development + testing — single-file, zero setup):
+
+```dotenv
+DB_CONNECTION=sqlite
+DB_DATABASE=/absolute/path/to/database.sqlite
+# or relative:
+# DB_DATABASE=database/database.sqlite
+```
+
+### What differs across databases
+
+| Concern | PostgreSQL | MySQL | SQLite |
+|---|---|---|---|
+| **JSON columns** | Native `JSON` / `JSONB` with GIN indexing available | Native `JSON` (8.0+); no JSON indexes by default | Stored as `TEXT`; Laravel handles read/write transparently |
+| **Enum columns** | Real `ENUM` type — adding a value requires a migration | Native `ENUM` — adding a value requires `ALTER TABLE` | Stored as `TEXT`; ignores enum constraint (any string accepted) |
+| **Boolean columns** | Native `boolean` | Stored as `tinyint(1)` | Stored as integer (0/1) |
+| **Cascade delete + foreign keys** | Full support | Full support | Full support, but FK enforcement is opt-in (Laravel enables it) |
+
+For everyday app code, Laravel's casts hide these differences. Where they surface:
+
+- Adding values to existing `enum` columns requires a migration on Postgres + MySQL. Core uses enum on `notes.status`, `notables.processing_status`, `entry_histories.change_type`, `relationship_blueprints.ai_priority`, `ai_review_commands.status`, `users.dob_visibility`, `element_visibilities.visibility_type`, `link_platforms.type`, `privacy_settings.visibility`.
+- JSON-column queries that need indexed lookups perform best on Postgres.
+
+The Testbench test suite runs against in-memory SQLite — passing tests confirm the migrations compile cross-DB.
 
 ---
 
