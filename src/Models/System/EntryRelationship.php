@@ -39,14 +39,16 @@ use Illuminate\Support\Carbon;
  * @property-read Entry $child
  * @property-read Blueprint $blueprint
  *
- * @method static Builder<static> ofType(string $typeSlug)
- * @method static Builder<static> active()
- * @method static Builder<static> archived()
- * @method static Builder<static> query()
- * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
- * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> ofType(string $typeSlug)
+ * @method static \Illuminate\Database\Eloquent\Builder<static> active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> archived()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
  * @method static EntryRelationshipFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static EntryRelationship create(array $attributes = [])
+ * @method static EntryRelationship|null find(mixed $id, array|string $columns = ['*'])
+ * @method static EntryRelationship findOrFail(mixed $id, array|string $columns = ['*'])
  */
 class EntryRelationship extends Model
 {
