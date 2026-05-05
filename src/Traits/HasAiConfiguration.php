@@ -31,6 +31,8 @@ trait HasAiConfiguration
 
     /**
      * Get AI configuration by type.
+     *
+     * @noinspection PhpUndefinedMethodInspection — scopes resolve through MorphMany at runtime
      */
     public function getAiConfiguration(string $type): ?AiConfiguration
     {

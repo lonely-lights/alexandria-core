@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Models\Permissions;
 
+use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 
 /**
@@ -25,7 +27,7 @@ use Spatie\Permission\Models\Permission as SpatiePermission;
  * @method static Permission firstOrCreate(array $attributes, array $values = [])
  * @method static Builder<Permission> where($column, $operator = null, $value = null, $boolean = 'and')
  * @method static Builder<Permission> query()
- * @method static \Illuminate\Support\Collection pluck(string|\Illuminate\Contracts\Database\Query\Expression $column, string|null $key = null)
+ * @method static Collection pluck(string|Expression $column, string|null $key = null)
  */
 class Permission extends SpatiePermission
 {
