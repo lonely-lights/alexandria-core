@@ -11,29 +11,15 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 /**
- * Creates/removes single-row, bidirectional relationships.
- *
- * Columns:
- *  - parent_label : label for the PARENT when viewing the CHILD’s page
- *  - child_label  : label for the CHILD  when viewing the PARENT’s page
- *
- * Notes:
- *  - Labels are promoted to first-class columns; they are stripped from `metadata`
- *    so your JSON remains for true relationship data (subtype, events, etc.).
+ * Creates/removes single-row bidirectional entry relationships; promotes parent_label/child_label to columns.
  */
-class RelationshipWriter
+readonly class RelationshipWriter
 {
     /**
-     * Create a relationship row (single, bidirectional edge).
-     *
-     * @param  string  $relationshipType  Canonical relationship slug (will be snake_cased)
-     * @param  array  $metadata  May include 'parent_label' and/or 'child_label'. Legacy keys are rejected.
+     * @param  array  $metadata  May include 'parent_label' / 'child_label' (promoted to columns); legacy keys are rejected.
      */
     public function add(Entry $parent, Entry $child, string $relationshipType, array $metadata = []): EntryRelationship
     {
-        // Reject legacy metadata keys early -- parent_label / child_label are
-        // first-class columns on entry_relationships, and role_label /
-        // role_override no longer exist anywhere.
         foreach (['role_label', 'role_override'] as $legacy) {
             if (array_key_exists($legacy, $metadata) && $metadata[$legacy] !== null) {
                 throw new InvalidArgumentException(

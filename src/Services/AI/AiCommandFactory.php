@@ -59,7 +59,7 @@ class AiCommandFactory
 
         // Now, loop over the correctly identified array of commands.
         foreach ($actualCommands as $index => $commandData) {
-            Log::info('AiCommandFactory: Processing command', [
+            Log::debug('AiCommandFactory: Processing command', [
                 'batch_id' => $batchId,
                 'command_index' => $index,
                 'action_type' => $commandData['action_type'] ?? 'missing',
@@ -70,7 +70,7 @@ class AiCommandFactory
                 // 1. Validate the structure of each command object.
                 $this->validateCommandStructure($commandData, $index);
 
-                Log::info('AiCommandFactory: Command validation passed', [
+                Log::debug('AiCommandFactory: Command validation passed', [
                     'batch_id' => $batchId,
                     'command_index' => $index,
                     'action_type' => $commandData['action_type'],
@@ -87,7 +87,7 @@ class AiCommandFactory
                     'reasoning' => $commandData['reasoning'],
                 ]);
 
-                Log::info('AiCommandFactory: Command created successfully', [
+                Log::debug('AiCommandFactory: Command created successfully', [
                     'batch_id' => $batchId,
                     'command_index' => $index,
                     'command_id' => $command->id,
@@ -134,7 +134,7 @@ class AiCommandFactory
      */
     private function validateCommandStructure(array $commandData, int $index): void
     {
-        Log::info('AiCommandFactory: Validating command structure', [
+        Log::debug('AiCommandFactory: Validating command structure', [
             'command_index' => $index,
             'command_keys' => array_keys($commandData),
             'action_type' => $commandData['action_type'] ?? 'missing',
