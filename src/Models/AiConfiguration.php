@@ -41,15 +41,7 @@ class AiConfiguration extends Model
 
     public const string TYPE_VALIDATION_RULES = 'validation_rules';
 
-    protected $fillable = [
-        'configurable_type',
-        'configurable_id',
-        'type',
-        'instructions',
-        'metadata',
-        'priority',
-        'is_active',
-    ];
+    protected $guarded = ['id'];
 
     protected static function newFactory(): AiConfigurationFactory
     {
