@@ -17,7 +17,7 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Verified-location pin (Font Awesome Pro). Inherits color via
+ * Location pin (Font Awesome Free, map-marker). Inherits color via
  * currentColor so the era text and icon dim together via the parent's
  * opacity.
  */
@@ -31,7 +31,7 @@ function LocationPinIcon() {
             fill="currentColor"
             aria-hidden="true"
         >
-            <path d="M192 0C298 0 384 84.4 384 188.6 384 307.9 263.8 450.9 213.6 505.4 201.8 518.2 182.2 518.2 170.4 505.4 120.2 450.9 0 307.9 0 188.6 0 84.4 86 0 192 0zm90.9 132.6c-10.7-7.8-25.7-5.4-33.5 5.3l-85.6 117.7-26.5-27.4c-9.2-9.5-24.4-9.8-33.9-.6-9.5 9.2-9.8 24.4-.6 33.9l46.4 48c4.9 5.1 11.8 7.8 18.9 7.3s13.6-4.1 17.8-9.8L288.2 166.1c7.8-10.7 5.4-25.7-5.3-33.5z" />
+            <path d="M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z" />
         </svg>
     );
 }

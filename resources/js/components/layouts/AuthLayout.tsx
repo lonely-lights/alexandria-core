@@ -121,7 +121,7 @@ export default function AuthLayout({
                                         opacity: 0.6,
                                     }}
                                 >
-                                    A workbench for writers
+                                    A wordbench for writers
                                 </p>
                             </div>
                         </div>
