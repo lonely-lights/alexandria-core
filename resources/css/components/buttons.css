@@ -39,7 +39,8 @@
 .alex-btn--outline {
     background: transparent;
     color: var(--theme-brand-primary-500);
-    border: 2px dashed var(--theme-brand-primary-500);
+    border: 2px dashed
+        color-mix(in srgb, var(--theme-brand-primary-500) 50%, transparent);
 }
 
 .alex-btn--danger {
