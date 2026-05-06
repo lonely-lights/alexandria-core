@@ -1,0 +1,22 @@
+/*
+ * Divider label — quiet at the configured opacity (default 50%) and
+ * stays that way; no hover brightening. The label is informational
+ * (e.g. "Have an invite code?"), not interactive.
+ *
+ * Opacity is parameterised via the --alex-divider-label-opacity custom
+ * property (set inline by the component from the labelOpacity prop)
+ * so consumers can override the rest-state quietness without forking
+ * the CSS. Default 50%.
+ */
+
+.alex-divider__label {
+    /* Component-internal var. Declared here with the default so IDE
+       css-var resolution works; Divider.tsx sets it inline per
+       instance to honour the labelOpacity prop. */
+    --alex-divider-label-opacity: 50%;
+    color: color-mix(
+        in srgb,
+        var(--theme-surface-on-page) var(--alex-divider-label-opacity),
+        transparent
+    );
+}

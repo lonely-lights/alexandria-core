@@ -1,0 +1,82 @@
+/*
+ * Alexandria-native button styling. The Button + ButtonLink components
+ * emit `.alex-btn .alex-btn--{variant}` classes plus structural inline
+ * styles (layout, padding, radius, opacity). Theming — fill, foreground,
+ * border, and all hover behaviour — lives here so :hover can actually win
+ * against React's inline style attribute (which has higher specificity).
+ *
+ * Disabled buttons are excluded from hover via :not(:disabled). For
+ * ButtonLink (which renders as <a> and has no native disabled state),
+ * hover always applies.
+ */
+
+/* ── Variant rest state ────────────────────────────────────────────── */
+
+.alex-btn--primary {
+    background: var(--theme-brand-primary-500);
+    color: var(--theme-brand-primary-content);
+    border: none;
+}
+
+.alex-btn--secondary {
+    background: var(--theme-brand-secondary-500);
+    color: var(--theme-brand-secondary-content);
+    border: none;
+}
+
+.alex-btn--accent {
+    background: var(--theme-brand-accent-500);
+    color: var(--theme-brand-accent-content);
+    border: none;
+}
+
+.alex-btn--ghost {
+    background: transparent;
+    color: var(--theme-surface-on-page);
+    border: none;
+}
+
+.alex-btn--outline {
+    background: transparent;
+    color: var(--theme-brand-primary-500);
+    border: 2px dashed
+        color-mix(in srgb, var(--theme-brand-primary-500) 50%, transparent);
+}
+
+.alex-btn--danger {
+    background: var(--theme-status-error-fill);
+    color: var(--theme-status-error-content);
+    border: none;
+}
+
+/* ── Hover ─────────────────────────────────────────────────────────── */
+
+.alex-btn--primary:hover:not(:disabled) {
+    background: var(--theme-brand-primary-600);
+}
+
+.alex-btn--secondary:hover:not(:disabled) {
+    background: var(--theme-brand-secondary-600);
+}
+
+.alex-btn--accent:hover:not(:disabled) {
+    background: var(--theme-brand-accent-600);
+}
+
+.alex-btn--danger:hover:not(:disabled) {
+    background: var(--theme-status-error-stroke);
+}
+
+.alex-btn--ghost:hover:not(:disabled) {
+    background: var(--theme-surface-sunken);
+}
+
+/* Outline inverts to filled on hover — clear "I'm interactive" feedback
+   without competing with primary's filled prominence at rest. Border
+   solidifies (dashes vanish) since same-colour border on filled bg
+   would look like a flicker. */
+.alex-btn--outline:hover:not(:disabled) {
+    background: var(--theme-brand-primary-500);
+    color: var(--theme-brand-primary-content);
+    border-style: solid;
+}

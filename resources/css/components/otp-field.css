@@ -1,0 +1,39 @@
+/*
+ * OtpField box styling. Each digit gets its own focusable input;
+ * theming + focus ring share the same vocabulary as alex-textfield.
+ */
+
+.alex-otp-box {
+    width: 2.75rem;
+    height: 3.25rem;
+    text-align: center;
+    font-size: 1.5rem;
+    font-family: var(--theme-typography-mono-family), monospace;
+    letter-spacing: 0;
+    background: var(--theme-surface-sunken);
+    color: var(--theme-surface-on-page);
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: var(--theme-radius-input);
+    outline: none;
+    caret-color: var(--theme-brand-primary-500);
+    transition:
+        border-color var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard),
+        background var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-otp-box:hover:not(:disabled) {
+    border-color: var(--theme-neutral-400);
+}
+
+.alex-otp-box:focus-visible {
+    outline: 2px solid var(--theme-semantic-focus-ring);
+    outline-offset: 2px;
+    border-color: var(--theme-brand-primary-500);
+}
+
+.alex-otp-box:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

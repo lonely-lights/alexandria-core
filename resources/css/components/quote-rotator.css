@@ -1,0 +1,20 @@
+/*
+ * QuoteRotator fade-in. Each new quote remounts the blockquote (via
+ * React `key`), so this animation plays once per rotation.
+ */
+
+@keyframes alex-quote-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.5rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alex-quote-rotator {
+    animation: alex-quote-fade-in 700ms
+        var(--theme-motion-easing-decelerate, ease-out);
+}

@@ -1,0 +1,33 @@
+/*
+ * Link focus — keyboard tab focus paints a soft "badge" halo behind
+ * the link text instead of the default abrupt browser outline.
+ *
+ * Implementation:
+ *   - background: 18% brand-primary tint (visible in both light + dark
+ *     thanks to color-mix) — quiet enough to not jar against body copy,
+ *     bright enough to read as "this is focused"
+ *   - tiny horizontal padding + matching negative margin so the badge
+ *     hugs the text without shifting surrounding layout
+ *   - box-decoration-break: clone keeps the badge intact across line
+ *     breaks (e.g. links in body copy that wrap)
+ *   - radius reads from --theme-radius-badge (pill-shape in default)
+ *
+ * :focus-visible (not :focus) — mouse clicks don't get the halo, only
+ * keyboard navigation does.
+ */
+
+a:focus-visible {
+    outline: none;
+    background: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 18%,
+        transparent
+    );
+    padding: 0 0.25rem;
+    margin: 0 -0.25rem;
+    border-radius: var(--theme-radius-badge);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    transition: background var(--theme-motion-duration-interactive)
+        var(--theme-motion-easing-standard);
+}

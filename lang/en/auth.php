@@ -50,6 +50,7 @@ return [
         'login' => 'Log in',
         'forgot_password' => 'Forgot password?',
         'have_account' => "Don't have an account?",
+        'have_invite_code' => 'Have an invite code?',
         'enlist' => 'Enlist',
         'signup' => 'Enlist',
         'already_registered' => 'Already have an account?',
