@@ -1,8 +1,7 @@
 /*
- * Divider label — quiet at rest, brightens to full opacity when the
- * user hovers anywhere on the divider. Matches the "this is the
- * doorway to the next CTA" feeling for divider+button pairs like
- * Login's "Don't have an account?" → Enlist.
+ * Divider label — quiet at the configured opacity (default 50%) and
+ * stays that way; no hover brightening. The label is informational
+ * (e.g. "Have an invite code?"), not interactive.
  *
  * Opacity is parameterised via the --alex-divider-label-opacity custom
  * property (set inline by the component from the labelOpacity prop)
@@ -17,10 +16,4 @@
             var(--alex-divider-label-opacity, 50%),
         transparent
     );
-    transition: color var(--theme-motion-duration-interactive)
-        var(--theme-motion-easing-standard);
-}
-
-.alex-divider:hover .alex-divider__label {
-    color: var(--theme-surface-on-page);
 }

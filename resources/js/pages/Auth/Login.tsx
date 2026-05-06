@@ -185,7 +185,7 @@ export default function Login({
 
             {registerUrl && (
                 <>
-                    <Divider>{copy['actions.have_account']}</Divider>
+                    <Divider>{copy['actions.have_invite_code']}</Divider>
                     <ButtonLink
                         href={registerUrl}
                         variant="outline"
