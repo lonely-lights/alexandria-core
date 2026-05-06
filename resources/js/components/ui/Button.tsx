@@ -89,12 +89,10 @@ export default function Button({
             {...rest}
         >
             {loading && (
-                <span
+                <i
+                    className="fa-solid fa-arrows-rotate animate-spin"
                     aria-hidden="true"
-                    className="inline-block animate-spin"
-                >
-                    ⟳
-                </span>
+                />
             )}
             {!loading && iconPosition === 'before' && iconElement}
             {children}
