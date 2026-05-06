@@ -22,6 +22,7 @@ import type { CSSProperties, ReactNode } from 'react';
 
 import ModeToggle from '../theme/ModeToggle';
 import Logo from '../ui/Logo';
+import QuoteRotator from '../ui/QuoteRotator';
 
 const headingFont: CSSProperties = {
     fontFamily: 'var(--theme-typography-heading-family)',
@@ -45,8 +46,11 @@ export interface AuthLayoutProps {
     motif?: ReactNode;
 
     /**
-     * Closing blockquote text — defaults to the standard Alexandria copy.
-     * Pass `null` to drop the blockquote.
+     * Closing blockquote slot.
+     *   - undefined  → renders the rotating <QuoteRotator /> (default)
+     *   - string     → wrapped in the standard blockquote shell
+     *   - ReactNode  → rendered as-is (caller controls structure)
+     *   - null       → blockquote area dropped entirely
      */
     quote?: ReactNode | null;
 
@@ -54,16 +58,16 @@ export interface AuthLayoutProps {
     children: ReactNode;
 }
 
-const DEFAULT_QUOTE = "\"A story isn't one idea. It's thousands.\"";
-
 export default function AuthLayout({
     pageTitle,
     formTitle,
     formIntro,
     motif,
-    quote = DEFAULT_QUOTE,
+    quote,
     children,
 }: AuthLayoutProps) {
+    const quoteContent =
+        quote === undefined ? <QuoteRotator /> : quote;
     return (
         <>
             <Head title={pageTitle} />
@@ -127,21 +131,27 @@ export default function AuthLayout({
                             <div className="h-[280px] w-full max-w-[440px]">{motif}</div>
                         )}
 
-                        {/* Closing blockquote */}
-                        {quote && (
-                            <blockquote className="space-y-3 max-w-md">
-                                <p
-                                    className="text-2xl xl:text-3xl leading-tight italic"
-                                    style={{
-                                        ...headingFont,
-                                        color: 'var(--theme-surface-on-page)',
-                                        opacity: 0.85,
-                                    }}
-                                >
-                                    {quote}
-                                </p>
-                            </blockquote>
-                        )}
+                        {/* Closing blockquote — string content gets wrapped
+                            in the default shell; ReactNode content (e.g.
+                            QuoteRotator) renders as-is so it can manage its
+                            own attribution layout. */}
+                        {quoteContent &&
+                            (typeof quoteContent === 'string' ? (
+                                <blockquote className="space-y-3 max-w-md">
+                                    <p
+                                        className="text-2xl xl:text-3xl leading-tight italic"
+                                        style={{
+                                            ...headingFont,
+                                            color: 'var(--theme-surface-on-page)',
+                                            opacity: 0.85,
+                                        }}
+                                    >
+                                        {quoteContent}
+                                    </p>
+                                </blockquote>
+                            ) : (
+                                quoteContent
+                            ))}
                     </div>
                 </div>
 
