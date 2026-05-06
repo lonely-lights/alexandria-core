@@ -15,15 +15,18 @@
  *   - success — status-success
  *   - error   — status-error
  *
- * Reads --theme-surface-sunken (background), --theme-neutral-300
- * (border), and the brand-primary / status-* tokens for focus/state.
+ * Focus ring is painted by CSS (.alex-textfield:focus-visible in
+ * core/resources/css/components/inputs.css) so we don't have to fight
+ * inline-style specificity for keyboard-focus halos. Border colour stays
+ * inline because it reflects validation state, not focus.
  */
 
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
 
 export type TextFieldState = 'idle' | 'success' | 'error';
 
-export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
+export interface TextFieldProps
+    extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
     /** Icon slot at the inline-start side (e.g. mail/lock SVG). */
     icon?: ReactNode;
 
@@ -39,7 +42,6 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextFiel
     ref,
 ) {
     const borderColor = STATE_BORDER[state];
-    const focusBorderColor = STATE_FOCUS[state];
 
     return (
         <div className="relative">
@@ -62,26 +64,17 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextFiel
                 className={`alex-textfield w-full ${className}`}
                 style={{
                     width: '100%',
-                    padding: icon ? '0.625rem 0.875rem 0.625rem 3rem' : '0.625rem 0.875rem',
+                    padding: icon
+                        ? '0.625rem 0.875rem 0.625rem 3rem'
+                        : '0.625rem 0.875rem',
                     paddingInlineEnd: trailing ? '2.75rem' : undefined,
                     background: 'var(--theme-surface-sunken)',
                     color: 'var(--theme-surface-on-page)',
                     border: `1px solid ${borderColor}`,
                     borderRadius: 'var(--theme-radius-input)',
-                    outline: 'none',
                     fontFamily: 'inherit',
                     fontSize: '1rem',
-                    transition:
-                        'border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
                     ...style,
-                }}
-                onFocus={(e) => {
-                    e.currentTarget.style.borderColor = focusBorderColor;
-                    rest.onFocus?.(e);
-                }}
-                onBlur={(e) => {
-                    e.currentTarget.style.borderColor = borderColor;
-                    rest.onBlur?.(e);
                 }}
                 {...rest}
             />
@@ -101,13 +94,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextFiel
 export default TextField;
 
 const STATE_BORDER: Record<TextFieldState, string> = {
-    idle:    'var(--theme-neutral-300)',
+    idle: 'var(--theme-neutral-300)',
     success: 'var(--theme-status-success-stroke)',
-    error:   'var(--theme-status-error-stroke)',
-};
-
-const STATE_FOCUS: Record<TextFieldState, string> = {
-    idle:    'var(--theme-brand-primary-500)',
-    success: 'var(--theme-status-success-fill)',
-    error:   'var(--theme-status-error-fill)',
+    error: 'var(--theme-status-error-stroke)',
 };

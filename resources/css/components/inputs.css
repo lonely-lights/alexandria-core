@@ -1,0 +1,21 @@
+/*
+ * TextField focus ring — same outline-offset pattern as the checkbox
+ * so focused inputs read consistently across the form library.
+ *
+ * State-based border colour (idle / success / error) is still set inline
+ * by the TextField component; the ring layered on top doesn't replace
+ * the border, just adds a halo around it on keyboard focus. Click focus
+ * uses :focus (no ring) so mouse users don't see the halo.
+ */
+
+.alex-textfield {
+    outline: none;
+    transition:
+        border-color var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-textfield:focus-visible {
+    outline: 2px solid var(--theme-semantic-focus-ring);
+    outline-offset: 2px;
+}
