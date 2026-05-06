@@ -1,0 +1,62 @@
+/*
+ * Checkbox styling — fully custom to support the radius.checkbox token
+ * (square / rounded / circle). Native <input type="checkbox"> styling
+ * is too restrictive for theming; we strip it via appearance: none and
+ * paint our own surface.
+ *
+ * Sized to a comfortable 1.125rem (18px) — slightly larger than the
+ * default 1rem to feel tappable. Checkmark drawn via a rotated
+ * pseudo-element border (the classic CSS checkmark trick) so it
+ * inherits color from the box and scales correctly inside any radius.
+ */
+
+.alex-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    border: 2px solid var(--theme-neutral-400);
+    border-radius: var(--theme-radius-checkbox);
+    background: var(--theme-surface-page);
+    cursor: pointer;
+    position: relative;
+    transition:
+        background var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard),
+        border-color var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-checkbox:hover:not(:disabled) {
+    border-color: var(--theme-brand-primary-500);
+}
+
+.alex-checkbox:checked {
+    background: var(--theme-brand-primary-500);
+    border-color: var(--theme-brand-primary-500);
+}
+
+/* Checkmark — rotated rectangle with bottom + right borders.
+   Positioned to read as centered inside the box at any radius. */
+.alex-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 4px;
+    height: 9px;
+    border: solid var(--theme-brand-primary-content);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.alex-checkbox:focus-visible {
+    outline: 2px solid var(--theme-semantic-focus-ring);
+    outline-offset: 2px;
+}
+
+.alex-checkbox:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

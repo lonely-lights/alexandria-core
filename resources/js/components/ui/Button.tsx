@@ -131,7 +131,7 @@ export function buttonStyles({
         cursor: disabled ? 'not-allowed' : 'pointer',
         borderRadius: 'var(--theme-radius-button)',
         transition:
-            'background var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), opacity var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+            'background var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), color var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), border-color var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), opacity var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard)',
         padding: s.padding,
         fontSize: s.fontSize,
         opacity: disabled ? 0.4 : 1,

@@ -1,18 +1,21 @@
 /**
- * CheckboxField — labeled checkbox with theme-aware accent.
+ * CheckboxField — labeled checkbox with theme-aware shape.
  *
- * Renders the native checkbox with `accent-color` set to brand-primary,
- * paired with a clickable label. Use for Login's "Remember me" and
- * Register's "I agree to terms" rows.
+ * The checkbox surface is fully custom-painted (CSS in
+ * core/resources/css/components/checkboxes.css) so its corner radius
+ * follows the `radius.checkbox` theme token (square / rounded / circle).
  *
- * For the toggle-shaped (sliding pill) variant, see Toggle.tsx — this
- * component is the standard checkbox surface.
+ * Use for Login's "Remember me" and Register's "I agree to terms" rows.
+ * For the toggle-shaped (sliding pill) variant, see Toggle.tsx.
  */
 
 import type { InputHTMLAttributes, ReactNode } from 'react';
 
 export interface CheckboxFieldProps
-    extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size' | 'children'> {
+    extends Omit<
+        InputHTMLAttributes<HTMLInputElement>,
+        'type' | 'size' | 'children'
+    > {
     /** Label text or rich content rendered next to the box. */
     label: ReactNode;
 
@@ -42,10 +45,7 @@ export default function CheckboxField({
                 type="checkbox"
                 className="alex-checkbox"
                 style={{
-                    accentColor: 'var(--theme-brand-primary-500)',
-                    width: '1rem',
-                    height: '1rem',
-                    marginTop: align === 'start' ? '0.25rem' : 0,
+                    marginTop: align === 'start' ? '0.125rem' : 0,
                 }}
                 {...rest}
             />
@@ -53,7 +53,7 @@ export default function CheckboxField({
                 className="text-sm"
                 style={{
                     color: 'var(--theme-surface-on-page)',
-                    opacity: 0.8,
+                    opacity: 0.85,
                 }}
             >
                 {label}
