@@ -39,7 +39,7 @@
 .alex-btn--outline {
     background: transparent;
     color: var(--theme-brand-primary-500);
-    border: 1px solid var(--theme-brand-primary-500);
+    border: 2px dashed var(--theme-brand-primary-500);
 }
 
 .alex-btn--danger {
@@ -71,8 +71,11 @@
 }
 
 /* Outline inverts to filled on hover — clear "I'm interactive" feedback
-   without competing with primary's filled prominence at rest. */
+   without competing with primary's filled prominence at rest. Border
+   solidifies (dashes vanish) since same-colour border on filled bg
+   would look like a flicker. */
 .alex-btn--outline:hover:not(:disabled) {
     background: var(--theme-brand-primary-500);
     color: var(--theme-brand-primary-content);
+    border-style: solid;
 }

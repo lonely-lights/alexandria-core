@@ -88,16 +88,17 @@ export default function Divider({
     }
 
     return (
-        <div role="separator" className={`relative ${className}`}>
+        <div role="separator" className={`alex-divider relative ${className}`}>
             <div className="absolute inset-0 flex items-center">
                 <div className="w-full" style={lineStyle} />
             </div>
             <div className="relative flex justify-center text-sm">
                 <span
-                    className="px-4"
+                    className="alex-divider__label px-4"
                     style={{
                         background: `var(--theme-surface-${labelSurface})`,
-                        color: `color-mix(in srgb, var(--theme-surface-on-page) ${labelOpacity * 100}%, transparent)`,
+                        ['--alex-divider-label-opacity' as string]:
+                            `${labelOpacity * 100}%`,
                     }}
                 >
                     {children}

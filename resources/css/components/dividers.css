@@ -1,0 +1,26 @@
+/*
+ * Divider label — quiet at rest, brightens to full opacity when the
+ * user hovers anywhere on the divider. Matches the "this is the
+ * doorway to the next CTA" feeling for divider+button pairs like
+ * Login's "Don't have an account?" → Enlist.
+ *
+ * Opacity is parameterised via the --alex-divider-label-opacity custom
+ * property (set inline by the component from the labelOpacity prop)
+ * so consumers can override the rest-state quietness without forking
+ * the CSS. Default 50%.
+ */
+
+.alex-divider__label {
+    color: color-mix(
+        in srgb,
+        var(--theme-surface-on-page)
+            var(--alex-divider-label-opacity, 50%),
+        transparent
+    );
+    transition: color var(--theme-motion-duration-interactive)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-divider:hover .alex-divider__label {
+    color: var(--theme-surface-on-page);
+}
