@@ -48,6 +48,9 @@ class ProcessEavAiCommandsJob implements ShouldQueue
         public AiResponseDTO $dto
     ) {}
 
+    /**
+     * @throws Throwable
+     */
     public function handle(AiCommandFactory $commandFactory): void
     {
         try {
@@ -63,7 +66,7 @@ class ProcessEavAiCommandsJob implements ShouldQueue
                 AiTransaction::create([
                     'user_id' => $this->user->getAuthIdentifier(),
                     'batch_id' => $batchId,
-                    'provider_name' => 'unknown',
+                    'provider_name' => AiTransaction::PROVIDER_UNKNOWN,
                     'model_name' => $this->dto->modelName,
                     'context' => 'process_eav_ai_commands',
                     'input_tokens' => $this->dto->inputTokens,
@@ -78,10 +81,11 @@ class ProcessEavAiCommandsJob implements ShouldQueue
                 return $batchId;
             });
 
-            // Notify the user that the plan is ready.
-            // broadcast(new \App\Events\AiPlanReady($this->user, $batchId));
-
-            Log::info("Successfully created EAV AI command batch $batchId for user {$this->user->getAuthIdentifier()} and project {$this->project->id}.");
+            Log::info('ProcessEavAiCommandsJob: Batch created', [
+                'batch_id' => $batchId,
+                'user_id' => $this->user->getAuthIdentifier(),
+                'project_id' => $this->project->id,
+            ]);
 
         } catch (Throwable $e) {
             Log::error('ProcessEavAiCommandsJob failed to create commands.', [

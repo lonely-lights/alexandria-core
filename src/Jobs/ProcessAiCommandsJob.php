@@ -51,6 +51,9 @@ class ProcessAiCommandsJob implements ShouldQueue
         public AiResponseDTO $dto
     ) {}
 
+    /**
+     * @throws Throwable
+     */
     public function handle(AiCommandFactory $commandFactory): void
     {
         Log::info('ProcessAiCommandsJob: Starting job execution', [
@@ -79,7 +82,7 @@ class ProcessAiCommandsJob implements ShouldQueue
                 AiTransaction::create([
                     'user_id' => $this->user->getAuthIdentifier(),
                     'batch_id' => $batchId,
-                    'provider_name' => 'unknown',
+                    'provider_name' => AiTransaction::PROVIDER_UNKNOWN,
                     'model_name' => $this->dto->modelName,
                     'context' => 'process_ai_commands',
                     'input_tokens' => $this->dto->inputTokens,
@@ -94,16 +97,13 @@ class ProcessAiCommandsJob implements ShouldQueue
                 return $batchId;
             });
 
-            // 2. Notify the user that the plan is ready.
-            // broadcast(new \App\Events\AiPlanReady($this->user, $batchId));
+            Log::info('ProcessAiCommandsJob: Batch created', [
+                'batch_id' => $batchId,
+                'user_id' => $this->user->getAuthIdentifier(),
+            ]);
 
-            Log::info("Successfully created AI command batch $batchId for user {$this->user->getAuthIdentifier()}.");
-
-            // 3. Auto-approve safe commands, leave risky ones for manual approval.
-            //    Runs after commit so we only ever touch already-persisted rows.
+            // Auto-approve safe commands after commit, then queue execution.
             $this->autoApproveCommands($batchId);
-
-            // 4. Execute auto-approved commands in a separate job.
             $this->queueApprovedCommandsExecution($batchId);
 
         } catch (Throwable $e) {
