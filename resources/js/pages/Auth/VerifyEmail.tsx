@@ -42,8 +42,8 @@ export default function VerifyEmail({
                 <Alert role="success">{copy['actions.verification_sent']}</Alert>
             )}
 
-            <div className="flex flex-col sm:flex-row items-stretch gap-3">
-                <form onSubmit={handleResend} className="flex-1">
+            <div className="space-y-3">
+                <form onSubmit={handleResend}>
                     <Button
                         type="submit"
                         variant="primary"
@@ -57,7 +57,7 @@ export default function VerifyEmail({
                     </Button>
                 </form>
 
-                <form onSubmit={handleLogout} className="flex-1">
+                <form onSubmit={handleLogout}>
                     <Button
                         type="submit"
                         variant="outline"
