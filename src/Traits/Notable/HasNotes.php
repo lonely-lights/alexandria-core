@@ -26,11 +26,7 @@ trait HasNotes
      */
     public function notes(): MorphToMany
     {
-        return $this->morphToMany(
-            config('notable-ai.notableModel', Note::class),
-            config('notable-ai.notable.morphName', 'notable'),
-            config('notable-ai.notable.tableName', 'notables')
-        )
+        return $this->morphToMany(Note::class, Note::MORPH_NAME, Note::PIVOT_TABLE)
             ->using(NotablePivot::class)
             ->withPivot(['processing_status', 'processed_at']);
     }
@@ -60,10 +56,7 @@ trait HasNotes
      */
     public function addNote(string $text, array $attributes = []): Note
     {
-        $noteModelClass = config('notable-ai.notableModel', Note::class);
-
-        /** @var Note $note */
-        $note = new $noteModelClass(array_merge(['text' => $text], $attributes));
+        $note = new Note(array_merge(['text' => $text], $attributes));
 
         $this->notes()->save($note);
 

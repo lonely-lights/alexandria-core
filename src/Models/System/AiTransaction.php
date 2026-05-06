@@ -53,6 +53,13 @@ class AiTransaction extends Model
 {
     use HasFactory;
 
+    /**
+     * Sentinel for provider_name when the caller can't attribute the
+     * transaction to a concrete provider (e.g. AiResponseDTO doesn't
+     * carry providerName).
+     */
+    public const string PROVIDER_UNKNOWN = 'unknown';
+
     protected $table = 'ai_transactions';
 
     protected $guarded = ['id'];

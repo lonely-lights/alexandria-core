@@ -61,17 +61,12 @@ class ExecuteAiCommandsJob implements ShouldQueue
                 'success_count' => $results['success'],
                 'failed_count' => $results['failed'],
             ]);
-
-            // TODO: Add notification to user about execution results
-            // broadcast(new \App\Events\AiCommandsExecuted($this->user, $this->batchId, $results));
-
         } catch (Throwable $e) {
             Log::error('ExecuteAiCommandsJob: Execution failed', [
                 'batch_id' => $this->batchId,
                 'user_id' => $this->user->getAuthIdentifier(),
                 'error' => $e->getMessage(),
             ]);
-            // TODO: Notify user of execution failure
         }
     }
 }
