@@ -69,9 +69,9 @@ export const DEFAULT_QUOTES: BrandQuote[] = [
         era: 'United States, 1981',
     },
     {
-        text: 'Once you learn to read, you will be forever free.',
+        text: 'Knowledge makes a man unfit to be a slave.',
         author: 'Frederick Douglass',
-        era: 'United States, 1845',
+        era: 'United States, 1855',
     },
     {
         text: 'Poetry is not a luxury. It is a vital necessity of our existence.',
@@ -84,7 +84,7 @@ export const DEFAULT_QUOTES: BrandQuote[] = [
         era: 'Argentina, 1960',
     },
     {
-        text: 'Every day is a journey, and the journey itself is home.',
+        text: 'The days and months are travelers of eternity, and so are the years that pass by.',
         author: 'Matsuo Bashō',
         era: 'Edo Japan, c. 1690',
     },
