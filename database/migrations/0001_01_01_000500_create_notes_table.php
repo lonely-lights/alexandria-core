@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Alexandria\Core\Models\Notable\Note;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('notable-ai.notesTable', 'notes'), function (Blueprint $table) {
+        Schema::create(Note::TABLE, function (Blueprint $table) {
             $table->id();
             // user_id is left as a plain unsigned bigint (no FK constraint) because
             // this package cannot reference the host application's users table.
@@ -34,7 +35,7 @@ return new class extends Migration
             $table->index('type');
         });
 
-        Schema::create(config('notable-ai.notable.tableName', 'notables'), function (Blueprint $table) {
+        Schema::create(Note::PIVOT_TABLE, function (Blueprint $table) {
             $table->foreignId('note_id')->constrained()->cascadeOnDelete();
             $table->string('notable_type');
             $table->unsignedBigInteger('notable_id')->nullable();
@@ -66,7 +67,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('note_links');
-        Schema::dropIfExists(config('notable-ai.notable.tableName', 'notables'));
-        Schema::dropIfExists(config('notable-ai.notesTable', 'notes'));
+        Schema::dropIfExists(Note::PIVOT_TABLE);
+        Schema::dropIfExists(Note::TABLE);
     }
 };

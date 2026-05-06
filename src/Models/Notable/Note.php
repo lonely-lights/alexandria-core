@@ -66,13 +66,26 @@ class Note extends Model
     use HasTags;
     use SoftDeletes;
 
-    protected $guarded = ['id'];
+    /**
+     * Notes table name. Owns the truth so callers can reference it without
+     * spreading the literal everywhere.
+     */
+    public const string TABLE = 'notes';
 
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-        $this->setTable(config('notable-ai.notesTable', 'notes'));
-    }
+    /**
+     * Polymorphic pivot table that ties notes to attachable models
+     * (projects, blueprints, entries, etc.).
+     */
+    public const string PIVOT_TABLE = 'notables';
+
+    /**
+     * Morph relation name used by the polymorphic pivot.
+     */
+    public const string MORPH_NAME = 'notable';
+
+    protected $table = self::TABLE;
+
+    protected $guarded = ['id'];
 
     protected static function newFactory(): NoteFactory
     {
@@ -134,11 +147,7 @@ class Note extends Model
      */
     public function blueprints(): MorphToMany
     {
-        return $this->morphedByMany(
-            Blueprint::class,
-            config('notable-ai.notable.morphName', 'notable'),
-            config('notable-ai.notable.tableName', 'notables')
-        )
+        return $this->morphedByMany(Blueprint::class, self::MORPH_NAME, self::PIVOT_TABLE)
             ->using(NotablePivot::class)
             ->withPivot(['processing_status', 'processed_at']);
     }
@@ -172,9 +181,7 @@ class Note extends Model
      */
     public function getAttachments(): \Illuminate\Support\Collection
     {
-        $tableName = config('notable-ai.notable.tableName', 'notables');
-
-        $attachments = DB::table($tableName)
+        $attachments = DB::table(self::PIVOT_TABLE)
             ->where('note_id', $this->id)
             ->get(['notable_type', 'notable_id', 'processing_status']);
 
