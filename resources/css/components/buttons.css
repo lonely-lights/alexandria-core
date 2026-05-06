@@ -1,12 +1,54 @@
 /*
- * Button hover behavior — keyed to the variant class set by the
- * Button + ButtonLink components (alex-btn--{variant}). Inline-style
- * cannot reach :hover, so visual feedback lives in CSS.
+ * Alexandria-native button styling. The Button + ButtonLink components
+ * emit `.alex-btn .alex-btn--{variant}` classes plus structural inline
+ * styles (layout, padding, radius, opacity). Theming — fill, foreground,
+ * border, and all hover behaviour — lives here so :hover can actually win
+ * against React's inline style attribute (which has higher specificity).
  *
- * Disabled buttons are excluded via :not(:disabled). For ButtonLink
- * (which renders as <a> and has no native disabled state), hover
- * always applies — links don't gate this way.
+ * Disabled buttons are excluded from hover via :not(:disabled). For
+ * ButtonLink (which renders as <a> and has no native disabled state),
+ * hover always applies.
  */
+
+/* ── Variant rest state ────────────────────────────────────────────── */
+
+.alex-btn--primary {
+    background: var(--theme-brand-primary-500);
+    color: var(--theme-brand-primary-content);
+    border: none;
+}
+
+.alex-btn--secondary {
+    background: var(--theme-brand-secondary-500);
+    color: var(--theme-brand-secondary-content);
+    border: none;
+}
+
+.alex-btn--accent {
+    background: var(--theme-brand-accent-500);
+    color: var(--theme-brand-accent-content);
+    border: none;
+}
+
+.alex-btn--ghost {
+    background: transparent;
+    color: var(--theme-surface-on-page);
+    border: none;
+}
+
+.alex-btn--outline {
+    background: transparent;
+    color: var(--theme-brand-primary-500);
+    border: 1px solid var(--theme-brand-primary-500);
+}
+
+.alex-btn--danger {
+    background: var(--theme-status-error-fill);
+    color: var(--theme-status-error-content);
+    border: none;
+}
+
+/* ── Hover ─────────────────────────────────────────────────────────── */
 
 .alex-btn--primary:hover:not(:disabled) {
     background: var(--theme-brand-primary-600);
@@ -28,9 +70,8 @@
     background: var(--theme-surface-sunken);
 }
 
-/* Outline inverts to filled on hover — recognizable convention,
-   makes the secondary CTA still feel responsive without competing
-   with primary's filled prominence at rest. */
+/* Outline inverts to filled on hover — clear "I'm interactive" feedback
+   without competing with primary's filled prominence at rest. */
 .alex-btn--outline:hover:not(:disabled) {
     background: var(--theme-brand-primary-500);
     color: var(--theme-brand-primary-content);

@@ -107,13 +107,17 @@ export default function Button({
 // Shared style logic + icon helper — exported so <ButtonLink> shares verbatim
 // ============================================================================
 
+/**
+ * Structural styles only — fill / foreground / border live in
+ * resources/css/components/buttons.css keyed to .alex-btn--{variant}.
+ * Inline beats CSS specificity, so anything we want :hover-able stays
+ * out of this object.
+ */
 export function buttonStyles({
-    variant = 'primary',
     size = 'md',
     fullWidth = false,
     disabled = false,
 }: ButtonStyleProps): CSSProperties {
-    const v = VARIANT_STYLES[variant];
     const s = SIZE_STYLES[size];
 
     return {
@@ -128,9 +132,6 @@ export function buttonStyles({
         borderRadius: 'var(--theme-radius-button)',
         transition:
             'background var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), opacity var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
-        border: v.border ?? 'none',
-        background: v.background,
-        color: v.color,
         padding: s.padding,
         fontSize: s.fontSize,
         opacity: disabled ? 0.4 : 1,
@@ -152,41 +153,6 @@ export function renderIcon(icon: ButtonIcon | undefined): ReactNode {
 
     return icon;
 }
-
-const VARIANT_STYLES: Record<
-    ButtonVariant,
-    {
-        background: string;
-        color: string;
-        border?: string;
-    }
-> = {
-    primary: {
-        background: 'var(--theme-brand-primary-500)',
-        color: 'var(--theme-brand-primary-content)',
-    },
-    secondary: {
-        background: 'var(--theme-brand-secondary-500)',
-        color: 'var(--theme-brand-secondary-content)',
-    },
-    accent: {
-        background: 'var(--theme-brand-accent-500)',
-        color: 'var(--theme-brand-accent-content)',
-    },
-    ghost: {
-        background: 'transparent',
-        color: 'var(--theme-surface-on-page)',
-    },
-    outline: {
-        background: 'transparent',
-        color: 'var(--theme-brand-primary-500)',
-        border: '1px solid var(--theme-brand-primary-500)',
-    },
-    danger: {
-        background: 'var(--theme-status-error-fill)',
-        color: 'var(--theme-status-error-content)',
-    },
-};
 
 const SIZE_STYLES: Record<ButtonSize, { padding: string; fontSize: string }> = {
     sm: { padding: '0.375rem 0.75rem', fontSize: '0.875rem' },
