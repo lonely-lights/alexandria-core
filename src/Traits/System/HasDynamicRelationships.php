@@ -93,40 +93,10 @@ trait HasDynamicRelationships
     /**
      * Build a query for a dynamic relationship key, with optional inline filters.
      *
-     * The `$method` is the raw relationship key (it may ALREADY include filters),
-     * e.g.:
-     *   - 'characters'
-     *   - 'parentScenes'
-     *   - 'characters;order=name'
-     *
-     * You can supply additional filters via `$parameters` in ONE of two forms:
-     *
-     *   1) A single STRING of semicolon-delimited pairs:
-     *        $entry->callDynamicRelationship('characters', ['limit=10;order=name']);
-     *
-     *   2) An ASSOCIATIVE ARRAY of filters:
-     *        $entry->callDynamicRelationship('parentScenes', ['limit' => 5, 'order' => 'priority', 'dir' => 'desc']);
-     *
-     * Mixed usage is supported: if both `$method` and `$parameters` specify the same
-     * filter key, the value that appears LATER in the final composed key wins.
-     * This implementation appends the string-supplied filters first, then the
-     * associative filters—so associative values take precedence.
-     *
-     * Examples (final composed key → behavior):
-     *   callDynamicRelationship('parentScenes')
-     *     → 'parentScenes'
-     *
-     *   callDynamicRelationship('characters', ['limit=10;order=name'])
-     *     → 'characters;limit=10;order=name'
-     *
-     *   callDynamicRelationship('characters;order=priority', ['limit' => 3])
-     *     → 'characters;order=priority;limit=3'
-     *
-     * Notes:
-     * - This method only composes the raw key string; parsing/validation happens in
-     *   RelationshipKeyParser, which the repository uses.
-     * - We ensure exactly one ';' between the base key and appended filters, and
-     *   avoid duplicating semicolons.
+     * Composes a raw relationship key from `$method` plus optional filters in
+     * `$parameters` (either a `'k=v;…'` string or an `['k' => 'v']` map). Parsing
+     * + validation lives in RelationshipKeyParser; this method only composes
+     * the key string. See HasDynamicRelationshipsTest for shape examples.
      *
      * @param  string  $method  Raw dynamic key (may already include filters after a ';').
      * @param  array  $parameters  Either [ 'k=v;…' ] OR [ 'k' => 'v', … ].

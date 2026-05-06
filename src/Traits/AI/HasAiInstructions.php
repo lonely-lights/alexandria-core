@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Traits\AI;
 
+use Alexandria\Core\Models\System\Blueprint;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -54,9 +55,9 @@ trait HasAiInstructions
     public function getDefaultAiInstructions(): string
     {
         return match ($this->classification) {
-            'standard' => 'This is a standard entry type. Focus on creating well-structured entries with clear relationships.',
-            'list' => 'This is a list entry type. Focus on creating items that can be organized and categorized.',
-            'relationship' => 'This is a relationship entry type. Focus on connecting other entries through meaningful relationships.',
+            Blueprint::CLASSIFICATION_STANDARD => 'This is a standard entry type. Focus on creating well-structured entries with clear relationships.',
+            Blueprint::CLASSIFICATION_LIST => 'This is a list entry type. Focus on creating items that can be organized and categorized.',
+            Blueprint::CLASSIFICATION_RELATIONSHIP => 'This is a relationship entry type. Focus on connecting other entries through meaningful relationships.',
             default => 'Create entries that fit the purpose and structure of this entry type.',
         };
     }

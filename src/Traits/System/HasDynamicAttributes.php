@@ -40,20 +40,32 @@ use RuntimeException;
 trait HasDynamicAttributes
 {
     /**
+     * Allowlist of Laravel validation rule names safe to apply to dynamic-field
+     * input. The blueprint field's `validation_rules` JSON is filtered against
+     * this list before reaching `Validator::make()` — anything else is treated
+     * as field metadata, not a validation directive. Prevents accidental
+     * activation of side-effecting rules (`exists`, `unique`, `dimensions`,
+     * etc.) when an admin or AI authors validation_rules with unexpected keys.
+     */
+    private const array ALLOWED_VALIDATION_RULES = [
+        'required', 'nullable', 'sometimes', 'present', 'filled',
+        'string', 'integer', 'numeric', 'boolean', 'array',
+        'min', 'max', 'between', 'size', 'digits', 'digits_between',
+        'email', 'url', 'alpha', 'alpha_num', 'alpha_dash',
+        'in', 'not_in', 'starts_with', 'ends_with',
+        'date', 'date_format', 'before', 'after', 'before_or_equal', 'after_or_equal',
+        'json', 'uuid', 'ulid', 'regex',
+    ];
+
+    /**
      * In-memory cache for attributes to prevent redundant database queries.
-     * This is populated once per request for each model instance.
      */
     protected ?Collection $attributesCache = null;
 
     // Core Logic
 
     /**
-     * Eager loads all attributes from the database and caches them.
-     *
-     * Groups field values by the blueprint field name for easy access.
-     * Supports multiple values per field (e.g., multiple titles).
-     *
-     * UPDATED 2025-11-22: Now uses blueprint_field_id FK and groups by blueprintField.name
+     * Eager-load all field values for this entry and group them by blueprint-field name.
      */
     public function loadAttributes(): void
     {
@@ -73,14 +85,7 @@ trait HasDynamicAttributes
     }
 
     /**
-     * Retrieves and casts a dynamic attribute, supporting single or multiple values.
-     *
-     * If multiple field values exist for a key (like 'titles'), returns an array.
-     * Otherwise, returns a single cast value.
-     *
-     * UPDATED 2025-11-22: Now uses 'value' column instead of 'field_value'
-     *
-     * @param  string  $key  The name of the attribute (e.g., 'occupations').
+     * Retrieve a dynamic attribute, casting + collapsing to a scalar when only one value exists.
      */
     public function getDynamicAttribute(string $key): array|bool|float|int|string|Carbon|null
     {
@@ -176,12 +181,12 @@ trait HasDynamicAttributes
         $recordsToInsert = [];
 
         foreach ($valuesToInsert as $singleValue) {
-            // Validate if validation rules exist
+            // Allowlist rule keys against ALLOWED_VALIDATION_RULES — anything
+            // else (target_blueprint_slug, is_type_field, etc.) is field
+            // metadata, not a Laravel rule directive.
             if (! empty($fieldDefinition->validation_rules)) {
-                $allRules = $fieldDefinition->validation_rules;
-                // Filter out metadata keys that aren't actual Laravel validation rules
-                $realValidationRules = collect($allRules)
-                    ->except(['target_blueprint_slug', 'target_relationship_blueprint_slug', 'is_type_field', 'allow_intensity', 'intensity_label', 'allow_reference', 'reference_blueprint_slug', 'allow_overlap', 'date_precision'])
+                $realValidationRules = collect($fieldDefinition->validation_rules)
+                    ->only(self::ALLOWED_VALIDATION_RULES)
                     ->all();
                 if (! empty($realValidationRules)) {
                     Validator::make([$key => $singleValue], [$key => $realValidationRules])->validate();

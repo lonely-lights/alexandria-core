@@ -5,20 +5,7 @@ declare(strict_types=1);
 namespace Alexandria\Core\Support;
 
 /**
- * Deep merge with list-replacement semantics. Used by
- * AlexandriaServiceProvider::mergeConfigDeepFrom so consumers can
- * publish a partial config/alexandria.php (only the keys they want
- * to override) and still inherit defaults at every other path.
- *
- * For each key in the override:
- *   - if both sides are associative arrays, recurse;
- *   - otherwise the override value wins as-is (list arrays included).
- *
- * The list-replacement contract matters for keys like
- * media.accepted_mimes — when the consumer narrows the list, we want
- * the consumer's narrower list to win, not get silently re-merged
- * with core's broader defaults at sibling indexes (which is what
- * PHP's array_replace_recursive would do).
+ * Deep-merge consumer config overrides onto core defaults — list values are replaced wholesale, associative arrays recurse.
  */
 final class ConfigDeepMerge
 {

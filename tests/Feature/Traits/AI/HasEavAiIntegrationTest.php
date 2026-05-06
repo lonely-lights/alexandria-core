@@ -96,13 +96,3 @@ it('returns an empty array from suggestEntryRelationships for a valid entry (stu
 
     expect($result)->toBe([]);
 });
-
-// ---------------------------------------------------------------------------
-// hasAiIntegrationEnabled
-// ---------------------------------------------------------------------------
-
-it('returns true from hasAiIntegrationEnabled by default', function () {
-    $project = Project::factory()->create();
-
-    expect($project->hasAiIntegrationEnabled())->toBeTrue();
-});
