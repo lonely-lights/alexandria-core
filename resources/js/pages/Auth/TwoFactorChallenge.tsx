@@ -35,6 +35,10 @@ export default function TwoFactorChallenge({
         setUsingRecovery((prev) => !prev);
     };
 
+    const canSubmit = usingRecovery
+        ? form.data.recovery_code.trim().length > 0
+        : form.data.code.length === 6;
+
     return (
         <AuthLayout
             pageTitle={copy['two_factor.challenge.title']}
@@ -108,24 +112,23 @@ export default function TwoFactorChallenge({
                     size="lg"
                     fullWidth
                     loading={form.processing}
-                    disabled={form.processing}
+                    disabled={form.processing || !canSubmit}
                 >
                     {copy['two_factor.challenge.submit']}
                     <span aria-hidden="true">→</span>
                 </Button>
 
-                <div className="text-center">
-                    <button
-                        type="button"
-                        onClick={toggleMode}
-                        className="text-sm hover:opacity-80 transition-opacity"
-                        style={{ color: 'var(--theme-brand-primary-500)' }}
-                    >
-                        {usingRecovery
-                            ? copy['two_factor.challenge.use_authentication']
-                            : copy['two_factor.challenge.use_recovery']}
-                    </button>
-                </div>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="lg"
+                    fullWidth
+                    onClick={toggleMode}
+                >
+                    {usingRecovery
+                        ? copy['two_factor.challenge.use_authentication']
+                        : copy['two_factor.challenge.use_recovery']}
+                </Button>
             </form>
 
             <p

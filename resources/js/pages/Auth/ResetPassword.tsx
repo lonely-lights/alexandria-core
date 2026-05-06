@@ -1,11 +1,16 @@
 import { useForm } from '@inertiajs/react';
-import type { SyntheticEvent } from 'react';
+import { useState, type SyntheticEvent } from 'react';
 
+import PasswordRulesPopover, {
+    evaluatePasswordRules,
+} from '@alexandria/components/form/PasswordRulesPopover';
 import FormGroup from '../../components/form/FormGroup';
 import TextField from '../../components/form/TextField';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
+import ButtonLink from '../../components/ui/ButtonLink';
+import Divider from '../../components/ui/Divider';
 
 interface ResetPasswordProps {
     copy: Record<string, string>;
@@ -35,6 +40,21 @@ export default function ResetPassword({
         e.preventDefault();
         form.post('/reset-password');
     };
+
+    // Password popover anchoring + focus tracking (mirrors Register).
+    const [passwordEl, setPasswordEl] = useState<HTMLInputElement | null>(null);
+    const [passwordFocused, setPasswordFocused] = useState(false);
+    const [confirmationFocused, setConfirmationFocused] = useState(false);
+
+    const passwordsValid = evaluatePasswordRules(form.data.password, {
+        confirmation: form.data.password_confirmation,
+    }).allPassed;
+
+    const emailValid =
+        form.data.email.includes('@') && form.data.email.includes('.');
+
+    const canSubmit = emailValid && passwordsValid;
+    const passwordFieldState = passwordsValid ? 'success' : 'idle';
 
     return (
         <AuthLayout
@@ -72,15 +92,25 @@ export default function ResetPassword({
 
                 <FormGroup label={copy['fields.password']} htmlFor="password">
                     <TextField
+                        ref={setPasswordEl}
                         id="password"
                         name="password"
                         type="password"
                         value={form.data.password}
                         onChange={(e) => form.setData('password', e.target.value)}
+                        onFocus={() => setPasswordFocused(true)}
+                        onBlur={() => setPasswordFocused(false)}
                         required
                         autoComplete="new-password"
                         placeholder="••••••••"
+                        state={passwordFieldState}
                         icon={<i className="fa-solid fa-lock" aria-hidden="true" />}
+                    />
+                    <PasswordRulesPopover
+                        value={form.data.password}
+                        confirmation={form.data.password_confirmation}
+                        open={passwordFocused || confirmationFocused}
+                        anchor={passwordEl}
                     />
                 </FormGroup>
 
@@ -96,9 +126,12 @@ export default function ResetPassword({
                         onChange={(e) =>
                             form.setData('password_confirmation', e.target.value)
                         }
+                        onFocus={() => setConfirmationFocused(true)}
+                        onBlur={() => setConfirmationFocused(false)}
                         required
                         autoComplete="new-password"
                         placeholder="••••••••"
+                        state={passwordFieldState}
                         icon={<i className="fa-solid fa-lock" aria-hidden="true" />}
                     />
                 </FormGroup>
@@ -109,26 +142,18 @@ export default function ResetPassword({
                     size="lg"
                     fullWidth
                     loading={form.processing}
-                    disabled={form.processing}
+                    disabled={form.processing || !canSubmit}
                 >
                     {copy['actions.reset_password']}
                     <span aria-hidden="true">→</span>
                 </Button>
             </form>
 
-            <p
-                className="text-center"
-                style={{ color: 'var(--theme-surface-on-page)', opacity: 0.6 }}
-            >
-                Remembered it?{' '}
-                <a
-                    href={loginUrl}
-                    className="font-semibold hover:opacity-80 transition-opacity"
-                    style={{ color: 'var(--theme-brand-primary-500)' }}
-                >
-                    Log in
-                </a>
-            </p>
+            <Divider>Remembered it?</Divider>
+            <ButtonLink href={loginUrl} variant="outline" size="lg" fullWidth>
+                {copy['actions.login']}
+                <span aria-hidden="true">→</span>
+            </ButtonLink>
 
             <p
                 className="text-center text-xs pt-4"

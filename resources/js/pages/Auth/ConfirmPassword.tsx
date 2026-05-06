@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import type { MouseEvent, SyntheticEvent } from 'react';
+import type { SyntheticEvent } from 'react';
 
 import FormGroup from '../../components/form/FormGroup';
 import TextField from '../../components/form/TextField';
@@ -25,12 +25,15 @@ export default function ConfirmPassword({
         form.post('/user/confirm-password');
     };
 
-    const handleCancel = (e: MouseEvent<HTMLAnchorElement>) => {
+    const handleCancel = () => {
         if (window.history.length > 1) {
-            e.preventDefault();
             window.history.back();
+        } else {
+            window.location.href = '/';
         }
     };
+
+    const canSubmit = form.data.password.length > 0;
 
     return (
         <AuthLayout
@@ -70,25 +73,21 @@ export default function ConfirmPassword({
                     size="lg"
                     fullWidth
                     loading={form.processing}
-                    disabled={form.processing}
+                    disabled={form.processing || !canSubmit}
                 >
                     Confirm
                     <span aria-hidden="true">→</span>
                 </Button>
 
-                <div className="text-center">
-                    <a
-                        href="/"
-                        onClick={handleCancel}
-                        className="text-sm hover:opacity-100 transition-opacity"
-                        style={{
-                            color: 'var(--theme-surface-on-page)',
-                            opacity: 0.6,
-                        }}
-                    >
-                        Cancel
-                    </a>
-                </div>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="lg"
+                    fullWidth
+                    onClick={handleCancel}
+                >
+                    Cancel
+                </Button>
             </form>
 
             <p

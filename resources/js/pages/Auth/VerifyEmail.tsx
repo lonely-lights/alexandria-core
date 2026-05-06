@@ -60,7 +60,7 @@ export default function VerifyEmail({
                 <form onSubmit={handleLogout} className="flex-1">
                     <Button
                         type="submit"
-                        variant="ghost"
+                        variant="outline"
                         size="lg"
                         fullWidth
                         loading={logoutForm.processing}

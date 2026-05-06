@@ -6,6 +6,8 @@ import TextField from '../../components/form/TextField';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
+import ButtonLink from '../../components/ui/ButtonLink';
+import Divider from '../../components/ui/Divider';
 
 interface ForgotPasswordProps {
     copy: Record<string, string>;
@@ -28,6 +30,9 @@ export default function ForgotPassword({
         e.preventDefault();
         form.post('/forgot-password');
     };
+
+    const canSubmit =
+        form.data.email.includes('@') && form.data.email.includes('.');
 
     return (
         <AuthLayout
@@ -83,26 +88,18 @@ export default function ForgotPassword({
                     size="lg"
                     fullWidth
                     loading={form.processing}
-                    disabled={form.processing}
+                    disabled={form.processing || !canSubmit}
                 >
                     {copy['actions.email_reset_link']}
                     <span aria-hidden="true">→</span>
                 </Button>
             </form>
 
-            <p
-                className="text-center"
-                style={{ color: 'var(--theme-surface-on-page)', opacity: 0.6 }}
-            >
-                Remembered it?{' '}
-                <a
-                    href={loginUrl}
-                    className="font-semibold hover:opacity-80 transition-opacity"
-                    style={{ color: 'var(--theme-brand-primary-500)' }}
-                >
-                    {copy['actions.login']}
-                </a>
-            </p>
+            <Divider>Remembered it?</Divider>
+            <ButtonLink href={loginUrl} variant="outline" size="lg" fullWidth>
+                {copy['actions.login']}
+                <span aria-hidden="true">→</span>
+            </ButtonLink>
 
             <p
                 className="text-center text-xs pt-4"
