@@ -1,0 +1,37 @@
+/*
+ * Button hover behavior — keyed to the variant class set by the
+ * Button + ButtonLink components (alex-btn--{variant}). Inline-style
+ * cannot reach :hover, so visual feedback lives in CSS.
+ *
+ * Disabled buttons are excluded via :not(:disabled). For ButtonLink
+ * (which renders as <a> and has no native disabled state), hover
+ * always applies — links don't gate this way.
+ */
+
+.alex-btn--primary:hover:not(:disabled) {
+    background: var(--theme-brand-primary-600);
+}
+
+.alex-btn--secondary:hover:not(:disabled) {
+    background: var(--theme-brand-secondary-600);
+}
+
+.alex-btn--accent:hover:not(:disabled) {
+    background: var(--theme-brand-accent-600);
+}
+
+.alex-btn--danger:hover:not(:disabled) {
+    background: var(--theme-status-error-stroke);
+}
+
+.alex-btn--ghost:hover:not(:disabled) {
+    background: var(--theme-surface-sunken);
+}
+
+/* Outline inverts to filled on hover — recognizable convention,
+   makes the secondary CTA still feel responsive without competing
+   with primary's filled prominence at rest. */
+.alex-btn--outline:hover:not(:disabled) {
+    background: var(--theme-brand-primary-500);
+    color: var(--theme-brand-primary-content);
+}

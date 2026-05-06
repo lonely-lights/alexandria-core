@@ -6,22 +6,39 @@
  *   - secondary  (brand-secondary)
  *   - accent     (brand-accent)
  *   - ghost      (transparent, on-page text, hover surface-sunken)
- *   - outline    (transparent, primary-coloured stroke + text)
+ *   - outline    (transparent, primary-coloured stroke + text; inverts to
+ *                 filled on hover)
  *   - danger     (status-error fill)
  *
  * Sizes: sm | md | lg.
  *
- * Disabled and loading states render at 50% opacity with cursor-not-allowed.
+ * Disabled and loading states render at 40% opacity with cursor not-allowed.
+ * Hover behavior is defined globally in core/resources/css/components/buttons.css
+ * via `.alex-btn--{variant}` selectors — inline styles can't reach :hover.
+ *
+ * Icon prop accepts a FontAwesome class string (`'fa-solid fa-arrow-right'`)
+ * or any ReactNode (SVG, custom JSX). `iconPosition` (default 'after') puts
+ * it before or after the text.
+ *
  * For Inertia link-shaped destinations use `<ButtonLink>` instead.
  */
 
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
 
 export type ButtonVariant =
-    | 'primary' | 'secondary' | 'accent'
-    | 'ghost' | 'outline' | 'danger';
+    | 'primary'
+    | 'secondary'
+    | 'accent'
+    | 'ghost'
+    | 'outline'
+    | 'danger';
 
 export type ButtonSize = 'sm' | 'md' | 'lg';
+
+/** FontAwesome class string or any ReactNode (SVG, custom JSX, etc.). */
+export type ButtonIcon = ReactNode | string;
+
+export type ButtonIconPosition = 'before' | 'after';
 
 export interface ButtonStyleProps {
     variant?: ButtonVariant;
@@ -30,11 +47,17 @@ export interface ButtonStyleProps {
     disabled?: boolean;
 }
 
-export interface ButtonProps extends
-    Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>,
-    ButtonStyleProps {
+export interface ButtonProps
+    extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>,
+        ButtonStyleProps {
     children: ReactNode;
     loading?: boolean;
+
+    /** FontAwesome class string or ReactNode (SVG / custom JSX). */
+    icon?: ButtonIcon;
+
+    /** Where the icon sits relative to the text. Default 'after'. */
+    iconPosition?: ButtonIconPosition;
 }
 
 export default function Button({
@@ -43,36 +66,45 @@ export default function Button({
     fullWidth = false,
     loading = false,
     disabled,
+    icon,
+    iconPosition = 'after',
     children,
     className = '',
     ...rest
 }: ButtonProps) {
     const isDisabled = disabled || loading;
+    const iconElement = renderIcon(icon);
 
     return (
         <button
             type={rest.type ?? 'button'}
             disabled={isDisabled}
-            className={`alex-btn ${className}`}
-            style={buttonStyles({ variant, size, fullWidth, disabled: isDisabled })}
+            className={`alex-btn alex-btn--${variant} ${className}`}
+            style={buttonStyles({
+                variant,
+                size,
+                fullWidth,
+                disabled: isDisabled,
+            })}
             {...rest}
         >
             {loading && (
                 <span
                     aria-hidden="true"
                     className="inline-block animate-spin"
-                    style={{ marginInlineEnd: '0.5rem' }}
                 >
                     ⟳
                 </span>
             )}
+            {!loading && iconPosition === 'before' && iconElement}
             {children}
+            {!loading && iconPosition === 'after' && iconElement}
         </button>
     );
 }
 
 // ============================================================================
-// Shared style logic — exported so <ButtonLink> shares it verbatim
+// Shared style logic + icon helper — exported so <ButtonLink> shares verbatim
 // ============================================================================
 
 export function buttonStyles({
@@ -94,7 +126,8 @@ export function buttonStyles({
         textDecoration: 'none',
         cursor: disabled ? 'not-allowed' : 'pointer',
         borderRadius: 'var(--theme-radius-button)',
-        transition: 'background var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), opacity var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+        transition:
+            'background var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), opacity var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
         border: v.border ?? 'none',
         background: v.background,
         color: v.color,
@@ -104,11 +137,30 @@ export function buttonStyles({
     };
 }
 
-const VARIANT_STYLES: Record<ButtonVariant, {
-    background: string;
-    color: string;
-    border?: string;
-}> = {
+/**
+ * Render a button icon. String → FontAwesome `<i>` tag (decorative,
+ * aria-hidden). ReactNode → rendered verbatim. Falsy → nothing.
+ */
+export function renderIcon(icon: ButtonIcon | undefined): ReactNode {
+    if (!icon) {
+        return null;
+    }
+
+    if (typeof icon === 'string') {
+        return <i className={icon} aria-hidden="true" />;
+    }
+
+    return icon;
+}
+
+const VARIANT_STYLES: Record<
+    ButtonVariant,
+    {
+        background: string;
+        color: string;
+        border?: string;
+    }
+> = {
     primary: {
         background: 'var(--theme-brand-primary-500)',
         color: 'var(--theme-brand-primary-content)',
@@ -138,6 +190,6 @@ const VARIANT_STYLES: Record<ButtonVariant, {
 
 const SIZE_STYLES: Record<ButtonSize, { padding: string; fontSize: string }> = {
     sm: { padding: '0.375rem 0.75rem', fontSize: '0.875rem' },
-    md: { padding: '0.5rem 1rem',      fontSize: '1rem' },
-    lg: { padding: '0.75rem 1.5rem',   fontSize: '1.125rem' },
+    md: { padding: '0.5rem 1rem', fontSize: '1rem' },
+    lg: { padding: '0.75rem 1.5rem', fontSize: '1.125rem' },
 };
