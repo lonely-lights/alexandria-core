@@ -5,6 +5,7 @@ import HeroRotator from '@alexandria/components/ui/HeroRotator';
 import CheckboxField from '../../components/form/CheckboxField';
 import FormGroup from '../../components/form/FormGroup';
 import TextField from '../../components/form/TextField';
+import useT from '../../hooks/useT';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
@@ -29,6 +30,8 @@ export default function Login({
     canResetPassword,
     status,
 }: LoginProps) {
+    const t = useT();
+
     const form = useForm({
         email: '',
         password: '',
@@ -173,7 +176,7 @@ export default function Login({
                 </Button>
             </form>
 
-            <Divider>{copy['login.or']}</Divider>
+            <Divider>{t('common.or')}</Divider>
 
             {registerUrl && (
                 <p
