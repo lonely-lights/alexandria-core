@@ -5,10 +5,10 @@ import HeroRotator from '@alexandria/components/ui/HeroRotator';
 import CheckboxField from '../../components/form/CheckboxField';
 import FormGroup from '../../components/form/FormGroup';
 import TextField from '../../components/form/TextField';
-import useT from '../../hooks/useT';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
+import ButtonLink from '../../components/ui/ButtonLink';
 import Divider from '../../components/ui/Divider';
 
 interface LoginProps {
@@ -30,8 +30,6 @@ export default function Login({
     canResetPassword,
     status,
 }: LoginProps) {
-    const t = useT();
-
     const form = useForm({
         email: '',
         password: '',
@@ -42,6 +40,15 @@ export default function Login({
         e.preventDefault();
         form.post('/login');
     };
+
+    // Submit gate — server still re-validates, this is a UX gate.
+    // Email needs an @ and a dot; password needs any non-empty value.
+    // We don't enforce a length floor on login because legacy accounts
+    // may have shorter passwords than the current registration rules.
+    const canSubmit =
+        form.data.email.includes('@') &&
+        form.data.email.includes('.') &&
+        form.data.password.length > 0;
 
     return (
         <AuthLayout
@@ -169,29 +176,26 @@ export default function Login({
                     size="lg"
                     fullWidth
                     loading={form.processing}
-                    disabled={form.processing}
+                    disabled={form.processing || !canSubmit}
                 >
                     {copy['actions.login']}
                     <span aria-hidden="true">→</span>
                 </Button>
             </form>
 
-            <Divider>{t('common.or')}</Divider>
-
             {registerUrl && (
-                <p
-                    className="text-center"
-                    style={{ color: 'var(--theme-surface-on-page)', opacity: 0.6 }}
-                >
-                    {copy['actions.have_account']}{' '}
-                    <a
+                <>
+                    <Divider>{copy['actions.have_account']}</Divider>
+                    <ButtonLink
                         href={registerUrl}
-                        className="font-semibold hover:opacity-80 transition-opacity"
-                        style={{ color: 'var(--theme-brand-primary-500)' }}
+                        variant="secondary"
+                        size="lg"
+                        fullWidth
                     >
                         {copy['actions.signup']}
-                    </a>
-                </p>
+                        <span aria-hidden="true">→</span>
+                    </ButtonLink>
+                </>
             )}
 
             <p
