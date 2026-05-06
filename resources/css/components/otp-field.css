@@ -8,7 +8,7 @@
     height: 3.25rem;
     text-align: center;
     font-size: 1.5rem;
-    font-family: var(--theme-typography-mono-family);
+    font-family: var(--theme-typography-mono-family), monospace;
     letter-spacing: 0;
     background: var(--theme-surface-sunken);
     color: var(--theme-surface-on-page);

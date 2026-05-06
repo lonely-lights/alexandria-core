@@ -10,10 +10,13 @@
  */
 
 .alex-divider__label {
+    /* Component-internal var. Declared here with the default so IDE
+       css-var resolution works; Divider.tsx sets it inline per
+       instance to honour the labelOpacity prop. */
+    --alex-divider-label-opacity: 50%;
     color: color-mix(
         in srgb,
-        var(--theme-surface-on-page)
-            var(--alex-divider-label-opacity, 50%),
+        var(--theme-surface-on-page) var(--alex-divider-label-opacity),
         transparent
     );
 }
