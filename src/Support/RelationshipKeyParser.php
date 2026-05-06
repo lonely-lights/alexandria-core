@@ -38,8 +38,14 @@ use InvalidArgumentException;
  * This minimal set covers 95% of current needs. We can add more (e.g., subtype)
  * later once we standardize cross-DB JSON querying for metadata.
  */
-class RelationshipKeyParser
+final class RelationshipKeyParser
 {
+    /**
+     * Hard ceiling on the `limit` filter. Caller-supplied values above this
+     * are clamped — prevents DoS via `?key=foo;limit=999999999`.
+     */
+    public const int MAX_LIMIT = 500;
+
     /** @throws InvalidArgumentException */
     public function parse(string $raw): RelationshipKey
     {
@@ -86,7 +92,7 @@ class RelationshipKeyParser
             if ($n <= 0) {
                 throw new InvalidArgumentException("Filter `limit` must be a positive integer in key `$raw`.");
             }
-            $filters['limit'] = $n;
+            $filters['limit'] = min($n, self::MAX_LIMIT);
         }
 
         if (isset($filters['order'])) {

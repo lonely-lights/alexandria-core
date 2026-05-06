@@ -86,6 +86,14 @@ class Blueprint extends Model implements HasMedia
     use LogsActivity;
     use SoftDeletes;
 
+    public const string CLASSIFICATION_STANDARD = 'standard';
+
+    public const string CLASSIFICATION_LIST = 'list';
+
+    public const string CLASSIFICATION_STRUCTURAL = 'structural';
+
+    public const string CLASSIFICATION_RELATIONSHIP = 'relationship';
+
     protected $guarded = ['id'];
 
     protected static function newFactory(): BlueprintFactory
@@ -139,11 +147,11 @@ class Blueprint extends Model implements HasMedia
 
     public function scopeStandard(Builder $query): Builder
     {
-        return $query->where('classification', 'standard');
+        return $query->where('classification', self::CLASSIFICATION_STANDARD);
     }
 
     public function scopeList(Builder $query): Builder
     {
-        return $query->where('classification', 'list');
+        return $query->where('classification', self::CLASSIFICATION_LIST);
     }
 }

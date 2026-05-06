@@ -74,13 +74,4 @@ trait HasEavAiIntegration
 
         return [];
     }
-
-    /**
-     * Whether AI features are enabled for this project. Default: true.
-     * Override in a subclass or via a project setting.
-     */
-    public function hasAiIntegrationEnabled(): bool
-    {
-        return true;
-    }
 }
