@@ -50,18 +50,29 @@ export default function ResetPassword({
         confirmation: form.data.password_confirmation,
     }).allPassed;
 
-    const emailValid =
-        form.data.email.includes('@') && form.data.email.includes('.');
-
-    const canSubmit = emailValid && passwordsValid;
+    // Email is trusted from the signed URL — we don't render it as an
+    // input (preventing devtools-driven edits from confusing the UX) so
+    // it's not part of the submit gate.
+    const canSubmit = passwordsValid;
     const passwordFieldState = passwordsValid ? 'success' : 'idle';
 
     return (
         <AuthLayout
             pageTitle={copy['actions.reset_password']}
             formTitle="Choose a new password"
-            formIntro="Enter your email and pick a new password to log back in."
+            formIntro="Pick a new password to log back in."
         >
+            <div
+                className="text-sm"
+                style={{
+                    color: 'var(--theme-surface-on-page)',
+                    opacity: 0.6,
+                }}
+            >
+                Resetting password for{' '}
+                <strong style={{ opacity: 1 }}>{email}</strong>
+            </div>
+
             {Object.keys(form.errors).length > 0 && (
                 <Alert role="error">
                     <div className="space-y-1">
@@ -73,23 +84,6 @@ export default function ResetPassword({
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                <input type="hidden" name="token" value={form.data.token} />
-
-                <FormGroup label={copy['fields.email']} htmlFor="email">
-                    <TextField
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={form.data.email}
-                        onChange={(e) => form.setData('email', e.target.value)}
-                        required
-                        autoFocus
-                        autoComplete="username"
-                        placeholder="you@example.com"
-                        icon={<i className="fa-solid fa-envelope" aria-hidden="true" />}
-                    />
-                </FormGroup>
-
                 <FormGroup label={copy['fields.password']} htmlFor="password">
                     <TextField
                         ref={setPasswordEl}
@@ -101,6 +95,7 @@ export default function ResetPassword({
                         onFocus={() => setPasswordFocused(true)}
                         onBlur={() => setPasswordFocused(false)}
                         required
+                        autoFocus
                         autoComplete="new-password"
                         placeholder="••••••••"
                         state={passwordFieldState}
