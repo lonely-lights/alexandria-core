@@ -188,7 +188,7 @@ export default function Login({
                     <Divider>{copy['actions.have_account']}</Divider>
                     <ButtonLink
                         href={registerUrl}
-                        variant="secondary"
+                        variant="outline"
                         size="lg"
                         fullWidth
                     >

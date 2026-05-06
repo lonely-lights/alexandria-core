@@ -27,6 +27,7 @@ export interface ButtonStyleProps {
     variant?: ButtonVariant;
     size?: ButtonSize;
     fullWidth?: boolean;
+    disabled?: boolean;
 }
 
 export interface ButtonProps extends
@@ -46,12 +47,14 @@ export default function Button({
     className = '',
     ...rest
 }: ButtonProps) {
+    const isDisabled = disabled || loading;
+
     return (
         <button
             type={rest.type ?? 'button'}
-            disabled={disabled || loading}
+            disabled={isDisabled}
             className={`alex-btn ${className}`}
-            style={buttonStyles({ variant, size, fullWidth })}
+            style={buttonStyles({ variant, size, fullWidth, disabled: isDisabled })}
             {...rest}
         >
             {loading && (
@@ -76,6 +79,7 @@ export function buttonStyles({
     variant = 'primary',
     size = 'md',
     fullWidth = false,
+    disabled = false,
 }: ButtonStyleProps): CSSProperties {
     const v = VARIANT_STYLES[variant];
     const s = SIZE_STYLES[size];
@@ -88,14 +92,15 @@ export function buttonStyles({
         width: fullWidth ? '100%' : undefined,
         fontWeight: 600,
         textDecoration: 'none',
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
         borderRadius: 'var(--theme-radius-button)',
-        transition: 'background var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+        transition: 'background var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), opacity var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
         border: v.border ?? 'none',
         background: v.background,
         color: v.color,
         padding: s.padding,
         fontSize: s.fontSize,
+        opacity: disabled ? 0.4 : 1,
     };
 }
 
