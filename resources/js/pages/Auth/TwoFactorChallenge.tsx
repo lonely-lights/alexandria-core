@@ -1,7 +1,13 @@
 import { useForm } from '@inertiajs/react';
-import { useState, type SyntheticEvent } from 'react';
+import {
+    useRef,
+    useState,
+    type ChangeEvent,
+    type SyntheticEvent,
+} from 'react';
 
 import FormGroup from '../../components/form/FormGroup';
+import OtpField from '../../components/form/OtpField';
 import TextField from '../../components/form/TextField';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import Alert from '../../components/ui/Alert';
@@ -35,8 +41,15 @@ export default function TwoFactorChallenge({
         setUsingRecovery((prev) => !prev);
     };
 
+    // Recovery codes ship as `xxxxxxxxxx-xxxxxxxxxx` (Fortify default).
+    // The submit gate accepts anything resembling that shape; server
+    // validation handles the actual lookup against the user's codes.
+    const recoveryShapeOk =
+        form.data.recovery_code.includes('-') &&
+        form.data.recovery_code.split('-').every((seg) => seg.length > 0);
+
     const canSubmit = usingRecovery
-        ? form.data.recovery_code.trim().length > 0
+        ? recoveryShapeOk
         : form.data.code.length === 6;
 
     return (
@@ -63,20 +76,10 @@ export default function TwoFactorChallenge({
                         label={copy['two_factor.challenge.recovery_label']}
                         htmlFor="recovery_code"
                     >
-                        <TextField
-                            id="recovery_code"
-                            name="recovery_code"
-                            type="text"
+                        <RecoveryCodeField
                             value={form.data.recovery_code}
-                            onChange={(e) =>
-                                form.setData('recovery_code', e.target.value)
-                            }
-                            required
+                            onChange={(v) => form.setData('recovery_code', v)}
                             autoFocus
-                            autoComplete="one-time-code"
-                            style={{
-                                fontFamily: 'var(--theme-typography-mono-family)',
-                            }}
                         />
                     </FormGroup>
                 ) : (
@@ -84,24 +87,15 @@ export default function TwoFactorChallenge({
                         label={copy['two_factor.challenge.code_label']}
                         htmlFor="code"
                     >
-                        <TextField
+                        <OtpField
                             id="code"
                             name="code"
-                            type="text"
+                            length={6}
+                            numeric
                             value={form.data.code}
-                            onChange={(e) => form.setData('code', e.target.value)}
-                            required
+                            onChange={(v) => form.setData('code', v)}
                             autoFocus
-                            autoComplete="one-time-code"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            maxLength={6}
-                            style={{
-                                fontFamily: 'var(--theme-typography-mono-family)',
-                                letterSpacing: '0.25em',
-                                textAlign: 'center',
-                                fontSize: '1.125rem',
-                            }}
+                            required
                         />
                     </FormGroup>
                 )}
@@ -150,5 +144,104 @@ export default function TwoFactorChallenge({
                 </a>
             </p>
         </AuthLayout>
+    );
+}
+
+/**
+ * Two segments × 10 characters each, joined by a hyphen — matches the
+ * Fortify default recovery-code format `xxxxxxxxxx-xxxxxxxxxx`.
+ *
+ * Smart paste on either field: pasting `abc-def` distributes across
+ * both segments; pasting just `abc` lands in whichever field is
+ * focused. Auto-advances from segment 1 → 2 once segment 1 hits 10
+ * chars. The combined value (with the hyphen) is stored in form.data
+ * since that's the format Fortify validates against.
+ */
+function RecoveryCodeField({
+    value,
+    onChange,
+    autoFocus = false,
+}: {
+    value: string;
+    onChange: (value: string) => void;
+    autoFocus?: boolean;
+}) {
+    const secondRef = useRef<HTMLInputElement>(null);
+    const [rawFirst = '', rawSecond = ''] = value.split('-');
+
+    function rebuild(first: string, second: string): void {
+        const cleanFirst = first.slice(0, 10);
+        const cleanSecond = second.slice(0, 10);
+        onChange(
+            cleanSecond.length > 0 || value.includes('-')
+                ? `${cleanFirst}-${cleanSecond}`
+                : cleanFirst,
+        );
+    }
+
+    function handleFirstChange(e: ChangeEvent<HTMLInputElement>): void {
+        const incoming = e.target.value;
+
+        // Pasted full code "xxxxxxxxxx-yyyyyyyyyy" → distribute across both.
+        if (incoming.includes('-')) {
+            const [a = '', b = ''] = incoming.split('-');
+            rebuild(a, b);
+            secondRef.current?.focus();
+
+            return;
+        }
+
+        rebuild(incoming, rawSecond);
+
+        // Auto-advance when segment 1 fills.
+        if (incoming.length === 10) {
+            secondRef.current?.focus();
+        }
+    }
+
+    function handleSecondChange(e: ChangeEvent<HTMLInputElement>): void {
+        rebuild(rawFirst, e.target.value);
+    }
+
+    const monoStyle = {
+        fontFamily: 'var(--theme-typography-mono-family)',
+        textAlign: 'center' as const,
+        letterSpacing: '0.1em',
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            <TextField
+                id="recovery_code"
+                name="recovery_code"
+                value={rawFirst}
+                onChange={handleFirstChange}
+                maxLength={10}
+                autoFocus={autoFocus}
+                autoComplete="one-time-code"
+                placeholder="xxxxxxxxxx"
+                style={monoStyle}
+            />
+            <span
+                aria-hidden="true"
+                style={{
+                    color: 'var(--theme-surface-on-page)',
+                    opacity: 0.4,
+                    fontFamily: 'var(--theme-typography-mono-family)',
+                    fontSize: '1.25rem',
+                }}
+            >
+                –
+            </span>
+            <TextField
+                ref={secondRef}
+                value={rawSecond}
+                onChange={handleSecondChange}
+                maxLength={10}
+                autoComplete="one-time-code"
+                placeholder="xxxxxxxxxx"
+                style={monoStyle}
+            />
+        </div>
     );
 }
