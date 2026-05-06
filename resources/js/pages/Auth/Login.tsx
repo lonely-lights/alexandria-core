@@ -185,8 +185,7 @@ export default function Login({
                         className="px-4"
                         style={{
                             background: 'var(--theme-surface-page)',
-                            color: 'var(--theme-surface-on-page)',
-                            opacity: 0.5,
+                            color: 'color-mix(in srgb, var(--theme-surface-on-page) 50%, transparent)',
                         }}
                     >
                         {copy['login.or']}
