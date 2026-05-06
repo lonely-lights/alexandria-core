@@ -8,6 +8,7 @@ import TextField from '../../components/form/TextField';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
+import Divider from '../../components/ui/Divider';
 
 interface LoginProps {
     copy: Record<string, string>;
@@ -172,26 +173,7 @@ export default function Login({
                 </Button>
             </form>
 
-            {/* Divider */}
-            <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                    <div
-                        className="w-full"
-                        style={{ borderTop: '1px solid var(--theme-neutral-300)' }}
-                    />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                    <span
-                        className="px-4"
-                        style={{
-                            background: 'var(--theme-surface-page)',
-                            color: 'color-mix(in srgb, var(--theme-surface-on-page) 50%, transparent)',
-                        }}
-                    >
-                        {copy['login.or']}
-                    </span>
-                </div>
-            </div>
+            <Divider>{copy['login.or']}</Divider>
 
             {registerUrl && (
                 <p
