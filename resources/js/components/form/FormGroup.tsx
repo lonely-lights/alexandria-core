@@ -20,6 +20,14 @@ export interface FormGroupProps {
     /** Visible label text. Pass an empty string to hide the label row. */
     label?: string;
 
+    /**
+     * Faded inline hint rendered immediately after the label text — e.g.
+     * "(3–30 characters)" on a Username label. Quieter than helper/error
+     * (which sit below the control); use this for sub-second-glance
+     * format hints that belong tied to the label, not the field state.
+     */
+    labelHint?: ReactNode;
+
     /** Forwarded to the <label htmlFor> attribute. */
     htmlFor?: string;
 
@@ -38,6 +46,7 @@ export interface FormGroupProps {
 
 export default function FormGroup({
     label,
+    labelHint,
     htmlFor,
     helper,
     error,
@@ -58,6 +67,14 @@ export default function FormGroup({
                             }}
                         >
                             {label}
+                            {labelHint && (
+                                <span
+                                    className="font-normal ms-1.5"
+                                    style={{ opacity: 0.5 }}
+                                >
+                                    {labelHint}
+                                </span>
+                            )}
                         </label>
                     )}
                     {action && <div className="text-sm">{action}</div>}

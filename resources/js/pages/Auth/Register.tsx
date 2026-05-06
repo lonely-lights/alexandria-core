@@ -14,6 +14,8 @@ import TextField from '../../components/form/TextField';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
+import ButtonLink from '../../components/ui/ButtonLink';
+import Divider from '../../components/ui/Divider';
 
 interface AvailabilityState {
     status: AvailabilityStatus;
@@ -217,8 +219,7 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
     return (
         <AuthLayout
             pageTitle={copy['actions.enlist'] ?? 'Register'}
-            formTitle="Join the workbench"
-            formIntro={copy['registration.intro']}
+            formTitle="Join the wordbench"
             motif={<RegisterPapersPanel />}
         >
             {Object.keys(form.errors).length > 0 && (
@@ -234,8 +235,8 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <FormGroup
                     label={copy['fields.name']}
+                    labelHint="(3–30 characters)"
                     htmlFor="name"
-                    helper="3–30 characters. This will be your unique identifier."
                 >
                     <TextField
                         id="name"
@@ -381,19 +382,16 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                 </Button>
             </form>
 
-            <p
-                className="text-center"
-                style={{ color: 'var(--theme-surface-on-page)', opacity: 0.6 }}
+            <Divider>{copy['actions.already_registered']}</Divider>
+            <ButtonLink
+                href={loginUrl}
+                variant="outline"
+                size="lg"
+                fullWidth
             >
-                {copy['actions.already_registered']}{' '}
-                <a
-                    href={loginUrl}
-                    className="font-semibold hover:opacity-80 transition-opacity"
-                    style={{ color: 'var(--theme-brand-primary-500)' }}
-                >
-                    {copy['actions.login']}
-                </a>
-            </p>
+                {copy['actions.login']}
+                <span aria-hidden="true">→</span>
+            </ButtonLink>
         </AuthLayout>
     );
 }
