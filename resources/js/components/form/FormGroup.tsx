@@ -31,6 +31,14 @@ export interface FormGroupProps {
     /** Forwarded to the <label htmlFor> attribute. */
     htmlFor?: string;
 
+    /**
+     * Hide the label visually but keep it in the DOM for screen readers.
+     * Use when the surrounding context (page heading, segment style) makes
+     * the visual label redundant — e.g. a 6-digit code field on a page
+     * already titled "Authentication code".
+     */
+    hideLabel?: boolean;
+
     /** Static helper text shown below the control when no error is set. */
     helper?: ReactNode;
 
@@ -48,16 +56,24 @@ export default function FormGroup({
     label,
     labelHint,
     htmlFor,
+    hideLabel = false,
     helper,
     error,
     action,
     children,
 }: FormGroupProps) {
+    const showLabelRow = (label && !hideLabel) || action;
+
     return (
         <div className="space-y-2">
-            {(label || action) && (
+            {label && hideLabel && (
+                <label htmlFor={htmlFor} className="sr-only">
+                    {label}
+                </label>
+            )}
+            {showLabelRow && (
                 <div className="flex items-center justify-between">
-                    {label && (
+                    {label && !hideLabel && (
                         <label
                             htmlFor={htmlFor}
                             className="block text-sm font-medium"

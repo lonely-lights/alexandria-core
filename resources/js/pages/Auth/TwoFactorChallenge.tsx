@@ -9,9 +9,11 @@ import {
 import FormGroup from '../../components/form/FormGroup';
 import OtpField from '../../components/form/OtpField';
 import TextField from '../../components/form/TextField';
+import useT from '../../hooks/useT';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
+import Divider from '../../components/ui/Divider';
 
 interface TwoFactorChallengeProps {
     copy: Record<string, string>;
@@ -24,6 +26,7 @@ export default function TwoFactorChallenge({
     termsUrl,
     privacyUrl,
 }: TwoFactorChallengeProps) {
+    const t = useT();
     const [usingRecovery, setUsingRecovery] = useState(false);
 
     const form = useForm({
@@ -75,6 +78,7 @@ export default function TwoFactorChallenge({
                     <FormGroup
                         label={copy['two_factor.challenge.recovery_label']}
                         htmlFor="recovery_code"
+                        hideLabel
                     >
                         <RecoveryCodeField
                             value={form.data.recovery_code}
@@ -86,6 +90,7 @@ export default function TwoFactorChallenge({
                     <FormGroup
                         label={copy['two_factor.challenge.code_label']}
                         htmlFor="code"
+                        hideLabel
                     >
                         <OtpField
                             id="code"
@@ -111,19 +116,21 @@ export default function TwoFactorChallenge({
                     {copy['two_factor.challenge.submit']}
                     <span aria-hidden="true">→</span>
                 </Button>
-
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="lg"
-                    fullWidth
-                    onClick={toggleMode}
-                >
-                    {usingRecovery
-                        ? copy['two_factor.challenge.use_authentication']
-                        : copy['two_factor.challenge.use_recovery']}
-                </Button>
             </form>
+
+            <Divider>{t('common.or')}</Divider>
+
+            <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                fullWidth
+                onClick={toggleMode}
+            >
+                {usingRecovery
+                    ? copy['two_factor.challenge.use_authentication']
+                    : copy['two_factor.challenge.use_recovery']}
+            </Button>
 
             <p
                 className="text-center text-xs pt-4"
