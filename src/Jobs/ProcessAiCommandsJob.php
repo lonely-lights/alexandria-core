@@ -60,22 +60,13 @@ class ProcessAiCommandsJob implements ShouldQueue
         ]);
 
         try {
-            // 1. Persist the pending commands + transaction log atomically.
-            //    AiCommandFactory::createBatchFromJson processes commands in a
-            //    foreach loop. If command index N throws (e.g. ValidationException),
-            //    rows 0..N-1 are already inserted. Wrapping the factory call in a
-            //    DB transaction rolls those partial writes back so we never leave
-            //    orphan AiReviewCommand rows under a batch_id with no AiTransaction
-            //    companion.
-            //
-            //    Provider is left as 'unknown' here because AiResponseDTO does not
-            //    expose providerName; callers that need attribution should set
-            //    `metadata['provider']` on the DTO and a follow-up CT can plumb
-            //    it through.
+            // Persist the pending commands + transaction log atomically — partial
+            // writes from a mid-loop ValidationException would otherwise leave
+            // orphan AiReviewCommand rows under a batch_id with no companion row.
             $batchId = DB::transaction(function () use ($commandFactory): string {
                 Log::info('ProcessAiCommandsJob: Calling createBatchFromJson', [
                     'user_id' => $this->user->getAuthIdentifier(),
-                    'commands' => $this->commandsData,
+                    'command_count' => count($this->commandsData),
                 ]);
 
                 $batchId = $commandFactory->createBatchFromJson($this->commandsData, $this->user, $this->context);
@@ -120,8 +111,10 @@ class ProcessAiCommandsJob implements ShouldQueue
                 'user_id' => $this->user->getAuthIdentifier(),
                 'error' => $e->getMessage(),
             ]);
-            // Notify the user of the failure.
-            // broadcast(new \App\Events\AiPlanFailed($this->user, $e->getMessage()));
+
+            // Rethrow so the queue worker records the failure + respects retry config.
+            // Swallowing here would mark the job successful despite the error.
+            throw $e;
         }
     }
 

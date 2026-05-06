@@ -30,12 +30,8 @@ class NoteAiStatusUpdated implements ShouldBroadcast
     use SerializesModels;
 
     /**
-     * Create a new event instance.
-     */
-    /**
      * @throws RuntimeException when neither $userId nor $note->user_id is set —
-     *                          we'd otherwise broadcast to "user." which silently
-     *                          reaches no subscribers.
+     *                          would otherwise broadcast to "user." with no subscribers.
      */
     public function __construct(
         public Note $note,

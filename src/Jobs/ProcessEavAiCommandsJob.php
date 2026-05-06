@@ -89,8 +89,9 @@ class ProcessEavAiCommandsJob implements ShouldQueue
                 'project_id' => $this->project->id,
                 'error' => $e->getMessage(),
             ]);
-            // Notify the user of the failure.
-            // broadcast(new \App\Events\AiPlanFailed($this->user, $e->getMessage()));
+
+            // Rethrow so the queue worker records the failure + respects retry config.
+            throw $e;
         }
     }
 }
