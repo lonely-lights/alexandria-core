@@ -39,8 +39,20 @@ export default function ThemePicker() {
         }
     }
 
+    function openThemeChooser(): void {
+        // Decoupled from preset state — consumers that mount a theme
+        // chooser modal listen for this event. Core stays preset-blind;
+        // app-side ThemeChooserModal handles the response. See
+        // alexandria-app/resources/js/components/dev/ThemeChooserModal.tsx.
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+                new CustomEvent('alexandria:open-theme-chooser'),
+            );
+        }
+    }
+
     return (
-        <div className="px-2 py-1.5">
+        <div className="flex flex-col gap-1.5 px-2 py-1.5">
             <div
                 className="alex-appearance-picker inline-flex w-full overflow-hidden rounded-md"
                 style={{
@@ -82,6 +94,32 @@ export default function ThemePicker() {
                     );
                 })}
             </div>
+
+            {/* Theme chooser trigger — dispatches a global event the app
+                listens for. Renders unconditionally; consumers that
+                don't mount a listener silently no-op when clicked. */}
+            <button
+                type="button"
+                onClick={openThemeChooser}
+                className="alex-theme-chooser-trigger flex w-full items-center gap-2 px-2.5 py-1.5 text-xs transition-colors"
+                style={{
+                    background: 'transparent',
+                    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+                    border: '1px solid var(--theme-base-400)',
+                    borderRadius: 'var(--theme-radius-button)',
+                }}
+            >
+                <i
+                    className="fa-solid fa-palette text-[11px]"
+                    aria-hidden="true"
+                />
+                <span>Theme</span>
+                <i
+                    className="fa-solid fa-chevron-right ml-auto text-[0.65rem]"
+                    aria-hidden="true"
+                    style={{ opacity: 0.5 }}
+                />
+            </button>
         </div>
     );
 }
