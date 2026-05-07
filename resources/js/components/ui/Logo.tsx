@@ -30,7 +30,7 @@ export default function Logo({ size = '2.5em', className }: LogoProps) {
             height={size}
             aria-hidden="true"
         >
-            {/* Outer rounded square (theme primary) */}
+            {/* Outer rounded square — brand primary (preset + mode aware) */}
             <rect
                 x="6"
                 y="6"
@@ -38,9 +38,9 @@ export default function Logo({ size = '2.5em', className }: LogoProps) {
                 height="88"
                 rx="20"
                 ry="20"
-                className="fill-primary"
+                fill="var(--theme-brand-primary-500)"
             />
-            {/* Inner notch (theme base-100) */}
+            {/* Inner notch — page bg so it cuts cleanly out of the square */}
             <rect
                 x="22"
                 y="22"
@@ -48,14 +48,14 @@ export default function Logo({ size = '2.5em', className }: LogoProps) {
                 height="56"
                 rx="10"
                 ry="10"
-                className="fill-base-100"
+                fill="var(--theme-base-page)"
             />
-            {/* Center dot (theme primary) */}
+            {/* Center dot — brand primary again */}
             <circle
                 cx="50"
                 cy="50"
                 r="12"
-                className="fill-primary"
+                fill="var(--theme-brand-primary-500)"
             />
         </svg>
     );

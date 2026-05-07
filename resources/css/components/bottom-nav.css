@@ -1,0 +1,260 @@
+/* BottomNav + chrome hover/focus rules
+ * Inline styles can't reach :hover/:focus-visible, so all pseudo-class
+ * states for the bottom nav, the modal close button, and the FAB live
+ * here. Active + hover tabs read the `--theme-brand-primary-highlight-bg`
+ * + `-highlight-fg` aliases (pre-resolved per mode by the emitter so
+ * we don't need light-dark() at the CSS layer); the active tab is
+ * distinguished by the top accent bar.
+ */
+
+nav[aria-label='Primary mobile navigation'] a,
+nav[aria-label='Primary mobile navigation'] button {
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Hover (and tap) — read the brand-primary highlight aliases that the
+ * emitter pre-resolves per mode (light: -100 bg / -700 fg, dark: -800
+ * bg / -200 fg). One var ref per pseudo-class instead of inline
+ * light-dark() that gates on Safari 17.5+. */
+nav[aria-label='Primary mobile navigation'] a:hover,
+nav[aria-label='Primary mobile navigation'] button:hover,
+nav[aria-label='Primary mobile navigation'] a:focus-visible,
+nav[aria-label='Primary mobile navigation'] button:focus-visible {
+    color: var(--theme-brand-primary-highlight-fg) !important;
+    background: var(--theme-brand-primary-highlight-bg) !important;
+}
+
+nav[aria-label='Primary mobile navigation'] a:focus-visible,
+nav[aria-label='Primary mobile navigation'] button:focus-visible {
+    outline: 2px solid var(--theme-brand-primary-500);
+    outline-offset: -4px;
+}
+
+/* Active tab indicator: a 2px brand bar across the top edge. */
+nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2.25rem;
+    height: 2px;
+    background: var(--theme-brand-primary-500);
+    border-radius: 0 0 2px 2px;
+}
+
+/* Modal close-button hover */
+.alex-modal-close:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-surface-on-page) 8%,
+        transparent
+    );
+}
+
+.alex-modal-close:focus-visible {
+    outline: 2px solid var(--theme-brand-primary-500);
+    outline-offset: 2px;
+}
+
+/* FAB hover/active/focus — brand-tinted shadow that adapts to either
+ * mode (vs a hardcoded dark rgba which vanishes on dark pages). */
+.alex-fab:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--theme-brand-primary-500) 40%, transparent),
+        0 14px 32px color-mix(in srgb, var(--theme-brand-primary-500) 55%, transparent),
+        0 6px 14px rgba(0, 0, 0, 0.3);
+}
+
+.alex-fab:active {
+    transform: translateY(0);
+}
+
+.alex-fab:focus-visible {
+    outline: 3px solid var(--theme-brand-primary-500);
+    outline-offset: 3px;
+}
+
+/* Pull the FAB clear of the bottom-nav bar's space on mobile only;
+ * on lg+ there's no bottom nav, so anchor it lower for a normal feel. */
+@media (min-width: 1024px) {
+    .alex-fab {
+        bottom: calc(env(safe-area-inset-bottom) + 1.5rem) !important;
+        right: 1.5rem !important;
+    }
+}
+
+/* Sidebar — profile row at the bottom hovers a touch warmer to signal
+ * tappable. Soft tint of the base-content color so it lifts subtly
+ * against the chrome bg in either mode. */
+.alex-sidebar-user:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 8%,
+        transparent
+    );
+}
+
+/* User-menu dropdown rows — hover lifts via the same soft tint pattern.
+ * Targets all anchors + buttons inside the menu container. */
+.alex-user-menu a,
+.alex-user-menu button {
+    transition: background var(--theme-motion-duration-interactive)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-user-menu a:hover,
+.alex-user-menu button:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 8%,
+        transparent
+    );
+}
+
+/* Destructive menu rows (logout, delete, etc.) — hover paints with the
+ * status-error fill so the visual signals "this commits a destructive
+ * action". Selector overrides the soft-tint default above. */
+.alex-user-menu a.alex-menu-row--danger:hover,
+.alex-user-menu button.alex-menu-row--danger:hover {
+    background: var(--theme-status-error-fill);
+    color: var(--theme-status-error-content);
+}
+
+/* Navbar avatar trigger — hover lifts via the same soft base tint as
+ * the dropdown rows so the trigger and the menu feel related. */
+.alex-user-trigger:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 10%,
+        transparent
+    );
+}
+
+/* Navbar icon buttons (notes, etc.) — neutral default, brighten on hover.
+ * Brand-flavoured variant (search button) brightens its primary tint. */
+.alex-nav-icon-btn:hover {
+    background: var(--theme-base-300) !important;
+    color: var(--theme-base-content) !important;
+}
+
+.alex-nav-icon-btn--brand:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 80%,
+        transparent
+    ) !important;
+    color: var(--theme-brand-primary-content) !important;
+}
+
+/* Appearance picker (light/dark/system segmented control) — only the
+ * unselected buttons get a hover treatment. Selected button has its
+ * own brand-fill style inline that should not change on hover. */
+.alex-appearance-picker .alex-appearance-btn[aria-pressed='false']:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 6%,
+        transparent
+    ) !important;
+    color: var(--theme-base-content) !important;
+}
+
+/* Settings sheet — drilldown row hover. Subtle base-content tint so the
+ * row reads as tappable without competing with the brand-coloured icon. */
+.alex-settings-row:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 6%,
+        transparent
+    );
+}
+
+/* Sidebar nav rows — non-active rows lift via the same soft tint pattern.
+ * Active rows already carry their own brand-coloured bg inline, so the
+ * `:not([aria-current='page'])` guard prevents the tint from washing
+ * out the highlight. */
+.alex-sidebar-row:not([aria-current='page']):hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 8%,
+        transparent
+    );
+}
+
+/* Go to Project CTA — dashed border lifts to a brand-tinted fill on
+ * hover, using the same highlight aliases as active sidebar rows. */
+.alex-go-to-project:hover {
+    background: var(--theme-brand-primary-highlight-bg);
+    border-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 60%,
+        transparent
+    ) !important;
+}
+
+/* Project switcher trigger — small uppercase label that brightens
+ * on hover. The chevron rotates via inline transition-transform. */
+.alex-project-switcher:hover {
+    color: var(--theme-base-content) !important;
+}
+
+/* Project switcher dropdown items — non-current rows tint on hover;
+ * current row keeps its brand-coloured fg so the checkmark + name
+ * stay highlighted. */
+.alex-project-switcher-item[aria-selected='false']:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 8%,
+        transparent
+    );
+    color: var(--theme-base-content) !important;
+}
+
+.alex-project-switcher-item[aria-selected='true']:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 10%,
+        transparent
+    );
+}
+
+/* Range slider styling for settings — track + thumb tied to the active
+ * theme. Webkit + Firefox both need their own pseudo-elements. */
+.alex-settings-slider {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--theme-base-400);
+    border-radius: 999px;
+    outline: none;
+}
+
+.alex-settings-slider::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--theme-brand-primary-500);
+    border: 2px solid var(--theme-base-page);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    transition: transform var(--theme-motion-duration-interactive)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-settings-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+.alex-settings-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--theme-brand-primary-500);
+    border: 2px solid var(--theme-base-page);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+}

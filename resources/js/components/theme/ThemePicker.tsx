@@ -17,9 +17,15 @@ export default function ThemePicker() {
     if (!theme) return null;
 
     const { mode, followSystem, setMode, setFollowSystem } = theme;
-    const activeKey: 'light' | 'dark' | 'system' = followSystem ? 'system' : mode;
+    const activeKey: 'light' | 'dark' | 'system' = followSystem
+        ? 'system'
+        : mode;
 
-    const options: Array<{ key: 'light' | 'dark' | 'system'; label: string; icon: string }> = [
+    const options: Array<{
+        key: 'light' | 'dark' | 'system';
+        label: string;
+        icon: string;
+    }> = [
         { key: 'light', label: 'Light', icon: 'fa-sun' },
         { key: 'dark', label: 'Dark', icon: 'fa-moon' },
         { key: 'system', label: 'System', icon: 'fa-circle-half-stroke' },
@@ -35,10 +41,13 @@ export default function ThemePicker() {
 
     return (
         <div className="px-2 py-1.5">
-            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/50">
-                Appearance
-            </div>
-            <div className="inline-flex w-full overflow-hidden rounded-md border border-base-content/15 bg-base-200">
+            <div
+                className="alex-appearance-picker inline-flex w-full overflow-hidden rounded-md"
+                style={{
+                    background: 'var(--theme-base-200)',
+                    border: '1px solid var(--theme-base-400)',
+                }}
+            >
                 {options.map((opt) => {
                     const selected = activeKey === opt.key;
                     return (
@@ -46,16 +55,29 @@ export default function ThemePicker() {
                             key={opt.key}
                             type="button"
                             onClick={() => handleSelect(opt.key)}
-                            className={`flex flex-1 items-center justify-center gap-1.5 px-2 py-1.5 text-xs transition-colors ${
+                            className="alex-appearance-btn flex flex-1 items-center justify-center gap-1.5 px-2 py-1.5 text-xs transition-colors"
+                            style={
                                 selected
-                                    ? 'bg-primary text-primary-content'
-                                    : 'text-base-content/70 hover:bg-base-content/5'
-                            }`}
+                                    ? {
+                                          background:
+                                              'var(--theme-brand-primary-500)',
+                                          color: 'var(--theme-brand-primary-content)',
+                                      }
+                                    : {
+                                          background: 'transparent',
+                                          color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+                                      }
+                            }
                             aria-pressed={selected}
                             title={opt.label}
                         >
-                            <i className={`fa-solid ${opt.icon} text-[11px]`} aria-hidden="true" />
-                            <span className="hidden sm:inline">{opt.label}</span>
+                            <i
+                                className={`fa-solid ${opt.icon} text-[11px]`}
+                                aria-hidden="true"
+                            />
+                            <span className="hidden sm:inline">
+                                {opt.label}
+                            </span>
                         </button>
                     );
                 })}

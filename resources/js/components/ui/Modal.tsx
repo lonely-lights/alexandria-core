@@ -1,6 +1,7 @@
-import { type ReactNode, useEffect, useRef, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import gsap from 'gsap';
+
+import { useFloatingPanel } from '../../hooks/useFloatingPanel';
 
 interface ModalProps {
     children: ReactNode;
@@ -9,60 +10,35 @@ interface ModalProps {
     maxWidth?: string;
 }
 
-export default function Modal({ children, open, onClose, maxWidth = 'max-w-md' }: ModalProps) {
-    const backdropRef = useRef<HTMLDivElement>(null);
-    const panelRef = useRef<HTMLDivElement>(null);
-    const closingRef = useRef(false);
-
-    // Lock body scroll when modal is open
-    useEffect(() => {
-        if (!open) return;
-        document.body.style.overflow = 'hidden';
-        return () => { document.body.style.overflow = ''; };
-    }, [open]);
-
-    // Animate in on mount
-    useEffect(() => {
-        if (!open) return;
-        closingRef.current = false;
-
-        if (backdropRef.current) {
-            gsap.fromTo(backdropRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.out' });
-        }
-        if (panelRef.current) {
-            gsap.fromTo(panelRef.current,
-                { opacity: 0, scale: 0.92, y: 24 },
-                { opacity: 1, scale: 1, y: 0, duration: 0.35, ease: 'back.out(1.6)' },
-            );
-        }
-    }, [open]);
-
-    // Escape key
-    useEffect(() => {
-        if (!open) return;
-
-        function handleKey(e: KeyboardEvent) {
-            if (e.key === 'Escape') animateClose();
-        }
-
-        document.addEventListener('keydown', handleKey);
-
-        return () => document.removeEventListener('keydown', handleKey);
-    }, [open]);
-
-    const animateClose = useCallback(() => {
-        if (closingRef.current) return;
-        closingRef.current = true;
-
-        const tl = gsap.timeline({ onComplete: onClose });
-
-        if (panelRef.current) {
-            tl.to(panelRef.current, { opacity: 0, scale: 0.95, y: 12, duration: 0.2, ease: 'power2.in' }, 0);
-        }
-        if (backdropRef.current) {
-            tl.to(backdropRef.current, { opacity: 0, duration: 0.2, ease: 'power2.in' }, 0);
-        }
-    }, [onClose]);
+export default function Modal({
+    children,
+    open,
+    onClose,
+    maxWidth = 'max-w-md',
+}: ModalProps) {
+    const { backdropRef, panelRef, animateClose } = useFloatingPanel(
+        open,
+        onClose,
+        {
+            enter: {
+                from: { opacity: 0, scale: 0.92, y: 24 },
+                to: {
+                    opacity: 1,
+                    scale: 1,
+                    y: 0,
+                    duration: 0.35,
+                    ease: 'back.out(1.6)',
+                },
+            },
+            exit: {
+                opacity: 0,
+                scale: 0.95,
+                y: 12,
+                duration: 0.2,
+                ease: 'power2.in',
+            },
+        },
+    );
 
     if (!open) return null;
 
@@ -70,12 +46,24 @@ export default function Modal({ children, open, onClose, maxWidth = 'max-w-md' }
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div
                 ref={backdropRef}
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                className="absolute inset-0"
+                style={{
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    backdropFilter: 'blur(4px)',
+                    WebkitBackdropFilter: 'blur(4px)',
+                }}
                 onClick={animateClose}
             />
             <div
                 ref={panelRef}
-                className={`relative w-full ${maxWidth} overflow-hidden rounded-3xl border border-base-content/10 bg-base-200 shadow-2xl`}
+                className={`relative w-full ${maxWidth} overflow-hidden`}
+                style={{
+                    background: 'var(--theme-base-surface)',
+                    color: 'var(--theme-base-content)',
+                    border: '1px solid var(--theme-base-400)',
+                    borderRadius: 'var(--theme-radius-card)',
+                    boxShadow: '0 24px 48px rgba(0, 0, 0, 0.32)',
+                }}
             >
                 {children}
             </div>
@@ -84,14 +72,32 @@ export default function Modal({ children, open, onClose, maxWidth = 'max-w-md' }
     );
 }
 
-/* ── Convenience sub-components ── */
-
-export function ModalHeader({ title, onClose }: { title: string; onClose: () => void }) {
+export function ModalHeader({
+    title,
+    onClose,
+}: {
+    title: string;
+    onClose: () => void;
+}) {
     return (
-        <div className="flex items-center justify-between border-b border-base-content/10 px-6 py-4">
-            <h3 className="text-lg font-bold">{title}</h3>
-            <button onClick={onClose} className="btn btn-ghost btn-sm btn-circle">
-                <i className="fa-solid fa-xmark" />
+        <div
+            className="flex items-center justify-between px-6 py-4"
+            style={{ borderBottom: '1px solid var(--theme-base-400)' }}
+        >
+            <h3
+                className="text-lg font-bold"
+                style={{ fontFamily: 'var(--theme-typography-heading-family)' }}
+            >
+                {title}
+            </h3>
+            <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                className="alex-modal-close inline-flex h-8 w-8 items-center justify-center rounded-full"
+                style={{ color: 'var(--theme-base-content)' }}
+            >
+                <i className="fa-solid fa-xmark" aria-hidden="true" />
             </button>
         </div>
     );
@@ -99,7 +105,10 @@ export function ModalHeader({ title, onClose }: { title: string; onClose: () => 
 
 export function ModalFooter({ children }: { children: ReactNode }) {
     return (
-        <div className="flex justify-end gap-2 border-t border-base-content/10 px-6 py-4">
+        <div
+            className="flex justify-end gap-2 px-6 py-4"
+            style={{ borderTop: '1px solid var(--theme-base-400)' }}
+        >
             {children}
         </div>
     );
