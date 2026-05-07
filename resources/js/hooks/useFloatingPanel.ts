@@ -17,7 +17,7 @@
  * and explicit close buttons.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import gsap from 'gsap';
 
 export interface FloatingPanelAnimation {
@@ -35,8 +35,8 @@ export interface FloatingPanelAnimation {
 }
 
 export interface FloatingPanelHandles {
-    backdropRef: React.RefObject<HTMLDivElement | null>;
-    panelRef: React.RefObject<HTMLDivElement | null>;
+    backdropRef: RefObject<HTMLDivElement | null>;
+    panelRef: RefObject<HTMLDivElement | null>;
     /** Run the exit animation, then call `onClose`. Idempotent. */
     animateClose: () => void;
 }
