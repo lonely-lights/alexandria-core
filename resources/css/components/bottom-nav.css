@@ -1,8 +1,10 @@
 /* BottomNav + chrome hover/focus rules
  * Inline styles can't reach :hover/:focus-visible, so all pseudo-class
  * states for the bottom nav, the modal close button, and the FAB live
- * here. Tab hover and active share the same brand-primary-100 / -500
- * color pair; the active tab is distinguished by the top accent bar.
+ * here. Active + hover tabs read the `--theme-brand-primary-highlight-bg`
+ * + `-highlight-fg` aliases (pre-resolved per mode by the emitter so
+ * we don't need light-dark() at the CSS layer); the active tab is
+ * distinguished by the top accent bar.
  */
 
 nav[aria-label='Primary mobile navigation'] a,
@@ -11,25 +13,16 @@ nav[aria-label='Primary mobile navigation'] button {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* Hover (and tap) — same brand color pair as the active tab, flipped
- * per mode via CSS native `light-dark()`. ThemeProvider sets
- * `color-scheme: dark | light` on documentElement, which is what
- * light-dark() reads. In light mode hovers fill with a pale brand tint
- * (-100) and brighten text to a deep brand (-700); in dark mode the bg
- * flips to a deep brand tint (-800) and text to pale brand (-200). The
- * 100/700 ↔ 800/200 swap keeps contrast high either direction. */
+/* Hover (and tap) — read the brand-primary highlight aliases that the
+ * emitter pre-resolves per mode (light: -100 bg / -700 fg, dark: -800
+ * bg / -200 fg). One var ref per pseudo-class instead of inline
+ * light-dark() that gates on Safari 17.5+. */
 nav[aria-label='Primary mobile navigation'] a:hover,
 nav[aria-label='Primary mobile navigation'] button:hover,
 nav[aria-label='Primary mobile navigation'] a:focus-visible,
 nav[aria-label='Primary mobile navigation'] button:focus-visible {
-    color: light-dark(
-        var(--theme-brand-primary-700),
-        var(--theme-brand-primary-200)
-    ) !important;
-    background: light-dark(
-        var(--theme-brand-primary-100),
-        var(--theme-brand-primary-800)
-    ) !important;
+    color: var(--theme-brand-primary-highlight-fg) !important;
+    background: var(--theme-brand-primary-highlight-bg) !important;
 }
 
 nav[aria-label='Primary mobile navigation'] a:focus-visible,
@@ -38,8 +31,7 @@ nav[aria-label='Primary mobile navigation'] button:focus-visible {
     outline-offset: -4px;
 }
 
-/* Active tab indicator: a 2px brand bar across the top edge. Slightly
- * brighter in dark mode for visibility against the deeper bg. */
+/* Active tab indicator: a 2px brand bar across the top edge. */
 nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
     content: '';
     position: absolute;
@@ -48,10 +40,7 @@ nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
     transform: translateX(-50%);
     width: 2.25rem;
     height: 2px;
-    background: light-dark(
-        var(--theme-brand-primary-500),
-        var(--theme-brand-primary-300)
-    );
+    background: var(--theme-brand-primary-500);
     border-radius: 0 0 2px 2px;
 }
 
@@ -195,13 +184,9 @@ nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
 }
 
 /* Go to Project CTA — dashed border lifts to a brand-tinted fill on
- * hover. Same light-dark swap as the active sidebar row so the
- * highlight reads in either mode. */
+ * hover, using the same highlight aliases as active sidebar rows. */
 .alex-go-to-project:hover {
-    background: light-dark(
-        var(--theme-brand-primary-100),
-        var(--theme-brand-primary-800)
-    );
+    background: var(--theme-brand-primary-highlight-bg);
     border-color: color-mix(
         in srgb,
         var(--theme-brand-primary-500) 60%,

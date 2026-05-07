@@ -60,16 +60,12 @@ interface TabProps {
     active: boolean;
 }
 
-// Active + hover tabs use the SAME color pair so the visual treatment is
-// consistent. The pair flips per mode via CSS native `light-dark()`,
-// driven by `color-scheme: dark | light` set on documentElement by
-// the ThemeProvider. In light mode we get a pale brand bg + deep brand
-// text; in dark mode we flip to a deep brand bg + pale brand text. The
-// 100/700 vs 800/200 stops keep contrast high in both directions.
-const ACTIVE_COLOR =
-    'light-dark(var(--theme-brand-primary-700), var(--theme-brand-primary-200))';
-const ACTIVE_BG =
-    'light-dark(var(--theme-brand-primary-100), var(--theme-brand-primary-800))';
+// Active + hover tabs read the brand-primary highlight aliases — pre-
+// resolved by the emitter so callers don't need light-dark() / a CSS
+// feature gate. In light mode the aliases point at -100/-700; in dark
+// at -800/-200. Same numeric stop = same semantic role across modes.
+const ACTIVE_COLOR = 'var(--theme-brand-primary-highlight-fg)';
+const ACTIVE_BG = 'var(--theme-brand-primary-highlight-bg)';
 
 function Tab({ tab, active }: TabProps) {
     const colorVar = active
