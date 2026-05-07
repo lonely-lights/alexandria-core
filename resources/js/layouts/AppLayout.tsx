@@ -10,7 +10,6 @@ import PageTransition from '../components/ui/PageTransition';
 import { projectSearch } from '../lib/projectSearch';
 import { ToastProvider } from '../components/ui/ToastProvider';
 import Logo from '../components/ui/Logo';
-import { ThemeProvider } from '../hooks/useTheme';
 import type { BottomNavTab, UserMenuItem } from '../types/navigation';
 import type { SharedProps } from '../types/index';
 
@@ -90,15 +89,6 @@ interface AppLayoutProps {
      *  suppress the bottom nav entirely. */
     bottomNavTabs?: BottomNavTab[];
 
-    /** Optional "More" sheet on the bottom nav. */
-    bottomNavMore?: {
-        heading?: string;
-        items: UserMenuItem[];
-    } | null;
-
-    /** Extra slot rendered above the bottom-nav More-menu items. */
-    bottomNavMoreExtras?: ReactNode;
-
     // ────────────────────────────────────────────────────────────────────
     // Extras
     // ────────────────────────────────────────────────────────────────────
@@ -144,8 +134,6 @@ export default function AppLayout({
     onNotesToggle,
 
     bottomNavTabs,
-    bottomNavMore,
-    bottomNavMoreExtras,
 
     extras,
 }: AppLayoutProps) {
@@ -277,72 +265,73 @@ export default function AppLayout({
     const showSearch = onSearchToggle !== null;
 
     return (
-        <ThemeProvider>
-            <ToastProvider>
-                {title && <Head title={title} />}
+        <ToastProvider>
+            {title && <Head title={title} />}
 
-                <Sidebar
-                    open={sidebarOpen}
-                    onClose={() => setSidebarOpen(false)}
-                    brand={sidebarBrand}
-                    logoSlot={sidebarLogo ?? <Logo size="2em" />}
-                    body={sidebarBody}
-                    userMenuLink={sidebarUserLink}
+            <Sidebar
+                open={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+                brand={sidebarBrand}
+                logoSlot={sidebarLogo ?? <Logo size="2em" />}
+                body={sidebarBody}
+                userMenuLink={sidebarUserLink}
+            />
+
+            {navbar && (
+                <Navbar
+                    onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+                    brand={navbarBrand}
+                    brandSlot={navbarBrandSlot}
+                    onSearchToggle={onSearchToggle ?? undefined}
+                    showSearch={showSearch}
+                    onNotesToggle={resolvedNotesToggle}
+                    extraActions={extraNavbarActions}
+                    userMenuItems={userMenuItems}
+                    userMenuFooter={userMenuFooter}
+                    guestActions={navbarGuestActions}
                 />
+            )}
 
-                {navbar && (
-                    <Navbar
-                        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-                        brand={navbarBrand}
-                        brandSlot={navbarBrandSlot}
-                        onSearchToggle={onSearchToggle ?? undefined}
-                        showSearch={showSearch}
-                        onNotesToggle={resolvedNotesToggle}
-                        extraActions={extraNavbarActions}
-                        userMenuItems={userMenuItems}
-                        userMenuFooter={userMenuFooter}
-                        guestActions={navbarGuestActions}
-                    />
-                )}
+            <main
+                className={[
+                    immersive ? '' : 'pt-20',
+                    showBottomNav ? 'pb-20 lg:pb-0' : '',
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
+            >
+                {children}
+            </main>
 
-                <main className={immersive ? '' : 'pt-20'}>{children}</main>
+            {showBottomNav && <BottomNav tabs={bottomNavTabs} />}
 
-                {showBottomNav && (
-                    <BottomNav
-                        tabs={bottomNavTabs}
-                        moreMenu={bottomNavMore}
-                        moreMenuExtras={bottomNavMoreExtras}
-                    />
-                )}
+            {/* Mount CommandPalette globally when there's a current
+                project to search against — wires Cmd+K + the navbar
+                search button to /p/{slug}/search through the
+                projectSearch helper. Per-page mounts (e.g. legacy's
+                Show pages) are no longer required. */}
+            {currentProject && (
+                <CommandPalette
+                    open={paletteOpen}
+                    onClose={() => setPaletteOpen(false)}
+                    onSearch={projectSearch(currentProject.slug)}
+                />
+            )}
 
-                {/* Mount CommandPalette globally when there's a current
-                    project to search against — wires Cmd+K + the navbar
-                    search button to /p/{slug}/search through the
-                    projectSearch helper. Per-page mounts (e.g. legacy's
-                    Show pages) are no longer required. */}
-                {currentProject && (
-                    <CommandPalette
-                        open={paletteOpen}
-                        onClose={() => setPaletteOpen(false)}
-                        onSearch={projectSearch(currentProject.slug)}
-                    />
-                )}
+            {/* NotesDrawer manages its own state through the global
+                `alexandria:open-notes` event. Mount only on /p/{...}
+                routes so the dedicated Notes / AI dashboards aren't
+                shadowed by a redundant slide-up drawer. */}
+            {currentProject && isProjectScope && <NotesDrawer />}
 
-                {/* NotesDrawer manages its own state through the global
-                    `alexandria:open-notes` event. Mount only on /p/{...}
-                    routes so the dedicated Notes / AI dashboards aren't
-                    shadowed by a redundant slide-up drawer. */}
-                {currentProject && isProjectScope && <NotesDrawer />}
+            {/* PageTransition listens for `alexandria:transition-close`
+                events and resolves the Promise returned by
+                triggerPageTransition(). Without it mounted, any caller
+                awaiting that helper hangs forever — the SortingHistory
+                modal's blueprint/entry links are the canonical example. */}
+            <PageTransition />
 
-                {/* PageTransition listens for `alexandria:transition-close`
-                    events and resolves the Promise returned by
-                    triggerPageTransition(). Without it mounted, any caller
-                    awaiting that helper hangs forever — the SortingHistory
-                    modal's blueprint/entry links are the canonical example. */}
-                <PageTransition />
-
-                {extras}
-            </ToastProvider>
-        </ThemeProvider>
+            {extras}
+        </ToastProvider>
     );
 }

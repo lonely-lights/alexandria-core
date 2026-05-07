@@ -140,12 +140,13 @@ export default function Navbar({
     userMenuFooter,
     guestActions,
 }: NavbarProps) {
-    // Resolve menu items: consumer-supplied wins, otherwise stitch the
-    // default Profile/Settings/Shortcuts head with the Support/API/Log
-    // out tail. Dropdown body always renders ThemePicker between this
-    // resolved list and the optional userMenuFooter slot.
-    const resolvedMenuItems: UserMenuItem[] = userMenuItems
-        ?? [...DEFAULT_USER_MENU_ITEMS, ...DEFAULT_USER_MENU_FOOTER_ITEMS];
+    // Default dropdown structure renders in three groups so the
+    // ThemePicker (Appearance) lands between the "head" items
+    // (Profile / Settings / Keyboard shortcuts) and the "tail" items
+    // (Support / API / Log out). When a consumer supplies their own
+    // userMenuItems we render those as a single block followed by
+    // Appearance — there's no head/tail boundary we can infer.
+    const useCustomMenu = userMenuItems !== undefined;
     const { auth } = usePage<SharedProps>().props;
     const user = auth?.user ?? null;
     const [scrolled, setScrolled] = useState(false);
@@ -189,11 +190,21 @@ export default function Navbar({
                     document.documentElement.style.setProperty('--navbar-height', `${el.offsetHeight}px`);
                 }
             }}
-            className={`fixed top-0 z-20 w-full px-2 py-2 navbar backdrop-blur-lg border-b transition-all duration-300 overflow-visible ${
-                scrolled
-                    ? 'bg-base-300/70 border-base-content/10 shadow-lg'
-                    : 'bg-base-300/30 border-transparent'
-            }`}
+            className="fixed top-0 z-20 w-full px-2 py-2 navbar backdrop-blur-lg border-b transition-all duration-300 overflow-visible"
+            style={{
+                // base-chrome is the elevated-chrome surface (preset- and
+                // mode-aware). Translucency lets the page bg show through
+                // for the frosted-glass feel; scrolled state firms up.
+                background: scrolled
+                    ? 'color-mix(in srgb, var(--theme-base-chrome) 70%, transparent)'
+                    : 'color-mix(in srgb, var(--theme-base-chrome) 30%, transparent)',
+                borderBottomColor: scrolled
+                    ? 'var(--theme-base-400)'
+                    : 'transparent',
+                boxShadow: scrolled
+                    ? '0 8px 16px rgba(0, 0, 0, 0.18)'
+                    : 'none',
+            }}
         >
             <div className="container mx-auto flex max-w-7xl items-center justify-between px-2">
                 <div className="flex flex-1 items-center">
@@ -209,7 +220,10 @@ export default function Navbar({
                     {/* Brand */}
                     <a href="/" className="flex items-center">
                         {brandSlot ?? (brand ? (
-                            <span className="ml-4 hidden font-serif text-xl font-semibold text-base-content sm:inline">
+                            <span
+                                className="ml-4 hidden font-serif text-xl font-semibold sm:inline"
+                                style={{ color: 'var(--theme-base-content)' }}
+                            >
                                 {brand}
                             </span>
                         ) : null)}
@@ -231,7 +245,12 @@ export default function Navbar({
                                 >
                                     <button
                                         onClick={handleSearchClick}
-                                        className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary/60 text-primary-content transition-colors hover:bg-primary/80"
+                                        className="alex-nav-icon-btn alex-nav-icon-btn--brand flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
+                                        style={{
+                                            background:
+                                                'color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)',
+                                            color: 'var(--theme-brand-primary-content)',
+                                        }}
                                         aria-label="Search (⌘K)"
                                     >
                                         <i className="fa-light fa-magnifying-glass" />
@@ -244,7 +263,12 @@ export default function Navbar({
                                 <Tooltip content="Notes" placement="bottom">
                                     <button
                                         onClick={onNotesToggle}
-                                        className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full bg-base-200 text-base-content/70 transition-colors hover:bg-base-300 hover:text-base-content"
+                                        className="alex-nav-icon-btn flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
+                                        style={{
+                                            background:
+                                                'var(--theme-base-200)',
+                                            color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+                                        }}
                                         aria-label="Notes"
                                     >
                                         <i className="fa-solid fa-note-sticky" />
@@ -258,29 +282,52 @@ export default function Navbar({
                             <div className="relative min-w-0" ref={dropdownRef}>
                                 <button
                                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                                    className="inline-flex min-w-0 max-w-full items-center gap-4 overflow-hidden rounded-md px-3 py-1 text-sm font-medium text-base-content transition-all duration-300 hover:bg-base-content/10 focus:outline-none"
+                                    className="alex-user-trigger inline-flex min-w-0 max-w-full items-center gap-3 px-3 py-1 text-sm font-medium transition-all duration-300 focus:outline-none"
+                                    style={{
+                                        color: 'var(--theme-base-content)',
+                                        borderRadius: 'var(--theme-radius-button)',
+                                    }}
                                 >
-                                    <AvatarWithRing
-                                        src={user.has_avatar && user.avatar_thumb_url ? user.avatar_thumb_url : null}
-                                        alt={user.name ?? 'User'}
-                                        initials={(user.display_name ?? user.name ?? 'U').charAt(0).toUpperCase()}
-                                        size={32}
-                                        ring={user.avatar_ring_slug ?? 'none'}
-                                        ringSettings={user.avatar_ring_settings as never}
-                                        ringThickness={4}
-                                    />
+                                    {/* Avatar overflows below the navbar's
+                                        bottom edge for a "hanging seal"
+                                        feel — translateY pushes it down
+                                        without reflowing the button. The
+                                        navbar's overflow-visible className
+                                        keeps it from being clipped. */}
+                                    <span
+                                        className="shrink-0"
+                                        style={{ transform: 'translateY(0.5rem)' }}
+                                    >
+                                        <AvatarWithRing
+                                            src={user.has_avatar && user.avatar_thumb_url ? user.avatar_thumb_url : null}
+                                            alt={user.name ?? 'User'}
+                                            initials={(user.display_name ?? user.name ?? 'U').charAt(0).toUpperCase()}
+                                            size={48}
+                                            ring={user.avatar_ring_slug ?? 'none'}
+                                            ringSettings={user.avatar_ring_settings as never}
+                                            ringThickness={4}
+                                        />
+                                    </span>
                                     <span className="flex min-w-0 flex-col items-start leading-none">
                                         <span className="truncate max-w-[180px]">
                                             {user.display_name ?? user.name ?? 'User'}
                                         </span>
                                         {user.display_name && user.name && (
-                                            <span className="truncate max-w-[180px] text-xs text-base-content/50">
+                                            <span
+                                                className="truncate max-w-[180px] text-xs"
+                                                style={{
+                                                    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                                                }}
+                                            >
                                                 @{user.name}
                                             </span>
                                         )}
                                     </span>
                                     <svg
-                                        className="h-4 w-4 flex-shrink-0 text-base-content/40"
+                                        className="h-4 w-4 flex-shrink-0"
+                                        style={{
+                                            color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+                                        }}
                                         xmlns="http://www.w3.org/2000/svg"
                                         fill="none"
                                         viewBox="0 0 24 24"
@@ -298,33 +345,30 @@ export default function Navbar({
                                 {/* Dropdown Menu */}
                                 {dropdownOpen && (
                                     <div className="absolute right-0 top-full z-50 mt-2 w-56">
-                                        <div className="mt-1 rounded-md bg-base-300 p-1 text-base-content shadow-md">
-                                            {/* Header */}
-                                            <div className="px-2 py-1.5 text-sm font-semibold">
-                                                <span>My Account</span>
-                                            </div>
-
-                                            <div className="-mx-1 my-1 h-px bg-base-content/10" />
-
-                                            {resolvedMenuItems.map((item, idx) => {
-                                                if (isDivider(item)) {
-                                                    return (
-                                                        <div
-                                                            key={`div-${idx}`}
-                                                            className="-mx-1 my-1 h-px bg-base-content/10"
-                                                        />
-                                                    );
-                                                }
-                                                return renderMenuRow(item, idx);
-                                            })}
-
-                                            <div className="-mx-1 my-1 h-px bg-base-content/10" />
-
+                                        <div
+                                            className="alex-user-menu mt-1 rounded-md p-1 shadow-md"
+                                            style={{
+                                                background: 'var(--theme-base-surface)',
+                                                color: 'var(--theme-base-content)',
+                                                border: '1px solid var(--theme-base-400)',
+                                            }}
+                                        >
                                             <ThemePicker />
+
+                                            <MenuDivider />
+
+                                            {useCustomMenu ? (
+                                                userMenuItems!.map(renderMenuItem)
+                                            ) : (
+                                                <>
+                                                    {DEFAULT_USER_MENU_ITEMS.map(renderMenuItem)}
+                                                    {DEFAULT_USER_MENU_FOOTER_ITEMS.map(renderMenuItem)}
+                                                </>
+                                            )}
 
                                             {userMenuFooter && (
                                                 <>
-                                                    <div className="-mx-1 my-1 h-px bg-base-content/10" />
+                                                    <MenuDivider />
                                                     {userMenuFooter}
                                                 </>
                                             )}
@@ -360,14 +404,35 @@ function DefaultGuestActions() {
     );
 }
 
+function renderMenuItem(item: UserMenuItem, idx: number): ReactNode {
+    if (isDivider(item)) {
+        return <MenuDivider key={`div-${idx}`} />;
+    }
+    return renderMenuRow(item, idx);
+}
+
+function MenuDivider() {
+    return (
+        <div
+            className="-mx-1 my-1 h-px"
+            style={{
+                background:
+                    'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+            }}
+        />
+    );
+}
+
 function renderMenuRow(item: UserMenuItemRow, idx: number): ReactNode {
-    const baseClass = 'relative flex select-none items-center rounded px-2 py-1.5 text-sm outline-none transition-colors';
+    const baseClass = 'relative flex select-none items-center px-2 py-1.5 text-sm outline-none transition-colors';
+    const baseStyle = { borderRadius: 'var(--theme-radius-button)' };
 
     if (item.disabled) {
         return (
             <span
                 key={`item-${idx}`}
                 className={`${baseClass} cursor-default opacity-50`}
+                style={baseStyle}
             >
                 {renderMenuIcon(item.icon)}
                 <span>{item.label}</span>
@@ -378,16 +443,13 @@ function renderMenuRow(item: UserMenuItemRow, idx: number): ReactNode {
         );
     }
 
-    const hoverClass = item.danger
-        ? 'hover:bg-error hover:text-error-content'
-        : 'hover:bg-primary hover:text-primary-content';
-
     return (
         <a
             key={`item-${idx}`}
             href={item.href}
             onClick={item.onClick}
-            className={`${baseClass} ${hoverClass}`}
+            className={`${baseClass} ${item.danger ? 'alex-menu-row--danger' : ''}`}
+            style={baseStyle}
         >
             {renderMenuIcon(item.icon)}
             <span>{item.label}</span>

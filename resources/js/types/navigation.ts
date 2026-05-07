@@ -35,8 +35,12 @@ export interface UserMenuItemDivider {
 export type UserMenuItem = UserMenuItemRow | UserMenuItemDivider;
 
 /**
- * A single tab in the mobile BottomNav. Up to five tabs render; one of them
- * may carry `featured: true` to render as a centered floating-action button.
+ * A single tab in the mobile BottomNav. Five tabs render evenly spaced.
+ * The global "create" affordance lives in a separate floating action
+ * button — do not try to express it as a featured tab here.
+ *
+ * Use `href: '#'` + an `onClick` handler for tabs that open modals or
+ * sheets instead of navigating.
  */
 export interface BottomNavTab {
     /** Stable React key. */
@@ -45,13 +49,11 @@ export interface BottomNavTab {
     label: string;
     /** Icon content. FontAwesome class string OR ReactNode. */
     icon: string | ReactNode;
-    /** Destination href. */
+    /** Destination href. Pass `'#'` for action-only tabs (opens a modal /
+     *  sheet via `onClick`). */
     href: string;
     /** Optional badge content (e.g. unread count). */
     badge?: number | string;
-    /** Renders this tab as a floating-action style button (raised, primary
-     *  color). Typically used for the centre tab of a 5-tab bar. */
-    featured?: boolean;
     /** Optional click handler — called before navigation. Call
      *  `event.preventDefault()` to suppress navigation. */
     onClick?: (event: { preventDefault: () => void }) => void;

@@ -94,13 +94,25 @@ export default function Sidebar({
 
             {/* Sidebar Panel */}
             <Transition show={open} as={Fragment}>
-                <aside className="fixed top-0 left-0 z-40 h-screen w-72 flex-col bg-base-200 p-3 transition-transform duration-300 data-[closed]:-translate-x-full flex">
+                <aside
+                    className="alex-sidebar fixed top-0 left-0 z-40 h-screen w-72 flex-col p-3 transition-transform duration-300 data-[closed]:-translate-x-full flex"
+                    style={{
+                        background: 'var(--theme-base-chrome)',
+                        color: 'var(--theme-base-content)',
+                        borderRight: '1px solid var(--theme-base-400)',
+                    }}
+                >
                     {/* Header */}
                     <div className="mb-3 flex items-center justify-between">
                         <a href="/" className="flex items-center">
                             {logoSlot}
                             {brand && (
-                                <span className={`text-lg font-semibold text-white ${logoSlot ? 'ml-3' : ''}`}>
+                                <span
+                                    className={`text-lg font-semibold ${logoSlot ? 'ml-3' : ''}`}
+                                    style={{
+                                        color: 'var(--theme-base-content)',
+                                    }}
+                                >
                                     {brand}
                                 </span>
                             )}
@@ -121,7 +133,10 @@ export default function Sidebar({
                             <div className="divider my-1 h-px" />
                             <a
                                 href={userMenuLink}
-                                className="flex items-center gap-4 rounded-lg px-2 py-1.5 transition-colors hover:bg-base-300"
+                                className="alex-sidebar-user flex items-center gap-4 px-2 py-1.5 transition-colors"
+                                style={{
+                                    borderRadius: 'var(--theme-radius-card)',
+                                }}
                             >
                                 <AvatarWithRing
                                     src={auth.user.has_avatar && auth.user.avatar_thumb_url ? auth.user.avatar_thumb_url : null}
@@ -137,7 +152,12 @@ export default function Sidebar({
                                         {auth.user.display_name ?? auth.user.name ?? 'User'}
                                     </span>
                                     {auth.user.display_name && auth.user.name && (
-                                        <span className="text-xs leading-tight text-base-content/60">
+                                        <span
+                                            className="text-xs leading-tight"
+                                            style={{
+                                                color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+                                            }}
+                                        >
                                             @{auth.user.name}
                                         </span>
                                     )}
