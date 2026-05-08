@@ -10,8 +10,58 @@ import PageTransition from '../components/ui/PageTransition';
 import { projectSearch } from '../lib/projectSearch';
 import { ToastProvider } from '../components/ui/ToastProvider';
 import Logo from '../components/ui/Logo';
+import Fab from '../components/ui/Fab';
+import Modal, { ModalHeader } from '../components/ui/Modal';
 import type { BottomNavTab, UserMenuItem } from '../types/navigation';
 import type { SharedProps } from '../types/index';
+
+/**
+ * Default actions surfaced by the global add-new FAB. Stub onClick
+ * handlers for now — Stage 7g+ wires real flows (notes / free writing /
+ * entry creation / project creation) into these slots. Override the
+ * default set per-page via the `fabActions` prop.
+ */
+interface FabAction {
+    label: string;
+    description: string;
+    icon: string;
+    onClick: () => void;
+}
+
+const DEFAULT_FAB_ACTIONS: FabAction[] = [
+    {
+        label: 'New note',
+        description: 'Capture an idea — the AI will sort it later.',
+        icon: 'fa-solid fa-note-sticky',
+        onClick: () => {
+            /* TODO: wire to NotesDrawer open with empty draft */
+        },
+    },
+    {
+        label: 'Free writing',
+        description: 'Open a blank page and write without structure.',
+        icon: 'fa-solid fa-pen-nib',
+        onClick: () => {
+            /* TODO: wire to free-writing surface (Stage 7g) */
+        },
+    },
+    {
+        label: 'New entry',
+        description: 'Create a character, location, event, or anything.',
+        icon: 'fa-solid fa-circle-plus',
+        onClick: () => {
+            /* TODO: wire to blueprint picker → entry create */
+        },
+    },
+    {
+        label: 'New project',
+        description: 'Start a fresh worldbuilding workspace.',
+        icon: 'fa-solid fa-folder-plus',
+        onClick: () => {
+            /* TODO: wire to dashboard's create-project flow */
+        },
+    },
+];
 
 interface AppLayoutProps {
     /** The page content. */
@@ -90,6 +140,17 @@ interface AppLayoutProps {
     bottomNavTabs?: BottomNavTab[];
 
     // ────────────────────────────────────────────────────────────────────
+    // Floating action button
+    // ────────────────────────────────────────────────────────────────────
+
+    /** Override the default add-new FAB actions (4 stub cards: New
+     *  note / Free writing / New entry / New project). Pass `null` to
+     *  hide the FAB entirely. The FAB only renders when there's an
+     *  authenticated user — anonymous pages (auth, dev sandbox unless
+     *  logged in) never see it. */
+    fabActions?: FabAction[] | null;
+
+    // ────────────────────────────────────────────────────────────────────
     // Extras
     // ────────────────────────────────────────────────────────────────────
 
@@ -135,13 +196,24 @@ export default function AppLayout({
 
     bottomNavTabs,
 
+    fabActions,
+
     extras,
 }: AppLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [paletteOpen, setPaletteOpen] = useState(false);
+    const [addNewOpen, setAddNewOpen] = useState(false);
     const pageProps = usePage<SharedProps>().props;
-    const { currentProject } = pageProps;
+    const { currentProject, auth } = pageProps;
+    const user = auth?.user ?? null;
     const url = usePage().url;
+
+    // Resolve which actions the FAB modal renders. Consumer override
+    // wins; otherwise fall back to the four-stub default. `null`
+    // suppresses the FAB entirely.
+    const resolvedFabActions: FabAction[] | null =
+        fabActions === null ? null : (fabActions ?? DEFAULT_FAB_ACTIONS);
+    const showFab = !!user && resolvedFabActions !== null;
 
     // Inertia ships the page's bound blueprint/entry as shared props on
     // the show routes so the drawer can scope its notes list to that
@@ -330,6 +402,76 @@ export default function AppLayout({
                 awaiting that helper hangs forever — the SortingHistory
                 modal's blueprint/entry links are the canonical example. */}
             <PageTransition />
+
+            {/* Global add-new FAB. Authenticated only (see `showFab`
+                above). Opens a small modal with the resolved action
+                cards; consumers override the default 4-card set via
+                the `fabActions` prop or pass `null` to hide. */}
+            {showFab && (
+                <>
+                    <Fab
+                        label="Add new"
+                        onClick={() => setAddNewOpen(true)}
+                    />
+                    <Modal
+                        open={addNewOpen}
+                        onClose={() => setAddNewOpen(false)}
+                        maxWidth="max-w-md"
+                    >
+                        <ModalHeader
+                            title="Add new"
+                            onClose={() => setAddNewOpen(false)}
+                        />
+                        <ul className="m-0 flex list-none flex-col p-0">
+                            {resolvedFabActions!.map((action, idx) => (
+                                <li key={action.label}>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            action.onClick();
+                                            setAddNewOpen(false);
+                                        }}
+                                        className="alex-add-new-card flex w-full items-start gap-3 px-6 py-4 text-left transition-colors"
+                                        style={{
+                                            color: 'var(--theme-base-content)',
+                                            borderBottom:
+                                                idx ===
+                                                resolvedFabActions!.length - 1
+                                                    ? 'none'
+                                                    : '1px solid var(--theme-base-400)',
+                                        }}
+                                    >
+                                        <span
+                                            aria-hidden="true"
+                                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                                            style={{
+                                                background:
+                                                    'var(--theme-brand-primary-highlight-bg)',
+                                                color: 'var(--theme-brand-primary-highlight-fg)',
+                                            }}
+                                        >
+                                            <i className={action.icon} />
+                                        </span>
+                                        <span className="flex flex-col">
+                                            <span className="text-sm font-semibold">
+                                                {action.label}
+                                            </span>
+                                            <span
+                                                className="text-xs"
+                                                style={{
+                                                    color: 'color-mix(in srgb, var(--theme-base-content) 65%, transparent)',
+                                                }}
+                                            >
+                                                {action.description}
+                                            </span>
+                                        </span>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </Modal>
+                </>
+            )}
 
             {extras}
         </ToastProvider>

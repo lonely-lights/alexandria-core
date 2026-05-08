@@ -202,6 +202,17 @@ nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
     color: var(--theme-base-content) !important;
 }
 
+/* Add-new modal cards — opened from the global FAB in AppLayout.
+ * Soft base-content tint matches the family of clickable rows
+ * elsewhere (sidebar items, dropdown rows, settings rows). */
+.alex-add-new-card:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 6%,
+        transparent
+    );
+}
+
 /* Settings sheet — drilldown row hover. Subtle base-content tint so the
  * row reads as tappable without competing with the brand-coloured icon. */
 .alex-settings-row:hover {
