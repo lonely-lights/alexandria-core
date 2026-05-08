@@ -296,20 +296,21 @@ export default function Navbar({
                             <div className="relative min-w-0" ref={dropdownRef}>
                                 <button
                                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                                    className="alex-user-trigger inline-flex min-w-0 max-w-full items-center gap-3 px-3 py-1 text-base font-medium transition-all duration-300 focus:outline-none"
+                                    className="alex-user-trigger inline-flex min-w-0 max-w-full items-center gap-3 px-3 text-base font-medium transition-all duration-300 focus:outline-none"
                                     style={{
                                         color: 'var(--theme-base-content)',
                                         borderRadius: 'var(--theme-radius-button)',
-                                        // Button height < navbar height so the
-                                        // hover-tint background sits with equal
-                                        // gap above and below — symmetric inside
-                                        // the navbar. items-center on the inner
-                                        // flex centers the 56px button inside
-                                        // the 72px navbar with 8px on each side.
-                                        // Avatar still hangs below via the
-                                        // wrapper's translateY transform, which
-                                        // doesn't affect the box.
-                                        height: '56px',
+                                        // Button fills the full navbar height so
+                                        // its hover-tint background covers the
+                                        // entire navbar slice. Content inside
+                                        // (avatar + text + chevron) is centered
+                                        // via items-center. The avatar's
+                                        // wrapper still uses translateY to
+                                        // overflow below; transforms don't
+                                        // affect the button's box, so the bg
+                                        // stays clipped to navbar bounds.
+                                        height: '100%',
+                                        alignSelf: 'stretch',
                                     }}
                                 >
                                     {/* Avatar overflows below the navbar's
