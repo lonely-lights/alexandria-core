@@ -292,7 +292,7 @@ export default function Navbar({
                             <div className="relative min-w-0" ref={dropdownRef}>
                                 <button
                                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                                    className="alex-user-trigger inline-flex min-w-0 max-w-full items-center gap-3 px-3 py-1 text-sm font-medium transition-all duration-300 focus:outline-none"
+                                    className="alex-user-trigger inline-flex min-w-0 max-w-full items-center gap-3 px-3 py-1 text-base font-medium transition-all duration-300 focus:outline-none"
                                     style={{
                                         color: 'var(--theme-base-content)',
                                         borderRadius: 'var(--theme-radius-button)',
@@ -330,7 +330,7 @@ export default function Navbar({
                                         </span>
                                         {user.display_name && user.name && (
                                             <span
-                                                className="truncate max-w-[180px] text-xs"
+                                                className="truncate max-w-[180px] text-sm"
                                                 style={{
                                                     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
                                                 }}
@@ -340,7 +340,7 @@ export default function Navbar({
                                         )}
                                     </span>
                                     <svg
-                                        className="h-4 w-4 flex-shrink-0"
+                                        className="h-5 w-5 flex-shrink-0"
                                         style={{
                                             color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
                                         }}
