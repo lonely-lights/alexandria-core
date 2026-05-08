@@ -55,12 +55,22 @@ export function useFloatingPanel(
     const animationRef = useRef(animation);
     animationRef.current = animation;
 
-    // Lock body scroll while open
+    // Lock page scroll while open. Apply `overflow: hidden` to <html>
+    // (not <body>) — body's overflow propagates to the viewport and
+    // clobbers `scrollbar-gutter: stable`, so the gutter disappears
+    // along with the scrollbar and content shifts. Locking html
+    // directly leaves the gutter rule intact, so the scrollbar's
+    // reserved column stays put. Save/restore the previous value so
+    // nested overlays don't trample each other.
     useEffect(() => {
         if (!open) return;
-        document.body.style.overflow = 'hidden';
+
+        const html = document.documentElement;
+        const previousOverflow = html.style.overflow;
+        html.style.overflow = 'hidden';
+
         return () => {
-            document.body.style.overflow = '';
+            html.style.overflow = previousOverflow;
         };
     }, [open]);
 
