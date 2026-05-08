@@ -28,6 +28,58 @@ interface FabAction {
     onClick: () => void;
 }
 
+/**
+ * Default mobile bottom-nav tab set. Five-slot layout: Dashboard +
+ * Projects + Notes + Profile + Settings. Profile and Settings both
+ * land on `/account` today — the URL split (Profile getting its own
+ * identity-themed page, Settings staying clinical) lands as a later
+ * Stage 3 refactor; the slots are reserved here for that transition.
+ *
+ * Notes routes to the current project's notes dashboard when there's
+ * a `currentProject` shared prop; otherwise falls back to `/dashboard`
+ * so the user can pick a project first.
+ */
+function buildDefaultBottomNavTabs(
+    currentProjectSlug: string | undefined,
+): BottomNavTab[] {
+    const notesHref = currentProjectSlug
+        ? `/notes/${currentProjectSlug}`
+        : '/dashboard';
+
+    return [
+        {
+            id: 'dashboard',
+            label: 'Dashboard',
+            href: '/dashboard',
+            icon: 'fa-solid fa-house',
+        },
+        {
+            id: 'projects',
+            label: 'Projects',
+            href: '/dashboard',
+            icon: 'fa-solid fa-folder-tree',
+        },
+        {
+            id: 'notes',
+            label: 'Notes',
+            href: notesHref,
+            icon: 'fa-solid fa-note-sticky',
+        },
+        {
+            id: 'profile',
+            label: 'Profile',
+            href: '/account',
+            icon: 'fa-solid fa-user',
+        },
+        {
+            id: 'settings',
+            label: 'Settings',
+            href: '/account',
+            icon: 'fa-solid fa-gear',
+        },
+    ];
+}
+
 const DEFAULT_FAB_ACTIONS: FabAction[] = [
     {
         label: 'New note',
@@ -135,9 +187,13 @@ interface AppLayoutProps {
     // Bottom-nav slots
     // ────────────────────────────────────────────────────────────────────
 
-    /** Tabs for the mobile bottom nav. Pass an empty array (or omit) to
-     *  suppress the bottom nav entirely. */
-    bottomNavTabs?: BottomNavTab[];
+    /** Override the default 5-tab bottom nav (Dashboard / Projects /
+     *  Notes / Profile / Settings). Pass an array to replace the
+     *  defaults, or `null` to hide the bottom nav entirely. The
+     *  default set only renders when there's an authenticated user —
+     *  anonymous pages (auth, dev sandbox unless logged in) never see
+     *  it. */
+    bottomNavTabs?: BottomNavTab[] | null;
 
     // ────────────────────────────────────────────────────────────────────
     // Floating action button
@@ -333,7 +389,20 @@ export default function AppLayout({
         };
     }, []);
 
-    const showBottomNav = !!bottomNavTabs && bottomNavTabs.length > 0;
+    // Resolve which bottom-nav tabs render. Same precedence as the FAB:
+    //   - explicit `null`     → suppress the bottom nav
+    //   - explicit array      → use as-is
+    //   - undefined + auth    → fall back to the default 5-slot set
+    //   - undefined + anon    → suppress (no auth → no bottom nav)
+    const resolvedBottomNavTabs: BottomNavTab[] | null =
+        bottomNavTabs === null
+            ? null
+            : (bottomNavTabs ??
+              (user
+                  ? buildDefaultBottomNavTabs(currentProject?.slug)
+                  : null));
+    const showBottomNav =
+        !!resolvedBottomNavTabs && resolvedBottomNavTabs.length > 0;
     const showSearch = onSearchToggle !== null;
 
     return (
@@ -375,7 +444,7 @@ export default function AppLayout({
                 {children}
             </main>
 
-            {showBottomNav && <BottomNav tabs={bottomNavTabs} />}
+            {showBottomNav && <BottomNav tabs={resolvedBottomNavTabs!} />}
 
             {/* Mount CommandPalette globally when there's a current
                 project to search against — wires Cmd+K + the navbar
