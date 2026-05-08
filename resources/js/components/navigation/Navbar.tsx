@@ -190,8 +190,14 @@ export default function Navbar({
                     document.documentElement.style.setProperty('--navbar-height', `${el.offsetHeight}px`);
                 }
             }}
-            className="fixed top-0 z-20 w-full px-2 py-2 navbar backdrop-blur-lg border-b transition-all duration-300 overflow-visible"
+            className="fixed top-0 z-20 w-full px-2 navbar backdrop-blur-lg border-b transition-all duration-300 overflow-visible"
             style={{
+                // Hard-cap the navbar at legacy's 72px height. Without
+                // this cap, sizing the user avatar bigger than 48px
+                // would stretch the navbar; with it, the avatar can
+                // overflow below for the "hanging seal" effect while
+                // the chrome stays the same height it always was.
+                height: '72px',
                 // base-chrome is the elevated-chrome surface (preset- and
                 // mode-aware). Translucency lets the page bg show through
                 // for the frosted-glass feel; scrolled state firms up.
@@ -294,19 +300,24 @@ export default function Navbar({
                                 >
                                     {/* Avatar overflows below the navbar's
                                         bottom edge for a "hanging seal"
-                                        feel — translateY pushes it down
-                                        without reflowing the button. The
-                                        navbar's overflow-visible className
-                                        keeps it from being clipped. */}
+                                        feel. Sized at 64px with a 1rem
+                                        translateY so the upper edge sits
+                                        at navbar_y + 20 (matching legacy's
+                                        original starting position) and the
+                                        lower edge extends ~12px below the
+                                        navbar's bottom. The navbar's hard
+                                        72px height + overflow-visible keep
+                                        it from being clipped or stretching
+                                        the chrome. */}
                                     <span
                                         className="shrink-0"
-                                        style={{ transform: 'translateY(0.5rem)' }}
+                                        style={{ transform: 'translateY(1rem)' }}
                                     >
                                         <AvatarWithRing
                                             src={user.has_avatar && user.avatar_thumb_url ? user.avatar_thumb_url : null}
                                             alt={user.name ?? 'User'}
                                             initials={(user.display_name ?? user.name ?? 'U').charAt(0).toUpperCase()}
-                                            size={48}
+                                            size={64}
                                             ring={user.avatar_ring_slug ?? 'none'}
                                             ringSettings={user.avatar_ring_settings as never}
                                             ringThickness={4}

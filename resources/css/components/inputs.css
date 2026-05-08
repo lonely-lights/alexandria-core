@@ -151,7 +151,7 @@
    on `:checked`. Uses `appearance: none` so we own the surface
    completely; native checkbox styling is too restrictive for theming. */
 
-.alex-toggle {
+input.alex-toggle {
     appearance: none;
     -webkit-appearance: none;
     width: 2.5rem;
@@ -170,7 +170,7 @@
             var(--theme-motion-easing-standard);
 }
 
-.alex-toggle::after {
+input.alex-toggle::after {
     content: '';
     position: absolute;
     top: 2px;
@@ -191,9 +191,9 @@
  * since going lighter (`-300`) reads as washed-out against dark
  * surfaces (oklch lightness rises faster than chroma at the upper
  * steps). */
-.alex-toggle:hover:not(:disabled),
-.alex-toggle:checked,
-.alex-toggle:checked:hover:not(:disabled) {
+input.alex-toggle:hover:not(:disabled),
+input.alex-toggle:checked,
+input.alex-toggle:checked:hover:not(:disabled) {
     background: var(--theme-brand-primary-400);
     box-shadow:
         0 0 0 1px var(--theme-brand-primary-500),
@@ -201,16 +201,16 @@
             color-mix(in srgb, var(--theme-brand-primary-400) 35%, transparent);
 }
 
-.alex-toggle:checked::after {
+input.alex-toggle:checked::after {
     transform: translateX(1.125rem);
 }
 
-.alex-toggle:focus-visible {
+input.alex-toggle:focus-visible {
     outline: 2px solid var(--theme-semantic-focus-ring);
     outline-offset: 2px;
 }
 
-.alex-toggle:disabled {
+input.alex-toggle:disabled {
     opacity: 0.45;
     cursor: not-allowed;
 }
