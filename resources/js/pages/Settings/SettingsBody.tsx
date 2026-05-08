@@ -373,24 +373,57 @@ export default function SettingsBody({
                                     <h2 className="truncate text-xl font-bold">
                                         {livePreview.display_name || profile.username}
                                     </h2>
-                                    <p className="text-sm text-base-content/60">
-                                        <span className="text-base-content/40">@</span>{profile.username}
+                                    <p
+                                        className="text-sm"
+                                        style={{
+                                            color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+                                            }}
+                                        >
+                                            @
+                                        </span>
+                                        {profile.username}
                                         <AnimatedPronouns pronouns={livePreview.pronouns} labels={options.pronouns as Record<string, string>} />
                                     </p>
                                     {livePreview.location && (
-                                        <p className="text-sm text-base-content/50 flex items-center justify-center gap-1">
+                                        <p
+                                            className="text-sm flex items-center justify-center gap-1"
+                                            style={{
+                                                color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                                            }}
+                                        >
                                             <i className="fa-solid fa-location-dot text-xs" />
                                             <span>{livePreview.location}</span>
                                         </p>
                                     )}
                                     {livePreview.tagline && (
-                                        <p className="mt-3 text-sm text-base-content/70 line-clamp-2">
+                                        <p
+                                            className="mt-3 text-sm line-clamp-2"
+                                            style={{
+                                                color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+                                            }}
+                                        >
                                             {livePreview.tagline}
                                         </p>
                                     )}
                                     {livePreview.website && (
-                                        <div className="mt-4 flex justify-center border-t border-base-200 pt-4 text-sm">
-                                            <a href={livePreview.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                                        <div
+                                            className="mt-4 flex justify-center border-t pt-4 text-sm"
+                                            style={{
+                                                borderColor: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                                            }}
+                                        >
+                                            <a
+                                                href={livePreview.website}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-1 hover:underline"
+                                                style={{ color: 'var(--theme-brand-primary-500)' }}
+                                            >
                                                 <i className="fa-solid fa-link text-xs" />
                                                 <span>Website</span>
                                             </a>
@@ -399,21 +432,29 @@ export default function SettingsBody({
                                 </div>
 
                                 {/* Navigation */}
-                                <div className="border-t border-base-200">
+                                <div
+                                    className="border-t"
+                                    style={{
+                                        borderColor: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                                    }}
+                                >
                                     <nav className="space-y-1 p-2">
                                         {ALL_NAV.map((item) => (
                                             <div key={item.key}>
                                                 <button
                                                     onClick={() => handleNavClick(item)}
-                                                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-all duration-200 ${
-                                                        isActive(item.key)
-                                                            ? 'bg-primary/10 text-primary'
-                                                            : 'hover:bg-base-200'
+                                                    className={`alex-settings-nav-row flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-all duration-200 ${
+                                                        isActive(item.key) ? 'alex-settings-nav-row--active' : ''
                                                     }`}
                                                 >
-                                                    <i className={`fa-solid ${item.icon} w-5 text-center ${
-                                                        isActive(item.key) ? 'text-primary' : 'text-base-content/50'
-                                                    }`} />
+                                                    <i
+                                                        className={`fa-solid ${item.icon} w-5 text-center`}
+                                                        style={{
+                                                            color: isActive(item.key)
+                                                                ? 'var(--theme-brand-primary-highlight-fg)'
+                                                                : 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                                                        }}
+                                                    />
                                                     <span className="flex-1 text-sm font-medium">{item.label}</span>
                                                     {item.children && (
                                                         <i className={`fa-solid fa-chevron-down text-xs transition-transform duration-300 ${
@@ -424,23 +465,41 @@ export default function SettingsBody({
 
                                                 {/* Nested items */}
                                                 {item.children && expandedGroups[item.key] && (
-                                                    <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-base-300/50 pl-4">
-                                                        {item.children.map((child) => (
-                                                            <button
-                                                                key={child.key}
-                                                                onClick={() => setActiveSection(child.key)}
-                                                                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-all duration-150 ${
-                                                                    activeSection === child.key
-                                                                        ? 'bg-primary/10 text-primary'
-                                                                        : 'text-base-content/70 hover:bg-base-200/70'
-                                                                }`}
-                                                            >
-                                                                <i className={`fa-solid ${child.icon} w-4 text-center ${
-                                                                    activeSection === child.key ? 'text-primary' : 'text-base-content/40'
-                                                                }`} />
-                                                                <span>{child.label}</span>
-                                                            </button>
-                                                        ))}
+                                                    <div
+                                                        className="ml-4 mt-1 space-y-0.5 border-l-2 pl-4"
+                                                        style={{
+                                                            borderColor: 'color-mix(in srgb, var(--theme-base-content) 18%, transparent)',
+                                                        }}
+                                                    >
+                                                        {item.children.map((child) => {
+                                                            const isChildActive = activeSection === child.key;
+                                                            return (
+                                                                <button
+                                                                    key={child.key}
+                                                                    onClick={() => setActiveSection(child.key)}
+                                                                    className={`alex-settings-nav-row flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-all duration-150 ${
+                                                                        isChildActive ? 'alex-settings-nav-row--active' : ''
+                                                                    }`}
+                                                                    style={
+                                                                        isChildActive
+                                                                            ? undefined
+                                                                            : {
+                                                                                  color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+                                                                              }
+                                                                    }
+                                                                >
+                                                                    <i
+                                                                        className={`fa-solid ${child.icon} w-4 text-center`}
+                                                                        style={{
+                                                                            color: isChildActive
+                                                                                ? 'var(--theme-brand-primary-highlight-fg)'
+                                                                                : 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+                                                                        }}
+                                                                    />
+                                                                    <span>{child.label}</span>
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 )}
                                             </div>

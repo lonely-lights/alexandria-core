@@ -235,6 +235,24 @@ nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
     );
 }
 
+/* Settings rail nav — left-rail rows in <SettingsBody>. Active rows get
+ * the brand-primary highlight pair (bg + fg pre-resolved per mode by
+ * the emitter); inactive rows lift to a soft content-tinted bg on
+ * hover. The `--active` modifier short-circuits the hover rule so the
+ * active row keeps its brand fill regardless of pointer state. */
+.alex-settings-nav-row:not(.alex-settings-nav-row--active):hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 8%,
+        transparent
+    );
+}
+
+.alex-settings-nav-row--active {
+    background: var(--theme-brand-primary-highlight-bg);
+    color: var(--theme-brand-primary-highlight-fg);
+}
+
 /* Go to Project CTA — dashed border lifts to a brand-tinted fill on
  * hover, using the same highlight aliases as active sidebar rows. */
 .alex-go-to-project:hover {
