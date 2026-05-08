@@ -339,7 +339,7 @@ export default function SettingsBody({
                             <div className="sticky top-4">
                                 {/* Avatar with Ring */}
                                 <div className="relative z-10 mb-4 flex justify-center">
-                                    <div className="group relative">
+                                    <div className="alex-avatar-shell relative">
                                         <AvatarWithRing
                                             src={profile.has_avatar ? profile.avatar_url : null}
                                             alt={profile.display_name ?? profile.username}
@@ -348,19 +348,38 @@ export default function SettingsBody({
                                             ring={previewRing?.slug ?? 'none'}
                                             ringSettings={previewRing?.settings}
                                         />
-                                        {/* Hover overlay */}
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <div className="mask mask-squircle flex h-32 w-32 items-center justify-center gap-1 bg-black/60 opacity-0 transition-all duration-300 group-hover:opacity-100">
-                                                <button onClick={() => avatarInput.current?.click()} className="btn btn-sm btn-circle btn-ghost text-white hover:bg-white/20">
-                                                    <i className="fa-solid fa-camera" />
+                                        {/* Hover-controls overlay — fades in on .alex-avatar-shell:hover.
+                                            Mask matches the squircle avatar shape. */}
+                                        <div className="alex-avatar-overlay absolute inset-0 flex items-center justify-center">
+                                            <div
+                                                className="mask mask-squircle flex h-32 w-32 items-center justify-center gap-1"
+                                                style={{ background: 'rgba(0, 0, 0, 0.6)' }}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() => avatarInput.current?.click()}
+                                                    className="alex-avatar-control"
+                                                    aria-label="Change avatar"
+                                                >
+                                                    <i className="fa-solid fa-camera" aria-hidden="true" />
                                                 </button>
                                                 {profile.has_avatar && (
-                                                    <button onClick={removeAvatar} className="btn btn-sm btn-circle btn-ghost text-white hover:bg-white/20">
-                                                        <i className="fa-solid fa-trash" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={removeAvatar}
+                                                        className="alex-avatar-control"
+                                                        aria-label="Remove avatar"
+                                                    >
+                                                        <i className="fa-solid fa-trash" aria-hidden="true" />
                                                     </button>
                                                 )}
-                                                <button onClick={() => setShowRingModal(true)} className="btn btn-sm btn-circle btn-ghost text-white hover:bg-white/20">
-                                                    <i className="fa-solid fa-ring" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowRingModal(true)}
+                                                    className="alex-avatar-control"
+                                                    aria-label="Change avatar ring"
+                                                >
+                                                    <i className="fa-solid fa-ring" aria-hidden="true" />
                                                 </button>
                                             </div>
                                         </div>

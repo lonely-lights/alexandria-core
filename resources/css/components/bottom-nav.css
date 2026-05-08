@@ -253,6 +253,45 @@ nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
     color: var(--theme-brand-primary-highlight-fg);
 }
 
+/* Avatar hover-controls overlay — the camera / trash / ring buttons
+ * that fade in over the user's avatar on the settings profile card.
+ * Plain CSS hover (not Tailwind's `group-hover` system) so the trigger
+ * is independent of Tailwind's compiled output and the overlay sits
+ * pointer-events:none while hidden so it doesn't catch events meant
+ * for the avatar underneath. */
+.alex-avatar-shell .alex-avatar-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 250ms ease;
+}
+
+.alex-avatar-shell:hover .alex-avatar-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.alex-avatar-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+    transition: background 150ms ease;
+}
+
+.alex-avatar-control:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.alex-avatar-control:focus-visible {
+    outline: 2px solid var(--theme-brand-primary-500);
+    outline-offset: 2px;
+}
+
 /* Go to Project CTA — dashed border lifts to a brand-tinted fill on
  * hover, using the same highlight aliases as active sidebar rows. */
 .alex-go-to-project:hover {
