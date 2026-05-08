@@ -99,10 +99,11 @@ function SaveRow({
 function UnwiredBanner({ children }: { children: React.ReactNode }) {
     return (
         <div
-            className="flex items-start gap-2 rounded-2xl p-3 text-sm"
+            className="flex items-start gap-2 p-3 text-sm"
             style={{
                 background: 'var(--theme-status-warning-subtle)',
                 color: 'var(--theme-status-warning-stroke)',
+                borderRadius: 'var(--theme-radius-card)',
             }}
         >
             <i className="fa-solid fa-triangle-exclamation mt-0.5" />
@@ -198,7 +199,7 @@ function AppearanceSection({
                                         theme.setMode(m.key);
                                     }
                                 }}
-                                className={`alex-pref-card flex flex-col items-center gap-2 rounded-2xl p-4 ${selected ? 'alex-pref-card--selected' : ''}`}
+                                className={`alex-pref-card flex flex-col items-center gap-2 p-4 ${selected ? 'alex-pref-card--selected' : ''}`}
                             >
                                 <i
                                     className={`fa-solid ${m.icon} text-xl`}
@@ -236,7 +237,7 @@ function AppearanceSection({
                                     form.setData('font_size', val);
                                     applyViewPreferences({ font_size: val });
                                 }}
-                                className={`alex-pref-card flex flex-col items-center gap-1 rounded-2xl p-4 ${selected ? 'alex-pref-card--selected' : ''}`}
+                                className={`alex-pref-card flex flex-col items-center gap-1 p-4 ${selected ? 'alex-pref-card--selected' : ''}`}
                             >
                                 <span className={`${previewSize} font-semibold`}>
                                     {t('settings.appearance.font_size_preview')}

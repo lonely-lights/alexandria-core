@@ -276,11 +276,12 @@ nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
     justify-content: center;
     width: 2rem;
     height: 2rem;
-    border-radius: 9999px;
+    border-radius: var(--theme-radius-badge);
     background: transparent;
     color: #fff;
     cursor: pointer;
-    transition: background 150ms ease;
+    transition: background var(--theme-motion-duration-interactive)
+        var(--theme-motion-easing-standard);
 }
 
 .alex-avatar-control:hover {
@@ -288,6 +289,28 @@ nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
 }
 
 .alex-avatar-control:focus-visible {
+    outline: 2px solid var(--theme-brand-primary-500);
+    outline-offset: 2px;
+}
+
+/* Avatar ring picker rows — inside the RingModal. Selected rows carry
+ * an inline brand-tinted bg + ring; unselected rows lift on hover via
+ * a soft base-content tint. The selectedness is signalled inline by
+ * the component, not via a modifier class, so the hover rule guards
+ * with a check for the inline boxShadow attribute being unset. The
+ * pragmatic shorthand is just to use a `:not(:focus-visible)` /
+ * `:hover` rule that always tints — selected rows already have a
+ * stronger fill so the hover tint reads as a subtle deepening rather
+ * than a flicker. */
+.alex-ring-option:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 6%,
+        transparent
+    );
+}
+
+.alex-ring-option:focus-visible {
     outline: 2px solid var(--theme-brand-primary-500);
     outline-offset: 2px;
 }

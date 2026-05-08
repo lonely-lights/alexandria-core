@@ -1,5 +1,7 @@
 import AvatarWithRing, { type AvatarRingOption } from '@alexandria/components/ui/AvatarWithRing';
 import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
+import Button from '@alexandria/components/ui/Button';
+import useT from '@alexandria/hooks/useT';
 
 /**
  * Avatar ring picker — opens from the avatar block in the settings
@@ -27,97 +29,151 @@ export default function RingModal({
     onSave: (id: number | null) => void;
     onClose: () => void;
 }) {
+    const t = useT();
     const previewRing = previewRingId !== null ? rings[previewRingId] : null;
+
+    const previewBg = 'color-mix(in srgb, var(--theme-base-300) 30%, transparent)';
+    const noneIconBg = 'var(--theme-base-300)';
+    const noneIconFg = 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)';
+    const subtitleFg = 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)';
+    const selectedBg = 'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)';
+    const selectedRing = 'var(--theme-brand-primary-500)';
+    const checkColor = 'var(--theme-brand-primary-500)';
+    const animatedBadgeBg = 'color-mix(in srgb, var(--theme-brand-secondary-500) 20%, transparent)';
+    const animatedBadgeFg = 'var(--theme-brand-secondary-500)';
+
+    function optionStyle(isSelected: boolean) {
+        return isSelected
+            ? {
+                  background: selectedBg,
+                  borderRadius: 'var(--theme-radius-card)',
+                  boxShadow: `inset 0 0 0 2px ${selectedRing}`,
+              }
+            : {
+                  borderRadius: 'var(--theme-radius-card)',
+              };
+    }
 
     return (
         <Modal open onClose={onClose}>
-            <ModalHeader title="Avatar Ring" onClose={onClose} />
+            <ModalHeader title={t('settings.ring_picker.title')} onClose={onClose} />
 
-                {/* Preview */}
-                <div className="flex justify-center bg-base-300/30 p-6">
-                    <AvatarWithRing
-                        src={avatarSrc}
-                        initials={initials}
-                        size={96}
-                        ring={previewRing?.slug ?? 'none'}
-                        ringSettings={previewRing?.settings}
-                    />
-                </div>
+            {/* Preview */}
+            <div
+                className="flex justify-center p-6"
+                style={{ background: previewBg }}
+            >
+                <AvatarWithRing
+                    src={avatarSrc}
+                    initials={initials}
+                    size={96}
+                    ring={previewRing?.slug ?? 'none'}
+                    ringSettings={previewRing?.settings}
+                />
+            </div>
 
-                {/* Ring Options */}
-                <div className="max-h-64 space-y-2 overflow-y-auto p-6">
-                    {/* None option */}
-                    <button
-                        onClick={() => onPreview(null)}
-                        className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all ${
-                            previewRingId === null
-                                ? 'bg-primary/10 ring-2 ring-primary'
-                                : 'hover:bg-base-300'
-                        }`}
+            {/* Ring Options */}
+            <div className="max-h-64 space-y-2 overflow-y-auto p-6">
+                {/* None option */}
+                <button
+                    type="button"
+                    onClick={() => onPreview(null)}
+                    className="alex-ring-option flex w-full items-center gap-3 px-4 py-3 text-left transition-all"
+                    style={optionStyle(previewRingId === null)}
+                >
+                    <div
+                        className="flex h-10 w-10 items-center justify-center"
+                        style={{
+                            background: noneIconBg,
+                            borderRadius: 'var(--theme-radius-badge)',
+                        }}
                     >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-base-300">
-                            <i className="fa-solid fa-ban text-base-content/40" />
-                        </div>
-                        <div>
-                            <p className="font-medium">None</p>
-                            <p className="text-xs text-base-content/50">No ring around your avatar</p>
-                        </div>
-                        {previewRingId === null && (
-                            <i className="fa-solid fa-check ml-auto text-primary" />
-                        )}
-                    </button>
+                        <i
+                            className="fa-solid fa-ban"
+                            style={{ color: noneIconFg }}
+                            aria-hidden="true"
+                        />
+                    </div>
+                    <div>
+                        <p className="font-medium">{t('settings.ring_picker.none_label')}</p>
+                        <p className="text-xs" style={{ color: subtitleFg }}>
+                            {t('settings.ring_picker.none_description')}
+                        </p>
+                    </div>
+                    {previewRingId === null && (
+                        <i
+                            className="fa-solid fa-check ml-auto"
+                            style={{ color: checkColor }}
+                            aria-hidden="true"
+                        />
+                    )}
+                </button>
 
-                    {Object.entries(rings).map(([id, ring]) => {
-                        const ringId = parseInt(id);
+                {Object.entries(rings).map(([id, ring]) => {
+                    const ringId = parseInt(id);
+                    const isSelected = previewRingId === ringId;
 
-                        return (
-                            <button
-                                key={ringId}
-                                onClick={() => onPreview(ringId)}
-                                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all ${
-                                    previewRingId === ringId
-                                        ? 'bg-primary/10 ring-2 ring-primary'
-                                        : 'hover:bg-base-300'
-                                }`}
-                            >
-                                <AvatarWithRing
-                                    src={avatarSrc}
-                                    initials={initials}
-                                    size={40}
-                                    ring={ring.slug}
-                                    ringSettings={ring.settings}
-                                />
-                                <div>
-                                    <p className="font-medium">
-                                        {ring.label}
-                                        {ring.is_animated && (
-                                            <span className="badge badge-sm badge-secondary ml-2">Animated</span>
-                                        )}
-                                    </p>
-                                    {ring.description && (
-                                        <p className="text-xs text-base-content/50">{ring.description}</p>
+                    return (
+                        <button
+                            key={ringId}
+                            type="button"
+                            onClick={() => onPreview(ringId)}
+                            className="alex-ring-option flex w-full items-center gap-3 px-4 py-3 text-left transition-all"
+                            style={optionStyle(isSelected)}
+                        >
+                            <AvatarWithRing
+                                src={avatarSrc}
+                                initials={initials}
+                                size={40}
+                                ring={ring.slug}
+                                ringSettings={ring.settings}
+                            />
+                            <div>
+                                <p className="font-medium">
+                                    {ring.label}
+                                    {ring.is_animated && (
+                                        <span
+                                            className="ml-2 inline-block px-2 py-0.5 text-xs font-semibold"
+                                            style={{
+                                                background: animatedBadgeBg,
+                                                color: animatedBadgeFg,
+                                                borderRadius: 'var(--theme-radius-badge)',
+                                            }}
+                                        >
+                                            {t('settings.ring_picker.animated_badge')}
+                                        </span>
                                     )}
-                                </div>
-                                {previewRingId === ringId && (
-                                    <i className="fa-solid fa-check ml-auto text-primary" />
+                                </p>
+                                {ring.description && (
+                                    <p className="text-xs" style={{ color: subtitleFg }}>
+                                        {ring.description}
+                                    </p>
                                 )}
-                            </button>
-                        );
-                    })}
-                </div>
+                            </div>
+                            {isSelected && (
+                                <i
+                                    className="fa-solid fa-check ml-auto"
+                                    style={{ color: checkColor }}
+                                    aria-hidden="true"
+                                />
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
 
-                <ModalFooter>
-                    <button onClick={onClose} className="btn btn-ghost rounded-xl">
-                        Cancel
-                    </button>
-                    <button
-                        onClick={() => onSave(previewRingId)}
-                        className="btn btn-primary rounded-xl"
-                        disabled={previewRingId === savedRingId}
-                    >
-                        Save Ring
-                    </button>
-                </ModalFooter>
+            <ModalFooter>
+                <Button variant="ghost" onClick={onClose}>
+                    {t('settings.ring_picker.cancel_button')}
+                </Button>
+                <Button
+                    variant="primary"
+                    onClick={() => onSave(previewRingId)}
+                    disabled={previewRingId === savedRingId}
+                >
+                    {t('settings.ring_picker.save_button')}
+                </Button>
+            </ModalFooter>
         </Modal>
     );
 }

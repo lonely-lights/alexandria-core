@@ -26,10 +26,11 @@ export default function SectionCard({
 }) {
     return (
         <div
-            className="overflow-hidden rounded-3xl border shadow-xl"
+            className="overflow-hidden border shadow-xl"
             style={{
                 background: 'var(--theme-base-surface)',
                 borderColor: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                borderRadius: 'var(--theme-radius-card)',
             }}
         >
             <SectionHeader icon={icon} title={title} subtitle={subtitle} label={label} />

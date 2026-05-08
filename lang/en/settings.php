@@ -91,4 +91,12 @@ return [
     'accessibility.keyboard_shortcuts_label' => 'Keyboard Shortcuts',
     'accessibility.keyboard_shortcuts_description' => 'Enable keyboard shortcuts for common actions',
     'accessibility.save_button' => 'Save Accessibility',
+
+    // ── Avatar ring picker (RingModal) ──────────────────────────────
+    'ring_picker.title' => 'Avatar Ring',
+    'ring_picker.none_label' => 'None',
+    'ring_picker.none_description' => 'No ring around your avatar',
+    'ring_picker.animated_badge' => 'Animated',
+    'ring_picker.cancel_button' => 'Cancel',
+    'ring_picker.save_button' => 'Save Ring',
 ];

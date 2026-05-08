@@ -30,16 +30,20 @@ export default function SectionHeader({
             }}
         >
             <div
-                className="absolute right-0 top-0 h-32 w-32 -translate-y-1/2 translate-x-1/2 rounded-full blur-2xl"
-                style={{ background: brandTint5 }}
+                className="absolute right-0 top-0 h-32 w-32 -translate-y-1/2 translate-x-1/2 blur-2xl"
+                style={{
+                    background: brandTint5,
+                    borderRadius: 'var(--theme-radius-badge)',
+                }}
                 aria-hidden="true"
             />
             <div className="relative flex items-start gap-5">
                 <div
-                    className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border"
+                    className="flex h-12 w-12 flex-shrink-0 items-center justify-center border"
                     style={{
                         background: brandTint15,
                         borderColor: brandTint20,
+                        borderRadius: 'var(--theme-radius-card)',
                     }}
                 >
                     <i

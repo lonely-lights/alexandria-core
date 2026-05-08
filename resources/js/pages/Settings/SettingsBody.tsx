@@ -462,9 +462,10 @@ export default function SettingsBody({
                                             <div key={item.key}>
                                                 <button
                                                     onClick={() => handleNavClick(item)}
-                                                    className={`alex-settings-nav-row flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-all duration-200 ${
+                                                    className={`alex-settings-nav-row flex w-full items-center gap-3 px-4 py-2.5 text-left transition-all duration-200 ${
                                                         isActive(item.key) ? 'alex-settings-nav-row--active' : ''
                                                     }`}
+                                                    style={{ borderRadius: 'var(--theme-radius-input)' }}
                                                 >
                                                     <i
                                                         className={`fa-solid ${item.icon} w-5 text-center`}
@@ -496,13 +497,14 @@ export default function SettingsBody({
                                                                 <button
                                                                     key={child.key}
                                                                     onClick={() => setActiveSection(child.key)}
-                                                                    className={`alex-settings-nav-row flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-all duration-150 ${
+                                                                    className={`alex-settings-nav-row flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-all duration-150 ${
                                                                         isChildActive ? 'alex-settings-nav-row--active' : ''
                                                                     }`}
                                                                     style={
                                                                         isChildActive
-                                                                            ? undefined
+                                                                            ? { borderRadius: 'var(--theme-radius-button)' }
                                                                             : {
+                                                                                  borderRadius: 'var(--theme-radius-button)',
                                                                                   color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
                                                                               }
                                                                     }

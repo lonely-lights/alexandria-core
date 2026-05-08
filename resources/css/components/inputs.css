@@ -33,7 +33,7 @@
     color: var(--theme-base-content);
     border: 1px solid
         color-mix(in srgb, var(--theme-base-content) 20%, transparent);
-    border-radius: var(--theme-radius-input, 0.75rem);
+    border-radius: var(--theme-radius-input);
     padding-inline: 0.875rem;
     outline: none;
     transition:
@@ -101,7 +101,7 @@
     color: var(--theme-base-content);
     border: 1px solid
         color-mix(in srgb, var(--theme-base-content) 20%, transparent);
-    border-radius: var(--theme-radius-input, 0.75rem);
+    border-radius: var(--theme-radius-input);
     padding-inline: 0.875rem 2.25rem;
     outline: none;
     appearance: none;
@@ -162,7 +162,7 @@
         var(--theme-base-content) 20%,
         transparent
     );
-    border-radius: 999px;
+    border-radius: var(--theme-radius-badge);
     cursor: pointer;
     position: relative;
     transition:
@@ -178,7 +178,7 @@
     width: 1.125rem;
     height: 1.125rem;
     background: var(--theme-base-page);
-    border-radius: 50%;
+    border-radius: var(--theme-radius-badge);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     transition: transform var(--theme-motion-duration-interactive)
         var(--theme-motion-easing-standard);
@@ -220,6 +220,7 @@
     border: 2px solid
         color-mix(in srgb, var(--theme-base-content) 10%, transparent);
     background: transparent;
+    border-radius: var(--theme-radius-card);
     cursor: pointer;
     transition:
         border-color var(--theme-motion-duration-interactive)
