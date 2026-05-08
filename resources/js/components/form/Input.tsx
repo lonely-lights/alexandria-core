@@ -11,38 +11,77 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>
     size?: FormSize;
 }
 
-export default function Input({ label, error, hint, icon, iconElement, size = 'sm', className, id, ...props }: InputProps) {
+/**
+ * Single-line text input. Surface and focus state painted via the
+ * `.alex-input` class (see core/resources/css/components/inputs.css);
+ * sizing comes from the FORM_SIZES helper. Pair with `<TextField>` for
+ * the validated/animated variant; this primitive is the lighter form
+ * of the same surface for use inside config rows.
+ */
+export default function Input({
+    label,
+    error,
+    hint,
+    icon,
+    iconElement,
+    size = 'sm',
+    className,
+    id,
+    ...props
+}: InputProps) {
     const inputId = id ?? props.name;
     const s = FORM_SIZES[size];
     const hasIcon = !!(icon || iconElement);
 
+    const labelColor = 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)';
+    const iconColor = 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)';
+    const hintColor = 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)';
+
     return (
-        <div className="form-control w-full">
+        <div className="w-full">
             {label && (
-                <label className="label pb-1.5 pt-0" htmlFor={inputId}>
-                    <span className="label-text text-xs text-base-content/50">{label}</span>
+                <label
+                    className="mb-1.5 block text-xs"
+                    htmlFor={inputId}
+                    style={{ color: labelColor }}
+                >
+                    {label}
                 </label>
             )}
             <div className={hasIcon ? 'relative' : undefined}>
                 {hasIcon && (
-                    <span className={`absolute left-3 top-1/2 -translate-y-1/2 ${s.iconSize} text-base-content/30`}>
+                    <span
+                        className={`absolute left-3 top-1/2 -translate-y-1/2 ${s.iconSize}`}
+                        style={{ color: iconColor }}
+                    >
                         {iconElement ?? <i className={icon} />}
                     </span>
                 )}
                 <input
                     id={inputId}
                     className={cn(
-                        'input input-bordered w-full rounded-xl',
+                        'alex-input',
                         s.height, s.text,
                         hasIcon && s.iconPadding,
-                        error && 'input-error',
+                        error && 'alex-input--error',
                         className,
                     )}
                     {...props}
                 />
             </div>
-            {error && <p className="mt-1 text-xs text-error">{error}</p>}
-            {hint && !error && <p className="mt-1 text-xs text-base-content/40">{hint}</p>}
+            {error && (
+                <p
+                    className="mt-1 text-xs"
+                    style={{ color: 'var(--theme-status-error-stroke)' }}
+                >
+                    {error}
+                </p>
+            )}
+            {hint && !error && (
+                <p className="mt-1 text-xs" style={{ color: hintColor }}>
+                    {hint}
+                </p>
+            )}
         </div>
     );
 }

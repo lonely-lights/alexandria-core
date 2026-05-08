@@ -1,13 +1,17 @@
 /*
- * TextField focus ring — same outline-offset pattern as the checkbox
- * so focused inputs read consistently across the form library.
- *
- * State-based border colour (idle / success / error) is still set inline
- * by the TextField component; the ring layered on top doesn't replace
- * the border, just adds a halo around it on keyboard focus. Click focus
- * uses :focus (no ring) so mouse users don't see the halo.
+ * Form primitive theming. Each component file (Input, Textarea, Select,
+ * Toggle, TextField) emits one of the `.alex-*` classes below plus
+ * structural inline styles (height, padding, font-size) from the
+ * FORM_SIZES helper. Theming — fill, foreground, border, focus, hover —
+ * lives here so :hover and :focus-visible can reach the right state
+ * without inline-style specificity wars.
  */
 
+/* ── TextField — focus ring ──────────────────────────────────────── */
+
+/* TextField paints its border colour inline based on validation state
+ * (idle / success / error). The class only adds the focus-visible halo
+ * on top of whatever border colour the component picked. */
 .alex-textfield {
     outline: none;
     transition:
@@ -18,4 +22,190 @@
 .alex-textfield:focus-visible {
     outline: 2px solid var(--theme-semantic-focus-ring);
     outline-offset: 2px;
+}
+
+/* ── Input + Textarea — text-entry surfaces ─────────────────────── */
+
+.alex-input,
+.alex-textarea {
+    width: 100%;
+    background: var(--theme-base-page);
+    color: var(--theme-base-content);
+    border: 1px solid
+        color-mix(in srgb, var(--theme-base-content) 20%, transparent);
+    border-radius: var(--theme-radius-input, 0.75rem);
+    padding-inline: 0.875rem;
+    outline: none;
+    transition:
+        border-color var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard),
+        box-shadow var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-input::placeholder,
+.alex-textarea::placeholder {
+    color: color-mix(in srgb, var(--theme-base-content) 40%, transparent);
+}
+
+.alex-input:hover:not(:disabled),
+.alex-textarea:hover:not(:disabled) {
+    border-color: color-mix(
+        in srgb,
+        var(--theme-base-content) 35%,
+        transparent
+    );
+}
+
+.alex-input:focus-visible,
+.alex-textarea:focus-visible {
+    border-color: var(--theme-brand-primary-500);
+    box-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--theme-brand-primary-500) 18%, transparent);
+}
+
+.alex-input:disabled,
+.alex-textarea:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.alex-input--error,
+.alex-textarea--error {
+    border-color: var(--theme-status-error-stroke);
+}
+
+.alex-input--error:focus-visible,
+.alex-textarea--error:focus-visible {
+    border-color: var(--theme-status-error-stroke);
+    box-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--theme-status-error-stroke) 18%, transparent);
+}
+
+/* Textarea-specific — vertical resize, sensible default min-height. */
+.alex-textarea {
+    padding-block: 0.625rem;
+    min-height: 5.5rem;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+/* ── Select — same surface as input, with a chevron and reserved
+   right-padding so the option text never collides with it. The arrow
+   is an inline SVG painted with currentColor so it follows the
+   text-content token through theme swaps. ───────────────────────── */
+
+.alex-select {
+    width: 100%;
+    background: var(--theme-base-page);
+    color: var(--theme-base-content);
+    border: 1px solid
+        color-mix(in srgb, var(--theme-base-content) 20%, transparent);
+    border-radius: var(--theme-radius-input, 0.75rem);
+    padding-inline: 0.875rem 2.25rem;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 0.75rem;
+    cursor: pointer;
+    transition:
+        border-color var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard),
+        box-shadow var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-select:hover:not(:disabled) {
+    border-color: color-mix(
+        in srgb,
+        var(--theme-base-content) 35%,
+        transparent
+    );
+}
+
+.alex-select:focus-visible {
+    border-color: var(--theme-brand-primary-500);
+    box-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--theme-brand-primary-500) 18%, transparent);
+}
+
+.alex-select:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.alex-select--error {
+    border-color: var(--theme-status-error-stroke);
+}
+
+.alex-select--error:focus-visible {
+    border-color: var(--theme-status-error-stroke);
+    box-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--theme-status-error-stroke) 18%, transparent);
+}
+
+/* ── Toggle — sliding pill. Paints a track + a thumb that translates
+   on `:checked`. Uses `appearance: none` so we own the surface
+   completely; native checkbox styling is too restrictive for theming. */
+
+.alex-toggle {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 2.5rem;
+    height: 1.375rem;
+    flex-shrink: 0;
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 20%,
+        transparent
+    );
+    border-radius: 999px;
+    cursor: pointer;
+    position: relative;
+    transition:
+        background var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 1.125rem;
+    height: 1.125rem;
+    background: var(--theme-base-page);
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform var(--theme-motion-duration-interactive)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-toggle:hover:not(:disabled) {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 30%,
+        transparent
+    );
+}
+
+.alex-toggle:checked {
+    background: var(--theme-brand-primary-500);
+}
+
+.alex-toggle:checked::after {
+    transform: translateX(1.125rem);
+}
+
+.alex-toggle:focus-visible {
+    outline: 2px solid var(--theme-semantic-focus-ring);
+    outline-offset: 2px;
+}
+
+.alex-toggle:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
