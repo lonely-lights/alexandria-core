@@ -326,20 +326,23 @@ export default function Navbar({
                                     }}
                                 >
                                     {/* Avatar overflows below the navbar's
-                                        bottom edge for a "hanging seal"
-                                        feel. Sized at 72px with a 0.625rem
-                                        translateY so the upper edge sits
-                                        at navbar_y + 10 (about halfway
-                                        from the previous start to the
-                                        navbar's top) and the lower edge
-                                        extends ~10px below the navbar's
-                                        bottom. The navbar's hard 72px
-                                        height + overflow-visible keep
-                                        it from being clipped or
-                                        stretching the chrome. */}
+                                        bottom edge for a "hanging seal" feel
+                                        at the top of the page; once the user
+                                        scrolls, it shrinks to fit inside the
+                                        navbar (scale ≈ 0.667 → effective 48px,
+                                        the original within-navbar size) and
+                                        re-centers (translateY(0)). Both
+                                        transforms interpolate smoothly with a
+                                        single transition. */}
                                     <span
                                         className="shrink-0"
-                                        style={{ transform: 'translateY(0.625rem)' }}
+                                        style={{
+                                            transform: scrolled
+                                                ? 'translateY(0) scale(0.667)'
+                                                : 'translateY(0.625rem) scale(1)',
+                                            transition:
+                                                'transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
+                                        }}
                                     >
                                         <AvatarWithRing
                                             src={user.has_avatar && user.avatar_thumb_url ? user.avatar_thumb_url : null}
