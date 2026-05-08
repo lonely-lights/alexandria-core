@@ -184,15 +184,14 @@
         var(--theme-motion-easing-standard);
 }
 
-/* Unchecked-hover previews the active fill at full saturation so the
- * user sees what activation will look like, minus the ring + glow
- * signature that marks the *current* state. Active vs hover stays
- * distinguishable: same brand fill, but no ring around the pill and
- * no surrounding glow until you actually flip it on. */
-.alex-toggle:hover:not(:disabled) {
-    background: var(--theme-brand-primary-400);
-}
-
+/* Hover (any state) = full active-state styling: brand fill + ring
+ * + glow. The thumb position (left vs right) tells the user whether
+ * the toggle is actually active; hover styling shows a strong
+ * activation preview regardless. Going lighter on the chroma scale
+ * (`-300` etc.) reads as washed-out against dark surfaces since
+ * oklch lightness rises faster than chroma at the upper steps —
+ * that's why we hold at `-400` and amplify ring + glow instead. */
+.alex-toggle:hover:not(:disabled),
 .alex-toggle:checked {
     background: var(--theme-brand-primary-400);
     box-shadow:
@@ -201,10 +200,9 @@
             color-mix(in srgb, var(--theme-brand-primary-400) 35%, transparent);
 }
 
-/* Hover-while-active: keep the brand fill, intensify the ring and
- * glow rather than going lighter on the chroma scale (`-300` reads as
- * washed-out against dark surfaces because oklch lightness rises
- * faster than chroma at the upper steps). */
+/* Hover-while-active: amplify the ring + glow further so an already
+ * active toggle gets MORE visible feedback when pointed at, never
+ * less. */
 .alex-toggle:checked:hover:not(:disabled) {
     background: var(--theme-brand-primary-400);
     box-shadow:
