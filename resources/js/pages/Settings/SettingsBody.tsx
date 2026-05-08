@@ -246,32 +246,61 @@ export default function SettingsBody({
 
     return (
         <>
-            {/* ── Banner ── */}
+            {/* ── Banner ──
+                Banner image (or brand-tinted fallback) renders edge-to-edge
+                with no fade overlay so the page surface beneath stays a
+                clear, distinct band rather than bleeding into the image.
+                Grain texture sits on top of the image for a paper feel; a
+                token-driven hairline border closes the bottom edge cleanly. */}
             <div className="relative h-56 overflow-hidden sm:h-64 lg:h-72">
                 <div className="absolute inset-0">
                     {profile.has_banner ? (
                         <img src={profile.banner_url} alt="Profile banner" className="h-full w-full object-cover" />
                     ) : (
-                        <div className="h-full w-full bg-gradient-to-br from-primary via-secondary to-accent opacity-90" />
+                        <div
+                            className="h-full w-full opacity-90"
+                            style={{
+                                background: `linear-gradient(to bottom right, var(--theme-brand-primary-500), var(--theme-brand-secondary-500), var(--theme-brand-accent-500))`,
+                            }}
+                        />
                     )}
-                    {/* Gradient overlay for smooth blend */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-base-100 via-base-100/60 via-[30%] to-transparent" />
                     {/* Grain texture */}
                     <div
                         className="absolute inset-0 opacity-[0.08]"
                         style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=%220 0 256 256%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E')" }}
                     />
-                    {/* Bottom border */}
-                    <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-base-content/5 via-base-content/20 to-base-content/5" />
+                    {/* Bottom hairline */}
+                    <div
+                        className="absolute inset-x-0 bottom-0 h-px"
+                        style={{
+                            background: 'color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+                        }}
+                    />
                 </div>
                 {/* Banner controls */}
                 <div className="absolute right-8 top-24 z-10 flex gap-2">
-                    <button onClick={() => bannerInput.current?.click()} className="btn btn-sm bg-base-100/80 backdrop-blur-sm">
+                    <button
+                        onClick={() => bannerInput.current?.click()}
+                        className="alex-btn alex-btn--ghost text-sm backdrop-blur-sm"
+                        style={{
+                            background: 'color-mix(in srgb, var(--theme-base-page) 80%, transparent)',
+                            paddingInline: '0.75rem',
+                            paddingBlock: '0.375rem',
+                        }}
+                    >
                         <i className="fa-solid fa-camera" />
                         {profile.has_banner ? 'Change Banner' : 'Upload Banner'}
                     </button>
                     {profile.has_banner && (
-                        <button onClick={removeBanner} className="btn btn-sm btn-error bg-error/80 backdrop-blur-sm">
+                        <button
+                            onClick={removeBanner}
+                            className="alex-btn alex-btn--danger text-sm backdrop-blur-sm"
+                            style={{
+                                background: 'color-mix(in srgb, var(--theme-status-error-fill) 80%, transparent)',
+                                paddingInline: '0.75rem',
+                                paddingBlock: '0.375rem',
+                            }}
+                        >
                             <i className="fa-solid fa-trash" /> Remove
                         </button>
                     )}
@@ -293,7 +322,12 @@ export default function SettingsBody({
             )}
 
             {/* ── Pseudo-depth shadow ── */}
-            <div className="h-24 bg-gradient-to-b from-base-content/[0.03] to-transparent" />
+            <div
+                className="h-24"
+                style={{
+                    background: `linear-gradient(to bottom, color-mix(in srgb, var(--theme-base-content) 3%, transparent), transparent)`,
+                }}
+            />
 
             {/* ── Main Content ── */}
             <div className="relative -mt-32 z-10 px-4 pb-8 sm:-mt-36">
