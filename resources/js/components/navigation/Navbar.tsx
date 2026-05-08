@@ -296,6 +296,15 @@ export default function Navbar({
                                     style={{
                                         color: 'var(--theme-base-content)',
                                         borderRadius: 'var(--theme-radius-button)',
+                                        // Cap button height to the navbar's so the
+                                        // hover-tint background can't extend below
+                                        // the navbar's bottom edge. The avatar
+                                        // overflows visually via translateY (a
+                                        // transform — doesn't affect the box) so
+                                        // the box-clipped bg + visible-overflowing
+                                        // avatar achieve "highlight stays in
+                                        // navbar, avatar hangs below" together.
+                                        height: '72px',
                                     }}
                                 >
                                     {/* Avatar overflows below the navbar's
