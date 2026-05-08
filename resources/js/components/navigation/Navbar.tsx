@@ -340,45 +340,52 @@ export default function Navbar({
                                         re-centers (translateY(0)). Both
                                         transforms interpolate smoothly with a
                                         single transition. */}
+                                    {/* Outer wrapper owns the LAYOUT box —
+                                        width transitions from 80 (unscrolled,
+                                        full ring outerSize) to 60 (scrolled).
+                                        Layout reflows: button gets narrower,
+                                        right-side flex group shrinks under
+                                        justify-end, Search/Notes icons shift
+                                        right to maintain their right-anchored
+                                        positioning. Inner wrapper owns the
+                                        VISUAL transform — scales the actual
+                                        avatar render to fit the new box.
+                                        Origin top-left so the scaled content
+                                        fills the outer wrapper exactly
+                                        (visual top-left stays at outer
+                                        top-left); translateY(0.625rem) when
+                                        unscrolled handles the hanging-seal
+                                        overflow below the navbar. */}
                                     <span
                                         className="shrink-0"
                                         style={{
-                                            // Scrolled: scale 0.75 (effective
-                                            // 54px avatar / 60px including ring)
-                                            // — slightly bigger than the
-                                            // legacy 48px size for more
-                                            // presence inside the navbar.
-                                            // translateY(0) with
-                                            // transform-origin centering
-                                            // vertically means the scaled
-                                            // avatar sits centered in the
-                                            // 72px navbar.
-                                            transform: scrolled
-                                                ? 'translateY(0) scale(0.75)'
-                                                : 'translateY(0.625rem) scale(1)',
-                                            // Anchor the scale at the right
-                                            // edge horizontally + center
-                                            // vertically — right-edge so the
-                                            // avatar's right edge stays put
-                                            // against the text gap (otherwise
-                                            // it opens a too-wide gap), and
-                                            // center vertically so the
-                                            // shrink keeps the avatar
-                                            // centered in the navbar.
-                                            transformOrigin: 'right center',
+                                            width: scrolled ? '60px' : '80px',
+                                            height: scrolled ? '60px' : '80px',
                                             transition:
-                                                'transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
+                                                'width var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease), height var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
                                         }}
                                     >
-                                        <AvatarWithRing
-                                            src={user.has_avatar && user.avatar_thumb_url ? user.avatar_thumb_url : null}
-                                            alt={user.name ?? 'User'}
-                                            initials={(user.display_name ?? user.name ?? 'U').charAt(0).toUpperCase()}
-                                            size={72}
-                                            ring={user.avatar_ring_slug ?? 'none'}
-                                            ringSettings={user.avatar_ring_settings as never}
-                                            ringThickness={4}
-                                        />
+                                        <span
+                                            style={{
+                                                display: 'inline-block',
+                                                transform: scrolled
+                                                    ? 'translateY(0) scale(0.75)'
+                                                    : 'translateY(0.625rem) scale(1)',
+                                                transformOrigin: '0 0',
+                                                transition:
+                                                    'transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
+                                            }}
+                                        >
+                                            <AvatarWithRing
+                                                src={user.has_avatar && user.avatar_thumb_url ? user.avatar_thumb_url : null}
+                                                alt={user.name ?? 'User'}
+                                                initials={(user.display_name ?? user.name ?? 'U').charAt(0).toUpperCase()}
+                                                size={72}
+                                                ring={user.avatar_ring_slug ?? 'none'}
+                                                ringSettings={user.avatar_ring_settings as never}
+                                                ringThickness={4}
+                                            />
+                                        </span>
                                     </span>
                                     <span className="flex min-w-0 flex-col items-start leading-none">
                                         <span className="truncate max-w-[180px]">
