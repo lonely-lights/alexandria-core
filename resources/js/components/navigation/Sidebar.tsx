@@ -117,7 +117,15 @@ export default function Sidebar({
                                 </span>
                             )}
                         </a>
-                        <button onClick={onClose} className="btn btn-ghost btn-sm btn-square">
+                        <button
+                            onClick={onClose}
+                            className="alex-nav-icon-btn alex-nav-icon-btn--ghost flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
+                            style={{
+                                background: 'transparent',
+                                color: 'var(--theme-base-content)',
+                            }}
+                            aria-label="Close sidebar"
+                        >
                             <i className="fas fa-times" />
                         </button>
                     </div>

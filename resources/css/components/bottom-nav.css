@@ -133,8 +133,20 @@ nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
     );
 }
 
-/* Navbar icon buttons (notes, etc.) — neutral default, brighten on hover.
- * Brand-flavoured variant (search button) brightens its primary tint. */
+/* Navbar icon buttons (notes, search, hamburger, sidebar close, etc.) —
+ * shared family. Suppress the mobile blue tap-highlight in favour of
+ * our own hover/active treatment. Three variants:
+ *   - default      → solid neutral fill (Notes button)
+ *   - --brand      → brand-tinted fill (Search button)
+ *   - --ghost      → transparent default with a soft content tint on
+ *                    hover (hamburger, sidebar close)
+ *
+ * `--ghost`'s rule lands AFTER the base rule so it overrides the
+ * solid-fill hover when both classes are applied. */
+.alex-nav-icon-btn {
+    -webkit-tap-highlight-color: transparent;
+}
+
 .alex-nav-icon-btn:hover {
     background: var(--theme-base-300) !important;
     color: var(--theme-base-content) !important;
@@ -149,10 +161,39 @@ nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
     color: var(--theme-brand-primary-content) !important;
 }
 
+.alex-nav-icon-btn--ghost:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 10%,
+        transparent
+    ) !important;
+    color: var(--theme-base-content) !important;
+}
+
+.alex-nav-icon-btn--ghost:active {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 16%,
+        transparent
+    ) !important;
+}
+
 /* Appearance picker (light/dark/system segmented control) — only the
  * unselected buttons get a hover treatment. Selected button has its
  * own brand-fill style inline that should not change on hover. */
 .alex-appearance-picker .alex-appearance-btn[aria-pressed='false']:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 6%,
+        transparent
+    ) !important;
+    color: var(--theme-base-content) !important;
+}
+
+/* Theme chooser trigger — sits below the appearance picker in the
+ * user dropdown, dispatches an event the app listens for to open the
+ * theme-chooser modal. */
+.alex-theme-chooser-trigger:hover {
     background: color-mix(
         in srgb,
         var(--theme-base-content) 6%,
