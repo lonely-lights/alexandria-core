@@ -32,16 +32,29 @@ export default function TemporalFieldConfig({ field, index, listableBlueprints, 
                 ]}
             />
 
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-base-100/50 p-3 transition-colors hover:bg-base-100">
+            <label
+                className="flex cursor-pointer items-center gap-3 rounded-xl p-3 transition-colors"
+                style={{
+                    background:
+                        'color-mix(in srgb, var(--theme-base-200) 50%, transparent)',
+                }}
+            >
                 <input
                     type="checkbox"
-                    className="checkbox checkbox-sm checkbox-primary"
+                    className="alex-checkbox"
                     checked={!!rules.allow_intensity}
                     onChange={(e) => onUpdateRule(index, 'allow_intensity', e.target.checked)}
                 />
                 <div>
                     <span className="text-sm font-medium">Enable Intensity</span>
-                    <p className="text-xs text-base-content/50">Add a 1-10 scale to measure degree or importance</p>
+                    <p
+                        className="text-xs"
+                        style={{
+                            color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                        }}
+                    >
+                        Add a 1-10 scale to measure degree or importance
+                    </p>
                 </div>
             </label>
 
@@ -55,16 +68,29 @@ export default function TemporalFieldConfig({ field, index, listableBlueprints, 
                 />
             )}
 
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-base-100/50 p-3 transition-colors hover:bg-base-100">
+            <label
+                className="flex cursor-pointer items-center gap-3 rounded-xl p-3 transition-colors"
+                style={{
+                    background:
+                        'color-mix(in srgb, var(--theme-base-200) 50%, transparent)',
+                }}
+            >
                 <input
                     type="checkbox"
-                    className="checkbox checkbox-sm checkbox-primary"
+                    className="alex-checkbox"
                     checked={!!rules.allow_reference}
                     onChange={(e) => onUpdateRule(index, 'allow_reference', e.target.checked)}
                 />
                 <div>
                     <span className="text-sm font-medium">Link to Entry</span>
-                    <p className="text-xs text-base-content/50">Associate each record with an entry from another blueprint</p>
+                    <p
+                        className="text-xs"
+                        style={{
+                            color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                        }}
+                    >
+                        Associate each record with an entry from another blueprint
+                    </p>
                 </div>
             </label>
 
@@ -79,16 +105,29 @@ export default function TemporalFieldConfig({ field, index, listableBlueprints, 
                 />
             )}
 
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-base-100/50 p-3 transition-colors hover:bg-base-100">
+            <label
+                className="flex cursor-pointer items-center gap-3 rounded-xl p-3 transition-colors"
+                style={{
+                    background:
+                        'color-mix(in srgb, var(--theme-base-200) 50%, transparent)',
+                }}
+            >
                 <input
                     type="checkbox"
-                    className="checkbox checkbox-sm checkbox-primary"
+                    className="alex-checkbox"
                     checked={rules.allow_overlap !== false}
                     onChange={(e) => onUpdateRule(index, 'allow_overlap', e.target.checked)}
                 />
                 <div>
                     <span className="text-sm font-medium">Allow Overlapping Dates</span>
-                    <p className="text-xs text-base-content/50">Multiple records can be active at the same time</p>
+                    <p
+                        className="text-xs"
+                        style={{
+                            color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                        }}
+                    >
+                        Multiple records can be active at the same time
+                    </p>
                 </div>
             </label>
         </div>

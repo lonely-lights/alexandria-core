@@ -208,9 +208,14 @@ export default function PasswordRulesPopover({
                 <FloatingArrow
                     ref={arrowRef}
                     context={context}
-                    className="fill-base-200 [&>path:first-of-type]:stroke-base-300"
+                    className="[fill:var(--theme-base-200)] [&>path:first-of-type]:[stroke:var(--theme-base-300)]"
                 />
-                <p className="text-base-content/60 mb-2 text-xs font-medium uppercase tracking-wide">
+                <p
+                    className="mb-2 text-xs font-medium uppercase tracking-wide"
+                    style={{
+                        color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+                    }}
+                >
                     Password requirements
                 </p>
                 <ul className="space-y-1.5">
@@ -220,11 +225,19 @@ export default function PasswordRulesPopover({
                             className="flex items-center gap-2"
                         >
                             <span
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors ${
+                                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors"
+                                style={
                                     rule.passed
-                                        ? 'bg-success/20 text-success'
-                                        : 'bg-base-300 text-base-content/40'
-                                }`}
+                                        ? {
+                                              background:
+                                                  'color-mix(in srgb, var(--theme-status-success-stroke) 20%, transparent)',
+                                              color: 'var(--theme-status-success-stroke)',
+                                          }
+                                        : {
+                                              background: 'var(--theme-base-300)',
+                                              color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+                                          }
+                                }
                                 aria-hidden="true"
                             >
                                 {rule.passed ? (
@@ -244,11 +257,11 @@ export default function PasswordRulesPopover({
                                 )}
                             </span>
                             <span
-                                className={
-                                    rule.passed
-                                        ? 'text-base-content'
-                                        : 'text-base-content/60'
-                                }
+                                style={{
+                                    color: rule.passed
+                                        ? 'var(--theme-base-content)'
+                                        : 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+                                }}
                             >
                                 {rule.label}
                             </span>

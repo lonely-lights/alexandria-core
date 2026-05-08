@@ -16,9 +16,28 @@ interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'siz
     size?: FormSize;
 }
 
-export default function Select({ label, error, hint, options, placeholder, size = 'sm', className, id, ...props }: SelectProps) {
+/**
+ * Native dropdown. Theming via `.alex-select` in inputs.css — paints
+ * the same surface as `<Input>`/`<Textarea>`, plus an inline-SVG
+ * chevron on the right and reserved padding so option text never
+ * collides with the arrow.
+ */
+export default function Select({
+    label,
+    error,
+    hint,
+    options,
+    placeholder,
+    size = 'sm',
+    className,
+    id,
+    ...props
+}: SelectProps) {
     const selectId = id ?? props.name;
     const s = FORM_SIZES[size];
+
+    const labelColor = 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)';
+    const hintColor = 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)';
 
     // Normalize options to array format
     const normalizedOptions: SelectOption[] = Array.isArray(options)
@@ -26,18 +45,22 @@ export default function Select({ label, error, hint, options, placeholder, size 
         : Object.entries(options).map(([value, optionLabel]) => ({ value, label: optionLabel }));
 
     return (
-        <div className="form-control w-full">
+        <div className="w-full">
             {label && (
-                <label className="label pb-1.5 pt-0" htmlFor={selectId}>
-                    <span className="label-text text-xs text-base-content/50">{label}</span>
+                <label
+                    className="mb-1.5 block text-xs"
+                    htmlFor={selectId}
+                    style={{ color: labelColor }}
+                >
+                    {label}
                 </label>
             )}
             <select
                 id={selectId}
                 className={cn(
-                    'select select-bordered w-full min-h-0 rounded-xl',
+                    'alex-select',
                     s.height, s.text,
-                    error && 'select-error',
+                    error && 'alex-select--error',
                     className,
                 )}
                 {...props}
@@ -47,8 +70,19 @@ export default function Select({ label, error, hint, options, placeholder, size 
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
             </select>
-            {error && <p className="mt-1 text-xs text-error">{error}</p>}
-            {hint && !error && <p className="mt-1 text-xs text-base-content/40">{hint}</p>}
+            {error && (
+                <p
+                    className="mt-1 text-xs"
+                    style={{ color: 'var(--theme-status-error-stroke)' }}
+                >
+                    {error}
+                </p>
+            )}
+            {hint && !error && (
+                <p className="mt-1 text-xs" style={{ color: hintColor }}>
+                    {hint}
+                </p>
+            )}
         </div>
     );
 }
