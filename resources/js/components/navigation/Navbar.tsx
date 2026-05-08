@@ -190,13 +190,20 @@ export default function Navbar({
                     document.documentElement.style.setProperty('--navbar-height', `${el.offsetHeight}px`);
                 }
             }}
-            className="fixed top-0 z-20 w-full px-2 navbar backdrop-blur-lg border-b transition-all duration-300 overflow-visible"
+            className="fixed top-0 z-20 w-full px-2 py-0 navbar backdrop-blur-lg transition-all duration-300 overflow-visible"
             style={{
                 // Hard-cap the navbar at legacy's 72px height. Without
                 // this cap, sizing the user avatar bigger than 48px
                 // would stretch the navbar; with it, the avatar can
                 // overflow below for the "hanging seal" effect while
                 // the chrome stays the same height it always was.
+                //
+                // Note: `border-b` is intentionally NOT used here. With
+                // border-box sizing the 1px border eats from the
+                // content area, throwing off items-center's symmetry
+                // by half a pixel each direction. The bottom hairline
+                // when scrolled is layered on via inset box-shadow
+                // instead — paint-only, doesn't affect layout.
                 height: '72px',
                 // base-chrome is the elevated-chrome surface (preset- and
                 // mode-aware). Translucency lets the page bg show through
@@ -204,11 +211,8 @@ export default function Navbar({
                 background: scrolled
                     ? 'color-mix(in srgb, var(--theme-base-chrome) 70%, transparent)'
                     : 'color-mix(in srgb, var(--theme-base-chrome) 30%, transparent)',
-                borderBottomColor: scrolled
-                    ? 'var(--theme-base-400)'
-                    : 'transparent',
                 boxShadow: scrolled
-                    ? '0 8px 16px rgba(0, 0, 0, 0.18)'
+                    ? '0 8px 16px rgba(0, 0, 0, 0.18), inset 0 -1px 0 var(--theme-base-400)'
                     : 'none',
             }}
         >
