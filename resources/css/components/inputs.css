@@ -193,7 +193,15 @@
 }
 
 .alex-toggle:checked {
-    background: var(--theme-brand-primary-500);
+    background: var(--theme-brand-primary-400);
+    box-shadow:
+        0 0 0 1px var(--theme-brand-primary-500),
+        0 0 8px
+            color-mix(in srgb, var(--theme-brand-primary-400) 35%, transparent);
+}
+
+.alex-toggle:checked:hover:not(:disabled) {
+    background: var(--theme-brand-primary-300);
 }
 
 .alex-toggle:checked::after {
