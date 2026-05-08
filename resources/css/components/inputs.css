@@ -200,8 +200,16 @@
             color-mix(in srgb, var(--theme-brand-primary-400) 35%, transparent);
 }
 
+/* Hover-while-active: keep the brand fill, intensify the ring and
+ * glow rather than going lighter on the chroma scale (`-300` reads as
+ * washed-out against dark surfaces because oklch lightness rises
+ * faster than chroma at the upper steps). */
 .alex-toggle:checked:hover:not(:disabled) {
-    background: var(--theme-brand-primary-300);
+    background: var(--theme-brand-primary-400);
+    box-shadow:
+        0 0 0 2px var(--theme-brand-primary-500),
+        0 0 14px
+            color-mix(in srgb, var(--theme-brand-primary-400) 60%, transparent);
 }
 
 .alex-toggle:checked::after {
