@@ -300,17 +300,20 @@ export default function Navbar({
                                     style={{
                                         color: 'var(--theme-base-content)',
                                         borderRadius: 'var(--theme-radius-button)',
-                                        // Button fills the full navbar height so
-                                        // its hover-tint background covers the
-                                        // entire navbar slice. Content inside
-                                        // (avatar + text + chevron) is centered
-                                        // via items-center. The avatar's
-                                        // wrapper still uses translateY to
-                                        // overflow below; transforms don't
-                                        // affect the button's box, so the bg
-                                        // stays clipped to navbar bounds.
-                                        height: '100%',
-                                        alignSelf: 'stretch',
+                                        // Hard-cap button height at the navbar's
+                                        // 72px. Without this cap the avatar's
+                                        // ring (size + ringThickness*2 = 80px)
+                                        // sets the flex line height to 80,
+                                        // making the button (and its hover bg)
+                                        // overflow the navbar by 8px below.
+                                        // With explicit 72, the button's BOX
+                                        // matches the navbar, the avatar
+                                        // overflows the button visually via
+                                        // its natural 80px content + the
+                                        // wrapper's translateY transform —
+                                        // neither affects the box, so the
+                                        // hover bg stays inside navbar bounds.
+                                        height: '72px',
                                     }}
                                 >
                                     {/* Avatar overflows below the navbar's
