@@ -323,6 +323,12 @@ export default function Navbar({
                                         // neither affects the box, so the
                                         // hover bg stays inside navbar bounds.
                                         height: '72px',
+                                        // Nudge the content (avatar + text)
+                                        // down a few px from items-center's
+                                        // pure mathematical center — visually
+                                        // the chrome reads better with a
+                                        // slight bias toward the bottom.
+                                        paddingTop: '0.25rem',
                                     }}
                                 >
                                     {/* Avatar overflows below the navbar's
