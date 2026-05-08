@@ -84,7 +84,7 @@ export default function AvatarWithRing({
                                 style={{
                                     background: gradient
                                         ? translateLegacyDaisyTokens(gradient)
-                                        : 'conic-gradient(from 0deg, var(--color-primary), var(--color-secondary), var(--color-accent), var(--color-primary))',
+                                        : 'conic-gradient(from 0deg, var(--theme-brand-primary-500), var(--theme-brand-secondary-500), var(--theme-brand-accent-500), var(--theme-brand-primary-500))',
                                     ...(isAnimated ? {
                                         animation: `avatar-ring-spin ${ringSettings?.animation_duration ?? 3}s linear infinite`,
                                     } : {}),
@@ -95,24 +95,40 @@ export default function AvatarWithRing({
 
                     {/* Gap layer */}
                     <div
-                        className="absolute mask mask-squircle bg-base-200"
-                        style={{ width: gapSize, height: gapSize }}
+                        className="absolute mask mask-squircle"
+                        style={{
+                            width: gapSize,
+                            height: gapSize,
+                            background: 'var(--theme-base-surface)',
+                        }}
                     />
                 </>
             )}
 
             {/* Avatar */}
             <div
-                className="relative mask mask-squircle overflow-hidden bg-base-300 shadow-xl"
-                style={{ width: avatarSize, height: avatarSize }}
+                className="relative mask mask-squircle overflow-hidden shadow-xl"
+                style={{
+                    width: avatarSize,
+                    height: avatarSize,
+                    background: 'var(--theme-base-300)',
+                }}
             >
                 {src ? (
                     <img src={src} alt={alt} className="h-full w-full object-cover" />
                 ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/30 to-secondary/30">
+                    <div
+                        className="flex h-full w-full items-center justify-center"
+                        style={{
+                            background: 'linear-gradient(to bottom right, color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent), color-mix(in srgb, var(--theme-brand-secondary-500) 30%, transparent))',
+                        }}
+                    >
                         <span
-                            className="select-none font-bold text-primary/50"
-                            style={{ fontSize: avatarSize * 0.4 }}
+                            className="select-none font-bold"
+                            style={{
+                                fontSize: avatarSize * 0.4,
+                                color: 'color-mix(in srgb, var(--theme-brand-primary-500) 50%, transparent)',
+                            }}
                         >
                             {initials}
                         </span>
@@ -123,32 +139,38 @@ export default function AvatarWithRing({
     );
 }
 
-/* ── DaisyUI v4 → v5 token shims ──
- * AvatarRing seed data was authored against DaisyUI 4 (CSS vars
- * --p/--s/--a holding raw HSL components consumed via oklch(...)).
- * DaisyUI 5 ships fully-formed oklch strings under --color-primary
- * /--color-secondary/--color-accent, so wrapping them in oklch()
- * again produces invalid CSS (oklch(oklch(...))) — solid + gradient
- * + animated + rainbow rings all rendered as transparent. Translate
- * on read so existing DB rows keep working without a migration. */
+/* ── Slug → theme-token map ──
+ * Ring slugs in the DB (and AvatarRing seed data) reference theme
+ * roles by short name — `p` / `primary` for the primary brand colour,
+ * `s` / `secondary`, etc. We resolve them to the project's
+ * `--theme-brand-*` and `--theme-base-*` tokens (NOT DaisyUI's
+ * `--color-*` family) so the ring repaints alongside the rest of
+ * the chrome when the user swaps theme presets — a "solid primary"
+ * ring on the default preset becomes the cyberpunk preset's primary
+ * the moment the cascade resolves.
+ *
+ * Legacy v4 short slugs (p / s / a / n / b1-3 / bc) and the v5 long
+ * slugs (primary / secondary / accent / neutral) both map onto the
+ * same theme tokens so existing DB rows keep working without a
+ * migration. */
 
 const TOKEN_MAP: Record<string, string> = {
-    p: '--color-primary',
-    s: '--color-secondary',
-    a: '--color-accent',
-    n: '--color-neutral',
-    b1: '--color-base-100',
-    b2: '--color-base-200',
-    b3: '--color-base-300',
-    bc: '--color-base-content',
-    primary: '--color-primary',
-    secondary: '--color-secondary',
-    accent: '--color-accent',
-    neutral: '--color-neutral',
+    p: '--theme-brand-primary-500',
+    s: '--theme-brand-secondary-500',
+    a: '--theme-brand-accent-500',
+    n: '--theme-base-500',
+    b1: '--theme-base-100',
+    b2: '--theme-base-200',
+    b3: '--theme-base-300',
+    bc: '--theme-base-content',
+    primary: '--theme-brand-primary-500',
+    secondary: '--theme-brand-secondary-500',
+    accent: '--theme-brand-accent-500',
+    neutral: '--theme-base-500',
 };
 
 function resolveTokenName(slug: string): string {
-    return TOKEN_MAP[slug] ?? `--color-${slug}`;
+    return TOKEN_MAP[slug] ?? `--theme-brand-${slug}-500`;
 }
 
 function solidRingColor(slug: string | undefined, opacity: number | undefined): string {
