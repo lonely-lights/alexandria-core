@@ -157,9 +157,9 @@ export default function Dashboard() {
                         </p>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
-                        <QuickActionTile href="/account" icon="fa-user-gear" label="Account" />
+                        <QuickActionTile href="/profile" icon="fa-user-gear" label="Profile" />
                         <QuickActionTile href="/ai/suggestions" icon="fa-wand-magic-sparkles" label="AI suggestions" />
-                        <QuickActionTile href="/account#pref-appearance" icon="fa-palette" label="Appearance" />
+                        <QuickActionTile href="/settings#pref-appearance" icon="fa-palette" label="Appearance" />
                     </div>
                 </header>
 

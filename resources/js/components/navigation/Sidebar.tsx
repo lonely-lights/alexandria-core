@@ -34,7 +34,7 @@ interface SidebarProps {
     body?: ReactNode;
 
     /**
-     * Footer link target for the user-info row. Defaults to "/account".
+     * Footer link target for the user-info row. Defaults to "/settings".
      * Pass `null` to suppress the footer entirely.
      */
     userMenuLink?: string | null;
@@ -57,7 +57,7 @@ export default function Sidebar({
     brand = 'Alexandria',
     logoSlot,
     body,
-    userMenuLink = '/account',
+    userMenuLink = '/settings',
 }: SidebarProps) {
     const { auth, projects, currentProject } = usePage<SharedProps>().props;
     const typedProject = currentProject as

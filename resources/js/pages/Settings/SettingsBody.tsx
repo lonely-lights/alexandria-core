@@ -127,6 +127,14 @@ export interface SettingsBodyProps {
      * updates. See `PreferencesSection` for the contract.
      */
     applyViewPreferences?: (prefs: ViewPreferences) => void;
+    /**
+     * Section key the body should land on when first rendered. Lets the
+     * /profile and /settings pages share the same body but open at
+     * different starting sections — /profile lands on `identity`,
+     * /settings lands on a clinical section like `pref-appearance`.
+     * Defaults to `identity` when unset.
+     */
+    initialActiveSection?: string;
 }
 
 export default function SettingsBody({
@@ -143,8 +151,9 @@ export default function SettingsBody({
     options,
     accountManagementSlot,
     applyViewPreferences,
+    initialActiveSection = 'identity',
 }: SettingsBodyProps) {
-    const [activeSection, setActiveSection] = useState('identity');
+    const [activeSection, setActiveSection] = useState(initialActiveSection);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ profile: true });
     const [showRingModal, setShowRingModal] = useState(false);
     const [savedRingId, setSavedRingId] = useState<number | null>(profile.avatar_ring_id);

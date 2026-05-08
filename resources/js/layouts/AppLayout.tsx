@@ -30,10 +30,10 @@ interface FabAction {
 
 /**
  * Default mobile bottom-nav tab set. Five-slot layout: Dashboard +
- * Projects + Notes + Profile + Settings. Profile and Settings both
- * land on `/account` today — the URL split (Profile getting its own
- * identity-themed page, Settings staying clinical) lands as a later
- * Stage 3 refactor; the slots are reserved here for that transition.
+ * Projects + Notes + Profile + Settings. Profile lands on `/profile`
+ * (identity-themed); Settings lands on `/settings` (clinical). Both
+ * routes resolve to the same `<SettingsBody>` for now — visual
+ * specialisation between them lands in a later step.
  *
  * Notes routes to the current project's notes dashboard when there's
  * a `currentProject` shared prop; otherwise falls back to `/dashboard`
@@ -68,13 +68,13 @@ function buildDefaultBottomNavTabs(
         {
             id: 'profile',
             label: 'Profile',
-            href: '/account',
+            href: '/profile',
             icon: 'fa-solid fa-user',
         },
         {
             id: 'settings',
             label: 'Settings',
-            href: '/account',
+            href: '/settings',
             icon: 'fa-solid fa-gear',
         },
     ];
@@ -144,7 +144,7 @@ interface AppLayoutProps {
     sidebarBrand?: string | null;
 
     /** Footer link target for the sidebar user-info row. Defaults
-     *  to "/account". Pass `null` to hide the footer. */
+     *  to "/settings". Pass `null` to hide the footer. */
     sidebarUserLink?: string | null;
 
     // ────────────────────────────────────────────────────────────────────
@@ -239,7 +239,7 @@ export default function AppLayout({
     sidebarBody,
     sidebarLogo,
     sidebarBrand = 'Alexandria',
-    sidebarUserLink = '/account',
+    sidebarUserLink = '/settings',
 
     navbarBrand = 'Alexandria',
     navbarBrandSlot,

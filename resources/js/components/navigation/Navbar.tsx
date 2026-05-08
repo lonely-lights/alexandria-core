@@ -91,9 +91,9 @@ interface NavbarProps {
  * the click handler below.
  */
 const DEFAULT_USER_MENU_ITEMS: UserMenuItem[] = [
-    { label: 'Profile', href: '/account', icon: 'fa-solid fa-user', shortcut: '⇧⌘P' },
-    { label: 'Settings', href: '/account', icon: 'fa-solid fa-gear', shortcut: '⌘S' },
-    { label: 'Keyboard shortcuts', href: '/account', icon: 'fa-solid fa-keyboard', shortcut: '⌘K' },
+    { label: 'Profile', href: '/profile', icon: 'fa-solid fa-user', shortcut: '⇧⌘P' },
+    { label: 'Settings', href: '/settings', icon: 'fa-solid fa-gear', shortcut: '⌘S' },
+    { label: 'Keyboard shortcuts', href: '/settings', icon: 'fa-solid fa-keyboard', shortcut: '⌘K' },
 ];
 
 const DEFAULT_USER_MENU_FOOTER_ITEMS: UserMenuItem[] = [
