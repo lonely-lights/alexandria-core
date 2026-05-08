@@ -340,6 +340,14 @@ export default function Navbar({
                                             transform: scrolled
                                                 ? 'translateY(0) scale(0.667)'
                                                 : 'translateY(0.625rem) scale(1)',
+                                            // Anchor the scale at the right edge
+                                            // so it shrinks from the left only —
+                                            // the avatar's right edge stays put
+                                            // against the text gap, otherwise
+                                            // center-origin scaling pulls the
+                                            // avatar leftward and opens a
+                                            // too-wide gap before the name.
+                                            transformOrigin: 'right center',
                                             transition:
                                                 'transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
                                         }}
