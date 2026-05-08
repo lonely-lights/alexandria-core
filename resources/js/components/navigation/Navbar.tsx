@@ -300,24 +300,25 @@ export default function Navbar({
                                 >
                                     {/* Avatar overflows below the navbar's
                                         bottom edge for a "hanging seal"
-                                        feel. Sized at 64px with a 1rem
+                                        feel. Sized at 72px with a 0.625rem
                                         translateY so the upper edge sits
-                                        at navbar_y + 20 (matching legacy's
-                                        original starting position) and the
-                                        lower edge extends ~12px below the
-                                        navbar's bottom. The navbar's hard
-                                        72px height + overflow-visible keep
-                                        it from being clipped or stretching
-                                        the chrome. */}
+                                        at navbar_y + 10 (about halfway
+                                        from the previous start to the
+                                        navbar's top) and the lower edge
+                                        extends ~10px below the navbar's
+                                        bottom. The navbar's hard 72px
+                                        height + overflow-visible keep
+                                        it from being clipped or
+                                        stretching the chrome. */}
                                     <span
                                         className="shrink-0"
-                                        style={{ transform: 'translateY(1rem)' }}
+                                        style={{ transform: 'translateY(0.625rem)' }}
                                     >
                                         <AvatarWithRing
                                             src={user.has_avatar && user.avatar_thumb_url ? user.avatar_thumb_url : null}
                                             alt={user.name ?? 'User'}
                                             initials={(user.display_name ?? user.name ?? 'U').charAt(0).toUpperCase()}
-                                            size={64}
+                                            size={72}
                                             ring={user.avatar_ring_slug ?? 'none'}
                                             ringSettings={user.avatar_ring_settings as never}
                                             ringThickness={4}
