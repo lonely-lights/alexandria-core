@@ -359,6 +359,15 @@ export default function Navbar({
                                     <span
                                         className="shrink-0"
                                         style={{
+                                            // inline-block (not inline) so the
+                                            // explicit width/height take effect.
+                                            // An inline span ignores width/height
+                                            // and sizes to content (80px from
+                                            // AvatarWithRing), defeating the
+                                            // layout-shrink intent and putting
+                                            // the top-left-anchored visual into
+                                            // the upper part of an 80px box.
+                                            display: 'inline-block',
                                             width: scrolled ? '60px' : '80px',
                                             height: scrolled ? '60px' : '80px',
                                             transition:
