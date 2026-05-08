@@ -101,12 +101,24 @@ function UnwiredBanner({ children }: { children: React.ReactNode }) {
         <div
             className="flex items-start gap-2 p-3 text-sm"
             style={{
+                // Subtle warning-tinted bg + base-content for readable
+                // body text (which adapts to mode automatically). The
+                // warning hue stays as an accent on the icon and the
+                // border so the row still reads as "warning" without
+                // sacrificing legibility — `--theme-status-warning-stroke`
+                // as text on a subtle warning bg was too low-contrast,
+                // especially in dark mode where the stroke desaturates.
                 background: 'var(--theme-status-warning-subtle)',
-                color: 'var(--theme-status-warning-stroke)',
+                color: 'var(--theme-base-content)',
                 borderRadius: 'var(--theme-radius-card)',
+                border: '1px solid color-mix(in srgb, var(--theme-status-warning-fill) 35%, transparent)',
             }}
         >
-            <i className="fa-solid fa-triangle-exclamation mt-0.5" />
+            <i
+                className="fa-solid fa-triangle-exclamation mt-0.5"
+                style={{ color: 'var(--theme-status-warning-fill)' }}
+                aria-hidden="true"
+            />
             <span>{children}</span>
         </div>
     );
