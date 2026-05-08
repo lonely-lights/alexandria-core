@@ -1,0 +1,94 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+ * Settings-page UI strings — labels, descriptions, helper text, save
+ * buttons, and section headers across the /settings + /profile body.
+ *
+ * Surfaced React-side via the `t.settings` shared prop and accessed
+ * through `useT()`: `t('settings.appearance.color_mode_label')`,
+ * `t('settings.notifications.unwired_banner')`, etc.
+ *
+ * Keys use dot-prefixed sub-namespaces matching the section structure
+ * (`appearance.*`, `language.*`, `notifications.*`, `editor.*`,
+ * `accessibility.*`) — useT() does a single substring split at the
+ * group boundary, so the sub-namespace has to be a flat lookup
+ * inside the group's bag.
+ *
+ * Consumers can override individual entries by publishing
+ * `vendor:publish --tag=alexandria-translations` and editing the same
+ * keys in their own lang/<locale>/settings.php.
+ */
+return [
+    // ── Appearance ──────────────────────────────────────────────────
+    'appearance.color_mode_label' => 'Color Mode',
+    'appearance.color_mode_light' => 'Light',
+    'appearance.color_mode_dark' => 'Dark',
+    'appearance.color_mode_system' => 'System',
+    'appearance.color_mode_help' => 'System follows your operating system setting.',
+    'appearance.font_size_label' => 'Font Size',
+    'appearance.font_size_preview' => 'Aa',
+    'appearance.reduced_motion_label' => 'Reduced Motion',
+    'appearance.reduced_motion_description' => 'Minimize animations and transitions',
+    'appearance.compact_mode_label' => 'Compact Mode',
+    'appearance.compact_mode_description' => 'Use a denser layout with less spacing',
+    'appearance.save_button' => 'Save Appearance',
+
+    // ── Language / Regional Formats ─────────────────────────────────
+    'language.date_format_label' => 'Date Format',
+    'language.time_format_label' => 'Time Format',
+    'language.first_day_label' => 'First Day of Week',
+    'language.number_format_label' => 'Number Format',
+    'language.save_button' => 'Save Formats',
+
+    // ── Notifications ───────────────────────────────────────────────
+    'notifications.unwired_banner' => 'Notification delivery is not yet wired up. These preferences are saved but won\'t take effect until the notification system is connected.',
+    'notifications.delivery_header' => 'Delivery',
+    'notifications.email_label' => 'Email Notifications',
+    'notifications.email_frequency_label' => 'Email Frequency',
+    'notifications.push_label' => 'Push Notifications',
+    'notifications.in_app_label' => 'In-App Notifications',
+    'notifications.notify_about_header' => 'Notify Me About',
+    'notifications.mentions_label' => 'Mentions',
+    'notifications.mentions_description' => 'When someone @mentions you',
+    'notifications.comments_label' => 'Comments',
+    'notifications.comments_description' => 'New comments on your content',
+    'notifications.invites_label' => 'Project Invites',
+    'notifications.invites_description' => 'When you\'re invited to a project',
+    'notifications.ai_completion_label' => 'AI Completion',
+    'notifications.ai_completion_description' => 'When AI tasks finish processing',
+    'notifications.communications_header' => 'Communications',
+    'notifications.marketing_emails_label' => 'Marketing Emails',
+    'notifications.product_updates_label' => 'Product Updates',
+    'notifications.tips_label' => 'Tips & Tutorials',
+    'notifications.community_digest_label' => 'Community Digest',
+    'notifications.save_button' => 'Save Notifications',
+
+    // ── Editor ──────────────────────────────────────────────────────
+    'editor.unwired_banner' => 'Editor settings are saved but not yet applied to the editor interface. This will be connected in a future update.',
+    'editor.default_mode_label' => 'Default Editor Mode',
+    'editor.auto_save_label' => 'Auto-Save',
+    'editor.auto_save_description' => 'Automatically save your work',
+    'editor.auto_save_interval_label' => 'Auto-Save Interval',
+    'editor.spell_check_label' => 'Spell Check',
+    'editor.word_count_label' => 'Show Word Count',
+    'editor.reading_time_label' => 'Show Reading Time',
+    'editor.note_visibility_label' => 'Default Note Visibility',
+    'editor.save_button' => 'Save Editor Settings',
+
+    // ── Accessibility ───────────────────────────────────────────────
+    'accessibility.high_contrast_label' => 'High Contrast',
+    'accessibility.high_contrast_description' => 'Boost contrast for better visibility',
+    'accessibility.focus_indicators_label' => 'Focus Indicators',
+    'accessibility.dyslexia_label' => 'Dyslexia-Friendly Font',
+    'accessibility.dyslexia_description' => 'Use a font designed for easier reading (Atkinson Hyperlegible)',
+    'accessibility.reduce_motion_label' => 'Reduce Motion',
+    'accessibility.reduce_motion_description' => 'Minimize animations and transitions across the app',
+    'accessibility.os_motion_help' => 'Your operating system\'s reduce-motion setting is also respected automatically.',
+    'accessibility.screen_reader_label' => 'Screen Reader Mode',
+    'accessibility.screen_reader_description' => 'Optimize the interface for screen readers',
+    'accessibility.keyboard_shortcuts_label' => 'Keyboard Shortcuts',
+    'accessibility.keyboard_shortcuts_description' => 'Enable keyboard shortcuts for common actions',
+    'accessibility.save_button' => 'Save Accessibility',
+];

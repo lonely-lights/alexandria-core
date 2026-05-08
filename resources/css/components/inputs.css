@@ -209,3 +209,43 @@
     opacity: 0.45;
     cursor: not-allowed;
 }
+
+/* ── Preference picker cards — segmented-card selectors used by
+   PreferencesSection (color mode, font size, etc.). Selected variant
+   gets a brand-tinted border + fill via the `--selected` modifier;
+   the rest-state card hovers to a slightly stronger neutral border so
+   keyboard / mouse users get clear affordance feedback. ──────────── */
+
+.alex-pref-card {
+    border: 2px solid
+        color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+    background: transparent;
+    cursor: pointer;
+    transition:
+        border-color var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard),
+        background var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-pref-card:hover:not(.alex-pref-card--selected) {
+    border-color: color-mix(
+        in srgb,
+        var(--theme-base-content) 30%,
+        transparent
+    );
+}
+
+.alex-pref-card:focus-visible {
+    outline: 2px solid var(--theme-semantic-focus-ring);
+    outline-offset: 2px;
+}
+
+.alex-pref-card--selected {
+    border-color: var(--theme-brand-primary-500);
+    background: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 10%,
+        transparent
+    );
+}
