@@ -28,33 +28,13 @@
             var(--theme-motion-easing-standard);
 }
 
-/* Hover (any state) = full active-state styling: brand fill + ring
- * + glow. The checkmark presence (drawn by `::after` only on
- * `:checked`) tells the user whether the box is actually checked;
- * hover shows a strong activation preview regardless. Holding at
- * `-400` for the fill and amplifying ring + glow on hover-while-
- * checked rather than going lighter on the chroma scale, since
- * oklch lightness rises faster than chroma at the upper steps and
- * lighter shades read as washed-out on dark surfaces. */
-.alex-checkbox:hover:not(:disabled),
-.alex-checkbox:checked {
-    background: var(--theme-brand-primary-400);
+.alex-checkbox:hover:not(:disabled) {
     border-color: var(--theme-brand-primary-500);
-    box-shadow:
-        0 0 0 1px var(--theme-brand-primary-500),
-        0 0 8px
-            color-mix(in srgb, var(--theme-brand-primary-400) 35%, transparent);
 }
 
-/* Hover-while-checked: amplify the ring + glow further so an already
- * checked box gets MORE visible feedback when pointed at, never less. */
-.alex-checkbox:checked:hover:not(:disabled) {
-    background: var(--theme-brand-primary-400);
+.alex-checkbox:checked {
+    background: var(--theme-brand-primary-500);
     border-color: var(--theme-brand-primary-500);
-    box-shadow:
-        0 0 0 2px var(--theme-brand-primary-500),
-        0 0 14px
-            color-mix(in srgb, var(--theme-brand-primary-400) 60%, transparent);
 }
 
 /* Checkmark — rotated rectangle with bottom + right borders.

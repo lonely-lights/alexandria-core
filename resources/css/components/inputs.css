@@ -184,16 +184,32 @@
         var(--theme-motion-easing-standard);
 }
 
-.alex-toggle:hover:not(:disabled) {
-    background: color-mix(
-        in srgb,
-        var(--theme-base-content) 30%,
-        transparent
-    );
+/* Hover (any state) = full active-state styling: brand fill + ring
+ * + glow. The thumb position (left vs right) tells the user whether
+ * the toggle is actually active; hover styling shows a strong
+ * activation preview regardless. Holding at `-400` for the fill and
+ * amplifying ring + glow on hover-while-active rather than going
+ * lighter on the chroma scale, since oklch lightness rises faster
+ * than chroma at the upper steps and lighter shades read as
+ * washed-out on dark surfaces. */
+.alex-toggle:hover:not(:disabled),
+.alex-toggle:checked {
+    background: var(--theme-brand-primary-400);
+    box-shadow:
+        0 0 0 1px var(--theme-brand-primary-500),
+        0 0 8px
+            color-mix(in srgb, var(--theme-brand-primary-400) 35%, transparent);
 }
 
-.alex-toggle:checked {
-    background: var(--theme-brand-primary-500);
+/* Hover-while-active: amplify the ring + glow further so an already
+ * active toggle gets MORE visible feedback when pointed at, never
+ * less. */
+.alex-toggle:checked:hover:not(:disabled) {
+    background: var(--theme-brand-primary-400);
+    box-shadow:
+        0 0 0 2px var(--theme-brand-primary-500),
+        0 0 14px
+            color-mix(in srgb, var(--theme-brand-primary-400) 60%, transparent);
 }
 
 .alex-toggle:checked::after {
