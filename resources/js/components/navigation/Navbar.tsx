@@ -211,7 +211,11 @@ export default function Navbar({
                     {/* Hamburger Menu Button */}
                     <button
                         onClick={onMenuToggle}
-                        className="btn btn-ghost btn-circle mr-2"
+                        className="alex-nav-icon-btn alex-nav-icon-btn--ghost mr-2 flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
+                        style={{
+                            background: 'transparent',
+                            color: 'var(--theme-base-content)',
+                        }}
                         aria-label="Open sidebar"
                     >
                         <i className="fas fa-bars text-xl" />
