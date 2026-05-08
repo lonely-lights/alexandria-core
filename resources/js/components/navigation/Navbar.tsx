@@ -337,16 +337,28 @@ export default function Navbar({
                                     <span
                                         className="shrink-0"
                                         style={{
+                                            // Scrolled: scale 0.75 (effective
+                                            // 54px avatar / 60px including ring)
+                                            // — slightly bigger than the
+                                            // legacy 48px size for more
+                                            // presence inside the navbar.
+                                            // translateY(0) with
+                                            // transform-origin centering
+                                            // vertically means the scaled
+                                            // avatar sits centered in the
+                                            // 72px navbar.
                                             transform: scrolled
-                                                ? 'translateY(0) scale(0.667)'
+                                                ? 'translateY(0) scale(0.75)'
                                                 : 'translateY(0.625rem) scale(1)',
-                                            // Anchor the scale at the right edge
-                                            // so it shrinks from the left only —
-                                            // the avatar's right edge stays put
-                                            // against the text gap, otherwise
-                                            // center-origin scaling pulls the
-                                            // avatar leftward and opens a
-                                            // too-wide gap before the name.
+                                            // Anchor the scale at the right
+                                            // edge horizontally + center
+                                            // vertically — right-edge so the
+                                            // avatar's right edge stays put
+                                            // against the text gap (otherwise
+                                            // it opens a too-wide gap), and
+                                            // center vertically so the
+                                            // shrink keeps the avatar
+                                            // centered in the navbar.
                                             transformOrigin: 'right center',
                                             transition:
                                                 'transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
