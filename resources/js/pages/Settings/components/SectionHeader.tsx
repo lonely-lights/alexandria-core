@@ -39,7 +39,7 @@ export default function SectionHeader({
             />
             <div className="relative flex items-start gap-5">
                 <div
-                    className="flex h-[3.75rem] w-[3.75rem] flex-shrink-0 items-center justify-center border"
+                    className="flex h-15 w-15 flex-shrink-0 items-center justify-center border"
                     style={{
                         background: brandTint15,
                         borderColor: brandTint20,
