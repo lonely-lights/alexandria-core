@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 /**
  * One row in the user dropdown menu (Navbar) and in the BottomNav "More"
  * sheet. The consumer fills the URLs/labels — core ships no opinions about
- * /account, /support, /logout, etc.
+ * /settings, /profile, /support, /logout, etc.
  *
  * Use { divider: true } as a sentinel item to render a horizontal rule.
  */

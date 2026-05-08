@@ -5,12 +5,19 @@ import SettingsBody, { type SettingsBodyProps } from './SettingsBody';
 import { type ViewPreferences } from './Sections/PreferencesSection';
 
 /**
- * /settings (and /account) page shell.
+ * /settings + /profile page shell.
  *
  * Reads Inertia page props and renders `<SettingsBody>` inside an
  * immersive `<AppLayout>`. The body itself owns all UI state and is
  * shared with the future `<SettingsDrawer>` overlay so logic stays DRY
  * across both presentations.
+ *
+ * Both /profile (identity-themed) and /settings (clinical) routes
+ * resolve to this component. The consumer app's controller picks the
+ * starting section per route by passing `initialActiveSection` in the
+ * Inertia props — `identity` for /profile, `pref-appearance` for
+ * /settings. Visual specialisation between the two surfaces will land
+ * in a later step; for now they share the same body.
  *
  * Backend route contract lives on `<SettingsBody>` — see that file's
  * docblock for the full endpoint surface the consumer app must expose.
