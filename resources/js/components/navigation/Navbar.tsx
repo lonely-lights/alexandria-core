@@ -204,7 +204,16 @@ export default function Navbar({
                 // by half a pixel each direction. The bottom hairline
                 // when scrolled is layered on via inset box-shadow
                 // instead — paint-only, doesn't affect layout.
+                //
+                // Inline padding-y override: DaisyUI's `.navbar` class
+                // ships `padding: 0.5rem` (shorthand, all four sides)
+                // which can outweigh Tailwind's `py-0` utility on
+                // cascade ties. Inline style is highest specificity,
+                // guarantees content area = full 72px so the user
+                // trigger's 72px box fills the navbar exactly.
                 height: '72px',
+                paddingTop: 0,
+                paddingBottom: 0,
                 // base-chrome is the elevated-chrome surface (preset- and
                 // mode-aware). Translucency lets the page bg show through
                 // for the frosted-glass feel; scrolled state firms up.
