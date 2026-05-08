@@ -359,15 +359,22 @@ export default function Navbar({
                                     <span
                                         className="shrink-0"
                                         style={{
-                                            // inline-block (not inline) so the
-                                            // explicit width/height take effect.
-                                            // An inline span ignores width/height
-                                            // and sizes to content (80px from
-                                            // AvatarWithRing), defeating the
-                                            // layout-shrink intent and putting
-                                            // the top-left-anchored visual into
-                                            // the upper part of an 80px box.
+                                            // Flex items default to
+                                            // min-width/min-height: auto, which
+                                            // resolves to min-content size
+                                            // when overflow is visible. Our
+                                            // content is AvatarWithRing's 80×80
+                                            // outer (with explicit
+                                            // minWidth/minHeight set on it),
+                                            // so this flex item silently
+                                            // floors at 80×80 and ignores the
+                                            // declared `width: 60` we want
+                                            // when scrolled. Forcing min-* to
+                                            // 0 lets the explicit sizes
+                                            // actually take effect.
                                             display: 'inline-block',
+                                            minWidth: 0,
+                                            minHeight: 0,
                                             width: scrolled ? '60px' : '80px',
                                             height: scrolled ? '60px' : '80px',
                                             transition:
