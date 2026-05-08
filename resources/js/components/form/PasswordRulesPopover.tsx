@@ -9,6 +9,7 @@ import {
     type Placement,
 } from '@floating-ui/react';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
+import useT from '@alexandria/hooks/useT';
 
 /**
  * A single password validation rule. The label is what shows in the
@@ -162,6 +163,7 @@ export default function PasswordRulesPopover({
     rules = defaultPasswordRules,
     placement = 'right',
 }: PasswordRulesPopoverProps) {
+    const t = useT();
     const arrowRef = useRef<SVGSVGElement>(null);
     const [refs, setRefs] = useState<{ reference: HTMLElement | null }>({
         reference: null,
@@ -216,7 +218,7 @@ export default function PasswordRulesPopover({
                         color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
                     }}
                 >
-                    Password requirements
+                    {t('forms.password.requirements_header')}
                 </p>
                 <ul className="space-y-1.5">
                     {evaluatedRules.map((rule) => (
@@ -263,7 +265,12 @@ export default function PasswordRulesPopover({
                                         : 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
                                 }}
                             >
-                                {rule.label}
+                                {/* Lookup by rule.id; consumer-supplied rules
+                                    that don't have a translation key fall
+                                    back to their literal `label` prop. */}
+                                {typeof rule.label === 'string'
+                                    ? t(`forms.password.rule_${rule.id}`, rule.label)
+                                    : rule.label}
                             </span>
                         </li>
                     ))}
