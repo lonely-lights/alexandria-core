@@ -184,12 +184,13 @@
         var(--theme-motion-easing-standard);
 }
 
+/* Unchecked-hover previews the active fill at full saturation so the
+ * user sees what activation will look like, minus the ring + glow
+ * signature that marks the *current* state. Active vs hover stays
+ * distinguishable: same brand fill, but no ring around the pill and
+ * no surrounding glow until you actually flip it on. */
 .alex-toggle:hover:not(:disabled) {
-    background: color-mix(
-        in srgb,
-        var(--theme-brand-primary-400) 35%,
-        transparent
-    );
+    background: var(--theme-brand-primary-400);
 }
 
 .alex-toggle:checked {
