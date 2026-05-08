@@ -39,7 +39,7 @@ export default function SectionHeader({
             />
             <div className="relative flex items-start gap-5">
                 <div
-                    className="flex h-12 w-12 flex-shrink-0 items-center justify-center border"
+                    className="flex h-[3.75rem] w-[3.75rem] flex-shrink-0 items-center justify-center border"
                     style={{
                         background: brandTint15,
                         borderColor: brandTint20,
@@ -47,14 +47,14 @@ export default function SectionHeader({
                     }}
                 >
                     <i
-                        className={`fa-solid ${icon} text-xl`}
+                        className={`fa-solid ${icon} text-2xl`}
                         style={{ color: 'var(--theme-brand-primary-500)' }}
                     />
                 </div>
                 <div className="min-w-0">
                     {label && (
                         <div
-                            className="mb-1.5 text-[11px] font-semibold uppercase tracking-[.25em]"
+                            className="mb-0.5 text-[11px] font-semibold uppercase tracking-[.25em]"
                             style={{ color: brandTint80 }}
                         >
                             {label}
@@ -62,7 +62,7 @@ export default function SectionHeader({
                     )}
                     <h3 className="font-serif text-3xl font-bold leading-tight tracking-tight">{title}</h3>
                     <p
-                        className="mt-2 text-sm leading-relaxed"
+                        className="mt-0.5 text-sm leading-relaxed"
                         style={{ color: subtitleColor }}
                     >
                         {subtitle}
