@@ -92,6 +92,10 @@ return [
     'accessibility.keyboard_shortcuts_description' => 'Enable keyboard shortcuts for common actions',
     'accessibility.save_button' => 'Save Accessibility',
 
+    // ── SettingsDrawer overlay ──────────────────────────────────────
+    'drawer.title' => 'Settings',
+    'drawer.aria_label' => 'Settings drawer',
+
     // ── Avatar ring picker (RingModal) ──────────────────────────────
     'ring_picker.title' => 'Avatar Ring',
     'ring_picker.none_label' => 'None',
