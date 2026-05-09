@@ -17,7 +17,7 @@
  * and explicit close buttons.
  */
 
-import { useCallback, useEffect, useRef, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import gsap from 'gsap';
 
 export interface FloatingPanelAnimation {
@@ -74,8 +74,14 @@ export function useFloatingPanel(
         };
     }, [open]);
 
-    // Animate in
-    useEffect(() => {
+    // Animate in. Synchronous (`useLayoutEffect`) on purpose: a regular
+    // `useEffect` runs AFTER the first paint, so the panel briefly
+    // renders in its default style (opacity 1, scale 1) before GSAP's
+    // `fromTo` hides it for the entrance — visible flicker on open.
+    // useLayoutEffect runs after DOM mutation but before paint, so the
+    // `from` state lands first and the user only ever sees the
+    // animation, not the unstyled flash.
+    useLayoutEffect(() => {
         if (!open) return;
         closingRef.current = false;
         const { enter, backdropEnterDuration = 0.25 } = animationRef.current;
