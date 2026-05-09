@@ -2,9 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm } from '@inertiajs/react';
 import Select from '@alexandria/components/form/Select';
 import Toggle from '@alexandria/components/form/Toggle';
+import Input from '@alexandria/components/form/Input';
+import Button from '@alexandria/components/ui/Button';
 import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
 import gsap from 'gsap';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 import type { SyntheticEvent } from 'react';
 
 interface FieldConfig {
@@ -53,11 +56,80 @@ export default function PrivacySections({ section, ...props }: PrivacyProps) {
     }
 }
 
+/* ── Color slug → theme token resolver ──
+ * Privacy lists store a colour slug (`primary`, `info`, `success`, …)
+ * that historically rendered as DaisyUI utility classes (`bg-primary`,
+ * `text-info`, …). With the token migration we resolve the slug to a
+ * `--theme-*` CSS variable at render time so preset swaps repaint the
+ * lists alongside the rest of the chrome.
+ *
+ * Brand roles (primary/secondary/accent/neutral) map to `--theme-brand-*`;
+ * status roles (info/success/warning/error) to `--theme-status-*`. Unknown
+ * slugs fall back to brand-primary so the chip still renders.
+ */
+function resolveColorVar(slug: string): string {
+    switch (slug) {
+        case 'primary': return 'var(--theme-brand-primary-500)';
+        case 'secondary': return 'var(--theme-brand-secondary-500)';
+        case 'accent': return 'var(--theme-brand-accent-500)';
+        case 'neutral': return 'var(--theme-base-500)';
+        case 'info': return 'var(--theme-status-info-fill)';
+        case 'success': return 'var(--theme-status-success-fill)';
+        case 'warning': return 'var(--theme-status-warning-fill)';
+        case 'error': return 'var(--theme-status-error-stroke)';
+        default: return 'var(--theme-brand-primary-500)';
+    }
+}
+
+/* ── Pill-shaped status badge — same family as AiSections ── */
+type BadgeVariant = 'success' | 'error' | 'warning' | 'info' | 'primary' | 'secondary' | 'neutral';
+
+function StatusBadge({ children, variant = 'neutral', icon }: { children: React.ReactNode; variant?: BadgeVariant; icon?: string }) {
+    const palettes: Record<BadgeVariant, { bg: string; fg: string }> = {
+        success: { bg: 'var(--theme-status-success-subtle)', fg: 'var(--theme-status-success-fill)' },
+        error: { bg: 'var(--theme-status-error-subtle)', fg: 'var(--theme-status-error-stroke)' },
+        warning: { bg: 'var(--theme-status-warning-subtle)', fg: 'var(--theme-status-warning-fill)' },
+        info: { bg: 'var(--theme-status-info-subtle)', fg: 'var(--theme-status-info-fill)' },
+        primary: {
+            bg: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+            fg: 'var(--theme-brand-primary-500)',
+        },
+        secondary: {
+            bg: 'color-mix(in srgb, var(--theme-brand-secondary-500) 12%, transparent)',
+            fg: 'var(--theme-brand-secondary-500)',
+        },
+        neutral: {
+            bg: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+            fg: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+        },
+    };
+    const p = palettes[variant];
+    return (
+        <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold"
+            style={{ background: p.bg, color: p.fg, borderRadius: '9999px' }}
+        >
+            {icon && <i className={`${icon} text-[10px]`} />}
+            {children}
+        </span>
+    );
+}
+
+function visibilityVariant(visibility: string | undefined): BadgeVariant {
+    switch (visibility) {
+        case 'public': return 'success';
+        case 'friends': return 'info';
+        case 'custom': return 'secondary';
+        default: return 'neutral';
+    }
+}
+
 /* ══════════════════════════════════════════════════════════
    FIELD VISIBILITY
    ══════════════════════════════════════════════════════════ */
 
 function FieldVisibilitySection({ fieldVisibility, privacyLists, privacyOptions, onDataChanged }: Omit<PrivacyProps, 'section' | 'preferences' | 'options'>) {
+    const t = useT();
     const [fields, setFields] = useState(fieldVisibility);
     const [editingField, setEditingField] = useState<string | null>(null);
 
@@ -77,12 +149,22 @@ function FieldVisibilitySection({ fieldVisibility, privacyLists, privacyOptions,
     }
 
     const visOpts = privacyOptions.visibility;
+    const fieldRowStyle = {
+        background: 'var(--theme-base-page)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const iconBoxStyle = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+        borderRadius: 'var(--theme-radius-input)',
+    };
+    const fadedTextStyle = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+    };
 
     return (
         <div className="space-y-3">
-            <p className="mb-4 text-sm text-base-content/60">
-                Control who can see each part of your profile. Click any field to change its visibility.
-            </p>
+            <p className="mb-4 text-sm" style={fadedTextStyle}>{t('privacy.visibility.intro')}</p>
 
             {Object.entries(privacyOptions.fields).map(([fieldKey, config]) => {
                 const current = fields[fieldKey];
@@ -93,29 +175,30 @@ function FieldVisibilitySection({ fieldVisibility, privacyLists, privacyOptions,
                         key={fieldKey}
                         type="button"
                         onClick={() => setEditingField(fieldKey)}
-                        className="flex w-full items-center gap-3 rounded-2xl border border-base-content/10 bg-base-100 p-4 text-left transition-all hover:border-base-content/20 hover:shadow-sm"
+                        className="flex w-full items-center gap-3 p-4 text-left transition-shadow hover:shadow-sm"
+                        style={fieldRowStyle}
                     >
-                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-base-300">
-                            <i className={`${config.icon} text-sm text-base-content/60`} />
+                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center" style={iconBoxStyle}>
+                            <i className={`${config.icon} text-sm`} style={{ color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' }} />
                         </div>
                         <div className="min-w-0 flex-1">
                             <span className="text-sm font-medium">{config.label}</span>
-                            <p className="text-xs text-base-content/40">{config.description}</p>
+                            <p className="text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}>
+                                {config.description}
+                            </p>
                         </div>
-                        <span className={`badge badge-sm ${
-                            current?.visibility === 'public' ? 'badge-success' :
-                            current?.visibility === 'friends' ? 'badge-info' :
-                            current?.visibility === 'custom' ? 'badge-secondary' : ''
-                        }`}>
-                            <i className={`${vis?.icon ?? 'fa-solid fa-globe'} mr-1 text-[10px]`} />
-                            {vis?.label ?? 'Public'}
-                        </span>
+                        <StatusBadge
+                            variant={visibilityVariant(current?.visibility)}
+                            icon={vis?.icon ?? 'fa-solid fa-globe'}
+                        >
+                            {vis?.label ?? t('privacy.visibility.public_fallback')}
+                        </StatusBadge>
                     </button>
                 );
             })}
 
-            {/* Edit Modal */}
             <FieldVisibilityModal
+                t={t}
                 open={!!editingField}
                 fieldKey={editingField ?? ''}
                 fieldConfig={editConfig}
@@ -130,7 +213,8 @@ function FieldVisibilitySection({ fieldVisibility, privacyLists, privacyOptions,
     );
 }
 
-function FieldVisibilityModal({ open, fieldKey, fieldConfig, currentVisibility, currentListIds, visibilityOptions, lists, onSave, onClose }: {
+function FieldVisibilityModal({ t, open, fieldKey, fieldConfig, currentVisibility, currentListIds, visibilityOptions, lists, onSave, onClose }: {
+    t: Translator;
     open: boolean;
     fieldKey: string;
     fieldConfig: FieldConfig | null;
@@ -155,34 +239,73 @@ function FieldVisibilityModal({ open, fieldKey, fieldConfig, currentVisibility, 
 
     return (
         <Modal open={open} onClose={onClose}>
-            <ModalHeader title={fieldConfig?.label ?? 'Field Visibility'} onClose={onClose} />
+            <ModalHeader title={fieldConfig?.label ?? t('privacy.visibility.modal_title_fallback')} onClose={onClose} />
             <div className="space-y-3 p-6">
-                {Object.entries(visibilityOptions).map(([key, opt]) => (
-                    <label
-                        key={key}
-                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-3 transition-all ${
-                            visibility === key ? 'border-primary bg-primary/5' : 'border-base-content/10 hover:border-base-content/30'
-                        }`}
-                    >
-                        <input type="radio" className="radio radio-primary radio-sm" checked={visibility === key} onChange={() => setVisibility(key)} />
-                        <i className={`${opt.icon} w-5 text-center ${visibility === key ? 'text-primary' : 'text-base-content/50'}`} />
-                        <div>
-                            <span className="text-sm font-medium">{opt.label}</span>
-                            <p className="text-xs text-base-content/50">{opt.description}</p>
-                        </div>
-                    </label>
-                ))}
+                {Object.entries(visibilityOptions).map(([key, opt]) => {
+                    const selected = visibility === key;
+                    return (
+                        <label
+                            key={key}
+                            className={`alex-pref-card flex cursor-pointer items-center gap-3 p-3 ${selected ? 'alex-pref-card--selected' : ''}`}
+                        >
+                            <input
+                                type="radio"
+                                className="alex-checkbox"
+                                style={{ borderRadius: '9999px' }}
+                                checked={selected}
+                                onChange={() => setVisibility(key)}
+                            />
+                            <i
+                                className={`${opt.icon} w-5 text-center`}
+                                style={{
+                                    color: selected
+                                        ? 'var(--theme-brand-primary-500)'
+                                        : 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                                }}
+                                aria-hidden="true"
+                            />
+                            <div>
+                                <span className="text-sm font-medium">{opt.label}</span>
+                                <p className="text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}>
+                                    {opt.description}
+                                </p>
+                            </div>
+                        </label>
+                    );
+                })}
 
                 {visibility === 'custom' && lists.length > 0 && (
-                    <div className="mt-2 rounded-2xl bg-base-300/30 p-3">
-                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[.25em] text-primary/80">Include these lists</p>
+                    <div
+                        className="mt-2 p-3"
+                        style={{
+                            background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+                            borderRadius: 'var(--theme-radius-card)',
+                        }}
+                    >
+                        <p
+                            className="mb-2 text-[11px] font-semibold uppercase tracking-[.25em]"
+                            style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-500) 80%, transparent)' }}
+                        >
+                            {t('privacy.visibility.include_lists_header')}
+                        </p>
                         <div className="space-y-1">
                             {lists.map((list) => (
-                                <label key={list.id} className="flex cursor-pointer items-center gap-2 rounded-lg p-2 hover:bg-base-300/50">
-                                    <input type="checkbox" className="checkbox checkbox-primary checkbox-sm" checked={listIds.includes(list.id)} onChange={() => toggleList(list.id)} />
-                                    <i className={`fa-solid ${list.icon} text-${list.color} text-sm`} />
+                                <label
+                                    key={list.id}
+                                    className="flex cursor-pointer items-center gap-2 p-2"
+                                    style={{ borderRadius: 'var(--theme-radius-input)' }}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        className="alex-checkbox"
+                                        checked={listIds.includes(list.id)}
+                                        onChange={() => toggleList(list.id)}
+                                    />
+                                    <i className={`fa-solid ${list.icon} text-sm`} style={{ color: resolveColorVar(list.color) }} />
                                     <span className="text-sm">{list.name}</span>
-                                    <span className="badge badge-ghost badge-sm ml-auto">{list.members_count}</span>
+                                    <span className="ml-auto">
+                                        <StatusBadge variant="neutral">{list.members_count}</StatusBadge>
+                                    </span>
                                 </label>
                             ))}
                         </div>
@@ -190,10 +313,13 @@ function FieldVisibilityModal({ open, fieldKey, fieldConfig, currentVisibility, 
                 )}
             </div>
             <ModalFooter>
-                <button type="button" onClick={onClose} className="btn btn-ghost rounded-xl">Cancel</button>
-                <button type="button" onClick={() => onSave(fieldKey, visibility, visibility === 'custom' ? listIds : [])} className="btn btn-primary rounded-xl">
-                    Save
-                </button>
+                <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+                <Button
+                    variant="primary"
+                    onClick={() => onSave(fieldKey, visibility, visibility === 'custom' ? listIds : [])}
+                >
+                    {t('privacy.visibility.save_button')}
+                </Button>
             </ModalFooter>
         </Modal>
     );
@@ -204,6 +330,7 @@ function FieldVisibilityModal({ open, fieldKey, fieldConfig, currentVisibility, 
    ══════════════════════════════════════════════════════════ */
 
 function PrivacySettingsSection({ preferences, options }: { preferences: Record<string, unknown>; options: Record<string, Record<string, string>> }) {
+    const t = useT();
     const form = useForm({
         profile_visibility: preferences.profile_visibility as string,
         show_online_status: preferences.show_online_status as boolean,
@@ -218,15 +345,39 @@ function PrivacySettingsSection({ preferences, options }: { preferences: Record<
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            <Select label="Profile Visibility" name="profile_visibility" options={options.profile_visibility} value={form.data.profile_visibility} onChange={(e) => form.setData('profile_visibility', e.target.value)} />
-            <Toggle label="Show Online Status" description="Let others see when you're online" checked={form.data.show_online_status} onChange={(v) => form.setData('show_online_status', v)} />
-            <Toggle label="Show Activity Status" description="Let others see your recent activity" checked={form.data.show_activity_status} onChange={(v) => form.setData('show_activity_status', v)} />
-            <Select label="Allow Project Invites" name="allow_project_invites" options={options.allow_project_invites} value={form.data.allow_project_invites} onChange={(e) => form.setData('allow_project_invites', e.target.value)} />
+            <Select
+                size="md"
+                label={t('privacy.settings.profile_visibility_label')}
+                name="profile_visibility"
+                options={options.profile_visibility}
+                value={form.data.profile_visibility}
+                onChange={(e) => form.setData('profile_visibility', e.target.value)}
+            />
+            <Toggle
+                label={t('privacy.settings.online_label')}
+                description={t('privacy.settings.online_description')}
+                checked={form.data.show_online_status}
+                onChange={(v) => form.setData('show_online_status', v)}
+            />
+            <Toggle
+                label={t('privacy.settings.activity_label')}
+                description={t('privacy.settings.activity_description')}
+                checked={form.data.show_activity_status}
+                onChange={(v) => form.setData('show_activity_status', v)}
+            />
+            <Select
+                size="md"
+                label={t('privacy.settings.invites_label')}
+                name="allow_project_invites"
+                options={options.allow_project_invites}
+                value={form.data.allow_project_invites}
+                onChange={(e) => form.setData('allow_project_invites', e.target.value)}
+            />
 
             <div className="flex justify-end pt-4">
-                <button type="submit" className="btn btn-primary rounded-xl" disabled={form.processing}>
-                    {form.processing ? <><span className="loading loading-spinner loading-sm" /> Saving...</> : 'Save Privacy'}
-                </button>
+                <Button type="submit" variant="primary" loading={form.processing}>
+                    {form.processing ? t('common.saving') : t('privacy.settings.save_button')}
+                </Button>
             </div>
         </form>
     );
@@ -237,6 +388,7 @@ function PrivacySettingsSection({ preferences, options }: { preferences: Record<
    ══════════════════════════════════════════════════════════ */
 
 function PrivacyListsSection({ privacyLists: initialLists, privacyOptions, onDataChanged }: Omit<PrivacyProps, 'section' | 'preferences' | 'options' | 'fieldVisibility'>) {
+    const t = useT();
     const [lists, setLists] = useState<PrivacyList[]>(initialLists);
     const [editingList, setEditingList] = useState<PrivacyList | null>(null);
     const [showCreate, setShowCreate] = useState(false);
@@ -244,19 +396,31 @@ function PrivacyListsSection({ privacyLists: initialLists, privacyOptions, onDat
     const iconOptions = privacyOptions.list_icons;
     const colorOptions = privacyOptions.list_colors;
 
+    const introStyle = {
+        background: 'var(--theme-status-info-subtle)',
+        color: 'var(--theme-status-info-fill)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const emptyIconBoxStyle = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    };
+    const fadedTextStyle = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    };
+
     return (
         <div className="space-y-6">
-            <div className="flex items-start gap-2 rounded-2xl bg-info/10 p-3 text-sm text-info">
+            <div className="flex items-start gap-2 p-3 text-sm" style={introStyle}>
                 <i className="fa-solid fa-circle-info mt-0.5" />
-                <span>Privacy lists let you group people — like "Close Friends" or "Writing Group" — so you can share specific profile fields with just those groups.</span>
+                <span>{t('privacy.lists.intro')}</span>
             </div>
 
-            {/* List display */}
             {lists.length > 0 ? (
                 <div className="space-y-3">
                     {lists.map((list) => (
                         <ListCard
                             key={list.id}
+                            t={t}
                             list={list}
                             onEdit={() => setEditingList(list)}
                             onDelete={() => {
@@ -271,20 +435,30 @@ function PrivacyListsSection({ privacyLists: initialLists, privacyOptions, onDat
                 </div>
             ) : (
                 <div className="py-8 text-center">
-                    <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-base-300">
-                        <i className="fa-solid fa-users-rectangle text-xl text-base-content/30" />
+                    <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full" style={emptyIconBoxStyle}>
+                        <i className="fa-solid fa-users-rectangle text-xl" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' }} />
                     </div>
-                    <p className="text-base-content/50">No privacy lists yet</p>
+                    <p style={fadedTextStyle}>{t('privacy.lists.empty_state')}</p>
                 </div>
             )}
 
-            {/* Create form */}
             {!showCreate ? (
-                <button type="button" onClick={() => setShowCreate(true)} className="btn btn-ghost w-full gap-2 rounded-2xl border-2 border-dashed border-base-content/10 text-base-content/50 hover:border-primary/30 hover:text-primary">
-                    <i className="fa-solid fa-plus" /> Create List
+                <button
+                    type="button"
+                    onClick={() => setShowCreate(true)}
+                    className="flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all"
+                    style={{
+                        border: '2px dashed color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                        color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+                        borderRadius: 'var(--theme-radius-card)',
+                        background: 'transparent',
+                    }}
+                >
+                    <i className="fa-solid fa-plus" /> {t('privacy.lists.create_button')}
                 </button>
             ) : (
                 <ListForm
+                    t={t}
                     iconOptions={iconOptions}
                     colorOptions={colorOptions}
                     onSave={(data) => {
@@ -304,8 +478,8 @@ function PrivacyListsSection({ privacyLists: initialLists, privacyOptions, onDat
                 />
             )}
 
-            {/* Edit modal */}
             <EditListModal
+                t={t}
                 list={editingList}
                 iconOptions={iconOptions}
                 colorOptions={colorOptions}
@@ -327,7 +501,7 @@ function PrivacyListsSection({ privacyLists: initialLists, privacyOptions, onDat
     );
 }
 
-function ListCard({ list, onEdit, onDelete }: { list: PrivacyList; onEdit: () => void; onDelete: () => void }) {
+function ListCard({ t, list, onEdit, onDelete }: { t: Translator; list: PrivacyList; onEdit: () => void; onDelete: () => void }) {
     const cardRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -336,30 +510,51 @@ function ListCard({ list, onEdit, onDelete }: { list: PrivacyList; onEdit: () =>
         }
     }, []);
 
+    const colorVar = resolveColorVar(list.color);
+    const cardStyle = {
+        background: 'var(--theme-base-page)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const iconBoxStyle = {
+        background: `color-mix(in srgb, ${colorVar} 20%, transparent)`,
+        borderRadius: 'var(--theme-radius-input)',
+    };
+    const memberWord = list.members_count === 1 ? t('privacy.lists.member_singular') : t('privacy.lists.member_plural');
+
     return (
-        <div ref={cardRef} className="group flex items-center gap-3 rounded-2xl border border-base-content/10 bg-base-100 p-4 transition-all hover:border-base-content/20">
-            <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-${list.color}/20`}>
-                <i className={`fa-solid ${list.icon} text-${list.color}`} />
+        <div ref={cardRef} className="group flex items-center gap-3 p-4" style={cardStyle}>
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center" style={iconBoxStyle}>
+                <i className={`fa-solid ${list.icon}`} style={{ color: colorVar }} />
             </div>
             <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{list.name}</span>
-                    {list.is_system && <span className="badge badge-ghost badge-sm">System</span>}
-                    <span className="badge badge-sm badge-ghost">{list.members_count} {list.members_count === 1 ? 'member' : 'members'}</span>
+                    {list.is_system && <StatusBadge variant="neutral">{t('privacy.lists.system_badge')}</StatusBadge>}
+                    <StatusBadge variant="neutral">{`${list.members_count} ${memberWord}`}</StatusBadge>
                 </div>
-                {list.description && <p className="truncate text-xs text-base-content/50">{list.description}</p>}
+                {list.description && (
+                    <p className="truncate text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}>
+                        {list.description}
+                    </p>
+                )}
             </div>
             {!list.is_system && (
                 <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button type="button" onClick={onEdit} className="btn btn-ghost btn-sm btn-square"><i className="fa-solid fa-pen text-xs" /></button>
-                    <button type="button" onClick={onDelete} className="btn btn-ghost btn-sm btn-square text-error"><i className="fa-solid fa-trash text-xs" /></button>
+                    <Button variant="ghost" size="sm" onClick={onEdit} icon="fa-solid fa-pen text-xs" iconPosition="before" aria-label={t('common.edit')}>
+                        <span className="sr-only">{t('common.edit')}</span>
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={onDelete} icon="fa-solid fa-trash text-xs" iconPosition="before" aria-label={t('common.delete')}>
+                        <span className="sr-only">{t('common.delete')}</span>
+                    </Button>
                 </div>
             )}
         </div>
     );
 }
 
-function ListForm({ iconOptions, colorOptions, initialData, onSave, onCancel }: {
+function ListForm({ t, iconOptions, colorOptions, initialData, onSave, onCancel }: {
+    t: Translator;
     iconOptions: Record<string, string>;
     colorOptions: Record<string, string>;
     initialData?: { name: string; description: string; icon: string; color: string };
@@ -378,68 +573,120 @@ function ListForm({ iconOptions, colorOptions, initialData, onSave, onCancel }: 
         }
     }, []);
 
+    const containerStyle = {
+        background: 'color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const colorVar = resolveColorVar(color);
+
     return (
-        <div ref={formRef} className="rounded-2xl border border-primary/20 bg-primary/5 p-5 space-y-4">
-            <h4 className="font-serif text-xl font-bold leading-tight"><i className="fa-solid fa-plus mr-2 text-primary" />{initialData ? 'Edit List' : 'New List'}</h4>
+        <div ref={formRef} className="space-y-4 p-5" style={containerStyle}>
+            <h4 className="font-serif text-xl font-bold leading-tight">
+                <i className="fa-solid fa-plus mr-2" style={{ color: 'var(--theme-brand-primary-500)' }} />
+                {initialData ? t('privacy.lists.edit_heading') : t('privacy.lists.new_heading')}
+            </h4>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="form-control">
-                    <label className="label py-1"><span className="label-text text-sm">Name</span></label>
-                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="input input-bordered rounded-xl focus:input-primary" placeholder="e.g., Close Friends" maxLength={50} />
-                </div>
-                <div className="form-control">
-                    <label className="label py-1"><span className="label-text text-sm">Description</span></label>
-                    <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="input input-bordered rounded-xl focus:input-primary" placeholder="Optional" maxLength={255} />
+                <Input
+                    size="md"
+                    label={t('privacy.lists.name_field')}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={t('privacy.lists.name_placeholder')}
+                    maxLength={50}
+                />
+                <Input
+                    size="md"
+                    label={t('privacy.lists.description_field')}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder={t('privacy.lists.description_placeholder')}
+                    maxLength={255}
+                />
+            </div>
+
+            <div>
+                <span className="mb-1.5 block text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}>
+                    {t('privacy.lists.icon_field')}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                    {Object.entries(iconOptions).map(([key, label]) => {
+                        const selected = icon === key;
+                        return (
+                            <button
+                                key={key}
+                                type="button"
+                                title={label}
+                                onClick={() => setIcon(key)}
+                                className="flex h-12 w-12 items-center justify-center transition-all"
+                                style={{
+                                    background: selected
+                                        ? `color-mix(in srgb, ${colorVar} 20%, transparent)`
+                                        : 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+                                    border: selected ? `2px solid ${colorVar}` : '2px solid transparent',
+                                    borderRadius: 'var(--theme-radius-input)',
+                                }}
+                            >
+                                <i
+                                    className={`fa-solid ${key}`}
+                                    style={{ color: selected ? colorVar : 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}
+                                />
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
-            {/* Icon picker */}
             <div>
-                <label className="label py-1"><span className="label-text text-sm">Icon</span></label>
+                <span className="mb-1.5 block text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}>
+                    {t('privacy.lists.color_field')}
+                </span>
                 <div className="flex flex-wrap gap-2">
-                    {Object.entries(iconOptions).map(([key, label]) => (
-                        <button
-                            key={key}
-                            type="button"
-                            title={label}
-                            onClick={() => setIcon(key)}
-                            className={`flex h-12 w-12 items-center justify-center rounded-xl transition-all ${icon === key ? `bg-${color}/20 ring-2 ring-${color}` : 'bg-base-300 hover:bg-base-300/70'}`}
-                        >
-                            <i className={`fa-solid ${key} ${icon === key ? `text-${color}` : 'text-base-content/50'}`} />
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Color picker */}
-            <div>
-                <label className="label py-1"><span className="label-text text-sm">Color</span></label>
-                <div className="flex flex-wrap gap-2">
-                    {Object.entries(colorOptions).map(([key, label]) => (
-                        <button
-                            key={key}
-                            type="button"
-                            title={label}
-                            onClick={() => setColor(key)}
-                            className={`flex h-10 w-10 items-center justify-center rounded-full bg-${key} transition-all ${color === key ? 'ring-2 ring-offset-2 ring-offset-base-100 ring-base-content/50 scale-110' : 'opacity-60 hover:opacity-100'}`}
-                        >
-                            {color === key && <i className={`fa-solid fa-check text-xs text-${key}-content`} />}
-                        </button>
-                    ))}
+                    {Object.entries(colorOptions).map(([key, label]) => {
+                        const selected = color === key;
+                        const swatchVar = resolveColorVar(key);
+                        return (
+                            <button
+                                key={key}
+                                type="button"
+                                title={label}
+                                onClick={() => setColor(key)}
+                                className="flex h-10 w-10 items-center justify-center rounded-full transition-all"
+                                style={{
+                                    background: swatchVar,
+                                    opacity: selected ? 1 : 0.6,
+                                    transform: selected ? 'scale(1.1)' : 'scale(1)',
+                                    boxShadow: selected
+                                        ? `0 0 0 2px var(--theme-base-page), 0 0 0 4px color-mix(in srgb, var(--theme-base-content) 50%, transparent)`
+                                        : 'none',
+                                }}
+                            >
+                                {selected && <i className="fa-solid fa-check text-xs" style={{ color: 'white' }} />}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={onCancel} className="btn btn-ghost rounded-xl">Cancel</button>
-                <button type="button" onClick={() => onSave({ name, description: description || null, icon, color })} className="btn btn-primary rounded-xl" disabled={!name}>
-                    <i className="fa-solid fa-plus mr-1" /> {initialData ? 'Save' : 'Create List'}
-                </button>
+                <Button variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
+                <Button
+                    variant="primary"
+                    onClick={() => onSave({ name, description: description || null, icon, color })}
+                    disabled={!name}
+                    icon="fa-solid fa-plus"
+                    iconPosition="before"
+                >
+                    {initialData ? t('privacy.lists.save_button') : t('privacy.lists.create_action_button')}
+                </Button>
             </div>
         </div>
     );
 }
 
-function EditListModal({ list, iconOptions, colorOptions, onSave, onClose }: {
+function EditListModal({ t, list, iconOptions, colorOptions, onSave, onClose }: {
+    t: Translator;
     list: PrivacyList | null;
     iconOptions: Record<string, string>;
     colorOptions: Record<string, string>;
@@ -450,9 +697,10 @@ function EditListModal({ list, iconOptions, colorOptions, onSave, onClose }: {
 
     return (
         <Modal open={!!list} onClose={onClose}>
-            <ModalHeader title={`Edit "${list.name}"`} onClose={onClose} />
+            <ModalHeader title={t('privacy.lists.edit_modal_title').replace(':name', list.name)} onClose={onClose} />
             <div className="p-6">
                 <ListForm
+                    t={t}
                     iconOptions={iconOptions}
                     colorOptions={colorOptions}
                     initialData={{ name: list.name, description: list.description ?? '', icon: list.icon, color: list.color }}
