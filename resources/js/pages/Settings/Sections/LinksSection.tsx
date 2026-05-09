@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
+import Button from '@alexandria/components/ui/Button';
+import Input from '@alexandria/components/form/Input';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 
 interface UserLink {
     id: number;
@@ -31,33 +34,98 @@ interface LinksSectionProps {
     onLinksChanged: () => void;
 }
 
-const VISIBILITY_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
-    public: { label: 'Public', icon: 'fa-globe', color: 'badge-success' },
-    authenticated: { label: 'Members', icon: 'fa-users', color: 'badge-info' },
-    private: { label: 'Private', icon: 'fa-lock', color: '' },
+type VisibilityVariant = 'success' | 'info' | 'neutral';
+
+interface VisibilityConfig {
+    labelKey: string;
+    icon: string;
+    variant: VisibilityVariant;
+}
+
+const VISIBILITY_CONFIG: Record<string, VisibilityConfig> = {
+    public: { labelKey: 'links.visibility.public', icon: 'fa-globe', variant: 'success' },
+    authenticated: { labelKey: 'links.visibility.authenticated', icon: 'fa-users', variant: 'info' },
+    private: { labelKey: 'links.visibility.private', icon: 'fa-lock', variant: 'neutral' },
 };
 
-const TYPE_LABELS: Record<string, string> = {
-    social: 'Social Media',
-    support: 'Creator Support',
-    professional: 'Professional',
-    creative: 'Creative',
-    other: 'Other',
-};
+/* ── Status pill — matches AiSections / PrivacySections families. ── */
+function StatusBadge({ children, variant = 'neutral', icon }: {
+    children: React.ReactNode;
+    variant?: VisibilityVariant;
+    icon?: string;
+}) {
+    const palettes: Record<VisibilityVariant, { bg: string; fg: string }> = {
+        success: { bg: 'var(--theme-status-success-subtle)', fg: 'var(--theme-status-success-fill)' },
+        info: { bg: 'var(--theme-status-info-subtle)', fg: 'var(--theme-status-info-fill)' },
+        neutral: {
+            bg: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+            fg: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+        },
+    };
+    const p = palettes[variant];
+    return (
+        <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold"
+            style={{ background: p.bg, color: p.fg, borderRadius: '9999px' }}
+        >
+            {icon && <i className={`${icon} text-[10px]`} />}
+            {children}
+        </span>
+    );
+}
+
+/* ── Visibility radio-pill cluster, shared between Add and Edit forms. ── */
+function VisibilityPicker({ t, value, onChange }: { t: Translator; value: string; onChange: (v: string) => void }) {
+    return (
+        <div>
+            <span className="mb-1.5 block text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}>
+                {t('links.form.visibility_field')}
+            </span>
+            <div className="flex flex-wrap gap-2">
+                {Object.entries(VISIBILITY_CONFIG).map(([key, config]) => {
+                    const selected = value === key;
+                    return (
+                        <button
+                            key={key}
+                            type="button"
+                            onClick={() => onChange(key)}
+                            aria-pressed={selected}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all"
+                            style={{
+                                border: `2px solid ${selected ? 'var(--theme-brand-secondary-500)' : 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)'}`,
+                                background: selected
+                                    ? 'color-mix(in srgb, var(--theme-brand-secondary-500) 12%, transparent)'
+                                    : 'transparent',
+                                color: selected
+                                    ? 'var(--theme-brand-secondary-500)'
+                                    : 'var(--theme-base-content)',
+                                borderRadius: '9999px',
+                            }}
+                        >
+                            <i className={`fa-solid ${config.icon}`} />
+                            {t(config.labelKey)}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
 
 export default function LinksSection({ links: initialLinks, platforms, onLinksChanged }: LinksSectionProps) {
+    const t = useT();
     const [links, setLinks] = useState<UserLink[]>(initialLinks);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingLink, setEditingLink] = useState<UserLink | null>(null);
 
     return (
         <div className="space-y-6">
-            {/* Link List */}
             {links.length > 0 ? (
                 <div className="space-y-3">
                     {links.map((link) => (
                         <LinkCard
                             key={link.id}
+                            t={t}
                             link={link}
                             onEdit={() => setEditingLink(link)}
                             onDelete={() => {
@@ -72,26 +140,37 @@ export default function LinksSection({ links: initialLinks, platforms, onLinksCh
                 </div>
             ) : (
                 <div className="flex flex-col items-center py-10 text-center">
-                    <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-base-300">
-                        <i className="fa-solid fa-link text-2xl text-base-content/30" />
+                    <div
+                        className="mb-3 flex h-16 w-16 items-center justify-center rounded-full"
+                        style={{ background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)' }}
+                    >
+                        <i className="fa-solid fa-link text-2xl" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' }} />
                     </div>
-                    <p className="text-base-content/50">No links yet</p>
-                    <p className="mt-1 text-xs text-base-content/40">Add your social media, portfolio, and support links</p>
+                    <p style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}>{t('links.empty_heading')}</p>
+                    <p className="mt-1 text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}>
+                        {t('links.empty_subtitle')}
+                    </p>
                 </div>
             )}
 
-            {/* Add Button */}
             {!showAddForm ? (
                 <button
                     type="button"
                     onClick={() => setShowAddForm(true)}
-                    className="btn btn-ghost w-full gap-2 rounded-2xl border-2 border-dashed border-base-content/30 bg-base-200/50 text-base-content/80 transition-all hover:border-primary hover:bg-primary/10 hover:text-primary"
+                    className="flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all"
+                    style={{
+                        border: '2px dashed color-mix(in srgb, var(--theme-base-content) 30%, transparent)',
+                        background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+                        color: 'color-mix(in srgb, var(--theme-base-content) 75%, transparent)',
+                        borderRadius: 'var(--theme-radius-card)',
+                    }}
                 >
                     <i className="fa-solid fa-plus" />
-                    Add Link
+                    {t('links.add_button')}
                 </button>
             ) : (
                 <AddLinkForm
+                    t={t}
                     platforms={platforms}
                     onAdd={(newLink) => {
                         setLinks((prev) => [...prev, newLink]);
@@ -102,8 +181,8 @@ export default function LinksSection({ links: initialLinks, platforms, onLinksCh
                 />
             )}
 
-            {/* Edit Modal */}
             <EditLinkModal
+                t={t}
                 link={editingLink}
                 onSave={(updated) => {
                     setLinks((prev) => prev.map((l) => l.id === updated.id ? { ...l, ...updated } : l));
@@ -117,7 +196,7 @@ export default function LinksSection({ links: initialLinks, platforms, onLinksCh
 }
 
 /* ── Link Card ── */
-function LinkCard({ link, onEdit, onDelete }: { link: UserLink; onEdit: () => void; onDelete: () => void }) {
+function LinkCard({ t, link, onEdit, onDelete }: { t: Translator; link: UserLink; onEdit: () => void; onDelete: () => void }) {
     const cardRef = useRef<HTMLDivElement>(null);
     const vis = VISIBILITY_CONFIG[link.visibility] ?? VISIBILITY_CONFIG.private;
 
@@ -127,15 +206,21 @@ function LinkCard({ link, onEdit, onDelete }: { link: UserLink; onEdit: () => vo
         }
     }, []);
 
+    const cardStyle = {
+        background: 'var(--theme-base-page)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const platformColor = link.platform_color ?? '#666';
+
     return (
-        <div
-            ref={cardRef}
-            className="group flex items-center gap-3 rounded-2xl border border-base-300 bg-base-100 p-4 transition-all hover:border-base-content/20 hover:shadow-sm"
-        >
-            {/* Platform Icon */}
+        <div ref={cardRef} className="group flex items-center gap-3 p-4 transition-shadow hover:shadow-sm" style={cardStyle}>
             <div
-                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl"
-                style={{ backgroundColor: (link.platform_color ?? '#666') + '20' }}
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center"
+                style={{
+                    backgroundColor: `color-mix(in srgb, ${platformColor} 20%, transparent)`,
+                    borderRadius: 'var(--theme-radius-input)',
+                }}
             >
                 <i
                     className={`${link.platform_icon ?? 'fa-solid fa-link'} text-lg`}
@@ -143,43 +228,54 @@ function LinkCard({ link, onEdit, onDelete }: { link: UserLink; onEdit: () => vo
                 />
             </div>
 
-            {/* Info */}
             <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                    <span className="font-medium">{link.platform_name ?? 'Link'}</span>
-                    {link.label && (
-                        <span className="badge badge-sm badge-ghost">{link.label}</span>
-                    )}
-                    <span className={`badge badge-sm ${vis.color}`}>
-                        <i className={`fa-solid ${vis.icon} mr-1 text-[10px]`} />
-                        {vis.label}
-                    </span>
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{link.platform_name ?? t('links.card.fallback_name')}</span>
+                    {link.label && <StatusBadge variant="neutral">{link.label}</StatusBadge>}
+                    <StatusBadge variant={vis.variant} icon={`fa-solid ${vis.icon}`}>
+                        {t(vis.labelKey)}
+                    </StatusBadge>
                 </div>
                 <a
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="truncate text-sm text-primary hover:underline"
+                    className="truncate text-sm hover:underline"
+                    style={{ color: 'var(--theme-brand-primary-500)' }}
                 >
                     {link.handle ? `@${link.handle}` : link.url}
                 </a>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                <button type="button" onClick={onEdit} className="btn btn-ghost btn-sm btn-square">
-                    <i className="fa-solid fa-pen text-xs" />
-                </button>
-                <button type="button" onClick={onDelete} className="btn btn-ghost btn-sm btn-square text-error">
-                    <i className="fa-solid fa-trash text-xs" />
-                </button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onEdit}
+                    icon="fa-solid fa-pen text-xs"
+                    iconPosition="before"
+                    aria-label={t('common.edit')}
+                >
+                    <span className="sr-only">{t('common.edit')}</span>
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onDelete}
+                    icon="fa-solid fa-trash text-xs"
+                    iconPosition="before"
+                    aria-label={t('common.delete')}
+                >
+                    <span className="sr-only">{t('common.delete')}</span>
+                </Button>
             </div>
         </div>
     );
 }
 
 /* ── Add Link Form ── */
-function AddLinkForm({ platforms, onAdd, onCancel }: {
+function AddLinkForm({ t, platforms, onAdd, onCancel }: {
+    t: Translator;
     platforms: Record<string, Platform[]>;
     onAdd: (link: UserLink) => void;
     onCancel: () => void;
@@ -199,11 +295,9 @@ function AddLinkForm({ platforms, onAdd, onCancel }: {
         }
     }, []);
 
-    // Find selected platform
     const allPlatforms = Object.values(platforms).flat();
     const selectedPlatform = platformId ? allPlatforms.find((p) => p.id === parseInt(platformId)) : null;
 
-    // Auto-generate URL from handle
     useEffect(() => {
         if (selectedPlatform && handle) {
             if (selectedPlatform.url_pattern) {
@@ -230,31 +324,40 @@ function AddLinkForm({ platforms, onAdd, onCancel }: {
                 if (data.id) {
                     onAdd(data);
                 } else {
-                    setError(data.message ?? 'Failed to add link');
+                    setError(data.message ?? t('links.error.add_failed'));
                 }
             })
-            .catch(() => { setSaving(false); setError('Something went wrong'); });
+            .catch(() => { setSaving(false); setError(t('links.error.generic')); });
     }
 
+    const containerStyle = {
+        background: 'color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const showHandle = selectedPlatform && (selectedPlatform.url_pattern || selectedPlatform.base_url);
+    const urlHint = handle && selectedPlatform?.url_pattern ? t('links.form.url_auto') : t('links.form.url_required');
+
     return (
-        <div ref={formRef} className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+        <div ref={formRef} className="p-5" style={containerStyle}>
             <h4 className="mb-4 font-serif text-xl font-bold leading-tight">
-                <i className="fa-solid fa-plus mr-2 text-primary" />
-                Add New Link
+                <i className="fa-solid fa-plus mr-2" style={{ color: 'var(--theme-brand-primary-500)' }} />
+                {t('links.form.add_heading')}
             </h4>
 
             <div className="space-y-4">
-                {/* Platform */}
                 <div>
-                    <label className="label py-1"><span className="label-text text-sm">Platform</span></label>
+                    <span className="mb-1.5 block text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}>
+                        {t('links.form.platform_field')}
+                    </span>
                     <select
                         value={platformId}
                         onChange={(e) => { setPlatformId(e.target.value); setUrl(''); setHandle(''); }}
-                        className="select select-bordered h-12 w-full rounded-2xl focus:select-primary"
+                        className="alex-select h-12 w-full text-sm"
                     >
-                        <option value="">Select a platform...</option>
+                        <option value="">{t('links.form.platform_placeholder')}</option>
                         {Object.entries(platforms).map(([type, items]) => (
-                            <optgroup key={type} label={TYPE_LABELS[type] ?? type}>
+                            <optgroup key={type} label={t(`links.type.${type}`, type)}>
                                 {items.map((p) => (
                                     <option key={p.id} value={p.id}>{p.name}</option>
                                 ))}
@@ -263,85 +366,67 @@ function AddLinkForm({ platforms, onAdd, onCancel }: {
                     </select>
                 </div>
 
-                {/* Handle */}
-                {selectedPlatform && (selectedPlatform.url_pattern || selectedPlatform.base_url) && (
+                {showHandle && (
                     <div>
-                        <label className="label py-1"><span className="label-text text-sm">Username / Handle</span></label>
+                        <span className="mb-1.5 block text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}>
+                            {t('links.form.handle_field')}
+                        </span>
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40">@</span>
-                            <input
-                                type="text"
+                            <span
+                                className="absolute left-4 top-1/2 z-10 -translate-y-1/2"
+                                style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}
+                            >@</span>
+                            <Input
+                                size="md"
                                 value={handle}
                                 onChange={(e) => setHandle(e.target.value)}
-                                className="input input-bordered h-12 w-full rounded-2xl pl-8 focus:input-primary"
-                                placeholder="username"
+                                placeholder={t('links.form.handle_placeholder')}
+                                className="pl-8"
                             />
                         </div>
                     </div>
                 )}
 
-                {/* URL */}
-                <div>
-                    <label className="label py-1">
-                        <span className="label-text text-sm">URL</span>
-                        <span className="label-text-alt text-xs text-base-content/40">{handle && selectedPlatform?.url_pattern ? 'Auto-generated' : 'Required'}</span>
-                    </label>
-                    <input
-                        type="url"
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        className="input input-bordered h-12 w-full rounded-2xl focus:input-primary"
-                        placeholder="https://..."
-                    />
-                </div>
+                <Input
+                    size="md"
+                    type="url"
+                    label={t('links.form.url_field')}
+                    hint={urlHint}
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder={t('links.form.url_placeholder')}
+                />
 
-                {/* Label */}
-                <div>
-                    <label className="label py-1">
-                        <span className="label-text text-sm">Label</span>
-                        <span className="label-text-alt text-xs text-base-content/40">Optional</span>
-                    </label>
-                    <input
-                        type="text"
-                        value={label}
-                        onChange={(e) => setLabel(e.target.value)}
-                        className="input input-bordered h-12 w-full rounded-2xl focus:input-primary"
-                        placeholder='e.g., "Personal", "Work"'
-                        maxLength={50}
-                    />
-                </div>
+                <Input
+                    size="md"
+                    label={t('links.form.label_field')}
+                    hint={t('links.form.label_optional')}
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    placeholder={t('links.form.label_placeholder')}
+                    maxLength={50}
+                />
 
-                {/* Visibility */}
-                <div>
-                    <label className="label py-1"><span className="label-text text-sm">Visibility</span></label>
-                    <div className="flex flex-wrap gap-2">
-                        {Object.entries(VISIBILITY_CONFIG).map(([key, config]) => (
-                            <label key={key} className="cursor-pointer">
-                                <input type="radio" className="peer hidden" checked={visibility === key} onChange={() => setVisibility(key)} />
-                                <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-base-300 px-3 py-1.5 text-xs font-medium transition-all hover:border-base-content/30 peer-checked:border-secondary peer-checked:bg-secondary/10 peer-checked:text-secondary">
-                                    <i className={`fa-solid ${config.icon}`} />
-                                    {config.label}
-                                </span>
-                            </label>
-                        ))}
-                    </div>
-                </div>
+                <VisibilityPicker t={t} value={visibility} onChange={setVisibility} />
 
                 {error && (
-                    <p className="text-sm text-error"><i className="fa-solid fa-circle-xmark mr-1" />{error}</p>
+                    <p className="text-sm" style={{ color: 'var(--theme-status-error-stroke)' }}>
+                        <i className="fa-solid fa-circle-xmark mr-1" />{error}
+                    </p>
                 )}
 
-                {/* Actions */}
                 <div className="flex justify-end gap-2 pt-2">
-                    <button type="button" onClick={onCancel} className="btn btn-ghost rounded-xl">Cancel</button>
-                    <button
-                        type="button"
+                    <Button variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
+                    <Button
+                        variant="primary"
                         onClick={handleSubmit}
-                        className="btn btn-primary rounded-xl"
-                        disabled={!platformId || !url || saving}
+                        disabled={!platformId || !url}
+                        loading={saving}
+                        icon="fa-solid fa-plus"
+                        iconPosition="before"
                     >
-                        {saving ? <><span className="loading loading-spinner loading-sm" /> Adding...</> : <><i className="fa-solid fa-plus mr-1" /> Add Link</>}
-                    </button>
+                        {saving ? t('links.adding') : t('links.add_action_button')}
+                    </Button>
                 </div>
             </div>
         </div>
@@ -349,7 +434,8 @@ function AddLinkForm({ platforms, onAdd, onCancel }: {
 }
 
 /* ── Edit Link Modal ── */
-function EditLinkModal({ link, onSave, onClose }: {
+function EditLinkModal({ t, link, onSave, onClose }: {
+    t: Translator;
     link: UserLink | null;
     onSave: (updated: Partial<UserLink> & { id: number }) => void;
     onClose: () => void;
@@ -385,45 +471,45 @@ function EditLinkModal({ link, onSave, onClose }: {
             .catch(() => setSaving(false));
     }
 
+    const platformName = link?.platform_name ?? t('links.card.fallback_name');
+    const dividerStyle = {
+        borderColor: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    };
+
     return (
         <Modal open={!!link} onClose={onClose}>
-            <ModalHeader title={`Edit ${link?.platform_name ?? 'Link'}`} onClose={onClose} />
+            <ModalHeader title={t('links.form.edit_heading').replace(':platform', platformName)} onClose={onClose} />
             <div className="space-y-4 p-6">
-                <div>
-                    <label className="label py-1"><span className="label-text text-sm">Username / Handle</span></label>
-                    <input type="text" value={handle} onChange={(e) => setHandle(e.target.value)}
-                           className="input input-bordered h-12 w-full rounded-2xl focus:input-primary" placeholder="username" />
-                </div>
-                <div>
-                    <label className="label py-1"><span className="label-text text-sm">URL</span></label>
-                    <input type="url" value={url} onChange={(e) => setUrl(e.target.value)}
-                           className="input input-bordered h-12 w-full rounded-2xl focus:input-primary" placeholder="https://..." />
-                </div>
-                <div>
-                    <label className="label py-1"><span className="label-text text-sm">Label</span></label>
-                    <input type="text" value={label} onChange={(e) => setLabel(e.target.value)}
-                           className="input input-bordered h-12 w-full rounded-2xl focus:input-primary" placeholder="Optional" maxLength={50} />
-                </div>
-                <div>
-                    <label className="label py-1"><span className="label-text text-sm">Visibility</span></label>
-                    <div className="flex flex-wrap gap-2">
-                        {Object.entries(VISIBILITY_CONFIG).map(([key, config]) => (
-                            <label key={key} className="cursor-pointer">
-                                <input type="radio" className="peer hidden" checked={visibility === key} onChange={() => setVisibility(key)} />
-                                <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-base-300 px-3 py-1.5 text-xs font-medium transition-all hover:border-base-content/30 peer-checked:border-secondary peer-checked:bg-secondary/10 peer-checked:text-secondary">
-                                    <i className={`fa-solid ${config.icon}`} />
-                                    {config.label}
-                                </span>
-                            </label>
-                        ))}
-                    </div>
-                </div>
+                <Input
+                    size="md"
+                    label={t('links.form.handle_field')}
+                    value={handle}
+                    onChange={(e) => setHandle(e.target.value)}
+                    placeholder={t('links.form.handle_placeholder')}
+                />
+                <Input
+                    size="md"
+                    type="url"
+                    label={t('links.form.url_field')}
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder={t('links.form.url_placeholder')}
+                />
+                <Input
+                    size="md"
+                    label={t('links.form.label_field')}
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    placeholder={t('links.form.label_optional')}
+                    maxLength={50}
+                />
+                <VisibilityPicker t={t} value={visibility} onChange={setVisibility} />
             </div>
-            <div className="flex justify-end gap-2 border-t border-base-content/10 px-6 py-4">
-                <button type="button" onClick={onClose} className="btn btn-ghost rounded-xl">Cancel</button>
-                <button type="button" onClick={handleSave} className="btn btn-primary rounded-xl" disabled={!url || saving}>
-                    {saving ? <><span className="loading loading-spinner loading-sm" /> Saving...</> : 'Save Changes'}
-                </button>
+            <div className="flex justify-end gap-2 border-t px-6 py-4" style={dividerStyle}>
+                <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+                <Button variant="primary" onClick={handleSave} disabled={!url} loading={saving}>
+                    {saving ? t('common.saving') : t('links.save_button')}
+                </Button>
             </div>
         </Modal>
     );
