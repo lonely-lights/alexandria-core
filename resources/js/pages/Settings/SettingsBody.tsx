@@ -122,7 +122,6 @@ export interface SettingsBodyProps {
         confirmed: boolean;
         qr_data_url: string | null;
         secret: string | null;
-        recovery_codes: string[] | null;
     };
     preferences: Record<string, unknown>;
     options: Record<string, Record<string, string>>;
