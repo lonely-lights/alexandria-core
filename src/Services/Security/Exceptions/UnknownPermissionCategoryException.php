@@ -26,7 +26,7 @@ class UnknownPermissionCategoryException extends RuntimeException
         $list = implode(', ', $missingSlugs);
 
         return new self(
-            "Package '{$packageSlug}' references unknown permission categories: {$list}. "
+            "Package '$packageSlug' references unknown permission categories: $list. "
             .'Categories must be seeded into `role_permission_categories` before '
             .'`AppPermissionRegistry::register()` is called.',
         );

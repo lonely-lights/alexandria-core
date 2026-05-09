@@ -11,6 +11,7 @@ use Alexandria\Core\Services\Security\Exceptions\UnknownPermissionCategoryExcept
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
+use Throwable;
 
 /**
  * Registry that lets each package (alexandria-app, the future
@@ -50,16 +51,16 @@ use Spatie\Permission\PermissionRegistrar;
  *       );
  *   }
  */
-class AppPermissionRegistry
+final readonly class AppPermissionRegistry
 {
     public function __construct(
-        private readonly PermissionRegistrar $spatie,
+        private PermissionRegistrar $spatie,
     ) {}
 
     /**
      * Register or refresh a package's permission manifest.
      *
-     * @param  array<int, array{
+     * @param array<int, array{
      *     name: string,
      *     display_name: string,
      *     description?: string|null,
@@ -69,6 +70,7 @@ class AppPermissionRegistry
      * @return int Count of permission rows written or updated.
      *
      * @throws UnknownPermissionCategoryException
+     * @throws Throwable
      */
     public function register(
         string $packageSlug,
@@ -86,8 +88,14 @@ class AppPermissionRegistry
             ->values()
             ->all();
 
+        // Resolve to permission-typed categories only — the slug
+        // namespace is shared with role-typed categories (e.g. "system"
+        // exists as both), and a permission manifest must never pick
+        // up a role-only category by accident. Using the explicit
+        // type filter rather than the `permissions()` query scope
+        // keeps static analysers happy through Builder<RolePermissionCategory>.
         $categories = RolePermissionCategory::query()
-            ->permissions()
+            ->where('type', 'permission')
             ->whereIn('slug', $categorySlugs)
             ->pluck('id', 'slug');
 

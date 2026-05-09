@@ -6,6 +6,7 @@ namespace Alexandria\Core\Concerns;
 
 use Illuminate\Support\Collection;
 use Spatie\Permission\PermissionRegistrar;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * Helper methods for assigning + checking application-level roles
@@ -27,6 +28,8 @@ use Spatie\Permission\PermissionRegistrar;
  *     $user->getAppRoleNames();           // collection of slugs
  *     $user->syncAppRoles(['member']);
  *     $user->removeAppRole('unverified');
+ *
+ * @mixin HasRoles
  */
 trait HasAppLevelRoles
 {
@@ -37,10 +40,7 @@ trait HasAppLevelRoles
      */
     public function assignAppRole(string|array $roles): static
     {
-        return $this->withAppRoleScope(function () use ($roles): static {
-            /** @phpstan-ignore-next-line uses Spatie's HasRoles trait, present on the host model */
-            return $this->assignRole($roles);
-        });
+        return $this->withAppRoleScope(fn (): static => $this->assignRole($roles));
     }
 
     /**
@@ -50,10 +50,7 @@ trait HasAppLevelRoles
      */
     public function syncAppRoles(array $roles): static
     {
-        return $this->withAppRoleScope(function () use ($roles): static {
-            /** @phpstan-ignore-next-line */
-            return $this->syncRoles($roles);
-        });
+        return $this->withAppRoleScope(fn (): static => $this->syncRoles($roles));
     }
 
     /**
@@ -61,10 +58,7 @@ trait HasAppLevelRoles
      */
     public function removeAppRole(string $role): static
     {
-        return $this->withAppRoleScope(function () use ($role): static {
-            /** @phpstan-ignore-next-line */
-            return $this->removeRole($role);
-        });
+        return $this->withAppRoleScope(fn (): static => $this->removeRole($role));
     }
 
     /**
@@ -72,10 +66,7 @@ trait HasAppLevelRoles
      */
     public function hasAppRole(string $role): bool
     {
-        return $this->withAppRoleScope(function () use ($role): bool {
-            /** @phpstan-ignore-next-line */
-            return $this->hasRole($role);
-        });
+        return $this->withAppRoleScope(fn (): bool => $this->hasRole($role));
     }
 
     /**
@@ -85,10 +76,7 @@ trait HasAppLevelRoles
      */
     public function hasAnyAppRole(array $roles): bool
     {
-        return $this->withAppRoleScope(function () use ($roles): bool {
-            /** @phpstan-ignore-next-line */
-            return $this->hasAnyRole($roles);
-        });
+        return $this->withAppRoleScope(fn (): bool => $this->hasAnyRole($roles));
     }
 
     /**
@@ -98,10 +86,7 @@ trait HasAppLevelRoles
      */
     public function getAppRoleNames(): Collection
     {
-        return $this->withAppRoleScope(function (): Collection {
-            /** @phpstan-ignore-next-line */
-            return $this->getRoleNames();
-        });
+        return $this->withAppRoleScope(fn (): Collection => $this->getRoleNames());
     }
 
     /**
