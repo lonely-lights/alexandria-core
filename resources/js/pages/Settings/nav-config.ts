@@ -22,6 +22,7 @@ export const ALL_NAV: NavItem[] = [
             { key: 'details', label: 'Details', icon: 'fa-circle-info' },
             { key: 'links', label: 'Links', icon: 'fa-link' },
             { key: 'account', label: 'Account', icon: 'fa-user-gear' },
+            { key: 'security', label: 'Security', icon: 'fa-key' },
         ],
     },
     {

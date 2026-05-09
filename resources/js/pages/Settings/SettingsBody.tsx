@@ -110,6 +110,20 @@ export interface SettingsBodyProps {
         list_colors: Record<string, string>;
     };
     ai: Record<string, unknown>;
+    /**
+     * Two-factor authentication state for the Security tab. Optional —
+     * when omitted, the Security section renders a "not configured by
+     * the consumer app" placeholder. When present, the consumer is
+     * responsible for resolving the four pieces from Fortify's
+     * `TwoFactorAuthenticatable` trait on the User model.
+     */
+    twoFactor?: {
+        enabled: boolean;
+        confirmed: boolean;
+        qr_data_url: string | null;
+        secret: string | null;
+        recovery_codes: string[] | null;
+    };
     preferences: Record<string, unknown>;
     options: Record<string, Record<string, string>>;
     /**
@@ -147,6 +161,7 @@ export default function SettingsBody({
     privacyLists,
     privacyOptions,
     ai,
+    twoFactor,
     preferences,
     options,
     accountManagementSlot,
@@ -551,6 +566,7 @@ export default function SettingsBody({
                                     privacyLists={privacyLists}
                                     privacyOptions={privacyOptions}
                                     ai={ai}
+                                    twoFactor={twoFactor}
                                     preferences={preferences}
                                     options={options}
                                     onPreviewChange={setLivePreview}

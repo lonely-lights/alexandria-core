@@ -4,8 +4,10 @@ import PreferencesSection from '../Sections/PreferencesSection';
 import LinksSection from '../Sections/LinksSection';
 import PrivacySections from '../Sections/PrivacySections';
 import AiSections from '../Sections/AiSections';
+import SecuritySection from '../Sections/SecuritySection';
 import type { SettingsBodyProps } from '../SettingsBody';
 import SectionCard from './SectionCard';
+import useT from '@alexandria/hooks/useT';
 
 /**
  * Section content router — picks the correct section component for the
@@ -24,6 +26,7 @@ export default function SectionContent({
     privacyLists,
     privacyOptions,
     ai,
+    twoFactor,
     preferences,
     options,
     onPreviewChange,
@@ -39,12 +42,14 @@ export default function SectionContent({
     privacyLists: SettingsBodyProps['privacyLists'];
     privacyOptions: SettingsBodyProps['privacyOptions'];
     ai: SettingsBodyProps['ai'];
+    twoFactor?: SettingsBodyProps['twoFactor'];
     preferences: Record<string, unknown>;
     options: Record<string, Record<string, string>>;
     onPreviewChange: (preview: { display_name: string | null; pronouns: string[]; tagline: string | null; location: string | null; website: string | null }) => void;
     accountManagementSlot?: SettingsBodyProps['accountManagementSlot'];
     applyViewPreferences?: SettingsBodyProps['applyViewPreferences'];
 }) {
+    const t = useT();
     // Profile sections
     if (['identity', 'about', 'details'].includes(activeSection)) {
         return <ProfileSection profile={profile} usernameStatus={usernameStatus} options={options as { pronouns: Record<string, string>; dob_visibility: Record<string, string> }} activeSection={activeSection} onPreviewChange={onPreviewChange} />;
@@ -55,6 +60,32 @@ export default function SectionContent({
         return (
             <SectionCard icon="fa-link" title="Connected Links" subtitle="Social media, support links, and other connections" label="Social & Links">
                 <LinksSection links={links} platforms={linkPlatforms} onLinksChanged={() => router.reload({ only: ['links'] })} />
+            </SectionCard>
+        );
+    }
+
+    // Security section — Fortify-driven 2FA. Core ships the UI, the
+    // consumer app's controller resolves the `twoFactor` prop from
+    // the user model.
+    if (activeSection === 'security') {
+        return (
+            <SectionCard
+                icon="fa-key"
+                title={t('security.header_title')}
+                subtitle={t('security.header_subtitle')}
+                label={t('security.header_label')}
+            >
+                {twoFactor
+                    ? <SecuritySection twoFactor={twoFactor} />
+                    : (
+                        <div
+                            className="py-10 text-center text-sm"
+                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}
+                        >
+                            <i className="fa-solid fa-circle-info mr-1" />
+                            Two-factor authentication is not configured by the consumer app.
+                        </div>
+                    )}
             </SectionCard>
         );
     }
