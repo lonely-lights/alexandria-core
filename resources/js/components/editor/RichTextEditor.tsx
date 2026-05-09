@@ -10,6 +10,8 @@ import { serializeToWiki } from '../tiptap-bio-editor/utils/wiki-serializer';
 import createMentionExtension from '../tiptap-bio-editor/extensions/mention';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
+import Input from '@alexandria/components/form/Input';
+import Button from '@alexandria/components/ui/Button';
 
 /**
  * RichTextEditor — Tiptap 3 wiki-markup editor surface.
@@ -151,6 +153,48 @@ const TIER_TOOLBARS: Record<EditorTier, string[]> = {
 };
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
+
+/* ── Compact icon-only toolbar button — replaces DaisyUI `btn btn-sm
+   btn-ghost btn-square`. Hover/active states keyed off `--theme-base-*`
+   and `--theme-brand-secondary-*` so preset swaps repaint them. ── */
+function ToolbarIconButton({
+    onMouseDown,
+    active = false,
+    disabled = false,
+    children,
+    className = '',
+    title,
+}: {
+    onMouseDown: (e: React.MouseEvent) => void;
+    active?: boolean;
+    disabled?: boolean;
+    children: React.ReactNode;
+    className?: string;
+    title?: string;
+}) {
+    return (
+        <button
+            type="button"
+            onMouseDown={onMouseDown}
+            disabled={disabled}
+            title={title}
+            className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${active ? 'alex-toolbar-btn--active' : ''} ${className}`}
+            style={{
+                background: active
+                    ? 'color-mix(in srgb, var(--theme-brand-secondary-500) 18%, transparent)'
+                    : 'transparent',
+                color: active
+                    ? 'var(--theme-brand-secondary-500)'
+                    : 'var(--theme-base-content)',
+                borderRadius: 'var(--theme-radius-button)',
+                opacity: disabled ? 0.4 : 1,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+            }}
+        >
+            {children}
+        </button>
+    );
+}
 
 /* ── Component ── */
 
@@ -397,37 +441,81 @@ export default function RichTextEditor({
 
     if (!editor) return null;
 
+    const containerBorder = overLimit
+        ? 'var(--theme-status-error-stroke)'
+        : isFocused
+            ? 'var(--theme-brand-secondary-500)'
+            : 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)';
+    const containerRing = overLimit
+        ? `0 0 0 3px color-mix(in srgb, var(--theme-status-error-stroke) 18%, transparent)`
+        : isFocused
+            ? `0 0 0 3px color-mix(in srgb, var(--theme-brand-secondary-500) 18%, transparent)`
+            : 'none';
+    const labelColor = isFocused
+        ? 'var(--theme-brand-secondary-500)'
+        : 'var(--theme-base-content)';
+    const counterColor = overLimit
+        ? 'var(--theme-status-error-stroke)'
+        : 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)';
+    const dividerStyle = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    };
+    const toolbarStyle = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+        borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+        borderTopLeftRadius: 'var(--theme-radius-input)',
+        borderTopRightRadius: 'var(--theme-radius-input)',
+    };
+    const editorAreaStyle = {
+        background: 'var(--theme-base-page)',
+        borderBottomLeftRadius: 'var(--theme-radius-input)',
+        borderBottomRightRadius: 'var(--theme-radius-input)',
+    };
+    const fadedTextStyle = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    };
+
     return (
         <div className={`space-y-2 ${className ?? ''}`}>
             {/* Label + Character Count Row */}
             {(label || maxLength > 0) && (
                 <div className="flex items-center justify-between">
                     {label && (
-                        <span className={`text-sm font-semibold transition-colors duration-200 ${isFocused ? 'text-secondary' : ''}`}>
+                        <span
+                            className="text-sm font-semibold transition-colors duration-200"
+                            style={{ color: labelColor }}
+                        >
                             {label}
                         </span>
                     )}
-                    <span className={`text-xs ${overLimit ? 'text-error' : 'text-base-content/50'}`}>
+                    <span className="text-xs" style={{ color: counterColor }}>
                         {charCount}/{maxLength}
                     </span>
                 </div>
             )}
 
             {/* Editor Container */}
-            <div className={`relative rounded-2xl border transition-all ${
-                overLimit
-                    ? 'border-error ring-2 ring-error'
-                    : isFocused
-                        ? 'border-secondary ring-2 ring-secondary'
-                        : 'border-base-300'
-            }`}>
+            <div
+                className="relative transition-all"
+                style={{
+                    border: `1px solid ${containerBorder}`,
+                    borderRadius: 'var(--theme-radius-input)',
+                    boxShadow: containerRing,
+                }}
+            >
                 {/* Toolbar */}
-                <div className="flex items-center justify-between rounded-t-2xl border-b border-base-300 bg-base-300/30 p-2">
+                <div className="flex items-center justify-between p-2" style={toolbarStyle}>
                     <div className={`flex items-center gap-1 ${codeView ? 'pointer-events-none opacity-30' : ''}`}>
                         {/* Tier-based buttons */}
                         {toolbarItems.map((item, i) => {
                             if (item === '|') {
-                                return <span key={`div-${i}`} className="mx-1 inline-block h-5 w-px bg-base-300" />;
+                                return (
+                                    <span
+                                        key={`div-${i}`}
+                                        className="mx-1 inline-block h-5 w-px"
+                                        style={dividerStyle}
+                                    />
+                                );
                             }
 
                             const btn = BUTTONS[item];
@@ -436,60 +524,66 @@ export default function RichTextEditor({
 
                             return (
                                 <Tooltip key={item} content={btn.title}>
-                                    <button
-                                        type="button"
+                                    <ToolbarIconButton
                                         onMouseDown={(e) => { e.preventDefault(); btn.action(editor, actions); }}
-                                        className={`btn btn-sm btn-ghost btn-square ${active ? 'bg-secondary/20 text-secondary' : ''}`}
+                                        active={active}
                                         disabled={codeView}
                                     >
                                         <i className={`fa-solid ${btn.icon}`} />
-                                    </button>
+                                    </ToolbarIconButton>
                                 </Tooltip>
                             );
                         })}
 
                         {/* Divider before special buttons (only if any are visible) */}
                         {(enableMentions || enableEntryLinks) && (
-                            <span className="mx-1 inline-block h-5 w-px bg-base-300" />
+                            <span className="mx-1 inline-block h-5 w-px" style={dividerStyle} />
                         )}
 
                         {/* @Mention (always if enabled) */}
                         {enableMentions && (
                             <Tooltip content="Mention User">
-                                <button
-                                    type="button"
+                                <ToolbarIconButton
                                     onMouseDown={(e) => { e.preventDefault(); actions.insertMention(); }}
-                                    className="btn btn-sm btn-ghost btn-square"
                                 >
                                     <i className="fa-solid fa-at" />
-                                </button>
+                                </ToolbarIconButton>
                             </Tooltip>
                         )}
 
                         {/* [[Entry Link]] (only when enabled) */}
                         {enableEntryLinks && (
                             <Tooltip content="Entry Link">
-                                <button
-                                    type="button"
+                                <ToolbarIconButton
                                     onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().insertContent('[[').run(); }}
-                                    className="btn btn-sm btn-ghost btn-square"
                                 >
                                     <i className="fa-solid fa-file-lines" />
-                                </button>
+                                </ToolbarIconButton>
                             </Tooltip>
                         )}
                         {/* AI Writing Assistant */}
                         {enableAi && (
                             <>
-                                <span className="mx-1 inline-block h-5 w-px bg-base-300" />
+                                <span className="mx-1 inline-block h-5 w-px" style={dividerStyle} />
                                 <Tooltip content="AI Writing Assistant">
                                     <button
                                         type="button"
                                         onMouseDown={(e) => { e.preventDefault(); setShowAiModal(true); }}
-                                        className={`btn btn-sm btn-ghost btn-square ${aiLoading ? 'animate-pulse text-secondary' : 'text-secondary/70 hover:text-secondary'}`}
                                         disabled={aiLoading}
+                                        className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${aiLoading ? 'animate-pulse' : ''}`}
+                                        style={{
+                                            background: 'transparent',
+                                            color: 'var(--theme-brand-secondary-500)',
+                                            borderRadius: 'var(--theme-radius-button)',
+                                            opacity: aiLoading ? 0.7 : 0.85,
+                                            cursor: aiLoading ? 'wait' : 'pointer',
+                                        }}
                                     >
-                                        {aiLoading ? <span className="loading loading-spinner loading-xs" /> : <i className="fa-solid fa-wand-magic-sparkles" />}
+                                        {aiLoading ? (
+                                            <i className="fa-solid fa-arrows-rotate animate-spin" />
+                                        ) : (
+                                            <i className="fa-solid fa-wand-magic-sparkles" />
+                                        )}
                                     </button>
                                 </Tooltip>
                             </>
@@ -500,42 +594,46 @@ export default function RichTextEditor({
                     <div className="flex items-center gap-1">
                         {/* Code View Toggle */}
                         <Tooltip content={codeView ? 'Switch to WYSIWYG' : 'Switch to Code View'}>
-                            <button
-                                type="button"
+                            <ToolbarIconButton
                                 onMouseDown={(e) => { e.preventDefault(); toggleCodeView(); }}
-                                className={`btn btn-sm btn-ghost btn-square ${codeView ? 'bg-secondary/20 text-secondary' : 'text-base-content/50 hover:text-base-content'}`}
+                                active={codeView}
                             >
                                 <i className={`fa-solid ${codeView ? 'fa-eye' : 'fa-code'}`} />
-                            </button>
+                            </ToolbarIconButton>
                         </Tooltip>
 
                         {/* Help/Legend button */}
                         <Tooltip content="Formatting Help">
-                            <button
-                                type="button"
+                            <ToolbarIconButton
                                 onMouseDown={(e) => { e.preventDefault(); setShowLegend(true); }}
-                                className="btn btn-sm btn-ghost btn-square text-base-content/50 hover:text-base-content"
                             >
                                 <i className="fa-solid fa-circle-question" />
-                            </button>
+                            </ToolbarIconButton>
                         </Tooltip>
                     </div>
                 </div>
 
                 {/* Editor Area / Code View */}
                 {codeView ? (
-                    <div className="overflow-hidden rounded-b-2xl bg-base-100">
+                    <div className="overflow-hidden" style={editorAreaStyle}>
                         <textarea
                             value={codeValue}
                             onChange={(e) => { setCodeValue(e.target.value); onChange(e.target.value); }}
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setIsFocused(false)}
-                            className="min-h-[120px] w-full resize-none bg-base-100 p-4 font-mono text-sm text-base-content outline-none"
+                            className="min-h-[120px] w-full resize-none p-4 font-mono text-sm outline-none"
+                            style={{
+                                background: 'var(--theme-base-page)',
+                                color: 'var(--theme-base-content)',
+                            }}
                             spellCheck={false}
                         />
                     </div>
                 ) : (
-                    <div className="tiptap-editor overflow-hidden rounded-b-2xl bg-base-100 [&_.ProseMirror>*:last-child]:mb-0">
+                    <div
+                        className="tiptap-editor overflow-hidden [&_.ProseMirror>*:last-child]:mb-0"
+                        style={editorAreaStyle}
+                    >
                         <EditorContent editor={editor} />
                     </div>
                 )}
@@ -546,47 +644,49 @@ export default function RichTextEditor({
                 <div className="p-6">
                     <h3 className="mb-4 text-lg font-bold">Insert Link</h3>
                     <div className="mb-4 space-y-3">
-                        <div>
-                            <label className="label py-1">
-                                <span className="label-text text-sm">URL <span className="text-error">*</span></span>
-                            </label>
-                            <input
-                                type="url"
-                                value={linkUrl}
-                                onChange={(e) => setLinkUrl(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && applyLink()}
-                                placeholder="https://example.com"
-                                className="input input-bordered w-full rounded-xl"
-                                autoFocus
-                            />
-                        </div>
-                        <div>
-                            <label className="label py-1">
-                                <span className="label-text text-sm">Display Text</span>
-                                <span className="label-text-alt text-xs text-base-content/50">Optional</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={linkText}
-                                onChange={(e) => setLinkText(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && applyLink()}
-                                placeholder="Leave empty to show URL"
-                                className="input input-bordered w-full rounded-xl"
-                            />
-                        </div>
+                        <Input
+                            size="md"
+                            type="url"
+                            label="URL *"
+                            value={linkUrl}
+                            onChange={(e) => setLinkUrl(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && applyLink()}
+                            placeholder="https://example.com"
+                            autoFocus
+                        />
+                        <Input
+                            size="md"
+                            label="Display Text"
+                            hint="Optional"
+                            value={linkText}
+                            onChange={(e) => setLinkText(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && applyLink()}
+                            placeholder="Leave empty to show URL"
+                        />
                     </div>
                     <div className="flex justify-end gap-2">
                         {editor.isActive('link') && (
-                            <button type="button" onMouseDown={(e) => { e.preventDefault(); removeLink(); }} className="btn btn-ghost rounded-xl text-error hover:bg-error/10">
+                            <Button
+                                variant="ghost"
+                                onMouseDown={(e: React.MouseEvent) => { e.preventDefault(); removeLink(); }}
+                                style={{ color: 'var(--theme-status-error-stroke)' }}
+                            >
                                 Unlink
-                            </button>
+                            </Button>
                         )}
-                        <button type="button" onMouseDown={(e) => { e.preventDefault(); setShowLinkModal(false); }} className="btn btn-ghost rounded-xl">
+                        <Button
+                            variant="ghost"
+                            onMouseDown={(e: React.MouseEvent) => { e.preventDefault(); setShowLinkModal(false); }}
+                        >
                             Cancel
-                        </button>
-                        <button type="button" onMouseDown={(e) => { e.preventDefault(); applyLink(); }} className="btn btn-secondary rounded-xl" disabled={!linkUrl}>
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            onMouseDown={(e: React.MouseEvent) => { e.preventDefault(); applyLink(); }}
+                            disabled={!linkUrl}
+                        >
                             Apply
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </Modal>
@@ -596,22 +696,45 @@ export default function RichTextEditor({
                 <ModalHeader title="Formatting Help" onClose={() => setShowLegend(false)} />
                 <div className="max-h-[60vh] space-y-1 overflow-y-auto p-6">
                     {getLegendItems().map((item) => (
-                        <div key={item.title} className="flex items-center gap-3 rounded-lg p-2 hover:bg-base-300/50">
-                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-base-300">
+                        <div key={item.title} className="alex-legend-row flex items-center gap-3 p-2">
+                            <div
+                                className="flex h-8 w-8 flex-shrink-0 items-center justify-center"
+                                style={{
+                                    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+                                    borderRadius: 'var(--theme-radius-input)',
+                                }}
+                            >
                                 <i className={`fa-solid ${item.icon} text-sm`} />
                             </div>
                             <div className="min-w-0 flex-1">
                                 <div className="text-sm font-medium">{item.title}</div>
-                                <div className="text-xs text-base-content/60">{item.description}</div>
+                                <div className="text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' }}>
+                                    {item.description}
+                                </div>
                             </div>
                             {item.shortcut && (
-                                <kbd className="kbd kbd-sm flex-shrink-0 text-xs">{item.shortcut}</kbd>
+                                <kbd
+                                    className="flex-shrink-0 px-1.5 py-0.5 text-xs font-mono"
+                                    style={{
+                                        background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+                                        border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+                                        borderRadius: 'var(--theme-radius-button)',
+                                        color: 'var(--theme-base-content)',
+                                    }}
+                                >
+                                    {item.shortcut}
+                                </kbd>
                             )}
                         </div>
                     ))}
                 </div>
-                <div className="border-t border-base-300 px-6 py-4">
-                    <p className="text-xs text-base-content/60">
+                <div
+                    className="px-6 py-4"
+                    style={{
+                        borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                    }}
+                >
+                    <p className="text-xs" style={fadedTextStyle}>
                         Tip: Type @ to mention a user{enableEntryLinks ? ', or [[ to link to an entry' : ''}.
                     </p>
                 </div>

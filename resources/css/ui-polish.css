@@ -137,7 +137,7 @@ button:not(:disabled),
     float: left;
     height: 0;
     pointer-events: none;
-    color: color-mix(in srgb, var(--color-base-content) 40%, transparent);
+    color: color-mix(in srgb, var(--theme-base-content) 40%, transparent);
 }
 .tiptap-editor .ProseMirror h2 {
     font-family: 'Libre Baskerville', serif;
@@ -147,7 +147,7 @@ button:not(:disabled),
     margin-top: 2rem;
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid color-mix(in srgb, var(--color-base-content) 20%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent);
 }
 .tiptap-editor .ProseMirror h3 {
     font-family: 'Libre Baskerville', serif;
@@ -161,22 +161,43 @@ button:not(:disabled),
 .tiptap-editor .ProseMirror > h3:first-child { margin-top: 0; }
 .tiptap-editor .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; }
 .tiptap-editor .ProseMirror ol { list-style-type: decimal; padding-left: 1.5rem; }
-.tiptap-editor .ProseMirror a { color: var(--color-primary); text-decoration: underline; }
+.tiptap-editor .ProseMirror a { color: var(--theme-brand-primary-500); text-decoration: underline; }
 .tiptap-editor .ProseMirror a.mention { text-decoration: none; }
 .tiptap-editor .ProseMirror .mention {
-    background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
-    border-radius: 0.25rem;
+    background-color: color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent);
+    border-radius: var(--theme-radius-button);
     padding: 0.125rem 0.25rem;
 }
 .tiptap-editor .ProseMirror .entry-link {
-    background-color: color-mix(in srgb, var(--color-secondary) 10%, transparent);
-    border-radius: 0.25rem;
+    background-color: color-mix(in srgb, var(--theme-brand-secondary-500) 10%, transparent);
+    border-radius: var(--theme-radius-button);
     padding: 0.125rem 0.25rem;
-    color: var(--color-primary);
+    color: var(--theme-brand-primary-500);
     text-decoration: none;
 }
 .tiptap-editor .ProseMirror .entry-link:hover { text-decoration: underline; }
 .tiptap-mention-popup { position: fixed; z-index: 9999; }
+
+/*
+ * RichTextEditor toolbar buttons — hover treatment lives here because
+ * `:hover` can't be expressed via inline style. Active state is owned
+ * by inline style on the React component (paints from
+ * `--theme-brand-secondary-*`).
+ */
+.alex-toolbar-btn:hover:not(:disabled):not(.alex-toolbar-btn--active) {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
+}
+
+/* Legend / formatting-help row hover — same idle-tint as the toolbar
+   buttons so the modal feels related to the editor surface. */
+.alex-legend-row {
+    border-radius: var(--theme-radius-input);
+    transition: background var(--theme-motion-duration-interactive)
+        var(--theme-motion-easing-standard);
+}
+.alex-legend-row:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 6%, transparent);
+}
 
 /* ----------------------------------------------------------------------
    Server-rendered wiki/prose content surface
@@ -219,7 +240,7 @@ button:not(:disabled),
 }
 .prose .wiki-h2 {
     @apply text-3xl font-bold mt-8 mb-4 pb-2 overflow-hidden;
-    border-bottom: 1px solid color-mix(in srgb, var(--color-base-content) 20%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent);
 }
 .prose .wiki-h3 { @apply text-2xl font-bold mt-6 mb-3; }
 .prose .wiki-h4 { @apply text-xl font-bold mt-4 mb-2; }
