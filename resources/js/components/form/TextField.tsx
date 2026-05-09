@@ -51,7 +51,7 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextFiel
                     className="absolute inset-y-0 flex items-center pointer-events-none"
                     style={{
                         insetInlineStart: '1rem',
-                        color: 'var(--theme-surface-on-page)',
+                        color: 'var(--theme-base-content)',
                         opacity: 0.4,
                     }}
                 >
@@ -68,8 +68,8 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextFiel
                         ? '0.625rem 0.875rem 0.625rem 3rem'
                         : '0.625rem 0.875rem',
                     paddingInlineEnd: trailing ? '2.75rem' : undefined,
-                    background: 'var(--theme-surface-sunken)',
-                    color: 'var(--theme-surface-on-page)',
+                    background: 'var(--theme-base-200)',
+                    color: 'var(--theme-base-content)',
                     border: `1px solid ${borderColor}`,
                     borderRadius: 'var(--theme-radius-input)',
                     fontFamily: 'inherit',

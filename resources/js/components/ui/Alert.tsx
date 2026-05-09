@@ -27,11 +27,18 @@ export interface AlertProps {
 }
 
 export default function Alert({ role, title, children, className = '' }: AlertProps) {
+    // `--theme-status-{role}-content` is the foreground color for the
+    // SATURATED fill ("white text on solid red"). Pairing it with the
+    // SUBTLE bg (light-tinted error) results in low contrast — light
+    // text on light bg. Use `--theme-base-content` for body text on
+    // the subtle bg; the role still reads via the start-edge accent
+    // stripe + the title color, which keeps the saturated stroke.
     const style: CSSProperties = {
         background: `var(--theme-status-${role}-subtle)`,
-        color: `var(--theme-status-${role}-content)`,
-        border: `1px solid var(--theme-status-${role}-stroke)`,
+        color: 'var(--theme-base-content)',
+        border: `1px solid color-mix(in srgb, var(--theme-status-${role}-stroke) 35%, transparent)`,
         borderInlineStartWidth: '4px',
+        borderInlineStartColor: `var(--theme-status-${role}-stroke)`,
         borderRadius: 'var(--theme-radius-card)',
         padding: '0.875rem 1rem',
     };
@@ -46,6 +53,7 @@ export default function Alert({ role, title, children, className = '' }: AlertPr
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         marginBottom: '0.25rem',
+                        color: `var(--theme-status-${role}-stroke)`,
                     }}
                 >
                     {title}

@@ -130,7 +130,7 @@ export default function QuoteRotator({
                 className="text-2xl xl:text-3xl leading-tight italic"
                 style={{
                     fontFamily: 'var(--theme-typography-heading-family)',
-                    color: 'var(--theme-surface-on-page)',
+                    color: 'var(--theme-base-content)',
                     opacity: 0.85,
                 }}
             >
@@ -139,7 +139,7 @@ export default function QuoteRotator({
             <footer
                 className="flex items-center gap-3 text-sm flex-wrap"
                 style={{
-                    color: 'var(--theme-surface-on-page)',
+                    color: 'var(--theme-base-content)',
                     opacity: 0.6,
                 }}
             >

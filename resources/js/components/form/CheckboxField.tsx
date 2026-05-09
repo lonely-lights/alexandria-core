@@ -52,7 +52,7 @@ export default function CheckboxField({
             <span
                 className="text-sm"
                 style={{
-                    color: 'var(--theme-surface-on-page)',
+                    color: 'var(--theme-base-content)',
                     opacity: 0.85,
                 }}
             >

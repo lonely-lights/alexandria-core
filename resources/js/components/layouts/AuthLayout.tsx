@@ -75,14 +75,14 @@ export default function AuthLayout({
             <div
                 className="min-h-screen flex font-sans"
                 style={{
-                    background: 'var(--theme-surface-page)',
-                    color: 'var(--theme-surface-on-page)',
+                    background: 'var(--theme-base-page)',
+                    color: 'var(--theme-base-content)',
                 }}
             >
                 {/* LEFT PANEL — atmospheric brand side (hidden on mobile) */}
                 <div
                     className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden"
-                    style={{ background: 'var(--theme-surface-sunken)' }}
+                    style={{ background: 'var(--theme-base-200)' }}
                 >
                     {/* Paper-grid background — the "tf-paper" decorative motif */}
                     <div className="grid-paper absolute inset-0 opacity-60" aria-hidden="true" />
@@ -117,7 +117,7 @@ export default function AuthLayout({
                                 <p
                                     className="text-xs tracking-[.3em] uppercase mt-1"
                                     style={{
-                                        color: 'var(--theme-surface-on-page)',
+                                        color: 'var(--theme-base-content)',
                                         opacity: 0.6,
                                     }}
                                 >
@@ -142,7 +142,7 @@ export default function AuthLayout({
                                         className="text-2xl xl:text-3xl leading-tight italic"
                                         style={{
                                             ...headingFont,
-                                            color: 'var(--theme-surface-on-page)',
+                                            color: 'var(--theme-base-content)',
                                             opacity: 0.85,
                                         }}
                                     >
@@ -158,7 +158,7 @@ export default function AuthLayout({
                 {/* RIGHT PANEL — form */}
                 <div
                     className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center p-6 sm:p-12 relative"
-                    style={{ background: 'var(--theme-surface-page)' }}
+                    style={{ background: 'var(--theme-base-page)' }}
                 >
                     {/* Theme toggle, top-right */}
                     <div className="absolute top-4 right-4 hidden sm:flex items-center gap-2">
@@ -188,7 +188,7 @@ export default function AuthLayout({
                                 {formIntro && (
                                     <p
                                         style={{
-                                            color: 'var(--theme-surface-on-page)',
+                                            color: 'var(--theme-base-content)',
                                             opacity: 0.6,
                                         }}
                                     >

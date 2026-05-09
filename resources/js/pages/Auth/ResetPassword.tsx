@@ -65,7 +65,7 @@ export default function ResetPassword({
             <div
                 className="text-sm"
                 style={{
-                    color: 'var(--theme-surface-on-page)',
+                    color: 'var(--theme-base-content)',
                     opacity: 0.6,
                 }}
             >
@@ -152,7 +152,7 @@ export default function ResetPassword({
 
             <p
                 className="text-center text-xs pt-4"
-                style={{ color: 'var(--theme-surface-on-page)', opacity: 0.4 }}
+                style={{ color: 'var(--theme-base-content)', opacity: 0.4 }}
             >
                 {copy['login.agree_terms']}{' '}
                 <a

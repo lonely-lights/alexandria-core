@@ -78,7 +78,7 @@ export default function FormGroup({
                             htmlFor={htmlFor}
                             className="block text-sm font-medium"
                             style={{
-                                color: 'var(--theme-surface-on-page)',
+                                color: 'var(--theme-base-content)',
                                 opacity: 0.8,
                             }}
                         >
@@ -112,7 +112,7 @@ export default function FormGroup({
                 <p
                     className="text-xs"
                     style={{
-                        color: 'var(--theme-surface-on-page)',
+                        color: 'var(--theme-base-content)',
                         opacity: 0.6,
                     }}
                 >

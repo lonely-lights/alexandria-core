@@ -200,7 +200,7 @@ export default function Login({
 
             <p
                 className="text-center text-xs pt-4"
-                style={{ color: 'var(--theme-surface-on-page)', opacity: 0.4 }}
+                style={{ color: 'var(--theme-base-content)', opacity: 0.4 }}
             >
                 {copy['login.agree_terms']}{' '}
                 <a
@@ -407,7 +407,7 @@ function LoginDotsPanel() {
                     style={{
                         top: n.y + n.labelOffsetY,
                         left: n.x + n.labelOffsetX,
-                        color: 'var(--theme-surface-on-page)',
+                        color: 'var(--theme-base-content)',
                         opacity: 0.8,
                     }}
                 >
