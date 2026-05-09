@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import gsap from 'gsap';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import Button from '@alexandria/components/ui/Button';
@@ -51,7 +51,7 @@ const VISIBILITY_CONFIG: Record<string, VisibilityConfig> = {
 
 /* ── Status pill — matches AiSections / PrivacySections families. ── */
 function StatusBadge({ children, variant = 'neutral', icon }: {
-    children: React.ReactNode;
+    children: ReactNode;
     variant?: VisibilityVariant;
     icon?: string;
 }) {

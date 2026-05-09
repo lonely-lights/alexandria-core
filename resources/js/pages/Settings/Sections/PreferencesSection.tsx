@@ -5,7 +5,7 @@ import Button from '@alexandria/components/ui/Button';
 import { useTheme } from '@alexandria/hooks/useTheme';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useToastContext } from '@alexandria/components/ui/ToastProvider';
-import type { SyntheticEvent } from 'react';
+import type { SyntheticEvent, ReactNode } from 'react';
 
 /**
  * Subset of view preferences the consumer app may want to mirror onto
@@ -97,7 +97,7 @@ function SaveRow({
  * the Notifications + Editor sub-forms where the preference fields
  * persist but downstream wiring is pending.
  */
-function UnwiredBanner({ children }: { children: React.ReactNode }) {
+function UnwiredBanner({ children }: { children: ReactNode }) {
     return (
         <div
             className="flex items-start gap-2 p-3 text-sm"
@@ -129,7 +129,7 @@ function UnwiredBanner({ children }: { children: React.ReactNode }) {
  * Section header used between toggle groups inside the Notifications
  * sub-form. Uppercase tracking, brand-primary tint at 80% opacity.
  */
-function GroupHeader({ children }: { children: React.ReactNode }) {
+function GroupHeader({ children }: { children: ReactNode }) {
     return (
         <h3
             className="text-[11px] font-semibold uppercase tracking-[.25em]"

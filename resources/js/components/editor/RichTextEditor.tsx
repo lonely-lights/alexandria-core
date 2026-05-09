@@ -3,7 +3,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import LinkExtension from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type MouseEvent, type ReactNode } from 'react';
 import AiWritingModal from './AiWritingModal';
 import { parseWikiToHtml } from '../tiptap-bio-editor/utils/wiki-parser';
 import { serializeToWiki } from '../tiptap-bio-editor/utils/wiki-serializer';
@@ -165,10 +165,10 @@ function ToolbarIconButton({
     className = '',
     title,
 }: {
-    onMouseDown: (e: React.MouseEvent) => void;
+    onMouseDown: (e: MouseEvent) => void;
     active?: boolean;
     disabled?: boolean;
-    children: React.ReactNode;
+    children: ReactNode;
     className?: string;
     title?: string;
 }) {
@@ -668,7 +668,7 @@ export default function RichTextEditor({
                         {editor.isActive('link') && (
                             <Button
                                 variant="ghost"
-                                onMouseDown={(e: React.MouseEvent) => { e.preventDefault(); removeLink(); }}
+                                onMouseDown={(e: MouseEvent) => { e.preventDefault(); removeLink(); }}
                                 style={{ color: 'var(--theme-status-error-stroke)' }}
                             >
                                 Unlink
@@ -676,13 +676,13 @@ export default function RichTextEditor({
                         )}
                         <Button
                             variant="ghost"
-                            onMouseDown={(e: React.MouseEvent) => { e.preventDefault(); setShowLinkModal(false); }}
+                            onMouseDown={(e: MouseEvent) => { e.preventDefault(); setShowLinkModal(false); }}
                         >
                             Cancel
                         </Button>
                         <Button
                             variant="secondary"
-                            onMouseDown={(e: React.MouseEvent) => { e.preventDefault(); applyLink(); }}
+                            onMouseDown={(e: MouseEvent) => { e.preventDefault(); applyLink(); }}
                             disabled={!linkUrl}
                         >
                             Apply

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import Toggle from '@alexandria/components/form/Toggle';
 import Modal from '@alexandria/components/ui/Modal';
 import Button from '@alexandria/components/ui/Button';
@@ -58,7 +58,7 @@ export default function AiSections({ section, ai, onDataChanged }: AiSectionsPro
    or `--theme-brand-*` token families so preset swaps repaint. ── */
 type BadgeVariant = 'success' | 'error' | 'warning' | 'info' | 'primary' | 'neutral';
 
-function StatusBadge({ children, variant = 'neutral' }: { children: React.ReactNode; variant?: BadgeVariant }) {
+function StatusBadge({ children, variant = 'neutral' }: { children: ReactNode; variant?: BadgeVariant }) {
     const palettes: Record<BadgeVariant, { bg: string; fg: string }> = {
         success: { bg: 'var(--theme-status-success-subtle)', fg: 'var(--theme-status-success-fill)' },
         error: { bg: 'var(--theme-status-error-subtle)', fg: 'var(--theme-status-error-stroke)' },

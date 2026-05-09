@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useForm } from '@inertiajs/react';
 import Select from '@alexandria/components/form/Select';
 import Toggle from '@alexandria/components/form/Toggle';
@@ -85,7 +85,7 @@ function resolveColorVar(slug: string): string {
 /* ── Pill-shaped status badge — same family as AiSections ── */
 type BadgeVariant = 'success' | 'error' | 'warning' | 'info' | 'primary' | 'secondary' | 'neutral';
 
-function StatusBadge({ children, variant = 'neutral', icon }: { children: React.ReactNode; variant?: BadgeVariant; icon?: string }) {
+function StatusBadge({ children, variant = 'neutral', icon }: { children: ReactNode; variant?: BadgeVariant; icon?: string }) {
     const palettes: Record<BadgeVariant, { bg: string; fg: string }> = {
         success: { bg: 'var(--theme-status-success-subtle)', fg: 'var(--theme-status-success-fill)' },
         error: { bg: 'var(--theme-status-error-subtle)', fg: 'var(--theme-status-error-stroke)' },
