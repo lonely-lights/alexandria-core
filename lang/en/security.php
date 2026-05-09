@@ -58,4 +58,11 @@ return [
     'error.confirm_invalid_code' => 'That code didn\'t match. Try again with a fresh code from your app.',
     'error.password_confirmation_required' => 'Please confirm your password before changing security settings.',
     'error.generic' => 'Something went wrong. Please try again.',
+
+    // Inline password-confirmation modal
+    'password_confirm.title' => 'Confirm your password',
+    'password_confirm.intro' => 'For your security, please confirm your password to continue with this change.',
+    'password_confirm.password_label' => 'Password',
+    'password_confirm.submit' => 'Confirm',
+    'password_confirm.invalid' => 'That password didn\'t match. Try again.',
 ];

@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { router } from '@inertiajs/react';
+import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
 import Button from '@alexandria/components/ui/Button';
+import Input from '@alexandria/components/form/Input';
 import OtpField from '@alexandria/components/form/OtpField';
 import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
-import useT from '@alexandria/hooks/useT';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 
 /**
  * Security tab — drives Fortify's standard two-factor-authentication
@@ -26,16 +28,16 @@ import useT from '@alexandria/hooks/useT';
  * The consumer-side controller resolves `qr_data_url`, `secret`, and
  * `recovery_codes` from the user model and ships them in the
  * `twoFactor` prop. The QR ships as a `data:image/svg+xml;base64,…`
- * URL so it can render via `<img>` (avoids dangerouslySetInnerHTML).
+ * URL so it can render via `<img>`.
  *
  * After a mutation the section calls
  * `router.reload({ only: ['twoFactor'] })` to refresh that prop.
  *
  * Password confirmation: Fortify's `password.confirm` middleware
- * normally guards these endpoints. If the consumer wires that,
- * unconfirmed users get a 423; we surface a toast pointing them at
- * `/user/confirm-password`. Apps that don't enforce confirmation
- * (config: `fortify.features.passwordConfirmation`) bypass that path.
+ * normally guards these endpoints. When a request returns 423, the
+ * section opens an inline modal asking for the user's password and
+ * POSTs to `/user/confirm-password`. On success, the original action
+ * is retried automatically. The user never has to leave the page.
  */
 interface SecuritySectionProps {
     twoFactor: {
@@ -47,9 +49,44 @@ interface SecuritySectionProps {
     };
 }
 
+/**
+ * Action runner contract — each handler returns one of these verdicts
+ * so the outer wrapper can decide whether to open the password-confirm
+ * modal, retry, or treat as a terminal outcome.
+ */
+type ActionVerdict = 'ok' | 'needs_password' | 'error';
+
 export default function SecuritySection({ twoFactor }: SecuritySectionProps) {
     const t = useT();
     const toast = useToastContext();
+
+    // Pending-action queue used by the password-confirm modal: when an
+    // action returns 423 the runner stows itself here and opens the
+    // modal; on successful confirmation the modal calls
+    // `pendingRunner` to retry the original request transparently.
+    const [pendingRunner, setPendingRunner] = useState<(() => void) | null>(null);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+
+    const requestPasswordConfirm = useCallback((runner: () => void) => {
+        setPendingRunner(() => runner);
+        setConfirmOpen(true);
+    }, []);
+
+    function handleConfirmSuccess() {
+        setConfirmOpen(false);
+        if (pendingRunner) {
+            // Defer the retry by a tick so React unmounts the modal
+            // (and removes the scroll lock) before the action fires
+            // and potentially triggers a router.reload.
+            setTimeout(() => pendingRunner(), 0);
+        }
+        setPendingRunner(null);
+    }
+
+    function handleConfirmClose() {
+        setConfirmOpen(false);
+        setPendingRunner(null);
+    }
 
     // State machine: derive once per render so the JSX stays a flat
     // ternary cascade rather than nested conditional expressions.
@@ -67,7 +104,7 @@ export default function SecuritySection({ twoFactor }: SecuritySectionProps) {
             </h3>
 
             {phase === 'disabled' && (
-                <DisabledPanel t={t} toast={toast} />
+                <DisabledPanel t={t} toast={toast} requestPasswordConfirm={requestPasswordConfirm} />
             )}
 
             {phase === 'setup' && (
@@ -76,6 +113,7 @@ export default function SecuritySection({ twoFactor }: SecuritySectionProps) {
                     toast={toast}
                     qrDataUrl={twoFactor.qr_data_url}
                     secret={twoFactor.secret}
+                    requestPasswordConfirm={requestPasswordConfirm}
                 />
             )}
 
@@ -84,38 +122,172 @@ export default function SecuritySection({ twoFactor }: SecuritySectionProps) {
                     t={t}
                     toast={toast}
                     recoveryCodes={twoFactor.recovery_codes ?? []}
+                    requestPasswordConfirm={requestPasswordConfirm}
                 />
             )}
+
+            <PasswordConfirmModal
+                t={t}
+                toast={toast}
+                open={confirmOpen}
+                onClose={handleConfirmClose}
+                onSuccess={handleConfirmSuccess}
+            />
         </div>
     );
 }
 
-/* ── Phase: Disabled ── */
-function DisabledPanel({ t, toast }: { t: ReturnType<typeof useT>; toast: ReturnType<typeof useToastContext> }) {
-    const [enabling, setEnabling] = useState(false);
+/* ── Inline password-confirmation modal ──
+ *
+ * Fortify's `password.confirm` middleware blocks 2FA management until
+ * the user has reconfirmed their password within `password_timeout`
+ * (3 hours by default). Hitting a guarded endpoint without a fresh
+ * confirmation returns 423; the section opens this modal, the user
+ * enters their password, we POST it to `/user/confirm-password`, and
+ * on success the modal closes and the original action retries.
+ */
+function PasswordConfirmModal({
+    t,
+    toast,
+    open,
+    onClose,
+    onSuccess,
+}: {
+    t: Translator;
+    toast: ReturnType<typeof useToastContext>;
+    open: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+}) {
+    const [password, setPassword] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    function handleEnable() {
-        setEnabling(true);
-        fetch('/user/two-factor-authentication', {
+    function reset() {
+        setPassword('');
+        setError(null);
+        setSubmitting(false);
+    }
+
+    function handleClose() {
+        reset();
+        onClose();
+    }
+
+    function handleSubmit() {
+        if (!password || submitting) return;
+        setSubmitting(true);
+        setError(null);
+
+        fetch('/user/confirm-password', {
             method: 'POST',
             headers: csrfHeaders(),
+            body: JSON.stringify({ password }),
         })
-            .then((r) => {
-                setEnabling(false);
+            .then(async (r) => {
+                setSubmitting(false);
                 if (r.ok) {
-                    toast.show(t('security.toast.enabled'), { type: 'success' });
-                    router.reload({ only: ['twoFactor'] });
-                } else if (r.status === 423) {
-                    toast.show(t('security.error.password_confirmation_required'), { type: 'warning' });
-                } else {
-                    toast.show(t('security.error.generic'), { type: 'danger' });
+                    reset();
+                    onSuccess();
+                    return;
                 }
+                if (r.status === 422) {
+                    const data = await r.json().catch(() => null);
+                    setError(data?.errors?.password?.[0] ?? t('security.password_confirm.invalid'));
+                    return;
+                }
+                setError(t('security.error.generic'));
             })
             .catch(() => {
-                setEnabling(false);
-                toast.show(t('security.error.generic'), { type: 'danger' });
+                setSubmitting(false);
+                setError(t('security.error.generic'));
             });
     }
+
+    return (
+        <Modal open={open} onClose={handleClose}>
+            <ModalHeader title={t('security.password_confirm.title')} onClose={handleClose} />
+            <div className="space-y-4 p-6">
+                <p
+                    className="text-sm"
+                    style={{ color: 'color-mix(in srgb, var(--theme-base-content) 65%, transparent)' }}
+                >
+                    {t('security.password_confirm.intro')}
+                </p>
+                <Input
+                    size="md"
+                    type="password"
+                    label={t('security.password_confirm.password_label')}
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                    autoFocus
+                    autoComplete="current-password"
+                    error={error ?? undefined}
+                />
+            </div>
+            <ModalFooter>
+                <Button variant="ghost" onClick={handleClose}>{t('common.cancel')}</Button>
+                <Button
+                    variant="primary"
+                    onClick={handleSubmit}
+                    loading={submitting}
+                    disabled={!password}
+                >
+                    {t('security.password_confirm.submit')}
+                </Button>
+            </ModalFooter>
+        </Modal>
+    );
+}
+
+/* Helper — classify a fetch response into the verdict the runner contract
+ * expects. Network failures count as 'error'. Centralised so each handler
+ * doesn't repeat the same status-code check. */
+async function classifyResponse(promise: Promise<Response>): Promise<{ verdict: ActionVerdict; response: Response | null }> {
+    try {
+        const response = await promise;
+        if (response.ok) return { verdict: 'ok', response };
+        if (response.status === 423) return { verdict: 'needs_password', response };
+        return { verdict: 'error', response };
+    } catch {
+        return { verdict: 'error', response: null };
+    }
+}
+
+/* ── Phase: Disabled ── */
+function DisabledPanel({
+    t,
+    toast,
+    requestPasswordConfirm,
+}: {
+    t: Translator;
+    toast: ReturnType<typeof useToastContext>;
+    requestPasswordConfirm: (runner: () => void) => void;
+}) {
+    const [enabling, setEnabling] = useState(false);
+
+    const handleEnable = useCallback(() => {
+        setEnabling(true);
+        classifyResponse(
+            fetch('/user/two-factor-authentication', {
+                method: 'POST',
+                headers: csrfHeaders(),
+            }),
+        ).then(({ verdict }) => {
+            setEnabling(false);
+            if (verdict === 'ok') {
+                toast.show(t('security.toast.enabled'), { type: 'success' });
+                router.reload({ only: ['twoFactor'] });
+                return;
+            }
+            if (verdict === 'needs_password') {
+                requestPasswordConfirm(handleEnable);
+                return;
+            }
+            toast.show(t('security.error.generic'), { type: 'danger' });
+        });
+    }, [requestPasswordConfirm, t, toast]);
 
     const fadedTextStyle = {
         color: 'color-mix(in srgb, var(--theme-base-content) 65%, transparent)',
@@ -148,67 +320,71 @@ function SetupPanel({
     toast,
     qrDataUrl,
     secret,
+    requestPasswordConfirm,
 }: {
-    t: ReturnType<typeof useT>;
+    t: Translator;
     toast: ReturnType<typeof useToastContext>;
     qrDataUrl: string | null;
     secret: string | null;
+    requestPasswordConfirm: (runner: () => void) => void;
 }) {
     const [code, setCode] = useState('');
     const [confirming, setConfirming] = useState(false);
     const [cancelling, setCancelling] = useState(false);
     const [codeError, setCodeError] = useState<string | null>(null);
 
-    function handleConfirm() {
+    const handleConfirm = useCallback(() => {
         if (code.length !== 6) return;
         setConfirming(true);
         setCodeError(null);
 
-        fetch('/user/confirmed-two-factor-authentication', {
-            method: 'POST',
-            headers: csrfHeaders(),
-            body: JSON.stringify({ code }),
-        })
-            .then((r) => {
-                setConfirming(false);
-                if (r.ok) {
-                    toast.show(t('security.toast.confirmed'), { type: 'success' });
-                    router.reload({ only: ['twoFactor'] });
-                    return;
-                }
-                if (r.status === 422) {
-                    setCodeError(t('security.error.confirm_invalid_code'));
-                    return;
-                }
-                if (r.status === 423) {
-                    toast.show(t('security.error.password_confirmation_required'), { type: 'warning' });
-                    return;
-                }
-                toast.show(t('security.error.generic'), { type: 'danger' });
-            })
-            .catch(() => {
-                setConfirming(false);
-                toast.show(t('security.error.generic'), { type: 'danger' });
-            });
-    }
+        classifyResponse(
+            fetch('/user/confirmed-two-factor-authentication', {
+                method: 'POST',
+                headers: csrfHeaders(),
+                body: JSON.stringify({ code }),
+            }),
+        ).then(async ({ verdict, response }) => {
+            setConfirming(false);
+            if (verdict === 'ok') {
+                toast.show(t('security.toast.confirmed'), { type: 'success' });
+                router.reload({ only: ['twoFactor'] });
+                return;
+            }
+            if (verdict === 'needs_password') {
+                requestPasswordConfirm(handleConfirm);
+                return;
+            }
+            if (response?.status === 422) {
+                setCodeError(t('security.error.confirm_invalid_code'));
+                return;
+            }
+            toast.show(t('security.error.generic'), { type: 'danger' });
+        });
+    }, [code, requestPasswordConfirm, t, toast]);
 
-    function handleCancel() {
+    const handleCancel = useCallback(() => {
         // Cancelling setup = disabling 2FA before confirmation. Same
         // endpoint as the post-enable disable flow.
         setCancelling(true);
-        fetch('/user/two-factor-authentication', {
-            method: 'DELETE',
-            headers: csrfHeaders(),
-        })
-            .then(() => {
-                setCancelling(false);
+        classifyResponse(
+            fetch('/user/two-factor-authentication', {
+                method: 'DELETE',
+                headers: csrfHeaders(),
+            }),
+        ).then(({ verdict }) => {
+            setCancelling(false);
+            if (verdict === 'ok') {
                 router.reload({ only: ['twoFactor'] });
-            })
-            .catch(() => {
-                setCancelling(false);
-                toast.show(t('security.error.generic'), { type: 'danger' });
-            });
-    }
+                return;
+            }
+            if (verdict === 'needs_password') {
+                requestPasswordConfirm(handleCancel);
+                return;
+            }
+            toast.show(t('security.error.generic'), { type: 'danger' });
+        });
+    }, [requestPasswordConfirm, t, toast]);
 
     const cardStyle = {
         background: 'var(--theme-base-page)',
@@ -316,59 +492,59 @@ function EnabledPanel({
     t,
     toast,
     recoveryCodes,
+    requestPasswordConfirm,
 }: {
-    t: ReturnType<typeof useT>;
+    t: Translator;
     toast: ReturnType<typeof useToastContext>;
     recoveryCodes: string[];
+    requestPasswordConfirm: (runner: () => void) => void;
 }) {
     const [regenerating, setRegenerating] = useState(false);
     const [disabling, setDisabling] = useState(false);
 
-    function handleRegenerate() {
+    const handleRegenerate = useCallback(() => {
         setRegenerating(true);
-        fetch('/user/two-factor-recovery-codes', {
-            method: 'POST',
-            headers: csrfHeaders(),
-        })
-            .then((r) => {
-                setRegenerating(false);
-                if (r.ok) {
-                    toast.show(t('security.toast.codes_regenerated'), { type: 'success' });
-                    router.reload({ only: ['twoFactor'] });
-                } else if (r.status === 423) {
-                    toast.show(t('security.error.password_confirmation_required'), { type: 'warning' });
-                } else {
-                    toast.show(t('security.error.generic'), { type: 'danger' });
-                }
-            })
-            .catch(() => {
-                setRegenerating(false);
-                toast.show(t('security.error.generic'), { type: 'danger' });
-            });
-    }
+        classifyResponse(
+            fetch('/user/two-factor-recovery-codes', {
+                method: 'POST',
+                headers: csrfHeaders(),
+            }),
+        ).then(({ verdict }) => {
+            setRegenerating(false);
+            if (verdict === 'ok') {
+                toast.show(t('security.toast.codes_regenerated'), { type: 'success' });
+                router.reload({ only: ['twoFactor'] });
+                return;
+            }
+            if (verdict === 'needs_password') {
+                requestPasswordConfirm(handleRegenerate);
+                return;
+            }
+            toast.show(t('security.error.generic'), { type: 'danger' });
+        });
+    }, [requestPasswordConfirm, t, toast]);
 
-    function handleDisable() {
+    const handleDisable = useCallback(() => {
         setDisabling(true);
-        fetch('/user/two-factor-authentication', {
-            method: 'DELETE',
-            headers: csrfHeaders(),
-        })
-            .then((r) => {
-                setDisabling(false);
-                if (r.ok) {
-                    toast.show(t('security.toast.disabled'), { type: 'success' });
-                    router.reload({ only: ['twoFactor'] });
-                } else if (r.status === 423) {
-                    toast.show(t('security.error.password_confirmation_required'), { type: 'warning' });
-                } else {
-                    toast.show(t('security.error.generic'), { type: 'danger' });
-                }
-            })
-            .catch(() => {
-                setDisabling(false);
-                toast.show(t('security.error.generic'), { type: 'danger' });
-            });
-    }
+        classifyResponse(
+            fetch('/user/two-factor-authentication', {
+                method: 'DELETE',
+                headers: csrfHeaders(),
+            }),
+        ).then(({ verdict }) => {
+            setDisabling(false);
+            if (verdict === 'ok') {
+                toast.show(t('security.toast.disabled'), { type: 'success' });
+                router.reload({ only: ['twoFactor'] });
+                return;
+            }
+            if (verdict === 'needs_password') {
+                requestPasswordConfirm(handleDisable);
+                return;
+            }
+            toast.show(t('security.error.generic'), { type: 'danger' });
+        });
+    }, [requestPasswordConfirm, t, toast]);
 
     const successBannerStyle = {
         background: 'var(--theme-status-success-subtle)',
