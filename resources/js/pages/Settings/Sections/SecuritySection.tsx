@@ -142,11 +142,11 @@ function SetupPendingPanel({
     }
 
     const warningBannerStyle = {
-        background: 'color-mix(in srgb, var(--theme-status-warning-fill) 14%, var(--theme-base-surface))',
+        background: 'var(--theme-base-surface)',
         color: 'var(--theme-base-content)',
-        border: '1px solid color-mix(in srgb, var(--theme-status-warning-stroke) 35%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
         borderInlineStartWidth: '4px',
-        borderInlineStartColor: 'var(--theme-status-warning-stroke)',
+        borderInlineStartColor: 'var(--theme-status-warning-fill)',
         borderRadius: 'var(--theme-radius-card)',
     };
 
@@ -155,7 +155,7 @@ function SetupPendingPanel({
             <div className="flex items-start gap-3 p-4 text-sm" style={warningBannerStyle}>
                 <i
                     className="fa-solid fa-triangle-exclamation mt-0.5 flex-shrink-0"
-                    style={{ color: 'var(--theme-status-warning-stroke)' }}
+                    style={{ color: 'var(--theme-status-warning-fill)' }}
                     aria-hidden="true"
                 />
                 <div className="space-y-1">
@@ -198,10 +198,10 @@ function EnabledPanel({
     onDisable: () => void;
 }) {
     const successBannerStyle = {
-        background: 'color-mix(in srgb, var(--theme-status-success-fill) 14%, var(--theme-base-surface))',
-        border: '1px solid color-mix(in srgb, var(--theme-status-success-stroke) 35%, transparent)',
+        background: 'var(--theme-base-surface)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
         borderInlineStartWidth: '4px',
-        borderInlineStartColor: 'var(--theme-status-success-stroke)',
+        borderInlineStartColor: 'var(--theme-status-success-fill)',
         borderRadius: 'var(--theme-radius-card)',
         color: 'var(--theme-base-content)',
     };
@@ -214,7 +214,7 @@ function EnabledPanel({
             <div className="flex items-start gap-3 p-4 text-sm" style={successBannerStyle}>
                 <i
                     className="fa-solid fa-shield-halved mt-0.5 flex-shrink-0"
-                    style={{ color: 'var(--theme-status-success-stroke)' }}
+                    style={{ color: 'var(--theme-status-success-fill)' }}
                     aria-hidden="true"
                 />
                 <div className="space-y-1">

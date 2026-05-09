@@ -27,25 +27,23 @@ export interface AlertProps {
 }
 
 export default function Alert({ role, title, children, className = '' }: AlertProps) {
-    // `--theme-status-{role}-content` is the foreground color for the
-    // SATURATED fill ("white text on solid red"). Pairing it with the
-    // SUBTLE bg (light-tinted error) results in low contrast — light
-    // text on light bg. Use `--theme-base-content` for body text on
-    // the subtle bg; the role still reads via the start-edge accent
-    // stripe + the title color, which keeps the saturated stroke.
+    // Body sits on plain `--theme-base-surface` so the panel reads as
+    // a normal card on every theme — no tinted background. The role
+    // identity rides on just two accents: the 4px leading edge stripe
+    // and the icon-color title prefix (when present).
     //
-    // Background is a color-mix into `--theme-base-surface` rather than
-    // the alpha-based `subtle` token. On dark, high-chroma palettes
-    // (cyberpunk's neon greens / magentas), 10% alpha on near-black
-    // produces a garish ghost; mixing into the surface keeps the bg
-    // opaque + tinted so the panel reads as a proper alert across
-    // every theme.
+    // This is a deliberate retreat from tinting the whole panel — on
+    // high-chroma palettes (cyberpunk's neon-green success / magenta
+    // error / acid-yellow warning) any percentage of role color across
+    // the full panel reads as garish; on default's quiet paper palette
+    // the same percentage reads as washed-out. A neutral surface +
+    // saturated accent works on both ends of the chroma spectrum.
     const style: CSSProperties = {
-        background: `color-mix(in srgb, var(--theme-status-${role}-fill) 14%, var(--theme-base-surface))`,
+        background: 'var(--theme-base-surface)',
         color: 'var(--theme-base-content)',
-        border: `1px solid color-mix(in srgb, var(--theme-status-${role}-stroke) 35%, transparent)`,
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
         borderInlineStartWidth: '4px',
-        borderInlineStartColor: `var(--theme-status-${role}-stroke)`,
+        borderInlineStartColor: `var(--theme-status-${role}-fill)`,
         borderRadius: 'var(--theme-radius-card)',
         padding: '0.875rem 1rem',
     };
@@ -60,7 +58,7 @@ export default function Alert({ role, title, children, className = '' }: AlertPr
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         marginBottom: '0.25rem',
-                        color: `var(--theme-status-${role}-stroke)`,
+                        color: `var(--theme-status-${role}-fill)`,
                     }}
                 >
                     {title}
