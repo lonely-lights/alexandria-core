@@ -96,6 +96,24 @@ return [
     'drawer.title' => 'Settings',
     'drawer.aria_label' => 'Settings drawer',
 
+    // ── Save-success toasts (shared across every section) ───────────
+    'toast.saved' => 'Changes saved',
+    'toast.profile_saved' => 'Profile updated',
+    'toast.preferences_saved' => 'Preferences saved',
+    'toast.privacy_saved' => 'Privacy settings saved',
+    'toast.field_visibility_saved' => 'Visibility updated',
+    'toast.list_created' => 'Privacy list created',
+    'toast.list_updated' => 'Privacy list updated',
+    'toast.list_deleted' => 'Privacy list deleted',
+    'toast.link_added' => 'Link added',
+    'toast.link_updated' => 'Link updated',
+    'toast.link_deleted' => 'Link removed',
+    'toast.api_key_added' => 'API key added',
+    'toast.api_key_deleted' => 'API key removed',
+    'toast.api_key_activated' => 'API key activated',
+    'toast.models_saved' => 'AI models saved',
+    'toast.ai_preferences_saved' => 'AI preferences saved',
+
     // ── Avatar ring picker (RingModal) ──────────────────────────────
     'ring_picker.title' => 'Avatar Ring',
     'ring_picker.none_label' => 'None',

@@ -32,11 +32,14 @@ export function useToastContext(): ToastContextValue {
 }
 
 const TOAST_CONFIG: Record<ToastType, { icon: string; iconColor: string }> = {
-    success: { icon: 'fa-solid fa-circle-check', iconColor: 'text-success' },
-    info: { icon: 'fa-solid fa-circle-info', iconColor: 'text-info' },
-    warning: { icon: 'fa-solid fa-triangle-exclamation', iconColor: 'text-warning' },
-    danger: { icon: 'fa-solid fa-circle-exclamation', iconColor: 'text-error' },
-    default: { icon: 'fa-solid fa-bell', iconColor: 'text-base-content/70' },
+    success: { icon: 'fa-solid fa-circle-check', iconColor: 'var(--theme-status-success-fill)' },
+    info: { icon: 'fa-solid fa-circle-info', iconColor: 'var(--theme-status-info-fill)' },
+    warning: { icon: 'fa-solid fa-triangle-exclamation', iconColor: 'var(--theme-status-warning-fill)' },
+    danger: { icon: 'fa-solid fa-circle-exclamation', iconColor: 'var(--theme-status-error-stroke)' },
+    default: {
+        icon: 'fa-solid fa-bell',
+        iconColor: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+    },
 };
 
 const POSITIONS: ToastPosition[] = [
@@ -326,18 +329,34 @@ function ToastItem({
 
     return (
         <div className={`${anchorClass} pointer-events-auto`} style={style}>
-            <div className="overflow-hidden rounded-xl border border-base-content/10 bg-base-100 shadow-lg">
+            <div
+                className="overflow-hidden"
+                style={{
+                    background: 'var(--theme-base-surface)',
+                    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                    borderRadius: 'var(--theme-radius-card)',
+                    boxShadow:
+                        '0 12px 32px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08)',
+                }}
+            >
                 <div className="flex items-start gap-3 p-4">
                     <i
-                        className={`${config.icon} ${config.iconColor} mt-[1px] flex-shrink-0 text-base leading-5`}
+                        className={`${config.icon} mt-[1px] flex-shrink-0 text-base leading-5`}
+                        style={{ color: config.iconColor }}
                         aria-hidden="true"
                     />
                     <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium leading-5 text-base-content">
+                        <p
+                            className="text-sm font-medium leading-5"
+                            style={{ color: 'var(--theme-base-content)' }}
+                        >
                             {toast.message}
                         </p>
                         {toast.description && (
-                            <p className="mt-1 text-xs leading-snug text-base-content/60">
+                            <p
+                                className="mt-1 text-xs leading-snug"
+                                style={{ color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' }}
+                            >
                                 {toast.description}
                             </p>
                         )}
@@ -345,7 +364,12 @@ function ToastItem({
                     <button
                         type="button"
                         onClick={() => onDismiss(toast.id)}
-                        className="mt-[1px] flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-base-content/30 transition-colors hover:bg-base-200/50 hover:text-base-content/60"
+                        className="alex-toast-close mt-[1px] flex h-5 w-5 flex-shrink-0 items-center justify-center transition-colors"
+                        style={{
+                            background: 'transparent',
+                            color: 'color-mix(in srgb, var(--theme-base-content) 35%, transparent)',
+                            borderRadius: 'var(--theme-radius-button)',
+                        }}
                         aria-label="Dismiss notification"
                     >
                         <i className="fa-solid fa-xmark text-[10px]" />

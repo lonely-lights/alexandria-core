@@ -8,6 +8,7 @@ import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal
 import gsap from 'gsap';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import useT, { type Translator } from '@alexandria/hooks/useT';
+import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 import type { SyntheticEvent } from 'react';
 
 interface FieldConfig {
@@ -130,6 +131,7 @@ function visibilityVariant(visibility: string | undefined): BadgeVariant {
 
 function FieldVisibilitySection({ fieldVisibility, privacyLists, privacyOptions, onDataChanged }: Omit<PrivacyProps, 'section' | 'preferences' | 'options'>) {
     const t = useT();
+    const toast = useToastContext();
     const [fields, setFields] = useState(fieldVisibility);
     const [editingField, setEditingField] = useState<string | null>(null);
 
@@ -145,6 +147,7 @@ function FieldVisibilitySection({ fieldVisibility, privacyLists, privacyOptions,
             setFields((prev) => ({ ...prev, [field]: { visibility, include_list_ids: includeListIds } }));
             setEditingField(null);
             onDataChanged();
+            toast.show(t('settings.toast.field_visibility_saved'), { type: 'success' });
         });
     }
 
@@ -331,6 +334,7 @@ function FieldVisibilityModal({ t, open, fieldKey, fieldConfig, currentVisibilit
 
 function PrivacySettingsSection({ preferences, options }: { preferences: Record<string, unknown>; options: Record<string, Record<string, string>> }) {
     const t = useT();
+    const toast = useToastContext();
     const form = useForm({
         profile_visibility: preferences.profile_visibility as string,
         show_online_status: preferences.show_online_status as boolean,
@@ -340,7 +344,9 @@ function PrivacySettingsSection({ preferences, options }: { preferences: Record<
 
     function handleSubmit(e: SyntheticEvent) {
         e.preventDefault();
-        form.put('/account/preferences');
+        form.put('/account/preferences', {
+            onSuccess: () => toast.show(t('settings.toast.privacy_saved'), { type: 'success' }),
+        });
     }
 
     return (
@@ -389,6 +395,7 @@ function PrivacySettingsSection({ preferences, options }: { preferences: Record<
 
 function PrivacyListsSection({ privacyLists: initialLists, privacyOptions, onDataChanged }: Omit<PrivacyProps, 'section' | 'preferences' | 'options' | 'fieldVisibility'>) {
     const t = useT();
+    const toast = useToastContext();
     const [lists, setLists] = useState<PrivacyList[]>(initialLists);
     const [editingList, setEditingList] = useState<PrivacyList | null>(null);
     const [showCreate, setShowCreate] = useState(false);
@@ -428,6 +435,7 @@ function PrivacyListsSection({ privacyLists: initialLists, privacyOptions, onDat
                                     .then(() => {
                                         setLists((prev) => prev.filter((l) => l.id !== list.id));
                                         onDataChanged();
+                                        toast.show(t('settings.toast.list_deleted'), { type: 'success' });
                                     });
                             }}
                         />
@@ -472,6 +480,7 @@ function PrivacyListsSection({ privacyLists: initialLists, privacyOptions, onDat
                                 setLists((prev) => [...prev, newList]);
                                 setShowCreate(false);
                                 onDataChanged();
+                                toast.show(t('settings.toast.list_created'), { type: 'success' });
                             });
                     }}
                     onCancel={() => setShowCreate(false)}
@@ -493,6 +502,7 @@ function PrivacyListsSection({ privacyLists: initialLists, privacyOptions, onDat
                         setLists((prev) => prev.map((l) => l.id === editingList.id ? { ...l, ...data } : l));
                         setEditingList(null);
                         onDataChanged();
+                        toast.show(t('settings.toast.list_updated'), { type: 'success' });
                     });
                 }}
                 onClose={() => setEditingList(null)}

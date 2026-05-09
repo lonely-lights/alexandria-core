@@ -199,6 +199,13 @@ button:not(:disabled),
     background: color-mix(in srgb, var(--theme-base-content) 6%, transparent);
 }
 
+/* Toast dismiss-button hover — paint via theme tokens so preset swaps
+   reach into the toast surface. Idle state lives inline on the button. */
+.alex-toast-close:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
+    color: color-mix(in srgb, var(--theme-base-content) 65%, transparent);
+}
+
 /* ----------------------------------------------------------------------
    Server-rendered wiki/prose content surface
    ----------------------------------------------------------------------

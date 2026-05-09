@@ -7,6 +7,7 @@ import Select from '@alexandria/components/form/Select';
 import gsap from 'gsap';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import useT, { type Translator } from '@alexandria/hooks/useT';
+import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 
 interface Provider { id: number; name: string; slug: string; }
 interface ApiKey {
@@ -95,6 +96,7 @@ function ConnectionSection({ providers, apiKeys: initialKeys, onDataChanged }: {
     providers: Provider[]; apiKeys: ApiKey[]; onDataChanged: () => void;
 }) {
     const t = useT();
+    const toast = useToastContext();
     const [keys, setKeys] = useState<ApiKey[]>(initialKeys);
     const [selectedProvider, setSelectedProvider] = useState<number>(providers[0]?.id ?? 0);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -112,6 +114,7 @@ function ConnectionSection({ providers, apiKeys: initialKeys, onDataChanged }: {
                         : k
                 ));
                 onDataChanged();
+                toast.show(t('settings.toast.api_key_activated'), { type: 'success' });
             });
     }
 
@@ -122,6 +125,7 @@ function ConnectionSection({ providers, apiKeys: initialKeys, onDataChanged }: {
                 setKeys((prev) => prev.filter((k) => k.id !== deleteKeyId));
                 setDeleteKeyId(null);
                 onDataChanged();
+                toast.show(t('settings.toast.api_key_deleted'), { type: 'success' });
             });
     }
 
@@ -230,7 +234,12 @@ function ConnectionSection({ providers, apiKeys: initialKeys, onDataChanged }: {
                 <AddKeyForm
                     t={t}
                     provider={selectedProviderObj!}
-                    onAdd={(newKey) => { setKeys((prev) => [...prev, newKey]); setShowAddForm(false); onDataChanged(); }}
+                    onAdd={(newKey) => {
+                        setKeys((prev) => [...prev, newKey]);
+                        setShowAddForm(false);
+                        onDataChanged();
+                        toast.show(t('settings.toast.api_key_added'), { type: 'success' });
+                    }}
                     onCancel={() => setShowAddForm(false)}
                 />
             )}
@@ -409,6 +418,7 @@ function ModelsSection({ models, selectedModels: initial, providersWithKeys, onD
     models: AiModel[]; selectedModels: Record<string, number | null>; providersWithKeys: number[]; onDataChanged: () => void;
 }) {
     const t = useT();
+    const toast = useToastContext();
     const [selected, setSelected] = useState(initial);
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -441,7 +451,13 @@ function ModelsSection({ models, selectedModels: initial, providersWithKeys, onD
         setSaving(true);
         setSuccess(false);
         fetch('/account/ai/models', { method: 'PUT', headers: csrfHeaders(), body: JSON.stringify(selected) })
-            .then(() => { setSaving(false); setSuccess(true); onDataChanged(); setTimeout(() => setSuccess(false), 3000); })
+            .then(() => {
+                setSaving(false);
+                setSuccess(true);
+                onDataChanged();
+                toast.show(t('settings.toast.models_saved'), { type: 'success' });
+                setTimeout(() => setSuccess(false), 3000);
+            })
             .catch(() => setSaving(false));
     }
 
@@ -598,6 +614,7 @@ function PreferencesSection({ preferences, onDataChanged }: {
     onDataChanged: () => void;
 }) {
     const t = useT();
+    const toast = useToastContext();
     const [responseLength, setResponseLength] = useState(preferences.ai_response_length);
     const [suggestions, setSuggestions] = useState(preferences.ai_suggestions);
     const [autoCategorize, setAutoCategorize] = useState(preferences.ai_auto_categorize);
@@ -611,7 +628,13 @@ function PreferencesSection({ preferences, onDataChanged }: {
             method: 'PUT', headers: csrfHeaders(),
             body: JSON.stringify({ ai_response_length: responseLength, ai_suggestions: suggestions, ai_auto_categorize: autoCategorize }),
         })
-            .then(() => { setSaving(false); setSuccess(true); onDataChanged(); setTimeout(() => setSuccess(false), 3000); })
+            .then(() => {
+                setSaving(false);
+                setSuccess(true);
+                onDataChanged();
+                toast.show(t('settings.toast.ai_preferences_saved'), { type: 'success' });
+                setTimeout(() => setSuccess(false), 3000);
+            })
             .catch(() => setSaving(false));
     }
 

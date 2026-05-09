@@ -5,6 +5,7 @@ import Button from '@alexandria/components/ui/Button';
 import Input from '@alexandria/components/form/Input';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import useT, { type Translator } from '@alexandria/hooks/useT';
+import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 
 interface UserLink {
     id: number;
@@ -114,6 +115,7 @@ function VisibilityPicker({ t, value, onChange }: { t: Translator; value: string
 
 export default function LinksSection({ links: initialLinks, platforms, onLinksChanged }: LinksSectionProps) {
     const t = useT();
+    const toast = useToastContext();
     const [links, setLinks] = useState<UserLink[]>(initialLinks);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingLink, setEditingLink] = useState<UserLink | null>(null);
@@ -133,6 +135,7 @@ export default function LinksSection({ links: initialLinks, platforms, onLinksCh
                                     .then(() => {
                                         setLinks((prev) => prev.filter((l) => l.id !== link.id));
                                         onLinksChanged();
+                                        toast.show(t('settings.toast.link_deleted'), { type: 'success' });
                                     });
                             }}
                         />
@@ -176,6 +179,7 @@ export default function LinksSection({ links: initialLinks, platforms, onLinksCh
                         setLinks((prev) => [...prev, newLink]);
                         setShowAddForm(false);
                         onLinksChanged();
+                        toast.show(t('settings.toast.link_added'), { type: 'success' });
                     }}
                     onCancel={() => setShowAddForm(false)}
                 />
@@ -188,6 +192,7 @@ export default function LinksSection({ links: initialLinks, platforms, onLinksCh
                     setLinks((prev) => prev.map((l) => l.id === updated.id ? { ...l, ...updated } : l));
                     setEditingLink(null);
                     onLinksChanged();
+                    toast.show(t('settings.toast.link_updated'), { type: 'success' });
                 }}
                 onClose={() => setEditingLink(null)}
             />
