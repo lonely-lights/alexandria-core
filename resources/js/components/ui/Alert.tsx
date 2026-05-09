@@ -33,8 +33,15 @@ export default function Alert({ role, title, children, className = '' }: AlertPr
     // text on light bg. Use `--theme-base-content` for body text on
     // the subtle bg; the role still reads via the start-edge accent
     // stripe + the title color, which keeps the saturated stroke.
+    //
+    // Background is a color-mix into `--theme-base-surface` rather than
+    // the alpha-based `subtle` token. On dark, high-chroma palettes
+    // (cyberpunk's neon greens / magentas), 10% alpha on near-black
+    // produces a garish ghost; mixing into the surface keeps the bg
+    // opaque + tinted so the panel reads as a proper alert across
+    // every theme.
     const style: CSSProperties = {
-        background: `var(--theme-status-${role}-subtle)`,
+        background: `color-mix(in srgb, var(--theme-status-${role}-fill) 14%, var(--theme-base-surface))`,
         color: 'var(--theme-base-content)',
         border: `1px solid color-mix(in srgb, var(--theme-status-${role}-stroke) 35%, transparent)`,
         borderInlineStartWidth: '4px',

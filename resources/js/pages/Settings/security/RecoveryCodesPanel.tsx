@@ -53,11 +53,11 @@ export default function RecoveryCodesPanel({
         color: 'color-mix(in srgb, var(--theme-base-content) 65%, transparent)',
     };
     const warningBannerStyle = {
-        background: 'var(--theme-status-warning-subtle)',
+        background: 'color-mix(in srgb, var(--theme-status-warning-fill) 14%, var(--theme-base-surface))',
         color: 'var(--theme-base-content)',
-        border: '1px solid color-mix(in srgb, var(--theme-status-warning-fill) 35%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--theme-status-warning-stroke) 35%, transparent)',
         borderInlineStartWidth: '4px',
-        borderInlineStartColor: 'var(--theme-status-warning-fill)',
+        borderInlineStartColor: 'var(--theme-status-warning-stroke)',
         borderRadius: 'var(--theme-radius-card)',
     };
     const codeChipStyle = {
@@ -80,7 +80,7 @@ export default function RecoveryCodesPanel({
                 <div className="flex items-start gap-2 px-3 py-2 text-sm" style={warningBannerStyle}>
                     <i
                         className="fa-solid fa-triangle-exclamation mt-0.5 flex-shrink-0"
-                        style={{ color: 'var(--theme-status-warning-fill)' }}
+                        style={{ color: 'var(--theme-status-warning-stroke)' }}
                         aria-hidden="true"
                     />
                     <span>{t('security.recovery_codes.warning')}</span>
