@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import Toggle from '@alexandria/components/form/Toggle';
 import Modal from '@alexandria/components/ui/Modal';
+import Button from '@alexandria/components/ui/Button';
+import Input from '@alexandria/components/form/Input';
+import Select from '@alexandria/components/form/Select';
 import gsap from 'gsap';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 
 interface Provider { id: number; name: string; slug: string; }
 interface ApiKey {
@@ -35,12 +39,52 @@ interface AiSectionsProps {
 
 export default function AiSections({ section, ai, onDataChanged }: AiSectionsProps) {
     switch (section) {
-        case 'connection': return <ConnectionSection providers={ai.providers} apiKeys={ai.apiKeys} onDataChanged={onDataChanged} />;
-        case 'models': return <ModelsSection models={ai.models} selectedModels={ai.selectedModels} providersWithKeys={ai.providersWithKeys} onDataChanged={onDataChanged} />;
-        case 'usage': return <UsageSection usage={ai.usage} />;
-        case 'preferences': return <PreferencesSection preferences={ai.preferences} onDataChanged={onDataChanged} />;
-        default: return null;
+        case 'connection':
+            return <ConnectionSection providers={ai.providers} apiKeys={ai.apiKeys} onDataChanged={onDataChanged} />;
+        case 'models':
+            return <ModelsSection models={ai.models} selectedModels={ai.selectedModels} providersWithKeys={ai.providersWithKeys} onDataChanged={onDataChanged} />;
+        case 'usage':
+            return <UsageSection usage={ai.usage} />;
+        case 'preferences':
+            return <PreferencesSection preferences={ai.preferences} onDataChanged={onDataChanged} />;
+        default:
+            return null;
     }
+}
+
+/* ── Pill-shaped status badge — used for Key Added / Expired / Active /
+   JSON / Vision / Recommended chips. Variant maps to `--theme-status-*`
+   or `--theme-brand-*` token families so preset swaps repaint. ── */
+type BadgeVariant = 'success' | 'error' | 'warning' | 'info' | 'primary' | 'neutral';
+
+function StatusBadge({ children, variant = 'neutral' }: { children: React.ReactNode; variant?: BadgeVariant }) {
+    const palettes: Record<BadgeVariant, { bg: string; fg: string }> = {
+        success: { bg: 'var(--theme-status-success-subtle)', fg: 'var(--theme-status-success-fill)' },
+        error: { bg: 'var(--theme-status-error-subtle)', fg: 'var(--theme-status-error-stroke)' },
+        warning: { bg: 'var(--theme-status-warning-subtle)', fg: 'var(--theme-status-warning-fill)' },
+        info: { bg: 'var(--theme-status-info-subtle)', fg: 'var(--theme-status-info-fill)' },
+        primary: {
+            bg: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+            fg: 'var(--theme-brand-primary-500)',
+        },
+        neutral: {
+            bg: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+            fg: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+        },
+    };
+    const p = palettes[variant];
+    return (
+        <span
+            className="inline-flex items-center px-2 py-0.5 text-[11px] font-semibold"
+            style={{
+                background: p.bg,
+                color: p.fg,
+                borderRadius: '9999px',
+            }}
+        >
+            {children}
+        </span>
+    );
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -50,6 +94,7 @@ export default function AiSections({ section, ai, onDataChanged }: AiSectionsPro
 function ConnectionSection({ providers, apiKeys: initialKeys, onDataChanged }: {
     providers: Provider[]; apiKeys: ApiKey[]; onDataChanged: () => void;
 }) {
+    const t = useT();
     const [keys, setKeys] = useState<ApiKey[]>(initialKeys);
     const [selectedProvider, setSelectedProvider] = useState<number>(providers[0]?.id ?? 0);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -82,32 +127,41 @@ function ConnectionSection({ providers, apiKeys: initialKeys, onDataChanged }: {
 
     const selectedProviderObj = providers.find((p) => p.id === selectedProvider);
 
+    const fadedTextStyle = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    };
+    const keyRowStyle = {
+        background: 'var(--theme-base-page)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+
     return (
         <div className="space-y-6">
-            {/* Provider selector */}
+            {/* Provider selector cards */}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {providers.map((p) => {
                     const hasKeys = keys.some((k) => k.ai_provider_id === p.id && !k.is_expired);
                     const activeKey = keys.find((k) => k.ai_provider_id === p.id && k.is_active);
-
+                    const selected = selectedProvider === p.id;
                     return (
                         <button
                             key={p.id}
                             type="button"
                             onClick={() => { setSelectedProvider(p.id); setShowAddForm(false); }}
-                            className={`rounded-2xl border-2 p-4 text-left transition-all ${
-                                selectedProvider === p.id ? 'border-primary bg-primary/5' : 'border-base-content/10 hover:border-base-content/30'
-                            }`}
+                            className={`alex-pref-card p-4 text-left ${selected ? 'alex-pref-card--selected' : ''}`}
                         >
                             <span className="text-sm font-semibold">{p.name}</span>
                             <div className="mt-1">
                                 {hasKeys ? (
-                                    <span className="badge badge-sm badge-success">Key Added</span>
+                                    <StatusBadge variant="success">{t('ai.connection.key_added_badge')}</StatusBadge>
                                 ) : (
-                                    <span className="badge badge-sm badge-ghost">No Key</span>
+                                    <StatusBadge variant="neutral">{t('ai.connection.no_key_badge')}</StatusBadge>
                                 )}
                             </div>
-                            {activeKey && <p className="mt-1 truncate text-xs text-base-content/50">{activeKey.label}</p>}
+                            {activeKey && (
+                                <p className="mt-1 truncate text-xs" style={fadedTextStyle}>{activeKey.label}</p>
+                            )}
                         </button>
                     );
                 })}
@@ -117,14 +171,14 @@ function ConnectionSection({ providers, apiKeys: initialKeys, onDataChanged }: {
             {providerKeys.length > 0 ? (
                 <div className="space-y-3">
                     {providerKeys.map((key) => (
-                        <div key={key.id} className="group flex items-center gap-3 rounded-2xl border border-base-content/10 bg-base-100 p-4 transition-all hover:border-base-content/20">
+                        <div key={key.id} className="group flex items-center gap-3 p-4" style={keyRowStyle}>
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-medium">{key.label}</span>
-                                    {key.is_active && <span className="badge badge-sm badge-primary">Active</span>}
-                                    {key.is_expired && <span className="badge badge-sm badge-error">Expired</span>}
+                                    {key.is_active && <StatusBadge variant="primary">{t('ai.connection.active_badge')}</StatusBadge>}
+                                    {key.is_expired && <StatusBadge variant="error">{t('ai.connection.expired_badge')}</StatusBadge>}
                                 </div>
-                                <div className="mt-0.5 flex items-center gap-3 text-xs text-base-content/50">
+                                <div className="mt-0.5 flex items-center gap-3 text-xs" style={fadedTextStyle}>
                                     <span className="font-mono">••••{key.api_key_last_four}</span>
                                     <span>{key.expiration_status}</span>
                                     <span>{key.last_used_status}</span>
@@ -132,26 +186,49 @@ function ConnectionSection({ providers, apiKeys: initialKeys, onDataChanged }: {
                             </div>
                             <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                                 {!key.is_active && !key.is_expired && (
-                                    <button type="button" onClick={() => handleActivate(key.id)} className="btn btn-ghost btn-xs text-primary">Activate</button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleActivate(key.id)}>
+                                        {t('ai.connection.activate_button')}
+                                    </Button>
                                 )}
-                                <button type="button" onClick={() => setDeleteKeyId(key.id)} className="btn btn-ghost btn-xs text-error">
-                                    <i className="fa-solid fa-trash text-xs" />
-                                </button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setDeleteKeyId(key.id)}
+                                    icon="fa-solid fa-trash text-xs"
+                                    iconPosition="before"
+                                    aria-label={t('ai.connection.delete_button')}
+                                >
+                                    <span className="sr-only">{t('ai.connection.delete_button')}</span>
+                                </Button>
                             </div>
                         </div>
                     ))}
                 </div>
             ) : (
-                <p className="py-4 text-center text-sm text-base-content/50">No API keys for {selectedProviderObj?.name ?? 'this provider'}</p>
+                <p className="py-4 text-center text-sm" style={fadedTextStyle}>
+                    {t('ai.connection.empty_state').replace(':provider', selectedProviderObj?.name ?? t('ai.connection.empty_state_default'))}
+                </p>
             )}
 
-            {/* Add key */}
+            {/* Add key trigger / inline form */}
             {!showAddForm ? (
-                <button type="button" onClick={() => setShowAddForm(true)} className="btn btn-ghost w-full gap-2 rounded-2xl border-2 border-dashed border-base-content/10 text-base-content/50 hover:border-primary/30 hover:text-primary">
-                    <i className="fa-solid fa-plus" /> Add API Key
+                <button
+                    type="button"
+                    onClick={() => setShowAddForm(true)}
+                    className="flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all"
+                    style={{
+                        border: '2px dashed color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                        color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+                        borderRadius: 'var(--theme-radius-card)',
+                        background: 'transparent',
+                    }}
+                >
+                    <i className="fa-solid fa-plus" />
+                    {t('ai.connection.add_key_button')}
                 </button>
             ) : (
                 <AddKeyForm
+                    t={t}
                     provider={selectedProviderObj!}
                     onAdd={(newKey) => { setKeys((prev) => [...prev, newKey]); setShowAddForm(false); onDataChanged(); }}
                     onCancel={() => setShowAddForm(false)}
@@ -161,16 +238,19 @@ function ConnectionSection({ providers, apiKeys: initialKeys, onDataChanged }: {
             {/* Delete confirmation */}
             <Modal open={!!deleteKeyId} onClose={() => setDeleteKeyId(null)}>
                 <div className="p-6 text-center">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-error/10">
-                        <i className="fa-solid fa-key text-xl text-error" />
+                    <div
+                        className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full"
+                        style={{ background: 'var(--theme-status-error-subtle)' }}
+                    >
+                        <i className="fa-solid fa-key text-xl" style={{ color: 'var(--theme-status-error-stroke)' }} />
                     </div>
-                    <h3 className="font-serif text-xl font-bold leading-tight">Delete API Key?</h3>
-                    <p className="mt-2 text-sm text-base-content/60">
+                    <h3 className="font-serif text-xl font-bold leading-tight">{t('ai.connection.delete_modal_title')}</h3>
+                    <p className="mt-2 text-sm" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' }}>
                         {deleteKey && <><strong>{deleteKey.label}</strong> (••••{deleteKey.api_key_last_four})</>}
                     </p>
                     <div className="mt-6 flex justify-center gap-2">
-                        <button type="button" onClick={() => setDeleteKeyId(null)} className="btn btn-ghost rounded-xl">Cancel</button>
-                        <button type="button" onClick={handleDelete} className="btn btn-error rounded-xl">Delete Key</button>
+                        <Button variant="ghost" onClick={() => setDeleteKeyId(null)}>{t('common.cancel')}</Button>
+                        <Button variant="danger" onClick={handleDelete}>{t('ai.connection.delete_button')}</Button>
                     </div>
                 </div>
             </Modal>
@@ -178,7 +258,8 @@ function ConnectionSection({ providers, apiKeys: initialKeys, onDataChanged }: {
     );
 }
 
-function AddKeyForm({ provider, onAdd, onCancel }: {
+function AddKeyForm({ t, provider, onAdd, onCancel }: {
+    t: Translator;
     provider: Provider; onAdd: (key: ApiKey) => void; onCancel: () => void;
 }) {
     const [label, setLabel] = useState(`Personal - ${provider.name} - ${new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`);
@@ -204,7 +285,7 @@ function AddKeyForm({ provider, onAdd, onCancel }: {
         })
             .then((r) => r.json())
             .then((data) => { setValidating(false); setValidationResult(data); })
-            .catch(() => { setValidating(false); setValidationResult({ valid: false, message: 'Validation failed' }); });
+            .catch(() => { setValidating(false); setValidationResult({ valid: false, message: t('ai.connection.validation_failed') }); });
     }
 
     function handleSave() {
@@ -218,55 +299,94 @@ function AddKeyForm({ provider, onAdd, onCancel }: {
             .catch(() => setSaving(false));
     }
 
-    const canSave = apiKey.length >= 10 && label && (validationResult?.valid || skipValidation);
+    const canSave = apiKey.length >= 10 && !!label && (validationResult?.valid || skipValidation);
+
+    const containerStyle = {
+        background: 'color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const validationStyle = (valid: boolean) => ({
+        background: valid ? 'var(--theme-status-success-subtle)' : 'var(--theme-status-error-subtle)',
+        color: valid ? 'var(--theme-status-success-fill)' : 'var(--theme-status-error-stroke)',
+        borderRadius: 'var(--theme-radius-card)',
+    });
 
     return (
-        <div ref={formRef} className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
-            <h4 className="font-serif text-xl font-bold leading-tight"><i className="fa-solid fa-plus mr-2 text-primary" />Add {provider.name} Key</h4>
+        <div ref={formRef} className="space-y-4 p-5" style={containerStyle}>
+            <h4 className="font-serif text-xl font-bold leading-tight">
+                <i className="fa-solid fa-plus mr-2" style={{ color: 'var(--theme-brand-primary-500)' }} />
+                {t('ai.connection.add_form_heading').replace(':provider', provider.name)}
+            </h4>
 
-            <div className="form-control">
-                <label className="label py-1"><span className="label-text text-sm">Label</span></label>
-                <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} className="input input-bordered rounded-xl focus:input-primary" maxLength={100} />
-            </div>
+            <Input
+                size="md"
+                label={t('ai.connection.label_field')}
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                maxLength={100}
+            />
 
-            <div className="form-control">
-                <label className="label py-1"><span className="label-text text-sm">API Key</span></label>
-                <input type="password" value={apiKey} onChange={(e) => { setApiKey(e.target.value); setValidationResult(null); setSkipValidation(false); }} className="input input-bordered rounded-xl font-mono focus:input-primary" placeholder="sk-..." />
-            </div>
+            <Input
+                size="md"
+                type="password"
+                label={t('ai.connection.api_key_field')}
+                value={apiKey}
+                onChange={(e) => { setApiKey(e.target.value); setValidationResult(null); setSkipValidation(false); }}
+                placeholder={t('ai.connection.api_key_placeholder')}
+                className="font-mono"
+            />
 
             {apiKey.length >= 10 && !validationResult && (
-                <button type="button" onClick={handleValidate} className="btn btn-secondary btn-sm rounded-xl" disabled={validating}>
-                    {validating ? <><span className="loading loading-spinner loading-xs" /> Validating...</> : <><i className="fa-solid fa-check-double mr-1" /> Validate Key</>}
-                </button>
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleValidate}
+                    loading={validating}
+                    icon="fa-solid fa-check-double"
+                    iconPosition="before"
+                >
+                    {validating ? t('ai.connection.validating') : t('ai.connection.validate_button')}
+                </Button>
             )}
 
             {validationResult && (
-                <div className={`rounded-2xl p-3 text-sm ${validationResult.valid ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>
+                <div className="p-3 text-sm" style={validationStyle(validationResult.valid)}>
                     <i className={`fa-solid ${validationResult.valid ? 'fa-circle-check' : 'fa-circle-xmark'} mr-1`} />
                     {validationResult.message}
                 </div>
             )}
 
             {validationResult && !validationResult.valid && (
-                <label className="flex cursor-pointer items-center gap-2 text-sm text-base-content/60">
-                    <input type="checkbox" className="checkbox checkbox-sm" checked={skipValidation} onChange={(e) => setSkipValidation(e.target.checked)} />
-                    Skip validation (not recommended)
+                <label
+                    className="flex cursor-pointer items-center gap-2 text-sm"
+                    style={{ color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' }}
+                >
+                    <input
+                        type="checkbox"
+                        className="alex-checkbox"
+                        checked={skipValidation}
+                        onChange={(e) => setSkipValidation(e.target.checked)}
+                    />
+                    {t('ai.connection.skip_validation')}
                 </label>
             )}
 
-            <div className="form-control">
-                <label className="label py-1">
-                    <span className="label-text text-sm">Expiration Date</span>
-                    <span className="label-text-alt text-xs text-base-content/40">Optional</span>
-                </label>
-                <input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} className="input input-bordered rounded-xl focus:input-primary" min={new Date(Date.now() + 86400000).toISOString().split('T')[0]} />
-            </div>
+            <Input
+                size="md"
+                type="date"
+                label={t('ai.connection.expires_field')}
+                hint={t('ai.connection.expires_optional')}
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+            />
 
             <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={onCancel} className="btn btn-ghost rounded-xl">Cancel</button>
-                <button type="button" onClick={handleSave} className="btn btn-primary rounded-xl" disabled={!canSave || saving}>
-                    {saving ? <><span className="loading loading-spinner loading-sm" /> Saving...</> : 'Save Key'}
-                </button>
+                <Button variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
+                <Button variant="primary" onClick={handleSave} loading={saving} disabled={!canSave}>
+                    {saving ? t('common.saving') : t('ai.connection.save_key_button')}
+                </Button>
             </div>
         </div>
     );
@@ -276,9 +396,19 @@ function AddKeyForm({ provider, onAdd, onCancel }: {
    MODELS
    ══════════════════════════════════════════════════════════ */
 
+interface ModelCategoryConfig {
+    key: 'analyst_model_id' | 'creative_model_id' | 'image_model_id' | 'video_model_id';
+    labelKey: string;
+    descriptionKey: string;
+    icon: string;
+    iconColor: string;
+    cats: string[];
+}
+
 function ModelsSection({ models, selectedModels: initial, providersWithKeys, onDataChanged }: {
     models: AiModel[]; selectedModels: Record<string, number | null>; providersWithKeys: number[]; onDataChanged: () => void;
 }) {
+    const t = useT();
     const [selected, setSelected] = useState(initial);
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -286,20 +416,25 @@ function ModelsSection({ models, selectedModels: initial, providersWithKeys, onD
     if (providersWithKeys.length === 0) {
         return (
             <div className="py-8 text-center">
-                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-warning/10">
-                    <i className="fa-solid fa-key text-xl text-warning" />
+                <div
+                    className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full"
+                    style={{ background: 'var(--theme-status-warning-subtle)' }}
+                >
+                    <i className="fa-solid fa-key text-xl" style={{ color: 'var(--theme-status-warning-fill)' }} />
                 </div>
-                <p className="font-serif text-xl font-bold leading-tight">No valid API keys</p>
-                <p className="mt-1 text-sm text-base-content/60">Add an API key in the Connection tab to select models.</p>
+                <p className="font-serif text-xl font-bold leading-tight">{t('ai.models.no_keys_heading')}</p>
+                <p className="mt-1 text-sm" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' }}>
+                    {t('ai.models.no_keys_description')}
+                </p>
             </div>
         );
     }
 
-    const categories = [
-        { key: 'analyst_model_id', label: 'Analyst Model', icon: 'fa-chart-line', color: 'text-accent', focusColor: 'focus:select-accent', description: 'For categorization & analysis', cats: ['analyst', 'general', 'fast'] },
-        { key: 'creative_model_id', label: 'Creative Model', icon: 'fa-wand-magic-sparkles', color: 'text-info', focusColor: 'focus:select-info', description: 'For content generation', cats: ['creative', 'general', 'fast'] },
-        { key: 'image_model_id', label: 'Image Model', icon: 'fa-image', color: 'text-secondary', focusColor: 'focus:select-secondary', description: 'For image generation', cats: ['image'] },
-        { key: 'video_model_id', label: 'Video Model', icon: 'fa-video', color: 'text-error', focusColor: 'focus:select-error', description: 'For video generation', cats: ['video'] },
+    const categories: ModelCategoryConfig[] = [
+        { key: 'analyst_model_id', labelKey: 'ai.models.analyst_label', descriptionKey: 'ai.models.analyst_description', icon: 'fa-chart-line', iconColor: 'var(--theme-brand-accent-500)', cats: ['analyst', 'general', 'fast'] },
+        { key: 'creative_model_id', labelKey: 'ai.models.creative_label', descriptionKey: 'ai.models.creative_description', icon: 'fa-wand-magic-sparkles', iconColor: 'var(--theme-status-info-fill)', cats: ['creative', 'general', 'fast'] },
+        { key: 'image_model_id', labelKey: 'ai.models.image_label', descriptionKey: 'ai.models.image_description', icon: 'fa-image', iconColor: 'var(--theme-brand-secondary-500)', cats: ['image'] },
+        { key: 'video_model_id', labelKey: 'ai.models.video_label', descriptionKey: 'ai.models.video_description', icon: 'fa-video', iconColor: 'var(--theme-status-error-stroke)', cats: ['video'] },
     ];
 
     function handleSave() {
@@ -311,16 +446,23 @@ function ModelsSection({ models, selectedModels: initial, providersWithKeys, onD
     }
 
     function formatContext(tokens: number): string {
-        return tokens.toLocaleString() + ' tokens';
+        return `${tokens.toLocaleString()} ${t('ai.models.tokens_suffix')}`;
     }
+
+    const fadedTextStyle = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+    };
+    const infoCardStyle = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
 
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {categories.map(({ key, label, icon, color, focusColor, cats }) => {
+                {categories.map(({ key, labelKey, icon, iconColor, cats }) => {
                     const available = models.filter((m) => cats.includes(m.category));
 
-                    // Group by provider and sort provider names alphabetically
                     const grouped: Record<string, AiModel[]> = {};
                     available.forEach((m) => {
                         const g = m.provider_name ?? 'Other';
@@ -331,19 +473,17 @@ function ModelsSection({ models, selectedModels: initial, providersWithKeys, onD
                     const selectedModel = available.find((m) => m.id === selected[key]);
 
                     return (
-                        <div key={key} className="form-control">
-                            <label className="label">
-                                <span className="label-text font-semibold">
-                                    <i className={`fa-solid ${icon} mr-2 ${color}`} />
-                                    {label}
-                                </span>
-                            </label>
+                        <div key={key}>
+                            <span className="mb-1.5 block text-sm font-semibold">
+                                <i className={`fa-solid ${icon} mr-2`} style={{ color: iconColor }} />
+                                {t(labelKey)}
+                            </span>
                             <select
                                 value={selected[key] ?? ''}
                                 onChange={(e) => setSelected((prev) => ({ ...prev, [key]: e.target.value ? parseInt(e.target.value) : null }))}
-                                className={`select select-bordered w-full rounded-xl ${focusColor}`}
+                                className="alex-select h-10 w-full text-sm"
                             >
-                                <option value="">Select a model...</option>
+                                <option value="">{t('ai.models.select_placeholder')}</option>
                                 {sortedProviders.map((provName) => (
                                     <optgroup key={provName} label={provName}>
                                         {grouped[provName].map((m) => (
@@ -355,30 +495,31 @@ function ModelsSection({ models, selectedModels: initial, providersWithKeys, onD
                                 ))}
                             </select>
 
-                            {/* Model info card (matches Livewire layout) */}
                             {selectedModel && (
-                                <div className="mt-2 rounded-2xl bg-base-200/50 p-4 text-sm">
+                                <div className="mt-2 p-4 text-sm" style={infoCardStyle}>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-base-content/70">Provider:</span>
+                                        <span style={fadedTextStyle}>{t('ai.models.info_provider')}</span>
                                         <span className="font-medium">{selectedModel.provider_name}</span>
                                     </div>
                                     <div className="mt-1 flex items-center justify-between">
-                                        <span className="text-base-content/70">Pricing:</span>
+                                        <span style={fadedTextStyle}>{t('ai.models.info_pricing')}</span>
                                         <span className="font-mono text-xs">
-                                            <span className="text-success">{selectedModel.formatted_input_price}</span> in /
-                                            <span className="text-warning"> {selectedModel.formatted_output_price}</span> out
+                                            <span style={{ color: 'var(--theme-status-success-fill)' }}>{selectedModel.formatted_input_price}</span>
+                                            <span> {t('ai.models.pricing_in_suffix')} / </span>
+                                            <span style={{ color: 'var(--theme-status-warning-fill)' }}>{selectedModel.formatted_output_price}</span>
+                                            <span> {t('ai.models.pricing_out_suffix')}</span>
                                         </span>
                                     </div>
                                     {selectedModel.context_window && (
                                         <div className="mt-1 flex items-center justify-between">
-                                            <span className="text-base-content/70">Context:</span>
+                                            <span style={fadedTextStyle}>{t('ai.models.info_context')}</span>
                                             <span className="font-mono text-xs">{formatContext(selectedModel.context_window)}</span>
                                         </div>
                                     )}
-                                    <div className="mt-2 flex gap-2">
-                                        {selectedModel.supports_json_mode && <span className="badge badge-sm badge-success">JSON</span>}
-                                        {selectedModel.supports_vision && <span className="badge badge-sm badge-info">Vision</span>}
-                                        {selectedModel.is_recommended && <span className="badge badge-sm badge-warning">Recommended</span>}
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        {selectedModel.supports_json_mode && <StatusBadge variant="success">{t('ai.models.feature_json')}</StatusBadge>}
+                                        {selectedModel.supports_vision && <StatusBadge variant="info">{t('ai.models.feature_vision')}</StatusBadge>}
+                                        {selectedModel.is_recommended && <StatusBadge variant="warning">{t('ai.models.feature_recommended')}</StatusBadge>}
                                     </div>
                                 </div>
                             )}
@@ -388,10 +529,15 @@ function ModelsSection({ models, selectedModels: initial, providersWithKeys, onD
             </div>
 
             <div className="flex items-center justify-end gap-3">
-                {success && <span className="text-sm text-success"><i className="fa-solid fa-circle-check mr-1" />Saved</span>}
-                <button type="button" onClick={handleSave} className="btn btn-primary rounded-xl" disabled={saving}>
-                    {saving ? <><span className="loading loading-spinner loading-sm" /> Saving...</> : 'Save Model Settings'}
-                </button>
+                {success && (
+                    <span className="text-sm" style={{ color: 'var(--theme-status-success-fill)' }}>
+                        <i className="fa-solid fa-circle-check mr-1" />
+                        {t('ai.models.saved_indicator')}
+                    </span>
+                )}
+                <Button variant="primary" onClick={handleSave} loading={saving}>
+                    {saving ? t('common.saving') : t('ai.models.save_button')}
+                </Button>
             </div>
         </div>
     );
@@ -402,28 +548,42 @@ function ModelsSection({ models, selectedModels: initial, providersWithKeys, onD
    ══════════════════════════════════════════════════════════ */
 
 function UsageSection({ usage }: { usage: { requests: number; tokens: number; cost: number } }) {
+    const t = useT();
     const stats = [
-        { label: 'Tokens', value: usage.tokens >= 1000 ? `${(usage.tokens / 1000).toFixed(1)}k` : usage.tokens.toString(), icon: 'fa-coins', color: 'text-primary' },
-        { label: 'Est. Cost', value: `$${usage.cost.toFixed(2)}`, icon: 'fa-dollar-sign', color: 'text-success' },
-        { label: 'Requests', value: usage.requests.toString(), icon: 'fa-arrow-right-arrow-left', color: 'text-secondary' },
+        { labelKey: 'ai.usage.tokens_label', value: usage.tokens >= 1000 ? `${(usage.tokens / 1000).toFixed(1)}k` : usage.tokens.toString(), icon: 'fa-coins', color: 'var(--theme-brand-primary-500)' },
+        { labelKey: 'ai.usage.cost_label', value: `$${usage.cost.toFixed(2)}`, icon: 'fa-dollar-sign', color: 'var(--theme-status-success-fill)' },
+        { labelKey: 'ai.usage.requests_label', value: usage.requests.toString(), icon: 'fa-arrow-right-arrow-left', color: 'var(--theme-brand-secondary-500)' },
     ];
+
+    const cardStyle = {
+        background: 'var(--theme-base-page)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const fadedTextStyle = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+    };
 
     return (
         <div className="space-y-6">
-            <p className="text-sm text-base-content/60">This month's AI usage across all projects.</p>
+            <p className="text-sm" style={fadedTextStyle}>{t('ai.usage.heading')}</p>
 
             <div className="grid grid-cols-3 gap-3">
                 {stats.map((stat) => (
-                    <div key={stat.label} className="rounded-2xl border border-base-content/10 bg-base-100 p-5 text-center">
-                        <i className={`fa-solid ${stat.icon} ${stat.color} text-lg`} />
+                    <div key={stat.labelKey} className="p-5 text-center" style={cardStyle}>
+                        <i className={`fa-solid ${stat.icon} text-lg`} style={{ color: stat.color }} />
                         <p className="mt-2 font-serif text-3xl font-bold leading-tight tracking-tight">{stat.value}</p>
-                        <p className="text-[11px] font-semibold uppercase tracking-[.25em] text-base-content/60">{stat.label}</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[.25em]" style={fadedTextStyle}>
+                            {t(stat.labelKey)}
+                        </p>
                     </div>
                 ))}
             </div>
 
             {usage.requests === 0 && (
-                <p className="text-center text-sm text-base-content/40">No AI usage this month yet.</p>
+                <p className="text-center text-sm" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}>
+                    {t('ai.usage.empty_state')}
+                </p>
             )}
         </div>
     );
@@ -437,6 +597,7 @@ function PreferencesSection({ preferences, onDataChanged }: {
     preferences: { ai_suggestions: boolean; ai_auto_categorize: boolean; ai_response_length: string };
     onDataChanged: () => void;
 }) {
+    const t = useT();
     const [responseLength, setResponseLength] = useState(preferences.ai_response_length);
     const [suggestions, setSuggestions] = useState(preferences.ai_suggestions);
     const [autoCategorize, setAutoCategorize] = useState(preferences.ai_auto_categorize);
@@ -456,23 +617,41 @@ function PreferencesSection({ preferences, onDataChanged }: {
 
     return (
         <div className="space-y-6">
-            <div className="form-control">
-                <label className="label"><span className="label-text font-semibold">Response Length</span></label>
-                <select value={responseLength} onChange={(e) => setResponseLength(e.target.value)} className="select select-bordered w-full rounded-xl focus:select-primary">
-                    <option value="concise">Concise</option>
-                    <option value="balanced">Balanced</option>
-                    <option value="detailed">Detailed</option>
-                </select>
-            </div>
+            <Select
+                size="md"
+                label={t('ai.preferences.response_length_label')}
+                value={responseLength}
+                onChange={(e) => setResponseLength(e.target.value)}
+                options={[
+                    { value: 'concise', label: t('ai.preferences.response_length_concise') },
+                    { value: 'balanced', label: t('ai.preferences.response_length_balanced') },
+                    { value: 'detailed', label: t('ai.preferences.response_length_detailed') },
+                ]}
+            />
 
-            <Toggle label="AI Suggestions" description="Get AI-powered suggestions while writing" checked={suggestions} onChange={setSuggestions} />
-            <Toggle label="Auto-Categorize" description="Automatically categorize new entries using AI" checked={autoCategorize} onChange={setAutoCategorize} />
+            <Toggle
+                label={t('ai.preferences.suggestions_label')}
+                description={t('ai.preferences.suggestions_description')}
+                checked={suggestions}
+                onChange={setSuggestions}
+            />
+            <Toggle
+                label={t('ai.preferences.auto_categorize_label')}
+                description={t('ai.preferences.auto_categorize_description')}
+                checked={autoCategorize}
+                onChange={setAutoCategorize}
+            />
 
             <div className="flex items-center justify-end gap-3 pt-4">
-                {success && <span className="text-sm text-success"><i className="fa-solid fa-circle-check mr-1" />Saved</span>}
-                <button type="button" onClick={handleSave} className="btn btn-primary rounded-xl" disabled={saving}>
-                    {saving ? <><span className="loading loading-spinner loading-sm" /> Saving...</> : 'Save Preferences'}
-                </button>
+                {success && (
+                    <span className="text-sm" style={{ color: 'var(--theme-status-success-fill)' }}>
+                        <i className="fa-solid fa-circle-check mr-1" />
+                        {t('ai.preferences.saved_indicator')}
+                    </span>
+                )}
+                <Button variant="primary" onClick={handleSave} loading={saving}>
+                    {saving ? t('common.saving') : t('ai.preferences.save_button')}
+                </Button>
             </div>
         </div>
     );
