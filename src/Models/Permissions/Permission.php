@@ -4,70 +4,58 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Models\Permissions;
 
-use App\Models\User;
-use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Permission as SpatiePermission;
-use Spatie\Permission\Models\Role;
 
 /**
+ * Permission wrapper — extends Spatie's Permission with the admin-
+ * grid + registry metadata the framework needs.
+ *
+ * Stage 7a additions:
+ *   - `display_name`  Human-readable label ("View Users").
+ *   - `package_slug`  Which registered package brought this permission
+ *                     into existence ("app", "saas", "craft", …).
+ *
+ * Stage 7a relies on the existing `description`, `category_id`, and
+ * `sort_order` columns from the earlier
+ * `0001_01_01_000110_create_permission_tables` migration.
+ *
+ * `display_name` falls back to a Title-cased `name` slug via the
+ * accessor so consumers that haven't filled it in still get a
+ * readable label.
+ *
  * @property int $id
  * @property string $name
- * @property string|null $display_name
- * @property string|null $group
- * @property string|null $description
- * @property int|null $sort
  * @property string $guard_name
- * @property array|null $style
- * @property string|null $icon
- * @property array|null $icon_style
+ * @property string|null $display_name
+ * @property string|null $package_slug
+ * @property string|null $description
+ * @property int|null $category_id
+ * @property int $sort_order
  * @property-read RolePermissionCategory|null $category
+ * @property-read RegisteredPackage|null $package
  *
  * @method static Permission create(array $attributes = [])
  * @method static Permission firstOrCreate(array $attributes, array $values = [])
+ * @method static Permission updateOrCreate(array $attributes, array $values = [])
  * @method static Builder<Permission> where($column, $operator = null, $value = null, $boolean = 'and')
  * @method static Builder<Permission> query()
- * @method static Collection pluck(string|Expression $column, string|null $key = null)
- *
- * @property int|null $category_id
- * @property int $sort_order
- * @property CarbonImmutable|null $created_at
- * @property CarbonImmutable|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SpatiePermission> $permissions
- * @property-read int|null $permissions_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Role> $roles
- * @property-read int|null $roles_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, User> $users
- * @property-read int|null $users_count
- *
- * @method static Builder<static>|Permission newModelQuery()
- * @method static Builder<static>|Permission newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Permission permission($permissions, $without = false)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Permission role($roles, $guard = null, $without = false)
- * @method static Builder<static>|Permission whereCategoryId($value)
- * @method static Builder<static>|Permission whereCreatedAt($value)
- * @method static Builder<static>|Permission whereDescription($value)
- * @method static Builder<static>|Permission whereGuardName($value)
- * @method static Builder<static>|Permission whereId($value)
- * @method static Builder<static>|Permission whereName($value)
- * @method static Builder<static>|Permission whereSortOrder($value)
- * @method static Builder<static>|Permission whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Permission withoutPermission($permissions)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Permission withoutRole($roles, $guard = null)
- *
- * @mixin \Eloquent
  */
 class Permission extends SpatiePermission
 {
     protected $fillable = [
         'name',
         'guard_name',
+        'display_name',
+        'package_slug',
         'category_id',
         'description',
         'sort_order',
+    ];
+
+    protected $casts = [
+        'sort_order' => 'integer',
     ];
 
     public function getRouteKeyName(): string
@@ -78,5 +66,20 @@ class Permission extends SpatiePermission
     public function category(): BelongsTo
     {
         return $this->belongsTo(RolePermissionCategory::class, 'category_id');
+    }
+
+    public function package(): BelongsTo
+    {
+        return $this->belongsTo(RegisteredPackage::class, 'package_slug', 'slug');
+    }
+
+    /**
+     * Display label, falling back to a Title-cased `name` slug when no
+     * explicit `display_name` is set. `'app-users-view' → 'App Users View'`.
+     */
+    public function getDisplayLabelAttribute(): string
+    {
+        return $this->display_name
+            ?? ucwords(str_replace(['-', '_'], ' ', (string) $this->name));
     }
 }
