@@ -3,6 +3,11 @@ import { useForm, router } from '@inertiajs/react';
 import gsap from 'gsap';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import RichTextEditor from '@alexandria/components/editor/RichTextEditor';
+import Input from '@alexandria/components/form/Input';
+import Select from '@alexandria/components/form/Select';
+import Button from '@alexandria/components/ui/Button';
+import SectionHeader from '../components/SectionHeader';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 
 interface ProfileData {
     display_name: string | null;
@@ -43,20 +48,14 @@ interface ProfileSectionProps {
     onPreviewChange?: (preview: { display_name: string | null; pronouns: string[]; tagline: string | null; location: string | null; website: string | null }) => void;
 }
 
-const MONTHS: Record<string, string> = {
-    '': 'Month',
-    '1': 'January', '2': 'February', '3': 'March', '4': 'April',
-    '5': 'May', '6': 'June', '7': 'July', '8': 'August',
-    '9': 'September', '10': 'October', '11': 'November', '12': 'December',
-};
-
-const SECTION_META: Record<string, { icon: string; title: string; subtitle: string; fromColor: string; toColor: string }> = {
-    identity: { icon: 'fa-user-circle', title: 'Identity', subtitle: 'How others see and identify you', fromColor: 'from-primary/10', toColor: 'to-secondary/5' },
-    about: { icon: 'fa-feather', title: 'About', subtitle: 'Tell the world about yourself', fromColor: 'from-secondary/10', toColor: 'to-accent/5' },
-    details: { icon: 'fa-circle-info', title: 'Details', subtitle: 'Personal details and preferences', fromColor: 'from-accent/10', toColor: 'to-primary/5' },
+const SECTION_META: Record<string, { icon: string; titleKey: string; subtitleKey: string }> = {
+    identity: { icon: 'fa-user-circle', titleKey: 'profile.identity.header_title', subtitleKey: 'profile.identity.header_subtitle' },
+    about: { icon: 'fa-feather', titleKey: 'profile.about.header_title', subtitleKey: 'profile.about.header_subtitle' },
+    details: { icon: 'fa-circle-info', titleKey: 'profile.details.header_title', subtitleKey: 'profile.details.header_subtitle' },
 };
 
 export default function ProfileSection({ profile, usernameStatus, options, activeSection = 'identity', onPreviewChange }: ProfileSectionProps) {
+    const t = useT();
     const [showUsernameModal, setShowUsernameModal] = useState(false);
     const locationPlaceholder = useRotatingPlaceholder(LOCATION_HINTS, 2200);
     const form = useForm({
@@ -75,7 +74,6 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
         dob_visibility: profile.dob_visibility,
     });
 
-    // Push form changes to the profile card preview
     useEffect(() => {
         onPreviewChange?.({
             display_name: form.data.display_name || null,
@@ -102,258 +100,55 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
 
     const meta = SECTION_META[activeSection] ?? SECTION_META.identity;
 
+    const cardStyle = {
+        background: 'var(--theme-base-surface)',
+        borderColor: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const dividerStyle = {
+        borderColor: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    };
+
     return (
         <form onSubmit={handleSubmit}>
-            <div className="overflow-hidden rounded-3xl border border-base-content/10 bg-base-200 shadow-xl">
-                {/* Section Header */}
-                <div className={`relative overflow-hidden px-6 py-6 bg-gradient-to-br ${meta.fromColor} via-transparent ${meta.toColor}`}>
-                    <div className="absolute right-0 top-0 h-32 w-32 -translate-y-1/2 translate-x-1/2 rounded-full bg-primary/5 blur-2xl" />
-                    <div className="relative flex items-start gap-4">
-                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/20">
-                            <i className={`fa-solid ${meta.icon} text-xl text-primary`} />
-                        </div>
-                        <div>
-                            <h3 className="font-serif text-2xl font-bold leading-tight">{meta.title}</h3>
-                            <p className="mt-0.5 text-sm text-base-content/60">{meta.subtitle}</p>
-                        </div>
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-                </div>
+            <div className="overflow-hidden border shadow-xl" style={cardStyle}>
+                <SectionHeader icon={meta.icon} title={t(meta.titleKey)} subtitle={t(meta.subtitleKey)} />
 
-                {/* Section Content */}
                 <div className="space-y-6 p-6">
                     {activeSection === 'identity' && (
-                        <>
-                            {/* Username */}
-                            <FieldRow label="Username" hint="@mentions & URL">
-                                <div className="flex items-stretch gap-2">
-                                    <div className="flex h-12 flex-1 items-center rounded-2xl bg-base-300/50 px-5">
-                                        <span className="mr-1 text-base-content/40">@</span>
-                                        <span className="truncate font-mono font-medium">{profile.username}</span>
-                                    </div>
-                                    {usernameStatus?.can_change ? (
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowUsernameModal(true)}
-                                            className="btn btn-ghost h-12 min-h-12 rounded-2xl bg-primary/10 hover:bg-primary/20 text-primary"
-                                        >
-                                            <i className="fa-solid fa-pen text-xs" />
-                                            Change
-                                        </button>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowUsernameModal(true)}
-                                            className="btn btn-ghost h-12 min-h-12 rounded-2xl text-base-content/50"
-                                        >
-                                            <i className="fa-solid fa-font text-xs" />
-                                            Edit Case
-                                        </button>
-                                    )}
-                                </div>
-                                {usernameStatus && !usernameStatus.can_change && usernameStatus.next_change_date && (
-                                    <div className="mt-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning">
-                                        <i className="fa-solid fa-clock mr-1" />
-                                        Full changes available {usernameStatus.next_change_date} ({usernameStatus.next_change_diff})
-                                        {usernameStatus.can_revert && usernameStatus.revertable_username && (
-                                            <span className="block mt-1 text-base-content/60">
-                                                You can revert to <strong>@{usernameStatus.revertable_username}</strong> or edit casing.
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-                            </FieldRow>
-
-                            {/* Display Name */}
-                            <FieldRow label="Display Name" hint="How you want to be called">
-                                <input
-                                    type="text"
-                                    value={form.data.display_name}
-                                    onChange={(e) => form.setData('display_name', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
-                                    placeholder="How you want to be called"
-                                    maxLength={255}
-                                />
-                                {form.errors.display_name && <p className="mt-1 text-sm text-error">{form.errors.display_name}</p>}
-                            </FieldRow>
-
-                            {/* Pronouns */}
-                            <FieldRow label="Pronouns" hint="Select one or more">
-                                <div className="flex flex-wrap gap-2">
-                                    {Object.entries(options.pronouns).map(([value, label]) => (
-                                        <label key={value} className="cursor-pointer">
-                                            <input type="checkbox" className="peer hidden" checked={form.data.pronouns.includes(value)} onChange={() => togglePronoun(value)} />
-                                            <span className="inline-block rounded-full border-2 border-base-300 px-4 py-2 text-sm font-medium transition-all hover:border-base-content/30 peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary">
-                                                {label}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                                <input
-                                    type="text"
-                                    value={form.data.custom_pronouns}
-                                    onChange={(e) => form.setData('custom_pronouns', e.target.value)}
-                                    className="input input-bordered mt-2 h-10 w-full rounded-2xl pl-5 text-sm focus:input-primary"
-                                    placeholder="Custom pronouns"
-                                    maxLength={50}
-                                />
-                            </FieldRow>
-
-                            {/* Pronoun Reordering */}
-                            <AnimatedCollapse visible={form.data.pronouns.length > 1}>
-                                <PronounReorder
-                                    pronouns={form.data.pronouns}
-                                    customPronouns={form.data.custom_pronouns}
-                                    labels={options.pronouns}
-                                    onReorder={(reordered) => form.setData('pronouns', reordered)}
-                                />
-                            </AnimatedCollapse>
-                        </>
+                        <IdentityFields
+                            t={t}
+                            profile={profile}
+                            usernameStatus={usernameStatus}
+                            options={options}
+                            form={form}
+                            togglePronoun={togglePronoun}
+                            onOpenUsernameModal={() => setShowUsernameModal(true)}
+                        />
                     )}
 
                     {activeSection === 'about' && (
-                        <>
-                            {/* Tagline */}
-                            <div>
-                                <label className="label"><span className="label-text font-semibold">Tagline</span></label>
-                                <input
-                                    type="text"
-                                    value={form.data.tagline}
-                                    onChange={(e) => form.setData('tagline', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
-                                    placeholder="A short one-liner about you"
-                                    maxLength={150}
-                                />
-                                {form.errors.tagline && <p className="mt-1 text-sm text-error">{form.errors.tagline}</p>}
-                            </div>
-
-                            {/* Bio */}
-                            <div>
-                                <RichTextEditor
-                                    label="Bio"
-                                    value={form.data.bio}
-                                    onChange={(wiki) => form.setData('bio', wiki)}
-                                    placeholder="Tell others about yourself"
-                                    maxLength={1000}
-                                    tier="free"
-                                />
-                                {form.errors.bio && <p className="mt-1 text-sm text-error">{form.errors.bio}</p>}
-                            </div>
-
-                            {/* Private Bio */}
-                            <div>
-                                <RichTextEditor
-                                    label="Private Bio"
-                                    value={form.data.private_bio}
-                                    onChange={(wiki) => form.setData('private_bio', wiki)}
-                                    placeholder="Only visible based on your visibility settings"
-                                    maxLength={1000}
-                                    tier="free"
-                                />
-                                {form.errors.private_bio && <p className="mt-1 text-sm text-error">{form.errors.private_bio}</p>}
-                            </div>
-                        </>
+                        <AboutFields t={t} form={form} />
                     )}
 
                     {activeSection === 'details' && (
-                        <>
-                            {/* Location */}
-                            <FieldRow label="Location" hint="Anywhere — real or imagined">
-                                <input
-                                    type="text"
-                                    value={form.data.location}
-                                    onChange={(e) => form.setData('location', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
-                                    placeholder={locationPlaceholder}
-                                    maxLength={100}
-                                />
-                                {form.errors.location && <p className="mt-1 text-sm text-error">{form.errors.location}</p>}
-                            </FieldRow>
-
-                            {/* Website */}
-                            <FieldRow label="Website" hint="Your personal site">
-                                <input
-                                    type="url"
-                                    value={form.data.website}
-                                    onChange={(e) => form.setData('website', e.target.value)}
-                                    className="input input-bordered h-12 w-full rounded-2xl pl-5 focus:input-primary"
-                                    placeholder="https://example.com"
-                                    maxLength={255}
-                                />
-                                {form.errors.website && <p className="mt-1 text-sm text-error">{form.errors.website}</p>}
-                            </FieldRow>
-
-                            {/* Birthday */}
-                            <FieldRow label="Birthday" hint="Date of birth">
-                                <div className="grid grid-cols-3 gap-3">
-                                    <select
-                                        value={form.data.birth_month}
-                                        onChange={(e) => form.setData('birth_month', e.target.value)}
-                                        className="select select-bordered h-12 rounded-2xl focus:select-primary"
-                                    >
-                                        {Object.entries(MONTHS).map(([val, label]) => (
-                                            <option key={val} value={val}>{label}</option>
-                                        ))}
-                                    </select>
-                                    <select
-                                        value={form.data.birth_day}
-                                        onChange={(e) => form.setData('birth_day', e.target.value)}
-                                        className="select select-bordered h-12 rounded-2xl focus:select-primary"
-                                    >
-                                        <option value="">Day</option>
-                                        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                                            <option key={d} value={d}>{d}</option>
-                                        ))}
-                                    </select>
-                                    <select
-                                        value={form.data.birth_year}
-                                        onChange={(e) => form.setData('birth_year', e.target.value)}
-                                        className="select select-bordered h-12 rounded-2xl focus:select-primary"
-                                    >
-                                        <option value="">Year</option>
-                                        {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map((y) => (
-                                            <option key={y} value={y}>{y}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                {(form.errors.birth_month || form.errors.birth_day || form.errors.birth_year) && (
-                                    <p className="mt-1 text-sm text-error">
-                                        {form.errors.birth_month || form.errors.birth_day || form.errors.birth_year}
-                                    </p>
-                                )}
-                            </FieldRow>
-
-                            {/* DOB Visibility */}
-                            <BirthdayVisibilityPicker
-                                month={form.data.birth_month}
-                                day={form.data.birth_day}
-                                year={form.data.birth_year}
-                                value={form.data.dob_visibility}
-                                onChange={(v) => form.setData('dob_visibility', v)}
-                            />
-                        </>
+                        <DetailsFields
+                            t={t}
+                            form={form}
+                            locationPlaceholder={locationPlaceholder}
+                        />
                     )}
                 </div>
 
-                {/* Save Button */}
-                <div className="flex justify-end border-t border-base-300/50 px-6 pb-6 pt-6">
-                    <button type="submit" className="btn btn-primary gap-2 rounded-xl px-8" disabled={form.processing}>
-                        {form.processing ? (
-                            <>
-                                <span className="loading loading-spinner loading-sm" />
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <i className="fa-solid fa-floppy-disk" />
-                                <span>Save Changes</span>
-                            </>
-                        )}
-                    </button>
+                <div className="flex justify-end border-t px-6 pb-6 pt-6" style={dividerStyle}>
+                    <Button type="submit" variant="primary" loading={form.processing} icon="fa-solid fa-floppy-disk" iconPosition="before">
+                        {form.processing ? t('common.saving') : t('profile.save_button')}
+                    </Button>
                 </div>
             </div>
 
             <UsernameChangeModal
+                t={t}
                 open={showUsernameModal}
                 currentUsername={profile.username}
                 usernameStatus={usernameStatus!}
@@ -367,8 +162,271 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
     );
 }
 
+/* ── Identity fields ── */
+function IdentityFields({
+    t,
+    profile,
+    usernameStatus,
+    options,
+    form,
+    togglePronoun,
+    onOpenUsernameModal,
+}: {
+    t: Translator;
+    profile: ProfileData;
+    usernameStatus?: UsernameStatus;
+    options: ProfileSectionProps['options'];
+    form: ReturnType<typeof useForm<ProfileFormData>>;
+    togglePronoun: (p: string) => void;
+    onOpenUsernameModal: () => void;
+}) {
+    const usernameRowStyle = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+        borderRadius: 'var(--theme-radius-input)',
+    };
+    const fadedTextStyle = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+    };
+    const cooldownStyle = {
+        background: 'var(--theme-status-warning-subtle)',
+        color: 'var(--theme-base-content)',
+        borderRadius: 'var(--theme-radius-card)',
+        border: '1px solid color-mix(in srgb, var(--theme-status-warning-fill) 35%, transparent)',
+    };
+
+    return (
+        <>
+            <FieldRow label={t('profile.identity.username_label')} hint={t('profile.identity.username_hint')}>
+                <div className="flex items-stretch gap-2">
+                    <div className="flex h-12 flex-1 items-center px-5" style={usernameRowStyle}>
+                        <span className="mr-1" style={fadedTextStyle}>@</span>
+                        <span className="truncate font-mono font-medium">{profile.username}</span>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        onClick={onOpenUsernameModal}
+                        icon={usernameStatus?.can_change ? 'fa-solid fa-pen text-xs' : 'fa-solid fa-font text-xs'}
+                        iconPosition="before"
+                    >
+                        {usernameStatus?.can_change
+                            ? t('profile.identity.username_change_button')
+                            : t('profile.identity.username_edit_case_button')}
+                    </Button>
+                </div>
+                {usernameStatus && !usernameStatus.can_change && usernameStatus.next_change_date && (
+                    <div className="mt-2 px-3 py-2 text-xs" style={cooldownStyle}>
+                        <i className="fa-solid fa-clock mr-1" style={{ color: 'var(--theme-status-warning-fill)' }} />
+                        {t('profile.identity.username_cooldown_message')
+                            .replace(':date', usernameStatus.next_change_date)
+                            .replace(':diff', usernameStatus.next_change_diff ?? '')}
+                        {usernameStatus.can_revert && usernameStatus.revertable_username && (
+                            <span className="mt-1 block" style={fadedTextStyle}>
+                                {t('profile.identity.username_revert_hint').replace(':username', usernameStatus.revertable_username)}
+                            </span>
+                        )}
+                    </div>
+                )}
+            </FieldRow>
+
+            <FieldRow label={t('profile.identity.display_name_label')} hint={t('profile.identity.display_name_hint')}>
+                <Input
+                    size="md"
+                    value={form.data.display_name}
+                    onChange={(e) => form.setData('display_name', e.target.value)}
+                    placeholder={t('profile.identity.display_name_placeholder')}
+                    maxLength={255}
+                    error={form.errors.display_name}
+                />
+            </FieldRow>
+
+            <FieldRow label={t('profile.identity.pronouns_label')} hint={t('profile.identity.pronouns_hint')}>
+                <div className="flex flex-wrap gap-2">
+                    {Object.entries(options.pronouns).map(([value, label]) => (
+                        <PronounChip
+                            key={value}
+                            label={label}
+                            selected={form.data.pronouns.includes(value)}
+                            onToggle={() => togglePronoun(value)}
+                        />
+                    ))}
+                </div>
+                <div className="mt-2">
+                    <Input
+                        size="sm"
+                        value={form.data.custom_pronouns}
+                        onChange={(e) => form.setData('custom_pronouns', e.target.value)}
+                        placeholder={t('profile.identity.custom_pronouns_placeholder')}
+                        maxLength={50}
+                    />
+                </div>
+            </FieldRow>
+
+            <AnimatedCollapse visible={form.data.pronouns.length > 1}>
+                <PronounReorder
+                    t={t}
+                    pronouns={form.data.pronouns}
+                    customPronouns={form.data.custom_pronouns}
+                    labels={options.pronouns}
+                    onReorder={(reordered) => form.setData('pronouns', reordered)}
+                />
+            </AnimatedCollapse>
+        </>
+    );
+}
+
+/* ── About fields ── */
+function AboutFields({ t, form }: { t: Translator; form: ReturnType<typeof useForm<ProfileFormData>> }) {
+    return (
+        <>
+            <div>
+                <Input
+                    size="md"
+                    label={t('profile.about.tagline_label')}
+                    value={form.data.tagline}
+                    onChange={(e) => form.setData('tagline', e.target.value)}
+                    placeholder={t('profile.about.tagline_placeholder')}
+                    maxLength={150}
+                    error={form.errors.tagline}
+                />
+            </div>
+
+            <div>
+                <RichTextEditor
+                    label={t('profile.about.bio_label')}
+                    value={form.data.bio}
+                    onChange={(wiki) => form.setData('bio', wiki)}
+                    placeholder={t('profile.about.bio_placeholder')}
+                    maxLength={1000}
+                    tier="free"
+                />
+                {form.errors.bio && (
+                    <p className="mt-1 text-sm" style={{ color: 'var(--theme-status-error-stroke)' }}>{form.errors.bio}</p>
+                )}
+            </div>
+
+            <div>
+                <RichTextEditor
+                    label={t('profile.about.private_bio_label')}
+                    value={form.data.private_bio}
+                    onChange={(wiki) => form.setData('private_bio', wiki)}
+                    placeholder={t('profile.about.private_bio_placeholder')}
+                    maxLength={1000}
+                    tier="free"
+                />
+                {form.errors.private_bio && (
+                    <p className="mt-1 text-sm" style={{ color: 'var(--theme-status-error-stroke)' }}>{form.errors.private_bio}</p>
+                )}
+            </div>
+        </>
+    );
+}
+
+/* ── Details fields ── */
+function DetailsFields({
+    t,
+    form,
+    locationPlaceholder,
+}: {
+    t: Translator;
+    form: ReturnType<typeof useForm<ProfileFormData>>;
+    locationPlaceholder: string;
+}) {
+    const monthOptions = Object.entries(MONTHS).slice(1).map(([value, label]) => ({ value, label }));
+    const dayOptions = Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
+    const yearOptions = Array.from({ length: 100 }, (_, i) => {
+        const y = String(new Date().getFullYear() - i);
+        return { value: y, label: y };
+    });
+    const errorBag = form.errors.birth_month || form.errors.birth_day || form.errors.birth_year;
+
+    return (
+        <>
+            <FieldRow label={t('profile.details.location_label')} hint={t('profile.details.location_hint')}>
+                <Input
+                    size="md"
+                    value={form.data.location}
+                    onChange={(e) => form.setData('location', e.target.value)}
+                    placeholder={locationPlaceholder}
+                    maxLength={100}
+                    error={form.errors.location}
+                />
+            </FieldRow>
+
+            <FieldRow label={t('profile.details.website_label')} hint={t('profile.details.website_hint')}>
+                <Input
+                    size="md"
+                    type="url"
+                    value={form.data.website}
+                    onChange={(e) => form.setData('website', e.target.value)}
+                    placeholder={t('profile.details.website_placeholder')}
+                    maxLength={255}
+                    error={form.errors.website}
+                />
+            </FieldRow>
+
+            <FieldRow label={t('profile.details.birthday_label')} hint={t('profile.details.birthday_hint')}>
+                <div className="grid grid-cols-3 gap-3">
+                    <Select
+                        size="md"
+                        value={form.data.birth_month}
+                        onChange={(e) => form.setData('birth_month', e.target.value)}
+                        options={monthOptions}
+                        placeholder={t('profile.details.birthday_month_placeholder')}
+                    />
+                    <Select
+                        size="md"
+                        value={form.data.birth_day}
+                        onChange={(e) => form.setData('birth_day', e.target.value)}
+                        options={dayOptions}
+                        placeholder={t('profile.details.birthday_day_placeholder')}
+                    />
+                    <Select
+                        size="md"
+                        value={form.data.birth_year}
+                        onChange={(e) => form.setData('birth_year', e.target.value)}
+                        options={yearOptions}
+                        placeholder={t('profile.details.birthday_year_placeholder')}
+                    />
+                </div>
+                {errorBag && (
+                    <p className="mt-1 text-sm" style={{ color: 'var(--theme-status-error-stroke)' }}>{errorBag}</p>
+                )}
+            </FieldRow>
+
+            <BirthdayVisibilityPicker
+                t={t}
+                month={form.data.birth_month}
+                day={form.data.birth_day}
+                year={form.data.birth_year}
+                value={form.data.dob_visibility}
+                onChange={(v) => form.setData('dob_visibility', v)}
+            />
+        </>
+    );
+}
+
+/* ── Pronoun chip — selectable pill button (replaces DaisyUI peer-checked
+   pattern; relies on .alex-pref-card surface tokens). ── */
+function PronounChip({ label, selected, onToggle }: { label: string; selected: boolean; onToggle: () => void }) {
+    return (
+        <button
+            type="button"
+            onClick={onToggle}
+            aria-pressed={selected}
+            className={`alex-pref-card px-4 py-2 text-sm font-medium ${selected ? 'alex-pref-card--selected' : ''}`}
+            style={{
+                color: selected ? 'var(--theme-brand-primary-500)' : 'var(--theme-base-content)',
+                borderRadius: '9999px',
+            }}
+        >
+            {label}
+        </button>
+    );
+}
+
 /* ── Username Change Modal ── */
-function UsernameChangeModal({ open, currentUsername, usernameStatus, onClose, onSuccess }: {
+function UsernameChangeModal({ t, open, currentUsername, usernameStatus, onClose, onSuccess }: {
+    t: Translator;
     open: boolean;
     currentUsername: string;
     usernameStatus: UsernameStatus;
@@ -388,10 +446,6 @@ function UsernameChangeModal({ open, currentUsername, usernameStatus, onClose, o
     const isSame = newUsername === currentUsername;
     const isValid = /^[a-zA-Z0-9_-]*$/.test(newUsername) && newUsername.length <= 30;
 
-    // typeof check guards SSR — `document` doesn't exist in Node.js
-    // when Inertia renders the page server-side. The csrfToken is
-    // only used inside fetch() handlers that fire client-side, so
-    // an empty fallback during SSR is harmless.
     const csrfToken = typeof document !== 'undefined'
         ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''
         : '';
@@ -401,7 +455,6 @@ function UsernameChangeModal({ open, currentUsername, usernameStatus, onClose, o
             setAvailability({ available: null, message: null });
             return;
         }
-
         if (!/^[a-zA-Z0-9_-]*$/.test(username) || username.length > 30) return;
 
         setChecking(true);
@@ -432,13 +485,12 @@ function UsernameChangeModal({ open, currentUsername, usernameStatus, onClose, o
             return;
         }
 
-        // Validate format
         if (!/^[a-zA-Z0-9_-]*$/.test(value)) {
-            setAvailability({ available: false, message: 'Only letters, numbers, dashes, and underscores' });
+            setAvailability({ available: false, message: t('profile.username_modal.format_error') });
             return;
         }
         if (value.length > 30) {
-            setAvailability({ available: false, message: 'Username must be 30 characters or less' });
+            setAvailability({ available: false, message: t('profile.username_modal.length_error') });
             return;
         }
 
@@ -467,7 +519,7 @@ function UsernameChangeModal({ open, currentUsername, usernameStatus, onClose, o
             })
             .catch(() => {
                 setSaving(false);
-                setError('Something went wrong. Please try again.');
+                setError(t('profile.username_modal.generic_error'));
             });
     }
 
@@ -490,162 +542,204 @@ function UsernameChangeModal({ open, currentUsername, usernameStatus, onClose, o
             })
             .catch(() => {
                 setSaving(false);
-                setError('Something went wrong. Please try again.');
+                setError(t('profile.username_modal.generic_error'));
             });
     }
 
     const canSubmit = !isSame && isValid && newUsername.length > 0 && availability.available === true && !saving;
 
-    const modalTitle = showRevert ? 'Revert Username' : (usernameStatus.can_change ? 'Change Username' : 'Edit Username Casing');
+    const modalTitle = showRevert
+        ? t('profile.username_modal.revert_title')
+        : (usernameStatus.can_change ? t('profile.username_modal.change_title') : t('profile.username_modal.case_title'));
+
+    const subtleSurface = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const errorSurface = {
+        background: 'var(--theme-status-error-subtle)',
+        color: 'var(--theme-status-error-stroke)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const infoSurface = {
+        background: 'var(--theme-status-info-subtle)',
+        color: 'var(--theme-base-content)',
+        borderRadius: 'var(--theme-radius-card)',
+        border: '1px solid color-mix(in srgb, var(--theme-status-info-fill) 35%, transparent)',
+    };
+    const warnSurface = {
+        background: 'var(--theme-status-warning-subtle)',
+        color: 'var(--theme-base-content)',
+        borderRadius: 'var(--theme-radius-card)',
+        border: '1px solid color-mix(in srgb, var(--theme-status-warning-fill) 35%, transparent)',
+    };
+    const fadedTextStyle = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+    };
 
     return (
         <Modal open={open} onClose={onClose}>
             <ModalHeader title={modalTitle} onClose={onClose} />
 
-                {showRevert && usernameStatus.can_revert && usernameStatus.revertable_username ? (
-                    /* ── Revert View ── */
-                    <div className="p-6 space-y-4">
-                        <div className="flex items-center justify-center gap-4">
-                            <div className="rounded-xl bg-base-300 px-4 py-2 text-center">
-                                <p className="text-xs text-base-content/50">Current</p>
-                                <p className="font-mono font-bold">@{currentUsername}</p>
-                            </div>
-                            <i className="fa-solid fa-arrow-right text-base-content/30" />
-                            <div className="rounded-xl bg-primary/10 px-4 py-2 text-center">
-                                <p className="text-xs text-primary/70">Revert to</p>
-                                <p className="font-mono font-bold text-primary">@{usernameStatus.revertable_username}</p>
-                            </div>
+            {showRevert && usernameStatus.can_revert && usernameStatus.revertable_username ? (
+                <div className="space-y-4 p-6">
+                    <div className="flex items-center justify-center gap-4">
+                        <div className="px-4 py-2 text-center" style={subtleSurface}>
+                            <p className="text-xs" style={fadedTextStyle}>{t('profile.username_modal.revert_current_label')}</p>
+                            <p className="font-mono font-bold">@{currentUsername}</p>
                         </div>
+                        <i className="fa-solid fa-arrow-right" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' }} />
+                        <div
+                            className="px-4 py-2 text-center"
+                            style={{
+                                background: 'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)',
+                                borderRadius: 'var(--theme-radius-card)',
+                            }}
+                        >
+                            <p className="text-xs" style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-500) 70%, transparent)' }}>
+                                {t('profile.username_modal.revert_target_label')}
+                            </p>
+                            <p className="font-mono font-bold" style={{ color: 'var(--theme-brand-primary-500)' }}>
+                                @{usernameStatus.revertable_username}
+                            </p>
+                        </div>
+                    </div>
 
-                        <div className="rounded-xl bg-warning/10 p-4 text-sm space-y-1">
-                            <p className="font-medium text-warning"><i className="fa-solid fa-triangle-exclamation mr-1" /> Important</p>
-                            <ul className="list-disc list-inside text-base-content/70 space-y-0.5">
-                                <li>The 6-month cooldown remains active</li>
-                                <li>@{currentUsername} becomes immediately available</li>
-                                <li>You cannot reserve usernames by reverting</li>
+                    <div className="space-y-1 p-4 text-sm" style={warnSurface}>
+                        <p className="font-medium" style={{ color: 'var(--theme-status-warning-fill)' }}>
+                            <i className="fa-solid fa-triangle-exclamation mr-1" /> {t('profile.username_modal.revert_important_header')}
+                        </p>
+                        <ul className="list-inside list-disc space-y-0.5" style={fadedTextStyle}>
+                            <li>{t('profile.username_modal.revert_cooldown_remains')}</li>
+                            <li>{t('profile.username_modal.revert_old_available').replace(':username', currentUsername)}</li>
+                            <li>{t('profile.username_modal.revert_no_reservation')}</li>
+                        </ul>
+                    </div>
+
+                    {error && (
+                        <div className="p-3 text-sm" style={errorSurface}>
+                            <i className="fa-solid fa-circle-xmark mr-1" /> {error}
+                        </div>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="ghost" onClick={() => setShowRevert(false)}>{t('common.back')}</Button>
+                        <Button variant="primary" onClick={handleRevert} loading={saving}>
+                            {saving ? t('profile.username_modal.reverting') : t('profile.username_modal.revert_button')}
+                        </Button>
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-4 p-6">
+                    {usernameStatus.can_change ? (
+                        <div className="space-y-1 p-4 text-sm" style={infoSurface}>
+                            <p className="font-medium" style={{ color: 'var(--theme-status-info-fill)' }}>
+                                <i className="fa-solid fa-circle-info mr-1" /> {t('profile.username_modal.before_change_header')}
+                            </p>
+                            <ul className="list-inside list-disc space-y-0.5" style={fadedTextStyle}>
+                                <li>{t('profile.username_modal.cooldown_after')}</li>
+                                <li>{t('profile.username_modal.revert_window')}</li>
+                                <li>{t('profile.username_modal.old_becomes_available')}</li>
                             </ul>
                         </div>
+                    ) : (
+                        <div className="p-4 text-sm" style={subtleSurface}>
+                            <p style={fadedTextStyle}>
+                                <i className="fa-solid fa-info-circle mr-1" style={{ color: 'var(--theme-status-info-fill)' }} />
+                                {t('profile.username_modal.case_only_explanation')}
+                            </p>
+                        </div>
+                    )}
 
-                        {error && (
-                            <div className="rounded-xl bg-error/10 p-3 text-sm text-error">
-                                <i className="fa-solid fa-circle-xmark mr-1" /> {error}
-                            </div>
-                        )}
-
-                        <div className="flex justify-end gap-2 pt-2">
-                            <button onClick={() => setShowRevert(false)} className="btn btn-ghost rounded-xl">Back</button>
-                            <button onClick={handleRevert} className="btn btn-warning rounded-xl" disabled={saving}>
-                                {saving ? <><span className="loading loading-spinner loading-sm" /> Reverting...</> : 'Revert Username'}
-                            </button>
+                    <div>
+                        <label className="mb-1.5 block text-xs" style={fadedTextStyle}>
+                            {t('profile.username_modal.current_label')}
+                        </label>
+                        <div className="flex items-center px-4 py-3" style={subtleSurface}>
+                            <span className="mr-1" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}>@</span>
+                            <span className="font-mono font-medium">{currentUsername}</span>
                         </div>
                     </div>
-                ) : (
-                    /* ── Change / Case Edit View ── */
-                    <div className="p-6 space-y-4">
-                        {/* Info box */}
-                        {usernameStatus.can_change ? (
-                            <div className="rounded-xl bg-info/10 p-4 text-sm space-y-1">
-                                <p className="font-medium text-info"><i className="fa-solid fa-circle-info mr-1" /> Before you change</p>
-                                <ul className="list-disc list-inside text-base-content/70 space-y-0.5">
-                                    <li>6-month cooldown after changing</li>
-                                    <li>14 days to revert if needed</li>
-                                    <li>Old username becomes available to others</li>
-                                </ul>
-                            </div>
-                        ) : (
-                            <div className="rounded-xl bg-base-300/50 p-4 text-sm">
-                                <p className="text-base-content/70">
-                                    <i className="fa-solid fa-info-circle mr-1 text-info" />
-                                    Casing changes are always allowed — only the capitalization is updated.
-                                </p>
+
+                    <div>
+                        <label className="mb-1.5 block text-xs" style={fadedTextStyle}>
+                            {t('profile.username_modal.new_label')}
+                        </label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 z-10 -translate-y-1/2" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}>@</span>
+                            <Input
+                                size="md"
+                                value={newUsername}
+                                onChange={(e) => handleInputChange(e.target.value)}
+                                placeholder={currentUsername}
+                                maxLength={30}
+                                autoFocus
+                                className="pl-8 font-mono"
+                            />
+                            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                                {checking ? (
+                                    <i className="fa-solid fa-arrows-rotate animate-spin text-xs" />
+                                ) : availability.available === true ? (
+                                    <i className="fa-solid fa-circle-check" style={{ color: 'var(--theme-status-success-fill)' }} />
+                                ) : availability.available === false ? (
+                                    <i className="fa-solid fa-circle-xmark" style={{ color: 'var(--theme-status-error-stroke)' }} />
+                                ) : null}
+                            </span>
+                        </div>
+                        {availability.message && (
+                            <div
+                                ref={feedbackRef}
+                                className="mt-1.5 text-xs"
+                                style={{
+                                    color: availability.available
+                                        ? 'var(--theme-status-success-fill)'
+                                        : 'var(--theme-status-error-stroke)',
+                                }}
+                            >
+                                {availability.message}
                             </div>
                         )}
+                        <p className="mt-3 text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}>
+                            {t('profile.username_modal.charset_hint')}
+                        </p>
+                    </div>
 
-                        {/* Current username */}
-                        <div>
-                            <label className="label"><span className="label-text text-base-content/50">Current username</span></label>
-                            <div className="flex items-center rounded-2xl bg-base-300/50 px-4 py-3">
-                                <span className="mr-1 text-base-content/40">@</span>
-                                <span className="font-mono font-medium">{currentUsername}</span>
-                            </div>
+                    {error && (
+                        <div className="p-3 text-sm" style={errorSurface}>
+                            <i className="fa-solid fa-circle-xmark mr-1" /> {error}
                         </div>
+                    )}
 
-                        {/* New username input */}
+                    <div className="flex items-center justify-between pt-2">
                         <div>
-                            <label className="label"><span className="label-text">New username</span></label>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40">@</span>
-                                <input
-                                    type="text"
-                                    value={newUsername}
-                                    onChange={(e) => handleInputChange(e.target.value)}
-                                    className={`input input-bordered h-12 w-full rounded-2xl pl-8 font-mono focus:input-primary ${
-                                        availability.available === false ? 'input-error' : availability.available === true ? 'input-success' : ''
-                                    }`}
-                                    placeholder={currentUsername}
-                                    maxLength={30}
-                                    autoFocus
-                                />
-                                {/* Status icon */}
-                                <span className="absolute right-4 top-1/2 -translate-y-1/2">
-                                    {checking ? (
-                                        <span className="loading loading-spinner loading-xs" />
-                                    ) : availability.available === true ? (
-                                        <i className="fa-solid fa-circle-check text-success" />
-                                    ) : availability.available === false ? (
-                                        <i className="fa-solid fa-circle-xmark text-error" />
-                                    ) : null}
-                                </span>
-                            </div>
-                            {/* Feedback message */}
-                            {availability.message && (
-                                <div ref={feedbackRef} className={`mt-1.5 text-xs ${availability.available ? 'text-success' : 'text-error'}`}>
-                                    {availability.message}
-                                </div>
-                            )}
-                            <p className="mt-3 text-xs text-base-content/40">Letters, numbers, dashes, and underscores only</p>
-                        </div>
-
-                        {error && (
-                            <div className="rounded-xl bg-error/10 p-3 text-sm text-error">
-                                <i className="fa-solid fa-circle-xmark mr-1" /> {error}
-                            </div>
-                        )}
-
-                        {/* Actions */}
-                        <div className="flex items-center justify-between pt-2">
-                            <div>
-                                {usernameStatus.can_revert && usernameStatus.revertable_username && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowRevert(true)}
-                                        className="btn btn-ghost btn-sm rounded-xl text-warning"
-                                    >
-                                        <i className="fa-solid fa-rotate-left text-xs" />
-                                        Revert to @{usernameStatus.revertable_username}
-                                    </button>
-                                )}
-                            </div>
-                            <div className="flex gap-2">
-                                <button type="button" onClick={onClose} className="btn btn-ghost rounded-xl">Cancel</button>
-                                <button
-                                    type="button"
-                                    onClick={handleSave}
-                                    className="btn btn-primary rounded-xl"
-                                    disabled={!canSubmit}
+                            {usernameStatus.can_revert && usernameStatus.revertable_username && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowRevert(true)}
+                                    icon="fa-solid fa-rotate-left text-xs"
+                                    iconPosition="before"
                                 >
-                                    {saving ? (
-                                        <><span className="loading loading-spinner loading-sm" /> Saving...</>
-                                    ) : isCaseOnly ? (
-                                        'Update Casing'
-                                    ) : (
-                                        'Change Username'
-                                    )}
-                                </button>
-                            </div>
+                                    {t('profile.username_modal.revert_to_button').replace(':username', usernameStatus.revertable_username)}
+                                </Button>
+                            )}
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+                            <Button
+                                variant="primary"
+                                onClick={handleSave}
+                                loading={saving}
+                                disabled={!canSubmit}
+                            >
+                                {isCaseOnly
+                                    ? t('profile.username_modal.update_casing_button')
+                                    : t('profile.username_modal.change_button')}
+                            </Button>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
         </Modal>
     );
 }
@@ -665,7 +759,6 @@ function AnimatedCollapse({ visible, children }: { visible: boolean; children: R
             setShouldRender(true);
         }
 
-        // Skip animation on initial mount
         if (!mounted.current) {
             mounted.current = true;
             if (outer && visible) {
@@ -678,7 +771,6 @@ function AnimatedCollapse({ visible, children }: { visible: boolean; children: R
         if (!outer || !inner) return;
 
         if (visible) {
-            // Expand then fade in
             const contentHeight = inner.scrollHeight;
             gsap.timeline()
                 .set(outer, { height: 0, overflow: 'hidden' })
@@ -687,7 +779,6 @@ function AnimatedCollapse({ visible, children }: { visible: boolean; children: R
                 .to(inner, { opacity: 1, duration: 0.2, ease: 'power1.out' })
                 .set(outer, { height: 'auto', overflow: 'visible' });
         } else {
-            // Fade out then contract
             gsap.timeline({
                 onComplete: () => setShouldRender(false),
             })
@@ -707,7 +798,8 @@ function AnimatedCollapse({ visible, children }: { visible: boolean; children: R
 }
 
 /* ── Pronoun Drag-to-Reorder ── */
-function PronounReorder({ pronouns, customPronouns, labels, onReorder }: {
+function PronounReorder({ t, pronouns, customPronouns, labels, onReorder }: {
+    t: Translator;
     pronouns: string[];
     customPronouns: string;
     labels: Record<string, string>;
@@ -732,56 +824,78 @@ function PronounReorder({ pronouns, customPronouns, labels, onReorder }: {
         return labels[pronoun] ?? pronoun;
     }
 
+    const surfaceStyle = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+    };
+    const chipStyle = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    };
+
     return (
-        <div className="rounded-2xl bg-base-300/30 p-4">
-            <p className="mb-3 text-xs text-base-content/50">
+        <div className="p-4" style={surfaceStyle}>
+            <p className="mb-3 text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}>
                 <i className="fa-solid fa-grip-vertical mr-1" />
-                Drag to reorder your pronouns:
+                {t('profile.identity.pronoun_reorder_hint')}
             </p>
             <div className="flex flex-wrap gap-2">
-                {pronouns.map((pronoun, index) => (
-                    <div
-                        key={pronoun}
-                        draggable
-                        onDragStart={(e) => {
-                            setDraggedIndex(index);
-                            e.currentTarget.classList.add('opacity-50');
-                        }}
-                        onDragEnd={(e) => {
-                            e.currentTarget.classList.remove('opacity-50');
-                            setDraggedIndex(null);
-                            setDragOverIndex(null);
-                        }}
-                        onDragOver={(e) => {
-                            e.preventDefault();
-                            setDragOverIndex(index);
-                        }}
-                        onDragLeave={() => setDragOverIndex(null)}
-                        onDrop={(e) => {
-                            e.preventDefault();
-                            handleDrop(index);
-                        }}
-                        className={`inline-flex cursor-grab select-none items-center gap-2 rounded-full border border-base-300 bg-base-300 px-3 py-1.5 text-sm transition-all hover:border-primary/50 hover:shadow-sm active:cursor-grabbing ${
-                            dragOverIndex === index && draggedIndex !== index ? 'ring-2 ring-primary ring-offset-2' : ''
-                        }`}
-                    >
-                        <i className="fa-solid fa-grip-vertical text-[10px] text-base-content/30" />
-                        <span className="font-medium">{getLabel(pronoun)}</span>
-                    </div>
-                ))}
+                {pronouns.map((pronoun, index) => {
+                    const isDragOver = dragOverIndex === index && draggedIndex !== index;
+                    return (
+                        <div
+                            key={pronoun}
+                            draggable
+                            onDragStart={(e) => {
+                                setDraggedIndex(index);
+                                e.currentTarget.classList.add('opacity-50');
+                            }}
+                            onDragEnd={(e) => {
+                                e.currentTarget.classList.remove('opacity-50');
+                                setDraggedIndex(null);
+                                setDragOverIndex(null);
+                            }}
+                            onDragOver={(e) => {
+                                e.preventDefault();
+                                setDragOverIndex(index);
+                            }}
+                            onDragLeave={() => setDragOverIndex(null)}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                handleDrop(index);
+                            }}
+                            className="inline-flex cursor-grab select-none items-center gap-2 px-3 py-1.5 text-sm transition-shadow hover:shadow-sm active:cursor-grabbing"
+                            style={{
+                                ...chipStyle,
+                                borderRadius: '9999px',
+                                outline: isDragOver ? `2px solid var(--theme-brand-primary-500)` : 'none',
+                                outlineOffset: isDragOver ? '2px' : 0,
+                            }}
+                        >
+                            <i className="fa-solid fa-grip-vertical text-[10px]" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' }} />
+                            <span className="font-medium">{getLabel(pronoun)}</span>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
 }
 
 /* ── Birthday Visibility Picker ── */
+const MONTHS: Record<string, string> = {
+    '': 'Month',
+    '1': 'January', '2': 'February', '3': 'March', '4': 'April',
+    '5': 'May', '6': 'June', '7': 'July', '8': 'August',
+    '9': 'September', '10': 'October', '11': 'November', '12': 'December',
+};
 
 const MONTH_NAMES = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-function formatBirthdayPreview(visibility: string, month: string, day: string, year: string): string {
+function formatBirthdayPreview(visibility: string, month: string, day: string, year: string, ageSuffix: string): string {
     const monthName = month ? MONTH_NAMES[parseInt(month)] : '';
     const y = parseInt(year);
 
@@ -798,13 +912,14 @@ function formatBirthdayPreview(visibility: string, month: string, day: string, y
             if (m && (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && d && today.getDate() < d))) {
                 age--;
             }
-            return `${age} years old`;
+            return `${age} ${ageSuffix}`;
         }
         default: return '';
     }
 }
 
-function BirthdayVisibilityPicker({ month, day, year, value, onChange }: {
+function BirthdayVisibilityPicker({ t, month, day, year, value, onChange }: {
+    t: Translator;
     month: string; day: string; year: string; value: string;
     onChange: (v: string) => void;
 }) {
@@ -812,56 +927,62 @@ function BirthdayVisibilityPicker({ month, day, year, value, onChange }: {
     const hasDay = !!day;
     const hasYear = !!year;
     const hasAny = hasMonth || hasDay || hasYear;
+    const ageSuffix = t('profile.details.age_suffix');
 
-    // Build available options based on filled fields (mirrors PHP logic)
     const availableOptions: { key: string; preview: string }[] = [];
 
     if (hasMonth && hasDay && hasYear) {
-        availableOptions.push({ key: 'full', preview: formatBirthdayPreview('full', month, day, year) });
+        availableOptions.push({ key: 'full', preview: formatBirthdayPreview('full', month, day, year, ageSuffix) });
     }
     if (hasMonth && hasDay) {
-        availableOptions.push({ key: 'month_day', preview: formatBirthdayPreview('month_day', month, day, year) });
+        availableOptions.push({ key: 'month_day', preview: formatBirthdayPreview('month_day', month, day, year, ageSuffix) });
     }
     if (hasYear) {
-        availableOptions.push({ key: 'year', preview: formatBirthdayPreview('year', month, day, year) });
-        availableOptions.push({ key: 'age', preview: formatBirthdayPreview('age', month, day, year) });
+        availableOptions.push({ key: 'year', preview: formatBirthdayPreview('year', month, day, year, ageSuffix) });
+        availableOptions.push({ key: 'age', preview: formatBirthdayPreview('age', month, day, year, ageSuffix) });
     }
 
     if (!hasAny) {
         return (
-            <p className="text-sm italic text-base-content/50">
+            <p className="text-sm italic" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}>
                 <i className="fa-solid fa-info-circle mr-1" />
-                Fill in birthday fields above to see display options
+                {t('profile.details.dob_visibility_empty')}
             </p>
         );
     }
 
     return (
         <div className="mb-12">
-            <label className="label">
-                <span className="label-text font-semibold">Show Birthday As</span>
-            </label>
+            <span className="mb-2 block text-sm font-semibold">
+                {t('profile.details.dob_visibility_label')}
+            </span>
             <div className="grid grid-cols-2 gap-2">
-                {availableOptions.map(({ key, preview }) => (
-                    <label
-                        key={key}
-                        className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-3 transition-all ${
-                            value === key
-                                ? 'border-primary bg-primary/5'
-                                : 'border-base-300 hover:border-base-content/30'
-                        }`}
-                    >
-                        <input
-                            type="radio"
-                            name="dob_visibility"
-                            value={key}
-                            checked={value === key}
-                            onChange={() => onChange(key)}
-                            className="radio radio-primary radio-sm"
-                        />
-                        <span className="text-sm font-medium">{preview}</span>
-                    </label>
-                ))}
+                {availableOptions.map(({ key, preview }) => {
+                    const selected = value === key;
+                    return (
+                        <button
+                            key={key}
+                            type="button"
+                            onClick={() => onChange(key)}
+                            className={`alex-pref-card flex cursor-pointer items-center gap-3 p-3 ${selected ? 'alex-pref-card--selected' : ''}`}
+                        >
+                            <span
+                                className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2"
+                                style={{
+                                    borderColor: selected
+                                        ? 'var(--theme-brand-primary-500)'
+                                        : 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)',
+                                }}
+                                aria-hidden="true"
+                            >
+                                {selected && (
+                                    <span className="h-2 w-2 rounded-full" style={{ background: 'var(--theme-brand-primary-500)' }} />
+                                )}
+                            </span>
+                            <span className="text-sm font-medium">{preview}</span>
+                        </button>
+                    );
+                })}
             </div>
         </div>
     );
@@ -869,11 +990,14 @@ function BirthdayVisibilityPicker({ month, day, year, value, onChange }: {
 
 /* ── Two-column field row (matches original 38.2% / flex-1 layout) ── */
 function FieldRow({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+    const hintStyle = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    };
     return (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-6">
             <div className="flex-shrink-0 sm:w-[38.2%]">
                 <span className="text-sm font-semibold">{label}</span>
-                {hint && <p className="text-xs text-base-content/50">{hint}</p>}
+                {hint && <p className="text-xs" style={hintStyle}>{hint}</p>}
             </div>
             <div className="flex-1">{children}</div>
         </div>
@@ -881,10 +1005,8 @@ function FieldRow({ label, hint, children }: { label: string; hint?: string; chi
 }
 
 /* ── Rotating placeholder hook ──
- * Cycles through a list of strings on a fixed interval. Used by the
- * Location field to suggest both real and imagined places (Shackleton
- * Crater, Ankh-Morpork, etc.) instead of pinning the placeholder to a
- * generic "City, Country" template that boxes users into one shape.
+ * Cycles through a list of strings to suggest both real and imagined
+ * places in the Location field.
  */
 const LOCATION_HINTS = [
     'Brooklyn, NY',
@@ -915,4 +1037,21 @@ function useRotatingPlaceholder(values: readonly string[], intervalMs: number): 
     }, [values, intervalMs]);
 
     return values[index];
+}
+
+/* ── Form data shape for typing the form ref across helpers. ── */
+interface ProfileFormData {
+    display_name: string;
+    pronouns: string[];
+    custom_pronouns: string;
+    tagline: string;
+    bio: string;
+    private_bio: string;
+    private_bio_visibility: string;
+    location: string;
+    website: string;
+    birth_month: string;
+    birth_day: string;
+    birth_year: string;
+    dob_visibility: string;
 }
