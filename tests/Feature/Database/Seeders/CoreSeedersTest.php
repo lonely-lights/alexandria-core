@@ -4,15 +4,9 @@ declare(strict_types=1);
 
 use Alexandria\Core\Database\Seeders\AiModelSeeder;
 use Alexandria\Core\Database\Seeders\AiProviderSeeder;
-use Alexandria\Core\Database\Seeders\Permissions\PermissionSeeder;
-use Alexandria\Core\Database\Seeders\Permissions\RolePermissionCategorySeeder;
-use Alexandria\Core\Database\Seeders\RoleAndPermissionSeeder;
 use Alexandria\Core\Models\AiModel;
 use Alexandria\Core\Models\AiProvider;
-use Alexandria\Core\Models\Permissions\RolePermissionCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -39,18 +33,8 @@ it('AiModelSeeder seeds models when providers exist', function () {
         ->and(AiModel::query()->whereNull('ai_provider_id')->count())->toBe(0);
 });
 
-it('RolePermissionCategorySeeder creates the 8 default categories', function () {
-    (new RolePermissionCategorySeeder)->run();
-
-    expect(RolePermissionCategory::query()->count())->toBe(8)
-        ->and(RolePermissionCategory::query()->where('slug', 'project')->exists())->toBeTrue();
-});
-
-it('PermissionSeeder + RoleAndPermissionSeeder run without errors', function () {
-    (new RolePermissionCategorySeeder)->run();
-    (new PermissionSeeder)->run();
-    (new RoleAndPermissionSeeder)->run();
-
-    expect(Permission::query()->count())->toBeGreaterThan(0)
-        ->and(Role::query()->count())->toBeGreaterThan(0);
-})->skip('Spatie PermissionRegistrar boot fails in Testbench without the spatie/permission config primed (same blocker we hit in MP-B C3 project_user test). Seeders are validated end-to-end in a real Laravel app context (alexandria-app) at MP-J.');
+// RBAC seeders (RolePermissionCategorySeeder, PermissionSeeder,
+// RoleAndPermissionSeeder) deliberately do NOT live in core — they're
+// consumer-app scaffolding that sits in alexandria-app/database/seeders/
+// per Stage 7a. Their tests live alongside in alexandria-app/tests/
+// Feature/Security/.
