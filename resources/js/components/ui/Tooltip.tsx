@@ -5,6 +5,7 @@ import {
     useDismiss,
     useRole,
     useInteractions,
+    useTransitionStyles,
     offset,
     flip,
     shift,
@@ -111,14 +112,33 @@ export default function Tooltip({
 
     const { getReferenceProps, getFloatingProps } = useInteractions([hover, dismiss, role]);
 
+    // Slide + fade entrance/exit. Distance is intentionally short
+    // (4px) and durations short (open 140ms, close 90ms) so the
+    // motion reads as snappy hover feedback rather than a slow modal
+    // entrance. Direction depends on `side`: tooltip slides AWAY from
+    // the trigger on enter (so it appears to grow out of the trigger
+    // edge it sits next to). `isMounted` keeps the node alive through
+    // the close animation; we use it instead of `isOpen` for render.
+    const { isMounted, styles: transitionStyles } = useTransitionStyles(context, {
+        duration: { open: 140, close: 90 },
+        initial: ({ side }) => ({
+            opacity: 0,
+            transform:
+                side === 'top' ? 'translateY(4px)' :
+                side === 'bottom' ? 'translateY(-4px)' :
+                side === 'left' ? 'translateX(4px)' :
+                'translateX(-4px)',
+        }),
+    });
+
     const tokens = VARIANT_TOKENS[variant];
 
     const panelStyle: CSSProperties = {
-        ...floatingStyles,
         background: tokens.bg,
         color: tokens.text,
         borderRadius: 'var(--theme-radius-button)',
         boxShadow: '0 0 16px rgba(0, 0, 0, 0.25)',
+        ...transitionStyles,
     };
 
     return (
@@ -129,25 +149,34 @@ export default function Tooltip({
                     ...getReferenceProps(),
                 } as Record<string, unknown>)}
 
-            {isOpen && content && (
+            {isMounted && content && (
                 <FloatingPortal>
+                    {/* Outer div carries floating-ui positioning; inner
+                        div carries the animated panel + arrow so the
+                        transform-based slide doesn't fight floating-ui's
+                        positioning transform. */}
                     <div
                         ref={refs.setFloating}
-                        style={panelStyle}
+                        style={floatingStyles}
                         {...getFloatingProps()}
-                        className={cn(
-                            'z-[9999] max-w-xs px-3 py-1.5 text-xs font-medium',
-                            bounce && 'animate-bounce',
-                        )}
+                        className="z-[9999]"
                     >
-                        {content}
-                        <FloatingArrow
-                            ref={arrowRef}
-                            context={context}
-                            width={12}
-                            height={6}
-                            style={{ fill: tokens.bg }}
-                        />
+                        <div
+                            style={panelStyle}
+                            className={cn(
+                                'max-w-xs px-3 py-1.5 text-xs font-medium',
+                                bounce && 'animate-bounce',
+                            )}
+                        >
+                            {content}
+                            <FloatingArrow
+                                ref={arrowRef}
+                                context={context}
+                                width={12}
+                                height={6}
+                                style={{ fill: tokens.bg }}
+                            />
+                        </div>
                     </div>
                 </FloatingPortal>
             )}
