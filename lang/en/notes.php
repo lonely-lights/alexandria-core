@@ -303,4 +303,27 @@ return [
     'tag_picker.empty.no_match' => 'No matching tags',
     'tag_picker.empty.no_tags' => 'No tags yet',
     'tag_picker.done' => 'Done',
+
+    // ── NotebookSelectorModal (notebook switcher / link/move chooser) ─
+    'notebook_selector.title' => 'Notebooks',
+    'notebook_selector.subtitle' => 'Switch between notebooks or view all notes',
+    'notebook_selector.all_notes' => 'All Notes',
+    'notebook_selector.empty' => 'No notebooks yet',
+    'notebook_selector.new' => 'New Notebook',
+    'notebook_selector.close' => 'Close',
+    'notebook_selector.actions_aria' => 'Notebook actions',
+    'notebook_selector.action.link' => 'Link to…',
+    'notebook_selector.action.move' => 'Move to…',
+
+    // ── DedupModal (AI duplicate-merge proposals) ───────────────────
+    'dedup.title' => 'Check Duplicates',
+    'dedup.analyzing' => 'Analyzing for duplicates…',
+    'dedup.empty' => 'No duplicates found',
+    'dedup.merge_label' => 'Merge → :name',
+    'dedup.match_label' => 'Duplicates existing entry',
+    'dedup.action.apply' => 'Apply',
+    'dedup.action.remove' => 'Remove',
+    'dedup.chip.keep' => 'Keep #:id',
+    'dedup.chip.remove' => 'Remove #:id',
+    'dedup.chip.entry' => '→ Entry #:id',
 ];

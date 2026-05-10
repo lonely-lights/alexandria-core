@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import Modal from '@alexandria/components/ui/Modal';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 
 export interface NotebookData {
     id: number;
@@ -23,6 +24,17 @@ interface NotebookSelectorModalProps {
     onMoveNotebook: (notebookId: number) => void;
 }
 
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
+
+const listWrapperStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+    overflow: 'hidden',
+};
+
+const dividerBorder = '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)';
+
 export default function NotebookSelectorModal({
     open,
     onClose,
@@ -33,66 +45,131 @@ export default function NotebookSelectorModal({
     onLinkNotebook,
     onMoveNotebook,
 }: NotebookSelectorModalProps) {
+    const t = useT();
+
+    const allNotesActive = !activeNotebookId;
+
     return (
         <Modal open={open} onClose={onClose} maxWidth="max-w-sm">
             <div className="p-5">
-                <h3 className="text-base font-bold">Notebooks</h3>
-                <p className="mt-1 text-xs text-base-content/40">Switch between notebooks or view all notes</p>
+                <h3 className="text-base font-bold">{t('notes.notebook_selector.title')}</h3>
+                <p className="mt-1 text-xs" style={fadedText}>
+                    {t('notes.notebook_selector.subtitle')}
+                </p>
 
-                <div className="mt-4 overflow-hidden rounded-xl border border-base-300">
+                <div className="mt-4" style={listWrapperStyle}>
                     {/* All Notes option */}
                     <button
                         onClick={() => { onSelectNotebook(null); onClose(); }}
-                        className={`flex w-full items-center gap-3 border-b border-base-content/5 px-4 py-3 text-left text-sm transition-colors hover:bg-base-200/30 ${
-                            !activeNotebookId ? 'bg-primary/5' : ''
-                        }`}
+                        className="alex-notes-tag-row flex w-full items-center gap-3 px-4 py-3 text-left text-sm"
+                        style={{
+                            borderBottom: dividerBorder,
+                            background: allNotesActive
+                                ? 'color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent)'
+                                : 'transparent',
+                        }}
                     >
-                        <i className={`fa-solid fa-layer-group text-xs ${!activeNotebookId ? 'text-primary' : 'text-base-content/30'}`} />
-                        <span className={`flex-1 font-medium ${!activeNotebookId ? 'text-primary' : ''}`}>All Notes</span>
-                        {!activeNotebookId && <i className="fa-solid fa-check text-[10px] text-primary" />}
+                        <i
+                            className="fa-solid fa-layer-group text-xs"
+                            style={{
+                                color: allNotesActive
+                                    ? 'var(--theme-brand-primary-500)'
+                                    : 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)',
+                            }}
+                        />
+                        <span
+                            className="flex-1 font-medium"
+                            style={allNotesActive ? { color: 'var(--theme-brand-primary-500)' } : undefined}
+                        >
+                            {t('notes.notebook_selector.all_notes')}
+                        </span>
+                        {allNotesActive && (
+                            <i
+                                className="fa-solid fa-check text-[10px]"
+                                style={{ color: 'var(--theme-brand-primary-500)' }}
+                            />
+                        )}
                     </button>
 
                     {/* Notebooks */}
-                    {notebooks.map((nb) => (
-                        <div
-                            key={nb.id}
-                            className={`group flex items-center border-b border-base-content/5 last:border-0 ${
-                                activeNotebookId === nb.id ? 'bg-primary/5' : ''
-                            }`}
-                        >
-                            <button
-                                onClick={() => { onSelectNotebook(nb.id); onClose(); }}
-                                className="flex flex-1 items-center gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-base-200/30"
+                    {notebooks.map((nb, idx) => {
+                        const isActive = activeNotebookId === nb.id;
+                        const isLast = idx === notebooks.length - 1;
+                        return (
+                            <div
+                                key={nb.id}
+                                className="group flex items-center"
+                                style={{
+                                    borderBottom: isLast ? 'none' : dividerBorder,
+                                    background: isActive
+                                        ? 'color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent)'
+                                        : 'transparent',
+                                }}
                             >
-                                {nb.color ? (
-                                    <span className="inline-block h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: nb.color }} />
-                                ) : (
-                                    <i className="fa-solid fa-book text-xs text-base-content/30" />
-                                )}
-                                <span className={`flex-1 font-medium ${activeNotebookId === nb.id ? 'text-primary' : ''}`}>{nb.title}</span>
-                                <span className="text-xs text-base-content/30">{nb.notes_count}</span>
-                                {activeNotebookId === nb.id && <i className="fa-solid fa-check text-[10px] text-primary" />}
-                            </button>
-                            <NotebookActionsMenu
-                                onLink={() => { onClose(); onLinkNotebook(nb.id); }}
-                                onMove={() => { onClose(); onMoveNotebook(nb.id); }}
-                            />
-                        </div>
-                    ))}
+                                <button
+                                    onClick={() => { onSelectNotebook(nb.id); onClose(); }}
+                                    className="alex-notes-tag-row flex flex-1 items-center gap-3 px-4 py-3 text-left text-sm"
+                                >
+                                    {nb.color ? (
+                                        <span className="inline-block h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: nb.color }} />
+                                    ) : (
+                                        <i className="fa-solid fa-book text-xs" style={microText} />
+                                    )}
+                                    <span
+                                        className="flex-1 font-medium"
+                                        style={isActive ? { color: 'var(--theme-brand-primary-500)' } : undefined}
+                                    >
+                                        {nb.title}
+                                    </span>
+                                    <span className="text-xs" style={microText}>{nb.notes_count}</span>
+                                    {isActive && (
+                                        <i
+                                            className="fa-solid fa-check text-[10px]"
+                                            style={{ color: 'var(--theme-brand-primary-500)' }}
+                                        />
+                                    )}
+                                </button>
+                                <NotebookActionsMenu
+                                    onLink={() => { onClose(); onLinkNotebook(nb.id); }}
+                                    onMove={() => { onClose(); onMoveNotebook(nb.id); }}
+                                    t={t}
+                                />
+                            </div>
+                        );
+                    })}
 
                     {notebooks.length === 0 && (
-                        <div className="py-6 text-center text-xs text-base-content/30">No notebooks yet</div>
+                        <div className="py-6 text-center text-xs" style={microText}>
+                            {t('notes.notebook_selector.empty')}
+                        </div>
                     )}
                 </div>
 
                 <div className="mt-3 flex items-center justify-between">
                     <button
                         onClick={() => { onClose(); onNewNotebook(); }}
-                        className="btn btn-ghost btn-sm gap-1.5 text-xs text-primary"
+                        className="alex-btn alex-btn--ghost"
+                        style={{
+                            borderRadius: 'var(--theme-radius-button)',
+                            padding: '0.25rem 0.625rem',
+                            fontSize: '0.75rem',
+                            gap: '0.375rem',
+                            color: 'var(--theme-brand-primary-500)',
+                        }}
                     >
-                        <i className="fa-solid fa-plus text-[10px]" /> New Notebook
+                        <i className="fa-solid fa-plus text-[10px]" /> {t('notes.notebook_selector.new')}
                     </button>
-                    <button onClick={onClose} className="btn btn-ghost btn-sm text-xs">Close</button>
+                    <button
+                        onClick={onClose}
+                        className="alex-btn alex-btn--ghost"
+                        style={{
+                            borderRadius: 'var(--theme-radius-button)',
+                            padding: '0.25rem 0.625rem',
+                            fontSize: '0.75rem',
+                        }}
+                    >
+                        {t('notes.notebook_selector.close')}
+                    </button>
                 </div>
             </div>
         </Modal>
@@ -101,7 +178,7 @@ export default function NotebookSelectorModal({
 
 /* ── Notebook Actions Menu ── */
 
-function NotebookActionsMenu({ onLink, onMove }: { onLink: () => void; onMove: () => void }) {
+function NotebookActionsMenu({ onLink, onMove, t }: { onLink: () => void; onMove: () => void; t: Translator }) {
     const [open, setOpen] = useState(false);
     const [pos, setPos] = useState({ top: 0, left: 0 });
     const btnRef = useRef<HTMLButtonElement | null>(null);
@@ -139,8 +216,8 @@ function NotebookActionsMenu({ onLink, onMove }: { onLink: () => void; onMove: (
     }
 
     const items = [
-        { label: 'Link to...', icon: 'fa-solid fa-link', onClick: onLink },
-        { label: 'Move to...', icon: 'fa-solid fa-right-from-bracket', onClick: onMove },
+        { label: t('notes.notebook_selector.action.link'), icon: 'fa-solid fa-link', onClick: onLink },
+        { label: t('notes.notebook_selector.action.move'), icon: 'fa-solid fa-right-from-bracket', onClick: onMove },
     ];
 
     return (
@@ -148,25 +225,41 @@ function NotebookActionsMenu({ onLink, onMove }: { onLink: () => void; onMove: (
             <button
                 ref={btnRef}
                 onClick={toggle}
-                className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover:opacity-100"
-                aria-label="Notebook actions"
+                className="alex-notes-tile-menu-trigger opacity-0 group-hover:opacity-100"
+                aria-label={t('notes.notebook_selector.actions_aria')}
             >
-                <i className="fa-solid fa-ellipsis-vertical" />
+                <i className="fa-solid fa-ellipsis-vertical text-xs" />
             </button>
             {open && createPortal(
                 <ul
                     ref={menuRef}
-                    className="fixed z-[9999] w-52 overflow-hidden rounded-lg border border-base-content/10 bg-base-100 text-base-content shadow-lg"
-                    style={{ top: pos.top, left: pos.left }}
+                    className="fixed z-[9999] w-52 overflow-hidden"
+                    style={{
+                        top: pos.top,
+                        left: pos.left,
+                        background: 'var(--theme-base-surface)',
+                        border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                        borderRadius: 'var(--theme-radius-card)',
+                        color: 'var(--theme-base-content)',
+                        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
+                    }}
                 >
                     {items.map((item, i) => (
                         <li key={i}>
                             <button
                                 onClick={() => { item.onClick(); setOpen(false); }}
-                                className={`flex w-full items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-base-200 ${i < items.length - 1 ? 'border-b border-base-content/10' : ''}`}
+                                className="alex-notes-tile-menu-row flex w-full items-center justify-between px-4 py-3 text-sm"
+                                style={{
+                                    borderBottom: i < items.length - 1
+                                        ? '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)'
+                                        : 'none',
+                                }}
                             >
                                 <span>{item.label}</span>
-                                <i className={`${item.icon} w-5 text-center text-base-content/60`} />
+                                <i
+                                    className={`${item.icon} w-5 text-center`}
+                                    style={{ color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' }}
+                                />
                             </button>
                         </li>
                     ))}
