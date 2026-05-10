@@ -87,4 +87,43 @@ return [
     'preferences.auto_categorize_description' => 'Automatically categorize new entries using AI',
     'preferences.save_button' => 'Save Preferences',
     'preferences.saved_indicator' => 'Saved',
+
+    // ── Project AI Dashboard chrome (AiDashboard.tsx) ───────────────
+    'dashboard.heading.title' => 'AI',
+    'dashboard.heading.subtitle' => 'Manage AI features for :project',
+    'dashboard.breadcrumb' => 'AI Dashboard',
+    'dashboard.tab.dashboard' => 'Dashboard',
+    'dashboard.tab.commands' => 'Commands',
+    'dashboard.tab.usage' => 'Usage',
+    'dashboard.tab.models' => 'Models',
+    'dashboard.tab.settings' => 'Settings',
+
+    // ── Settings → UsageSidebar (project usage stats card) ──────────
+    'usage_sidebar.title' => 'Project Usage',
+    'usage_sidebar.this_month' => 'This Month',
+    'usage_sidebar.requests' => 'Requests',
+    'usage_sidebar.tokens' => 'Tokens',
+    'usage_sidebar.cost' => 'Cost',
+    'usage_sidebar.budget_used' => 'Budget Used',
+    'usage_sidebar.all_time' => 'All Time',
+    'usage_sidebar.total_requests' => 'Total Requests',
+    'usage_sidebar.total_tokens' => 'Total Tokens',
+    'usage_sidebar.total_cost' => 'Total Cost',
+
+    // ── Settings → UserDefaultsSidebar (account defaults readout) ───
+    'user_defaults.title' => 'Your Defaults',
+    'user_defaults.provider' => 'Provider',
+    'user_defaults.analyst_model' => 'Analyst Model',
+    'user_defaults.creative_model' => 'Creative Model',
+    'user_defaults.api_key' => 'API Key',
+    'user_defaults.key_valid' => 'Valid',
+    'user_defaults.key_not_set' => 'Not set',
+    'user_defaults.empty.title' => 'No AI settings configured',
+    'user_defaults.empty.body' => 'Set up your AI provider and API keys first.',
+    'user_defaults.dash' => '—',
+    'user_defaults.quick_links_title' => 'Quick Links',
+    'user_defaults.api_keys_title' => 'API Keys',
+    'user_defaults.api_keys_desc' => 'Manage your API keys',
+    'user_defaults.global_settings_title' => 'Global AI Settings',
+    'user_defaults.global_settings_desc' => 'Default models & preferences',
 ];

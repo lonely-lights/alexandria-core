@@ -4,6 +4,7 @@ import AppLayout from '@alexandria/layouts/AppLayout';
 import IconTile from '@alexandria/components/ui/IconTile';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import NeuralConstellationBg from '@alexandria/components/backgrounds/NeuralConstellationBg';
+import useT from '@alexandria/hooks/useT';
 import DashboardTab from './Sections/DashboardTab';
 import CommandsTab from './Sections/CommandsTab';
 import UsageTab from './Sections/UsageTab';
@@ -13,13 +14,29 @@ import type { AiDashboardProps } from '@alexandria/types/ai-dashboard';
 
 type Tab = 'dashboard' | 'commands' | 'usage' | 'models' | 'settings';
 
-const TABS: { key: Tab; label: string; icon: string }[] = [
-    { key: 'dashboard', label: 'Dashboard', icon: 'fa-solid fa-gauge' },
-    { key: 'commands', label: 'Commands', icon: 'fa-solid fa-list-check' },
-    { key: 'usage', label: 'Usage', icon: 'fa-solid fa-chart-bar' },
-    { key: 'models', label: 'Models', icon: 'fa-solid fa-microchip' },
-    { key: 'settings', label: 'Settings', icon: 'fa-solid fa-gear' },
+const TABS: { key: Tab; labelKey: string; icon: string }[] = [
+    { key: 'dashboard', labelKey: 'ai.dashboard.tab.dashboard', icon: 'fa-solid fa-gauge' },
+    { key: 'commands', labelKey: 'ai.dashboard.tab.commands', icon: 'fa-solid fa-list-check' },
+    { key: 'usage', labelKey: 'ai.dashboard.tab.usage', icon: 'fa-solid fa-chart-bar' },
+    { key: 'models', labelKey: 'ai.dashboard.tab.models', icon: 'fa-solid fa-microchip' },
+    { key: 'settings', labelKey: 'ai.dashboard.tab.settings', icon: 'fa-solid fa-gear' },
 ];
+
+const tabActiveStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const tabIdleStyle: CSSProperties = {
+    background: 'transparent',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const subtitleStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
 
 function tabFromHash(): Tab {
     const hash = window.location.hash.slice(1) as Tab;
@@ -28,6 +45,7 @@ function tabFromHash(): Tab {
 }
 
 export default function AiDashboard() {
+    const t = useT();
     const props = usePage().props as unknown as AiDashboardProps;
     const { project, stats, providers, settings, userSettings } = props;
 
@@ -52,22 +70,25 @@ export default function AiDashboard() {
     }, [activeTab, visited]);
 
     return (
-        <AppLayout title="AI Dashboard" immersive>
+        <AppLayout title={t('ai.dashboard.breadcrumb')} immersive>
             <PageHeader
                 breadcrumbs={[
                     { label: project.name, href: `/p/${project.slug}` },
-                    { label: 'AI Dashboard' },
+                    { label: t('ai.dashboard.breadcrumb') },
                 ]}
                 tabs={
                     <>
                         {TABS.map((tab) => (
                             <button
                                 key={tab.key}
+                                type="button"
                                 onClick={() => setActiveTab(tab.key)}
-                                className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === tab.key ? 'btn-primary' : 'btn-ghost'}`}
+                                className="alex-btn inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium"
+                                style={activeTab === tab.key ? tabActiveStyle : tabIdleStyle}
+                                aria-pressed={activeTab === tab.key}
                             >
-                                <i className={`${tab.icon} text-xs`} />
-                                {tab.label}
+                                <i className={`${tab.icon} text-xs`} aria-hidden="true" />
+                                {t(tab.labelKey)}
                             </button>
                         ))}
                     </>
@@ -88,9 +109,11 @@ export default function AiDashboard() {
                         } as CSSProperties}
                     />
                     <div className="min-w-0 flex-1">
-                        <h1 className="font-serif text-3xl md:text-4xl font-bold leading-tight tracking-tight">AI</h1>
-                        <p className="mt-1 text-sm text-base-content/50">
-                            Manage AI features for {project.name}
+                        <h1 className="font-serif text-3xl md:text-4xl font-bold leading-tight tracking-tight">
+                            {t('ai.dashboard.heading.title')}
+                        </h1>
+                        <p className="mt-1 text-sm" style={subtitleStyle}>
+                            {t('ai.dashboard.heading.subtitle').replace(':project', project.name)}
                         </p>
                     </div>
                 </div>
