@@ -26,6 +26,9 @@ interface StatCardProps {
 }
 
 function StatCard({ label, value, paperVariant, onClick }: StatCardProps) {
+    // Label uses currentColor-derived alpha so it inherits paper-ink
+    // on tf themes (high contrast against warm paper) and base-content
+    // on non-tf themes (good contrast against base-surface).
     return (
         <button
             type="button"
@@ -34,7 +37,7 @@ function StatCard({ label, value, paperVariant, onClick }: StatCardProps) {
         >
             <p
                 className="text-[10px] font-semibold uppercase tracking-wider leading-none"
-                style={subtleText}
+                style={{ color: 'color-mix(in srgb, currentColor 65%, transparent)' }}
             >
                 {label}
             </p>
@@ -61,6 +64,13 @@ interface WorkflowCardProps {
 }
 
 function WorkflowCard({ icon, label, count, description, accentColor, accentBg, paperVariant, onClick }: WorkflowCardProps) {
+    // Count + description colors derive from currentColor so they
+    // inherit the surrounding text color: on tf themes paper-card
+    // forces a high-contrast paper-ink (#2b1d0f-ish) on its
+    // descendants, on non-tf themes they pick up --theme-base-content.
+    // The semantic accent (warning/info/primary) lives on the icon's
+    // background circle + glyph color, where it has its own opaque
+    // surface so contrast is independent of the paper tint behind it.
     return (
         <button
             type="button"
@@ -80,14 +90,16 @@ function WorkflowCard({ icon, label, count, description, accentColor, accentBg, 
                 <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
                         <p className="text-sm font-semibold leading-none">{label}</p>
-                        <span
-                            className="text-xl font-bold tabular-nums flex-shrink-0 leading-none"
-                            style={{ color: `var(--theme-${accentColor})` }}
-                        >
+                        <span className="text-xl font-bold tabular-nums flex-shrink-0 leading-none">
                             {count.toLocaleString()}
                         </span>
                     </div>
-                    <p className="mt-1.5 text-xs leading-tight" style={fadedText}>{description}</p>
+                    <p
+                        className="mt-1.5 text-xs leading-tight"
+                        style={{ color: 'color-mix(in srgb, currentColor 65%, transparent)' }}
+                    >
+                        {description}
+                    </p>
                 </div>
             </div>
         </button>
