@@ -1,0 +1,113 @@
+/*
+ * Notes pages polish — hover/active rules for the page-level tabs,
+ * stat + workflow cards, recent-note rows, and the sticky-tab
+ * highlighter indicator. Lives outside React so :hover wins over
+ * inline styles.
+ *
+ * Mirrors components/dashboard.css conventions: every transition
+ * pairs --theme-motion-duration-* with --theme-motion-easing-standard,
+ * every color routes through --theme-* tokens via color-mix().
+ */
+
+/* ── Page-level tabs (Dashboard / Notes / Notebooks) ─────────────────── */
+
+.alex-notes-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.75rem;
+    color: color-mix(in srgb, var(--theme-base-content) 75%, transparent);
+    background: transparent;
+    transition:
+        background-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-tab:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 7%, transparent);
+    color: var(--theme-base-content);
+}
+
+.alex-notes-tab--active {
+    background: var(--theme-brand-primary-500);
+    color: var(--theme-brand-primary-content);
+}
+
+.alex-notes-tab--active:hover {
+    background: var(--theme-brand-primary-500);
+    color: var(--theme-brand-primary-content);
+}
+
+.alex-notes-tab--icon-only {
+    padding: 0.375rem;
+    aspect-ratio: 1;
+}
+
+/* ── Stat + Workflow cards on the dashboard tab ──────────────────────── */
+
+.alex-notes-card {
+    background: var(--theme-base-surface);
+    border: 1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent);
+    border-radius: var(--theme-radius-card);
+    transition:
+        border-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        box-shadow var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-card:hover {
+    border-color: color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Recent-note row + sticky-tab highlighter indicator ──────────────── */
+
+.alex-notes-recent-row {
+    transition: background-color var(--theme-motion-duration-fast)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-notes-recent-row:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 6%, transparent);
+}
+
+.alex-notes-recent-row .alex-notes-recent-tab {
+    background: var(--theme-brand-primary-500);
+    transform-origin: top;
+    transform: scaleY(0);
+    transition: transform var(--theme-motion-duration-normal)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-notes-recent-row:hover .alex-notes-recent-tab {
+    transform: scaleY(1);
+}
+
+/* ── Page-level "More actions" trigger button ────────────────────────── */
+
+.alex-notes-overflow-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.75rem;
+    color: color-mix(in srgb, var(--theme-base-content) 70%, transparent);
+    background: transparent;
+    transition:
+        background-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-overflow-trigger:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 7%, transparent);
+    color: var(--theme-base-content);
+}

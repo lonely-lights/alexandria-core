@@ -6,6 +6,8 @@ import ActionButton from '@alexandria/components/ui/ActionButton';
 import CommandPalette from '@alexandria/components/search/CommandPalette';
 import { projectSearch } from '@alexandria/lib/projectSearch';
 import IconTile from '@alexandria/components/ui/IconTile';
+import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
+import useT from '@alexandria/hooks/useT';
 import { useCmdK } from '@alexandria/hooks/useCmdK';
 import DashboardView from './Sections/DashboardView';
 import NotesView from './Sections/NotesView';
@@ -27,6 +29,7 @@ function viewFromHash(): View {
 export default function NotesDashboard() {
     const props = usePage().props as unknown as NotesDashboardProps;
     const { project, stats, recentNotes } = props;
+    const t = useT();
 
     const [activeView, setActiveView] = useState<View>(viewFromHash);
     const [initialStatusFilter, setInitialStatusFilter] = useState<NoteStatusFilter | null>(null);
@@ -79,17 +82,17 @@ export default function NotesDashboard() {
     }
 
     return (
-        <AppLayout title="Notes" immersive onSearchToggle={() => setSearchOpen(true)}>
+        <AppLayout title={t('notes.page.title')} immersive onSearchToggle={() => setSearchOpen(true)}>
             <PageHeader
                 breadcrumbs={[
                     { label: project.name, href: `/p/${project.slug}` },
-                    { label: 'Notes' },
+                    { label: t('notes.page.breadcrumb') },
                 ]}
                 actions={
                     <div className="flex items-center gap-2">
                         <ActionButton
                             icon="fa-solid fa-plus"
-                            label="New Note"
+                            label={t('notes.action.new_note')}
                             size="md"
                             className="paper-action"
                             onClick={() => setShowCreate(true)}
@@ -102,11 +105,12 @@ export default function NotesDashboard() {
                         <button
                             type="button"
                             onClick={() => setShowNotebookForm(true)}
-                            className="inline-flex items-center gap-2 font-medium text-sm text-base-content/80 transition hover:text-base-content"
+                            className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
+                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)' }}
                         >
                             <span className="btn-dashed rounded-lg px-5 py-3">
                                 <i className="fa-solid fa-book-medical mr-1.5 text-xs" />
-                                New Notebook
+                                {t('notes.action.new_notebook')}
                             </span>
                         </button>
                     </div>
@@ -114,71 +118,57 @@ export default function NotesDashboard() {
                 tabs={
                     <>
                         <button
+                            type="button"
                             onClick={() => setActiveView('dashboard')}
-                            className={`btn btn-sm gap-1.5 rounded-xl ${activeView === 'dashboard' ? 'btn-primary' : 'btn-ghost'}`}
+                            className={`alex-notes-tab ${activeView === 'dashboard' ? 'alex-notes-tab--active' : ''}`}
                         >
                             <i className="fa-solid fa-gauge text-xs" />
-                            Dashboard
+                            {t('notes.tab.dashboard')}
                         </button>
                         <button
+                            type="button"
                             onClick={() => setActiveView('notes')}
-                            className={`btn btn-sm gap-1.5 rounded-xl ${activeView === 'notes' ? 'btn-primary' : 'btn-ghost'}`}
+                            className={`alex-notes-tab ${activeView === 'notes' ? 'alex-notes-tab--active' : ''}`}
                         >
                             <i className="fa-solid fa-sticky-note text-xs" />
-                            Notes
+                            {t('notes.tab.notes')}
                         </button>
                         <button
+                            type="button"
                             onClick={() => setActiveView('notebooks')}
-                            className={`btn btn-sm gap-1.5 rounded-xl ${activeView === 'notebooks' ? 'btn-primary' : 'btn-ghost'}`}
+                            className={`alex-notes-tab ${activeView === 'notebooks' ? 'alex-notes-tab--active' : ''}`}
                         >
                             <i className="fa-solid fa-book text-xs" />
-                            Notebooks
+                            {t('notes.tab.notebooks')}
                         </button>
                         {/* Overflow menu — universal actions available
                             from any tab. Lives in the tabs bar so there's
                             one canonical entry point whether the user is
-                            on Dashboard, Notes, or Notebooks. DaisyUI
-                            `dropdown` closes on item click via the
-                            `blur()` call on the trigger. */}
-                        <div className="dropdown dropdown-end">
-                            <button
-                                tabIndex={0}
-                                type="button"
-                                aria-label="More actions"
-                                className="btn btn-sm btn-ghost btn-square rounded-xl"
-                            >
-                                <i className="fa-solid fa-ellipsis-vertical text-xs" />
-                            </button>
-                            <ul
-                                tabIndex={0}
-                                className="dropdown-content menu menu-sm z-[1] mt-1 w-52 rounded-xl bg-base-100 p-1 shadow-lg ring-1 ring-base-content/10"
-                            >
-                                <li>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            setShowSortingHistory(true);
-                                            (e.currentTarget.closest('ul')?.previousElementSibling as HTMLElement | null)?.blur();
-                                        }}
-                                    >
-                                        <i className="fa-solid fa-route w-4 text-center" />
-                                        Sorting History
-                                    </button>
-                                </li>
-                                <li>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            setShowImport(true);
-                                            (e.currentTarget.closest('ul')?.previousElementSibling as HTMLElement | null)?.blur();
-                                        }}
-                                    >
-                                        <i className="fa-solid fa-file-import w-4 text-center" />
-                                        Import Notes
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
+                            on Dashboard, Notes, or Notebooks. */}
+                        <DropdownMenu
+                            align="right"
+                            trigger={
+                                <button
+                                    type="button"
+                                    aria-label={t('notes.action.more_aria')}
+                                    className="alex-notes-overflow-trigger"
+                                >
+                                    <i className="fa-solid fa-ellipsis-vertical text-xs" />
+                                </button>
+                            }
+                            items={[
+                                {
+                                    label: t('notes.action.sorting_history'),
+                                    icon: 'fa-route',
+                                    onClick: () => setShowSortingHistory(true),
+                                },
+                                {
+                                    label: t('notes.action.import_notes'),
+                                    icon: 'fa-file-import',
+                                    onClick: () => setShowImport(true),
+                                },
+                            ]}
+                        />
                     </>
                 }
             >
@@ -197,9 +187,12 @@ export default function NotesDashboard() {
                         } as CSSProperties}
                     />
                     <div className="min-w-0 flex-1">
-                        <h1 className="font-serif text-3xl md:text-4xl font-bold leading-tight tracking-tight">Notes</h1>
-                        <p className="mt-1 text-sm text-base-content/50">
-                            Manage notes for {project.name}
+                        <h1 className="font-serif text-3xl md:text-4xl font-bold leading-tight tracking-tight">{t('notes.page.heading')}</h1>
+                        <p
+                            className="mt-1 text-sm"
+                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}
+                        >
+                            {t('notes.page.tagline').replace(':project', project.name)}
                         </p>
                     </div>
                 </div>
@@ -377,7 +370,8 @@ function RuledCursiveBg() {
 
     return (
         <svg
-            className="h-full w-full text-base-content"
+            className="h-full w-full"
+            style={{ color: 'var(--theme-base-content)' }}
             aria-hidden="true"
             xmlns="http://www.w3.org/2000/svg"
         >
