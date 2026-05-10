@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import useT from '@alexandria/hooks/useT';
 import type { AiDashboardStats, AiProvider, AiProjectSettings, AiUserSettings } from '@alexandria/types/ai-dashboard';
 import UsageSidebar from './Settings/UsageSidebar';
 import UserDefaultsSidebar from './Settings/UserDefaultsSidebar';
@@ -48,6 +49,56 @@ function initForm(settings: AiProjectSettings | null): FormState {
     };
 }
 
+/* ── Theme styles ── */
+
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+const formLabelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)' };
+const muteText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' };
+
+const sectionCardStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    background: 'var(--theme-base-100)',
+    borderRadius: 'var(--theme-radius-card)',
+    padding: '1.5rem',
+};
+
+const toggleRowDivider: CSSProperties = {
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+};
+
+const inputStyle: CSSProperties = {
+    background: 'var(--theme-base-surface)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    color: 'var(--theme-base-content)',
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.875rem',
+};
+
+const selectStyle: CSSProperties = {
+    ...inputStyle,
+    paddingRight: '2rem',
+};
+
+const saveBtnStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.5rem 1rem',
+    fontSize: '0.875rem',
+    gap: '0.375rem',
+};
+
+const clearBtnStyle: CSSProperties = {
+    background: 'transparent',
+    color: 'var(--theme-status-error-stroke)',
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.25rem 0.5rem',
+    fontSize: '0.75rem',
+    gap: '0.25rem',
+};
+
 /* ── Toggle Row ── */
 
 function ToggleRow({
@@ -55,23 +106,28 @@ function ToggleRow({
     description,
     checked,
     onChange,
+    isLast,
 }: {
     label: string;
     description: string;
     checked: boolean;
     onChange: (val: boolean) => void;
+    isLast?: boolean;
 }) {
     return (
-        <label className="flex cursor-pointer items-center justify-between gap-4 py-3">
+        <label
+            className="flex cursor-pointer items-center justify-between gap-4 py-3"
+            style={isLast ? undefined : toggleRowDivider}
+        >
             <div>
                 <p className="text-sm font-medium">{label}</p>
-                <p className="text-xs text-base-content/50">{description}</p>
+                <p className="text-xs" style={labelText}>{description}</p>
             </div>
             <input
                 type="checkbox"
                 checked={checked}
                 onChange={(e) => onChange(e.target.checked)}
-                className="toggle toggle-primary"
+                className="alex-toggle"
             />
         </label>
     );
@@ -80,6 +136,7 @@ function ToggleRow({
 /* ── Settings Tab ── */
 
 export default function SettingsTab({ projectId, stats, settings, providers, userSettings }: SettingsTabProps) {
+    const t = useT();
     const [form, setForm] = useState<FormState>(() => initForm(settings));
     const [providerModels, setProviderModels] = useState<ProviderModels | null>(null);
     const [modelsLoading, setModelsLoading] = useState(false);
@@ -157,60 +214,66 @@ export default function SettingsTab({ projectId, stats, settings, providers, use
             {/* Left — main content */}
             <div className="space-y-6 lg:col-span-2">
                 {/* Project AI Settings */}
-                <div className="rounded-xl border border-base-300/50 bg-base-100 p-6">
+                <div style={sectionCardStyle}>
                     <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
-                        <i className="fa-solid fa-sliders text-primary" />
-                        Project AI Settings
+                        <i
+                            className="fa-solid fa-sliders"
+                            style={{ color: 'var(--theme-brand-primary-500)' }}
+                            aria-hidden="true"
+                        />
+                        {t('ai.settings_tab.project_settings.title')}
                     </h2>
 
-                    <div className="divide-y divide-base-200">
+                    <div>
                         <ToggleRow
-                            label="Enable AI Features"
-                            description="Master switch for all AI functionality in this project."
+                            label={t('ai.settings_tab.toggle.ai_enabled.label')}
+                            description={t('ai.settings_tab.toggle.ai_enabled.desc')}
                             checked={form.ai_enabled}
                             onChange={(val) => set('ai_enabled', val)}
                         />
                         <ToggleRow
-                            label="Auto-Categorize"
-                            description="Automatically route notes to entries without manual review."
+                            label={t('ai.settings_tab.toggle.auto_categorize.label')}
+                            description={t('ai.settings_tab.toggle.auto_categorize.desc')}
                             checked={form.auto_categorize}
                             onChange={(val) => set('auto_categorize', val)}
                         />
                         <ToggleRow
-                            label="Require Approval"
-                            description="AI commands must be reviewed before they are executed."
+                            label={t('ai.settings_tab.toggle.require_approval.label')}
+                            description={t('ai.settings_tab.toggle.require_approval.desc')}
                             checked={form.require_approval}
                             onChange={(val) => set('require_approval', val)}
+                            isLast
                         />
                     </div>
 
                     <div className="mt-5 grid gap-5 sm:grid-cols-2">
                         {/* Routing Action */}
                         <div>
-                            <label className="mb-1.5 block text-xs font-semibold text-base-content/70">
-                                Default Routing Action
+                            <label className="mb-1.5 block text-xs font-semibold" style={formLabelText}>
+                                {t('ai.settings_tab.routing.label')}
                             </label>
                             <select
                                 value={form.default_routing_action}
                                 onChange={(e) => set('default_routing_action', e.target.value)}
-                                className="select select-bordered select-sm w-full max-w-xs rounded-xl"
+                                className="w-full max-w-xs"
+                                style={selectStyle}
                             >
-                                <option value="suggest">Suggest</option>
-                                <option value="copy">Copy</option>
-                                <option value="move">Move</option>
+                                <option value="suggest">{t('ai.settings_tab.routing.suggest')}</option>
+                                <option value="copy">{t('ai.settings_tab.routing.copy')}</option>
+                                <option value="move">{t('ai.settings_tab.routing.move')}</option>
                             </select>
-                            <p className="mt-1 text-xs text-base-content/40">
-                                What to do when AI matches a note to an entry.
+                            <p className="mt-1 text-xs" style={fadedText}>
+                                {t('ai.settings_tab.routing.help')}
                             </p>
                         </div>
 
                         {/* Monthly Budget */}
                         <div>
-                            <label className="mb-1.5 block text-xs font-semibold text-base-content/70">
-                                Monthly Budget
+                            <label className="mb-1.5 block text-xs font-semibold" style={formLabelText}>
+                                {t('ai.settings_tab.budget.label')}
                             </label>
                             <div className="flex items-center gap-1">
-                                <span className="text-sm text-base-content/60">$</span>
+                                <span className="text-sm" style={muteText}>$</span>
                                 <input
                                     type="number"
                                     min="0"
@@ -218,52 +281,59 @@ export default function SettingsTab({ projectId, stats, settings, providers, use
                                     placeholder="0.00"
                                     value={form.monthly_budget}
                                     onChange={(e) => set('monthly_budget', e.target.value)}
-                                    className="input input-bordered input-sm w-32 rounded-xl"
+                                    className="w-32"
+                                    style={inputStyle}
                                 />
                             </div>
-                            <p className="mt-1 text-xs text-base-content/40">
-                                Leave blank for no limit.
+                            <p className="mt-1 text-xs" style={fadedText}>
+                                {t('ai.settings_tab.budget.help')}
                             </p>
                         </div>
                     </div>
                 </div>
 
                 {/* Model Overrides */}
-                <div className="rounded-xl border border-base-300/50 bg-base-100 p-6">
+                <div style={sectionCardStyle}>
                     <div className="mb-4 flex items-center justify-between">
                         <h2 className="flex items-center gap-2 text-sm font-semibold">
-                            <i className="fa-solid fa-microchip text-secondary" />
-                            Model Overrides
+                            <i
+                                className="fa-solid fa-microchip"
+                                style={{ color: 'var(--theme-brand-secondary-500)' }}
+                                aria-hidden="true"
+                            />
+                            {t('ai.settings_tab.overrides.title')}
                         </h2>
                         {form.ai_provider_id !== null && (
                             <button
                                 type="button"
                                 onClick={clearOverrides}
-                                className="btn btn-ghost btn-xs rounded-lg text-error"
+                                className="alex-btn inline-flex items-center"
+                                style={clearBtnStyle}
                             >
-                                <i className="fa-solid fa-xmark" />
-                                Clear Overrides
+                                <i className="fa-solid fa-xmark" aria-hidden="true" />
+                                {t('ai.settings_tab.overrides.clear')}
                             </button>
                         )}
                     </div>
 
-                    <p className="mb-4 text-xs text-base-content/50">
-                        Override the provider and models used for this project. Leave unset to use your account defaults.
+                    <p className="mb-4 text-xs" style={labelText}>
+                        {t('ai.settings_tab.overrides.help')}
                     </p>
 
                     {/* Provider */}
                     <div className="mb-4">
-                        <label className="mb-1.5 block text-xs font-semibold text-base-content/70">
-                            Provider
+                        <label className="mb-1.5 block text-xs font-semibold" style={formLabelText}>
+                            {t('ai.settings_tab.overrides.provider_label')}
                         </label>
                         <select
                             value={form.ai_provider_id ?? ''}
                             onChange={(e) =>
                                 handleProviderChange(e.target.value === '' ? null : Number(e.target.value))
                             }
-                            className="select select-bordered select-sm w-full max-w-xs rounded-xl"
+                            className="w-full max-w-xs"
+                            style={selectStyle}
                         >
-                            <option value="">Use user default</option>
+                            <option value="">{t('ai.settings_tab.overrides.provider_default')}</option>
                             {providers.map((p) => (
                                 <option key={p.id} value={p.id}>
                                     {p.name}
@@ -277,21 +347,22 @@ export default function SettingsTab({ projectId, stats, settings, providers, use
                         <div className="grid gap-4 sm:grid-cols-2">
                             {/* Analyst Model */}
                             <div>
-                                <label className="mb-1.5 block text-xs font-semibold text-base-content/70">
-                                    Analyst Model
+                                <label className="mb-1.5 block text-xs font-semibold" style={formLabelText}>
+                                    {t('ai.settings_tab.overrides.analyst_label')}
                                 </label>
                                 {modelsLoading ? (
-                                    <div className="flex items-center gap-2 text-xs text-base-content/40">
-                                        <span className="loading loading-spinner loading-xs" />
-                                        Loading…
+                                    <div className="flex items-center gap-2 text-xs" style={fadedText}>
+                                        <i className="fa-solid fa-circle-notch fa-spin text-xs" aria-hidden="true" />
+                                        {t('ai.settings_tab.overrides.loading')}
                                     </div>
                                 ) : (
                                     <select
                                         value={form.analyst_model_name ?? ''}
                                         onChange={(e) => set('analyst_model_name', e.target.value || null)}
-                                        className="select select-bordered select-sm w-full rounded-xl"
+                                        className="w-full"
+                                        style={selectStyle}
                                     >
-                                        <option value="">Use provider default</option>
+                                        <option value="">{t('ai.settings_tab.overrides.model_default')}</option>
                                         {(providerModels?.analyst ?? []).map((m) => (
                                             <option key={m.model_id} value={m.model_id}>
                                                 {m.display_name}
@@ -304,21 +375,22 @@ export default function SettingsTab({ projectId, stats, settings, providers, use
 
                             {/* Creative Model */}
                             <div>
-                                <label className="mb-1.5 block text-xs font-semibold text-base-content/70">
-                                    Creative Model
+                                <label className="mb-1.5 block text-xs font-semibold" style={formLabelText}>
+                                    {t('ai.settings_tab.overrides.creative_label')}
                                 </label>
                                 {modelsLoading ? (
-                                    <div className="flex items-center gap-2 text-xs text-base-content/40">
-                                        <span className="loading loading-spinner loading-xs" />
-                                        Loading…
+                                    <div className="flex items-center gap-2 text-xs" style={fadedText}>
+                                        <i className="fa-solid fa-circle-notch fa-spin text-xs" aria-hidden="true" />
+                                        {t('ai.settings_tab.overrides.loading')}
                                     </div>
                                 ) : (
                                     <select
                                         value={form.creative_model_name ?? ''}
                                         onChange={(e) => set('creative_model_name', e.target.value || null)}
-                                        className="select select-bordered select-sm w-full rounded-xl"
+                                        className="w-full"
+                                        style={selectStyle}
                                     >
-                                        <option value="">Use provider default</option>
+                                        <option value="">{t('ai.settings_tab.overrides.model_default')}</option>
                                         {(providerModels?.creative ?? []).map((m) => (
                                             <option key={m.model_id} value={m.model_id}>
                                                 {m.display_name}
@@ -338,23 +410,27 @@ export default function SettingsTab({ projectId, stats, settings, providers, use
                         type="button"
                         onClick={handleSave}
                         disabled={saving}
-                        className="btn btn-primary rounded-xl gap-1.5"
+                        className="alex-btn inline-flex items-center"
+                        style={{ ...saveBtnStyle, opacity: saving ? 0.5 : 1 }}
                     >
-                        {saving && <span className="loading loading-spinner loading-xs" />}
-                        {saving ? 'Saving…' : 'Save Settings'}
+                        {saving && <i className="fa-solid fa-circle-notch fa-spin text-xs" aria-hidden="true" />}
+                        {saving ? t('ai.settings_tab.save.saving') : t('ai.settings_tab.save.action')}
                     </button>
                     {saved && (
-                        <span className="flex items-center gap-1.5 text-sm text-success">
-                            <i className="fa-solid fa-check" />
-                            Settings saved
+                        <span
+                            className="flex items-center gap-1.5 text-sm"
+                            style={{ color: 'var(--theme-status-success-stroke)' }}
+                        >
+                            <i className="fa-solid fa-check" aria-hidden="true" />
+                            {t('ai.settings_tab.save.confirmed')}
                         </span>
                     )}
                 </div>
             </div>
 
-            {/* Right — readonly sidebar (usage summary + user
-                defaults + quick links). Extracted into focused
-                components so this file stays under ~350 lines. */}
+            {/* Right — readonly sidebar (usage summary + user defaults
+                + quick links). Extracted into focused components so this
+                file stays under ~350 lines. */}
             <div className="space-y-4">
                 <UsageSidebar stats={stats} monthlyBudget={form.monthly_budget} />
                 <UserDefaultsSidebar userSettings={userSettings} />
