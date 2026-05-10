@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import CommandReviewModal from '@alexandria/components/notes/CommandReviewModal';
 import Pagination from '@alexandria/components/ui/Pagination';
 import { relativeDate } from '@alexandria/lib/formatDate';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 import type { BatchSummary, PaginatedResponse } from '@alexandria/types/ai-dashboard';
 
 /* ── Types ── */
@@ -10,6 +11,98 @@ type StatusFilter = 'all' | 'pending' | 'executed' | 'failed';
 
 interface CommandsTabProps {
     projectId: number;
+}
+
+/* ── Theme styles ── */
+
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
+const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+
+const cardStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+    boxShadow: '0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    padding: '1rem',
+    transition: 'border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+};
+
+const dashedEmptyStyle: CSSProperties = {
+    border: '1px dashed color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const emptyIconWrapStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    borderRadius: '9999px',
+};
+
+const tabActiveStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const tabIdleStyle: CSSProperties = {
+    background: 'transparent',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const countBadgeStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+    borderRadius: 'var(--theme-radius-badge)',
+    padding: '0.125rem 0.5rem',
+    fontSize: '0.75rem',
+    fontWeight: 500,
+};
+
+const progressTrackStyle: CSSProperties = {
+    height: '0.375rem',
+    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    borderRadius: '9999px',
+    overflow: 'hidden',
+    display: 'flex',
+    width: '100%',
+};
+
+const reviewBtnStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.75rem',
+    gap: '0.25rem',
+    flexShrink: 0,
+};
+
+function iconBubbleStyle(status: 'pending' | 'executed' | 'failed' | 'mixed'): CSSProperties {
+    const map: Record<typeof status, { fill: string; stroke: string }> = {
+        pending: {
+            fill: 'color-mix(in srgb, var(--theme-status-warning-stroke) 12%, transparent)',
+            stroke: 'var(--theme-status-warning-stroke)',
+        },
+        executed: {
+            fill: 'color-mix(in srgb, var(--theme-status-success-stroke) 12%, transparent)',
+            stroke: 'var(--theme-status-success-stroke)',
+        },
+        failed: {
+            fill: 'color-mix(in srgb, var(--theme-status-error-stroke) 12%, transparent)',
+            stroke: 'var(--theme-status-error-stroke)',
+        },
+        mixed: {
+            fill: 'color-mix(in srgb, var(--theme-status-warning-stroke) 12%, transparent)',
+            stroke: 'var(--theme-status-warning-stroke)',
+        },
+    };
+    const tokens = map[status];
+    return {
+        background: tokens.fill,
+        color: tokens.stroke,
+        borderRadius: 'var(--theme-radius-input)',
+    };
 }
 
 /* ── Helpers ── */
@@ -43,26 +136,31 @@ function batchStatus(batch: BatchSummary): 'pending' | 'executed' | 'failed' | '
 interface BatchCardProps {
     batch: BatchSummary;
     onReview: (batchId: string) => void;
+    t: Translator;
 }
 
-function BatchCard({ batch, onReview }: BatchCardProps) {
+function BatchCard({ batch, onReview, t }: BatchCardProps) {
     const total = batch.total_commands;
     const status = batchStatus(batch);
 
-    const iconBgClass = status === 'pending' ? 'bg-warning/10' : status === 'executed' ? 'bg-success/10' : 'bg-error/10';
-    const iconColorClass = status === 'pending' ? 'text-warning' : status === 'executed' ? 'text-success' : 'text-error';
-    const iconName = status === 'pending' ? 'fa-solid fa-clock' : status === 'executed' ? 'fa-solid fa-check-circle' : 'fa-solid fa-circle-exclamation';
+    const iconName = status === 'pending'
+        ? 'fa-solid fa-clock'
+        : status === 'executed'
+            ? 'fa-solid fa-check-circle'
+            : 'fa-solid fa-circle-exclamation';
 
-    const batchName = batch.blueprint_slug ? titleCase(batch.blueprint_slug) : 'Command Batch';
+    const batchName = batch.blueprint_slug
+        ? titleCase(batch.blueprint_slug)
+        : t('ai.commands_tab.batch.fallback_name');
 
     const pctOf = (n: number) => (total > 0 ? `${((n / total) * 100).toFixed(1)}%` : '0%');
 
     return (
-        <div className="rounded-xl border border-base-content/10 bg-base-200 p-4 shadow-sm transition-colors hover:border-primary/30">
+        <div style={cardStyle}>
             <div className="flex items-start gap-3">
                 {/* Icon box */}
-                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${iconBgClass}`}>
-                    <i className={`${iconName} text-sm ${iconColorClass}`} />
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center" style={iconBubbleStyle(status)}>
+                    <i className={`${iconName} text-sm`} aria-hidden="true" />
                 </div>
 
                 {/* Main content */}
@@ -70,7 +168,7 @@ function BatchCard({ batch, onReview }: BatchCardProps) {
                     <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                             <p className="truncate text-sm font-semibold">{batchName}</p>
-                            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-base-content/40">
+                            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs" style={fadedText}>
                                 <span>{relativeDate(batch.created_at)}</span>
                                 {batch.model_name && (
                                     <>
@@ -91,48 +189,59 @@ function BatchCard({ batch, onReview }: BatchCardProps) {
                         <button
                             type="button"
                             onClick={() => onReview(batch.batch_id)}
-                            className="btn btn-sm btn-primary rounded-xl gap-1 flex-shrink-0"
+                            className="alex-btn inline-flex items-center"
+                            style={reviewBtnStyle}
                         >
-                            <i className="fa-solid fa-eye text-xs" />
-                            Review
+                            <i className="fa-solid fa-eye text-xs" aria-hidden="true" />
+                            {t('ai.commands_tab.batch.review')}
                         </button>
                     </div>
 
                     {/* Progress bar */}
-                    <div className="mt-3 flex h-1.5 w-full overflow-hidden rounded-full bg-base-300/40">
+                    <div className="mt-3" style={progressTrackStyle}>
                         {batch.executed_count > 0 && (
-                            <div className="bg-success transition-all" style={{ width: pctOf(batch.executed_count) }} />
+                            <div style={{ width: pctOf(batch.executed_count), background: 'var(--theme-status-success-stroke)' }} />
                         )}
                         {batch.approved_count > 0 && (
-                            <div className="bg-info transition-all" style={{ width: pctOf(batch.approved_count) }} />
+                            <div style={{ width: pctOf(batch.approved_count), background: 'var(--theme-status-info-stroke)' }} />
                         )}
                         {batch.pending_count > 0 && (
-                            <div className="bg-warning transition-all" style={{ width: pctOf(batch.pending_count) }} />
+                            <div style={{ width: pctOf(batch.pending_count), background: 'var(--theme-status-warning-stroke)' }} />
                         )}
                         {batch.failed_count > 0 && (
-                            <div className="bg-error transition-all" style={{ width: pctOf(batch.failed_count) }} />
+                            <div style={{ width: pctOf(batch.failed_count), background: 'var(--theme-status-error-stroke)' }} />
                         )}
                         {batch.rejected_count > 0 && (
-                            <div className="bg-base-content/20 transition-all" style={{ width: pctOf(batch.rejected_count) }} />
+                            <div style={{ width: pctOf(batch.rejected_count), background: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)' }} />
                         )}
                     </div>
 
                     {/* Status counts */}
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                         {batch.executed_count > 0 && (
-                            <span className="text-xs text-success">{batch.executed_count} done</span>
+                            <span className="text-xs" style={{ color: 'var(--theme-status-success-stroke)' }}>
+                                {t('ai.commands_tab.batch.executed').replace(':count', String(batch.executed_count))}
+                            </span>
                         )}
                         {batch.approved_count > 0 && (
-                            <span className="text-xs text-info">{batch.approved_count} approved</span>
+                            <span className="text-xs" style={{ color: 'var(--theme-status-info-stroke)' }}>
+                                {t('ai.commands_tab.batch.approved').replace(':count', String(batch.approved_count))}
+                            </span>
                         )}
                         {batch.pending_count > 0 && (
-                            <span className="text-xs text-warning">{batch.pending_count} pending</span>
+                            <span className="text-xs" style={{ color: 'var(--theme-status-warning-stroke)' }}>
+                                {t('ai.commands_tab.batch.pending').replace(':count', String(batch.pending_count))}
+                            </span>
                         )}
                         {batch.failed_count > 0 && (
-                            <span className="text-xs text-error">{batch.failed_count} failed</span>
+                            <span className="text-xs" style={{ color: 'var(--theme-status-error-stroke)' }}>
+                                {t('ai.commands_tab.batch.failed').replace(':count', String(batch.failed_count))}
+                            </span>
                         )}
                         {batch.rejected_count > 0 && (
-                            <span className="text-xs text-base-content/40">{batch.rejected_count} rejected</span>
+                            <span className="text-xs" style={fadedText}>
+                                {t('ai.commands_tab.batch.rejected').replace(':count', String(batch.rejected_count))}
+                            </span>
                         )}
                     </div>
                 </div>
@@ -144,6 +253,7 @@ function BatchCard({ batch, onReview }: BatchCardProps) {
 /* ── Commands Tab ── */
 
 export default function CommandsTab({ projectId }: CommandsTabProps) {
+    const t = useT();
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
@@ -192,11 +302,11 @@ export default function CommandsTab({ projectId }: CommandsTabProps) {
 
     const batches = response?.data ?? [];
 
-    const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
-        { value: 'all', label: 'All' },
-        { value: 'pending', label: 'Pending' },
-        { value: 'executed', label: 'Executed' },
-        { value: 'failed', label: 'Failed' },
+    const STATUS_FILTERS: { value: StatusFilter; labelKey: string }[] = [
+        { value: 'all', labelKey: 'ai.commands_tab.filter.all' },
+        { value: 'pending', labelKey: 'ai.commands_tab.filter.pending' },
+        { value: 'executed', labelKey: 'ai.commands_tab.filter.executed' },
+        { value: 'failed', labelKey: 'ai.commands_tab.filter.failed' },
     ];
 
     // Priority sort — failed need attention first, then in-flight,
@@ -216,10 +326,14 @@ export default function CommandsTab({ projectId }: CommandsTabProps) {
             {/* Header — title + count + status filter chips */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-baseline gap-2">
-                    <h2 className="font-serif text-2xl font-bold tracking-tight">Command Batches</h2>
+                    <h2 className="font-serif text-2xl font-bold tracking-tight">
+                        {t('ai.commands_tab.title')}
+                    </h2>
                     {response && response.total > 0 && (
-                        <span className="badge badge-ghost badge-sm">
-                            {response.total} {response.total === 1 ? 'batch' : 'batches'}
+                        <span style={countBadgeStyle}>
+                            {response.total === 1
+                                ? t('ai.commands_tab.batch_count.one').replace(':count', String(response.total))
+                                : t('ai.commands_tab.batch_count.many').replace(':count', String(response.total))}
                         </span>
                     )}
                 </div>
@@ -229,9 +343,11 @@ export default function CommandsTab({ projectId }: CommandsTabProps) {
                             key={f.value}
                             type="button"
                             onClick={() => handleFilterChange(f.value)}
-                            className={`btn btn-sm rounded-xl capitalize ${statusFilter === f.value ? 'btn-primary' : 'btn-ghost'}`}
+                            className="alex-btn inline-flex items-center px-3 py-1 text-sm font-medium"
+                            style={statusFilter === f.value ? tabActiveStyle : tabIdleStyle}
+                            aria-pressed={statusFilter === f.value}
                         >
-                            {f.label}
+                            {t(f.labelKey)}
                         </button>
                     ))}
                 </div>
@@ -240,22 +356,30 @@ export default function CommandsTab({ projectId }: CommandsTabProps) {
             {/* Batch list */}
             {loading ? (
                 <div className="flex items-center justify-center py-16">
-                    <span className="loading loading-spinner loading-sm text-primary" />
+                    <i
+                        className="fa-solid fa-circle-notch fa-spin text-base"
+                        style={{ color: 'var(--theme-brand-primary-500)' }}
+                        aria-hidden="true"
+                    />
                 </div>
             ) : batches.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-base-content/10 py-12 text-center">
-                    <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-base-300/50">
-                        <i className="fa-solid fa-layer-group text-xl text-base-content/30" />
+                <div className="py-12 text-center" style={dashedEmptyStyle}>
+                    <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center" style={emptyIconWrapStyle}>
+                        <i className="fa-solid fa-layer-group text-xl" style={microText} aria-hidden="true" />
                     </div>
-                    <p className="text-sm font-medium text-base-content/50">No command batches found</p>
+                    <p className="text-sm font-medium" style={labelText}>
+                        {t('ai.commands_tab.empty.title')}
+                    </p>
                     {statusFilter !== 'all' && (
-                        <p className="mt-1 text-xs text-base-content/30">Try switching to "All" to see all batches.</p>
+                        <p className="mt-1 text-xs" style={microText}>
+                            {t('ai.commands_tab.empty.hint')}
+                        </p>
                     )}
                 </div>
             ) : (
                 <div className="space-y-3">
                     {sortedBatches.map((batch) => (
-                        <BatchCard key={batch.batch_id} batch={batch} onReview={openReview} />
+                        <BatchCard key={batch.batch_id} batch={batch} onReview={openReview} t={t} />
                     ))}
                 </div>
             )}

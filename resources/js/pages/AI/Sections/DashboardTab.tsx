@@ -1,11 +1,111 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 
 import { relativeDate } from '@alexandria/lib/formatDate';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 import type { AiDashboardStats, QueuedNote, BatchSummary, NoteRouting } from '@alexandria/types/ai-dashboard';
 
 interface DashboardTabProps {
     projectId: number;
     stats: AiDashboardStats;
+}
+
+/* ── Theme styles ── */
+
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
+const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+
+const cardStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+    boxShadow: '0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    padding: '1rem',
+};
+
+const gradientCardStyle: CSSProperties = {
+    background: 'linear-gradient(135deg, var(--theme-brand-primary-500), var(--theme-brand-secondary-500))',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-card)',
+    boxShadow: '0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    padding: '1rem',
+};
+
+const paperBoardStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+    overflow: 'hidden',
+};
+
+const paperBoardHeaderStyle: CSSProperties = {
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+};
+
+const rowDividerStyle: CSSProperties = {
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+};
+
+const queueCountBadgeStyle: CSSProperties = {
+    background: 'var(--theme-status-warning-fill)',
+    color: 'var(--theme-status-warning-content)',
+    borderRadius: 'var(--theme-radius-badge)',
+    padding: '0.125rem 0.5rem',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+};
+
+const emptyIconWrapStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    borderRadius: '9999px',
+};
+
+const progressTrackStyle: CSSProperties = {
+    height: '0.375rem',
+    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    borderRadius: '9999px',
+    overflow: 'hidden',
+    display: 'flex',
+    width: '100%',
+};
+
+const STATUS_COLOR: Record<string, { fill: string; content: string; stroke: string }> = {
+    pending: {
+        fill: 'var(--theme-status-warning-fill)',
+        content: 'var(--theme-status-warning-content)',
+        stroke: 'var(--theme-status-warning-stroke)',
+    },
+    processing: {
+        fill: 'var(--theme-status-info-fill)',
+        content: 'var(--theme-status-info-content)',
+        stroke: 'var(--theme-status-info-stroke)',
+    },
+    completed: {
+        fill: 'var(--theme-status-success-fill)',
+        content: 'var(--theme-status-success-content)',
+        stroke: 'var(--theme-status-success-stroke)',
+    },
+    failed: {
+        fill: 'var(--theme-status-error-fill)',
+        content: 'var(--theme-status-error-content)',
+        stroke: 'var(--theme-status-error-stroke)',
+    },
+};
+
+const neutralBadgeStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-badge)',
+};
+
+function statusBadgeStyle(status: string): CSSProperties {
+    const tokens = STATUS_COLOR[status];
+    if (!tokens) return neutralBadgeStyle;
+    return {
+        background: tokens.fill,
+        color: tokens.content,
+        borderRadius: 'var(--theme-radius-badge)',
+    };
 }
 
 /* ── Helpers ── */
@@ -29,6 +129,30 @@ function titleCase(slug: string): string {
         .join(' ');
 }
 
+const STAT_ACCENT: Record<string, string> = {
+    warning: 'var(--theme-status-warning-stroke)',
+    secondary: 'var(--theme-brand-secondary-500)',
+    primary: 'var(--theme-brand-primary-500)',
+    info: 'var(--theme-status-info-stroke)',
+    success: 'var(--theme-status-success-stroke)',
+    error: 'var(--theme-status-error-stroke)',
+};
+
+function statIconWrapStyle(colorKey: string): CSSProperties {
+    const accent = STAT_ACCENT[colorKey] ?? STAT_ACCENT.primary;
+    return {
+        background: `color-mix(in srgb, ${accent} 12%, transparent)`,
+        color: accent,
+        borderRadius: 'var(--theme-radius-input)',
+    };
+}
+
+const gradientIconWrapStyle: CSSProperties = {
+    background: 'color-mix(in srgb, #fff 20%, transparent)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-input)',
+};
+
 /* ── Stat Card ── */
 
 interface StatCardProps {
@@ -36,41 +160,65 @@ interface StatCardProps {
     label: string;
     value: string | number;
     subLabel?: string;
-    colorClass: string;
+    colorKey: string;
     gradient?: boolean;
-    budget?: number | null;
+    budgetLabel?: string;
 }
 
-function StatCard({ icon, label, value, subLabel, colorClass, gradient, budget }: StatCardProps) {
+function StatCard({ icon, label, value, subLabel, colorKey, gradient, budgetLabel }: StatCardProps) {
+    if (gradient) {
+        return (
+            <div style={gradientCardStyle}>
+                <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                        <p
+                            className="text-xs font-semibold uppercase tracking-wider"
+                            style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-content) 70%, transparent)' }}
+                        >
+                            {label}
+                        </p>
+                        <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
+                        {subLabel && (
+                            <p
+                                className="mt-0.5 text-xs"
+                                style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-content) 60%, transparent)' }}
+                            >
+                                {subLabel}
+                            </p>
+                        )}
+                        {budgetLabel && (
+                            <p
+                                className="mt-0.5 text-xs"
+                                style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-content) 60%, transparent)' }}
+                            >
+                                {budgetLabel}
+                            </p>
+                        )}
+                    </div>
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center" style={gradientIconWrapStyle}>
+                        <i className={`${icon} text-sm`} aria-hidden="true" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div
-            className={
-                gradient
-                    ? 'rounded-xl bg-gradient-to-br from-primary to-secondary p-4 text-primary-content shadow-sm'
-                    : 'rounded-xl border border-base-content/10 bg-base-200 p-4 shadow-sm'
-            }
-        >
+        <div style={cardStyle}>
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                    <p className={`text-xs font-semibold uppercase tracking-wider ${gradient ? 'text-primary-content/70' : 'text-base-content/50'}`}>
+                    <p className="text-xs font-semibold uppercase tracking-wider" style={labelText}>
                         {label}
                     </p>
-                    <p className={`mt-1 text-2xl font-bold tabular-nums ${gradient ? 'text-primary-content' : ''}`}>
-                        {value}
-                    </p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
                     {subLabel && (
-                        <p className={`mt-0.5 text-xs ${gradient ? 'text-primary-content/60' : 'text-base-content/40'}`}>
+                        <p className="mt-0.5 text-xs" style={fadedText}>
                             {subLabel}
                         </p>
                     )}
-                    {budget != null && (
-                        <p className="mt-0.5 text-xs text-primary-content/60">
-                            of ${Number(budget).toFixed(2)} budget
-                        </p>
-                    )}
                 </div>
-                <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${gradient ? 'bg-white/20' : `bg-${colorClass}/10`}`}>
-                    <i className={`${icon} text-sm ${gradient ? 'text-primary-content' : `text-${colorClass}`}`} />
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center" style={statIconWrapStyle(colorKey)}>
+                    <i className={`${icon} text-sm`} aria-hidden="true" />
                 </div>
             </div>
         </div>
@@ -81,9 +229,10 @@ function StatCard({ icon, label, value, subLabel, colorClass, gradient, budget }
 
 interface NoteQueueProps {
     projectId: number;
+    t: Translator;
 }
 
-function NoteQueue({ projectId }: NoteQueueProps) {
+function NoteQueue({ projectId, t }: NoteQueueProps) {
     const [notes, setNotes] = useState<QueuedNote[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -106,31 +255,40 @@ function NoteQueue({ projectId }: NoteQueueProps) {
     }, [fetchQueue]);
 
     return (
-        <div className="paper-board overflow-hidden rounded-2xl border border-base-300/50 bg-base-200">
-            <div className="paper-stripe__head flex items-center justify-between border-b border-base-content/5 px-5 py-4">
-                <h2 className="font-serif text-xl font-bold tracking-tight">Note Queue</h2>
+        <div className="paper-board" style={paperBoardStyle}>
+            <div className="paper-stripe__head flex items-center justify-between px-5 py-4" style={paperBoardHeaderStyle}>
+                <h2 className="font-serif text-xl font-bold tracking-tight">
+                    {t('ai.dashboard_tab.queue.title')}
+                </h2>
                 {!loading && notes.length > 0 && (
-                    <span className="badge badge-warning badge-sm">{notes.length}</span>
+                    <span style={queueCountBadgeStyle}>{notes.length}</span>
                 )}
             </div>
 
             {loading ? (
                 <div className="flex items-center justify-center py-10">
-                    <span className="loading loading-spinner loading-sm text-primary" />
+                    <i
+                        className="fa-solid fa-circle-notch fa-spin text-base"
+                        style={{ color: 'var(--theme-brand-primary-500)' }}
+                        aria-hidden="true"
+                    />
                 </div>
             ) : notes.length === 0 ? (
                 <div className="py-10 text-center">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-base-300/50">
-                        <i className="fa-solid fa-inbox text-lg text-base-content/30" />
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center" style={emptyIconWrapStyle}>
+                        <i className="fa-solid fa-inbox text-lg" style={microText} aria-hidden="true" />
                     </div>
-                    <p className="text-sm font-medium text-base-content/50">No notes queued</p>
+                    <p className="text-sm font-medium" style={labelText}>
+                        {t('ai.dashboard_tab.queue.empty')}
+                    </p>
                 </div>
             ) : (
-                <div className="paper-stripe__body divide-y divide-base-content/5">
-                    {notes.map((note) => (
+                <div className="paper-stripe__body">
+                    {notes.map((note, i) => (
                         <NoteQueueItem
                             key={note.note_id}
                             note={note}
+                            isLast={i === notes.length - 1}
                         />
                     ))}
                 </div>
@@ -139,12 +297,12 @@ function NoteQueue({ projectId }: NoteQueueProps) {
     );
 }
 
-function NoteQueueItem({ note }: { note: QueuedNote }) {
+function NoteQueueItem({ note, isLast }: { note: QueuedNote; isLast: boolean }) {
     return (
-        <div className="px-4 py-3">
+        <div className="px-4 py-3" style={isLast ? undefined : rowDividerStyle}>
             <div className="mb-2">
                 <p className="truncate text-sm font-medium">{note.note_title}</p>
-                <p className="mt-0.5 text-xs text-base-content/40">
+                <p className="mt-0.5 text-xs" style={fadedText}>
                     {relativeDate(note.note_created_at)}
                     {note.creator_name ? ` · ${note.creator_name}` : ''}
                 </p>
@@ -168,16 +326,12 @@ function BlueprintBadge({ routing }: { routing: NoteRouting }) {
             : `fa-solid ${routing.blueprint_icon}`
         : 'fa-solid fa-cube';
 
-    const colorClass = {
-        pending: 'badge-warning',
-        processing: 'badge-info',
-        completed: 'badge-success',
-        failed: 'badge-error',
-    }[routing.processing_status] ?? 'badge-ghost';
-
     return (
-        <span className={`badge badge-sm gap-1 ${colorClass}`}>
-            <i className={`${iconClass} text-[9px]`} />
+        <span
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium"
+            style={statusBadgeStyle(routing.processing_status)}
+        >
+            <i className={`${iconClass} text-[9px]`} aria-hidden="true" />
             {routing.blueprint_name}
         </span>
     );
@@ -187,9 +341,10 @@ function BlueprintBadge({ routing }: { routing: NoteRouting }) {
 
 interface RecentBatchesProps {
     projectId: number;
+    t: Translator;
 }
 
-function RecentBatches({ projectId }: RecentBatchesProps) {
+function RecentBatches({ projectId, t }: RecentBatchesProps) {
     const [batches, setBatches] = useState<BatchSummary[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -206,8 +361,8 @@ function RecentBatches({ projectId }: RecentBatchesProps) {
             .catch(() => setLoading(false));
     }, [projectId]);
 
-    // Priority sort: failed → pending → executed. Surfaces batches
-    // that need attention first, then in-flight, then done.
+    // Priority sort: failed → pending → executed. Surfaces batches that
+    // need attention first, then in-flight, then done.
     const sortedBatches = [...batches].sort((a, b) => {
         const rank = (x: BatchSummary) => {
             if (x.failed_count > 0) return 0;
@@ -218,26 +373,34 @@ function RecentBatches({ projectId }: RecentBatchesProps) {
     });
 
     return (
-        <div className="paper-board overflow-hidden rounded-2xl border border-base-300/50 bg-base-200">
-            <div className="paper-stripe__head border-b border-base-content/5 px-5 py-4">
-                <h2 className="font-serif text-xl font-bold tracking-tight">Recent Batches</h2>
+        <div className="paper-board" style={paperBoardStyle}>
+            <div className="paper-stripe__head px-5 py-4" style={paperBoardHeaderStyle}>
+                <h2 className="font-serif text-xl font-bold tracking-tight">
+                    {t('ai.dashboard_tab.batches.title')}
+                </h2>
             </div>
 
             {loading ? (
                 <div className="flex items-center justify-center py-10">
-                    <span className="loading loading-spinner loading-sm text-primary" />
+                    <i
+                        className="fa-solid fa-circle-notch fa-spin text-base"
+                        style={{ color: 'var(--theme-brand-primary-500)' }}
+                        aria-hidden="true"
+                    />
                 </div>
             ) : batches.length === 0 ? (
                 <div className="py-10 text-center">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-base-300/50">
-                        <i className="fa-solid fa-layer-group text-lg text-base-content/30" />
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center" style={emptyIconWrapStyle}>
+                        <i className="fa-solid fa-layer-group text-lg" style={microText} aria-hidden="true" />
                     </div>
-                    <p className="text-sm font-medium text-base-content/50">No batches yet</p>
+                    <p className="text-sm font-medium" style={labelText}>
+                        {t('ai.dashboard_tab.batches.empty')}
+                    </p>
                 </div>
             ) : (
-                <div className="paper-stripe__body divide-y divide-base-content/5">
-                    {sortedBatches.map((batch) => (
-                        <BatchRow key={batch.batch_id} batch={batch} />
+                <div className="paper-stripe__body">
+                    {sortedBatches.map((batch, i) => (
+                        <BatchRow key={batch.batch_id} batch={batch} t={t} isLast={i === sortedBatches.length - 1} />
                     ))}
                 </div>
             )}
@@ -245,7 +408,7 @@ function RecentBatches({ projectId }: RecentBatchesProps) {
     );
 }
 
-function BatchRow({ batch }: { batch: BatchSummary }) {
+function BatchRow({ batch, t, isLast }: { batch: BatchSummary; t: Translator; isLast: boolean }) {
     const total = batch.total_commands;
     const executed = batch.executed_count;
     const pending = batch.pending_count;
@@ -257,45 +420,53 @@ function BatchRow({ batch }: { batch: BatchSummary }) {
     const label = batch.blueprint_slug ? titleCase(batch.blueprint_slug) : 'Batch';
 
     return (
-        <div className="px-4 py-3">
+        <div className="px-4 py-3" style={isLast ? undefined : rowDividerStyle}>
             <div className="mb-2 flex items-start justify-between gap-2">
                 <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{label}</p>
-                    <p className="mt-0.5 text-xs text-base-content/40">{relativeDate(batch.created_at)}</p>
+                    <p className="mt-0.5 text-xs" style={fadedText}>{relativeDate(batch.created_at)}</p>
                 </div>
-                <span className="flex-shrink-0 text-xs font-mono tabular-nums text-base-content/50">
+                <span className="flex-shrink-0 text-xs font-mono tabular-nums" style={labelText}>
                     {executed}/{total}
                 </span>
             </div>
 
             {/* Progress bar */}
-            <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-base-300/40">
+            <div style={progressTrackStyle}>
                 {executed > 0 && (
-                    <div className="bg-success transition-all" style={{ width: pctOf(executed) }} />
+                    <div style={{ width: pctOf(executed), background: 'var(--theme-status-success-stroke)' }} />
                 )}
                 {pending > 0 && (
-                    <div className="bg-warning transition-all" style={{ width: pctOf(pending) }} />
+                    <div style={{ width: pctOf(pending), background: 'var(--theme-status-warning-stroke)' }} />
                 )}
                 {failed > 0 && (
-                    <div className="bg-error transition-all" style={{ width: pctOf(failed) }} />
+                    <div style={{ width: pctOf(failed), background: 'var(--theme-status-error-stroke)' }} />
                 )}
                 {rejected > 0 && (
-                    <div className="bg-base-content/20 transition-all" style={{ width: pctOf(rejected) }} />
+                    <div style={{ width: pctOf(rejected), background: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)' }} />
                 )}
             </div>
 
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                 {executed > 0 && (
-                    <span className="text-xs text-success">{executed} done</span>
+                    <span className="text-xs" style={{ color: 'var(--theme-status-success-stroke)' }}>
+                        {t('ai.dashboard_tab.batch.executed').replace(':count', String(executed))}
+                    </span>
                 )}
                 {pending > 0 && (
-                    <span className="text-xs text-warning">{pending} pending</span>
+                    <span className="text-xs" style={{ color: 'var(--theme-status-warning-stroke)' }}>
+                        {t('ai.dashboard_tab.batch.pending').replace(':count', String(pending))}
+                    </span>
                 )}
                 {failed > 0 && (
-                    <span className="text-xs text-error">{failed} failed</span>
+                    <span className="text-xs" style={{ color: 'var(--theme-status-error-stroke)' }}>
+                        {t('ai.dashboard_tab.batch.failed').replace(':count', String(failed))}
+                    </span>
                 )}
                 {rejected > 0 && (
-                    <span className="text-xs text-base-content/40">{rejected} rejected</span>
+                    <span className="text-xs" style={fadedText}>
+                        {t('ai.dashboard_tab.batch.rejected').replace(':count', String(rejected))}
+                    </span>
                 )}
             </div>
         </div>
@@ -305,49 +476,50 @@ function BatchRow({ batch }: { batch: BatchSummary }) {
 /* ── Dashboard Tab ── */
 
 export default function DashboardTab({ projectId, stats }: DashboardTabProps) {
+    const t = useT();
+
     return (
         <div className="space-y-6">
             {/* Stats row */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 <StatCard
                     icon="fa-solid fa-inbox"
-                    label="Queued Notes"
+                    label={t('ai.dashboard_tab.stat.queued_notes')}
                     value={stats.queue_pending}
-                    colorClass="warning"
+                    colorKey="warning"
                 />
                 <StatCard
                     icon="fa-solid fa-clipboard-list"
-                    label="Pending Commands"
+                    label={t('ai.dashboard_tab.stat.pending_commands')}
                     value={stats.queue_total - stats.queue_pending}
-                    colorClass="secondary"
+                    colorKey="secondary"
                 />
                 <StatCard
                     icon="fa-solid fa-calendar"
-                    label="This Month"
+                    label={t('ai.dashboard_tab.stat.this_month')}
                     value={stats.this_month_transactions}
-                    subLabel="requests"
-                    colorClass="primary"
+                    subLabel={t('ai.dashboard_tab.stat.this_month_sub')}
+                    colorKey="primary"
                 />
                 <StatCard
                     icon="fa-solid fa-coins"
-                    label="Token Usage"
+                    label={t('ai.dashboard_tab.stat.token_usage')}
                     value={formatTokens(stats.total_tokens)}
-                    colorClass="info"
+                    colorKey="info"
                 />
                 <StatCard
                     icon="fa-solid fa-dollar-sign"
-                    label="Monthly Cost"
+                    label={t('ai.dashboard_tab.stat.monthly_cost')}
                     value={formatCost(stats.this_month_cost)}
-                    colorClass="primary"
+                    colorKey="primary"
                     gradient
-                    budget={null}
                 />
             </div>
 
             {/* Queue + Batches */}
             <div className="grid gap-6 lg:grid-cols-2">
-                <NoteQueue projectId={projectId} />
-                <RecentBatches projectId={projectId} />
+                <NoteQueue projectId={projectId} t={t} />
+                <RecentBatches projectId={projectId} t={t} />
             </div>
         </div>
     );
