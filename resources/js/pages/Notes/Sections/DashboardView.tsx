@@ -179,7 +179,21 @@ export default function DashboardView({ projectId, stats, recentNotes, onNavigat
                     are tf-scoped so Night Studio / legacy themes still
                     get a clean flat list. */}
                 <div className="min-w-0">
-                    <div className="paper-board rounded-2xl">
+                    {/* paper-board paints an offset bevel shadow on tf themes
+                        only. On every other preset we still want the panel
+                        to read as elevated, so a base box-shadow + 1px
+                        stroke ride along; on tf themes paper-board's
+                        ::before sits behind both. Corner radius pulls from
+                        --theme-radius-card so the panel honors the active
+                        theme's roundedness rather than a hardcoded 1rem. */}
+                    <div
+                        className="paper-board"
+                        style={{
+                            borderRadius: 'var(--theme-radius-card)',
+                            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.10)',
+                            border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                        }}
+                    >
                         {/* Inner owns the bg + overflow so the pseudo
                             shadow from paper-board can render behind
                             without being covered by the background. */}

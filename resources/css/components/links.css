@@ -16,6 +16,20 @@
  * keyboard navigation does.
  */
 
+/* PageHeader breadcrumb-link hover — primary color + underline.
+   Lives here (not in a per-page CSS file) since breadcrumb links
+   are a layout chrome concern shared across every page that uses
+   PageHeader. Same color-mix-based primary as the focus halo. */
+.alex-page-header-crumb-link {
+    transition: color var(--theme-motion-duration-fast)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-page-header-crumb-link:hover {
+    color: var(--theme-brand-primary-500);
+    text-decoration: underline;
+}
+
 a:focus-visible {
     outline: none;
     background: color-mix(

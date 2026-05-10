@@ -35,8 +35,8 @@ interface PageHeaderProps {
     bannerImage?: string;
     /**
      * Extra Tailwind classes merged onto the title-bar wrapper. Use to
-     * override the default `bg-base-200/50` tint when you want a solid
-     * color or themed background behind the title.
+     * override the default theme tint when you want a solid color or
+     * themed background behind the title.
      */
     className?: string;
 }
@@ -64,13 +64,30 @@ export default function PageHeader({
         titleBarStyle.backgroundImage = `url('${bannerImage.replace(/'/g, "\\'")}')`;
         titleBarStyle.backgroundSize = 'cover';
         titleBarStyle.backgroundPosition = 'center';
+    } else {
+        // Subtle base-content tint so the title bar reads as a distinct
+        // band against the page surface. color-mix into transparent
+        // gives the same "10% wash" effect as the legacy bg-base-200/50
+        // utility, but tracks the active --theme-base-content instead
+        // of DaisyUI's preset-frozen --color-base-200.
+        titleBarStyle.background = 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)';
     }
 
-    const titleBarClass = [
-        'relative',
-        bannerImage ? '' : 'bg-base-200/50',
-        className,
-    ].filter(Boolean).join(' ');
+    const titleBarClass = ['relative', className].filter(Boolean).join(' ');
+
+    const breadcrumbStripStyle: CSSProperties = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+        borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+        borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    };
+
+    const breadcrumbTextStyle: CSSProperties = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    };
+
+    const currentCrumbStyle: CSSProperties = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+    };
 
     return (
         <>
@@ -79,7 +96,11 @@ export default function PageHeader({
             <div className={titleBarClass} style={titleBarStyle}>
                 {bannerImage && (
                     <div
-                        className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-base-200/95"
+                        className="absolute inset-0"
+                        style={{
+                            background:
+                                'linear-gradient(to bottom, rgba(0, 0, 0, 0.20), transparent 35%, color-mix(in srgb, var(--theme-base-page) 95%, transparent))',
+                        }}
                         aria-hidden="true"
                     />
                 )}
@@ -93,14 +114,16 @@ export default function PageHeader({
                 </div>
             </div>
 
-            {/* Bar 2: Breadcrumbs + tabs. Top+bottom border at a brighter
+            {/* Bar 2: Breadcrumbs + tabs. Top+bottom borders at a brighter
                 tone so the strip reads as a distinct band sandwiched
-                between the hero bar above and the page content below. */}
-            <div className="border-y border-base-content/15 bg-base-300/40">
+                between the hero bar above and the page content below.
+                All colors route through --theme-base-content via
+                color-mix() so preset swaps repaint the strip. */}
+            <div style={breadcrumbStripStyle}>
                 <div className="container mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
                     {/* Breadcrumbs */}
                     {breadcrumbs && breadcrumbs.length > 0 ? (
-                        <div className="flex items-center gap-2 text-sm text-base-content/50">
+                        <div className="flex items-center gap-2 text-sm" style={breadcrumbTextStyle}>
                             {breadcrumbs.map((crumb, i) => {
                                 const isLast = i === breadcrumbs.length - 1;
                                 const iconClass = crumb.icon
@@ -111,12 +134,15 @@ export default function PageHeader({
                                     <span key={i} className="flex items-center gap-2">
                                         {i > 0 && <i className="fa-solid fa-chevron-right text-[8px]" />}
                                         {isLast ? (
-                                            <span className="text-base-content/70">
+                                            <span style={currentCrumbStyle}>
                                                 {iconClass && <i className={`${iconClass} mr-1 text-xs`} />}
                                                 {crumb.label}
                                             </span>
                                         ) : crumb.href ? (
-                                            <a href={crumb.href} className="hover:text-primary hover:underline">
+                                            <a
+                                                href={crumb.href}
+                                                className="alex-page-header-crumb-link"
+                                            >
                                                 {iconClass && <i className={`${iconClass} mr-1 text-xs`} />}
                                                 {crumb.label}
                                             </a>
