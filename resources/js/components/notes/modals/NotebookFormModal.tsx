@@ -1,7 +1,8 @@
-import { useEffect, useState, type SyntheticEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type SyntheticEvent } from 'react';
 import Modal from '@alexandria/components/ui/Modal';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { NOTE_COLORS } from '@alexandria/lib/noteColors';
+import useT from '@alexandria/hooks/useT';
 
 export interface NotebookFormData {
     id: number;
@@ -22,6 +23,50 @@ interface NotebookFormModalProps {
     onSaved: (saved: NotebookFormData) => void;
 }
 
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+const muteText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+
+const sectionBorderStyle: CSSProperties = {
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+};
+
+const sectionBorderTopStyle: CSSProperties = {
+    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+};
+
+const headerIconWrapStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)',
+    color: 'var(--theme-brand-primary-500)',
+    borderRadius: '9999px',
+};
+
+const inputStyle: CSSProperties = {
+    background: 'var(--theme-base-surface)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    color: 'var(--theme-base-content)',
+    padding: '0.375rem 0.75rem',
+};
+
+const iconPreviewStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+};
+
+const pinToggleWrapperStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const errorStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-status-error-stroke) 30%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-status-error-stroke) 5%, transparent)',
+    color: 'var(--theme-status-error-stroke)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
 /**
  * Shared create/edit form for notebooks. Switches modes based on the
  * `notebook` prop — null for create, an existing notebook object for
@@ -29,6 +74,7 @@ interface NotebookFormModalProps {
  * the user learns one UI.
  */
 export default function NotebookFormModal({ open, onClose, projectId, notebook, onSaved }: NotebookFormModalProps) {
+    const t = useT();
     const isEdit = notebook !== null;
 
     const [title, setTitle] = useState('');
@@ -57,7 +103,7 @@ export default function NotebookFormModal({ open, onClose, projectId, notebook, 
         e.preventDefault();
         const trimmed = title.trim();
         if (!trimmed) {
-            setError('Title is required.');
+            setError(t('notes.notebook_form.error.title_required'));
             return;
         }
         setSaving(true);
@@ -71,8 +117,6 @@ export default function NotebookFormModal({ open, onClose, projectId, notebook, 
             is_pinned: isPinned,
         };
 
-        // Create mode requires the context so the new notebook is
-        // attached to this project via `notebook_notables`.
         if (!isEdit) {
             payload.context_type = 'project';
             payload.context_id = projectId;
@@ -83,43 +127,51 @@ export default function NotebookFormModal({ open, onClose, projectId, notebook, 
             : `/api/v1/projects/${projectId}/notebooks`;
         const method = isEdit ? 'PUT' : 'POST';
 
-        try {
-            const res = await fetch(url, {
-                method,
-                headers: csrfHeaders(),
-                credentials: 'same-origin',
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) {
-                const body = await res.json().catch(() => null);
-                setError(body?.message ?? 'Save failed.');
-                setSaving(false);
-                return;
-            }
-            const saved = await res.json();
-            onSaved(saved as NotebookFormData);
-            onClose();
-        } catch {
-            setError('Network error. Try again.');
+        const res = await fetch(url, {
+            method,
+            headers: csrfHeaders(),
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+        }).catch(() => null);
+
+        if (!res) {
+            setError(t('notes.notebook_form.error.network'));
             setSaving(false);
+            return;
         }
+        if (!res.ok) {
+            const body = await res.json().catch(() => null);
+            setError(body?.message ?? t('notes.notebook_form.error.save_failed'));
+            setSaving(false);
+            return;
+        }
+        const saved = await res.json();
+        onSaved(saved as NotebookFormData);
+        onClose();
     }
 
     return (
         <Modal open={open} onClose={onClose} maxWidth="max-w-md">
             <form onSubmit={handleSubmit} className="flex flex-col">
                 {/* Header */}
-                <div className="flex items-center gap-3 border-b border-base-300 px-5 py-4">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/20">
-                        <i className="fa-solid fa-book text-primary" />
+                <div className="flex items-center gap-3 px-5 py-4" style={sectionBorderStyle}>
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center" style={headerIconWrapStyle}>
+                        <i className="fa-solid fa-book" />
                     </div>
                     <div className="flex-1">
-                        <h2 className="text-base font-bold">{isEdit ? 'Edit Notebook' : 'New Notebook'}</h2>
-                        <p className="mt-0.5 text-xs text-base-content/40">
-                            {isEdit ? 'Update this notebook' : 'Create a notebook to organize notes'}
+                        <h2 className="text-base font-bold">
+                            {isEdit ? t('notes.notebook_form.edit_title') : t('notes.notebook_form.create_title')}
+                        </h2>
+                        <p className="mt-0.5 text-xs" style={fadedText}>
+                            {isEdit ? t('notes.notebook_form.edit_subtitle') : t('notes.notebook_form.create_subtitle')}
                         </p>
                     </div>
-                    <button type="button" onClick={onClose} className="btn btn-ghost btn-sm btn-square rounded-xl">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="alex-notes-modal-icon-btn"
+                        aria-label={t('notes.modal.tooltip.close')}
+                    >
                         <i className="fa-solid fa-xmark" />
                     </button>
                 </div>
@@ -128,59 +180,61 @@ export default function NotebookFormModal({ open, onClose, projectId, notebook, 
                 <div className="space-y-4 px-5 py-4">
                     {/* Title */}
                     <div>
-                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-base-content/50">
-                            Title <span className="text-error">*</span>
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wider" style={muteText}>
+                            {t('notes.notebook_form.field.title')}{' '}
+                            <span style={{ color: 'var(--theme-status-error-stroke)' }}>*</span>
                         </label>
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="e.g., Plot Points"
+                            placeholder={t('notes.notebook_form.field.title_placeholder')}
                             autoFocus
                             maxLength={255}
-                            className="input input-bordered input-sm w-full rounded-xl"
+                            className="w-full text-sm"
+                            style={inputStyle}
                         />
                     </div>
 
                     {/* Description */}
                     <div>
-                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-base-content/50">
-                            Description
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wider" style={muteText}>
+                            {t('notes.notebook_form.field.description')}
                         </label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Optional — what lives in this notebook?"
+                            placeholder={t('notes.notebook_form.field.description_placeholder')}
                             rows={2}
                             maxLength={2000}
-                            className="textarea textarea-bordered w-full rounded-xl text-sm"
+                            className="w-full text-sm"
+                            style={{ ...inputStyle, resize: 'vertical' }}
                         />
                     </div>
 
                     {/* Color swatches */}
                     <div>
-                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-base-content/50">
-                            Color
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider" style={muteText}>
+                            {t('notes.notebook_form.field.color')}
                         </label>
                         <div className="flex flex-wrap gap-1.5">
                             <button
                                 type="button"
                                 onClick={() => setColor(null)}
-                                className={`flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs transition ${
-                                    color === null ? 'border-primary text-primary' : 'border-base-content/15 text-base-content/30 hover:border-base-content/30'
-                                }`}
-                                aria-label="No color"
+                                className={`alex-notes-modal-color-btn alex-notes-modal-color-btn--none ${color === null ? 'alex-notes-modal-color-btn--active' : ''}`}
+                                aria-label={t('notes.notebook_form.field.color_none_aria')}
                             >
-                                <i className="fa-solid fa-slash" />
+                                <i
+                                    className="fa-solid fa-slash text-[10px]"
+                                    style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}
+                                />
                             </button>
                             {Object.entries(NOTE_COLORS).map(([key, hex]) => (
                                 <button
                                     key={key}
                                     type="button"
                                     onClick={() => setColor(hex)}
-                                    className={`h-7 w-7 rounded-full border-2 transition ${
-                                        color === hex ? 'border-primary ring-2 ring-primary/30' : 'border-transparent hover:scale-110'
-                                    }`}
+                                    className={`alex-notes-modal-color-btn ${color === hex ? 'alex-notes-modal-color-btn--active' : ''}`}
                                     style={{ backgroundColor: hex }}
                                     aria-label={key}
                                     title={key}
@@ -189,15 +243,13 @@ export default function NotebookFormModal({ open, onClose, projectId, notebook, 
                         </div>
                     </div>
 
-                    {/* Icon — free-text FontAwesome class with live preview.
-                        Simpler than a full picker; power users can paste a
-                        class string, and the preview validates it. */}
+                    {/* Icon — free-text FontAwesome class with live preview. */}
                     <div>
-                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-base-content/50">
-                            Icon
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wider" style={muteText}>
+                            {t('notes.notebook_form.field.icon')}
                         </label>
                         <div className="flex items-center gap-2">
-                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-base-content/15 bg-base-200">
+                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center" style={iconPreviewStyle}>
                                 <i
                                     className={`${icon.trim() ? (icon.includes(' ') ? icon : `fa-solid ${icon}`) : 'fa-solid fa-book'} text-sm`}
                                     style={{ color: color ?? undefined }}
@@ -207,52 +259,59 @@ export default function NotebookFormModal({ open, onClose, projectId, notebook, 
                                 type="text"
                                 value={icon}
                                 onChange={(e) => setIcon(e.target.value)}
-                                placeholder="fa-book (or fa-solid fa-book)"
+                                placeholder={t('notes.notebook_form.field.icon_placeholder')}
                                 maxLength={100}
-                                className="input input-bordered input-sm flex-1 rounded-xl font-mono text-xs"
+                                className="flex-1 font-mono text-xs"
+                                style={inputStyle}
                             />
                         </div>
-                        <p className="mt-1 text-[10px] text-base-content/40">
-                            Any FontAwesome class. "fa-solid" is assumed if no style given.
+                        <p className="mt-1 text-[10px]" style={fadedText}>
+                            {t('notes.notebook_form.field.icon_hint')}
                         </p>
                     </div>
 
                     {/* Pinned toggle */}
-                    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-base-content/10 bg-base-200/40 px-3 py-2">
+                    <label className="flex cursor-pointer items-center justify-between px-3 py-2" style={pinToggleWrapperStyle}>
                         <div>
-                            <span className="text-sm font-medium">Pin to top</span>
-                            <p className="text-[11px] text-base-content/40">
-                                Pinned notebooks surface above the rest.
+                            <span className="text-sm font-medium">{t('notes.notebook_form.field.pin_label')}</span>
+                            <p className="text-[11px]" style={fadedText}>
+                                {t('notes.notebook_form.field.pin_hint')}
                             </p>
                         </div>
                         <input
                             type="checkbox"
                             checked={isPinned}
                             onChange={(e) => setIsPinned(e.target.checked)}
-                            className={`toggle toggle-sm ${isPinned ? 'toggle-primary' : ''}`}
+                            className="alex-toggle"
                         />
                     </label>
 
                     {/* Error surface */}
                     {error && (
-                        <div className="rounded-lg border border-error/30 bg-error/5 px-3 py-2 text-xs text-error">
+                        <div className="px-3 py-2 text-xs" style={errorStyle}>
                             {error}
                         </div>
                     )}
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end gap-2 border-t border-base-300 px-5 py-3">
-                    <button type="button" onClick={onClose} className="btn btn-ghost btn-sm text-xs">
-                        Cancel
+                <div className="flex items-center justify-end gap-2 px-5 py-3" style={sectionBorderTopStyle}>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="alex-btn alex-btn--ghost"
+                        style={{ borderRadius: 'var(--theme-radius-button)', padding: '0.25rem 0.625rem', fontSize: '0.75rem' }}
+                    >
+                        {t('notes.notebook_form.cancel')}
                     </button>
                     <button
                         type="submit"
                         disabled={saving || !title.trim()}
-                        className="btn btn-primary btn-sm rounded-xl text-xs"
+                        className="alex-btn alex-btn--primary"
+                        style={{ borderRadius: 'var(--theme-radius-button)', padding: '0.25rem 0.625rem', fontSize: '0.75rem', gap: '0.375rem' }}
                     >
-                        {saving && <span className="loading loading-spinner loading-xs" />}
-                        {isEdit ? 'Save Changes' : 'Create Notebook'}
+                        {saving && <i className="fa-solid fa-circle-notch fa-spin text-xs" />}
+                        {isEdit ? t('notes.notebook_form.submit_edit') : t('notes.notebook_form.submit_create')}
                     </button>
                 </div>
             </form>
