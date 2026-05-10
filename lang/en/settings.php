@@ -96,6 +96,75 @@ return [
     'drawer.title' => 'Settings',
     'drawer.aria_label' => 'Settings drawer',
 
+    // ── Profile-card chrome (banner / avatar controls / preview) ────
+    'aria.banner_alt' => 'Profile banner',
+    'aria.change_avatar' => 'Change avatar',
+    'aria.remove_avatar' => 'Remove avatar',
+    'aria.change_avatar_ring' => 'Change avatar ring',
+    'preview.website_label' => 'Website',
+
+    // ── Section card chrome (SectionContent dispatcher) ─────────────
+    // Title / subtitle / label that wrap each settings section card.
+    // Keyed by activeSection slug. Per-section sub-pages reuse these
+    // for their own SectionHeader; this is the dispatcher's view.
+    'section.links.title' => 'Connected Links',
+    'section.links.subtitle' => 'Social media, support links, and other connections',
+    'section.links.label' => 'Social & Links',
+
+    'section.account.title' => 'Account',
+    'section.account.subtitle' => 'Email, password, and account management',
+    'section.account.label' => 'Account',
+    'section.account.unconfigured' => 'Account management is supplied by the consumer app.',
+
+    'section.security.unconfigured' => 'Two-factor authentication is not configured by the consumer app.',
+
+    'section.privacy-visibility.title' => 'Field Visibility',
+    'section.privacy-visibility.subtitle' => 'Control who can see each part of your profile',
+    'section.privacy-settings.title' => 'Privacy Settings',
+    'section.privacy-settings.subtitle' => 'Global privacy and social interaction preferences',
+    'section.privacy-lists.title' => 'Privacy Lists',
+    'section.privacy-lists.subtitle' => 'Manage custom groups for granular access control',
+    'section.privacy.label' => 'Privacy',
+
+    'section.ai-connection.title' => 'AI Connection',
+    'section.ai-connection.subtitle' => 'Manage your API keys and providers',
+    'section.ai-models.title' => 'Model Selection',
+    'section.ai-models.subtitle' => 'Choose AI models for different tasks',
+    'section.ai-usage.title' => 'Usage',
+    'section.ai-usage.subtitle' => 'Track your AI usage this month',
+    'section.ai-preferences.title' => 'AI Preferences',
+    'section.ai-preferences.subtitle' => 'Response style and behavior settings',
+    'section.ai.label' => 'AI',
+
+    'section.pref-appearance.title' => 'Appearance',
+    'section.pref-appearance.subtitle' => 'Theme, font size, and display preferences',
+    'section.pref-language.title' => 'Regional Formats',
+    'section.pref-language.subtitle' => 'Date, time, and number formatting',
+    'section.pref-notifications.title' => 'Notifications',
+    'section.pref-notifications.subtitle' => 'Email, push, and in-app notification preferences',
+    'section.preferences.label' => 'Preferences',
+
+    'section.tools-editor.title' => 'Editor',
+    'section.tools-editor.subtitle' => 'Writing and editing preferences',
+    'section.tools.label' => 'Tools',
+
+    'section.a11y-visual.title' => 'Visual Accessibility',
+    'section.a11y-visual.subtitle' => 'Contrast, fonts, and focus indicators',
+    'section.a11y-motion.title' => 'Motion & Animation',
+    'section.a11y-motion.subtitle' => 'Reduce motion and transitions',
+    'section.a11y-assistive.title' => 'Assistive Technology',
+    'section.a11y-assistive.subtitle' => 'Screen reader and keyboard support',
+    'section.accessibility.label' => 'Accessibility',
+
+    // Placeholders for the not-yet-built tools sub-pages.
+    'placeholder.coming_soon' => 'Coming Soon',
+    'placeholder.tools-shortcuts.title' => 'Keyboard Shortcuts',
+    'placeholder.tools-shortcuts.subtitle' => 'Customize your key bindings',
+    'placeholder.tools-shortcuts.description' => 'Customizable keyboard shortcuts will let you navigate and edit faster with your preferred key combinations.',
+    'placeholder.tools-integrations.title' => 'Integrations',
+    'placeholder.tools-integrations.subtitle' => 'Connect your favorite tools',
+    'placeholder.tools-integrations.description' => 'Connect your favorite tools like Notion, Google Drive, Dropbox, and more to streamline your workflow.',
+
     // ── Save-success toasts (shared across every section) ───────────
     'toast.saved' => 'Changes saved',
     'toast.profile_saved' => 'Profile updated',

@@ -1,4 +1,5 @@
 import { router } from '@inertiajs/react';
+import useT from '@alexandria/hooks/useT';
 import ProfileSection from '../Sections/ProfileSection';
 import PreferencesSection from '../Sections/PreferencesSection';
 import LinksSection from '../Sections/LinksSection';
@@ -7,7 +8,6 @@ import AiSections from '../Sections/AiSections';
 import SecuritySection from '../Sections/SecuritySection';
 import type { SettingsBodyProps } from '../SettingsBody';
 import SectionCard from './SectionCard';
-import useT from '@alexandria/hooks/useT';
 
 /**
  * Section content router — picks the correct section component for the
@@ -15,6 +15,9 @@ import useT from '@alexandria/hooks/useT';
  * they own their own banner/avatar layout; everything else renders
  * inside a `<SectionCard>` with a header derived from the metadata
  * tables below.
+ *
+ * Card titles + subtitles + labels live as `settings.section.*` lang
+ * keys so consumers can re-skin the chrome without touching React.
  */
 export default function SectionContent({
     activeSection,
@@ -50,6 +53,8 @@ export default function SectionContent({
     applyViewPreferences?: SettingsBodyProps['applyViewPreferences'];
 }) {
     const t = useT();
+    const fadedTextStyle = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+
     // Profile sections
     if (['identity', 'about', 'details'].includes(activeSection)) {
         return <ProfileSection profile={profile} usernameStatus={usernameStatus} options={options as { pronouns: Record<string, string>; dob_visibility: Record<string, string> }} activeSection={activeSection} onPreviewChange={onPreviewChange} />;
@@ -58,7 +63,12 @@ export default function SectionContent({
     // Links section
     if (activeSection === 'links') {
         return (
-            <SectionCard icon="fa-link" title="Connected Links" subtitle="Social media, support links, and other connections" label="Social & Links">
+            <SectionCard
+                icon="fa-link"
+                title={t('settings.section.links.title')}
+                subtitle={t('settings.section.links.subtitle')}
+                label={t('settings.section.links.label')}
+            >
                 <LinksSection links={links} platforms={linkPlatforms} onLinksChanged={() => router.reload({ only: ['links'] })} />
             </SectionCard>
         );
@@ -78,12 +88,9 @@ export default function SectionContent({
                 {twoFactor
                     ? <SecuritySection twoFactor={twoFactor} />
                     : (
-                        <div
-                            className="py-10 text-center text-sm"
-                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}
-                        >
+                        <div className="py-10 text-center text-sm" style={fadedTextStyle}>
                             <i className="fa-solid fa-circle-info mr-1" />
-                            Two-factor authentication is not configured by the consumer app.
+                            {t('settings.section.security.unconfigured')}
                         </div>
                     )}
             </SectionCard>
@@ -95,13 +102,18 @@ export default function SectionContent({
     // and account-deletion flows are SaaS-app concerns.
     if (activeSection === 'account') {
         return (
-            <SectionCard icon="fa-user-gear" title="Account" subtitle="Email, password, and account management" label="Account">
+            <SectionCard
+                icon="fa-user-gear"
+                title={t('settings.section.account.title')}
+                subtitle={t('settings.section.account.subtitle')}
+                label={t('settings.section.account.label')}
+            >
                 {accountManagementSlot
                     ? accountManagementSlot({ email: profile.email, emailVerified: profile.email_verified })
                     : (
-                        <div className="py-10 text-center text-sm text-base-content/50">
+                        <div className="py-10 text-center text-sm" style={fadedTextStyle}>
                             <i className="fa-solid fa-circle-info mr-1" />
-                            Account management is supplied by the consumer app.
+                            {t('settings.section.account.unconfigured')}
                         </div>
                     )}
             </SectionCard>
@@ -109,16 +121,21 @@ export default function SectionContent({
     }
 
     // Privacy sections
-    const privacySectionMap: Record<string, { sub: string; icon: string; title: string; subtitle: string }> = {
-        'privacy-visibility': { sub: 'visibility', icon: 'fa-eye', title: 'Field Visibility', subtitle: 'Control who can see each part of your profile' },
-        'privacy-settings': { sub: 'settings', icon: 'fa-lock', title: 'Privacy Settings', subtitle: 'Global privacy and social interaction preferences' },
-        'privacy-lists': { sub: 'lists', icon: 'fa-users-rectangle', title: 'Privacy Lists', subtitle: 'Manage custom groups for granular access control' },
+    const privacySectionMap: Record<string, { sub: string; icon: string }> = {
+        'privacy-visibility': { sub: 'visibility', icon: 'fa-eye' },
+        'privacy-settings': { sub: 'settings', icon: 'fa-lock' },
+        'privacy-lists': { sub: 'lists', icon: 'fa-users-rectangle' },
     };
 
     const privacyMeta = privacySectionMap[activeSection];
     if (privacyMeta) {
         return (
-            <SectionCard icon={privacyMeta.icon} title={privacyMeta.title} subtitle={privacyMeta.subtitle} label="Privacy">
+            <SectionCard
+                icon={privacyMeta.icon}
+                title={t(`settings.section.${activeSection}.title`)}
+                subtitle={t(`settings.section.${activeSection}.subtitle`)}
+                label={t('settings.section.privacy.label')}
+            >
                 <PrivacySections
                     section={privacyMeta.sub}
                     fieldVisibility={fieldVisibility}
@@ -133,17 +150,22 @@ export default function SectionContent({
     }
 
     // AI sections
-    const aiSectionMap: Record<string, { sub: string; icon: string; title: string; subtitle: string }> = {
-        'ai-connection': { sub: 'connection', icon: 'fa-plug', title: 'AI Connection', subtitle: 'Manage your API keys and providers' },
-        'ai-models': { sub: 'models', icon: 'fa-cubes', title: 'Model Selection', subtitle: 'Choose AI models for different tasks' },
-        'ai-usage': { sub: 'usage', icon: 'fa-chart-pie', title: 'Usage', subtitle: 'Track your AI usage this month' },
-        'ai-preferences': { sub: 'preferences', icon: 'fa-sliders', title: 'AI Preferences', subtitle: 'Response style and behavior settings' },
+    const aiSectionMap: Record<string, { sub: string; icon: string }> = {
+        'ai-connection': { sub: 'connection', icon: 'fa-plug' },
+        'ai-models': { sub: 'models', icon: 'fa-cubes' },
+        'ai-usage': { sub: 'usage', icon: 'fa-chart-pie' },
+        'ai-preferences': { sub: 'preferences', icon: 'fa-sliders' },
     };
 
     const aiMeta = aiSectionMap[activeSection];
     if (aiMeta) {
         return (
-            <SectionCard icon={aiMeta.icon} title={aiMeta.title} subtitle={aiMeta.subtitle} label="AI">
+            <SectionCard
+                icon={aiMeta.icon}
+                title={t(`settings.section.${activeSection}.title`)}
+                subtitle={t(`settings.section.${activeSection}.subtitle`)}
+                label={t('settings.section.ai.label')}
+            >
                 <AiSections
                     section={aiMeta.sub}
                     ai={ai as never}
@@ -153,21 +175,26 @@ export default function SectionContent({
         );
     }
 
-    // Preference/settings sections
-    const sectionMeta: Record<string, { mapped: string; icon: string; title: string; subtitle: string; label: string }> = {
-        'pref-appearance': { mapped: 'appearance', icon: 'fa-palette', title: 'Appearance', subtitle: 'Theme, font size, and display preferences', label: 'Preferences' },
-        'pref-language': { mapped: 'language', icon: 'fa-globe', title: 'Regional Formats', subtitle: 'Date, time, and number formatting', label: 'Preferences' },
-        'pref-notifications': { mapped: 'notifications', icon: 'fa-bell', title: 'Notifications', subtitle: 'Email, push, and in-app notification preferences', label: 'Preferences' },
-        'tools-editor': { mapped: 'editor', icon: 'fa-pen-to-square', title: 'Editor', subtitle: 'Writing and editing preferences', label: 'Tools' },
-        'a11y-visual': { mapped: 'a11y-visual', icon: 'fa-eye', title: 'Visual Accessibility', subtitle: 'Contrast, fonts, and focus indicators', label: 'Accessibility' },
-        'a11y-motion': { mapped: 'a11y-motion', icon: 'fa-wand-magic-sparkles', title: 'Motion & Animation', subtitle: 'Reduce motion and transitions', label: 'Accessibility' },
-        'a11y-assistive': { mapped: 'a11y-assistive', icon: 'fa-universal-access', title: 'Assistive Technology', subtitle: 'Screen reader and keyboard support', label: 'Accessibility' },
+    // Preference / accessibility / tools section pages.
+    const sectionMeta: Record<string, { mapped: string; icon: string; labelKey: string }> = {
+        'pref-appearance': { mapped: 'appearance', icon: 'fa-palette', labelKey: 'settings.section.preferences.label' },
+        'pref-language': { mapped: 'language', icon: 'fa-globe', labelKey: 'settings.section.preferences.label' },
+        'pref-notifications': { mapped: 'notifications', icon: 'fa-bell', labelKey: 'settings.section.preferences.label' },
+        'tools-editor': { mapped: 'editor', icon: 'fa-pen-to-square', labelKey: 'settings.section.tools.label' },
+        'a11y-visual': { mapped: 'a11y-visual', icon: 'fa-eye', labelKey: 'settings.section.accessibility.label' },
+        'a11y-motion': { mapped: 'a11y-motion', icon: 'fa-wand-magic-sparkles', labelKey: 'settings.section.accessibility.label' },
+        'a11y-assistive': { mapped: 'a11y-assistive', icon: 'fa-universal-access', labelKey: 'settings.section.accessibility.label' },
     };
 
     const meta = sectionMeta[activeSection];
     if (meta) {
         return (
-            <SectionCard icon={meta.icon} title={meta.title} subtitle={meta.subtitle} label={meta.label}>
+            <SectionCard
+                icon={meta.icon}
+                title={t(`settings.section.${activeSection}.title`)}
+                subtitle={t(`settings.section.${activeSection}.subtitle`)}
+                label={t(meta.labelKey)}
+            >
                 <PreferencesSection
                     section={meta.mapped}
                     preferences={preferences}
@@ -178,22 +205,36 @@ export default function SectionContent({
         );
     }
 
-    // Placeholder sections
-    const placeholders: Record<string, { icon: string; title: string; subtitle: string; description: string }> = {
-        'tools-shortcuts': { icon: 'fa-keyboard', title: 'Keyboard Shortcuts', subtitle: 'Customize your key bindings', description: 'Customizable keyboard shortcuts will let you navigate and edit faster with your preferred key combinations.' },
-        'tools-integrations': { icon: 'fa-plug', title: 'Integrations', subtitle: 'Connect your favorite tools', description: 'Connect your favorite tools like Notion, Google Drive, Dropbox, and more to streamline your workflow.' },
+    // Placeholder sections — not-yet-built tools sub-pages.
+    const placeholders: Record<string, { icon: string }> = {
+        'tools-shortcuts': { icon: 'fa-keyboard' },
+        'tools-integrations': { icon: 'fa-plug' },
     };
 
     const placeholder = placeholders[activeSection];
     if (placeholder) {
         return (
-            <SectionCard icon={placeholder.icon} title={placeholder.title} subtitle={placeholder.subtitle} label="Tools">
+            <SectionCard
+                icon={placeholder.icon}
+                title={t(`settings.placeholder.${activeSection}.title`)}
+                subtitle={t(`settings.placeholder.${activeSection}.subtitle`)}
+                label={t('settings.section.tools.label')}
+            >
                 <div className="py-10 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-base-300">
-                        <i className={`fa-solid ${placeholder.icon} text-2xl text-base-content/30`} />
+                    <div
+                        className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+                        style={{ background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)' }}
+                    >
+                        <i
+                            className={`fa-solid ${placeholder.icon} text-2xl`}
+                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' }}
+                            aria-hidden="true"
+                        />
                     </div>
-                    <h3 className="font-serif text-2xl font-bold">Coming Soon</h3>
-                    <p className="mx-auto mt-2 max-w-sm text-sm text-base-content/50">{placeholder.description}</p>
+                    <h3 className="font-serif text-2xl font-bold">{t('settings.placeholder.coming_soon')}</h3>
+                    <p className="mx-auto mt-2 max-w-sm text-sm" style={fadedTextStyle}>
+                        {t(`settings.placeholder.${activeSection}.description`)}
+                    </p>
                 </div>
             </SectionCard>
         );

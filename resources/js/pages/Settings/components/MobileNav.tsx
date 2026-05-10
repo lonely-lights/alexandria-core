@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { ALL_NAV } from '../nav-config';
 
 /**
@@ -21,23 +21,74 @@ export default function MobileNav({
 }) {
     const [open, setOpen] = useState(false);
 
-    const currentLabel = ALL_NAV.flatMap((i) => [i, ...(i.children ?? [])]).find((i) => i.key === activeSection)?.label ?? 'Settings';
+    const currentLabel =
+        ALL_NAV.flatMap((i) => [i, ...(i.children ?? [])]).find((i) => i.key === activeSection)?.label
+        ?? 'Settings';
+
+    const triggerStyle: CSSProperties = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+        color: 'var(--theme-base-content)',
+        borderRadius: 'var(--theme-radius-button)',
+    };
+    const dropdownStyle: CSSProperties = {
+        background: 'var(--theme-base-surface)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
+    };
+
+    function rowStyle(active: boolean): CSSProperties {
+        if (active) {
+            return {
+                background: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+                color: 'var(--theme-brand-primary-500)',
+                borderRadius: 'var(--theme-radius-button)',
+            };
+        }
+        return {
+            color: 'var(--theme-base-content)',
+            borderRadius: 'var(--theme-radius-button)',
+        };
+    }
+
+    function childRowStyle(active: boolean): CSSProperties {
+        if (active) {
+            return {
+                background: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+                color: 'var(--theme-brand-primary-500)',
+                borderRadius: 'var(--theme-radius-button)',
+            };
+        }
+        return {
+            color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+            borderRadius: 'var(--theme-radius-button)',
+        };
+    }
 
     return (
         <div className="space-y-2 lg:hidden">
             <div className="relative">
                 <button
+                    type="button"
                     onClick={() => setOpen(!open)}
-                    className="btn btn-ghost w-full justify-between rounded-xl bg-base-200/50"
+                    className="flex w-full items-center justify-between px-4 py-2 text-sm font-medium transition-colors"
+                    style={triggerStyle}
                 >
                     <span>{currentLabel}</span>
-                    <i className={`fa-solid fa-chevron-down text-xs transition-transform ${open ? 'rotate-180' : ''}`} />
+                    <i
+                        className={`fa-solid fa-chevron-down text-xs transition-transform ${open ? 'rotate-180' : ''}`}
+                        aria-hidden="true"
+                    />
                 </button>
                 {open && (
-                    <div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-xl border border-base-300/50 bg-base-200 p-2 shadow-lg">
+                    <div
+                        className="absolute left-0 right-0 top-full z-20 mt-2 p-2"
+                        style={dropdownStyle}
+                    >
                         {ALL_NAV.map((item) => (
                             <div key={item.key}>
                                 <button
+                                    type="button"
                                     onClick={() => {
                                         if (item.children) {
                                             onToggleGroup(item.key);
@@ -46,19 +97,27 @@ export default function MobileNav({
                                             setOpen(false);
                                         }
                                     }}
-                                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm ${activeSection === item.key ? 'bg-primary/10 text-primary' : ''}`}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-sm"
+                                    style={rowStyle(activeSection === item.key)}
                                 >
-                                    <i className={`fa-solid ${item.icon} w-4`} />
+                                    <i className={`fa-solid ${item.icon} w-4`} aria-hidden="true" />
                                     <span className="flex-1 text-left">{item.label}</span>
-                                    {item.children && <i className={`fa-solid fa-chevron-down text-xs ${expandedGroups[item.key] ? 'rotate-180' : ''}`} />}
+                                    {item.children && (
+                                        <i
+                                            className={`fa-solid fa-chevron-down text-xs ${expandedGroups[item.key] ? 'rotate-180' : ''}`}
+                                            aria-hidden="true"
+                                        />
+                                    )}
                                 </button>
                                 {item.children && expandedGroups[item.key] && item.children.map((child) => (
                                     <button
+                                        type="button"
                                         key={child.key}
                                         onClick={() => { onSectionChange(child.key); setOpen(false); }}
-                                        className={`flex w-full items-center gap-2 rounded-lg py-1.5 pl-10 pr-3 text-sm ${activeSection === child.key ? 'bg-primary/10 text-primary' : 'text-base-content/70'}`}
+                                        className="flex w-full items-center gap-2 py-1.5 pl-10 pr-3 text-sm"
+                                        style={childRowStyle(activeSection === child.key)}
                                     >
-                                        <i className={`fa-solid ${child.icon} w-4`} />
+                                        <i className={`fa-solid ${child.icon} w-4`} aria-hidden="true" />
                                         {child.label}
                                     </button>
                                 ))}

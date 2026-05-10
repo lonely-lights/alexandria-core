@@ -53,7 +53,12 @@ export default function AnimatedPronouns({
 
     return (
         <span ref={containerRef} className="inline-block">
-            <span className="mx-1 text-base-content/30">·</span>
+            <span
+                className="mx-1"
+                style={{ color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' }}
+            >
+                ·
+            </span>
             <span>{formatPronouns(displayed)}</span>
         </span>
     );

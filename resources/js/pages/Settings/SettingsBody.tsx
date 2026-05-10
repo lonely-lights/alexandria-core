@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { useState, useRef, type ChangeEvent, type ReactNode } from 'react';
 import AvatarWithRing, { type AvatarRingOption } from '@alexandria/components/ui/AvatarWithRing';
 import { useEnterAnimation } from '@alexandria/hooks/useEnterAnimation';
+import useT from '@alexandria/hooks/useT';
 import { type ViewPreferences } from './Sections/PreferencesSection';
 import { ALL_NAV, type NavItem } from './nav-config';
 import AnimatedPronouns from './components/AnimatedPronouns';
@@ -167,6 +168,7 @@ export default function SettingsBody({
     applyViewPreferences,
     initialActiveSection = 'identity',
 }: SettingsBodyProps) {
+    const t = useT();
     const [activeSection, setActiveSection] = useState(initialActiveSection);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ profile: true });
     const [showRingModal, setShowRingModal] = useState(false);
@@ -269,7 +271,7 @@ export default function SettingsBody({
             <div className="relative h-56 overflow-hidden sm:h-64 lg:h-72">
                 <div className="absolute inset-0">
                     {profile.has_banner ? (
-                        <img src={profile.banner_url} alt="Profile banner" className="h-full w-full object-cover" />
+                        <img src={profile.banner_url} alt={t('settings.aria.banner_alt')} className="h-full w-full object-cover" />
                     ) : (
                         <div
                             className="h-full w-full opacity-90"
@@ -325,11 +327,31 @@ export default function SettingsBody({
             {/* Upload error */}
             {mediaError && (
                 <div className="mx-auto max-w-7xl px-4 pt-3">
-                    <div className="flex items-center gap-2 rounded-lg bg-error/10 border border-error/20 px-4 py-2 text-sm text-error">
-                        <i className="fa-solid fa-circle-exclamation" />
-                        {mediaError}
-                        <button onClick={() => setMediaError(null)} className="ml-auto btn btn-ghost btn-xs btn-circle">
-                            <i className="fa-solid fa-xmark text-[10px]" />
+                    <div
+                        className="flex items-center gap-2 px-4 py-2 text-sm"
+                        style={{
+                            background: 'var(--theme-base-surface)',
+                            color: 'var(--theme-base-content)',
+                            border: '1px solid color-mix(in srgb, var(--theme-status-error-stroke) 35%, transparent)',
+                            borderInlineStartWidth: '4px',
+                            borderInlineStartColor: 'var(--theme-status-error-stroke)',
+                            borderRadius: 'var(--theme-radius-card)',
+                        }}
+                    >
+                        <i
+                            className="fa-solid fa-circle-exclamation"
+                            style={{ color: 'var(--theme-status-error-stroke)' }}
+                            aria-hidden="true"
+                        />
+                        <span>{mediaError}</span>
+                        <button
+                            type="button"
+                            onClick={() => setMediaError(null)}
+                            className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-black/5"
+                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}
+                            aria-label={t('common.dismiss')}
+                        >
+                            <i className="fa-solid fa-xmark text-[10px]" aria-hidden="true" />
                         </button>
                     </div>
                 </div>
@@ -373,7 +395,7 @@ export default function SettingsBody({
                                                     type="button"
                                                     onClick={() => avatarInput.current?.click()}
                                                     className="alex-avatar-control"
-                                                    aria-label="Change avatar"
+                                                    aria-label={t('settings.aria.change_avatar')}
                                                 >
                                                     <i className="fa-solid fa-camera" aria-hidden="true" />
                                                 </button>
@@ -382,7 +404,7 @@ export default function SettingsBody({
                                                         type="button"
                                                         onClick={removeAvatar}
                                                         className="alex-avatar-control"
-                                                        aria-label="Remove avatar"
+                                                        aria-label={t('settings.aria.remove_avatar')}
                                                     >
                                                         <i className="fa-solid fa-trash" aria-hidden="true" />
                                                     </button>
@@ -391,7 +413,7 @@ export default function SettingsBody({
                                                     type="button"
                                                     onClick={() => setShowRingModal(true)}
                                                     className="alex-avatar-control"
-                                                    aria-label="Change avatar ring"
+                                                    aria-label={t('settings.aria.change_avatar_ring')}
                                                 >
                                                     <i className="fa-solid fa-ring" aria-hidden="true" />
                                                 </button>
@@ -458,7 +480,7 @@ export default function SettingsBody({
                                                 style={{ color: 'var(--theme-brand-primary-500)' }}
                                             >
                                                 <i className="fa-solid fa-link text-xs" />
-                                                <span>Website</span>
+                                                <span>{t('settings.preview.website_label')}</span>
                                             </a>
                                         </div>
                                     )}

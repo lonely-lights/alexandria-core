@@ -1,6 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { type ReactNode } from 'react';
 import AppLayout from '@alexandria/layouts/AppLayout';
+import useT from '@alexandria/hooks/useT';
 import SettingsBody, { type SettingsBodyProps } from './SettingsBody';
 import { type ViewPreferences } from './Sections/PreferencesSection';
 
@@ -39,11 +40,12 @@ export default function Account({
     accountManagementSlot,
     applyViewPreferences,
 }: AccountSlotProps = {}) {
+    const t = useT();
     const inertiaProps = usePage<{ props: AccountInertiaProps }>()
         .props as unknown as AccountInertiaProps;
 
     return (
-        <AppLayout title="Settings" immersive>
+        <AppLayout title={t('settings.drawer.title')} immersive>
             <SettingsBody
                 {...inertiaProps}
                 accountManagementSlot={accountManagementSlot}

@@ -38,6 +38,7 @@ return [
     'search' => 'Search',
     'filter' => 'Filter',
     'reset' => 'Reset',
+    'dismiss' => 'Dismiss',
 
     // Status words
     'loading' => 'Loading…',
