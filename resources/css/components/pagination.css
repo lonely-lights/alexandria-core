@@ -1,0 +1,35 @@
+/*
+ * Pagination primitive — nav-button base + hover + disabled states.
+ *
+ * All styles live here (not inline on the component) so :hover and
+ * :disabled selectors can override the rest position cleanly. Inline
+ * `style` would beat these rules on specificity.
+ */
+
+.alex-pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: var(--theme-radius-button);
+    background: transparent;
+    color: color-mix(in srgb, var(--theme-base-content) 70%, transparent);
+    cursor: pointer;
+    transition:
+        background-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-pagination-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-brand-primary-500) 18%, transparent);
+    color: var(--theme-brand-primary-500);
+}
+
+.alex-pagination-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}

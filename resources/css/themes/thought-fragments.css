@@ -10,15 +10,21 @@
        static analysis (PhpStorm CSS inspector) sees the tokens declared.
        Consumers can override per-host or per-theme.
 
-       Radii now derive from `--theme-radius-button` (paper-action,
-       since it's a button) and `--theme-radius-card` (paper-card +
+       Radii derive from `--theme-radius-button` (paper-action, since
+       it's a button) and `--theme-radius-card` (paper-card +
        paper-board, both panels) so the offset bevel shadow tracks
        the active theme's roundedness — soft / sharp / pill all
-       repaint correctly. */
+       repaint correctly.
+
+       Shadow color tracks `--theme-brand-primary-700` (the darker
+       brand variant) so the offset bevel picks up the active preset's
+       palette instead of the legacy warm gold. On tf themes whose
+       brand is gold this still reads warm; on cyberpunk it picks up
+       the deeper neon; on default it picks up the default brand. */
     --paper-action-shadow-radius: var(--theme-radius-button);
     --paper-card-shadow-radius: var(--theme-radius-card);
     --paper-board-shadow-radius: var(--theme-radius-card);
-    --paper-board-shadow-color: var(--tf-tape-shadow);
+    --paper-board-shadow-color: var(--theme-brand-primary-700);
 }
 
 /* Per-theme paper palette tokens. Legacy declared these inside
@@ -409,7 +415,7 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     /* Host can override --paper-board-shadow-color (e.g. to tint the
        shadow with a card-specific color like the secondary infobox).
        Falls back to the generic tape-shadow. */
-    background: var(--paper-board-shadow-color, var(--tf-tape-shadow));
+    background: var(--paper-board-shadow-color, var(--theme-brand-primary-700));
     transform: translate(3px, 4px);
     z-index: -1;
 }

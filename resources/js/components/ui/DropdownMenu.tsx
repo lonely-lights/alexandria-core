@@ -8,6 +8,8 @@ interface DropdownMenuItem {
     href?: string;
     badge?: string | number;
     divider?: false;
+    /** Render as a danger action (status-error tinted text + hover bg). */
+    danger?: boolean;
 }
 
 interface DropdownMenuDivider {
@@ -32,24 +34,56 @@ function DropdownRow({ item, onClose }: { item: DropdownMenuItem; onClose: () =>
         ? (item.icon.includes(' ') ? item.icon : `fa-solid ${item.icon}`)
         : null;
 
-    const rowClass = `flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors ${
-        hovered ? 'bg-base-content/10 text-base-content' : 'text-base-content/80'
-    }`;
+    // Color resolution branches on danger flag + hover state. Danger
+    // rows track --theme-status-error-stroke; non-danger rows track
+    // --theme-base-content with alpha-mix variants.
+    const baseColor = item.danger ? 'var(--theme-status-error-stroke)' : 'var(--theme-base-content)';
+    const fadedColor = item.danger
+        ? 'color-mix(in srgb, var(--theme-status-error-stroke) 80%, transparent)'
+        : 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)';
+    const iconFadedColor = item.danger
+        ? 'color-mix(in srgb, var(--theme-status-error-stroke) 70%, transparent)'
+        : 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)';
+    const hoverBg = item.danger
+        ? 'color-mix(in srgb, var(--theme-status-error-stroke) 12%, transparent)'
+        : 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)';
 
-    const badgeClass = `ml-4 flex-shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
-        hovered ? 'bg-base-content/15 text-base-content' : 'bg-base-content/10 text-base-content/50'
-    }`;
+    const rowStyle: CSSProperties = {
+        background: hovered ? hoverBg : 'transparent',
+        color: hovered ? baseColor : fadedColor,
+        transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+    };
+
+    const iconStyle: CSSProperties = {
+        color: hovered ? baseColor : iconFadedColor,
+    };
+
+    const badgeStyle: CSSProperties = {
+        background: hovered
+            ? 'color-mix(in srgb, var(--theme-base-content) 15%, transparent)'
+            : 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+        color: hovered
+            ? 'var(--theme-base-content)'
+            : 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+        borderRadius: 'var(--theme-radius-button)',
+    };
 
     const content = (
         <>
-            {iconClass && <i className={`${iconClass} w-5 flex-shrink-0 text-center text-xs ${hovered ? 'text-base-content' : 'text-base-content/60'}`} />}
+            {iconClass && <i className={`${iconClass} w-5 flex-shrink-0 text-center text-xs`} style={iconStyle} />}
             <span className="flex-1">{item.label}</span>
             {item.badge != null && (
-                <span className={badgeClass}>{item.badge}</span>
+                <span
+                    className="ml-4 flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium"
+                    style={badgeStyle}
+                >
+                    {item.badge}
+                </span>
             )}
         </>
     );
 
+    const rowClass = 'flex w-full items-center gap-3 px-4 py-2 text-left text-sm';
     const handlers = {
         onMouseEnter: () => setHovered(true),
         onMouseLeave: () => setHovered(false),
@@ -57,7 +91,7 @@ function DropdownRow({ item, onClose }: { item: DropdownMenuItem; onClose: () =>
 
     if (item.href) {
         return (
-            <a href={item.href} className={rowClass} onClick={onClose} {...handlers}>
+            <a href={item.href} className={rowClass} style={rowStyle} onClick={onClose} {...handlers}>
                 {content}
             </a>
         );
@@ -68,6 +102,7 @@ function DropdownRow({ item, onClose }: { item: DropdownMenuItem; onClose: () =>
             type="button"
             onClick={() => { item.onClick?.(); onClose(); }}
             className={rowClass}
+            style={rowStyle}
             {...handlers}
         >
             {content}
@@ -77,6 +112,7 @@ function DropdownRow({ item, onClose }: { item: DropdownMenuItem; onClose: () =>
 
 export default function DropdownMenu({ items, trigger, align = 'right' }: DropdownMenuProps) {
     const [open, setOpen] = useState(false);
+    const [defaultTriggerHovered, setDefaultTriggerHovered] = useState(false);
     const triggerRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -118,6 +154,36 @@ export default function DropdownMenu({ items, trigger, align = 'right' }: Dropdo
         return () => window.removeEventListener('scroll', handleScroll, true);
     }, [open]);
 
+    const defaultTriggerStyle: CSSProperties = {
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '2rem',
+        height: '2rem',
+        borderRadius: 'var(--theme-radius-button)',
+        background: defaultTriggerHovered
+            ? 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)'
+            : 'transparent',
+        color: defaultTriggerHovered
+            ? 'var(--theme-base-content)'
+            : 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+        transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+    };
+
+    const menuStyle: CSSProperties = {
+        ...getPosition(),
+        background: 'var(--theme-base-surface)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+        borderRadius: 'var(--theme-radius-card)',
+        color: 'var(--theme-base-content)',
+        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
+    };
+
+    const dividerStyle: CSSProperties = {
+        height: '1px',
+        background: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    };
+
     return (
         <div ref={triggerRef}>
             {/* Trigger */}
@@ -125,8 +191,11 @@ export default function DropdownMenu({ items, trigger, align = 'right' }: Dropdo
                 <span onClick={() => setOpen(!open)} className="cursor-pointer">{trigger}</span>
             ) : (
                 <button
+                    type="button"
                     onClick={() => setOpen(!open)}
-                    className="btn btn-ghost btn-sm btn-square rounded-xl"
+                    onMouseEnter={() => setDefaultTriggerHovered(true)}
+                    onMouseLeave={() => setDefaultTriggerHovered(false)}
+                    style={defaultTriggerStyle}
                     aria-label="More options"
                 >
                     <i className="fa-solid fa-ellipsis-vertical text-sm" />
@@ -134,17 +203,18 @@ export default function DropdownMenu({ items, trigger, align = 'right' }: Dropdo
             )}
 
             {/* Menu — portaled to body to escape overflow containers.
-                Uses base-* tokens so the panel stays theme-consistent
-                (matches page chrome) instead of the bold neutral tint. */}
+                Uses --theme-* tokens so the panel tracks the active
+                preset (page surface + content text + theme corner
+                radius). */}
             {open && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[9999] w-60 overflow-hidden rounded-lg border border-base-content/10 bg-base-100 text-base-content shadow-lg"
-                    style={getPosition()}
+                    className="fixed z-[9999] w-60 overflow-hidden"
+                    style={menuStyle}
                 >
                     {items.map((item, i) => {
                         if (item.divider) {
-                            return <div key={i} className="h-px bg-base-content/10" />;
+                            return <div key={i} style={dividerStyle} />;
                         }
 
                         return <DropdownRow key={i} item={item} onClose={() => setOpen(false)} />;

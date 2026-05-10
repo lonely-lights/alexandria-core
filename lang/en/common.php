@@ -50,4 +50,12 @@ return [
     'info' => 'Info',
     'required' => 'Required',
     'optional' => 'Optional',
+
+    // Pagination
+    'pagination.showing' => 'Showing :from–:to of :total',
+    'pagination.page' => 'Page :current of :last',
+    'pagination.first' => 'First page',
+    'pagination.previous' => 'Previous page',
+    'pagination.next' => 'Next page',
+    'pagination.last' => 'Last page',
 ];

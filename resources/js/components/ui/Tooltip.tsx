@@ -1,4 +1,4 @@
-import { useState, useRef, type ReactNode, type ReactElement, cloneElement, isValidElement } from 'react';
+import { useState, useRef, type CSSProperties, type ReactNode, type ReactElement, cloneElement, isValidElement } from 'react';
 import {
     useFloating,
     useHover,
@@ -24,7 +24,7 @@ interface TooltipProps {
     children: ReactElement;
     /** Placement relative to the trigger */
     placement?: Placement;
-    /** DaisyUI color variant */
+    /** Color variant — maps to brand or status theme tokens */
     variant?: TooltipVariant;
     /** Delay before showing (ms) */
     delay?: number;
@@ -34,15 +34,48 @@ interface TooltipProps {
     disabled?: boolean;
 }
 
-const VARIANT_STYLES: Record<TooltipVariant, { bg: string; text: string; arrowVar: string }> = {
-    default: { bg: 'bg-secondary', text: 'text-secondary-content', arrowVar: '--s' },
-    primary: { bg: 'bg-primary', text: 'text-primary-content', arrowVar: '--p' },
-    secondary: { bg: 'bg-secondary', text: 'text-secondary-content', arrowVar: '--s' },
-    accent: { bg: 'bg-accent', text: 'text-accent-content', arrowVar: '--a' },
-    info: { bg: 'bg-info', text: 'text-info-content', arrowVar: '--in' },
-    success: { bg: 'bg-success', text: 'text-success-content', arrowVar: '--su' },
-    warning: { bg: 'bg-warning', text: 'text-warning-content', arrowVar: '--wa' },
-    error: { bg: 'bg-error', text: 'text-error-content', arrowVar: '--er' },
+// Variant → theme token resolution. Both `bg` and `text` are CSS
+// var() references that the panel + arrow share, so the arrow color
+// always tracks whatever the panel paints. Using brand-* tokens for
+// the brand variants and status-* tokens for the status variants
+// (instead of DaisyUI's --p / --s / --in / etc) means tooltips
+// repaint when the active preset changes.
+//
+// `default` paints the brand-secondary tone — same tooltip "voice"
+// the legacy variant had, just routed through --theme-* now.
+const VARIANT_TOKENS: Record<TooltipVariant, { bg: string; text: string }> = {
+    default: {
+        bg: 'var(--theme-brand-secondary-500)',
+        text: 'var(--theme-brand-secondary-content)',
+    },
+    primary: {
+        bg: 'var(--theme-brand-primary-500)',
+        text: 'var(--theme-brand-primary-content)',
+    },
+    secondary: {
+        bg: 'var(--theme-brand-secondary-500)',
+        text: 'var(--theme-brand-secondary-content)',
+    },
+    accent: {
+        bg: 'var(--theme-brand-accent-500)',
+        text: 'var(--theme-brand-accent-content)',
+    },
+    info: {
+        bg: 'var(--theme-status-info-fill)',
+        text: 'var(--theme-status-info-content)',
+    },
+    success: {
+        bg: 'var(--theme-status-success-fill)',
+        text: 'var(--theme-status-success-content)',
+    },
+    warning: {
+        bg: 'var(--theme-status-warning-fill)',
+        text: 'var(--theme-status-warning-content)',
+    },
+    error: {
+        bg: 'var(--theme-status-error-fill)',
+        text: 'var(--theme-status-error-content)',
+    },
 };
 
 export default function Tooltip({
@@ -78,7 +111,15 @@ export default function Tooltip({
 
     const { getReferenceProps, getFloatingProps } = useInteractions([hover, dismiss, role]);
 
-    const style = VARIANT_STYLES[variant];
+    const tokens = VARIANT_TOKENS[variant];
+
+    const panelStyle: CSSProperties = {
+        ...floatingStyles,
+        background: tokens.bg,
+        color: tokens.text,
+        borderRadius: 'var(--theme-radius-button)',
+        boxShadow: '0 0 16px rgba(0, 0, 0, 0.25)',
+    };
 
     return (
         <>
@@ -92,12 +133,10 @@ export default function Tooltip({
                 <FloatingPortal>
                     <div
                         ref={refs.setFloating}
-                        style={floatingStyles}
+                        style={panelStyle}
                         {...getFloatingProps()}
                         className={cn(
-                            'z-[9999] max-w-xs rounded-lg px-3 py-1.5 text-xs font-medium tooltip-enter shadow-[0_0_16px_rgba(0,0,0,0.25)]',
-                            style.bg,
-                            style.text,
+                            'z-[9999] max-w-xs px-3 py-1.5 text-xs font-medium',
                             bounce && 'animate-bounce',
                         )}
                     >
@@ -107,7 +146,7 @@ export default function Tooltip({
                             context={context}
                             width={12}
                             height={6}
-                            style={{ fill: `oklch(var(${style.arrowVar}))` }}
+                            style={{ fill: tokens.bg }}
                         />
                     </div>
                 </FloatingPortal>
