@@ -319,6 +319,148 @@
     border-color: color-mix(in srgb, var(--theme-brand-primary-500) 40%, transparent);
 }
 
+/* ── Note modal — header icon buttons + link previews + color picker ─ */
+
+.alex-notes-modal-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    background: transparent;
+    color: color-mix(in srgb, var(--theme-base-content) 60%, transparent);
+    transition:
+        background-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-modal-icon-btn:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
+    color: var(--theme-brand-primary-500);
+}
+
+/* Active modifier — for the Pin button when the note is pinned */
+.alex-notes-modal-icon-btn--active {
+    color: var(--theme-brand-primary-500);
+}
+
+.alex-notes-modal-link-preview {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--theme-base-surface);
+    border: 1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent);
+    border-radius: var(--theme-radius-card);
+    transition:
+        background-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        border-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-modal-link-preview:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 4%, transparent);
+    border-color: color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent);
+}
+
+.alex-notes-modal-color-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    transition:
+        transform var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        border-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-modal-color-btn:hover:not(.alex-notes-modal-color-btn--active) {
+    transform: scale(1.05);
+}
+
+.alex-notes-modal-color-btn--active {
+    border-color: var(--theme-brand-primary-500);
+    transform: scale(1.10);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent);
+}
+
+/* "None" swatch (the X-mark button at the head of the row) — has no
+   fill color, so the resting border tracks base-content. */
+.alex-notes-modal-color-btn--none {
+    border-color: color-mix(in srgb, var(--theme-base-content) 20%, transparent);
+}
+
+.alex-notes-modal-color-btn--none:hover:not(.alex-notes-modal-color-btn--active) {
+    border-color: color-mix(in srgb, var(--theme-base-content) 30%, transparent);
+}
+
+/* Tag picker row hover — used inside TagPickerModal's scrollable list. */
+.alex-notes-tag-row {
+    transition: background-color var(--theme-motion-duration-fast)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-notes-tag-row:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 6%, transparent);
+}
+
+/* Tag pill in NoteModal's badge row — hover/focus-within reveals an
+   inline X button that removes the tag without opening the picker.
+   The pill keeps its compact at-rest shape; the X is absolutely
+   positioned as a small badge in the upper-right corner, slightly
+   overlapping the pill edge so it reads as "this control removes
+   this pill" rather than as part of the pill's content. Fades in
+   without changing pill width. */
+.alex-notes-tag-pill {
+    position: relative;
+}
+
+.alex-notes-tag-pill .alex-notes-tag-x {
+    position: absolute;
+    top: -0.4375rem;
+    right: -0.4375rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: var(--theme-status-error-stroke);
+    color: var(--theme-status-error-content);
+    border: 2px solid var(--theme-base-page);
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
+    transition:
+        opacity var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        transform var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        background-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-tag-pill:hover .alex-notes-tag-x,
+.alex-notes-tag-pill:focus-within .alex-notes-tag-x {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
+}
+
+.alex-notes-tag-x:hover {
+    background: color-mix(in srgb, var(--theme-status-error-stroke) 80%, #000);
+}
+
 /* ── Page-level "More actions" trigger button ────────────────────────── */
 
 .alex-notes-overflow-trigger {

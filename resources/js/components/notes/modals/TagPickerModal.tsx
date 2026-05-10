@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 import Modal from '@alexandria/components/ui/Modal';
+import useT from '@alexandria/hooks/useT';
 
 interface TagPickerModalProps {
     open: boolean;
@@ -10,63 +11,209 @@ interface TagPickerModalProps {
     onCreate: (tag: string) => Promise<void>;
 }
 
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
+const subtleText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)' };
+
+const sectionBorderStyle: CSSProperties = {
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+};
+
+const inputStyle: CSSProperties = {
+    background: 'var(--theme-base-surface)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    color: 'var(--theme-base-content)',
+};
+
+/**
+ * Pull a string label out of whatever shape the API hands us. Spatie's
+ * tag relationship can return either a flat string (when the resource
+ * casts it via `getNames()`) or an object like `{ name: 'foo' }` /
+ * `{ name: { en: 'foo' } }` (when the relationship is loaded raw).
+ * Both paths flow through this so the picker always compares strings
+ * to strings — and never silently treats an object tag as
+ * `[object Object]`.
+ */
+function tagToString(tag: unknown): string {
+    if (typeof tag === 'string') return tag;
+    if (tag && typeof tag === 'object') {
+        const obj = tag as Record<string, unknown>;
+        const name = obj.name;
+        if (typeof name === 'string') return name;
+        if (name && typeof name === 'object') {
+            const entry = Object.values(name as Record<string, unknown>)[0];
+            if (typeof entry === 'string') return entry;
+        }
+    }
+    return '';
+}
+
+/**
+ * Normalize a tag for comparison — trim + lowercase + coerce to
+ * string first. Used to gate the all-tags list so a tag in
+ * `selectedTags` is hidden from the "available" list even when the
+ * `/tags` endpoint returns it with different casing/whitespace than
+ * `/notes/dashboard-list` did.
+ */
+function normalizeTag(tag: unknown): string {
+    return tagToString(tag).trim().toLowerCase();
+}
+
+/**
+ * De-dup a tag list by normalized name. Spatie can return a tag both
+ * by display name and by slug from the same endpoint (e.g.,
+ * "Plot Points" + "plot-points"), and our optimistic-add path can
+ * stack a fresh entry on top of a refetched server entry. Either case
+ * surfaces as the same tag appearing twice in the picker list, so
+ * we collapse to the first-seen variant for each normalized key.
+ */
+function dedupeTags(tags: string[]): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const tag of tags) {
+        const norm = normalizeTag(tag);
+        if (!norm || seen.has(norm)) continue;
+        seen.add(norm);
+        out.push(tag);
+    }
+    return out;
+}
+
 export default function TagPickerModal({ open, onClose, projectId, noteTags, onToggle, onCreate }: TagPickerModalProps) {
+    const t = useT();
     const [allTags, setAllTags] = useState<string[]>([]);
+    const [allTagsLoading, setAllTagsLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [creating, setCreating] = useState(false);
+    // Internal copy of the selected-tag list so toggles can update
+    // optimistically without waiting for the parent to refetch + pass
+    // a new noteTags prop. Coerced to plain strings via tagToString so
+    // a Spatie relationship-shaped prop still becomes ['foo', 'bar']
+    // and matches against /tags items by value.
+    const [selectedTags, setSelectedTags] = useState<string[]>(() =>
+        (noteTags as unknown as Array<unknown>).map(tagToString).filter(Boolean),
+    );
+
+    useEffect(() => {
+        setSelectedTags(
+            (noteTags as unknown as Array<unknown>).map(tagToString).filter(Boolean),
+        );
+    }, [noteTags, open]);
 
     useEffect(() => {
         if (!open || !projectId) return;
         setSearch('');
+        setAllTagsLoading(true);
         fetch(`/api/v1/projects/${projectId}/tags`, {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
         })
             .then((r) => r.ok ? r.json() : [])
-            .then((tags) => setAllTags(tags))
-            .catch(() => setAllTags([]));
+            .then((tags: unknown[]) => {
+                // Same shape-coercion as for selectedTags above —
+                // `/tags` may return raw model objects depending on the
+                // controller resource shape. Dedupe by normalized name
+                // so display+slug pairs collapse to a single entry.
+                setAllTags(dedupeTags(tags.map(tagToString).filter(Boolean)));
+            })
+            .catch(() => setAllTags([]))
+            .finally(() => setAllTagsLoading(false));
     }, [open, projectId]);
 
-    const filtered = allTags.filter((t) =>
-        !search || t.toLowerCase().includes(search.toLowerCase())
+    const selectedNorm = selectedTags.map(normalizeTag);
+
+    const filtered = allTags.filter((tg) =>
+        !search || tg.toLowerCase().includes(search.toLowerCase())
     );
 
-    const exactMatch = search.trim() && allTags.some((t) => t.toLowerCase() === search.trim().toLowerCase());
+    const exactMatch = search.trim() && allTags.some((tg) => tg.toLowerCase() === search.trim().toLowerCase());
 
     async function handleCreate() {
         if (!search.trim() || creating) return;
         setCreating(true);
-        await onCreate(search.trim());
-        setAllTags((prev) => prev.includes(search.trim()) ? prev : [...prev, search.trim()].sort());
+        const trimmed = search.trim();
+        const trimmedNorm = normalizeTag(trimmed);
+        // Optimistic add: stamp into both lists so the UI flips
+        // immediately instead of waiting on the server round-trip.
+        // Dedupe by normalized name so a freshly-created tag doesn't
+        // collide with a near-duplicate already in the lists (e.g.,
+        // server returned "plot-points" but user typed "Plot Points").
+        setSelectedTags((prev) =>
+            prev.some((s) => normalizeTag(s) === trimmedNorm) ? prev : [...prev, trimmed],
+        );
+        setAllTags((prev) =>
+            prev.some((s) => normalizeTag(s) === trimmedNorm)
+                ? prev
+                : [...prev, trimmed].sort(),
+        );
+        await onCreate(trimmed);
         setSearch('');
         setCreating(false);
+    }
+
+    /**
+     * Optimistic toggle — flip `selectedTags` immediately so the
+     * checkbox state reflects the click before the server write
+     * resolves. The parent's `onToggle` still fires to persist;
+     * we just don't wait for it to update the visible state.
+     */
+    async function handleToggleInternal(tag: string, currentlySelected: boolean) {
+        const norm = normalizeTag(tag);
+        setSelectedTags((prev) => currentlySelected
+            ? prev.filter((s) => normalizeTag(s) !== norm)
+            : [...prev, tag],
+        );
+        await onToggle(tag, currentlySelected);
     }
 
     return (
         <Modal open={open} onClose={onClose} maxWidth="max-w-sm">
             <div className="flex flex-col max-h-[60vh]">
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-base-300 px-5 py-4">
+                <div className="flex items-center justify-between px-5 py-4" style={sectionBorderStyle}>
                     <div>
-                        <h2 className="text-base font-bold">Manage Tags</h2>
-                        <p className="mt-0.5 text-xs text-base-content/40">Select existing tags or create new ones</p>
+                        <h2 className="text-base font-bold">{t('notes.tag_picker.title')}</h2>
+                        <p className="mt-0.5 text-xs" style={fadedText}>{t('notes.tag_picker.subtitle')}</p>
                     </div>
-                    <button onClick={onClose} className="btn btn-ghost btn-sm btn-square rounded-xl">
+                    <button
+                        onClick={onClose}
+                        className="alex-notes-modal-icon-btn"
+                        aria-label={t('notes.modal.tooltip.close')}
+                    >
                         <i className="fa-solid fa-xmark" />
                     </button>
                 </div>
 
                 {/* Selected tags */}
-                {noteTags.length > 0 && (
-                    <div className="border-b border-base-300 px-5 py-3">
-                        <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-base-content/30">
-                            Selected ({noteTags.length})
+                {selectedTags.length > 0 && (
+                    <div className="px-5 py-3" style={sectionBorderStyle}>
+                        <div
+                            className="mb-1.5 text-[10px] font-medium uppercase tracking-wider"
+                            style={microText}
+                        >
+                            {t('notes.tag_picker.selected_label').replace(':count', String(selectedTags.length))}
                         </div>
                         <div className="flex flex-wrap gap-1.5">
-                            {noteTags.map((tag) => (
-                                <span key={tag} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-content">
+                            {selectedTags.map((tag) => (
+                                <span
+                                    key={tag}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium"
+                                    style={{
+                                        background: 'var(--theme-brand-primary-500)',
+                                        color: 'var(--theme-brand-primary-content)',
+                                        borderRadius: 'var(--theme-radius-button)',
+                                    }}
+                                >
                                     {tag}
-                                    <button onClick={() => void onToggle(tag, true)} className="flex items-center text-primary-content/60 hover:text-primary-content">
+                                    <button
+                                        onClick={() => void handleToggleInternal(tag, true)}
+                                        className="flex items-center"
+                                        style={{
+                                            color: 'color-mix(in srgb, var(--theme-brand-primary-content) 60%, transparent)',
+                                        }}
+                                        aria-label={t('notes.modal.tooltip.close')}
+                                    >
                                         <i className="fa-solid fa-xmark text-[9px]" />
                                     </button>
                                 </span>
@@ -76,10 +223,13 @@ export default function TagPickerModal({ open, onClose, projectId, noteTags, onT
                 )}
 
                 {/* Search + create */}
-                <div className="border-b border-base-300 px-5 py-3">
+                <div className="px-5 py-3" style={sectionBorderStyle}>
                     <div className="flex items-center gap-3">
                         <div className="relative flex-1">
-                            <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-base-content/20" />
+                            <i
+                                className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs"
+                                style={subtleText}
+                            />
                             <input
                                 type="text"
                                 value={search}
@@ -92,68 +242,92 @@ export default function TagPickerModal({ open, onClose, projectId, noteTags, onT
                                         }
                                     }
                                 }}
-                                placeholder="Filter or create..."
+                                placeholder={t('notes.tag_picker.search_placeholder')}
                                 autoFocus
-                                className="input input-bordered h-8 min-h-0 w-full rounded-xl pl-9 text-sm"
+                                className="h-8 w-full pl-9 pr-3 text-sm"
+                                style={inputStyle}
                             />
                         </div>
                         {search.trim() && !exactMatch && (
                             <button
                                 onClick={() => void handleCreate()}
                                 disabled={creating}
-                                className="btn btn-primary h-8 min-h-0 rounded-xl text-xs"
+                                className="alex-btn alex-btn--primary h-8"
+                                style={{
+                                    borderRadius: 'var(--theme-radius-button)',
+                                    padding: '0 0.625rem',
+                                    fontSize: '0.75rem',
+                                    gap: '0.375rem',
+                                }}
                             >
-                                {creating ? <span className="loading loading-spinner loading-xs" /> : <i className="fa-solid fa-plus text-[10px]" />}
-                                Create
+                                {creating
+                                    ? <i className="fa-solid fa-circle-notch fa-spin text-xs" />
+                                    : <i className="fa-solid fa-plus text-[10px]" />}
+                                {t('notes.tag_picker.create_button')}
                             </button>
                         )}
                     </div>
                 </div>
 
-                {/* Tag list */}
+                {/* Tag list — only renders tags NOT yet selected. Selected
+                    tags live as removable pills in the section above; the
+                    list is for adding new ones. Avoids the dual-state
+                    sync problem where the all-tags item could disagree
+                    with `selectedTags` on casing/shape. */}
                 <div className="flex-1 overflow-y-auto">
-                    {filtered.length === 0 ? (
-                        <div className="py-8 text-center text-xs text-base-content/30">
-                            {search ? 'No matching tags' : 'No tags yet'}
+                    {allTagsLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <i
+                                className="fa-solid fa-circle-notch fa-spin text-xl"
+                                style={microText}
+                                aria-hidden="true"
+                            />
                         </div>
-                    ) : (
-                        <div>
-                            {allTags.map((tag) => {
-                                const isSelected = noteTags.includes(tag);
-                                const isVisible = filtered.includes(tag);
-                                return (
-                                    <div
+                    ) : (() => {
+                        const available = filtered.filter(
+                            (tag) => !selectedNorm.includes(normalizeTag(tag)),
+                        );
+                        if (available.length === 0) {
+                            return (
+                                <div className="py-8 text-center text-xs" style={microText}>
+                                    {search ? t('notes.tag_picker.empty.no_match') : t('notes.tag_picker.empty.no_tags')}
+                                </div>
+                            );
+                        }
+                        return (
+                            <div>
+                                {available.map((tag) => (
+                                    <button
                                         key={tag}
-                                        className="overflow-hidden transition-all duration-200 ease-in-out"
-                                        style={{
-                                            maxHeight: isVisible ? '44px' : '0px',
-                                            opacity: isVisible ? 1 : 0,
-                                        }}
+                                        onClick={() => void handleToggleInternal(tag, false)}
+                                        className="alex-notes-tag-row flex w-full items-center gap-3 px-5 py-2.5 text-left text-sm"
                                     >
-                                        <button
-                                            onClick={() => void onToggle(tag, isSelected)}
-                                            className={`flex w-full items-center gap-3 px-5 py-2.5 text-left text-sm transition-colors hover:bg-base-200/30 ${
-                                                isSelected ? 'bg-primary/5' : ''
-                                            }`}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                readOnly
-                                                className="checkbox checkbox-xs checkbox-primary"
-                                            />
-                                            <span className={isSelected ? 'font-medium text-primary' : ''}>{tag}</span>
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                        <i
+                                            className="fa-solid fa-plus text-[10px]"
+                                            style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)' }}
+                                            aria-hidden="true"
+                                        />
+                                        <span>{tag}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end border-t border-base-300 px-5 py-3">
-                    <button onClick={onClose} className="btn btn-ghost btn-sm text-xs">Done</button>
+                <div className="flex items-center justify-end px-5 py-3" style={{ borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)' }}>
+                    <button
+                        onClick={onClose}
+                        className="alex-btn alex-btn--ghost"
+                        style={{
+                            borderRadius: 'var(--theme-radius-button)',
+                            padding: '0.25rem 0.625rem',
+                            fontSize: '0.75rem',
+                        }}
+                    >
+                        {t('notes.tag_picker.done')}
+                    </button>
                 </div>
             </div>
         </Modal>

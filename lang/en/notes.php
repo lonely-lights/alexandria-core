@@ -198,4 +198,109 @@ return [
     // Filter chip fallback labels (when an item isn't in the cached list)
     'list.chip.notebook_fallback' => 'Notebook #:id',
     'list.chip.author_fallback' => 'Author #:id',
+
+    // ── Note create/view modal ──────────────────────────────────────
+    'modal.edit_title' => 'Edit Note',
+    'modal.create_title' => 'New Note',
+    'modal.author_prefix' => 'By',
+    'modal.created_prefix' => 'Created',
+
+    // Action button tooltips
+    'modal.tooltip.pin' => 'Pin',
+    'modal.tooltip.unpin' => 'Unpin',
+    'modal.tooltip.generate_title' => 'Generate title',
+    'modal.tooltip.close' => 'Close',
+
+    // Header overflow menu items
+    'modal.menu.tags' => 'Tags',
+    'modal.menu.add_to_notebook' => 'Add to Notebook',
+    'modal.menu.history' => 'History',
+    'modal.menu.link_to' => 'Link to…',
+    'modal.menu.move_to' => 'Move to…',
+    'modal.menu.copy_to' => 'Copy to…',
+
+    // Status / location / pinned badges
+    'modal.badge.archived' => 'Archived',
+    'modal.badge.active' => 'Active',
+    'modal.badge.pinned' => 'Pinned',
+    'modal.badge.pending' => 'pending',
+
+    // Field labels + placeholders
+    'modal.field.title' => 'Title',
+    'modal.field.title_placeholder' => 'Optional title',
+    'modal.field.content' => 'Content',
+    'modal.field.content_placeholder' => 'Write your note here…',
+    'modal.field.note_date' => 'Note Date',
+    'modal.field.color' => 'Color',
+    'modal.field.links' => 'Links',
+
+    // Color picker — value:label map (value matches NOTE_COLORS const)
+    'modal.color.none' => 'None',
+    'modal.color.red' => 'Red',
+    'modal.color.orange' => 'Orange',
+    'modal.color.yellow' => 'Yellow',
+    'modal.color.green' => 'Green',
+    'modal.color.teal' => 'Teal',
+    'modal.color.blue' => 'Blue',
+    'modal.color.cerulean' => 'Cerulean',
+    'modal.color.purple' => 'Purple',
+    'modal.color.pink' => 'Pink',
+    'modal.color.brown' => 'Brown',
+    'modal.color.gray' => 'Gray',
+
+    // Metrics row
+    'modal.metric.chars' => 'chars',
+    'modal.metric.words' => 'words',
+    'modal.metric.updated_prefix' => 'Updated',
+    'modal.metric.tag_singular' => 'tag',
+    'modal.metric.tag_plural' => 'tags',
+    'modal.metric.location_singular' => 'location',
+    'modal.metric.location_plural' => 'locations',
+
+    // Footer buttons
+    'modal.discard' => 'Discard',
+    'modal.save' => 'Save',
+
+    // Sub-modal prompts (notebook create-from-picker)
+    'modal.prompt.notebook_name' => 'Notebook name:',
+
+    // Type labels — used as the prefix in tooltip captions on the
+    // mixed badge row (e.g., "Notebook: Plot Points", "Tag: Drama")
+    // so the user can disambiguate at a glance whether a pill is a
+    // notebook membership, a blueprint location, or a tag.
+    'modal.label.tag' => 'Tag',
+    'modal.label.notebook' => 'Notebook',
+    'modal.label.blueprint' => 'Blueprint',
+    'modal.label.entry' => 'Entry',
+    'modal.label.project' => 'Project',
+    'modal.tag_remove_aria' => 'Remove tag :tag',
+
+    // ── PromptPreviewModal (AI prompt debug viewer) ─────────────────
+    'prompt_preview.title' => 'Prompt Preview',
+    'prompt_preview.subtitle' => 'The full prompt that will be sent to the AI',
+    'prompt_preview.tokens' => '~:count tokens',
+    'prompt_preview.failed' => 'Failed to load prompt',
+
+    // ── ImportModal ────────────────────────────────────────────────
+    'import.title' => 'Import Notes',
+    'import.subtitle' => 'Upload JSON files from Google Keep or other sources',
+    'import.dropzone.placeholder' => 'Click to select JSON files',
+    'import.dropzone.selected_singular' => ':count file selected',
+    'import.dropzone.selected_plural' => ':count files selected',
+    'import.progress.queued' => ':done of :total file(s) queued…',
+    'import.progress.complete' => ':count file(s) queued for import',
+    'import.error.batch' => 'Import failed on batch :batch: :message',
+    'import.error.unknown' => 'An error occurred during import.',
+    'import.cancel' => 'Cancel',
+    'import.submit' => 'Import',
+
+    // ── TagPickerModal ─────────────────────────────────────────────
+    'tag_picker.title' => 'Manage Tags',
+    'tag_picker.subtitle' => 'Select existing tags or create new ones',
+    'tag_picker.selected_label' => 'Selected (:count)',
+    'tag_picker.search_placeholder' => 'Filter or create…',
+    'tag_picker.create_button' => 'Create',
+    'tag_picker.empty.no_match' => 'No matching tags',
+    'tag_picker.empty.no_tags' => 'No tags yet',
+    'tag_picker.done' => 'Done',
 ];
