@@ -27,11 +27,17 @@ const SIZE_CLASSES = {
 
 export default function ActionButton({ icon, label, variant = 'primary', size = 'sm', loading, href, className, disabled, ...props }: ActionButtonProps) {
     const classes = cn(
-        'btn gap-1.5 rounded-xl',
+        'btn gap-1.5',
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
         className,
     );
+
+    // Corner radius rides on --theme-radius-button so it tracks the
+    // active theme's roundedness preference (soft / sharp / pill)
+    // rather than DaisyUI's --radius-field. Inline style beats DaisyUI's
+    // .btn radius on specificity.
+    const style = { borderRadius: 'var(--theme-radius-button)' };
 
     const content = (
         <>
@@ -41,11 +47,11 @@ export default function ActionButton({ icon, label, variant = 'primary', size = 
     );
 
     if (href && !disabled) {
-        return <a href={href} className={classes}>{content}</a>;
+        return <a href={href} className={classes} style={style}>{content}</a>;
     }
 
     return (
-        <button type="button" className={classes} disabled={disabled || loading} {...props}>
+        <button type="button" className={classes} style={style} disabled={disabled || loading} {...props}>
             {content}
         </button>
     );

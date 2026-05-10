@@ -18,7 +18,7 @@
     padding: 0.375rem 0.875rem;
     font-size: 0.875rem;
     font-weight: 500;
-    border-radius: 0.75rem;
+    border-radius: var(--theme-radius-button);
     color: color-mix(in srgb, var(--theme-base-content) 75%, transparent);
     background: transparent;
     transition:
@@ -97,7 +97,7 @@
     justify-content: center;
     width: 2rem;
     height: 2rem;
-    border-radius: 0.75rem;
+    border-radius: var(--theme-radius-button);
     color: color-mix(in srgb, var(--theme-base-content) 70%, transparent);
     background: transparent;
     transition:

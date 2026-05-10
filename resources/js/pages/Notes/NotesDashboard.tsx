@@ -108,7 +108,10 @@ export default function NotesDashboard() {
                             className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
                             style={{ color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)' }}
                         >
-                            <span className="btn-dashed rounded-lg px-5 py-3">
+                            <span
+                                className="btn-dashed px-5 py-3"
+                                style={{ borderRadius: 'var(--theme-radius-button)' }}
+                            >
                                 <i className="fa-solid fa-book-medical mr-1.5 text-xs" />
                                 {t('notes.action.new_notebook')}
                             </span>
