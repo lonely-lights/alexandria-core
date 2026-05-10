@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type RefObject } from 'react';
+import { useState, useEffect, useRef, type CSSProperties, type RefObject } from 'react';
 import { usePage } from '@inertiajs/react';
 import { createPortal } from 'react-dom';
 import gsap from 'gsap';
@@ -9,25 +9,9 @@ import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { useDrawerHeight, type DrawerHeight } from '@alexandria/hooks/useDrawerHeight';
 import { useDrawerMode, type DrawerMode } from '@alexandria/hooks/useDrawerMode';
 import { useNoteActions } from '@alexandria/hooks/useNoteActions';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 import NoteModal from '@alexandria/pages/Notes/Sections/NoteModal';
 import NotesView from '@alexandria/pages/Notes/Sections/NotesView';
-
-// Tooltip copy + icons for the height-toggle buttons in the drawer
-// header. Keeps the render block tight.
-const HEIGHT_OPTIONS: Array<{ key: DrawerHeight; icon: string; label: string }> = [
-    { key: 'partial', icon: 'fa-solid fa-window-minimize', label: 'Partial' },
-    { key: 'tall', icon: 'fa-solid fa-bars', label: 'Tall' },
-    { key: 'full', icon: 'fa-solid fa-up-right-and-down-left-from-center', label: 'Full screen' },
-];
-
-// Layout mode options — split keeps the inline detail pane; list
-// hands deep reading/editing off to the shared NoteModal.
-const MODE_OPTIONS: Array<{ key: DrawerMode; icon: string; label: string }> = [
-    { key: 'split', icon: 'fa-solid fa-table-columns', label: 'Split view' },
-    { key: 'list', icon: 'fa-solid fa-list', label: 'List only' },
-];
-
-/* ── Child components ── */
 
 import type { Note } from '@alexandria/types/notes-dashboard';
 import AiStatusFooter from './AiStatusFooter';
@@ -39,6 +23,25 @@ import LinkMoveModal from './modals/LinkMoveModal';
 import ImportModal from './modals/ImportModal';
 import PromptPreviewModal from './modals/PromptPreviewModal';
 import SortingHistoryModal from './modals/SortingHistoryModal';
+
+/* ── Toggle option tables ── */
+
+// Tooltip copy + icons for the height-toggle buttons in the drawer
+// header. Labels resolve through useT() at render time.
+const HEIGHT_OPTIONS: Array<{ key: DrawerHeight; icon: string; labelKey: string }> = [
+    { key: 'partial', icon: 'fa-solid fa-window-minimize', labelKey: 'notes.drawer.height.partial' },
+    { key: 'tall', icon: 'fa-solid fa-bars', labelKey: 'notes.drawer.height.tall' },
+    { key: 'full', icon: 'fa-solid fa-up-right-and-down-left-from-center', labelKey: 'notes.drawer.height.full' },
+];
+
+// Layout mode options — split keeps the inline detail pane; list
+// hands deep reading/editing off to the shared NoteModal.
+const MODE_OPTIONS: Array<{ key: DrawerMode; icon: string; labelKey: string }> = [
+    { key: 'split', icon: 'fa-solid fa-table-columns', labelKey: 'notes.drawer.mode.split' },
+    { key: 'list', icon: 'fa-solid fa-list', labelKey: 'notes.drawer.mode.list' },
+];
+
+const NOTEBOOK_COLOR_SWATCHES = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4'];
 
 /* ── Types ── */
 
@@ -52,6 +55,293 @@ export interface NotesContext {
     preSelectNoteId?: number;
 }
 
+/* ── Theme styles ── */
+
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
+const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+const subtleText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' };
+const bodyText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)' };
+
+const drawerBgStyle: CSSProperties = {
+    background: 'var(--theme-base-100)',
+};
+
+const headerStyle: CSSProperties = {
+    background: 'linear-gradient(to bottom, color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent), color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent))',
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+};
+
+const segmentedGroupStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-100) 50%, transparent)',
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.125rem',
+};
+
+function segmentedItemStyle(active: boolean): CSSProperties {
+    if (active) {
+        return {
+            background: 'color-mix(in srgb, var(--theme-brand-primary-500) 15%, transparent)',
+            color: 'var(--theme-brand-primary-500)',
+            borderRadius: 'calc(var(--theme-radius-button) - 0.125rem)',
+        };
+    }
+    return {
+        background: 'transparent',
+        color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+        borderRadius: 'calc(var(--theme-radius-button) - 0.125rem)',
+    };
+}
+
+const closeBtnStyle: CSSProperties = {
+    background: 'var(--theme-base-content)',
+    color: 'var(--theme-base-100)',
+    borderRadius: '9999px',
+    padding: '0.375rem 0.875rem',
+    fontSize: '0.75rem',
+    fontWeight: 500,
+};
+
+const inputStyle: CSSProperties = {
+    background: 'var(--theme-base-surface)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    color: 'var(--theme-base-content)',
+    padding: '0.5rem 0.75rem',
+};
+
+const searchInputStyle: CSSProperties = {
+    ...inputStyle,
+    height: '3rem',
+    paddingLeft: '2.5rem',
+    borderRadius: '9999px',
+};
+
+const circleBtn = (kind: 'import' | 'add' | 'select-on' | 'select-off'): CSSProperties => {
+    const base: CSSProperties = {
+        width: '3rem',
+        height: '3rem',
+        borderRadius: '9999px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        cursor: 'pointer',
+        transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+    };
+    switch (kind) {
+        case 'import':
+            return {
+                ...base,
+                background: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                color: 'var(--theme-base-content)',
+            };
+        case 'add':
+            return {
+                ...base,
+                background: 'color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)',
+                color: 'var(--theme-brand-primary-content)',
+            };
+        case 'select-on':
+            return {
+                ...base,
+                background: 'color-mix(in srgb, var(--theme-status-warning-stroke) 60%, transparent)',
+                color: 'var(--theme-status-warning-content)',
+            };
+        case 'select-off':
+            return {
+                ...base,
+                background: 'color-mix(in srgb, var(--theme-base-content) 18%, transparent)',
+                color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+            };
+    }
+};
+
+const notebookSwitchStyle: CSSProperties = {
+    background: 'linear-gradient(90deg, color-mix(in srgb, var(--theme-brand-secondary-500) 20%, transparent), color-mix(in srgb, var(--theme-brand-secondary-500) 10%, transparent))',
+    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const tagPillStyle: CSSProperties = {
+    background: 'linear-gradient(90deg, color-mix(in srgb, var(--theme-brand-primary-500) 25%, transparent), color-mix(in srgb, var(--theme-brand-primary-500) 15%, transparent))',
+    color: 'var(--theme-brand-primary-500)',
+    borderRadius: 'var(--theme-radius-badge)',
+};
+
+const tagAddBtnStyle: CSSProperties = {
+    ...tagPillStyle,
+    width: '1.75rem',
+    height: '1.75rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '9999px',
+    transition: 'background var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+};
+
+function noteRowStyle(state: 'selected' | 'checked' | 'idle'): CSSProperties {
+    const base: CSSProperties = {
+        cursor: 'pointer',
+        padding: '0.5rem 1rem',
+        borderLeft: '4px solid transparent',
+        borderRadius: '0.25rem',
+        transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+    };
+    if (state === 'checked') {
+        return {
+            ...base,
+            borderLeftColor: 'var(--theme-brand-secondary-500)',
+            background: 'color-mix(in srgb, var(--theme-brand-secondary-500) 20%, transparent)',
+            boxShadow: '0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+        };
+    }
+    if (state === 'selected') {
+        return {
+            ...base,
+            borderLeftColor: 'var(--theme-brand-primary-500)',
+            background: 'color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)',
+            boxShadow: '0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+        };
+    }
+    return base;
+}
+
+const detailBodyStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    background: 'linear-gradient(to bottom, color-mix(in srgb, var(--theme-base-content) 6%, transparent), color-mix(in srgb, var(--theme-base-content) 3%, transparent))',
+    borderRadius: 'var(--theme-radius-card)',
+    boxShadow: 'inset 0 2px 4px 0 color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+};
+
+const trashedDetailStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-status-error-fill) 15%, transparent)',
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const emptyTrashBtnStyle: CSSProperties = {
+    background: 'var(--theme-status-error-fill)',
+    color: 'var(--theme-status-error-content)',
+    borderRadius: 'var(--theme-radius-button)',
+    width: '100%',
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.875rem',
+    fontWeight: 500,
+};
+
+const linkPreviewRowStyle: CSSProperties = {
+    borderRadius: 'var(--theme-radius-input)',
+    transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+};
+
+const cardStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'var(--theme-base-100)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const cardHiddenOverflow: CSSProperties = { ...cardStyle, overflow: 'hidden' };
+
+const sectionBorderTopStyle: CSSProperties = {
+    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+};
+
+const dividerStyle: CSSProperties = {
+    height: '1px',
+    background: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    margin: '0.75rem 0',
+};
+
+const btnSm: CSSProperties = {
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.875rem',
+    gap: '0.375rem',
+};
+
+const btnXs: CSSProperties = {
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.25rem 0.625rem',
+    fontSize: '0.75rem',
+    gap: '0.25rem',
+};
+
+const btnSmPill: CSSProperties = {
+    ...btnSm,
+    borderRadius: '9999px',
+};
+
+const btnSuccessFill: CSSProperties = {
+    background: 'var(--theme-status-success-fill)',
+    color: 'var(--theme-status-success-content)',
+};
+
+const btnDangerFill: CSSProperties = {
+    background: 'var(--theme-status-error-fill)',
+    color: 'var(--theme-status-error-content)',
+};
+
+const btnWarningFill: CSSProperties = {
+    background: 'var(--theme-status-warning-fill)',
+    color: 'var(--theme-status-warning-content)',
+};
+
+const btnSecondaryFill: CSSProperties = {
+    background: 'var(--theme-brand-secondary-500)',
+    color: 'var(--theme-brand-secondary-content)',
+};
+
+const btnNeutralFill: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
+    color: 'var(--theme-base-100)',
+};
+
+const headerIconWrapStyle = (kind: 'primary' | 'secondary' | 'danger'): CSSProperties => {
+    if (kind === 'primary') {
+        return {
+            background: 'color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)',
+            color: 'var(--theme-brand-primary-500)',
+            borderRadius: '9999px',
+        };
+    }
+    if (kind === 'secondary') {
+        return {
+            background: 'var(--theme-brand-secondary-500)',
+            color: 'var(--theme-brand-secondary-content)',
+            borderRadius: '9999px',
+        };
+    }
+    return {
+        background: 'color-mix(in srgb, var(--theme-status-error-fill) 25%, transparent)',
+        color: 'var(--theme-status-error-stroke)',
+        borderRadius: '9999px',
+    };
+};
+
+const categorizeOptionStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+    transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+};
+
+const portalMenuStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'var(--theme-base-100)',
+    color: 'var(--theme-base-content)',
+    boxShadow: '0 10px 20px -5px color-mix(in srgb, var(--theme-base-content) 25%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+    overflow: 'hidden',
+};
+
+const bulkBarStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)',
+    color: 'var(--theme-brand-primary-500)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
 /* ── Global event for opening the drawer ── */
 
 const OPEN_EVENT = 'alexandria:open-notes';
@@ -63,6 +353,8 @@ export function openNotesDrawer(ctx: NotesContext) {
 /* ── Drawer Component ── */
 
 export default function NotesDrawer() {
+    const t = useT();
+
     /* ── Core drawer state ── */
     const [open, setOpen] = useState(false);
     const [context, setContext] = useState<NotesContext | null>(null);
@@ -81,9 +373,7 @@ export default function NotesDrawer() {
     /* ── Shared per-note server actions ── */
     const noteActions = useNoteActions(context?.projectId ?? 0);
 
-    /* ── Unified edit/create modal state. Replaces the old inline
-           editor panels so the drawer uses the same feature-rich
-           NoteModal as the dashboard. */
+    /* ── Unified edit/create modal state ── */
     const [modalMode, setModalMode] = useState<'view' | 'create' | null>(null);
     const [modalNote, setModalNote] = useState<Note | null>(null);
 
@@ -214,7 +504,6 @@ export default function NotesDrawer() {
         if (open) {
             document.body.style.overflow = 'hidden';
             if (skipAnimationRef.current) {
-                // Instant — page transition handles the reveal
                 if (backdropRef.current) gsap.set(backdropRef.current, { opacity: 1 });
                 if (drawerRef.current) gsap.set(drawerRef.current, { y: '0%' });
                 skipAnimationRef.current = false;
@@ -236,9 +525,15 @@ export default function NotesDrawer() {
             void fetchNotes();
 
             if (data.status === 'completed') {
-                toast.show('AI categorization completed', { type: 'success', description: 'Note has been routed to the matching blueprint(s)' });
+                toast.show(t('notes.drawer.toast.ai_completed.title'), {
+                    type: 'success',
+                    description: t('notes.drawer.toast.ai_completed.desc'),
+                });
             } else if (data.status === 'failed') {
-                toast.show('AI categorization failed', { type: 'danger', description: data.error ?? 'An error occurred during processing' });
+                toast.show(t('notes.drawer.toast.ai_failed.title'), {
+                    type: 'danger',
+                    description: data.error ?? t('notes.drawer.toast.ai_failed.fallback'),
+                });
             }
         });
 
@@ -288,7 +583,6 @@ export default function NotesDrawer() {
             let data: Note[];
 
             if (activeNotebookId) {
-                // When viewing a notebook, show all its notes (notebooks are universal)
                 const res = await fetch(`/api/v1/projects/${context.projectId}/notebooks/${activeNotebookId}/notes`, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     credentials: 'same-origin',
@@ -338,16 +632,12 @@ export default function NotesDrawer() {
     }
 
     /**
-     * Called when the shared NoteModal finishes saving — we don't know
-     * the exact shape of the saved note without another fetch (the
-     * modal doesn't hand it back), so refetch the list to pick up both
-     * create and edit changes. For create, also remember to attach to
-     * the active notebook if one is selected.
+     * Called when the shared NoteModal finishes saving — refetch the
+     * list to surface the create/edit and bump the active notebook's
+     * count if relevant.
      */
     async function handleModalSaved() {
         if (!context) return;
-        // Refetch the drawer's notes list from the same endpoint the
-        // list originally uses so new/edited notes surface in place.
         const params = new URLSearchParams({
             context_type: context.contextType,
             context_id: String(context.contextId),
@@ -361,8 +651,6 @@ export default function NotesDrawer() {
         if (res.ok) {
             const data: Note[] = await res.json();
             setNotes(data);
-            // Bump the notebook's note count so the filter chip stays
-            // accurate without a second fetch. Only relevant on create.
             if (modalMode === 'create' && activeNotebookId && data.length > notes.length) {
                 setNotebooks((prev) => prev.map((nb) => nb.id === activeNotebookId ? { ...nb, notes_count: nb.notes_count + 1 } : nb));
             }
@@ -533,7 +821,6 @@ export default function NotesDrawer() {
         const contextType = mode === 'send' ? 'project' : 'blueprint';
         const contextId = mode === 'send' ? context.projectId : context.contextId;
 
-        // Determine which notes to categorize: bulk selected or single
         const noteIds = checkedIds.size > 0
             ? Array.from(checkedIds)
             : selectedNote ? [selectedNote.id] : [];
@@ -545,7 +832,6 @@ export default function NotesDrawer() {
 
         try {
             if (noteIds.length > 1) {
-                // Batch categorize
                 await fetch(`/api/v1/projects/${context.projectId}/notes/batch-categorize`, {
                     method: 'POST',
                     headers: csrfHeaders(),
@@ -558,7 +844,6 @@ export default function NotesDrawer() {
                     }),
                 });
             } else {
-                // Single note categorize
                 await fetch(`/api/v1/projects/${context.projectId}/notes/${noteIds[0]}/categorize`, {
                     method: 'POST',
                     headers: csrfHeaders(),
@@ -571,15 +856,19 @@ export default function NotesDrawer() {
                 });
             }
 
-            // Mark all as processing
             setNotes((prev) => prev.map((n) =>
                 noteIds.includes(n.id) ? { ...n, ai_notes: { ...n.ai_notes, status: 'processing' } } : n
             ));
 
             const count = noteIds.length;
-            const label = mode === 'send' ? 'Routing to blueprints' : 'Generating commands';
-            const autoLabel = categorizeAutoProcess ? ' (auto-processing enabled)' : '';
-            toast.show(`${label}${autoLabel}`, { type: 'info', description: `${count} note(s) processing in the background...` });
+            const label = mode === 'send'
+                ? t('notes.drawer.toast.routing.label')
+                : t('notes.drawer.toast.commands.label');
+            const autoLabel = categorizeAutoProcess ? t('notes.drawer.toast.auto.suffix') : '';
+            toast.show(`${label}${autoLabel}`, {
+                type: 'info',
+                description: t('notes.drawer.toast.processing.desc').replace(':count', String(count)),
+            });
 
             if (checkedIds.size > 0) exitSelectMode();
         } finally {
@@ -587,7 +876,7 @@ export default function NotesDrawer() {
         }
     }
 
-    /* ── AI routing/review handlers (used by AiStatusFooter via inline rendering) ── */
+    /* ── AI routing/review handlers ── */
 
     function approveRouting(selectedSlugs: string[]) {
         if (!context || !selectedNote || selectedSlugs.length === 0) return;
@@ -600,7 +889,7 @@ export default function NotesDrawer() {
             if (res.ok) {
                 const data = await res.json();
                 toast.show(
-                    `Note routed to ${data.blueprint_count} blueprint(s)`,
+                    t('notes.drawer.toast.routed.label').replace(':count', String(data.blueprint_count)),
                     {
                         type: 'success',
                         description: selectedSlugs.map((s) => s.replace(/\b\w/g, (c) => c.toUpperCase())).join(', '),
@@ -653,7 +942,6 @@ export default function NotesDrawer() {
         }
     }
 
-
     /* ══════════════════════════════════════════════
      *  RENDER
      * ══════════════════════════════════════════════ */
@@ -663,96 +951,109 @@ export default function NotesDrawer() {
     return createPortal(
         <>
             {/* Backdrop */}
-            <div ref={backdropRef} className="fixed inset-0 z-40 bg-black/50" onClick={close} />
+            <div
+                ref={backdropRef}
+                className="fixed inset-0 z-40"
+                style={{ background: 'color-mix(in srgb, #000 50%, transparent)' }}
+                onClick={close}
+            />
 
-            {/* Drawer — bottom panel with partial/tall/full height
-                presets. `transition-[height]` lets Tailwind smoothly
-                grow/shrink when the preset changes without conflicting
-                with GSAP's open/close y-transform animation. */}
+            {/* Drawer */}
             <div
                 ref={drawerRef}
-                className={`fixed inset-x-0 bottom-0 z-50 flex flex-col bg-base-100 shadow-2xl transition-[height] duration-300 ease-out ${drawerHeightClass}`}
+                className={`fixed inset-x-0 bottom-0 z-50 flex flex-col transition-[height] duration-300 ease-out ${drawerHeightClass}`}
+                style={drawerBgStyle}
             >
 
                 {/* Header */}
-                <div className="flex flex-shrink-0 items-center justify-between border-b border-base-content/10 px-4 py-3" style={{ background: 'linear-gradient(to bottom, oklch(var(--p) / 0.1), oklch(var(--p) / 0.05))' }}>
+                <div className="flex flex-shrink-0 items-center justify-between px-4 py-3" style={headerStyle}>
                     <h3 className="text-xl font-bold">
                         {context && (
-                            <>Notes for: <span className="text-primary">{context.contextLabel}</span></>
+                            <>
+                                {t('notes.drawer.title.prefix')}
+                                <span style={{ color: 'var(--theme-brand-primary-500)' }}>{context.contextLabel}</span>
+                            </>
                         )}
                     </h3>
                     <div className="flex items-center gap-2">
-                        {/* Layout mode toggle — split (inline detail)
-                            vs list (full-width rows, open modal on
-                            click). Same segmented-group treatment as
-                            the height toggle so they read as a family. */}
-                        <div className="hidden items-center rounded-lg border border-base-content/10 bg-base-100/50 p-0.5 sm:flex">
-                            {MODE_OPTIONS.map(({ key, icon, label }) => (
-                                <Tooltip key={key} content={label} placement="bottom">
+                        {/* Layout mode toggle */}
+                        <div className="hidden items-center sm:flex" style={segmentedGroupStyle}>
+                            {MODE_OPTIONS.map(({ key, icon, labelKey }) => (
+                                <Tooltip key={key} content={t(labelKey)} placement="bottom">
                                     <button
+                                        type="button"
                                         onClick={() => setDrawerMode(key)}
-                                        className={`btn btn-ghost btn-xs btn-square rounded-md ${drawerMode === key ? 'bg-primary/15 text-primary' : 'text-base-content/50 hover:text-base-content'}`}
-                                        aria-label={label}
+                                        className="alex-btn inline-flex items-center justify-center"
+                                        style={{
+                                            ...segmentedItemStyle(drawerMode === key),
+                                            width: '1.75rem',
+                                            height: '1.75rem',
+                                            padding: 0,
+                                        }}
+                                        aria-label={t(labelKey)}
                                         aria-pressed={drawerMode === key}
                                     >
-                                        <i className={`${icon} text-[10px]`} />
+                                        <i className={`${icon} text-[10px]`} aria-hidden="true" />
                                     </button>
                                 </Tooltip>
                             ))}
                         </div>
 
-                        {/* Height toggle — partial / tall / full. Segmented
-                            button group; the active preset gets the
-                            btn-active styling so the current state is
-                            obvious at a glance. */}
-                        <div className="hidden items-center rounded-lg border border-base-content/10 bg-base-100/50 p-0.5 sm:flex">
-                            {HEIGHT_OPTIONS.map(({ key, icon, label }) => (
-                                <Tooltip key={key} content={label} placement="bottom">
+                        {/* Height toggle */}
+                        <div className="hidden items-center sm:flex" style={segmentedGroupStyle}>
+                            {HEIGHT_OPTIONS.map(({ key, icon, labelKey }) => (
+                                <Tooltip key={key} content={t(labelKey)} placement="bottom">
                                     <button
+                                        type="button"
                                         onClick={() => setDrawerHeight(key)}
-                                        className={`btn btn-ghost btn-xs btn-square rounded-md ${drawerHeight === key ? 'bg-primary/15 text-primary' : 'text-base-content/50 hover:text-base-content'}`}
-                                        aria-label={label}
+                                        className="alex-btn inline-flex items-center justify-center"
+                                        style={{
+                                            ...segmentedItemStyle(drawerHeight === key),
+                                            width: '1.75rem',
+                                            height: '1.75rem',
+                                            padding: 0,
+                                        }}
+                                        aria-label={t(labelKey)}
                                         aria-pressed={drawerHeight === key}
                                     >
-                                        <i className={`${icon} text-[10px]`} />
+                                        <i className={`${icon} text-[10px]`} aria-hidden="true" />
                                     </button>
                                 </Tooltip>
                             ))}
                         </div>
 
-                        <Tooltip content="Sorting History" placement="bottom">
+                        <Tooltip content={t('notes.drawer.action.sorting_history')} placement="bottom">
                             <button
+                                type="button"
                                 onClick={() => setShowSortingHistory(true)}
-                                className="btn btn-ghost btn-sm gap-1.5 text-base-content/70 hover:text-info"
-                                aria-label="Sorting History"
+                                className="alex-btn alex-btn--ghost inline-flex items-center"
+                                style={btnSm}
+                                aria-label={t('notes.drawer.action.sorting_history')}
                             >
-                                <i className="fa-solid fa-clock-rotate-left text-xs" />
-                                <span className="hidden sm:inline">Sorting History</span>
+                                <i className="fa-solid fa-clock-rotate-left text-xs" aria-hidden="true" />
+                                <span className="hidden sm:inline">{t('notes.drawer.action.sorting_history')}</span>
                             </button>
                         </Tooltip>
-                        <Tooltip content="Open Notes Dashboard" placement="bottom">
+                        <Tooltip content={t('notes.drawer.action.dashboard_aria')} placement="bottom">
                             <a
                                 href={`/notes/${context?.projectSlug ?? ''}`}
-                                className="btn btn-ghost btn-sm gap-1.5 text-base-content/70 hover:text-primary"
-                                aria-label="Open Notes Dashboard"
+                                className="alex-btn alex-btn--ghost inline-flex items-center"
+                                style={btnSm}
+                                aria-label={t('notes.drawer.action.dashboard_aria')}
                                 onClick={close}
                             >
-                                <i className="fa-solid fa-arrow-up-right-from-square text-xs" />
-                                <span className="hidden sm:inline">Notes Dashboard</span>
+                                <i className="fa-solid fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
+                                <span className="hidden sm:inline">{t('notes.drawer.action.dashboard')}</span>
                             </a>
                         </Tooltip>
-                        <button onClick={close} className="btn btn-sm btn-neutral rounded-full">Close</button>
+                        <button type="button" onClick={close} style={closeBtnStyle}>
+                            {t('notes.drawer.action.close')}
+                        </button>
                     </div>
                 </div>
 
                 {/* Two-panel content */}
                 {drawerMode === 'list' && context ? (
-                    /* List mode — render the same NotesView the
-                       Notes Dashboard uses, but scoped to this
-                       drawer's notable. All controls (filters,
-                       column picker, bulk actions, compact mode,
-                       sort, pagination) come for free; no
-                       duplicated UI. */
                     <div className="min-h-0 flex-grow overflow-y-auto px-4 py-4">
                         <NotesView
                             projectId={context.projectId}
@@ -766,7 +1067,10 @@ export default function NotesDrawer() {
                 <div className="grid min-h-0 flex-grow grid-cols-1 gap-4 p-6 md:grid-cols-12">
 
                     {/* ── Left pane: note list ── */}
-                    <div className={`flex min-h-0 flex-col ${drawerMode === 'split' ? 'border-r border-dashed border-base-content/10 pr-2 md:col-span-4' : 'md:col-span-12'}`}>
+                    <div
+                        className={`flex min-h-0 flex-col ${drawerMode === 'split' ? 'pr-2 md:col-span-4' : 'md:col-span-12'}`}
+                        style={drawerMode === 'split' ? { borderRight: '1px dashed color-mix(in srgb, var(--theme-base-content) 10%, transparent)' } : undefined}
+                    >
                         {/* View header + notebook selector */}
                         <h4 className="mb-4 flex items-center justify-between pl-2 text-lg font-bold">
                             <div className="flex items-center gap-2">
@@ -779,22 +1083,29 @@ export default function NotesDrawer() {
                                                     {nb.color && <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: nb.color }} />}
                                                     {nb.title}
                                                 </span>
-                                            ) : 'Notebook';
+                                            ) : t('notes.drawer.view.notebook_fallback');
                                         })()}
                                     </>
                                 ) : (
                                     <span>
-                                        {currentView === 'archived' ? 'Archived Notes' : currentView === 'trashed' ? 'Trashed Notes' : 'Active Notes'}
+                                        {currentView === 'archived'
+                                            ? t('notes.drawer.view.archived')
+                                            : currentView === 'trashed'
+                                                ? t('notes.drawer.view.trashed')
+                                                : t('notes.drawer.view.active')}
                                     </span>
                                 )}
 
                                 <button
+                                    type="button"
                                     onClick={() => setNotebookSelectorOpen(true)}
-                                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-base-content/60 transition-colors hover:text-base-content"
-                                    style={{ background: 'linear-gradient(90deg, oklch(var(--s) / 0.2), oklch(var(--s) / 0.1))' }}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium"
+                                    style={notebookSwitchStyle}
                                 >
-                                    <i className="fa-solid fa-book text-[10px]" />
-                                    {activeNotebookId ? 'Switch' : 'Notebooks'}
+                                    <i className="fa-solid fa-book text-[10px]" aria-hidden="true" />
+                                    {activeNotebookId
+                                        ? t('notes.drawer.notebook.button.switch')
+                                        : t('notes.drawer.notebook.button.browse')}
                                     {notebooks.length > 0 && (
                                         <span className="text-[9px] opacity-50">{notebooks.length}</span>
                                     )}
@@ -803,33 +1114,23 @@ export default function NotesDrawer() {
 
                             {!activeNotebookId && (
                                 <div className="flex gap-0.5">
-                                    <Tooltip content="Show active notes" placement="bottom">
-                                        <button
-                                            onClick={() => { setCurrentView('active'); setSelectedId(null); }}
-                                            className={`btn btn-ghost btn-circle btn-sm ${currentView === 'active' ? 'btn-active' : ''}`}
-                                            aria-label="Show active notes"
-                                        >
-                                            <i className="fa-solid fa-folder-open" />
-                                        </button>
-                                    </Tooltip>
-                                    <Tooltip content="Show archived notes" placement="bottom">
-                                        <button
-                                            onClick={() => { setCurrentView('archived'); setSelectedId(null); }}
-                                            className={`btn btn-ghost btn-circle btn-sm ${currentView === 'archived' ? 'btn-active' : ''}`}
-                                            aria-label="Show archived notes"
-                                        >
-                                            <i className="fa-solid fa-archive" />
-                                        </button>
-                                    </Tooltip>
-                                    <Tooltip content="Show trashed notes" placement="bottom">
-                                        <button
-                                            onClick={() => { setCurrentView('trashed'); setSelectedId(null); }}
-                                            className={`btn btn-ghost btn-circle btn-sm ${currentView === 'trashed' ? 'btn-active' : ''}`}
-                                            aria-label="Show trashed notes"
-                                        >
-                                            <i className="fa-solid fa-trash" />
-                                        </button>
-                                    </Tooltip>
+                                    {([
+                                        { key: 'active' as const, icon: 'fa-folder-open', tooltipKey: 'notes.drawer.view_toggle.active_aria' },
+                                        { key: 'archived' as const, icon: 'fa-archive', tooltipKey: 'notes.drawer.view_toggle.archived_aria' },
+                                        { key: 'trashed' as const, icon: 'fa-trash', tooltipKey: 'notes.drawer.view_toggle.trashed_aria' },
+                                    ]).map(({ key, icon, tooltipKey }) => (
+                                        <Tooltip key={key} content={t(tooltipKey)} placement="bottom">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setCurrentView(key); setSelectedId(null); }}
+                                                className="alex-notes-modal-icon-btn"
+                                                style={currentView === key ? { color: 'var(--theme-brand-primary-500)', background: 'color-mix(in srgb, var(--theme-brand-primary-500) 15%, transparent)' } : undefined}
+                                                aria-label={t(tooltipKey)}
+                                            >
+                                                <i className={`fa-solid ${icon}`} aria-hidden="true" />
+                                            </button>
+                                        </Tooltip>
+                                    ))}
                                 </div>
                             )}
                         </h4>
@@ -838,44 +1139,49 @@ export default function NotesDrawer() {
                         <div className="mb-6 mr-2 flex flex-shrink-0 items-center gap-2">
                             <div className="relative flex-1">
                                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                                    <i className="fa-solid fa-magnifying-glass text-base-content/40" />
+                                    <i className="fa-solid fa-magnifying-glass" style={fadedText} aria-hidden="true" />
                                 </span>
                                 <input
                                     type="text"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder={`Search notes (${notes.length})`}
-                                    className="input input-bordered h-12 w-full rounded-full pl-10"
+                                    placeholder={t('notes.drawer.search_placeholder').replace(':count', String(notes.length))}
+                                    className="w-full"
+                                    style={searchInputStyle}
                                 />
                             </div>
-                            <Tooltip content="Import Notes" placement="bottom">
+                            <Tooltip content={t('notes.drawer.tooltip.import')} placement="bottom">
                                 <button
+                                    type="button"
                                     onClick={() => setImportModalOpen(true)}
-                                    className="flex h-12 w-12 flex-shrink-0 cursor-pointer items-center justify-center rounded-full bg-base-200 text-base-content transition-colors hover:bg-base-300"
-                                    title="Import Notes"
+                                    style={circleBtn('import')}
+                                    aria-label={t('notes.drawer.tooltip.import')}
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" className="h-5 w-5 fill-current">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" className="h-5 w-5 fill-current" aria-hidden="true">
                                         <path d="M192 96L320 96L320 192C320 227.3 348.7 256 384 256L480 256L480 512C480 529.7 465.7 544 448 544L192 544C174.3 544 160 529.7 160 512L160 464L128 464L128 512C128 547.3 156.7 576 192 576L448 576C483.3 576 512 547.3 512 512L512 250.5C512 233.5 505.3 217.2 493.3 205.2L370.7 82.7C358.7 70.7 342.5 64 325.5 64L192 64C156.7 64 128 92.7 128 128L128 336L160 336L160 128C160 110.3 174.3 96 192 96zM352 109.3L466.7 224L384 224C366.3 224 352 209.7 352 192L352 109.3zM64 400C64 408.8 71.2 416 80 416L329.4 416L284.7 460.7C278.5 466.9 278.5 477.1 284.7 483.3C290.9 489.5 301.1 489.5 307.3 483.3L379.3 411.3C385.5 405.1 385.5 394.9 379.3 388.7L307.3 316.7C301.1 310.5 290.9 310.5 284.7 316.7C278.5 322.9 278.5 333.1 284.7 339.3L329.4 384L80 384C71.2 384 64 391.2 64 400z" />
                                     </svg>
                                 </button>
                             </Tooltip>
-                            <Tooltip content="Add Note" placement="bottom">
+                            <Tooltip content={t('notes.drawer.tooltip.add')} placement="bottom">
                                 <button
+                                    type="button"
                                     onClick={startAdding}
-                                    className="flex h-12 w-12 flex-shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary/60 text-primary-content transition-colors hover:bg-primary/80"
-                                    title="Add Note"
+                                    style={circleBtn('add')}
+                                    aria-label={t('notes.drawer.tooltip.add')}
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" className="h-5 w-5 fill-current">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" className="h-5 w-5 fill-current" aria-hidden="true">
                                         <path d="M160 512L352 512L352 416C352 380.7 380.7 352 416 352L512 352L512 160C512 142.3 497.7 128 480 128L160 128C142.3 128 128 142.3 128 160L128 480C128 497.7 142.3 512 160 512zM384 498.7L498.7 384L416 384C398.3 384 384 398.3 384 416L384 498.7zM160 544C124.7 544 96 515.3 96 480L96 160C96 124.7 124.7 96 160 96L480 96C515.3 96 544 124.7 544 160L544 357.5C544 374.5 537.3 390.8 525.3 402.8L402.7 525.3C390.7 537.3 374.4 544 357.4 544L160 544zM184 432C184 418.7 194.7 408 208 408C221.3 408 232 418.7 232 432C232 445.3 221.3 456 208 456C194.7 456 184 445.3 184 432zM208 232C194.7 232 184 221.3 184 208C184 194.7 194.7 184 208 184C221.3 184 232 194.7 232 208C232 221.3 221.3 232 208 232zM184 320C184 306.7 194.7 296 208 296C221.3 296 232 306.7 232 320C232 333.3 221.3 344 208 344C194.7 344 184 333.3 184 320z" />
                                     </svg>
                                 </button>
                             </Tooltip>
-                            <Tooltip content={selectMode ? 'Exit Select' : 'Select Notes'} placement="bottom">
+                            <Tooltip content={selectMode ? t('notes.drawer.tooltip.exit_select') : t('notes.drawer.tooltip.select')} placement="bottom">
                                 <button
+                                    type="button"
                                     onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
-                                    className={`flex h-12 w-12 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors ${selectMode ? 'bg-warning/60 text-warning-content hover:bg-warning/80' : 'bg-base-300/50 text-base-content/60 hover:bg-base-300/80'}`}
+                                    style={circleBtn(selectMode ? 'select-on' : 'select-off')}
+                                    aria-label={selectMode ? t('notes.drawer.tooltip.exit_select') : t('notes.drawer.tooltip.select')}
                                 >
-                                    <i className={`fa-solid ${selectMode ? 'fa-xmark' : 'fa-check-double'}`} />
+                                    <i className={`fa-solid ${selectMode ? 'fa-xmark' : 'fa-check-double'}`} aria-hidden="true" />
                                 </button>
                             </Tooltip>
                         </div>
@@ -884,15 +1190,16 @@ export default function NotesDrawer() {
                         {currentView === 'trashed' && notes.length > 0 && (
                             <div className="mb-3 mr-2">
                                 <button
+                                    type="button"
                                     onClick={() => setConfirmAction({ type: 'force-delete', noteId: -1 })}
-                                    className="btn btn-error btn-sm w-full"
+                                    style={emptyTrashBtnStyle}
                                 >
-                                    <i className="fa-solid fa-dumpster-fire" /> Empty All Trashed Notes
+                                    <i className="fa-solid fa-dumpster-fire" aria-hidden="true" />{' '}
+                                    {t('notes.drawer.empty_trash')}
                                 </button>
                             </div>
                         )}
 
-                        {/* Note list */}
                         {/* Bulk action toolbar */}
                         {selectMode && checkedIds.size > 0 && (
                             <BulkActionsToolbar
@@ -902,12 +1209,10 @@ export default function NotesDrawer() {
                                 onAddTag={() => {
                                     const ids = Array.from(checkedIds);
                                     setBulkTagIds(ids);
-                                    // Open tag modal with empty selection — adding will apply to all
                                     setTagModalNoteId(ids[0] ?? null);
                                     setNoteTags([]);
                                 }}
                                 onAddToNotebook={() => {
-                                    // Add all selected to notebook — use first for the picker
                                     const firstId = Array.from(checkedIds)[0];
                                     if (firstId) setNotebookPickerNoteId(firstId);
                                 }}
@@ -917,7 +1222,6 @@ export default function NotesDrawer() {
                                 }}
                                 onMove={handleBulkMove}
                                 onCopy={() => {
-                                    // Copy each selected note
                                     const ids = Array.from(checkedIds);
                                     void (async () => {
                                         for (const id of ids) {
@@ -940,154 +1244,206 @@ export default function NotesDrawer() {
                                     exitSelectMode();
                                     void fetchNotes();
                                 }}
+                                t={t}
                             />
                         )}
 
                         <div className="flex-grow overflow-y-auto">
                             <div className="mr-2 space-y-2">
                                 {loading && notes.length === 0 ? (
-                                    <div className="p-4 text-center"><span className="loading loading-spinner loading-md" /></div>
+                                    <div className="p-4 text-center">
+                                        <i className="fa-solid fa-circle-notch fa-spin text-base" style={microText} aria-hidden="true" />
+                                    </div>
                                 ) : notes.length === 0 ? (
-                                    <p className="p-4 text-center text-sm text-base-content/40">No matching notes found.</p>
+                                    <p className="p-4 text-center text-sm" style={fadedText}>
+                                        {t('notes.drawer.list.empty')}
+                                    </p>
                                 ) : (
-                                    notes.map((note) => (
-                                        <div
-                                            key={note.id}
-                                            onClick={() => {
-                                                if (selectMode) { toggleCheck(note.id); }
-                                                // In list mode, skip the inline detail pane and open the full
-                                                // NoteModal directly — same surface used from the dashboard.
-                                                else if (drawerMode === 'list') { setModalMode('view'); setModalNote(note); }
-                                                else { setSelectedId(note.id); }
-                                            }}
-                                            className={`cursor-pointer rounded border-l-4 px-4 py-2 transition-all duration-200 ${
-                                                selectMode && checkedIds.has(note.id)
-                                                    ? 'border-secondary bg-secondary/20 shadow-sm'
-                                                    : note.id === selectedId && !selectMode
-                                                        ? 'border-primary bg-primary/20 shadow-sm'
-                                                        : 'border-transparent hover:bg-primary/10'
-                                            }`}
-                                        >
-                                            <p className="flex items-center gap-1 truncate font-semibold">
-                                                {selectMode && (
-                                                    <input
-                                                        type="checkbox"
-                                                        className="checkbox checkbox-xs checkbox-primary mr-1"
-                                                        checked={checkedIds.has(note.id)}
-                                                        onChange={() => toggleCheck(note.id)}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                )}
-                                                {note.is_pinned && <i className="fa-solid fa-thumbtack text-[9px] text-primary" />}
-                                                {(note.ai_notes as Record<string, unknown> | null)?.status === 'processing' && (
-                                                    <span className="loading loading-spinner loading-xs text-secondary" />
-                                                )}
-                                                {(() => {
-                                                    const ai = note.ai_notes as Record<string, unknown> | null;
-                                                    if (!ai || ai.status === 'processing') return null;
-                                                    if (typeof ai.routing_count === 'number' && ai.routing_count > 0 && !ai.batch_id) {
-                                                        return <i className="fa-solid fa-circle-exclamation text-[10px] text-warning" title="Routing approval needed" />;
-                                                    }
-                                                    if (ai.batch_id) {
-                                                        return <i className="fa-solid fa-clipboard-list text-[10px] text-warning" title="Commands ready for review" />;
-                                                    }
-                                                    return null;
-                                                })()}
-                                                <span className="truncate">{note.title || <span className="italic opacity-60">Untitled</span>}</span>
-                                            </p>
-                                            <div className="flex items-center justify-between text-xs opacity-70">
-                                                <span>By {note.creator?.name ?? 'System'}</span>
-                                                <span>
-                                                    {currentView === 'trashed' && note.deleted_at
-                                                        ? `Trashed: ${new Date(note.deleted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                                                        : note.note_date
-                                                            ? new Date(note.note_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                                                            : ''
-                                                    }
-                                                </span>
+                                    notes.map((note) => {
+                                        const checked = selectMode && checkedIds.has(note.id);
+                                        const selected = note.id === selectedId && !selectMode;
+                                        const rowState: 'selected' | 'checked' | 'idle' = checked ? 'checked' : selected ? 'selected' : 'idle';
+                                        const ai = note.ai_notes as Record<string, unknown> | null;
+                                        return (
+                                            <div
+                                                key={note.id}
+                                                onClick={() => {
+                                                    if (selectMode) { toggleCheck(note.id); }
+                                                    else if (drawerMode === 'list') { setModalMode('view'); setModalNote(note); }
+                                                    else { setSelectedId(note.id); }
+                                                }}
+                                                style={noteRowStyle(rowState)}
+                                            >
+                                                <p className="flex items-center gap-1 truncate font-semibold">
+                                                    {selectMode && (
+                                                        <input
+                                                            type="checkbox"
+                                                            className="alex-checkbox mr-1"
+                                                            checked={checked}
+                                                            onChange={() => toggleCheck(note.id)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    )}
+                                                    {note.is_pinned && <i className="fa-solid fa-thumbtack text-[9px]" style={{ color: 'var(--theme-brand-primary-500)' }} aria-hidden="true" />}
+                                                    {ai?.status === 'processing' && (
+                                                        <i className="fa-solid fa-circle-notch fa-spin text-xs" style={{ color: 'var(--theme-brand-secondary-500)' }} aria-hidden="true" />
+                                                    )}
+                                                    {(() => {
+                                                        if (!ai || ai.status === 'processing') return null;
+                                                        if (typeof ai.routing_count === 'number' && ai.routing_count > 0 && !ai.batch_id) {
+                                                            return (
+                                                                <i
+                                                                    className="fa-solid fa-circle-exclamation text-[10px]"
+                                                                    style={{ color: 'var(--theme-status-warning-stroke)' }}
+                                                                    title={t('notes.drawer.list.routing_pending_aria')}
+                                                                    aria-label={t('notes.drawer.list.routing_pending_aria')}
+                                                                />
+                                                            );
+                                                        }
+                                                        if (ai.batch_id) {
+                                                            return (
+                                                                <i
+                                                                    className="fa-solid fa-clipboard-list text-[10px]"
+                                                                    style={{ color: 'var(--theme-status-warning-stroke)' }}
+                                                                    title={t('notes.drawer.list.commands_ready_aria')}
+                                                                    aria-label={t('notes.drawer.list.commands_ready_aria')}
+                                                                />
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
+                                                    <span className="truncate">
+                                                        {note.title || <span className="italic" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' }}>{t('notes.drawer.list.untitled')}</span>}
+                                                    </span>
+                                                </p>
+                                                <div className="flex items-center justify-between text-xs" style={bodyText}>
+                                                    <span>
+                                                        {t('notes.drawer.list.byline').replace(':name', note.creator?.name ?? t('notes.drawer.list.creator_fallback'))}
+                                                    </span>
+                                                    <span>
+                                                        {currentView === 'trashed' && note.deleted_at
+                                                            ? t('notes.drawer.list.trashed_label').replace(':date', new Date(note.deleted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
+                                                            : note.note_date
+                                                                ? new Date(note.note_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                                                : ''
+                                                        }
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    {/* ── Right pane: detail view only. Create & edit
-                           have been lifted to the shared NoteModal (see
-                           mount near the end of the file) so the drawer
-                           no longer renders its own simple editors.
-                           Hidden entirely in `list` mode — users open
-                           the full modal on note click instead. */}
+                    {/* ── Right pane: detail view ── */}
                     {drawerMode === 'split' && (
                     <div className="mt-4 flex min-h-0 flex-col md:col-span-8 md:mt-0">
                         {currentView === 'trashed' && selectedNote ? (
-                            /* Trashed view */
                             <div className="flex h-full flex-col">
                                 <div className="flex flex-shrink-0 items-center justify-between">
                                     <div>
-                                        <h4 className="text-lg font-bold text-error/80">{selectedNote.title}</h4>
+                                        <h4 className="text-lg font-bold" style={{ color: 'color-mix(in srgb, var(--theme-status-error-stroke) 80%, transparent)' }}>
+                                            {selectedNote.title}
+                                        </h4>
                                         {selectedNote.deleted_at && (
-                                            <p className="text-sm opacity-70">
-                                                Trashed on {new Date(selectedNote.deleted_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                            <p className="text-sm" style={bodyText}>
+                                                {t('notes.drawer.detail.trashed_on').replace(
+                                                    ':date',
+                                                    new Date(selectedNote.deleted_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+                                                )}
                                             </p>
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <button onClick={() => void restoreNote()} className="btn btn-success btn-sm rounded-full gap-1">
-                                            <i className="fa-solid fa-trash-arrow-up" /> Restore
+                                        <button
+                                            type="button"
+                                            onClick={() => void restoreNote()}
+                                            className="alex-btn inline-flex items-center"
+                                            style={{ ...btnSmPill, ...btnSuccessFill }}
+                                        >
+                                            <i className="fa-solid fa-trash-arrow-up" aria-hidden="true" />
+                                            {t('notes.drawer.detail.action.restore')}
                                         </button>
-                                        <button onClick={() => setConfirmAction({ type: 'force-delete', noteId: selectedNote.id })} className="btn btn-error btn-sm rounded-full gap-1">
-                                            <i className="fa-solid fa-skull-crossbones" /> Delete Forever
+                                        <button
+                                            type="button"
+                                            onClick={() => setConfirmAction({ type: 'force-delete', noteId: selectedNote.id })}
+                                            className="alex-btn inline-flex items-center"
+                                            style={{ ...btnSmPill, ...btnDangerFill }}
+                                        >
+                                            <i className="fa-solid fa-skull-crossbones" aria-hidden="true" />
+                                            {t('notes.drawer.detail.action.delete_forever')}
                                         </button>
                                     </div>
                                 </div>
-                                <div className="divider my-3" />
-                                <div className="prose prose-sm max-w-none flex-grow overflow-y-auto rounded-lg bg-error/10 px-4 py-3 text-base-content/70">
-                                    <p className="italic">This note is in the trash. You can restore it or delete it permanently.</p>
-                                    <div className="divider my-2" />
+                                <div style={dividerStyle} />
+                                <div
+                                    className="prose prose-sm max-w-none flex-grow overflow-y-auto px-4 py-3"
+                                    style={trashedDetailStyle}
+                                >
+                                    <p className="italic">{t('notes.drawer.detail.trashed_blurb')}</p>
+                                    <div style={dividerStyle} />
                                     <div className="whitespace-pre-wrap">{selectedNote.text}</div>
                                 </div>
                             </div>
                         ) : selectedNote ? (
-                            /* Standard view — delegates to NoteDetail */
                             <div className="flex h-full flex-col">
                                 <div className="flex flex-shrink-0 items-center justify-between">
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <h4 className="text-lg font-bold">{selectedNote.title}</h4>
-                                            <Tooltip content="Generate title from contents" placement="bottom">
+                                            <Tooltip content={t('notes.drawer.detail.tooltip.generate_title')} placement="bottom">
                                                 <button
+                                                    type="button"
                                                     onClick={() => void generateTitle()}
                                                     disabled={generatingTitle || !selectedNote.text?.trim()}
-                                                    className="btn btn-ghost btn-xs gap-1 text-base-content/40 hover:text-primary"
+                                                    className="alex-btn alex-btn--ghost inline-flex items-center"
+                                                    style={{ ...btnXs, color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}
+                                                    aria-label={t('notes.drawer.detail.tooltip.generate_title')}
                                                 >
                                                     {generatingTitle
-                                                        ? <span className="loading loading-spinner loading-xs" />
-                                                        : <i className="fa-solid fa-wand-magic-sparkles text-[10px]" />}
+                                                        ? <i className="fa-solid fa-circle-notch fa-spin text-[10px]" aria-hidden="true" />
+                                                        : <i className="fa-solid fa-wand-magic-sparkles text-[10px]" aria-hidden="true" />}
                                                 </button>
                                             </Tooltip>
                                         </div>
-                                        <p className="text-sm opacity-70">
-                                            By {selectedNote.creator?.name ?? 'System'} on{' '}
+                                        <p className="text-sm" style={bodyText}>
+                                            {t('notes.drawer.detail.byline_prefix')}
+                                            {selectedNote.creator?.name ?? t('notes.drawer.list.creator_fallback')}
+                                            {t('notes.drawer.detail.byline_separator')}
                                             {selectedNote.note_date ? new Date(selectedNote.note_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Tooltip content={selectedNote.is_pinned ? 'Unpin note' : 'Pin note'} placement="bottom">
+                                        <Tooltip content={selectedNote.is_pinned ? t('notes.drawer.detail.tooltip.unpin') : t('notes.drawer.detail.tooltip.pin')} placement="bottom">
                                             <button
+                                                type="button"
                                                 onClick={() => void togglePin()}
-                                                className={`btn btn-ghost btn-circle btn-sm ${selectedNote.is_pinned ? 'text-primary' : ''}`}
-                                                aria-label={selectedNote.is_pinned ? 'Unpin note' : 'Pin note'}
+                                                className="alex-notes-modal-icon-btn"
+                                                style={selectedNote.is_pinned ? { color: 'var(--theme-brand-primary-500)' } : undefined}
+                                                aria-label={selectedNote.is_pinned ? t('notes.drawer.detail.tooltip.unpin') : t('notes.drawer.detail.tooltip.pin')}
                                             >
-                                                <i className="fa-solid fa-thumbtack" />
+                                                <i className="fa-solid fa-thumbtack" aria-hidden="true" />
                                             </button>
                                         </Tooltip>
-                                        <button onClick={startEditing} className="btn btn-neutral btn-sm rounded-full gap-1">
-                                            <i className="fa-solid fa-pencil" /> Edit
+                                        <button
+                                            type="button"
+                                            onClick={startEditing}
+                                            className="alex-btn inline-flex items-center"
+                                            style={{ ...btnSmPill, ...btnNeutralFill }}
+                                        >
+                                            <i className="fa-solid fa-pencil" aria-hidden="true" />
+                                            {t('notes.drawer.detail.action.edit')}
                                         </button>
-                                        <button onClick={() => void openHistory(selectedNote.id)} className="btn btn-secondary btn-sm rounded-full gap-1">
-                                            <i className="fa-solid fa-clock-rotate-left" /> History
+                                        <button
+                                            type="button"
+                                            onClick={() => void openHistory(selectedNote.id)}
+                                            className="alex-btn inline-flex items-center"
+                                            style={{ ...btnSmPill, ...btnSecondaryFill }}
+                                        >
+                                            <i className="fa-solid fa-clock-rotate-left" aria-hidden="true" />
+                                            {t('notes.drawer.detail.action.history')}
                                         </button>
                                         <NoteActionsMenu
                                             onAddTag={() => void openTagModal(selectedNote.id)}
@@ -1098,36 +1454,38 @@ export default function NotesDrawer() {
                                             onArchive={() => void archiveNote()}
                                             onTrash={() => setConfirmAction({ type: 'trash', noteId: selectedNote.id })}
                                             isArchived={selectedNote.status === 'archived'}
+                                            t={t}
                                         />
                                     </div>
                                 </div>
-                                <div className="divider my-3" />
+                                <div style={dividerStyle} />
                                 <div className="mb-3 flex flex-wrap items-center gap-2">
                                     {selectedNote.tags?.map((tag) => (
                                         <span
                                             key={tag}
-                                            className="rounded-lg px-3 py-1.5 text-xs font-medium text-primary"
-                                            style={{ background: 'linear-gradient(90deg, oklch(var(--p) / 0.25), oklch(var(--p) / 0.15))' }}
+                                            className="px-3 py-1.5 text-xs font-medium"
+                                            style={tagPillStyle}
                                         >
                                             {tag}
                                         </span>
                                     ))}
                                     <button
+                                        type="button"
                                         onClick={() => void openTagModal(selectedNote.id)}
-                                        className="group/tag flex aspect-square h-7 items-center justify-center rounded-full text-primary transition-all hover:text-white"
-                                        style={{ background: 'linear-gradient(90deg, oklch(var(--p) / 0.25), oklch(var(--p) / 0.15))' }}
-                                        onMouseEnter={(e) => e.currentTarget.style.background = 'linear-gradient(90deg, oklch(var(--p) / 0.6), oklch(var(--p) / 0.45))'}
-                                        onMouseLeave={(e) => e.currentTarget.style.background = 'linear-gradient(90deg, oklch(var(--p) / 0.25), oklch(var(--p) / 0.15))'}
-                                        title="Add tag"
+                                        style={tagAddBtnStyle}
+                                        title={t('notes.drawer.detail.action.add_tag')}
+                                        aria-label={t('notes.drawer.detail.action.add_tag')}
                                     >
-                                        <i className="fa-solid fa-plus text-[10px]" />
+                                        <i className="fa-solid fa-plus text-[10px]" aria-hidden="true" />
                                     </button>
                                 </div>
-                                <div className="flex-grow overflow-y-auto rounded-xl border border-base-content/5 bg-gradient-to-b from-base-200/60 to-base-200/30 px-5 py-4 shadow-inner">
-                                    <div className="prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed text-base-content/80">{selectedNote.text}</div>
+                                <div className="flex-grow overflow-y-auto px-5 py-4" style={detailBodyStyle}>
+                                    <div className="prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)' }}>
+                                        {selectedNote.text}
+                                    </div>
                                 </div>
 
-                                {/* Link Previews (compact) */}
+                                {/* Link previews */}
                                 {selectedNote.links && selectedNote.links.filter((l) => l.status === 'fetched').length > 0 && (
                                     <div className="mt-2 space-y-1">
                                         {selectedNote.links.filter((l) => l.status === 'fetched').map((link) => (
@@ -1136,13 +1494,21 @@ export default function NotesDrawer() {
                                                 href={link.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs transition-colors hover:bg-base-200/50"
+                                                className="flex items-center gap-2 px-3 py-1.5 text-xs"
+                                                style={linkPreviewRowStyle}
                                             >
                                                 {link.favicon_url && (
-                                                    <img src={link.favicon_url} alt="" className="h-3.5 w-3.5 flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                                    <img
+                                                        src={link.favicon_url}
+                                                        alt=""
+                                                        className="h-3.5 w-3.5 flex-shrink-0"
+                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                    />
                                                 )}
-                                                <span className="min-w-0 flex-1 truncate text-primary/70">{link.title ?? link.url}</span>
-                                                <i className="fa-solid fa-arrow-up-right-from-square flex-shrink-0 text-[8px] text-base-content/20" />
+                                                <span className="min-w-0 flex-1 truncate" style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-500) 70%, transparent)' }}>
+                                                    {link.title ?? link.url}
+                                                </span>
+                                                <i className="fa-solid fa-arrow-up-right-from-square flex-shrink-0 text-[8px]" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)' }} aria-hidden="true" />
                                             </a>
                                         ))}
                                     </div>
@@ -1150,25 +1516,26 @@ export default function NotesDrawer() {
 
                                 {/* AI Status Footer */}
                                 <div className="mt-3">
-                                <AiStatusFooter
-                                    note={selectedNote}
-                                    projectId={context!.projectId}
-                                    contextType={context!.contextType}
-                                    contextId={context!.contextId}
-                                    onCategorize={() => setShowCategorizeModal(true)}
-                                    onApproveRouting={approveRouting}
-                                    onRejectRouting={rejectRouting}
-                                    onReviewCommands={reviewCommands}
-                                    onRetry={() => setShowCategorizeModal(true)}
-                                />
+                                    <AiStatusFooter
+                                        note={selectedNote}
+                                        projectId={context!.projectId}
+                                        contextType={context!.contextType}
+                                        contextId={context!.contextId}
+                                        onCategorize={() => setShowCategorizeModal(true)}
+                                        onApproveRouting={approveRouting}
+                                        onRejectRouting={rejectRouting}
+                                        onReviewCommands={reviewCommands}
+                                        onRetry={() => setShowCategorizeModal(true)}
+                                    />
                                 </div>
                             </div>
                         ) : (
-                            /* Empty state */
                             <div className="flex flex-1 items-center justify-center">
                                 <div className="text-center">
-                                    <i className="fa-solid fa-sticky-note mb-3 text-3xl text-base-content/10" />
-                                    <p className="text-sm text-base-content/30">Select a note or add a new one</p>
+                                    <i className="fa-solid fa-sticky-note mb-3 text-3xl" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)' }} aria-hidden="true" />
+                                    <p className="text-sm" style={microText}>
+                                        {t('notes.drawer.detail.empty')}
+                                    </p>
                                 </div>
                             </div>
                         )}
@@ -1179,10 +1546,9 @@ export default function NotesDrawer() {
             </div>
 
             {/* ══════════════════════════════════════════════
-             *  MODALS — delegated to extracted components
+             *  MODALS
              * ══════════════════════════════════════════════ */}
 
-            {/* History modal */}
             <HistoryModal
                 open={!!historyNoteId}
                 onClose={() => setHistoryNoteId(null)}
@@ -1192,7 +1558,6 @@ export default function NotesDrawer() {
                 noteId={historyNoteId}
             />
 
-            {/* Tag picker modal */}
             <TagPickerModal
                 open={!!tagModalNoteId}
                 onClose={() => { setTagModalNoteId(null); setBulkTagIds(null); void fetchNotes(); }}
@@ -1202,14 +1567,12 @@ export default function NotesDrawer() {
                     if (!context) return;
                     const noteIds = bulkTagIds ?? (tagModalNoteId ? [tagModalNoteId] : []);
                     if (selected) {
-                        // Remove tag from all
                         for (const id of noteIds) {
                             await fetch(`/api/v1/projects/${context.projectId}/notes/${id}/tags/${encodeURIComponent(tag)}`, {
                                 method: 'DELETE', headers: csrfHeaders(), credentials: 'same-origin',
                             });
                         }
                     } else {
-                        // Add tag to all
                         for (const id of noteIds) {
                             await fetch(`/api/v1/projects/${context.projectId}/notes/${id}/tags`, {
                                 method: 'POST', headers: csrfHeaders(), credentials: 'same-origin',
@@ -1217,7 +1580,6 @@ export default function NotesDrawer() {
                             });
                         }
                     }
-                    // Refresh tags display from first note
                     if (tagModalNoteId) {
                         const res = await fetch(`/api/v1/projects/${context.projectId}/notes/${tagModalNoteId}/tags`, {
                             headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin',
@@ -1243,7 +1605,6 @@ export default function NotesDrawer() {
                 }}
             />
 
-            {/* Notebook selector modal */}
             <NotebookSelectorModal
                 open={notebookSelectorOpen}
                 onClose={() => setNotebookSelectorOpen(false)}
@@ -1255,7 +1616,6 @@ export default function NotesDrawer() {
                 onMoveNotebook={(id) => setNotebookLinkAction({ notebookId: id, action: 'move' })}
             />
 
-            {/* Notebook Link/Move modal */}
             {notebookLinkAction && (
                 <LinkMoveModal
                     open
@@ -1268,7 +1628,6 @@ export default function NotesDrawer() {
                 />
             )}
 
-            {/* Import modal */}
             <ImportModal
                 open={importModalOpen}
                 onClose={() => setImportModalOpen(false)}
@@ -1278,7 +1637,6 @@ export default function NotesDrawer() {
                 onComplete={() => { setImportModalOpen(false); void fetchNotes(); }}
             />
 
-            {/* Link/Move/Copy modal */}
             <LinkMoveModal
                 open={!!linkAction}
                 onClose={() => setLinkAction(null)}
@@ -1288,7 +1646,6 @@ export default function NotesDrawer() {
                 onComplete={() => { setLinkAction(null); void fetchNotes(); }}
             />
 
-            {/* Bulk Move modal */}
             {bulkMoveIds && (
                 <LinkMoveModal
                     open
@@ -1301,7 +1658,6 @@ export default function NotesDrawer() {
                 />
             )}
 
-            {/* Prompt Preview modal */}
             <PromptPreviewModal
                 open={showPromptPreview}
                 onClose={() => setShowPromptPreview(false)}
@@ -1309,7 +1665,6 @@ export default function NotesDrawer() {
                 promptLoading={promptLoading}
             />
 
-            {/* Command Review modal */}
             <CommandReviewModal
                 open={showCommandReview}
                 onClose={() => setShowCommandReview(false)}
@@ -1317,13 +1672,12 @@ export default function NotesDrawer() {
                 projectId={context?.projectId ?? 0}
                 onExecuted={() => {
                     setShowCommandReview(false);
-                    toast.show('Commands executed successfully', { type: 'success' });
+                    toast.show(t('notes.drawer.toast.executed'), { type: 'success' });
                     void fetchNotes();
                 }}
                 onStatusChange={() => void fetchNotes()}
             />
 
-            {/* Sorting History modal */}
             <SortingHistoryModal
                 open={showSortingHistory}
                 onClose={() => setShowSortingHistory(false)}
@@ -1333,11 +1687,6 @@ export default function NotesDrawer() {
                 blueprintSlug={context?.contextType === 'blueprint' ? context?.contextSlug : undefined}
             />
 
-            {/* Shared edit / create modal — same component used by the
-                Notes Dashboard, opened here via the Edit button on the
-                detail pane or the "+ Add" button in the list. Context
-                is forwarded so create mode attaches the new note to the
-                correct notable (project/blueprint/entry). */}
             <NoteModal
                 open={modalMode !== null}
                 onClose={() => { setModalMode(null); setModalNote(null); }}
@@ -1353,77 +1702,83 @@ export default function NotesDrawer() {
             <Modal open={showCategorizeModal} onClose={() => setShowCategorizeModal(false)} maxWidth="max-w-sm">
                 <div className="p-6">
                     <div className="mb-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-secondary">
-                            <i className="fa-solid fa-wand-magic-sparkles text-secondary-content" />
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center" style={headerIconWrapStyle('secondary')}>
+                            <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" />
                         </div>
                         <div>
-                            <h3 className="font-bold">AI Categorization</h3>
+                            <h3 className="font-bold">{t('notes.drawer.categorize.title')}</h3>
                             {checkedIds.size > 1 ? (
-                                <p className="text-xs text-base-content/40">{checkedIds.size} notes selected</p>
+                                <p className="text-xs" style={fadedText}>
+                                    {t('notes.drawer.categorize.bulk_count').replace(':count', String(checkedIds.size))}
+                                </p>
                             ) : selectedNote ? (
-                                <p className="text-xs text-base-content/40">"{selectedNote.title || 'Untitled'}"</p>
+                                <p className="text-xs" style={fadedText}>
+                                    "{selectedNote.title || t('notes.drawer.list.untitled')}"
+                                </p>
                             ) : null}
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        {/* Send to Blueprint — only from project/entry context */}
                         {context?.contextType !== 'blueprint' && (
                             <button
+                                type="button"
                                 onClick={() => void handleCategorize('send')}
                                 disabled={aiProcessing}
-                                className="flex w-full items-start gap-3 rounded-xl border border-base-content/10 bg-base-200/50 px-4 py-3 text-left transition-colors hover:bg-base-200"
+                                className="alex-notes-tag-row flex w-full items-start gap-3 px-4 py-3 text-left"
+                                style={categorizeOptionStyle}
                             >
-                                <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/20">
-                                    <i className="fa-solid fa-share-from-square text-sm text-primary" />
+                                <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center" style={{ ...headerIconWrapStyle('primary'), borderRadius: 'var(--theme-radius-input)' }}>
+                                    <i className="fa-solid fa-share-from-square text-sm" aria-hidden="true" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold">Send to Blueprint</p>
-                                    <p className="text-xs text-base-content/50">AI will determine which blueprint(s) this note belongs to and route it there.</p>
+                                    <p className="text-sm font-semibold">{t('notes.drawer.categorize.send.title')}</p>
+                                    <p className="text-xs" style={labelText}>{t('notes.drawer.categorize.send.desc')}</p>
                                 </div>
                             </button>
                         )}
 
-                        {/* Sort within Blueprint — only in blueprint context */}
                         {context?.contextType === 'blueprint' && (
                             <button
+                                type="button"
                                 onClick={() => void handleCategorize('sort')}
                                 disabled={aiProcessing}
-                                className="flex w-full items-start gap-3 rounded-xl border border-base-content/10 bg-base-200/50 px-4 py-3 text-left transition-colors hover:bg-base-200"
+                                className="alex-notes-tag-row flex w-full items-start gap-3 px-4 py-3 text-left"
+                                style={categorizeOptionStyle}
                             >
-                                <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-secondary/20">
-                                    <i className="fa-solid fa-layer-group text-sm text-secondary" />
+                                <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center" style={{ background: 'color-mix(in srgb, var(--theme-brand-secondary-500) 20%, transparent)', color: 'var(--theme-brand-secondary-500)', borderRadius: 'var(--theme-radius-input)' }}>
+                                    <i className="fa-solid fa-layer-group text-sm" aria-hidden="true" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold">Sort within Blueprint</p>
-                                    <p className="text-xs text-base-content/50">Generate commands to create entries and relationships for this blueprint.</p>
+                                    <p className="text-sm font-semibold">{t('notes.drawer.categorize.sort.title')}</p>
+                                    <p className="text-xs" style={labelText}>{t('notes.drawer.categorize.sort.desc')}</p>
                                 </div>
                             </button>
                         )}
                     </div>
 
-                    {/* Auto-process checkbox */}
-                    <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2">
+                    <label className="mt-4 flex cursor-pointer items-start gap-3 px-2 py-2">
                         <input
                             type="checkbox"
-                            className="checkbox checkbox-sm checkbox-primary mt-0.5"
+                            className="alex-checkbox mt-0.5"
                             checked={categorizeAutoProcess}
                             onChange={(e) => setCategorizeAutoProcess(e.target.checked)}
                         />
                         <div>
-                            <p className="text-xs font-medium">Auto-process</p>
-                            <p className="text-xs text-base-content/40">Skip the approval step and process automatically.</p>
+                            <p className="text-xs font-medium">{t('notes.drawer.categorize.auto.label')}</p>
+                            <p className="text-xs" style={fadedText}>{t('notes.drawer.categorize.auto.desc')}</p>
                         </div>
                     </label>
 
-                    {/* Preview prompt link */}
-                    <div className="mt-3 border-t border-base-content/5 pt-3 text-center">
+                    <div className="mt-3 pt-3 text-center" style={sectionBorderTopStyle}>
                         <button
+                            type="button"
                             onClick={() => void fetchPromptPreview()}
-                            className="inline-flex items-center gap-1.5 text-xs text-base-content/40 transition-colors hover:text-primary"
+                            className="inline-flex items-center gap-1.5 text-xs"
+                            style={fadedText}
                         >
-                            <i className="fa-solid fa-code text-[10px]" />
-                            Preview prompt &amp; token estimate
+                            <i className="fa-solid fa-code text-[10px]" aria-hidden="true" />
+                            {t('notes.drawer.categorize.preview')}
                         </button>
                     </div>
                 </div>
@@ -1433,41 +1788,62 @@ export default function NotesDrawer() {
             <Modal open={showEntryIntegration} onClose={() => setShowEntryIntegration(false)} maxWidth="max-w-md">
                 <div className="p-6">
                     <div className="mb-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
-                            <i className="fa-solid fa-puzzle-piece text-primary" />
+                        <div className="flex h-10 w-10 items-center justify-center" style={headerIconWrapStyle('primary')}>
+                            <i className="fa-solid fa-puzzle-piece" aria-hidden="true" />
                         </div>
                         <div>
-                            <h3 className="text-base font-bold">Integrate into Entry</h3>
-                            <p className="text-xs text-base-content/40">AI will analyze this note and suggest field updates for the entry</p>
+                            <h3 className="text-base font-bold">{t('notes.drawer.integration.title')}</h3>
+                            <p className="text-xs" style={fadedText}>{t('notes.drawer.integration.subtitle')}</p>
                         </div>
                     </div>
 
                     {selectedNote && (
-                        <div className="mb-4 rounded-lg bg-base-200/30 px-3 py-2">
-                            <p className="text-xs text-base-content/40">Note: <span className="font-medium text-base-content/60">{selectedNote.title}</span></p>
+                        <div className="mb-4 px-3 py-2" style={{ background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)', borderRadius: 'var(--theme-radius-input)' }}>
+                            <p className="text-xs" style={fadedText}>
+                                {t('notes.drawer.integration.note_label')}{' '}
+                                <span className="font-medium" style={subtleText}>{selectedNote.title}</span>
+                            </p>
                         </div>
                     )}
 
                     <div>
-                        <label className="text-xs font-medium text-base-content/60">Custom Instructions (optional)</label>
+                        <label className="text-xs font-medium" style={subtleText}>
+                            {t('notes.drawer.integration.instructions_label')}
+                        </label>
                         <textarea
                             value={integrationInstructions}
                             onChange={(e) => setIntegrationInstructions(e.target.value)}
-                            placeholder="Any specific instructions for the AI... (e.g., 'Focus on updating the character's motivations')"
+                            placeholder={t('notes.drawer.integration.instructions_placeholder')}
                             rows={3}
-                            className="textarea textarea-bordered mt-1 w-full rounded-xl text-sm"
+                            className="mt-1 w-full text-sm"
+                            style={{ ...inputStyle, resize: 'vertical' }}
                         />
                     </div>
 
                     <div className="mt-4 flex justify-end gap-2">
-                        <button onClick={() => setShowEntryIntegration(false)} className="btn btn-ghost btn-sm text-xs">Cancel</button>
-                        <button onClick={() => void triggerEntryIntegration()} disabled={aiProcessing} className="btn btn-primary btn-sm text-xs">
-                            {aiProcessing ? <span className="loading loading-spinner loading-xs" /> : 'Integrate'}
+                        <button
+                            type="button"
+                            onClick={() => setShowEntryIntegration(false)}
+                            className="alex-btn alex-btn--ghost"
+                            style={btnXs}
+                        >
+                            {t('notes.drawer.integration.cancel')}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void triggerEntryIntegration()}
+                            disabled={aiProcessing}
+                            className="alex-btn alex-btn--primary"
+                            style={btnXs}
+                        >
+                            {aiProcessing
+                                ? <i className="fa-solid fa-circle-notch fa-spin text-xs" aria-hidden="true" />
+                                : t('notes.drawer.integration.submit')}
                         </button>
                     </div>
 
-                    <p className="mt-3 text-[10px] text-base-content/30">
-                        AI will create a review plan. You'll be able to approve or reject each suggestion before changes are applied.
+                    <p className="mt-3 text-[10px]" style={microText}>
+                        {t('notes.drawer.integration.footer')}
                     </p>
                 </div>
             </Modal>
@@ -1475,31 +1851,45 @@ export default function NotesDrawer() {
             {/* Locations modal */}
             <Modal open={!!locationsModalNote} onClose={() => setLocationsModalNote(null)} maxWidth="max-w-xs">
                 <div className="p-5">
-                    <h3 className="text-base font-bold">Note Locations</h3>
-                    <p className="mt-1 text-xs text-base-content/40">
-                        "{locationsModalNote?.title || 'Untitled'}" is attached to:
+                    <h3 className="text-base font-bold">{t('notes.drawer.locations.title')}</h3>
+                    <p className="mt-1 text-xs" style={fadedText}>
+                        {t('notes.drawer.locations.subtitle_prefix')}
+                        {locationsModalNote?.title || t('notes.drawer.list.untitled')}
+                        {t('notes.drawer.locations.subtitle_suffix')}
                     </p>
-                    <div className="mt-3 overflow-hidden rounded-xl border border-base-300">
-                        {locationsModalNote?.locations?.map((loc, i) => (
+                    <div className="mt-3" style={cardHiddenOverflow}>
+                        {locationsModalNote?.locations?.map((loc, i, arr) => (
                             <div
                                 key={i}
-                                className="flex items-center gap-3 border-b border-base-content/5 px-4 py-2.5 text-sm last:border-0"
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm"
+                                style={i === arr.length - 1 ? undefined : { borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)' }}
                             >
-                                <i className={`text-xs text-base-content/30 ${
-                                    loc.type === 'project' ? 'fa-solid fa-folder' :
-                                    loc.type === 'blueprint' ? 'fa-solid fa-cube' :
-                                    loc.type === 'notebook' ? 'fa-solid fa-book' :
-                                    'fa-solid fa-file'
-                                }`} />
+                                <i
+                                    className={`text-xs ${
+                                        loc.type === 'project' ? 'fa-solid fa-folder' :
+                                        loc.type === 'blueprint' ? 'fa-solid fa-cube' :
+                                        loc.type === 'notebook' ? 'fa-solid fa-book' :
+                                        'fa-solid fa-file'
+                                    }`}
+                                    style={microText}
+                                    aria-hidden="true"
+                                />
                                 <div>
                                     <span className="font-medium">{loc.name}</span>
-                                    <span className="ml-2 text-xs capitalize text-base-content/30">{loc.type}</span>
+                                    <span className="ml-2 text-xs capitalize" style={microText}>{loc.type}</span>
                                 </div>
                             </div>
                         ))}
                     </div>
                     <div className="mt-3 flex justify-end">
-                        <button onClick={() => setLocationsModalNote(null)} className="btn btn-ghost btn-sm text-xs">Close</button>
+                        <button
+                            type="button"
+                            onClick={() => setLocationsModalNote(null)}
+                            className="alex-btn alex-btn--ghost"
+                            style={btnXs}
+                        >
+                            {t('notes.drawer.locations.close')}
+                        </button>
                     </div>
                 </div>
             </Modal>
@@ -1507,34 +1897,42 @@ export default function NotesDrawer() {
             {/* Create Notebook modal */}
             <Modal open={showNewNotebook} onClose={() => setShowNewNotebook(false)} maxWidth="max-w-sm">
                 <div className="p-6">
-                    <h3 className="text-lg font-bold">New Notebook</h3>
-                    <p className="mt-1 text-xs text-base-content/40">Create a notebook to organize your notes</p>
+                    <h3 className="text-lg font-bold">{t('notes.drawer.new_notebook.title')}</h3>
+                    <p className="mt-1 text-xs" style={fadedText}>{t('notes.drawer.new_notebook.subtitle')}</p>
 
                     <div className="mt-5 space-y-4">
                         <div>
-                            <label className="text-xs font-medium text-base-content/60">Title</label>
+                            <label className="text-xs font-medium" style={subtleText}>
+                                {t('notes.drawer.new_notebook.field.title')}
+                            </label>
                             <input
                                 type="text"
                                 value={newNotebookTitle}
                                 onChange={(e) => setNewNotebookTitle(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter' && newNotebookTitle.trim()) void createNotebook(); }}
-                                placeholder="Notebook name"
+                                placeholder={t('notes.drawer.new_notebook.field.title_placeholder')}
                                 autoFocus
-                                className="input input-bordered mt-1 h-9 min-h-0 w-full rounded-xl text-sm"
+                                className="mt-1 w-full text-sm"
+                                style={inputStyle}
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-base-content/60">Description</label>
+                            <label className="text-xs font-medium" style={subtleText}>
+                                {t('notes.drawer.new_notebook.field.description')}
+                            </label>
                             <textarea
                                 value={newNotebookDesc}
                                 onChange={(e) => setNewNotebookDesc(e.target.value)}
-                                placeholder="What is this notebook for? (optional)"
+                                placeholder={t('notes.drawer.new_notebook.field.description_placeholder')}
                                 rows={2}
-                                className="textarea textarea-bordered mt-1 min-h-0 w-full rounded-xl text-sm"
+                                className="mt-1 w-full text-sm"
+                                style={{ ...inputStyle, resize: 'vertical' }}
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-base-content/60">Color</label>
+                            <label className="text-xs font-medium" style={subtleText}>
+                                {t('notes.drawer.new_notebook.field.color')}
+                            </label>
                             <div className="mt-1.5 flex items-center gap-4">
                                 <label className="relative cursor-pointer">
                                     <input
@@ -1544,12 +1942,17 @@ export default function NotesDrawer() {
                                         className="absolute inset-0 cursor-pointer opacity-0"
                                     />
                                     <div
-                                        style={{ backgroundColor: newNotebookColor }}
-                                        className="h-[60px] w-[60px] rounded-full ring-2 ring-base-content/10 ring-offset-2 ring-offset-base-100"
+                                        style={{
+                                            backgroundColor: newNotebookColor,
+                                            width: '60px',
+                                            height: '60px',
+                                            borderRadius: '9999px',
+                                            boxShadow: '0 0 0 2px var(--theme-base-100), 0 0 0 4px color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                                        }}
                                     />
                                 </label>
                                 <div className="grid grid-cols-[repeat(4,28px)] gap-2">
-                                    {['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4'].map((c) => (
+                                    {NOTEBOOK_COLOR_SWATCHES.map((c) => (
                                         <button
                                             key={c}
                                             type="button"
@@ -1557,7 +1960,7 @@ export default function NotesDrawer() {
                                             className="h-[28px] w-[28px] rounded-full border-2"
                                             style={{
                                                 backgroundColor: c,
-                                                borderColor: newNotebookColor === c ? 'white' : 'transparent',
+                                                borderColor: newNotebookColor === c ? 'var(--theme-base-100)' : 'transparent',
                                                 boxShadow: newNotebookColor === c ? `0 0 0 2px ${c}` : 'none',
                                             }}
                                         />
@@ -1568,13 +1971,22 @@ export default function NotesDrawer() {
                     </div>
 
                     <div className="mt-6 flex justify-end gap-2">
-                        <button onClick={() => setShowNewNotebook(false)} className="btn btn-ghost btn-sm text-xs">Cancel</button>
                         <button
+                            type="button"
+                            onClick={() => setShowNewNotebook(false)}
+                            className="alex-btn alex-btn--ghost"
+                            style={btnXs}
+                        >
+                            {t('notes.drawer.new_notebook.cancel')}
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => void createNotebook()}
                             disabled={!newNotebookTitle.trim()}
-                            className="btn btn-primary btn-sm text-xs"
+                            className="alex-btn alex-btn--primary"
+                            style={btnXs}
                         >
-                            Create Notebook
+                            {t('notes.drawer.new_notebook.submit')}
                         </button>
                     </div>
                 </div>
@@ -1583,18 +1995,19 @@ export default function NotesDrawer() {
             {/* Add to Notebook picker */}
             <Modal open={!!notebookPickerNoteId} onClose={() => setNotebookPickerNoteId(null)} maxWidth="max-w-sm">
                 <div className="p-5">
-                    <h3 className="text-base font-bold">Add to Notebook</h3>
-                    <p className="mt-1 text-xs text-base-content/40">Select a notebook for this note</p>
+                    <h3 className="text-base font-bold">{t('notes.drawer.notebook_picker.title')}</h3>
+                    <p className="mt-1 text-xs" style={fadedText}>{t('notes.drawer.notebook_picker.subtitle')}</p>
                     {notebooks.length === 0 ? (
                         <div className="mt-4 py-6 text-center">
-                            <i className="fa-solid fa-book mb-2 text-xl text-base-content/10" />
-                            <p className="text-xs text-base-content/30">No notebooks yet</p>
+                            <i className="fa-solid fa-book mb-2 text-xl" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)' }} aria-hidden="true" />
+                            <p className="text-xs" style={microText}>{t('notes.drawer.notebook_picker.empty')}</p>
                         </div>
                     ) : (
-                        <div className="mt-3 max-h-48 overflow-y-auto rounded-xl border border-base-300">
-                            {notebooks.map((nb) => (
+                        <div className="mt-3 max-h-48 overflow-y-auto" style={cardHiddenOverflow}>
+                            {notebooks.map((nb, i, arr) => (
                                 <button
                                     key={nb.id}
+                                    type="button"
                                     onClick={async () => {
                                         if (notebookPickerNoteId) {
                                             await addNoteToNotebook(notebookPickerNoteId, nb.id);
@@ -1602,19 +2015,27 @@ export default function NotesDrawer() {
                                             setNotebooks((prev) => prev.map((n) => n.id === nb.id ? { ...n, notes_count: n.notes_count + 1 } : n));
                                         }
                                     }}
-                                    className="flex w-full items-center gap-3 border-b border-base-content/5 px-4 py-3 text-left text-sm transition-colors last:border-0 hover:bg-base-200/30"
+                                    className="alex-notes-tag-row flex w-full items-center gap-3 px-4 py-3 text-left text-sm"
+                                    style={i === arr.length - 1 ? undefined : { borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)' }}
                                 >
                                     {nb.color && (
                                         <span className="inline-block h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: nb.color }} />
                                     )}
                                     <span className="flex-1 font-medium">{nb.title}</span>
-                                    <span className="text-xs text-base-content/30">{nb.notes_count}</span>
+                                    <span className="text-xs" style={microText}>{nb.notes_count}</span>
                                 </button>
                             ))}
                         </div>
                     )}
                     <div className="mt-3 flex justify-end">
-                        <button onClick={() => setNotebookPickerNoteId(null)} className="btn btn-ghost btn-sm text-xs">Cancel</button>
+                        <button
+                            type="button"
+                            onClick={() => setNotebookPickerNoteId(null)}
+                            className="alex-btn alex-btn--ghost"
+                            style={btnXs}
+                        >
+                            {t('notes.drawer.notebook_picker.cancel')}
+                        </button>
                     </div>
                 </div>
             </Modal>
@@ -1622,20 +2043,36 @@ export default function NotesDrawer() {
             {/* Delete confirmation modal */}
             <Modal open={!!confirmAction} onClose={() => setConfirmAction(null)} maxWidth="max-w-sm">
                 <div className="p-6 text-center">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-error/10">
-                        <i className={`fa-solid ${confirmAction?.type === 'force-delete' ? 'fa-skull-crossbones' : 'fa-trash'} text-xl text-error`} />
+                    <div
+                        className="mx-auto mb-4 flex h-14 w-14 items-center justify-center"
+                        style={headerIconWrapStyle('danger')}
+                    >
+                        <i
+                            className={`fa-solid ${confirmAction?.type === 'force-delete' ? 'fa-skull-crossbones' : 'fa-trash'} text-xl`}
+                            aria-hidden="true"
+                        />
                     </div>
                     <h3 className="text-lg font-bold">
-                        {confirmAction?.type === 'force-delete' ? 'Delete Forever?' : 'Move to Trash?'}
-                    </h3>
-                    <p className="mt-2 text-sm text-base-content/50">
                         {confirmAction?.type === 'force-delete'
-                            ? 'This note will be permanently deleted. This action cannot be undone.'
-                            : 'This note will be moved to the trash. You can restore it later.'}
+                            ? t('notes.drawer.confirm.delete_forever.title')
+                            : t('notes.drawer.confirm.trash.title')}
+                    </h3>
+                    <p className="mt-2 text-sm" style={labelText}>
+                        {confirmAction?.type === 'force-delete'
+                            ? t('notes.drawer.confirm.delete_forever.desc')
+                            : t('notes.drawer.confirm.trash.desc')}
                     </p>
                     <div className="mt-6 flex justify-center gap-3">
-                        <button onClick={() => setConfirmAction(null)} className="btn btn-ghost btn-sm">Cancel</button>
                         <button
+                            type="button"
+                            onClick={() => setConfirmAction(null)}
+                            className="alex-btn alex-btn--ghost"
+                            style={btnSm}
+                        >
+                            {t('notes.drawer.confirm.cancel')}
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => {
                                 if (!confirmAction) return;
                                 if (confirmAction.type === 'force-delete') {
@@ -1649,9 +2086,12 @@ export default function NotesDrawer() {
                                     void deleteNote(confirmAction.noteId);
                                 }
                             }}
-                            className={`btn btn-sm ${confirmAction?.type === 'force-delete' ? 'btn-error' : 'btn-warning'}`}
+                            className="alex-btn"
+                            style={{ ...btnSm, ...(confirmAction?.type === 'force-delete' ? btnDangerFill : btnWarningFill) }}
                         >
-                            {confirmAction?.type === 'force-delete' ? 'Delete Forever' : 'Move to Trash'}
+                            {confirmAction?.type === 'force-delete'
+                                ? t('notes.drawer.confirm.delete_forever.action')
+                                : t('notes.drawer.confirm.trash.action')}
                         </button>
                     </div>
                 </div>
@@ -1703,17 +2143,26 @@ function PortalMenu({ items, btnRef, open, onClose }: {
     return createPortal(
         <ul
             ref={menuRef}
-            className="fixed z-[9999] w-44 overflow-hidden rounded-lg border border-base-content/10 bg-base-100 text-base-content shadow-lg"
-            style={{ top: pos.top, left: pos.left }}
+            className="fixed z-[9999] w-44"
+            style={{ ...portalMenuStyle, top: pos.top, left: pos.left }}
         >
             {items.map((item, i) => (
-                <li key={i}>
+                <li
+                    key={i}
+                    style={i < items.length - 1 ? { borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)' } : undefined}
+                >
                     <button
+                        type="button"
                         onClick={() => { item.onClick(); onClose(); }}
-                        className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors hover:bg-base-200 ${i < items.length - 1 ? 'border-b border-base-content/10' : ''} ${item.danger ? 'text-error' : ''}`}
+                        className="alex-notes-tag-row flex w-full items-center justify-between px-3 py-2 text-xs"
+                        style={item.danger ? { color: 'var(--theme-status-error-stroke)' } : undefined}
                     >
                         <span>{item.label}</span>
-                        <i className={`${item.icon} ml-3 w-4 text-center text-base-content/60`} />
+                        <i
+                            className={`${item.icon} ml-3 w-4 text-center`}
+                            style={item.danger ? undefined : subtleText}
+                            aria-hidden="true"
+                        />
                     </button>
                 </li>
             ))}
@@ -1724,7 +2173,7 @@ function PortalMenu({ items, btnRef, open, onClose }: {
 
 /* ── NoteActionsMenu (inline sub-component) ── */
 
-function NoteActionsMenu({ onAddTag, onAddToNotebook, onLink, onMove, onCopy, onArchive, onTrash, isArchived }: {
+function NoteActionsMenu({ onAddTag, onAddToNotebook, onLink, onMove, onCopy, onArchive, onTrash, isArchived, t }: {
     onAddTag: () => void;
     onAddToNotebook: () => void;
     onLink: () => void;
@@ -1733,24 +2182,36 @@ function NoteActionsMenu({ onAddTag, onAddToNotebook, onLink, onMove, onCopy, on
     onArchive: () => void;
     onTrash: () => void;
     isArchived: boolean;
+    t: Translator;
 }) {
     const [open, setOpen] = useState(false);
     const btnRef = useRef<HTMLButtonElement>(null);
 
     const items: PortalMenuItem[] = [
-        { label: 'Add Tag', icon: 'fa-solid fa-tag', onClick: onAddTag },
-        { label: 'Add to Notebook', icon: 'fa-solid fa-book', onClick: onAddToNotebook },
-        { label: 'Link to...', icon: 'fa-solid fa-link', onClick: onLink },
-        { label: 'Move to...', icon: 'fa-solid fa-right-from-bracket', onClick: onMove },
-        { label: 'Make a Copy', icon: 'fa-solid fa-copy', onClick: onCopy },
-        { label: isArchived ? 'Unarchive' : 'Archive', icon: 'fa-solid fa-archive', onClick: onArchive },
-        { label: 'Move to Trash', icon: 'fa-solid fa-trash', onClick: onTrash, danger: true },
+        { label: t('notes.drawer.actions.add_tag'), icon: 'fa-solid fa-tag', onClick: onAddTag },
+        { label: t('notes.drawer.actions.add_to_notebook'), icon: 'fa-solid fa-book', onClick: onAddToNotebook },
+        { label: t('notes.drawer.actions.link'), icon: 'fa-solid fa-link', onClick: onLink },
+        { label: t('notes.drawer.actions.move'), icon: 'fa-solid fa-right-from-bracket', onClick: onMove },
+        { label: t('notes.drawer.actions.copy'), icon: 'fa-solid fa-copy', onClick: onCopy },
+        {
+            label: isArchived ? t('notes.drawer.actions.unarchive') : t('notes.drawer.actions.archive'),
+            icon: 'fa-solid fa-archive',
+            onClick: onArchive,
+        },
+        { label: t('notes.drawer.actions.trash'), icon: 'fa-solid fa-trash', onClick: onTrash, danger: true },
     ];
 
     return (
         <>
-            <button ref={btnRef} onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="btn btn-ghost btn-circle btn-sm" title="More actions">
-                <i className="fa-solid fa-ellipsis-vertical" />
+            <button
+                ref={btnRef}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+                className="alex-notes-modal-icon-btn"
+                title={t('notes.drawer.actions.menu_aria')}
+                aria-label={t('notes.drawer.actions.menu_aria')}
+            >
+                <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true" />
             </button>
             <PortalMenu items={items} btnRef={btnRef} open={open} onClose={() => setOpen(false)} />
         </>
@@ -1759,7 +2220,7 @@ function NoteActionsMenu({ onAddTag, onAddToNotebook, onLink, onMove, onCopy, on
 
 /* ── BulkActionsToolbar ── */
 
-function BulkActionsToolbar({ count, isArchived, onCategorize, onAddTag, onAddToNotebook, onLink, onMove, onCopy, onArchive, onTrash }: {
+function BulkActionsToolbar({ count, isArchived, onCategorize, onAddTag, onAddToNotebook, onLink, onMove, onCopy, onArchive, onTrash, t }: {
     count: number;
     isArchived: boolean;
     onCategorize: () => void;
@@ -1770,26 +2231,40 @@ function BulkActionsToolbar({ count, isArchived, onCategorize, onAddTag, onAddTo
     onCopy: () => void;
     onArchive: () => void;
     onTrash: () => void;
+    t: Translator;
 }) {
     const [open, setOpen] = useState(false);
     const btnRef = useRef<HTMLButtonElement>(null);
 
     const items: PortalMenuItem[] = [
-        { label: 'Categorize', icon: 'fa-solid fa-bolt', onClick: onCategorize },
-        { label: 'Add Tag', icon: 'fa-solid fa-tag', onClick: onAddTag },
-        { label: 'Add to Notebook', icon: 'fa-solid fa-book', onClick: onAddToNotebook },
-        { label: 'Link to...', icon: 'fa-solid fa-link', onClick: onLink },
-        { label: 'Move to...', icon: 'fa-solid fa-right-from-bracket', onClick: onMove },
-        { label: 'Make a Copy', icon: 'fa-solid fa-copy', onClick: onCopy },
-        { label: isArchived ? 'Unarchive' : 'Archive', icon: 'fa-solid fa-archive', onClick: onArchive },
-        { label: 'Move to Trash', icon: 'fa-solid fa-trash', onClick: onTrash, danger: true },
+        { label: t('notes.drawer.bulk.categorize'), icon: 'fa-solid fa-bolt', onClick: onCategorize },
+        { label: t('notes.drawer.actions.add_tag'), icon: 'fa-solid fa-tag', onClick: onAddTag },
+        { label: t('notes.drawer.actions.add_to_notebook'), icon: 'fa-solid fa-book', onClick: onAddToNotebook },
+        { label: t('notes.drawer.actions.link'), icon: 'fa-solid fa-link', onClick: onLink },
+        { label: t('notes.drawer.actions.move'), icon: 'fa-solid fa-right-from-bracket', onClick: onMove },
+        { label: t('notes.drawer.actions.copy'), icon: 'fa-solid fa-copy', onClick: onCopy },
+        {
+            label: isArchived ? t('notes.drawer.actions.unarchive') : t('notes.drawer.actions.archive'),
+            icon: 'fa-solid fa-archive',
+            onClick: onArchive,
+        },
+        { label: t('notes.drawer.actions.trash'), icon: 'fa-solid fa-trash', onClick: onTrash, danger: true },
     ];
 
     return (
-        <div className="mb-2 mr-2 flex items-center justify-between rounded-lg bg-primary/10 px-3 py-2">
-            <span className="text-xs font-medium text-primary">{count} selected</span>
-            <button ref={btnRef} onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="btn btn-primary btn-xs gap-1">
-                Actions <i className="fa-solid fa-chevron-down text-[8px]" />
+        <div className="mb-2 mr-2 flex items-center justify-between px-3 py-2" style={bulkBarStyle}>
+            <span className="text-xs font-medium">
+                {t('notes.drawer.bulk.selected').replace(':count', String(count))}
+            </span>
+            <button
+                ref={btnRef}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+                className="alex-btn alex-btn--primary inline-flex items-center"
+                style={btnXs}
+            >
+                {t('notes.drawer.bulk.actions')}
+                <i className="fa-solid fa-chevron-down text-[8px]" aria-hidden="true" />
             </button>
             <PortalMenu items={items} btnRef={btnRef} open={open} onClose={() => setOpen(false)} />
         </div>

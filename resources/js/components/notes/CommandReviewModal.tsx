@@ -1,9 +1,10 @@
 /* ── CommandReviewModal ── */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, type CSSProperties } from 'react';
 import Modal from '@alexandria/components/ui/Modal';
 import DedupModal from './modals/DedupModal';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 
 /* ── Types ── */
 
@@ -28,14 +29,147 @@ interface CommandReviewModalProps {
     onStatusChange?: () => void;
 }
 
-/* ── Helpers ── */
+/* ── Theme styles ── */
 
-const STATUS_BADGES: Record<string, string> = {
-    approved: 'badge-success',
-    rejected: 'badge-error',
-    executed: 'badge-accent',
-    failed: 'badge-error',
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
+const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+const subtleText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' };
+const bodyText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)' };
+
+const sectionBorderStyle: CSSProperties = {
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
 };
+const sectionBorderTopStyle: CSSProperties = {
+    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+};
+
+const cardStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'var(--theme-base-100)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const cardHiddenOverflow: CSSProperties = { ...cardStyle, overflow: 'hidden' };
+
+const cardSectionHeaderStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+};
+
+const rowDivider: CSSProperties = {
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+};
+
+const reasoningCalloutStyle: CSSProperties = {
+    border: '1px solid var(--theme-brand-primary-500)',
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const failureAlertStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-status-error-stroke) 40%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-status-error-fill) 25%, transparent)',
+    color: 'var(--theme-status-error-content)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const collapseStyle: CSSProperties = { ...cardHiddenOverflow };
+
+const refPickerButtonStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    color: 'var(--theme-base-content)',
+};
+
+const refPickerCurrentStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-input)',
+};
+
+const refPickerResultActiveStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+};
+
+const inputStyle: CSSProperties = {
+    background: 'var(--theme-base-surface)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    color: 'var(--theme-base-content)',
+    padding: '0.375rem 0.625rem',
+};
+
+const headerIconWrapStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-brand-secondary-500) 20%, transparent)',
+    color: 'var(--theme-brand-secondary-500)',
+    borderRadius: '9999px',
+};
+
+const neutralBadgeStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-badge)',
+};
+
+const STATUS_TOKEN: Record<string, { fill: string; content: string }> = {
+    pending: { fill: 'var(--theme-status-warning-fill)', content: 'var(--theme-status-warning-content)' },
+    approved: { fill: 'var(--theme-status-success-fill)', content: 'var(--theme-status-success-content)' },
+    rejected: { fill: 'var(--theme-status-error-fill)', content: 'var(--theme-status-error-content)' },
+    executed: { fill: 'var(--theme-brand-secondary-500)', content: 'var(--theme-brand-secondary-content)' },
+    failed: { fill: 'var(--theme-status-error-fill)', content: 'var(--theme-status-error-content)' },
+};
+
+function statusBadgeStyle(status: string): CSSProperties {
+    const token = STATUS_TOKEN[status];
+    if (!token) return neutralBadgeStyle;
+    return {
+        background: token.fill,
+        color: token.content,
+        borderRadius: 'var(--theme-radius-badge)',
+    };
+}
+
+const btnSm: CSSProperties = {
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.25rem 0.625rem',
+    fontSize: '0.75rem',
+    gap: '0.25rem',
+};
+const btnXs: CSSProperties = {
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.125rem 0.5rem',
+    fontSize: '0.6875rem',
+    gap: '0.25rem',
+};
+const btnXsSquare: CSSProperties = {
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.25rem',
+    width: '1.5rem',
+    height: '1.5rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+};
+const btnSuccessFill: CSSProperties = {
+    background: 'var(--theme-status-success-fill)',
+    color: 'var(--theme-status-success-content)',
+};
+const btnDangerOutline: CSSProperties = {
+    background: 'transparent',
+    color: 'var(--theme-status-error-stroke)',
+    border: '1px solid color-mix(in srgb, var(--theme-status-error-stroke) 50%, transparent)',
+};
+const btnWarningOutline: CSSProperties = {
+    background: 'transparent',
+    color: 'var(--theme-status-warning-stroke)',
+    border: '1px solid color-mix(in srgb, var(--theme-status-warning-stroke) 50%, transparent)',
+};
+
+/* ── Helpers ── */
 
 /**
  * Build a lookup of temp_id → entry name from all commands in a batch.
@@ -103,6 +237,12 @@ function formatActionType(type: string): string {
     return type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function statusLabel(t: Translator, status: string): string {
+    const key = `notes.command_review.status.${status}`;
+    const fallback = status.charAt(0).toUpperCase() + status.slice(1);
+    return t(key, fallback);
+}
+
 /* ── Component ── */
 
 export default function CommandReviewModal({
@@ -113,6 +253,7 @@ export default function CommandReviewModal({
     onExecuted,
     onStatusChange,
 }: CommandReviewModalProps) {
+    const t = useT();
     const [commands, setCommands] = useState<AiCommand[]>([]);
     const [loading, setLoading] = useState(false);
     const [executing, setExecuting] = useState(false);
@@ -135,49 +276,48 @@ export default function CommandReviewModal({
     /* ── Fetch commands ── */
     const fetchCommands = useCallback(async () => {
         setLoading(true);
-        try {
-            const res = await fetch(
-                `/api/v1/projects/${projectId}/ai/batches/${batchId}/commands`,
-                { headers: csrfHeaders() },
-            );
-            if (res.ok) {
-                const data = await res.json();
-                const cmds: AiCommand[] = Array.isArray(data.data) ? data.data : data;
-                setCommands(cmds);
+        const res = await fetch(
+            `/api/v1/projects/${projectId}/ai/batches/${batchId}/commands`,
+            { headers: csrfHeaders() },
+        ).catch(() => null);
+        if (!res?.ok) {
+            setLoading(false);
+            return;
+        }
+        const data = await res.json();
+        const cmds: AiCommand[] = Array.isArray(data.data) ? data.data : data;
+        setCommands(cmds);
 
-                // Collect ALL numeric IDs from payloads and attributes to resolve names
-                const entryIds = new Set<number>();
-                for (const cmd of cmds) {
-                    const p = cmd.payload as Record<string, unknown>;
-                    // Top-level payload IDs
-                    for (const val of Object.values(p)) {
+        // Collect ALL numeric IDs from payloads and attributes to resolve names
+        const entryIds = new Set<number>();
+        for (const cmd of cmds) {
+            const p = cmd.payload as Record<string, unknown>;
+            // Top-level payload IDs
+            for (const val of Object.values(p)) {
+                if (typeof val === 'number') entryIds.add(val);
+                // String values that look like numeric IDs (e.g., location_type: "170")
+                if (typeof val === 'string' && /^\d+$/.test(val)) entryIds.add(parseInt(val));
+            }
+            // Attribute and metadata IDs
+            for (const nested of [p.attributes, p.metadata]) {
+                if (nested && typeof nested === 'object') {
+                    for (const val of Object.values(nested as Record<string, unknown>)) {
                         if (typeof val === 'number') entryIds.add(val);
-                        // String values that look like numeric IDs (e.g., location_type: "170")
                         if (typeof val === 'string' && /^\d+$/.test(val)) entryIds.add(parseInt(val));
-                    }
-                    // Attribute and metadata IDs
-                    for (const nested of [p.attributes, p.metadata]) {
-                        if (nested && typeof nested === 'object') {
-                            for (const val of Object.values(nested as Record<string, unknown>)) {
-                                if (typeof val === 'number') entryIds.add(val);
-                                if (typeof val === 'string' && /^\d+$/.test(val)) entryIds.add(parseInt(val));
-                            }
-                        }
-                    }
-                }
-                if (entryIds.size > 0) {
-                    const nameRes = await fetch(
-                        `/api/v1/projects/${projectId}/entries/names?ids=${Array.from(entryIds).join(',')}`,
-                        { headers: csrfHeaders() },
-                    );
-                    if (nameRes.ok) {
-                        setEntryNames(await nameRes.json());
                     }
                 }
             }
-        } finally {
-            setLoading(false);
         }
+        if (entryIds.size > 0) {
+            const nameRes = await fetch(
+                `/api/v1/projects/${projectId}/entries/names?ids=${Array.from(entryIds).join(',')}`,
+                { headers: csrfHeaders() },
+            ).catch(() => null);
+            if (nameRes?.ok) {
+                setEntryNames(await nameRes.json());
+            }
+        }
+        setLoading(false);
     }, [projectId, batchId]);
 
     useEffect(() => {
@@ -195,17 +335,16 @@ export default function CommandReviewModal({
             method: 'PUT',
             headers: csrfHeaders(),
             body: JSON.stringify(body),
-        });
-        if (res.ok) {
-            const updated = await res.json();
-            const data = updated.data ?? updated;
-            setCommands((prev) =>
-                prev.map((c) => (c.id === id ? { ...c, ...data } : c)),
-            );
-            // Refresh note data so footer reflects updated command count
-            if (body.status) {
-                onStatusChange?.();
-            }
+        }).catch(() => null);
+        if (!res?.ok) return;
+        const updated = await res.json();
+        const data = updated.data ?? updated;
+        setCommands((prev) =>
+            prev.map((c) => (c.id === id ? { ...c, ...data } : c)),
+        );
+        // Refresh note data so footer reflects updated command count
+        if (body.status) {
+            onStatusChange?.();
         }
     };
 
@@ -216,41 +355,35 @@ export default function CommandReviewModal({
         const res = await fetch(
             `/api/v1/projects/${projectId}/ai/batches/${batchId}/approve-all`,
             { method: 'POST', headers: csrfHeaders() },
+        ).catch(() => null);
+        if (!res?.ok) return;
+        setCommands((prev) =>
+            prev.map((c) =>
+                c.status === 'pending' ? { ...c, status: 'approved' } : c,
+            ),
         );
-        if (res.ok) {
-            setCommands((prev) =>
-                prev.map((c) =>
-                    c.status === 'pending' ? { ...c, status: 'approved' } : c,
-                ),
-            );
-        }
     };
 
     const rejectAll = async () => {
         const res = await fetch(
             `/api/v1/projects/${projectId}/ai/batches/${batchId}/reject-all`,
             { method: 'POST', headers: csrfHeaders() },
-        );
-        if (res.ok) {
-            onExecuted(); // refresh note list / footer state
-            onClose();
-        }
+        ).catch(() => null);
+        if (!res?.ok) return;
+        onExecuted();
+        onClose();
     };
 
     const executeBatch = async () => {
         setExecuting(true);
-        try {
-            const res = await fetch(
-                `/api/v1/projects/${projectId}/ai/batches/${batchId}/execute`,
-                { method: 'POST', headers: csrfHeaders() },
-            );
-            if (res.ok) {
-                onExecuted();
-                onClose();
-            }
-        } finally {
-            setExecuting(false);
-        }
+        const res = await fetch(
+            `/api/v1/projects/${projectId}/ai/batches/${batchId}/execute`,
+            { method: 'POST', headers: csrfHeaders() },
+        ).catch(() => null);
+        setExecuting(false);
+        if (!res?.ok) return;
+        onExecuted();
+        onClose();
     };
 
     const savePayloadField = (cmdId: number, key: string, value: unknown) => {
@@ -279,16 +412,18 @@ export default function CommandReviewModal({
                     {/* ── Panel 1: Command List ── */}
                     <div className="w-1/2 min-w-[50%] flex flex-col">
                         {/* Header */}
-                        <div className="flex items-center justify-between border-b border-base-content/10 px-6 py-4">
+                        <div className="flex items-center justify-between px-6 py-4" style={sectionBorderStyle}>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-bold">Review Commands</h3>
-                                <span className="badge badge-sm badge-neutral">
+                                <h3 className="text-lg font-bold">{t('notes.command_review.title')}</h3>
+                                <span className="px-1.5 py-0.5 text-[10px] font-semibold" style={neutralBadgeStyle}>
                                     {commands.length}
                                 </span>
                             </div>
                             <button
+                                type="button"
                                 onClick={onClose}
-                                className="btn btn-ghost btn-sm btn-circle"
+                                className="alex-notes-modal-icon-btn"
+                                aria-label={t('notes.modal.tooltip.close')}
                             >
                                 <i className="fa-solid fa-xmark" />
                             </button>
@@ -298,29 +433,33 @@ export default function CommandReviewModal({
                         <div className="flex-1 overflow-y-auto px-4 py-3 max-h-[60vh]">
                             {loading && (
                                 <div className="flex justify-center py-8">
-                                    <span className="loading loading-spinner loading-md" />
+                                    <i
+                                        className="fa-solid fa-circle-notch fa-spin text-base"
+                                        style={microText}
+                                        aria-hidden="true"
+                                    />
                                 </div>
                             )}
 
                             {!loading && commands.length === 0 && (
-                                <p className="py-8 text-center text-sm opacity-50">
-                                    No commands found.
+                                <p className="py-8 text-center text-sm" style={labelText}>
+                                    {t('notes.command_review.empty')}
                                 </p>
                             )}
 
                             <div className="flex flex-col gap-2">
                                 {commands.map((cmd, idx) => (
-                                    <div
-                                        key={cmd.id}
-                                        className="rounded-xl border border-base-content/10 bg-base-100 p-3"
-                                    >
-                                            {/* Title row with action buttons */}
+                                    <div key={cmd.id} className="p-3" style={cardStyle}>
+                                        {/* Title row with action buttons */}
                                         <div className="flex items-center justify-between gap-2 mb-1">
                                             <p className="text-sm font-medium truncate">
                                                 {formatActionType(cmd.action_type)}
                                                 {cmd.status !== 'pending' && (
-                                                    <span className={`badge badge-xs ml-2 py-1.5 ${STATUS_BADGES[cmd.status] ?? ''}`}>
-                                                        {cmd.status.charAt(0).toUpperCase() + cmd.status.slice(1)}
+                                                    <span
+                                                        className="ml-2 px-1.5 py-0.5 text-[10px] font-semibold"
+                                                        style={statusBadgeStyle(cmd.status)}
+                                                    >
+                                                        {statusLabel(t, cmd.status)}
                                                     </span>
                                                 )}
                                             </p>
@@ -328,25 +467,34 @@ export default function CommandReviewModal({
                                                 {cmd.status === 'pending' && (
                                                     <>
                                                         <button
-                                                            className="btn btn-success btn-xs btn-square"
+                                                            type="button"
+                                                            className="alex-btn"
+                                                            style={{ ...btnXsSquare, ...btnSuccessFill }}
                                                             onClick={() => setStatus(cmd.id, 'approved')}
-                                                            title="Approve"
+                                                            title={t('notes.command_review.aria.approve')}
+                                                            aria-label={t('notes.command_review.aria.approve')}
                                                         >
                                                             <i className="fa-solid fa-check text-[10px]" />
                                                         </button>
                                                         <button
-                                                            className="btn btn-outline btn-error btn-xs btn-square"
+                                                            type="button"
+                                                            className="alex-btn"
+                                                            style={{ ...btnXsSquare, ...btnDangerOutline }}
                                                             onClick={() => setStatus(cmd.id, 'rejected')}
-                                                            title="Reject"
+                                                            title={t('notes.command_review.aria.reject')}
+                                                            aria-label={t('notes.command_review.aria.reject')}
                                                         >
                                                             <i className="fa-solid fa-xmark text-[10px]" />
                                                         </button>
                                                     </>
                                                 )}
                                                 <button
-                                                    className="btn btn-ghost btn-xs btn-square"
+                                                    type="button"
+                                                    className="alex-btn alex-btn--ghost"
+                                                    style={btnXsSquare}
                                                     onClick={() => setDetailIndex(idx)}
-                                                    title="View details"
+                                                    title={t('notes.command_review.aria.view_details')}
+                                                    aria-label={t('notes.command_review.aria.view_details')}
                                                 >
                                                     <i className="fa-solid fa-arrow-right text-[10px]" />
                                                 </button>
@@ -354,12 +502,12 @@ export default function CommandReviewModal({
                                         </div>
                                         {/* Subtitle + reasoning */}
                                         {commandSubtitle(cmd, tempIdMap) && (
-                                            <p className="text-xs font-medium text-base-content/70 truncate">
+                                            <p className="text-xs font-medium truncate" style={bodyText}>
                                                 {commandSubtitle(cmd, tempIdMap)}
                                             </p>
                                         )}
                                         {cmd.reasoning && (
-                                            <p className="text-xs opacity-50 line-clamp-2 mt-0.5">
+                                            <p className="text-xs line-clamp-2 mt-0.5" style={labelText}>
                                                 {cmd.reasoning}
                                             </p>
                                         )}
@@ -369,42 +517,56 @@ export default function CommandReviewModal({
                         </div>
 
                         {/* Footer */}
-                        <div className="flex items-center justify-between border-t border-base-content/10 px-6 py-3">
-                            <span className="text-xs opacity-60">
-                                {approvedCount} approved / {pendingCount} pending
+                        <div className="flex items-center justify-between px-6 py-3" style={sectionBorderTopStyle}>
+                            <span className="text-xs" style={subtleText}>
+                                {t('notes.command_review.counts')
+                                    .replace(':approved', String(approvedCount))
+                                    .replace(':pending', String(pendingCount))}
                             </span>
                             <div className="flex items-center gap-2">
                                 <button
-                                    className="btn btn-warning btn-outline btn-sm gap-1"
+                                    type="button"
+                                    className="alex-btn inline-flex items-center"
+                                    style={{ ...btnSm, ...btnWarningOutline }}
                                     onClick={() => setShowDedup(true)}
                                 >
-                                    <i className="fa-solid fa-code-merge text-[10px]" /> Check Duplicates
+                                    <i className="fa-solid fa-code-merge text-[10px]" aria-hidden="true" />
+                                    {t('notes.command_review.check_duplicates')}
                                 </button>
                                 {pendingCount > 0 && (
                                     <>
                                         <button
-                                            className="btn btn-outline btn-error btn-sm"
+                                            type="button"
+                                            className="alex-btn inline-flex items-center"
+                                            style={{ ...btnSm, ...btnDangerOutline }}
                                             onClick={rejectAll}
                                         >
-                                            Reject All
+                                            {t('notes.command_review.reject_all')}
                                         </button>
                                         <button
-                                            className="btn btn-outline btn-sm"
+                                            type="button"
+                                            className="alex-btn alex-btn--outline inline-flex items-center"
+                                            style={btnSm}
                                             onClick={approveAll}
                                         >
-                                            Approve All
+                                            {t('notes.command_review.approve_all')}
                                         </button>
                                     </>
                                 )}
                                 <button
-                                    className="btn btn-success btn-sm"
+                                    type="button"
+                                    className="alex-btn inline-flex items-center"
+                                    style={{ ...btnSm, ...btnSuccessFill, opacity: approvedCount === 0 || executing ? 0.5 : 1 }}
                                     disabled={approvedCount === 0 || executing}
                                     onClick={executeBatch}
                                 >
                                     {executing ? (
-                                        <span className="loading loading-spinner loading-xs" />
+                                        <i className="fa-solid fa-circle-notch fa-spin text-xs" aria-hidden="true" />
                                     ) : (
-                                        <>Execute <i className="fa-solid fa-play text-[10px]" /></>
+                                        <>
+                                            {t('notes.command_review.execute')}
+                                            <i className="fa-solid fa-play text-[10px]" aria-hidden="true" />
+                                        </>
                                     )}
                                 </button>
                             </div>
@@ -416,11 +578,13 @@ export default function CommandReviewModal({
                         {activeCommand ? (
                             <>
                                 {/* Header */}
-                                <div className="flex items-center justify-between border-b border-base-content/10 px-6 py-4">
+                                <div className="flex items-center justify-between px-6 py-4" style={sectionBorderStyle}>
                                     <div className="flex items-center gap-3">
                                         <button
-                                            className="btn btn-ghost btn-sm btn-circle"
+                                            type="button"
+                                            className="alex-notes-modal-icon-btn"
                                             onClick={() => setDetailIndex(null)}
+                                            aria-label={t('notes.command_review.back_to_list')}
                                         >
                                             <i className="fa-solid fa-arrow-left" />
                                         </button>
@@ -428,8 +592,10 @@ export default function CommandReviewModal({
                                             <h3 className="text-sm font-bold">
                                                 {formatActionType(activeCommand.action_type)}
                                             </h3>
-                                            <span className="text-xs opacity-50">
-                                                {(detailIndex ?? 0) + 1} of {commands.length}
+                                            <span className="text-xs" style={labelText}>
+                                                {t('notes.command_review.position')
+                                                    .replace(':current', String((detailIndex ?? 0) + 1))
+                                                    .replace(':total', String(commands.length))}
                                             </span>
                                         </div>
                                     </div>
@@ -437,29 +603,30 @@ export default function CommandReviewModal({
                                         {activeCommand.status === 'pending' ? (
                                             <>
                                                 <button
-                                                    className="btn btn-success btn-xs"
-                                                    onClick={() =>
-                                                        setStatus(activeCommand.id, 'approved')
-                                                    }
+                                                    type="button"
+                                                    className="alex-btn inline-flex items-center"
+                                                    style={{ ...btnXs, ...btnSuccessFill }}
+                                                    onClick={() => setStatus(activeCommand.id, 'approved')}
                                                 >
-                                                    <i className="fa-solid fa-check text-[10px]" />{' '}
-                                                    Approve
+                                                    <i className="fa-solid fa-check text-[10px]" aria-hidden="true" />
+                                                    {t('notes.command_review.action.approve')}
                                                 </button>
                                                 <button
-                                                    className="btn btn-outline btn-error btn-xs"
-                                                    onClick={() =>
-                                                        setStatus(activeCommand.id, 'rejected')
-                                                    }
+                                                    type="button"
+                                                    className="alex-btn inline-flex items-center"
+                                                    style={{ ...btnXs, ...btnDangerOutline }}
+                                                    onClick={() => setStatus(activeCommand.id, 'rejected')}
                                                 >
-                                                    <i className="fa-solid fa-xmark text-[10px]" />{' '}
-                                                    Reject
+                                                    <i className="fa-solid fa-xmark text-[10px]" aria-hidden="true" />
+                                                    {t('notes.command_review.action.reject')}
                                                 </button>
                                             </>
                                         ) : (
                                             <span
-                                                className={`badge badge-sm py-1.5 ${STATUS_BADGES[activeCommand.status] ?? 'badge-neutral'}`}
+                                                className="px-2 py-0.5 text-[11px] font-semibold"
+                                                style={statusBadgeStyle(activeCommand.status)}
                                             >
-                                                {activeCommand.status.charAt(0).toUpperCase() + activeCommand.status.slice(1)}
+                                                {statusLabel(t, activeCommand.status)}
                                             </span>
                                         )}
                                     </div>
@@ -469,11 +636,11 @@ export default function CommandReviewModal({
                                 <div className="flex-1 overflow-y-auto px-6 py-4 max-h-[60vh] space-y-4">
                                     {/* Reasoning */}
                                     {activeCommand.reasoning && (
-                                        <div className="rounded-lg border border-primary bg-primary/30 p-3">
-                                            <p className="text-xs font-semibold text-primary mb-1">
-                                                AI Reasoning
+                                        <div className="p-3" style={reasoningCalloutStyle}>
+                                            <p className="text-xs font-semibold mb-1">
+                                                {t('notes.command_review.ai_reasoning')}
                                             </p>
-                                            <p className="text-sm leading-relaxed text-primary">
+                                            <p className="text-sm leading-relaxed">
                                                 {activeCommand.reasoning}
                                             </p>
                                         </div>
@@ -481,8 +648,11 @@ export default function CommandReviewModal({
 
                                     {/* Failure reason */}
                                     {activeCommand.failure_reason ? (
-                                        <div className="alert alert-error text-sm">
-                                            <i className="fa-solid fa-circle-exclamation" />
+                                        <div
+                                            className="flex items-center gap-2 px-3 py-2 text-sm"
+                                            style={failureAlertStyle}
+                                        >
+                                            <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
                                             <span>{String(activeCommand.failure_reason)}</span>
                                         </div>
                                     ) : null}
@@ -496,53 +666,60 @@ export default function CommandReviewModal({
                                         onSave={(key, val) => savePayloadField(activeCommand.id, key, val)}
                                         projectId={projectId}
                                         onNameResolved={(id, name) => setEntryNames((prev) => ({ ...prev, [id]: name }))}
+                                        t={t}
                                     />
 
                                     {/* Raw JSON */}
-                                    <details className="collapse collapse-arrow bg-base-100 border border-base-content/10 rounded-lg">
-                                        <summary className="collapse-title text-xs font-semibold !min-h-0 !py-3 !px-4 !pr-10">
-                                            Raw JSON Payload
+                                    <details style={collapseStyle}>
+                                        <summary
+                                            className="cursor-pointer text-xs font-semibold py-3 px-4 flex items-center justify-between"
+                                            style={cardSectionHeaderStyle}
+                                        >
+                                            <span>{t('notes.command_review.raw_payload')}</span>
+                                            <i className="fa-solid fa-chevron-down text-[10px]" aria-hidden="true" />
                                         </summary>
-                                        <div className="collapse-content">
+                                        <div className="px-4 py-3">
                                             <pre className="text-xs overflow-x-auto whitespace-pre-wrap break-all">
-                                                {JSON.stringify(
-                                                    activeCommand.payload,
-                                                    null,
-                                                    2,
-                                                )}
+                                                {JSON.stringify(activeCommand.payload, null, 2)}
                                             </pre>
                                         </div>
                                     </details>
                                 </div>
 
                                 {/* Footer: prev/next */}
-                                <div className="flex items-center justify-between border-t border-base-content/10 px-6 py-3">
+                                <div className="flex items-center justify-between px-6 py-3" style={sectionBorderTopStyle}>
                                     <button
-                                        className="btn btn-ghost btn-sm"
+                                        type="button"
+                                        className="alex-btn alex-btn--ghost inline-flex items-center"
+                                        style={{ ...btnSm, opacity: detailIndex === 0 ? 0.5 : 1 }}
                                         disabled={detailIndex === 0}
-                                        onClick={() =>
-                                            setDetailIndex((detailIndex ?? 1) - 1)
-                                        }
+                                        onClick={() => setDetailIndex((detailIndex ?? 1) - 1)}
                                     >
-                                        <i className="fa-solid fa-arrow-left text-xs" /> Previous
+                                        <i className="fa-solid fa-arrow-left text-xs" aria-hidden="true" />
+                                        {t('notes.command_review.previous')}
                                     </button>
                                     <button
-                                        className="btn btn-ghost btn-sm"
-                                        disabled={
-                                            detailIndex === commands.length - 1
-                                        }
-                                        onClick={() =>
-                                            setDetailIndex((detailIndex ?? 0) + 1)
-                                        }
+                                        type="button"
+                                        className="alex-btn alex-btn--ghost inline-flex items-center"
+                                        style={{ ...btnSm, opacity: detailIndex === commands.length - 1 ? 0.5 : 1 }}
+                                        disabled={detailIndex === commands.length - 1}
+                                        onClick={() => setDetailIndex((detailIndex ?? 0) + 1)}
                                     >
-                                        Next <i className="fa-solid fa-arrow-right text-xs" />
+                                        {t('notes.command_review.next')}
+                                        <i className="fa-solid fa-arrow-right text-xs" aria-hidden="true" />
                                     </button>
                                 </div>
                             </>
                         ) : (
                             <div className="flex flex-1 items-center justify-center py-16">
-                                <button className="btn btn-ghost btn-sm" onClick={() => setDetailIndex(null)}>
-                                    <i className="fa-solid fa-arrow-left text-xs" /> Back to list
+                                <button
+                                    type="button"
+                                    className="alex-btn alex-btn--ghost inline-flex items-center"
+                                    style={btnSm}
+                                    onClick={() => setDetailIndex(null)}
+                                >
+                                    <i className="fa-solid fa-arrow-left text-xs" aria-hidden="true" />
+                                    {t('notes.command_review.back_to_list')}
                                 </button>
                             </div>
                         )}
@@ -564,21 +741,49 @@ export default function CommandReviewModal({
     );
 }
 
+/* ── Shared key/value row list (used by Attributes + Metadata cards) ── */
+
+function KeyValueRows({ entries, tempIdMap, t }: {
+    entries: Record<string, string | number | boolean>;
+    tempIdMap: Record<string, string>;
+    t: Translator;
+}) {
+    const rows = Object.entries(entries);
+    return (
+        <>
+            {rows.map(([key, val], i) => {
+                const resolved = typeof val === 'string' ? tempIdMap[val]
+                    : typeof val === 'number' ? tempIdMap[String(val)] : null;
+                return (
+                    <div
+                        key={key}
+                        className="flex items-center justify-between px-3 py-2"
+                        style={i === rows.length - 1 ? undefined : rowDivider}
+                    >
+                        <span className="text-xs" style={labelText}>{formatFieldLabel(t, key)}</span>
+                        <span className="text-xs font-medium">
+                            {resolved ?? String(val)}
+                        </span>
+                    </div>
+                );
+            })}
+        </>
+    );
+}
+
 /* ── Payload Field List (typed to avoid unknown-in-JSX) ── */
 
-function formatFieldLabel(key: string): string {
-    const aliases: Record<string, string> = {
-        target_model_id: 'Target Entry',
-        target_model_class: 'Target Entry Type',
-    };
-    if (aliases[key]) return aliases[key];
+function formatFieldLabel(t: Translator, key: string): string {
+    const aliasKey = `notes.command_review.field_alias.${key}`;
+    const aliased = t(aliasKey, '');
+    if (aliased) return aliased;
     return key
         .replace(/_id$/, '')
         .replace(/_/g, ' ')
         .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function PayloadFieldList({ command, tempIdMap, editingField, onEdit, onSave, projectId, onNameResolved }: {
+function PayloadFieldList({ command, tempIdMap, editingField, onEdit, onSave, projectId, onNameResolved, t }: {
     command: AiCommand;
     tempIdMap: Record<string, string>;
     editingField: string | null;
@@ -586,6 +791,7 @@ function PayloadFieldList({ command, tempIdMap, editingField, onEdit, onSave, pr
     onSave: (key: string, value: unknown) => void;
     onNameResolved: (id: number, name: string) => void;
     projectId: number;
+    t: Translator;
 }) {
     const payload = command.payload as Record<string, unknown>;
     const attributes = payload.attributes as Record<string, string | number | boolean> | undefined;
@@ -612,34 +818,40 @@ function PayloadFieldList({ command, tempIdMap, editingField, onEdit, onSave, pr
             {isRelationship && (
                 <>
                     {/* Relationship Type — top */}
-                    <div className="rounded-lg bg-base-100 border border-base-content/10 px-3 py-2">
-                        <label className="text-xs font-medium opacity-50">Relationship Type</label>
+                    <div className="px-3 py-2" style={cardStyle}>
+                        <label className="text-xs font-medium" style={labelText}>
+                            {t('notes.command_review.relationship_type')}
+                        </label>
                         <p className="text-sm">{String(payload.relationship_type ?? '-')}</p>
                     </div>
 
                     {/* Parent + Child side by side */}
                     <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-lg bg-base-100 border border-base-content/10 px-3 py-2">
-                            <label className="text-xs font-medium opacity-50">Parent Entry</label>
+                        <div className="px-3 py-2" style={cardStyle}>
+                            <label className="text-xs font-medium" style={labelText}>
+                                {t('notes.command_review.parent_entry')}
+                            </label>
                             <p className="text-sm font-medium">
                                 {resolveVal(payload.parent_entry_temp_id ?? payload.parent_entry_id)
                                     ?? String(payload.parent_entry_temp_id ?? payload.parent_entry_id ?? '-')}
                             </p>
                             {payload.parent_label ? (
-                                <p className="text-xs text-base-content/50 mt-0.5">
-                                    Label: {String(payload.parent_label)}
+                                <p className="text-xs mt-0.5" style={labelText}>
+                                    {t('notes.command_review.label_prefix').replace(':label', String(payload.parent_label))}
                                 </p>
                             ) : null}
                         </div>
-                        <div className="rounded-lg bg-base-100 border border-base-content/10 px-3 py-2">
-                            <label className="text-xs font-medium opacity-50">Child Entry</label>
+                        <div className="px-3 py-2" style={cardStyle}>
+                            <label className="text-xs font-medium" style={labelText}>
+                                {t('notes.command_review.child_entry')}
+                            </label>
                             <p className="text-sm font-medium">
                                 {resolveVal(payload.child_entry_temp_id ?? payload.child_entry_id)
                                     ?? String(payload.child_entry_temp_id ?? payload.child_entry_id ?? '-')}
                             </p>
                             {payload.child_label ? (
-                                <p className="text-xs text-base-content/50 mt-0.5">
-                                    Label: {String(payload.child_label)}
+                                <p className="text-xs mt-0.5" style={labelText}>
+                                    {t('notes.command_review.label_prefix').replace(':label', String(payload.child_label))}
                                 </p>
                             ) : null}
                         </div>
@@ -656,11 +868,16 @@ function PayloadFieldList({ command, tempIdMap, editingField, onEdit, onSave, pr
                     const resolved = resolveVal(rawVal);
 
                     return (
-                        <div key={key} className="rounded-lg bg-base-100 border border-base-content/10 px-3 py-2">
-                            <label className="flex items-center gap-2 text-xs font-medium opacity-50">
-                                {formatFieldLabel(key)}
+                        <div key={key} className="px-3 py-2" style={cardStyle}>
+                            <label className="flex items-center gap-2 text-xs font-medium" style={labelText}>
+                                {formatFieldLabel(t, key)}
                                 {resolved && (
-                                    <span className="badge badge-neutral badge-xs border-0 py-1 font-normal opacity-100">{resolved}</span>
+                                    <span
+                                        className="px-1.5 py-0.5 text-[10px] font-normal"
+                                        style={neutralBadgeStyle}
+                                    >
+                                        {resolved}
+                                    </span>
                                 )}
                             </label>
                             <p className={`text-sm ${isObj ? 'font-mono text-xs whitespace-pre-wrap' : ''}`}>
@@ -672,59 +889,51 @@ function PayloadFieldList({ command, tempIdMap, editingField, onEdit, onSave, pr
 
             {/* Attributes card */}
             {attributes && (
-                <div className="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
-                    <div className="flex items-center justify-between bg-base-200/50 px-3 py-2">
-                        <span className="text-xs font-semibold opacity-60">Attributes</span>
-                        <button type="button" className="btn btn-ghost btn-xs" onClick={() => onEdit('attributes')}>
-                            <i className="fa-solid fa-pencil text-[10px]" /> Edit
+                <div style={cardHiddenOverflow}>
+                    <div className="flex items-center justify-between px-3 py-2" style={cardSectionHeaderStyle}>
+                        <span className="text-xs font-semibold">{t('notes.command_review.attributes')}</span>
+                        <button
+                            type="button"
+                            className="alex-btn alex-btn--ghost inline-flex items-center"
+                            style={btnXs}
+                            onClick={() => onEdit('attributes')}
+                        >
+                            <i className="fa-solid fa-pencil text-[10px]" aria-hidden="true" />
+                            {t('notes.command_review.edit')}
                         </button>
                     </div>
-                    <div className="divide-y divide-base-200/50">
-                        {Object.entries(attributes).map(([key, val]) => {
-                            const resolved = typeof val === 'string' ? tempIdMap[val]
-                                : typeof val === 'number' ? tempIdMap[String(val)] : null;
-                            return (
-                                <div key={key} className="flex items-center justify-between px-3 py-2">
-                                    <span className="text-xs text-base-content/50">{formatFieldLabel(key)}</span>
-                                    <span className="text-xs font-medium">
-                                        {resolved ?? String(val)}
-                                    </span>
-                                </div>
-                            );
-                        })}
+                    <div>
+                        <KeyValueRows entries={attributes} tempIdMap={tempIdMap} t={t} />
                     </div>
                 </div>
             )}
 
             {/* Metadata card */}
             {metadata && (
-                <div className="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
-                    <div className="bg-base-200/50 px-3 py-2">
-                        <span className="text-xs font-semibold opacity-60">Metadata</span>
+                <div style={cardHiddenOverflow}>
+                    <div className="px-3 py-2" style={cardSectionHeaderStyle}>
+                        <span className="text-xs font-semibold">{t('notes.command_review.metadata')}</span>
                     </div>
-                    <div className="divide-y divide-base-200/50">
-                        {Object.entries(metadata).map(([key, val]) => {
-                            const resolved = typeof val === 'string' ? tempIdMap[val]
-                                : typeof val === 'number' ? tempIdMap[String(val)] : null;
-                            return (
-                                <div key={key} className="flex items-center justify-between px-3 py-2">
-                                    <span className="text-xs text-base-content/50">{formatFieldLabel(key)}</span>
-                                    <span className="text-xs font-medium">
-                                        {resolved ?? String(val)}
-                                    </span>
-                                </div>
-                            );
-                        })}
+                    <div>
+                        <KeyValueRows entries={metadata} tempIdMap={tempIdMap} t={t} />
                     </div>
                 </div>
             )}
 
             {/* AI Notes collapsible */}
             {aiNotes && (
-                <details className="collapse collapse-arrow bg-base-100 border border-base-content/10 rounded-lg">
-                    <summary className="collapse-title text-xs font-semibold !min-h-0 !py-3 !px-4 !pr-10">AI Notes</summary>
-                    <div className="collapse-content">
-                        <pre className="text-xs overflow-x-auto whitespace-pre-wrap break-all">{JSON.stringify(aiNotes, null, 2)}</pre>
+                <details style={collapseStyle}>
+                    <summary
+                        className="cursor-pointer text-xs font-semibold py-3 px-4 flex items-center justify-between"
+                        style={cardSectionHeaderStyle}
+                    >
+                        <span>{t('notes.command_review.ai_notes')}</span>
+                        <i className="fa-solid fa-chevron-down text-[10px]" aria-hidden="true" />
+                    </summary>
+                    <div className="px-4 py-3">
+                        <pre className="text-xs overflow-x-auto whitespace-pre-wrap break-all">
+                            {JSON.stringify(aiNotes, null, 2)}
+                        </pre>
                     </div>
                 </details>
             )}
@@ -742,6 +951,7 @@ function PayloadFieldList({ command, tempIdMap, editingField, onEdit, onSave, pr
                         onSave('attributes', updated);
                         onEdit(null);
                     }}
+                    t={t}
                 />
             )}
         </div>
@@ -750,7 +960,7 @@ function PayloadFieldList({ command, tempIdMap, editingField, onEdit, onSave, pr
 
 /* ── Attribute Editor Modal ── */
 
-function AttributeEditorModal({ open, onClose, attributes, tempIdMap, projectId, onSave, onNameResolved }: {
+function AttributeEditorModal({ open, onClose, attributes, tempIdMap, projectId, onSave, onNameResolved, t }: {
     open: boolean;
     onClose: () => void;
     attributes: Record<string, string | number | boolean>;
@@ -758,6 +968,7 @@ function AttributeEditorModal({ open, onClose, attributes, tempIdMap, projectId,
     projectId: number;
     onSave: (updated: Record<string, string | number | boolean>) => void;
     onNameResolved: (id: number, name: string) => void;
+    t: Translator;
 }) {
     const [values, setValues] = useState<Record<string, string | number | boolean>>({});
 
@@ -787,17 +998,16 @@ function AttributeEditorModal({ open, onClose, attributes, tempIdMap, projectId,
         const strVal = String(val);
         if (tempIdMap[strVal]) return true;
         return (key.endsWith('_id') || key.endsWith('_type')) && /^\d+$/.test(strVal);
-
     };
 
     return (
         <Modal open={open} onClose={onClose} maxWidth="max-w-md">
             <div className="p-5">
                 <div className="mb-4 flex items-center gap-3">
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-secondary/20">
-                        <i className="fa-solid fa-pencil text-sm text-secondary" />
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center" style={headerIconWrapStyle}>
+                        <i className="fa-solid fa-pencil text-sm" />
                     </div>
-                    <h3 className="font-bold">Edit Attributes</h3>
+                    <h3 className="font-bold">{t('notes.command_review.attr_editor.title')}</h3>
                 </div>
 
                 <div className="max-h-[50vh] space-y-3 overflow-y-auto">
@@ -807,8 +1017,8 @@ function AttributeEditorModal({ open, onClose, attributes, tempIdMap, projectId,
 
                         return (
                             <div key={key}>
-                                <label className="mb-1 block text-xs font-medium text-base-content/60">
-                                    {formatFieldLabel(key)}
+                                <label className="mb-1 block text-xs font-medium" style={subtleText}>
+                                    {formatFieldLabel(t, key)}
                                 </label>
                                 {typeof val === 'boolean' ? (
                                     <label className="flex cursor-pointer items-center gap-2">
@@ -816,9 +1026,13 @@ function AttributeEditorModal({ open, onClose, attributes, tempIdMap, projectId,
                                             type="checkbox"
                                             checked={val}
                                             onChange={(e) => updateValue(key, e.target.checked)}
-                                            className="toggle toggle-primary toggle-sm"
+                                            className="alex-toggle"
                                         />
-                                        <span className="text-xs text-base-content/50">{val ? 'Yes' : 'No'}</span>
+                                        <span className="text-xs" style={labelText}>
+                                            {val
+                                                ? t('notes.command_review.attr_editor.bool_yes')
+                                                : t('notes.command_review.attr_editor.bool_no')}
+                                        </span>
                                     </label>
                                 ) : isReferenceField(key, val) ? (
                                     <ReferenceFieldPicker
@@ -829,12 +1043,14 @@ function AttributeEditorModal({ open, onClose, attributes, tempIdMap, projectId,
                                         blueprintId={typeof values.blueprint_id === 'number' ? values.blueprint_id : undefined}
                                         onChange={(v) => updateValue(key, v)}
                                         onNameResolved={onNameResolved}
+                                        t={t}
                                     />
                                 ) : typeof val === 'string' && val.length > 80 ? (
                                     <textarea
                                         value={val}
                                         onChange={(e) => updateValue(key, e.target.value)}
-                                        className="textarea textarea-bordered textarea-sm w-full rounded-lg"
+                                        className="w-full text-sm"
+                                        style={{ ...inputStyle, resize: 'vertical' }}
                                         rows={3}
                                     />
                                 ) : (
@@ -842,7 +1058,8 @@ function AttributeEditorModal({ open, onClose, attributes, tempIdMap, projectId,
                                         type="text"
                                         value={String(val)}
                                         onChange={(e) => updateValue(key, e.target.value)}
-                                        className="input input-bordered input-sm w-full rounded-lg"
+                                        className="w-full text-sm"
+                                        style={inputStyle}
                                     />
                                 )}
                             </div>
@@ -851,8 +1068,22 @@ function AttributeEditorModal({ open, onClose, attributes, tempIdMap, projectId,
                 </div>
 
                 <div className="mt-4 flex justify-end gap-2">
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
-                    <button type="button" className="btn btn-primary btn-sm" onClick={() => onSave(values)}>Save Changes</button>
+                    <button
+                        type="button"
+                        className="alex-btn alex-btn--ghost"
+                        style={btnSm}
+                        onClick={onClose}
+                    >
+                        {t('notes.command_review.attr_editor.cancel')}
+                    </button>
+                    <button
+                        type="button"
+                        className="alex-btn alex-btn--primary"
+                        style={btnSm}
+                        onClick={() => onSave(values)}
+                    >
+                        {t('notes.command_review.attr_editor.save')}
+                    </button>
                 </div>
             </div>
         </Modal>
@@ -861,7 +1092,7 @@ function AttributeEditorModal({ open, onClose, attributes, tempIdMap, projectId,
 
 /* ── Reference Field Picker ── */
 
-function ReferenceFieldPicker({ fieldKey, value, resolvedName, projectId, blueprintId, onChange, onNameResolved }: {
+function ReferenceFieldPicker({ fieldKey, value, resolvedName, projectId, blueprintId, onChange, onNameResolved, t }: {
     fieldKey: string;
     value: string | number;
     resolvedName: string | null;
@@ -869,6 +1100,7 @@ function ReferenceFieldPicker({ fieldKey, value, resolvedName, projectId, bluepr
     blueprintId?: number;
     onChange: (val: string | number) => void;
     onNameResolved?: (id: number, name: string) => void;
+    t: Translator;
 }) {
     const [pickerOpen, setPickerOpen] = useState(false);
     const [search, setSearch] = useState('');
@@ -879,18 +1111,15 @@ function ReferenceFieldPicker({ fieldKey, value, resolvedName, projectId, bluepr
 
     const fetchResults = useCallback(async (query: string) => {
         setSearching(true);
-        try {
-            const params = new URLSearchParams({ field: fieldKey });
-            if (query.trim()) params.set('q', query);
-            if (blueprintId) params.set('blueprint_id', String(blueprintId));
-            const res = await fetch(
-                `/api/v1/projects/${projectId}/entries/search?${params}`,
-                { headers: csrfHeaders() },
-            );
-            if (res.ok) setResults(await res.json());
-        } finally {
-            setSearching(false);
-        }
+        const params = new URLSearchParams({ field: fieldKey });
+        if (query.trim()) params.set('q', query);
+        if (blueprintId) params.set('blueprint_id', String(blueprintId));
+        const res = await fetch(
+            `/api/v1/projects/${projectId}/entries/search?${params}`,
+            { headers: csrfHeaders() },
+        ).catch(() => null);
+        setSearching(false);
+        if (res?.ok) setResults(await res.json());
     }, [projectId, fieldKey, blueprintId]);
 
     useEffect(() => {
@@ -918,21 +1147,23 @@ function ReferenceFieldPicker({ fieldKey, value, resolvedName, projectId, bluepr
             <button
                 type="button"
                 onClick={() => setPickerOpen(true)}
-                className="flex w-full items-center justify-between rounded-lg border border-base-content/10 bg-base-200/30 px-3 py-2 text-left text-xs transition-colors hover:border-primary/30"
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-xs"
+                style={refPickerButtonStyle}
             >
-                <span className={displayName ? 'text-base-content' : 'text-base-content/40'}>
-                    {displayName ?? `ID: ${value}`}
+                <span style={displayName ? undefined : labelText}>
+                    {displayName ?? t('notes.command_review.ref_picker.id_prefix').replace(':id', String(value))}
                 </span>
-                <i className="fa-solid fa-magnifying-glass text-[10px] text-base-content/30" />
+                <i className="fa-solid fa-magnifying-glass text-[10px]" style={microText} aria-hidden="true" />
             </button>
 
             <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} maxWidth="max-w-sm">
                 <div className="p-4">
-                    <h4 className="mb-3 text-sm font-semibold">{formatFieldLabel(fieldKey)}</h4>
+                    <h4 className="mb-3 text-sm font-semibold">{formatFieldLabel(t, fieldKey)}</h4>
                     <input
                         type="text"
-                        className="input input-bordered input-sm mb-3 w-full"
-                        placeholder="Search by name..."
+                        className="mb-3 w-full text-sm"
+                        style={inputStyle}
+                        placeholder={t('notes.command_review.ref_picker.search_placeholder')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         autoFocus
@@ -941,16 +1172,24 @@ function ReferenceFieldPicker({ fieldKey, value, resolvedName, projectId, bluepr
                     <div className="max-h-[40vh] space-y-1 overflow-y-auto">
                         {/* Current value */}
                         {displayName && (
-                            <div className="flex items-center justify-between rounded-lg bg-primary/10 px-3 py-2 text-xs">
+                            <div
+                                className="flex items-center justify-between px-3 py-2 text-xs"
+                                style={refPickerCurrentStyle}
+                            >
                                 <span className="font-medium">{displayName}</span>
-                                <span className="badge badge-xs badge-primary py-1.5">Current</span>
+                                <span
+                                    className="px-1.5 py-0.5 text-[10px] font-semibold"
+                                    style={statusBadgeStyle('approved')}
+                                >
+                                    {t('notes.command_review.ref_picker.current_badge')}
+                                </span>
                             </div>
                         )}
 
                         {/* Search results */}
                         {searching && (
                             <div className="py-4 text-center">
-                                <span className="loading loading-spinner loading-xs" />
+                                <i className="fa-solid fa-circle-notch fa-spin text-xs" style={microText} aria-hidden="true" />
                             </div>
                         )}
                         {!searching && results.map((item) => (
@@ -958,16 +1197,17 @@ function ReferenceFieldPicker({ fieldKey, value, resolvedName, projectId, bluepr
                                 key={item.id}
                                 type="button"
                                 onClick={() => selectItem(item)}
-                                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition-colors hover:bg-base-200 ${
-                                    item.id === Number(value) ? 'bg-primary/10' : ''
-                                }`}
+                                className="alex-notes-tag-row flex w-full items-center justify-between px-3 py-2 text-left text-xs"
+                                style={item.id === Number(value) ? refPickerResultActiveStyle : undefined}
                             >
                                 <span>{item.name}</span>
-                                <span className="text-base-content/30">#{item.id}</span>
+                                <span style={microText}>#{item.id}</span>
                             </button>
                         ))}
                         {!searching && search && results.length === 0 && (
-                            <p className="py-4 text-center text-xs text-base-content/40">No results</p>
+                            <p className="py-4 text-center text-xs" style={fadedText}>
+                                {t('notes.command_review.ref_picker.no_results')}
+                            </p>
                         )}
                     </div>
                 </div>
