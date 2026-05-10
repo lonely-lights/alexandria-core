@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
@@ -74,6 +74,23 @@ export default function NotesDashboard() {
     }, [activeView, visited]);
 
     useCmdK(useCallback(() => setSearchOpen(true), []));
+
+    /**
+     * Refresh post-save without a full page navigation. Inertia partial
+     * reload pulls fresh `stats` + `recentNotes` props from the server
+     * (so the Dashboard tab reflects the new universe), and bumping the
+     * notesRefetchNonce tells NotesView to re-run its local API fetch
+     * (its data isn't an Inertia prop, so the partial reload doesn't
+     * touch it directly). NotebooksView gets bumped too in case a tag
+     * change touched a notebook membership. Scroll position, mounted
+     * tab states, and modal animations all survive — full-page reload
+     * was burning all of that.
+     */
+    const refreshAfterSave = useCallback(() => {
+        router.reload({ only: ['stats', 'recentNotes'] });
+        setNotesRefetchNonce((n) => n + 1);
+        setNotebooksRefetchNonce((n) => n + 1);
+    }, []);
 
     function navigateToNotes(statusFilter?: NoteStatusFilter, quickFilter?: string): void {
         setInitialStatusFilter(statusFilter ?? null);
@@ -239,7 +256,7 @@ export default function NotesDashboard() {
                                 stats={stats}
                                 recentNotes={recentNotes}
                                 onNavigate={navigateToNotes}
-                                onNoteSaved={() => window.location.reload()}
+                                onNoteSaved={refreshAfterSave}
                             />
                         </div>
                     )}
@@ -277,7 +294,7 @@ export default function NotesDashboard() {
                 note={null}
                 projectId={project.id}
                 mode="create"
-                onSaved={() => { setShowCreate(false); window.location.reload(); }}
+                onSaved={() => { setShowCreate(false); refreshAfterSave(); }}
             />
 
             <CommandPalette

@@ -709,10 +709,11 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                         {t('notes.list.filters.button')}
                         {hasActiveFilters && (
                             <span
-                                className="inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-semibold"
+                                className="inline-flex items-center px-1.5 py-0 text-[10px] font-semibold"
                                 style={{
                                     background: 'color-mix(in srgb, var(--theme-brand-secondary-content) 20%, transparent)',
                                     color: 'var(--theme-brand-secondary-content)',
+                                    borderRadius: 'var(--theme-radius-badge)',
                                 }}
                             >
                                 {activeFilterCount}
@@ -1016,12 +1017,13 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                 {col === 'status' && (
                                                     <div className="flex flex-wrap items-center gap-1">
                                                         <span
-                                                            className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                                            className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium"
                                                             style={{
                                                                 background: note.status === 'active'
                                                                     ? 'color-mix(in srgb, var(--theme-base-content) 15%, transparent)'
                                                                     : 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
                                                                 color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
+                                                                borderRadius: 'var(--theme-radius-badge)',
                                                             }}
                                                         >
                                                             {note.status.charAt(0).toUpperCase() + note.status.slice(1)}
@@ -1031,8 +1033,8 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                             if (!ai) return null;
                                                             return (
                                                                 <span
-                                                                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-                                                                    style={{ background: ai.bg, color: ai.color }}
+                                                                    className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium"
+                                                                    style={{ background: ai.bg, color: ai.color, borderRadius: 'var(--theme-radius-badge)' }}
                                                                 >
                                                                     {ai.spin && (
                                                                         <i className="fa-solid fa-circle-notch fa-spin text-[9px]" />
@@ -1054,13 +1056,15 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                         background: 'color-mix(in srgb, var(--theme-brand-secondary-500) 20%, transparent)',
                                                         color: 'var(--theme-brand-secondary-500)',
                                                         border: '1px solid color-mix(in srgb, var(--theme-brand-secondary-500) 30%, transparent)',
+                                                        borderRadius: 'var(--theme-radius-badge)',
                                                     };
                                                     const entryBadgeStyle: CSSProperties = {
                                                         background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
                                                         color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
                                                         border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+                                                        borderRadius: 'var(--theme-radius-badge)',
                                                     };
-                                                    const baseClass = 'inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium cursor-pointer';
+                                                    const baseClass = 'inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 text-[11px] font-medium cursor-pointer';
                                                     return (
                                                         <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
                                                             {locs.map((loc, i) => {
@@ -1119,10 +1123,11 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                             {notebookLocs.map((nb, i) => (
                                                                 <span
                                                                     key={`notebook-${nb.id}-${i}`}
-                                                                    className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                                                    className="inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 text-[11px] font-medium"
                                                                     style={{
                                                                         background: 'var(--theme-brand-primary-500)',
                                                                         color: 'var(--theme-brand-primary-content)',
+                                                                        borderRadius: 'var(--theme-radius-badge)',
                                                                     }}
                                                                 >
                                                                     <i className={`${nb.icon ?? 'fa-solid fa-book'} text-[10px]`} />
@@ -1195,10 +1200,11 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                         {note.tags?.map((tag) => (
                                                             <span
                                                                 key={tag}
-                                                                className="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                                                className="inline-flex items-center whitespace-nowrap px-2 py-0.5 text-[11px] font-medium"
                                                                 style={{
                                                                     background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
                                                                     color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
+                                                                    borderRadius: 'var(--theme-radius-badge)',
                                                                 }}
                                                             >
                                                                 {tag}
