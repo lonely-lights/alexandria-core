@@ -363,8 +363,8 @@ export default function DashboardView({ projectId, stats, recentNotes, onNavigat
                             label={t('notes.dashboard.workflow.pinned.label')}
                             count={stats.pinned}
                             description={t('notes.dashboard.workflow.pinned.description')}
-                            accentColor="brand-primary-500"
-                            accentBg="brand-primary-subtle"
+                            accentColor="status-success-stroke"
+                            accentBg="status-success-subtle"
                             paperVariant="lavender"
                             onClick={() => onNavigate('active', 'pinned')}
                         />
