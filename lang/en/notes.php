@@ -407,4 +407,21 @@ return [
     'link_entries.scroll_for_more' => 'Scroll for more',
     'link_entries.shown_of_total' => ':shown of :total shown',
     'link_entries.done' => 'Done',
+
+    // ── HistoryModal (note edit + AI activity history) ──────────────
+    'history.title' => 'Note History',
+    'history.tab.edits' => 'Edits',
+    'history.tab.ai' => 'AI Activity',
+    'history.edits.empty' => 'No edit history yet',
+    'history.edits.content_change' => 'Content change',
+    'history.ai.empty' => 'No AI activity yet',
+    'history.ai.sorted_to' => 'Sorted To',
+    'history.ai.classification' => 'Classification',
+    'history.ai.commands_count' => ':count commands',
+    'history.ai.status.pending' => 'Pending',
+    'history.ai.status.approved' => 'Approved',
+    'history.ai.status.executed' => 'Executed',
+    'history.ai.status.rejected' => 'Rejected',
+    'history.ai.status.failed' => 'Failed',
+    'history.version_label' => 'v:version',
 ];
