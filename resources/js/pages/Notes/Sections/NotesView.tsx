@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { usePage } from '@inertiajs/react';
 import Pagination from '@alexandria/components/ui/Pagination';
 import Modal from '@alexandria/components/ui/Modal';
@@ -18,6 +18,7 @@ import { useDateFormatters } from '@alexandria/lib/formatDate';
 import { applyViewPreferences } from '@alexandria/lib/applyViewPreferences';
 import { createColumnPersistence } from '@alexandria/lib/persistedColumns';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 import type {
     Note,
     NoteCreator,
@@ -56,23 +57,6 @@ interface NotesViewProps {
 const ALL_COLUMNS = ['checkbox', 'title', 'status', 'location', 'notebook', 'created_at', 'author', 'updated_at', 'note_date', 'tags'] as const;
 type ColumnKey = (typeof ALL_COLUMNS)[number];
 const DEFAULT_COLUMNS: ColumnKey[] = ['checkbox', 'title', 'location', 'notebook', 'created_at', 'author'];
-
-const COLUMN_LABELS: Record<ColumnKey, string> = {
-    checkbox: '',
-    title: 'Title',
-    status: 'Status',
-    location: 'Location',
-    notebook: 'Notebook',
-    created_at: 'Created',
-    author: 'Author',
-    updated_at: 'Updated',
-    note_date: 'Note Date',
-    tags: 'Tags',
-};
-
-// Header labels — same labels; "Include time" is a per-column toggle
-// rather than a distinct header.
-const COLUMN_HEADERS: Record<ColumnKey, string> = { ...COLUMN_LABELS };
 
 // Columns that support the "Include time" toggle in the column picker.
 const TIMEABLE_COLUMNS: readonly ColumnKey[] = ['created_at', 'updated_at', 'note_date'] as const;
@@ -155,22 +139,33 @@ const { load: loadColumns, save: saveColumns } = createColumnPersistence<ColumnK
     DEFAULT_COLUMNS,
 );
 
-
-
-function smartDate(dateStr: string | null, fmtDate: (v: string | null) => string): string {
+/**
+ * Smart-date formatter — under-1-minute returns "just now"; sub-hour
+ * returns "Nm ago"; sub-day returns "Nh ago"; sub-week returns "Nd ago";
+ * older falls through to the configured fmtDate. Buckets are localised
+ * via the t.notes.list.date.* keys; the count placeholder is interpolated
+ * in JS since useT() is lookup-only.
+ */
+function smartDate(dateStr: string | null, fmtDate: (v: string | null) => string, t: Translator): string {
     if (!dateStr) return '';
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1) return t('notes.list.date.just_now');
+    if (mins < 60) return t('notes.list.date.minutes_ago').replace(':count', String(mins));
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
+    if (hrs < 24) return t('notes.list.date.hours_ago').replace(':count', String(hrs));
     const days = Math.floor(hrs / 24);
-    if (days < 7) return `${days}d ago`;
+    if (days < 7) return t('notes.list.date.days_ago').replace(':count', String(days));
     return fmtDate(dateStr);
 }
 
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
+const muteText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)' };
+const subtleText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+
 export default function NotesView({ projectId, initialStatusFilter, initialQuickFilter, initialNotebookId, notebookSelectionNonce, refetchNonce, contextType, contextId }: NotesViewProps) {
+    const t = useT();
     const { fmtDate, fmtTime } = useDateFormatters();
     const [data, setData] = useState<NotesListResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -192,6 +187,21 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
     // implementations.
     const noteActions = useNoteActions(projectId);
     const toast = useToastContext();
+
+    // Column labels resolved against t.notes.list.column.* — recomputed
+    // inside render so locale switches at runtime repaint the headers.
+    const columnLabels: Record<ColumnKey, string> = {
+        checkbox: '',
+        title: t('notes.list.column.title'),
+        status: t('notes.list.column.status'),
+        location: t('notes.list.column.location'),
+        notebook: t('notes.list.column.notebook'),
+        created_at: t('notes.list.column.created_at'),
+        author: t('notes.list.column.author'),
+        updated_at: t('notes.list.column.updated_at'),
+        note_date: t('notes.list.column.note_date'),
+        tags: t('notes.list.column.tags'),
+    };
 
     function setCompact(value: boolean): void {
         // 1. Update local state immediately so the checkbox flips without
@@ -442,10 +452,13 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
             }),
         });
         if (res.ok) {
-            const label = ctxType === 'blueprint' ? 'Generating commands' : 'Routing to blueprints';
-            toast.show(label, { type: 'info', description: `${ids.length} note(s) processing in the background...` });
+            const label = ctxType === 'blueprint'
+                ? t('notes.list.toast.generating_commands')
+                : t('notes.list.toast.routing_to_blueprints');
+            const desc = t('notes.list.toast.notes_processing').replace(':count', String(ids.length));
+            toast.show(label, { type: 'info', description: desc });
         } else {
-            toast.show('Categorization failed', { type: 'danger', description: 'The request could not be queued.' });
+            toast.show(t('notes.list.toast.categorize_failed'), { type: 'danger', description: t('notes.list.toast.categorize_failed_desc') });
         }
         setSelectedIds(new Set());
         fetchData();
@@ -499,10 +512,12 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
         } : prev);
         const ok = await noteActions.categorize(noteId, { contextType: ctxType, contextId: ctxId });
         if (ok) {
-            const label = ctxType === 'blueprint' ? 'Generating commands' : 'Routing to blueprints';
-            toast.show(label, { type: 'info', description: 'Note processing in the background...' });
+            const label = ctxType === 'blueprint'
+                ? t('notes.list.toast.generating_commands')
+                : t('notes.list.toast.routing_to_blueprints');
+            toast.show(label, { type: 'info', description: t('notes.list.toast.note_processing') });
         } else {
-            toast.show('Categorization failed', { type: 'danger', description: 'The request could not be queued.' });
+            toast.show(t('notes.list.toast.categorize_failed'), { type: 'danger', description: t('notes.list.toast.categorize_failed_desc') });
         }
         fetchData();
     }
@@ -581,22 +596,92 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
         return null;
     }
 
-    // AI status from ai_notes
-    function aiStatus(note: Note): { label: string; class: string; spin?: boolean } | null {
+    /**
+     * AI status from ai_notes — returns label + theme-token-derived
+     * background/foreground colors so the badge reads correctly across
+     * presets. spin=true triggers an inline FA spinner before the label.
+     */
+    function aiStatus(note: Note): { label: string; bg: string; color: string; spin?: boolean } | null {
         if (!note.ai_notes) return null;
         const status = note.ai_notes.processing_status as string | undefined;
-        if (status === 'processing') return { label: 'Processing', class: 'badge-info', spin: true };
-        if (status === 'routed') return { label: 'Routed', class: 'badge-warning' };
-        if (status === 'error') return { label: 'Error', class: 'badge-error' };
+        if (status === 'processing') {
+            return {
+                label: t('notes.list.ai_status.processing'),
+                bg: 'var(--theme-status-info-stroke)',
+                color: 'var(--theme-status-info-content)',
+                spin: true,
+            };
+        }
+        if (status === 'routed') {
+            return {
+                label: t('notes.list.ai_status.routed'),
+                bg: 'var(--theme-status-warning-stroke)',
+                color: 'var(--theme-status-warning-content)',
+            };
+        }
+        if (status === 'error') {
+            return {
+                label: t('notes.list.ai_status.error'),
+                bg: 'var(--theme-status-error-stroke)',
+                color: 'var(--theme-status-error-content)',
+            };
+        }
         return null;
     }
 
     const statusOptions: { value: NoteStatusFilter; label: string }[] = [
-        { value: 'all', label: 'All' },
-        { value: 'active', label: 'Active' },
-        { value: 'archived', label: 'Archived' },
-        { value: 'trashed', label: 'Trashed' },
+        { value: 'all', label: t('notes.list.status.all') },
+        { value: 'active', label: t('notes.list.status.active') },
+        { value: 'archived', label: t('notes.list.status.archived') },
+        { value: 'trashed', label: t('notes.list.status.trashed') },
     ];
+
+    /* ── Reusable styles ────────────────────────────────────────────── */
+
+    const searchInputStyle: CSSProperties = {
+        background: 'var(--theme-base-surface)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+        borderRadius: 'var(--theme-radius-input)',
+        color: 'var(--theme-base-content)',
+    };
+
+    const filtersBtnStyle: CSSProperties = {
+        background: hasActiveFilters
+            ? 'var(--theme-brand-secondary-500)'
+            : 'transparent',
+        color: hasActiveFilters
+            ? 'var(--theme-brand-secondary-content)'
+            : 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
+        borderRadius: 'var(--theme-radius-button)',
+    };
+
+    // paper-board owns the offset bevel shadow on tf themes — no extra
+    // centered box-shadow here, otherwise the warm `--tf-tape-shadow`
+    // bevel gets crowded by a generic elevation glow.
+    const tableWrapperStyle: CSSProperties = {
+        borderRadius: 'var(--theme-radius-card)',
+        border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    };
+
+    const tableInnerStyle: CSSProperties = {
+        borderRadius: 'inherit',
+        background: 'var(--theme-base-surface)',
+    };
+
+    const tableHeaderRowStyle: CSSProperties = {
+        background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+        borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    };
+
+    const tableHeaderCellStyle: CSSProperties = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    };
+
+    const bulkBarStyle: CSSProperties = {
+        borderRadius: 'var(--theme-radius-card)',
+        border: '1px solid color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent)',
+        background: 'color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent)',
+    };
 
     return (
         <div className="flex flex-col gap-8 pt-4">
@@ -605,37 +690,44 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                 {/* Search */}
                 <input
                     type="text"
-                    placeholder="Search notes..."
+                    placeholder={t('notes.list.search_placeholder')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="input input-bordered input-sm w-56 rounded-xl"
+                    className="w-56 px-3 py-1.5 text-sm"
+                    style={searchInputStyle}
                 />
 
                 {/* Filter button */}
-                <Tooltip content="Filters" placement="bottom">
+                <Tooltip content={t('notes.list.filters.tooltip')} placement="bottom">
                     <button
                         type="button"
                         onClick={() => setShowFilterModal(true)}
-                        className={`btn btn-xs gap-1.5 rounded-xl ${hasActiveFilters ? 'btn-secondary' : 'btn-ghost'}`}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-colors"
+                        style={filtersBtnStyle}
                     >
                         <i className="fa-solid fa-filter text-[10px]" />
-                        Filters
+                        {t('notes.list.filters.button')}
                         {hasActiveFilters && (
-                            <span className="badge badge-xs badge-secondary">{activeFilterCount}</span>
+                            <span
+                                className="inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-semibold"
+                                style={{
+                                    background: 'color-mix(in srgb, var(--theme-brand-secondary-content) 20%, transparent)',
+                                    color: 'var(--theme-brand-secondary-content)',
+                                }}
+                            >
+                                {activeFilterCount}
+                            </span>
                         )}
                     </button>
                 </Tooltip>
 
                 {/* Active filter chips — sit to the right of the Filters
                     button so the user reads left→right: "manage filters,
-                    here's what's active." All chips use `btn btn-xs`
-                    styling so their height matches the Filters button
-                    exactly; `rounded-full` + subtle border distinguishes
-                    them as dismissable pills. Hover shifts to error red
-                    to hint the click removes the filter. */}
-                {/* One chip per selected notebook — lookup the title from
-                    the already-fetched notebooks list so the chip shows
-                    the actual name rather than "Notebook (3)". */}
+                    here's what's active." `.alex-notes-filter-chip` is a
+                    dismissable pill; hover shifts to error red to hint
+                    the click removes the filter. The `--brand` modifier
+                    is for notebook chips (primary tint at rest), the
+                    plain class is for status/quick/author chips. */}
                 {notebookFilters.map((nbId) => {
                     const nb = notebooks.find((n) => n.id === nbId);
                     return (
@@ -643,10 +735,10 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                             key={`nb-chip-${nbId}`}
                             type="button"
                             onClick={() => { setNotebookFilters((prev) => prev.filter((id) => id !== nbId)); setPage(1); }}
-                            className="btn btn-xs gap-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary hover:border-error/40 hover:bg-error/10 hover:text-error"
+                            className="alex-notes-filter-chip alex-notes-filter-chip--brand"
                         >
                             <i className="fa-solid fa-book text-[9px]" />
-                            {nb?.title ?? `Notebook #${nbId}`}
+                            {nb?.title ?? t('notes.list.chip.notebook_fallback').replace(':id', String(nbId))}
                             <i className="fa-solid fa-xmark text-[9px]" />
                         </button>
                     );
@@ -655,7 +747,7 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                     <button
                         type="button"
                         onClick={() => handleStatusChange('active')}
-                        className="btn btn-xs gap-1.5 rounded-full border border-base-content/20 bg-base-content/5 capitalize hover:border-error/40 hover:bg-error/10 hover:text-error"
+                        className="alex-notes-filter-chip"
                     >
                         {statusFilter}
                         <i className="fa-solid fa-xmark text-[9px]" />
@@ -665,13 +757,12 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                     <button
                         type="button"
                         onClick={() => handleQuickFilter('all' as NoteQuickFilter)}
-                        className="btn btn-xs gap-1.5 rounded-full border border-base-content/20 bg-base-content/5 capitalize hover:border-error/40 hover:bg-error/10 hover:text-error"
+                        className="alex-notes-filter-chip"
                     >
                         {quickFilter.replace('_', ' ')}
                         <i className="fa-solid fa-xmark text-[9px]" />
                     </button>
                 )}
-                {/* One chip per selected author — look up display name. */}
                 {creatorIds.map((cid) => {
                     const c = creators.find((cc) => cc.id === cid);
                     return (
@@ -679,24 +770,22 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                             key={`author-chip-${cid}`}
                             type="button"
                             onClick={() => { setCreatorIds((prev) => prev.filter((id) => id !== cid)); setPage(1); }}
-                            className="btn btn-xs gap-1.5 rounded-full border border-base-content/20 bg-base-content/5 hover:border-error/40 hover:bg-error/10 hover:text-error"
+                            className="alex-notes-filter-chip"
                         >
                             <i className="fa-solid fa-user text-[9px]" />
-                            {c?.name ?? `Author #${cid}`}
+                            {c?.name ?? t('notes.list.chip.author_fallback').replace(':id', String(cid))}
                             <i className="fa-solid fa-xmark text-[9px]" />
                         </button>
                     );
                 })}
-
-                {/* Author dropdown (kept for filter modal reference) */}
-                {/* Right side controls */}
 
                 {/* Empty Trash */}
                 {statusFilter === 'trashed' && notes && notes.total > 0 && (
                     <button
                         type="button"
                         onClick={async () => {
-                            if (!confirm(`Permanently delete all ${notes.total} trashed notes?`)) return;
+                            const confirmMsg = t('notes.list.empty_trash.confirm').replace(':count', String(notes.total));
+                            if (!confirm(confirmMsg)) return;
                             const ids = notes.data.map((n) => n.id);
                             await fetch(`/api/v1/projects/${projectId}/notes/bulk-action`, {
                                 method: 'POST',
@@ -706,90 +795,102 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                             });
                             fetchData();
                         }}
-                        className="btn btn-error btn-xs rounded-lg gap-1"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium"
+                        style={{
+                            background: 'var(--theme-status-error-stroke)',
+                            color: 'var(--theme-status-error-content)',
+                            borderRadius: 'var(--theme-radius-button)',
+                        }}
                     >
-                        <i className="fa-solid fa-trash text-[10px]" /> Empty Trash
+                        <i className="fa-solid fa-trash text-[10px]" /> {t('notes.list.empty_trash.label')}
                     </button>
                 )}
 
                 <div className="ml-auto flex items-center gap-3">
-                    <Tooltip content="Compact rows (also updates your Appearance preference)" placement="bottom">
-                        <label className="flex cursor-pointer items-center gap-2 text-xs text-base-content/70">
+                    <Tooltip content={t('notes.list.compact.tooltip')} placement="bottom">
+                        <label
+                            className="flex cursor-pointer items-center gap-2 text-xs"
+                            style={muteText}
+                        >
                             <input
                                 type="checkbox"
                                 checked={compact}
                                 onChange={(e) => setCompact(e.target.checked)}
-                                className={`toggle toggle-sm ${compact ? 'toggle-primary' : ''}`}
+                                className="alex-toggle"
                             />
-                            Compact
+                            {t('notes.list.compact.label')}
                         </label>
                     </Tooltip>
 
-                    <Tooltip content="Configure columns" placement="bottom">
+                    <Tooltip content={t('notes.list.config_columns.tooltip')} placement="bottom">
                         <button
                             type="button"
                             onClick={() => setShowColumnMenu(true)}
-                            className="btn btn-ghost btn-xs btn-square rounded-lg"
+                            className="alex-notes-icon-btn"
+                            aria-label={t('notes.list.config_columns.tooltip')}
                         >
                             <i className="fa-solid fa-table-columns text-xs" />
                         </button>
                     </Tooltip>
-
                 </div>
             </div>
 
             {/* Bulk actions bar */}
             {selectedIds.size > 0 && (
-                <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2">
-                    <span className="text-sm font-medium">{selectedIds.size} selected</span>
+                <div className="flex items-center gap-2 px-4 py-2" style={bulkBarStyle}>
+                    <span className="text-sm font-medium">
+                        {t('notes.list.bulk.selected').replace(':count', String(selectedIds.size))}
+                    </span>
                     <div className="ml-2 flex gap-1.5">
                         {(statusFilter === 'active' || statusFilter === 'all') && (
-                            <button type="button" onClick={() => bulkAction('archive')} className="btn btn-ghost btn-xs rounded-md">
-                                Archive
+                            <button type="button" onClick={() => bulkAction('archive')} className="alex-notes-bulk-btn">
+                                {t('notes.list.bulk.archive')}
                             </button>
                         )}
                         {(statusFilter === 'active' || statusFilter === 'archived' || statusFilter === 'all') && (
-                            <button type="button" onClick={() => bulkAction('trash')} className="btn btn-ghost btn-xs rounded-md">
-                                Move to Trash
+                            <button type="button" onClick={() => bulkAction('trash')} className="alex-notes-bulk-btn">
+                                {t('notes.list.bulk.move_to_trash')}
                             </button>
                         )}
                         {statusFilter === 'archived' && (
-                            <button type="button" onClick={() => bulkAction('unarchive')} className="btn btn-ghost btn-xs rounded-md">
-                                Unarchive
+                            <button type="button" onClick={() => bulkAction('unarchive')} className="alex-notes-bulk-btn">
+                                {t('notes.list.bulk.unarchive')}
                             </button>
                         )}
                         {statusFilter === 'trashed' && (
-                            <button type="button" onClick={() => bulkAction('restore')} className="btn btn-ghost btn-xs rounded-md">
-                                Restore
+                            <button type="button" onClick={() => bulkAction('restore')} className="alex-notes-bulk-btn">
+                                {t('notes.list.bulk.restore')}
                             </button>
                         )}
                         {statusFilter === 'active' && (
-                            <button type="button" onClick={bulkCategorize} className="btn btn-ghost btn-xs rounded-md">
-                                Categorize
+                            <button type="button" onClick={bulkCategorize} className="alex-notes-bulk-btn">
+                                {t('notes.list.bulk.categorize')}
                             </button>
                         )}
                     </div>
                     <button
                         type="button"
                         onClick={() => setSelectedIds(new Set())}
-                        className="btn btn-ghost btn-xs ml-auto rounded-md"
+                        className="alex-notes-bulk-btn ml-auto"
                     >
-                        Clear Selection
+                        {t('notes.list.bulk.clear_selection')}
                     </button>
                 </div>
             )}
 
-            {/* Table — outer owns the paper-board shadow, inner owns
-                the background + overflow so the pseudo-shadow can
-                paint behind without being covered by the bg. */}
+            {/* Table — outer carries the panel chrome (paper-board on tf
+                themes, base shadow + stroke elsewhere); inner owns the
+                background + overflow so nothing leaks past the rounded
+                corners. */}
             <div
-                className={`paper-board rounded-xl border border-base-300/50 transition-opacity duration-300 ${loading && data ? 'animate-pulse opacity-50' : 'opacity-100'}`}
+                className={`paper-board transition-opacity duration-300 ${loading && data ? 'animate-pulse opacity-50' : 'opacity-100'}`}
+                style={tableWrapperStyle}
             >
-                <div className="overflow-hidden bg-base-200 shadow-sm" style={{ borderRadius: 'inherit' }}>
+                <div className="overflow-hidden" style={tableInnerStyle}>
                 <div className="overflow-x-auto" style={{ borderRadius: 'inherit' }}>
                     <table className="paper-table w-full">
                         <thead>
-                            <tr className="border-b border-base-300/50 bg-base-200/50">
+                            <tr style={tableHeaderRowStyle}>
                                 {columns.map((col) => {
                                     const sk = sortKeyForColumn(col);
                                     const isSortable = sk !== null;
@@ -801,7 +902,7 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                     type="checkbox"
                                                     checked={allSelected}
                                                     onChange={toggleSelectAll}
-                                                    className="checkbox checkbox-xs"
+                                                    className="alex-checkbox"
                                                 />
                                             </th>
                                         );
@@ -812,45 +913,58 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                         <th
                                             key={col}
                                             onClick={isSortable ? () => handleSort(sk) : undefined}
-                                            className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/50 ${minW} ${isSortable ? 'cursor-pointer select-none transition-colors hover:text-base-content/80' : ''}`}
+                                            className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${minW} ${isSortable ? 'alex-notes-table-header-sortable cursor-pointer select-none' : ''}`}
+                                            style={tableHeaderCellStyle}
                                         >
-                                            {COLUMN_HEADERS[col]}
+                                            {columnLabels[col]}
                                             {isSortable && sortKey === sk && (
                                                 <i
-                                                    className={`fa-solid fa-chevron-${sortDir === 'asc' ? 'up' : 'down'} ml-1 text-[9px] text-primary`}
+                                                    className={`fa-solid fa-chevron-${sortDir === 'asc' ? 'up' : 'down'} ml-1 text-[9px]`}
+                                                    style={{ color: 'var(--theme-brand-primary-500)' }}
                                                 />
                                             )}
                                         </th>
                                     );
                                 })}
-                                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-base-content/50">
-                                    Actions
+                                <th
+                                    className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider"
+                                    style={tableHeaderCellStyle}
+                                >
+                                    {t('notes.list.column.actions')}
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-base-200">
+                        <tbody>
                             {loading && !data && (
                                 <tr>
-                                    {/* +1 covers the Actions column at the far right — without it
-                                        the last column keeps the container bg, breaking the
-                                        paper-card tint across the row. */}
                                     <td colSpan={columns.length + 1} className="px-4 py-16 text-center">
-                                        <span className="loading loading-spinner loading-lg text-primary" />
-                                        <p className="mt-3 text-sm font-medium text-base-content/60">Loading notes…</p>
+                                        <i
+                                            className="fa-solid fa-circle-notch fa-spin text-3xl"
+                                            style={{ color: 'var(--theme-brand-primary-500)' }}
+                                            aria-hidden="true"
+                                        />
+                                        <p className="mt-3 text-sm font-medium" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' }}>
+                                            {t('notes.list.loading')}
+                                        </p>
                                     </td>
                                 </tr>
                             )}
                             {!loading && (!notes?.data || notes.data.length === 0) && (
                                 <tr>
-                                    <td colSpan={columns.length + 1} className="px-4 py-12 text-center text-sm text-base-content/50">
-                                        No notes found.
+                                    <td colSpan={columns.length + 1} className="px-4 py-12 text-center text-sm" style={fadedText}>
+                                        {t('notes.list.no_results')}
                                     </td>
                                 </tr>
                             )}
-                            {notes?.data.map((note) => (
+                            {notes?.data.map((note, rowIdx) => (
                                 <tr
                                     key={note.id}
-                                    className="cursor-pointer transition-colors hover:bg-base-200/30"
+                                    className="alex-notes-table-row cursor-pointer"
+                                    style={{
+                                        borderTop: rowIdx === 0
+                                            ? 'none'
+                                            : '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+                                    }}
                                     onClick={() => {
                                         setModalNote(note);
                                         setModalMode('view');
@@ -865,7 +979,7 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                         type="checkbox"
                                                         checked={selectedIds.has(note.id)}
                                                         onChange={() => toggleSelectOne(note.id)}
-                                                        className="checkbox checkbox-xs"
+                                                        className="alex-checkbox"
                                                     />
                                                 </td>
                                             );
@@ -874,12 +988,6 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                         return (
                                             <td
                                                 key={col}
-                                                /* Title column takes the remaining horizontal space after
-                                                   all other (content-sized) columns claim theirs. The
-                                                   `max-w-0 w-full` combo is the canonical trick for a
-                                                   truncating table cell: max-width:0 stops it from
-                                                   expanding to fit its text, width:100% fills the leftover
-                                                   space, and the inner `truncate` clips against that. */
                                                 className={col === 'title' ? `${cellPadding} ${MIN_COL_WIDTHS.title ?? ''} w-full max-w-0` : `${cellPadding} ${MIN_COL_WIDTHS[col] ?? ''}`}
                                             >
                                                 {col === 'title' && (
@@ -890,15 +998,16 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                             )}
                                                             {note.is_pinned && (
                                                                 <i
-                                                                    className="fa-solid fa-thumbtack flex-shrink-0 text-[11px] text-primary"
-                                                                    title="Pinned"
-                                                                    aria-label="Pinned"
+                                                                    className="fa-solid fa-thumbtack flex-shrink-0 text-[11px]"
+                                                                    style={{ color: 'var(--theme-brand-primary-500)' }}
+                                                                    title={t('notes.list.tooltip.pinned')}
+                                                                    aria-label={t('notes.list.tooltip.pinned')}
                                                                 />
                                                             )}
-                                                            <span className="truncate">{note.title || 'Untitled'}</span>
+                                                            <span className="truncate">{note.title || t('notes.list.untitled')}</span>
                                                         </span>
                                                         {note.text && (
-                                                            <p className="mt-0.5 truncate text-xs leading-snug text-base-content/50">
+                                                            <p className="mt-0.5 truncate text-xs leading-snug" style={fadedText}>
                                                                 {note.text.replace(/\s+/g, ' ').trim()}
                                                             </p>
                                                         )}
@@ -907,7 +1016,13 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                 {col === 'status' && (
                                                     <div className="flex flex-wrap items-center gap-1">
                                                         <span
-                                                            className={`badge badge-sm ${note.status === 'active' ? 'badge-neutral' : 'badge-ghost'}`}
+                                                            className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                                            style={{
+                                                                background: note.status === 'active'
+                                                                    ? 'color-mix(in srgb, var(--theme-base-content) 15%, transparent)'
+                                                                    : 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+                                                                color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
+                                                            }}
                                                         >
                                                             {note.status.charAt(0).toUpperCase() + note.status.slice(1)}
                                                         </span>
@@ -915,9 +1030,12 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                             const ai = aiStatus(note);
                                                             if (!ai) return null;
                                                             return (
-                                                                <span className={`badge badge-sm ${ai.class}`}>
+                                                                <span
+                                                                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                                                    style={{ background: ai.bg, color: ai.color }}
+                                                                >
                                                                     {ai.spin && (
-                                                                        <span className="loading loading-spinner loading-xs mr-1" />
+                                                                        <i className="fa-solid fa-circle-notch fa-spin text-[9px]" />
                                                                     )}
                                                                     {ai.label}
                                                                 </span>
@@ -931,29 +1049,25 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                     // users can toggle each independently. Project-type
                                                     // locations are filtered because every note belongs to
                                                     // the project by definition.
-                                                    //
-                                                    // Entry badges are wrapped in EntryLink so hovering one
-                                                    // surfaces the same preview card used on Blueprint/
-                                                    // Entry pages. Blueprint badges are plain <a> links —
-                                                    // there's no blueprint-preview endpoint today, so no
-                                                    // hover card to show. stopPropagation prevents the row
-                                                    // click (which opens the note modal) from firing.
-                                                    //
-                                                    // flex-wrap on the container allows multiple badges to
-                                                    // STACK onto new lines, but whitespace-nowrap on each
-                                                    // badge keeps its own text on a single line.
                                                     const locs = (note.locations ?? []).filter((loc) => loc.type === 'blueprint' || loc.type === 'entry');
-                                                    const baseBadge = 'badge badge-sm whitespace-nowrap transition-colors cursor-pointer';
+                                                    const blueprintBadgeStyle: CSSProperties = {
+                                                        background: 'color-mix(in srgb, var(--theme-brand-secondary-500) 20%, transparent)',
+                                                        color: 'var(--theme-brand-secondary-500)',
+                                                        border: '1px solid color-mix(in srgb, var(--theme-brand-secondary-500) 30%, transparent)',
+                                                    };
+                                                    const entryBadgeStyle: CSSProperties = {
+                                                        background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+                                                        color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
+                                                        border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+                                                    };
+                                                    const baseClass = 'inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium cursor-pointer';
                                                     return (
-                                                        <div
-                                                            className="flex flex-wrap gap-1"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        >
+                                                        <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
                                                             {locs.map((loc, i) => {
-                                                                const cls = `${baseBadge} ${loc.type === 'blueprint' ? 'badge-secondary hover:badge-secondary/80' : 'badge-ghost hover:bg-base-content/10'}`;
+                                                                const style = loc.type === 'blueprint' ? blueprintBadgeStyle : entryBadgeStyle;
                                                                 const content = (
                                                                     <>
-                                                                        {loc.icon && <i className={`${loc.icon} mr-1 text-[10px]`} />}
+                                                                        {loc.icon && <i className={`${loc.icon} text-[10px]`} />}
                                                                         {loc.name}
                                                                     </>
                                                                 );
@@ -963,7 +1077,8 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                                             key={`entry-${loc.id}-${i}`}
                                                                             entryId={loc.id}
                                                                             href={loc.url}
-                                                                            className={cls}
+                                                                            className={baseClass}
+                                                                            style={style}
                                                                         >
                                                                             {content}
                                                                         </EntryLink>
@@ -974,7 +1089,8 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                                         <a
                                                                             key={`${loc.type}-${loc.id}-${i}`}
                                                                             href={loc.url}
-                                                                            className={cls}
+                                                                            className={baseClass}
+                                                                            style={style}
                                                                         >
                                                                             {content}
                                                                         </a>
@@ -983,33 +1099,38 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                                 return (
                                                                     <span
                                                                         key={`${loc.type}-${loc.id}-${i}`}
-                                                                        className={`badge badge-sm whitespace-nowrap ${loc.type === 'blueprint' ? 'badge-secondary' : 'badge-ghost'}`}
+                                                                        className={baseClass}
+                                                                        style={style}
                                                                     >
                                                                         {content}
                                                                     </span>
                                                                 );
                                                             })}
                                                             {locs.length === 0 && (
-                                                                <span className="text-xs text-base-content/30">--</span>
+                                                                <span className="text-xs" style={microText}>{t('notes.list.empty_cell')}</span>
                                                             )}
                                                         </div>
                                                     );
                                                 })()}
                                                 {col === 'notebook' && (() => {
-                                                    const notebooks = (note.locations ?? []).filter((loc) => loc.type === 'notebook');
+                                                    const notebookLocs = (note.locations ?? []).filter((loc) => loc.type === 'notebook');
                                                     return (
                                                         <div className="flex flex-wrap gap-1">
-                                                            {notebooks.map((nb, i) => (
+                                                            {notebookLocs.map((nb, i) => (
                                                                 <span
                                                                     key={`notebook-${nb.id}-${i}`}
-                                                                    className="badge badge-sm whitespace-nowrap border-0 bg-primary font-medium text-primary-content"
+                                                                    className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                                                    style={{
+                                                                        background: 'var(--theme-brand-primary-500)',
+                                                                        color: 'var(--theme-brand-primary-content)',
+                                                                    }}
                                                                 >
-                                                                    <i className={`${nb.icon ?? 'fa-solid fa-book'} mr-1 text-[10px]`} />
+                                                                    <i className={`${nb.icon ?? 'fa-solid fa-book'} text-[10px]`} />
                                                                     {nb.name}
                                                                 </span>
                                                             ))}
-                                                            {notebooks.length === 0 && (
-                                                                <span className="text-xs text-base-content/30">--</span>
+                                                            {notebookLocs.length === 0 && (
+                                                                <span className="text-xs" style={microText}>{t('notes.list.empty_cell')}</span>
                                                             )}
                                                         </div>
                                                     );
@@ -1017,62 +1138,69 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                 {col === 'created_at' && (
                                                     showTimeFor.created_at ? (
                                                         note.created_at ? (
-                                                            <div className="whitespace-nowrap text-xs leading-tight text-base-content/70">
+                                                            <div className="whitespace-nowrap text-xs leading-tight" style={muteText}>
                                                                 <span className="block font-semibold">{fmtDate(note.created_at)}</span>
-                                                                <span className="mt-0.5 block text-base-content/50">{fmtTime(note.created_at)}</span>
+                                                                <span className="mt-0.5 block" style={fadedText}>{fmtTime(note.created_at)}</span>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-xs text-base-content/30">--</span>
+                                                            <span className="text-xs" style={microText}>{t('notes.list.empty_cell')}</span>
                                                         )
                                                     ) : (
-                                                        <span className="whitespace-nowrap text-xs text-base-content/70">
-                                                            {smartDate(note.created_at, fmtDate)}
+                                                        <span className="whitespace-nowrap text-xs" style={muteText}>
+                                                            {smartDate(note.created_at, fmtDate, t)}
                                                         </span>
                                                     )
                                                 )}
                                                 {col === 'author' && (
-                                                    <span className="whitespace-nowrap text-xs text-base-content/70">
-                                                        {note.creator?.display_name ?? note.creator?.name ?? 'System'}
+                                                    <span className="whitespace-nowrap text-xs" style={muteText}>
+                                                        {note.creator?.display_name ?? note.creator?.name ?? t('notes.list.system_author')}
                                                     </span>
                                                 )}
                                                 {col === 'updated_at' && (
                                                     showTimeFor.updated_at ? (
                                                         note.updated_at ? (
-                                                            <div className="whitespace-nowrap text-xs leading-tight text-base-content/70">
+                                                            <div className="whitespace-nowrap text-xs leading-tight" style={muteText}>
                                                                 <span className="block font-semibold">{fmtDate(note.updated_at)}</span>
-                                                                <span className="mt-0.5 block text-base-content/50">{fmtTime(note.updated_at)}</span>
+                                                                <span className="mt-0.5 block" style={fadedText}>{fmtTime(note.updated_at)}</span>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-xs text-base-content/30">--</span>
+                                                            <span className="text-xs" style={microText}>{t('notes.list.empty_cell')}</span>
                                                         )
                                                     ) : (
-                                                        <span className="whitespace-nowrap text-xs text-base-content/70">
-                                                            {smartDate(note.updated_at, fmtDate)}
+                                                        <span className="whitespace-nowrap text-xs" style={muteText}>
+                                                            {smartDate(note.updated_at, fmtDate, t)}
                                                         </span>
                                                     )
                                                 )}
                                                 {col === 'note_date' && (
                                                     showTimeFor.note_date ? (
                                                         note.note_date ? (
-                                                            <div className="whitespace-nowrap text-xs leading-tight text-base-content/70">
+                                                            <div className="whitespace-nowrap text-xs leading-tight" style={muteText}>
                                                                 <span className="block font-semibold">{fmtDate(note.note_date)}</span>
-                                                                <span className="mt-0.5 block text-base-content/50">{fmtTime(note.note_date)}</span>
+                                                                <span className="mt-0.5 block" style={fadedText}>{fmtTime(note.note_date)}</span>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-xs text-base-content/30">--</span>
+                                                            <span className="text-xs" style={microText}>{t('notes.list.empty_cell')}</span>
                                                         )
                                                     ) : (
-                                                        <span className="whitespace-nowrap text-xs text-base-content/70">
+                                                        <span className="whitespace-nowrap text-xs" style={muteText}>
                                                             {note.note_date
                                                                 ? fmtDate(note.note_date)
-                                                                : <span className="text-base-content/30">--</span>}
+                                                                : <span style={microText}>{t('notes.list.empty_cell')}</span>}
                                                         </span>
                                                     )
                                                 )}
                                                 {col === 'tags' && (
                                                     <div className="flex flex-wrap gap-1">
                                                         {note.tags?.map((tag) => (
-                                                            <span key={tag} className="badge badge-ghost badge-sm whitespace-nowrap">
+                                                            <span
+                                                                key={tag}
+                                                                className="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                                                style={{
+                                                                    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+                                                                    color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
+                                                                }}
+                                                            >
                                                                 {tag}
                                                             </span>
                                                         ))}
@@ -1084,21 +1212,21 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                     {/* Row actions */}
                                     <td className={`${cellPadding} text-right`} onClick={(e) => e.stopPropagation()}>
                                         <DropdownMenu items={[
-                                            { label: note.is_pinned ? 'Unpin' : 'Pin', icon: 'fa-thumbtack', onClick: () => void togglePin(note.id) },
-                                            { label: 'Generate Title', icon: 'fa-wand-magic-sparkles', onClick: () => void generateTitle(note.id) },
-                                            { label: 'Tags', icon: 'fa-tag', onClick: () => { setTagNoteId(note.id); setTagNoteTags(note.tags ?? []); } },
-                                            { label: 'Add to Notebook', icon: 'fa-book', onClick: () => openNotebookPicker(note.id) },
-                                            { label: 'Categorize (AI)', icon: 'fa-bolt', onClick: () => void categorizeNote(note.id) },
+                                            { label: note.is_pinned ? t('notes.list.row.unpin') : t('notes.list.row.pin'), icon: 'fa-thumbtack', onClick: () => void togglePin(note.id) },
+                                            { label: t('notes.list.row.generate_title'), icon: 'fa-wand-magic-sparkles', onClick: () => void generateTitle(note.id) },
+                                            { label: t('notes.list.row.tags'), icon: 'fa-tag', onClick: () => { setTagNoteId(note.id); setTagNoteTags(note.tags ?? []); } },
+                                            { label: t('notes.list.row.add_to_notebook'), icon: 'fa-book', onClick: () => openNotebookPicker(note.id) },
+                                            { label: t('notes.list.row.categorize_ai'), icon: 'fa-bolt', onClick: () => void categorizeNote(note.id) },
                                             { divider: true },
-                                            { label: 'History', icon: 'fa-clock-rotate-left', onClick: () => void openHistory(note.id) },
+                                            { label: t('notes.list.row.history'), icon: 'fa-clock-rotate-left', onClick: () => void openHistory(note.id) },
                                             { divider: true },
-                                            { label: 'Link to...', icon: 'fa-link', onClick: () => setLinkAction({ noteId: note.id, action: 'link' }) },
-                                            { label: 'Move to...', icon: 'fa-right-from-bracket', onClick: () => setLinkAction({ noteId: note.id, action: 'move' }) },
-                                            { label: 'Copy to...', icon: 'fa-copy', onClick: () => setLinkAction({ noteId: note.id, action: 'copy' }) },
+                                            { label: t('notes.list.row.link_to'), icon: 'fa-link', onClick: () => setLinkAction({ noteId: note.id, action: 'link' }) },
+                                            { label: t('notes.list.row.move_to'), icon: 'fa-right-from-bracket', onClick: () => setLinkAction({ noteId: note.id, action: 'move' }) },
+                                            { label: t('notes.list.row.copy_to'), icon: 'fa-copy', onClick: () => setLinkAction({ noteId: note.id, action: 'copy' }) },
                                             ...(note.ai_notes && typeof (note.ai_notes as Record<string, unknown>).routing_count === 'number' ? [
                                                 { divider: true as const },
-                                                { label: 'Approve Routing', icon: 'fa-check', onClick: () => void approveRouting(note.id) },
-                                                { label: 'Reject Routing', icon: 'fa-xmark', onClick: () => void rejectRouting(note.id) },
+                                                { label: t('notes.list.row.approve_routing'), icon: 'fa-check', onClick: () => void approveRouting(note.id) },
+                                                { label: t('notes.list.row.reject_routing'), icon: 'fa-xmark', onClick: () => void rejectRouting(note.id) },
                                             ] : []),
                                         ]} />
                                     </td>
@@ -1109,7 +1237,10 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                 </div>
 
                 {notes && notes.last_page > 1 && (
-                    <div className="border-t border-base-300/50 p-3">
+                    <div
+                        className="p-3"
+                        style={{ borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)' }}
+                    >
                         <Pagination
                             currentPage={notes.current_page}
                             lastPage={notes.last_page}
@@ -1141,12 +1272,15 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
             <Modal open={showColumnMenu} onClose={() => setShowColumnMenu(false)} maxWidth="max-w-sm">
                 <div className="p-5">
                     <div className="mb-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/20">
-                            <i className="fa-solid fa-table-columns text-primary" />
+                        <div
+                            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+                            style={{ background: 'color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)' }}
+                        >
+                            <i className="fa-solid fa-table-columns" style={{ color: 'var(--theme-brand-primary-500)' }} />
                         </div>
                         <div>
-                            <h3 className="font-bold">Configure Columns</h3>
-                            <p className="text-xs text-base-content/40">Toggle and drag to reorder</p>
+                            <h3 className="font-bold">{t('notes.list.config_columns.title')}</h3>
+                            <p className="text-xs" style={subtleText}>{t('notes.list.config_columns.subtitle')}</p>
                         </div>
                     </div>
 
@@ -1154,7 +1288,9 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                         inline "Include time" checkbox; toggling it
                         doesn't reorder or remove the column — just flips
                         whether the cell shows date-only or date + time. */}
-                    <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-base-content/50">Active Columns</p>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wider" style={fadedText}>
+                        {t('notes.list.config_columns.active_heading')}
+                    </p>
                     <div ref={sortableRef} className="mb-3 space-y-1">
                         {columns.filter((c) => c !== 'checkbox').map((col) => {
                             const isTimeable = TIMEABLE_COLUMNS.includes(col);
@@ -1162,28 +1298,35 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                 <div
                                     key={col}
                                     data-col={col}
-                                    className="flex items-center gap-2 rounded-lg border border-base-300/50 bg-base-100 px-3 py-2"
+                                    className="flex items-center gap-2 px-3 py-2"
+                                    style={{
+                                        background: 'var(--theme-base-surface)',
+                                        border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                                        borderRadius: 'var(--theme-radius-button)',
+                                    }}
                                 >
-                                    <i className="drag-handle fa-solid fa-grip-vertical cursor-grab text-xs text-base-content/30 active:cursor-grabbing" />
-                                    <span className="flex-1 text-sm">{COLUMN_LABELS[col]}</span>
+                                    <i className="drag-handle fa-solid fa-grip-vertical cursor-grab text-xs active:cursor-grabbing" style={microText} />
+                                    <span className="flex-1 text-sm">{columnLabels[col]}</span>
                                     {isTimeable && (
                                         <label
-                                            className="flex cursor-pointer items-center gap-1.5 text-[11px] text-base-content/50"
+                                            className="flex cursor-pointer items-center gap-1.5 text-[11px]"
+                                            style={fadedText}
                                             onMouseDown={(e) => e.stopPropagation()}
                                         >
                                             <input
                                                 type="checkbox"
-                                                className="checkbox checkbox-xs checkbox-primary"
+                                                className="alex-checkbox"
                                                 checked={Boolean(showTimeFor[col])}
                                                 onChange={() => toggleShowTime(col)}
                                             />
-                                            Include time
+                                            {t('notes.list.config_columns.include_time')}
                                         </label>
                                     )}
                                     <button
                                         type="button"
                                         onClick={() => toggleColumn(col)}
-                                        className="btn btn-ghost btn-xs btn-circle text-base-content/30 hover:text-error"
+                                        className="alex-notes-icon-btn alex-notes-icon-btn--danger"
+                                        aria-label={t('notes.list.config_columns.subtitle')}
                                     >
                                         <i className="fa-solid fa-xmark text-[10px]" />
                                     </button>
@@ -1195,17 +1338,20 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                     {/* Available columns — not active */}
                     {ALL_COLUMNS.filter((c) => c !== 'checkbox' && !columns.includes(c)).length > 0 && (
                         <>
-                            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-base-content/50">Available</p>
+                            <p className="mb-1 text-xs font-semibold uppercase tracking-wider" style={fadedText}>
+                                {t('notes.list.config_columns.available_heading')}
+                            </p>
                             <div className="space-y-1">
                                 {ALL_COLUMNS.filter((c) => c !== 'checkbox' && !columns.includes(c)).map((col) => (
                                     <button
                                         key={col}
                                         type="button"
                                         onClick={() => toggleColumn(col)}
-                                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-base-content/50 transition-colors hover:bg-base-200/50"
+                                        className="alex-notes-bulk-btn flex w-full items-center gap-2 px-3 py-2 text-sm"
+                                        style={fadedText}
                                     >
-                                        <i className="fa-solid fa-plus text-[10px] text-primary/60" />
-                                        {COLUMN_LABELS[col]}
+                                        <i className="fa-solid fa-plus text-[10px]" style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)' }} />
+                                        {columnLabels[col]}
                                     </button>
                                 ))}
                             </div>
@@ -1254,7 +1400,7 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                 activeNotebookId={null}
                 onSelectNotebook={() => {}}
                 onNewNotebook={async () => {
-                    const name = prompt('Notebook name:');
+                    const name = prompt(t('notes.list.notebook_picker.prompt_name'));
                     if (!name) return;
                     await fetch(`/api/v1/projects/${projectId}/notebooks`, {
                         method: 'POST',
@@ -1274,8 +1420,8 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
             <SearchableMultiSelectModal
                 open={showAuthorPicker}
                 onClose={() => setShowAuthorPicker(false)}
-                title="Filter by Author"
-                subtitle="Select one or more authors to filter by"
+                title={t('notes.list.author_picker.title')}
+                subtitle={t('notes.list.author_picker.subtitle')}
                 items={creators.map((c): SearchableItem => ({ id: c.id, label: c.name, icon: 'fa-solid fa-user' }))}
                 selectedIds={creatorIds}
                 onToggle={(id, next) => {
@@ -1284,16 +1430,16 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                     setPage(1);
                 }}
                 onClear={() => { setCreatorIds([]); setPage(1); }}
-                emptyLabel="No authors yet"
-                searchPlaceholder="Search authors..."
+                emptyLabel={t('notes.list.author_picker.empty')}
+                searchPlaceholder={t('notes.list.author_picker.search')}
             />
 
             {/* Notebook picker */}
             <SearchableMultiSelectModal
                 open={showNotebookPicker}
                 onClose={() => setShowNotebookPicker(false)}
-                title="Filter by Notebook"
-                subtitle="Select one or more notebooks to filter by"
+                title={t('notes.list.notebook_picker.title')}
+                subtitle={t('notes.list.notebook_picker.subtitle')}
                 items={notebooks.map((nb): SearchableItem => ({
                     id: nb.id,
                     label: nb.title,
@@ -1308,33 +1454,38 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                     setPage(1);
                 }}
                 onClear={() => { setNotebookFilters([]); setPage(1); }}
-                emptyLabel="No notebooks yet"
-                searchPlaceholder="Search notebooks..."
+                emptyLabel={t('notes.list.notebook_picker.empty')}
+                searchPlaceholder={t('notes.list.notebook_picker.search')}
             />
 
             {/* Filter Modal */}
             <Modal open={showFilterModal} onClose={() => setShowFilterModal(false)} maxWidth="max-w-lg">
                 <div className="p-5">
                     <div className="mb-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-secondary/20">
-                            <i className="fa-solid fa-filter text-secondary" />
+                        <div
+                            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+                            style={{ background: 'color-mix(in srgb, var(--theme-brand-secondary-500) 20%, transparent)' }}
+                        >
+                            <i className="fa-solid fa-filter" style={{ color: 'var(--theme-brand-secondary-500)' }} />
                         </div>
                         <div>
-                            <h3 className="font-bold">Filters</h3>
-                            <p className="text-xs text-base-content/40">Narrow down your notes</p>
+                            <h3 className="font-bold">{t('notes.list.filter_modal.title')}</h3>
+                            <p className="text-xs" style={subtleText}>{t('notes.list.filter_modal.subtitle')}</p>
                         </div>
                     </div>
 
                     {/* Status */}
                     <div className="mb-4">
-                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-base-content/50">Status</label>
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider" style={fadedText}>
+                            {t('notes.list.filter_modal.status_label')}
+                        </label>
                         <div className="flex flex-wrap gap-1">
                             {statusOptions.map((opt) => (
                                 <button
                                     key={opt.value}
                                     type="button"
                                     onClick={() => { handleStatusChange(opt.value); }}
-                                    className={`btn btn-sm rounded-lg ${statusFilter === opt.value ? 'btn-primary' : 'btn-ghost'}`}
+                                    className={`alex-notes-quick-chip ${statusFilter === opt.value ? 'alex-notes-quick-chip--active' : ''}`}
                                 >
                                     {opt.label}
                                 </button>
@@ -1344,16 +1495,30 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
 
                     {/* Quick Filters */}
                     <div className="mb-4">
-                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-base-content/50">Quick Filters</label>
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider" style={fadedText}>
+                            {t('notes.list.filter_modal.quick_label')}
+                        </label>
                         <div className="flex flex-wrap gap-1">
-                            <button type="button" onClick={() => handleQuickFilter('uncategorized')} className={`btn btn-sm rounded-lg ${quickFilter === 'uncategorized' ? 'btn-warning' : 'btn-ghost'}`}>
-                                <i className="fa-solid fa-inbox text-xs" /> Uncategorized
+                            <button
+                                type="button"
+                                onClick={() => handleQuickFilter('uncategorized')}
+                                className={`alex-notes-quick-chip alex-notes-quick-chip--warning ${quickFilter === 'uncategorized' ? 'alex-notes-quick-chip--active' : ''}`}
+                            >
+                                <i className="fa-solid fa-inbox text-xs" /> {t('notes.list.quick.uncategorized')}
                             </button>
-                            <button type="button" onClick={() => handleQuickFilter('pending_routing')} className={`btn btn-sm rounded-lg ${quickFilter === 'pending_routing' ? 'btn-info' : 'btn-ghost'}`}>
-                                <i className="fa-solid fa-route text-xs" /> Pending
+                            <button
+                                type="button"
+                                onClick={() => handleQuickFilter('pending_routing')}
+                                className={`alex-notes-quick-chip alex-notes-quick-chip--info ${quickFilter === 'pending_routing' ? 'alex-notes-quick-chip--active' : ''}`}
+                            >
+                                <i className="fa-solid fa-route text-xs" /> {t('notes.list.quick.pending')}
                             </button>
-                            <button type="button" onClick={() => handleQuickFilter('pinned')} className={`btn btn-sm rounded-lg ${quickFilter === 'pinned' ? 'btn-primary' : 'btn-ghost'}`}>
-                                <i className="fa-solid fa-thumbtack text-xs" /> Pinned
+                            <button
+                                type="button"
+                                onClick={() => handleQuickFilter('pinned')}
+                                className={`alex-notes-quick-chip ${quickFilter === 'pinned' ? 'alex-notes-quick-chip--active' : ''}`}
+                            >
+                                <i className="fa-solid fa-thumbtack text-xs" /> {t('notes.list.quick.pinned')}
                             </button>
                         </div>
                     </div>
@@ -1361,48 +1526,52 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                     {/* Author + Notebook — each opens a dedicated
                         searchable picker modal (same pattern as Tags),
                         so long lists stay usable and selected entries
-                        show as chips at the top of the picker. The
-                        trigger summarizes the current selection so the
-                        user can see the state without opening it. */}
+                        show as chips at the top of the picker. */}
                     <div className="mb-4 grid grid-cols-2 gap-3">
                         <div>
-                            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-base-content/50">Author</label>
+                            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider" style={fadedText}>
+                                {t('notes.list.filter_modal.author_label')}
+                            </label>
                             <button
                                 type="button"
                                 onClick={() => setShowAuthorPicker(true)}
-                                className="flex w-full items-center justify-between gap-2 rounded-xl border border-base-content/15 bg-base-100 px-3 py-2 text-left text-sm hover:border-primary/40 hover:bg-base-200/50"
+                                className="alex-notes-facet-trigger flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm"
+                                style={{ borderRadius: 'var(--theme-radius-input)' }}
                             >
                                 <span className="flex min-w-0 items-center gap-2">
-                                    <i className="fa-solid fa-user text-[11px] text-base-content/40" />
+                                    <i className="fa-solid fa-user text-[11px]" style={subtleText} />
                                     <span className="truncate">
                                         {creatorIds.length === 0
-                                            ? 'All Authors'
+                                            ? t('notes.list.filter_modal.all_authors')
                                             : creatorIds.length === 1
-                                                ? (creators.find((c) => c.id === creatorIds[0])?.name ?? '1 selected')
-                                                : `${creatorIds.length} selected`}
+                                                ? (creators.find((c) => c.id === creatorIds[0])?.name ?? t('notes.list.filter_modal.one_selected'))
+                                                : t('notes.list.filter_modal.n_selected').replace(':count', String(creatorIds.length))}
                                     </span>
                                 </span>
-                                <i className="fa-solid fa-chevron-right text-[10px] text-base-content/30" />
+                                <i className="fa-solid fa-chevron-right text-[10px]" style={microText} />
                             </button>
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-base-content/50">Notebook</label>
+                            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider" style={fadedText}>
+                                {t('notes.list.filter_modal.notebook_label')}
+                            </label>
                             <button
                                 type="button"
                                 onClick={() => setShowNotebookPicker(true)}
-                                className="flex w-full items-center justify-between gap-2 rounded-xl border border-base-content/15 bg-base-100 px-3 py-2 text-left text-sm hover:border-primary/40 hover:bg-base-200/50"
+                                className="alex-notes-facet-trigger flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm"
+                                style={{ borderRadius: 'var(--theme-radius-input)' }}
                             >
                                 <span className="flex min-w-0 items-center gap-2">
-                                    <i className="fa-solid fa-book text-[11px] text-base-content/40" />
+                                    <i className="fa-solid fa-book text-[11px]" style={subtleText} />
                                     <span className="truncate">
                                         {notebookFilters.length === 0
-                                            ? 'All Notebooks'
+                                            ? t('notes.list.filter_modal.all_notebooks')
                                             : notebookFilters.length === 1
-                                                ? (notebooks.find((n) => n.id === notebookFilters[0])?.title ?? '1 selected')
-                                                : `${notebookFilters.length} selected`}
+                                                ? (notebooks.find((n) => n.id === notebookFilters[0])?.title ?? t('notes.list.filter_modal.one_selected'))
+                                                : t('notes.list.filter_modal.n_selected').replace(':count', String(notebookFilters.length))}
                                     </span>
                                 </span>
-                                <i className="fa-solid fa-chevron-right text-[10px] text-base-content/30" />
+                                <i className="fa-solid fa-chevron-right text-[10px]" style={microText} />
                             </button>
                         </div>
                     </div>
@@ -1418,9 +1587,10 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                 setNotebookFilters([]);
                                 setPage(1);
                             }}
-                            className="btn btn-ghost btn-sm w-full rounded-lg text-error"
+                            className="alex-notes-bulk-btn flex w-full items-center justify-center gap-1.5 py-2"
+                            style={{ color: 'var(--theme-status-error-stroke)' }}
                         >
-                            <i className="fa-solid fa-xmark text-xs" /> Clear All Filters
+                            <i className="fa-solid fa-xmark text-xs" /> {t('notes.list.filter_modal.clear_all')}
                         </button>
                     )}
                 </div>

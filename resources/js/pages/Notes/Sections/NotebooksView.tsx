@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef, useCallback, type MouseEvent as ReactMouseEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import NotebookFormModal, { type NotebookFormData } from '@alexandria/components/notes/modals/NotebookFormModal';
 import LinkEntriesModal from '@alexandria/components/notes/modals/LinkEntriesModal';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 
 // Threshold at which the filter input becomes useful — below this the
 // grid is scannable without one.
@@ -37,7 +38,11 @@ interface NotebooksViewProps {
     onSelectNotebook: (notebookId: number, title: string) => void;
 }
 
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
+
 export default function NotebooksView({ projectId, refetchNonce, onSelectNotebook }: NotebooksViewProps) {
+    const t = useT();
     const [notebooks, setNotebooks] = useState<NotebookItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [formOpen, setFormOpen] = useState(false);
@@ -101,7 +106,8 @@ export default function NotebooksView({ projectId, refetchNonce, onSelectNoteboo
     }
 
     async function handleDelete(nb: NotebookItem): Promise<void> {
-        if (!confirm(`Delete "${nb.title}"? Notes in it will not be deleted.`)) return;
+        const message = t('notes.notebooks.delete_confirm').replace(':title', nb.title);
+        if (!confirm(message)) return;
         const prev = notebooks;
         // Optimistic remove.
         setNotebooks((p) => p.filter((n) => n.id !== nb.id));
@@ -112,7 +118,7 @@ export default function NotebooksView({ projectId, refetchNonce, onSelectNoteboo
         }).catch(() => null);
         if (!res || !res.ok) {
             setNotebooks(prev);
-            alert('Failed to delete notebook.');
+            alert(t('notes.notebooks.delete_failed'));
         }
     }
 
@@ -206,7 +212,11 @@ export default function NotebooksView({ projectId, refetchNonce, onSelectNoteboo
     if (loading) {
         return (
             <div className="flex items-center justify-center py-16">
-                <span className="loading loading-spinner loading-md text-primary" />
+                <i
+                    className="fa-solid fa-circle-notch fa-spin text-2xl"
+                    style={{ color: 'var(--theme-brand-primary-500)' }}
+                    aria-hidden="true"
+                />
             </div>
         );
     }
@@ -228,6 +238,12 @@ export default function NotebooksView({ projectId, refetchNonce, onSelectNoteboo
     const pinned = visible.filter((n) => n.is_pinned);
     const unpinned = visible.filter((n) => !n.is_pinned);
 
+    const countLabel = notebooks.length === 1
+        ? t('notes.notebooks.singular')
+        : t('notes.notebooks.plural');
+
+    const sectionHeaderStyle: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+
     return (
         <div className="space-y-6">
             {/* Header row — count on the left, optional search on the
@@ -235,40 +251,81 @@ export default function NotebooksView({ projectId, refetchNonce, onSelectNoteboo
                 button so it's reachable from any tab. */}
             <div className="flex flex-wrap items-baseline justify-between gap-3">
                 <div className="flex items-center gap-2">
-                    <h2 className="font-serif text-2xl font-bold tracking-tight">Notebooks</h2>
+                    <h2 className="font-serif text-2xl font-bold tracking-tight">
+                        {t('notes.notebooks.heading')}
+                    </h2>
                     {notebooks.length > 0 && (
-                        <span className="badge badge-ghost badge-sm">
-                            {notebooks.length} {notebooks.length === 1 ? 'notebook' : 'notebooks'}
+                        <span
+                            className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                            style={{
+                                background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+                                color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+                            }}
+                        >
+                            {notebooks.length} {countLabel}
                         </span>
                     )}
                 </div>
                 {notebooks.length > SEARCH_THRESHOLD && (
                     <div className="relative w-full sm:w-64">
-                        <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-base-content/30" />
+                        <i
+                            className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs"
+                            style={microText}
+                        />
                         <input
                             type="text"
                             value={filter}
                             onChange={(e) => setFilter(e.target.value)}
-                            placeholder="Filter notebooks..."
-                            className="input input-bordered input-sm w-full rounded-xl pl-9"
+                            placeholder={t('notes.notebooks.filter_placeholder')}
+                            className="w-full pl-9 pr-3 py-1.5 text-sm"
+                            style={{
+                                background: 'var(--theme-base-surface)',
+                                border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+                                borderRadius: 'var(--theme-radius-input)',
+                                color: 'var(--theme-base-content)',
+                            }}
                         />
                     </div>
                 )}
             </div>
 
             {notebooks.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-base-content/10 py-16 text-center">
-                    <i className="fa-solid fa-book mb-3 text-3xl text-base-content/10" />
-                    <p className="text-sm text-base-content/30">No notebooks yet</p>
-                    <p className="mt-1 text-xs text-base-content/20">Use "New Notebook" at the top to create your first</p>
+                <div
+                    className="py-16 text-center"
+                    style={{
+                        border: '1px dashed color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                        borderRadius: 'var(--theme-radius-card)',
+                    }}
+                >
+                    <i
+                        className="fa-solid fa-book mb-3 text-3xl"
+                        style={{ color: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)' }}
+                    />
+                    <p className="text-sm" style={microText}>
+                        {t('notes.notebooks.empty.heading')}
+                    </p>
+                    <p
+                        className="mt-1 text-xs"
+                        style={{ color: 'color-mix(in srgb, var(--theme-base-content) 22%, transparent)' }}
+                    >
+                        {t('notes.notebooks.empty.hint')}
+                    </p>
                 </div>
             ) : (
                 <>
                     {pinned.length > 0 && (
                         <section>
                             <div className="mb-2 flex items-center gap-2">
-                                <i className="fa-solid fa-thumbtack text-[10px] text-warning" />
-                                <h3 className="text-xs font-semibold uppercase tracking-wider text-base-content/50">Pinned</h3>
+                                <i
+                                    className="fa-solid fa-thumbtack text-[10px]"
+                                    style={{ color: 'var(--theme-status-warning-stroke)' }}
+                                />
+                                <h3
+                                    className="text-xs font-semibold uppercase tracking-wider"
+                                    style={sectionHeaderStyle}
+                                >
+                                    {t('notes.notebooks.section.pinned')}
+                                </h3>
                             </div>
                             <NotebookGrid
                                 notebooks={pinned}
@@ -279,13 +336,19 @@ export default function NotebooksView({ projectId, refetchNonce, onSelectNoteboo
                                 onLinkEntries={openLinkEntries}
                                 onReorder={(o, n) => void reorderBand('pinned', o, n)}
                                 reorderEnabled={!filterLower}
+                                t={t}
                             />
                         </section>
                     )}
                     {unpinned.length > 0 && (
                         <section>
                             {pinned.length > 0 && (
-                                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-base-content/50">All Notebooks</h3>
+                                <h3
+                                    className="mb-2 text-xs font-semibold uppercase tracking-wider"
+                                    style={sectionHeaderStyle}
+                                >
+                                    {t('notes.notebooks.section.all')}
+                                </h3>
                             )}
                             <NotebookGrid
                                 notebooks={unpinned}
@@ -296,12 +359,20 @@ export default function NotebooksView({ projectId, refetchNonce, onSelectNoteboo
                                 onLinkEntries={openLinkEntries}
                                 onReorder={(o, n) => void reorderBand('unpinned', o, n)}
                                 reorderEnabled={!filterLower}
+                                t={t}
                             />
                         </section>
                     )}
                     {visible.length === 0 && filterLower && (
-                        <div className="rounded-xl border border-dashed border-base-content/10 py-10 text-center text-sm text-base-content/40">
-                            No notebooks match "{filter}"
+                        <div
+                            className="py-10 text-center text-sm"
+                            style={{
+                                border: '1px dashed color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                                borderRadius: 'var(--theme-radius-card)',
+                                color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+                            }}
+                        >
+                            {t('notes.notebooks.no_match').replace(':filter', filter)}
                         </div>
                     )}
                 </>
@@ -346,9 +417,10 @@ interface NotebookGridProps {
     onReorder: (oldIdx: number, newIdx: number) => void;
     /** When false, drag-to-reorder is disabled (e.g., during filter). */
     reorderEnabled: boolean;
+    t: Translator;
 }
 
-function NotebookGrid({ notebooks, onSelect, onEdit, onPinToggle, onDelete, onLinkEntries, onReorder, reorderEnabled }: NotebookGridProps) {
+function NotebookGrid({ notebooks, onSelect, onEdit, onPinToggle, onDelete, onLinkEntries, onReorder, reorderEnabled, t }: NotebookGridProps) {
     const gridRef = useRef<HTMLDivElement>(null);
     useSortableReorder(gridRef, onReorder, reorderEnabled);
 
@@ -363,6 +435,7 @@ function NotebookGrid({ notebooks, onSelect, onEdit, onPinToggle, onDelete, onLi
                     onPinToggle={() => onPinToggle(nb)}
                     onDelete={() => onDelete(nb)}
                     onLinkEntries={() => onLinkEntries(nb)}
+                    t={t}
                 />
             ))}
         </div>
@@ -378,12 +451,17 @@ interface NotebookTileProps {
     onPinToggle: () => void;
     onDelete: () => void;
     onLinkEntries: () => void;
+    t: Translator;
 }
 
-function NotebookTile({ notebook: nb, onSelect, onEdit, onPinToggle, onDelete, onLinkEntries }: NotebookTileProps) {
+function NotebookTile({ notebook: nb, onSelect, onEdit, onPinToggle, onDelete, onLinkEntries, t }: NotebookTileProps) {
     const iconClass = nb.icon
         ? (nb.icon.includes(' ') ? nb.icon : `fa-solid ${nb.icon}`)
         : 'fa-solid fa-book';
+
+    const noteCountLabel = nb.notes_count === 1
+        ? t('notes.notebooks.note_singular')
+        : t('notes.notebooks.note_plural');
 
     return (
         <div
@@ -391,7 +469,7 @@ function NotebookTile({ notebook: nb, onSelect, onEdit, onPinToggle, onDelete, o
             tabIndex={0}
             onClick={onSelect}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } }}
-            className="group relative flex cursor-pointer flex-col rounded-xl border border-base-content/10 bg-base-100 p-5 text-left transition-all hover:border-primary/30 hover:shadow-md"
+            className="alex-notes-card alex-notes-tile group relative flex cursor-pointer flex-col p-5 text-left"
         >
             {/* Drag handle — grip icon top-left, hover-revealed so it
                 doesn't fight with the tile's visual hierarchy. Only this
@@ -401,10 +479,10 @@ function NotebookTile({ notebook: nb, onSelect, onEdit, onPinToggle, onDelete, o
             <div
                 className="drag-handle absolute left-2 top-2 cursor-grab opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
                 onClick={(e) => e.stopPropagation()}
-                aria-label="Drag to reorder"
-                title="Drag to reorder"
+                aria-label={t('notes.notebooks.tile.drag_aria')}
+                title={t('notes.notebooks.tile.drag_aria')}
             >
-                <i className="fa-solid fa-grip-vertical text-xs text-base-content/30" />
+                <i className="fa-solid fa-grip-vertical text-xs" style={microText} />
             </div>
 
             {/* Overflow menu — absolute top-right so it doesn't push the
@@ -420,45 +498,70 @@ function NotebookTile({ notebook: nb, onSelect, onEdit, onPinToggle, onDelete, o
                     onPinToggle={onPinToggle}
                     onDelete={onDelete}
                     onLinkEntries={onLinkEntries}
+                    t={t}
                 />
             </div>
 
             {/* Header */}
             <div className="flex items-start gap-3">
                 <div
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg"
-                    style={{ backgroundColor: nb.color ? `${nb.color}20` : undefined }}
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center"
+                    style={{
+                        backgroundColor: nb.color ? `${nb.color}20` : 'color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+                        borderRadius: 'var(--theme-radius-button)',
+                    }}
                 >
                     <i className={`${iconClass} text-lg`} style={{ color: nb.color ?? undefined }} />
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 pr-6">
-                        <h3 className="truncate text-sm font-semibold group-hover:text-primary">{nb.title}</h3>
-                        {nb.is_pinned && <i className="fa-solid fa-thumbtack text-[10px] text-warning" />}
+                        <h3 className="alex-notes-tile-title truncate text-sm font-semibold">{nb.title}</h3>
+                        {nb.is_pinned && (
+                            <i
+                                className="fa-solid fa-thumbtack text-[10px]"
+                                style={{ color: 'var(--theme-status-warning-stroke)' }}
+                            />
+                        )}
                     </div>
                     {nb.description && (
-                        <p className="mt-0.5 line-clamp-2 text-xs text-base-content/50">{nb.description}</p>
+                        <p className="mt-0.5 line-clamp-2 text-xs" style={fadedText}>{nb.description}</p>
                     )}
                 </div>
             </div>
 
             {/* Stats */}
             <div className="mt-3 flex items-center gap-2">
-                <span className="badge badge-ghost badge-sm gap-1">
+                <span
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                    style={{
+                        background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+                        color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+                    }}
+                >
                     <i className="fa-solid fa-note-sticky text-[9px]" />
-                    {nb.notes_count} {nb.notes_count === 1 ? 'note' : 'notes'}
+                    {nb.notes_count} {noteCountLabel}
                 </span>
             </div>
 
             {/* Linked entries */}
             {nb.linked_entries && nb.linked_entries.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5 border-t border-base-content/5 pt-3">
+                <div
+                    className="mt-3 flex flex-wrap gap-1.5 pt-3"
+                    style={{ borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)' }}
+                >
                     {nb.linked_entries.map((entry) => {
                         const entryIcon = entry.blueprint_icon
                             ? (entry.blueprint_icon.includes(' ') ? entry.blueprint_icon : `fa-solid ${entry.blueprint_icon}`)
                             : 'fa-solid fa-cube';
                         return (
-                            <span key={entry.id} className="badge badge-xs gap-1 border-0 bg-base-content/10 text-base-content/70">
+                            <span
+                                key={entry.id}
+                                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px]"
+                                style={{
+                                    background: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                                    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+                                }}
+                            >
                                 <i className={`${entryIcon} text-[8px]`} />
                                 {entry.name}
                             </span>
@@ -478,9 +581,10 @@ interface TileMenuProps {
     onPinToggle: () => void;
     onDelete: () => void;
     onLinkEntries: () => void;
+    t: Translator;
 }
 
-function TileMenu({ isPinned, onEdit, onPinToggle, onDelete, onLinkEntries }: TileMenuProps) {
+function TileMenu({ isPinned, onEdit, onPinToggle, onDelete, onLinkEntries, t }: TileMenuProps) {
     const [open, setOpen] = useState(false);
     const [pos, setPos] = useState({ top: 0, left: 0 });
     const btnRef = useRef<HTMLButtonElement | null>(null);
@@ -505,10 +609,10 @@ function TileMenu({ isPinned, onEdit, onPinToggle, onDelete, onLinkEntries }: Ti
     }
 
     const items: Array<{ label: string; icon: string; danger?: boolean; onClick: () => void }> = [
-        { label: 'Edit', icon: 'fa-solid fa-pen', onClick: onEdit },
-        { label: isPinned ? 'Unpin' : 'Pin', icon: 'fa-solid fa-thumbtack', onClick: onPinToggle },
-        { label: 'Link Entries', icon: 'fa-solid fa-link', onClick: onLinkEntries },
-        { label: 'Delete', icon: 'fa-solid fa-trash', danger: true, onClick: onDelete },
+        { label: t('notes.notebooks.tile.menu.edit'), icon: 'fa-solid fa-pen', onClick: onEdit },
+        { label: isPinned ? t('notes.notebooks.tile.menu.unpin') : t('notes.notebooks.tile.menu.pin'), icon: 'fa-solid fa-thumbtack', onClick: onPinToggle },
+        { label: t('notes.notebooks.tile.menu.link_entries'), icon: 'fa-solid fa-link', onClick: onLinkEntries },
+        { label: t('notes.notebooks.tile.menu.delete'), icon: 'fa-solid fa-trash', danger: true, onClick: onDelete },
     ];
 
     return (
@@ -517,15 +621,23 @@ function TileMenu({ isPinned, onEdit, onPinToggle, onDelete, onLinkEntries }: Ti
                 ref={btnRef}
                 type="button"
                 onClick={toggle}
-                aria-label="Notebook actions"
-                className="btn btn-ghost btn-xs btn-square rounded-lg bg-base-100/80 backdrop-blur-sm"
+                aria-label={t('notes.notebooks.tile.menu_aria')}
+                className="alex-notes-tile-menu-trigger backdrop-blur-sm"
             >
                 <i className="fa-solid fa-ellipsis-vertical text-xs" />
             </button>
             {open && createPortal(
                 <ul
-                    className="fixed z-[9999] w-[200px] overflow-hidden rounded-lg border border-base-content/10 bg-base-100 text-base-content shadow-lg"
-                    style={{ top: pos.top, left: pos.left }}
+                    className="fixed z-[9999] w-[200px] overflow-hidden"
+                    style={{
+                        top: pos.top,
+                        left: pos.left,
+                        background: 'var(--theme-base-surface)',
+                        border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                        borderRadius: 'var(--theme-radius-card)',
+                        color: 'var(--theme-base-content)',
+                        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
+                    }}
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -534,9 +646,12 @@ function TileMenu({ isPinned, onEdit, onPinToggle, onDelete, onLinkEntries }: Ti
                             <button
                                 type="button"
                                 onClick={() => { item.onClick(); setOpen(false); }}
-                                className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-base-200 ${
-                                    i < items.length - 1 ? 'border-b border-base-content/5' : ''
-                                } ${item.danger ? 'text-error' : ''}`}
+                                className={`alex-notes-tile-menu-row flex w-full items-center gap-3 px-4 py-2.5 text-sm ${item.danger ? 'alex-notes-tile-menu-row--danger' : ''}`}
+                                style={{
+                                    borderBottom: i < items.length - 1
+                                        ? '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)'
+                                        : 'none',
+                                }}
                             >
                                 <i className={`${item.icon} w-4 text-center text-xs`} />
                                 <span>{item.label}</span>

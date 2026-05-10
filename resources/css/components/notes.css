@@ -89,6 +89,236 @@
     transform: scaleY(1);
 }
 
+/* ── Notebook tile — title turns primary on tile hover ──────────────── */
+
+.alex-notes-tile .alex-notes-tile-title {
+    transition: color var(--theme-motion-duration-fast)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-notes-tile:hover .alex-notes-tile-title {
+    color: var(--theme-brand-primary-500);
+}
+
+/* ── Notebook tile — overflow-menu trigger + menu rows ──────────────── */
+
+.alex-notes-tile-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--theme-radius-button);
+    background: color-mix(in srgb, var(--theme-base-surface) 80%, transparent);
+    color: color-mix(in srgb, var(--theme-base-content) 70%, transparent);
+    transition:
+        background-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-tile-menu-trigger:hover {
+    background: var(--theme-base-surface);
+    color: var(--theme-base-content);
+}
+
+.alex-notes-tile-menu-row {
+    background: transparent;
+    color: inherit;
+    transition: background-color var(--theme-motion-duration-fast)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-notes-tile-menu-row:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
+}
+
+.alex-notes-tile-menu-row--danger {
+    color: var(--theme-status-error-stroke);
+}
+
+.alex-notes-tile-menu-row--danger:hover {
+    background: color-mix(in srgb, var(--theme-status-error-stroke) 10%, transparent);
+}
+
+/* ── Notes-list table — row hover + sortable header + Actions cell ──── */
+
+.alex-notes-table-row {
+    transition: background-color var(--theme-motion-duration-fast)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-notes-table-row:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 5%, transparent);
+}
+
+.alex-notes-table-header-sortable {
+    transition: color var(--theme-motion-duration-fast)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-notes-table-header-sortable:hover {
+    color: color-mix(in srgb, var(--theme-base-content) 85%, transparent);
+}
+
+/* ── Filter chips (status + quick-filter dismissable pills) ────────── */
+
+.alex-notes-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--theme-base-content) 5%, transparent);
+    color: var(--theme-base-content);
+    border: 1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent);
+    text-transform: capitalize;
+    transition:
+        background-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        border-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-filter-chip:hover {
+    background: color-mix(in srgb, var(--theme-status-error-stroke) 10%, transparent);
+    border-color: color-mix(in srgb, var(--theme-status-error-stroke) 40%, transparent);
+    color: var(--theme-status-error-stroke);
+}
+
+.alex-notes-filter-chip--brand {
+    background: color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent);
+    color: var(--theme-brand-primary-500);
+    border-color: color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent);
+}
+
+.alex-notes-filter-chip--brand:hover {
+    background: color-mix(in srgb, var(--theme-status-error-stroke) 10%, transparent);
+    border-color: color-mix(in srgb, var(--theme-status-error-stroke) 40%, transparent);
+    color: var(--theme-status-error-stroke);
+}
+
+/* ── Bulk-actions bar buttons + small icon buttons ─────────────────── */
+
+.alex-notes-bulk-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: var(--theme-radius-button);
+    background: transparent;
+    color: var(--theme-base-content);
+    transition: background-color var(--theme-motion-duration-fast)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-notes-bulk-btn:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
+}
+
+.alex-notes-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--theme-radius-button);
+    background: transparent;
+    color: color-mix(in srgb, var(--theme-base-content) 70%, transparent);
+    transition:
+        background-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-icon-btn:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
+    color: var(--theme-base-content);
+}
+
+.alex-notes-icon-btn--danger:hover {
+    color: var(--theme-status-error-stroke);
+}
+
+/* ── Filter modal quick-chip buttons (rectangular variant) ─────────── */
+
+.alex-notes-quick-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: var(--theme-radius-button);
+    background: transparent;
+    color: color-mix(in srgb, var(--theme-base-content) 80%, transparent);
+    transition:
+        background-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-quick-chip:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
+    color: var(--theme-base-content);
+}
+
+.alex-notes-quick-chip--active {
+    background: var(--theme-brand-primary-500);
+    color: var(--theme-brand-primary-content);
+}
+
+.alex-notes-quick-chip--active:hover {
+    background: var(--theme-brand-primary-500);
+    color: var(--theme-brand-primary-content);
+}
+
+.alex-notes-quick-chip--warning.alex-notes-quick-chip--active {
+    background: var(--theme-status-warning-stroke);
+    color: var(--theme-status-warning-content);
+}
+
+.alex-notes-quick-chip--warning.alex-notes-quick-chip--active:hover {
+    background: var(--theme-status-warning-stroke);
+    color: var(--theme-status-warning-content);
+}
+
+.alex-notes-quick-chip--info.alex-notes-quick-chip--active {
+    background: var(--theme-status-info-stroke);
+    color: var(--theme-status-info-content);
+}
+
+.alex-notes-quick-chip--info.alex-notes-quick-chip--active:hover {
+    background: var(--theme-status-info-stroke);
+    color: var(--theme-status-info-content);
+}
+
+/* ── Filter modal facet-trigger button (Author / Notebook pickers) ─── */
+
+.alex-notes-facet-trigger {
+    background: var(--theme-base-surface);
+    border: 1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent);
+    transition:
+        background-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard),
+        border-color var(--theme-motion-duration-fast)
+            var(--theme-motion-easing-standard);
+}
+
+.alex-notes-facet-trigger:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 5%, transparent);
+    border-color: color-mix(in srgb, var(--theme-brand-primary-500) 40%, transparent);
+}
+
 /* ── Page-level "More actions" trigger button ────────────────────────── */
 
 .alex-notes-overflow-trigger {

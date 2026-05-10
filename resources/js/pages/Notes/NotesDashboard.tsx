@@ -97,24 +97,24 @@ export default function NotesDashboard() {
                             className="paper-action"
                             onClick={() => setShowCreate(true)}
                         />
-                        {/* Secondary action — dashed outline, matches the
-                            "See how it works" CTA on the Welcome page so
-                            the two share a visual language. Visible on
-                            every tab; opens the notebook form modal
-                            which lives at this page level. */}
+                        {/* Secondary action — dashed outline, paints from
+                            --theme-brand-primary-* via .alex-btn--outline
+                            so it tracks the active preset. Visible on
+                            every tab; opens the notebook form modal at
+                            the page level. */}
                         <button
                             type="button"
                             onClick={() => setShowNotebookForm(true)}
-                            className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
-                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)' }}
+                            className="alex-btn alex-btn--outline"
+                            style={{
+                                borderRadius: 'var(--theme-radius-button)',
+                                padding: '0.375rem 0.75rem',
+                                fontSize: '0.875rem',
+                                gap: '0.375rem',
+                            }}
                         >
-                            <span
-                                className="btn-dashed px-5 py-3"
-                                style={{ borderRadius: 'var(--theme-radius-button)' }}
-                            >
-                                <i className="fa-solid fa-book-medical mr-1.5 text-xs" />
-                                {t('notes.action.new_notebook')}
-                            </span>
+                            <i className="fa-solid fa-book-medical text-xs" />
+                            {t('notes.action.new_notebook')}
                         </button>
                     </div>
                 }
