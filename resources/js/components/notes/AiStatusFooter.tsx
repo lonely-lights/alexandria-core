@@ -1,7 +1,8 @@
 /* ── AiStatusFooter ── */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 import type { Note } from '@alexandria/types/notes-dashboard';
+import useT from '@alexandria/hooks/useT';
 
 export type AiState = 'idle' | 'processing' | 'routed' | 'commands_ready' | 'completed' | 'error';
 
@@ -47,6 +48,43 @@ export function resolveAiState(note: Note): AiState {
     return 'idle';
 }
 
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+
+const containerStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const dotBase: CSSProperties = {
+    height: '0.5rem',
+    width: '0.5rem',
+    borderRadius: '9999px',
+    flexShrink: 0,
+};
+
+const primaryBtnStyle: CSSProperties = {
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.25rem 0.625rem',
+    fontSize: '0.75rem',
+    gap: '0.25rem',
+};
+
+function routedSlugStyle(active: boolean): CSSProperties {
+    if (active) {
+        return {
+            background: 'var(--theme-brand-secondary-500)',
+            color: 'var(--theme-brand-secondary-content)',
+            borderRadius: 'var(--theme-radius-badge)',
+        };
+    }
+    return {
+        background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+        color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
+        borderRadius: 'var(--theme-radius-badge)',
+    };
+}
+
 export default function AiStatusFooter({
     note,
     onCategorize,
@@ -55,6 +93,7 @@ export default function AiStatusFooter({
     onReviewCommands,
     onRetry,
 }: AiStatusFooterProps) {
+    const t = useT();
     const state = resolveAiState(note);
     const ai = note.ai_notes as Record<string, unknown> | null;
 
@@ -74,36 +113,48 @@ export default function AiStatusFooter({
         );
     };
 
+    const commandCount = typeof ai?.command_count === 'number' ? ai.command_count : 0;
+    const errorMessage = typeof ai?.last_error === 'string'
+        ? ai.last_error
+        : t('notes.ai_footer.error.fallback');
+
     return (
-        <div className="flex-shrink-0 rounded-xl border border-base-content/10 bg-base-200/80 px-4 py-2.5">
+        <div className="flex-shrink-0 px-4 py-2.5" style={containerStyle}>
             {state === 'idle' && (
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-success" />
-                        <span className="text-xs font-medium">AI Ready</span>
+                        <span style={{ ...dotBase, background: 'var(--theme-status-success-stroke)' }} />
+                        <span className="text-xs font-medium">{t('notes.ai_footer.idle.label')}</span>
                     </div>
                     <button
                         type="button"
-                        className="btn btn-primary btn-xs"
+                        className="alex-btn alex-btn--primary"
+                        style={primaryBtnStyle}
                         onClick={onCategorize}
                     >
-                        ⚡ Categorize
+                        {t('notes.ai_footer.idle.action')}
                     </button>
                 </div>
             )}
 
             {state === 'processing' && (
                 <div className="flex items-center gap-2">
-                    <span className="loading loading-spinner loading-xs text-info" />
-                    <span className="text-xs font-medium">Classifying note...</span>
-                    <span className="text-xs opacity-50">This may take a few seconds</span>
+                    <i
+                        className="fa-solid fa-circle-notch fa-spin text-xs"
+                        style={{ color: 'var(--theme-status-info-stroke)' }}
+                        aria-hidden="true"
+                    />
+                    <span className="text-xs font-medium">{t('notes.ai_footer.processing.label')}</span>
+                    <span className="text-xs opacity-50">{t('notes.ai_footer.processing.hint')}</span>
                 </div>
             )}
 
             {state === 'routed' && (
                 <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                        <span className="flex-shrink-0 text-xs text-base-content/50">Sort into:</span>
+                        <span className="flex-shrink-0 text-xs" style={fadedText}>
+                            {t('notes.ai_footer.routed.prompt')}
+                        </span>
                         <div className="flex flex-1 flex-wrap items-center gap-1.5">
                             {routedBlueprints.map((slug) => {
                                 const isSelected = selectedSlugs.includes(slug);
@@ -112,11 +163,8 @@ export default function AiStatusFooter({
                                         key={slug}
                                         type="button"
                                         onClick={() => toggleSlug(slug)}
-                                        className={`badge border-0 py-1.5 transition-colors cursor-pointer ${
-                                            isSelected
-                                                ? 'badge-secondary'
-                                                : 'badge-neutral hover:brightness-125'
-                                        }`}
+                                        className="cursor-pointer px-2 py-1 text-[11px] font-medium transition-colors"
+                                        style={routedSlugStyle(isSelected)}
                                     >
                                         {isSelected && <span className="mr-1">✓</span>}
                                         {slug.replace(/\b\w/g, (c) => c.toUpperCase())}
@@ -127,17 +175,30 @@ export default function AiStatusFooter({
                         <div className="flex flex-shrink-0 items-center gap-2">
                             <button
                                 type="button"
-                                className="btn btn-outline btn-error btn-xs"
+                                className="alex-btn alex-btn--outline"
+                                style={{
+                                    ...primaryBtnStyle,
+                                    color: 'var(--theme-status-error-stroke)',
+                                    borderColor: 'color-mix(in srgb, var(--theme-status-error-stroke) 50%, transparent)',
+                                }}
                                 onClick={onRejectRouting}
                             >
-                                Reject All
+                                {t('notes.ai_footer.routed.reject')}
                             </button>
                             <button
                                 type="button"
-                                className={`btn btn-success btn-xs ${selectedSlugs.length === 0 ? 'btn-disabled' : ''}`}
+                                className="alex-btn alex-btn--primary"
+                                style={{
+                                    ...primaryBtnStyle,
+                                    background: 'var(--theme-status-success-fill)',
+                                    color: 'var(--theme-status-success-content)',
+                                    opacity: selectedSlugs.length === 0 ? 0.5 : 1,
+                                    cursor: selectedSlugs.length === 0 ? 'not-allowed' : 'pointer',
+                                }}
                                 onClick={() => selectedSlugs.length > 0 && onApproveRouting(selectedSlugs)}
+                                disabled={selectedSlugs.length === 0}
                             >
-                                ✓ Process ({selectedSlugs.length})
+                                {t('notes.ai_footer.routed.process').replace(':count', String(selectedSlugs.length))}
                             </button>
                         </div>
                     </div>
@@ -147,18 +208,18 @@ export default function AiStatusFooter({
             {state === 'commands_ready' && (
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-warning" />
+                        <span style={{ ...dotBase, background: 'var(--theme-status-warning-stroke)' }} />
                         <span className="text-xs font-medium">
-                            {typeof ai?.command_count === 'number' ? ai.command_count : '?'}{' '}
-                            commands pending review
+                            {t('notes.ai_footer.commands_ready.label').replace(':count', String(commandCount))}
                         </span>
                     </div>
                     <button
                         type="button"
-                        className="btn btn-primary btn-xs"
+                        className="alex-btn alex-btn--primary"
+                        style={primaryBtnStyle}
                         onClick={onReviewCommands}
                     >
-                        Review Commands →
+                        {t('notes.ai_footer.commands_ready.action')}
                     </button>
                 </div>
             )}
@@ -166,15 +227,16 @@ export default function AiStatusFooter({
             {state === 'completed' && (
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-success" />
-                        <span className="text-xs font-medium">Auto-Sorted</span>
+                        <span style={{ ...dotBase, background: 'var(--theme-status-success-stroke)' }} />
+                        <span className="text-xs font-medium">{t('notes.ai_footer.completed.label')}</span>
                     </div>
                     <button
                         type="button"
-                        className="btn btn-primary btn-xs"
+                        className="alex-btn alex-btn--primary"
+                        style={primaryBtnStyle}
                         onClick={onCategorize}
                     >
-                        <i className="fa-solid fa-bolt text-[10px]" /> Sort within Blueprint
+                        <i className="fa-solid fa-bolt text-[10px]" /> {t('notes.ai_footer.completed.action')}
                     </button>
                 </div>
             )}
@@ -182,19 +244,21 @@ export default function AiStatusFooter({
             {state === 'error' && (
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-error" />
-                        <span className="text-xs font-medium text-error">
-                            {typeof ai?.last_error === 'string'
-                                ? ai.last_error
-                                : 'An error occurred'}
+                        <span style={{ ...dotBase, background: 'var(--theme-status-error-stroke)' }} />
+                        <span
+                            className="text-xs font-medium"
+                            style={{ color: 'var(--theme-status-error-stroke)' }}
+                        >
+                            {errorMessage}
                         </span>
                     </div>
                     <button
                         type="button"
-                        className="btn btn-primary btn-xs"
+                        className="alex-btn alex-btn--primary"
+                        style={primaryBtnStyle}
                         onClick={onRetry}
                     >
-                        ⚡ Retry
+                        {t('notes.ai_footer.error.action')}
                     </button>
                 </div>
             )}
