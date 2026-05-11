@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type CSSProperties, type ReactNode } from 'react';
 import { router } from '@inertiajs/react';
 import { useEnterAnimation } from '@alexandria/hooks/useEnterAnimation';
 import ProjectDetailsSection from './settings/ProjectDetailsSection';
 import MembersSection from './settings/MembersSection';
 import DangerZoneSection from './settings/DangerZoneSection';
 import ActionButton from '@alexandria/components/ui/ActionButton';
+import Modal from '@alexandria/components/ui/Modal';
+import ImageUploader from '@alexandria/components/media/ImageUploader';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 import type { ProjectDetail, ProjectSettings } from '@alexandria/types/projects';
 
 interface SettingsTabProps {
@@ -12,35 +15,191 @@ interface SettingsTabProps {
     settings: ProjectSettings;
 }
 
-const TABS = [
-    { key: 'details', label: 'Project', icon: 'fa-pen-to-square' },
-    { key: 'media', label: 'Media', icon: 'fa-image' },
-    { key: 'ai-sorting', label: 'AI Sorting', icon: 'fa-wand-magic-sparkles' },
-    { key: 'members', label: 'Members', icon: 'fa-users' },
-    { key: 'danger', label: 'Danger Zone', icon: 'fa-triangle-exclamation' },
+const TABS: { key: string; labelKey: string; icon: string }[] = [
+    { key: 'details', labelKey: 'projects.settings_tab.tab.project', icon: 'fa-pen-to-square' },
+    { key: 'media', labelKey: 'projects.settings_tab.tab.media', icon: 'fa-image' },
+    { key: 'ai-sorting', labelKey: 'projects.settings_tab.tab.ai_sorting', icon: 'fa-wand-magic-sparkles' },
+    { key: 'members', labelKey: 'projects.settings_tab.tab.members', icon: 'fa-users' },
+    { key: 'danger', labelKey: 'projects.settings_tab.tab.danger', icon: 'fa-triangle-exclamation' },
 ];
 
+/* ── Theme styles ── */
+
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
+const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+const bodyText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' };
+
+function navTabStyle(active: boolean, isDanger: boolean): CSSProperties {
+    if (active) {
+        return {
+            background: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+            color: 'var(--theme-brand-primary-500)',
+            borderRadius: 'var(--theme-radius-button)',
+            transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+        };
+    }
+    return {
+        background: 'transparent',
+        color: isDanger ? 'var(--theme-status-error-stroke)' : 'var(--theme-base-content)',
+        borderRadius: 'var(--theme-radius-button)',
+        transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+    };
+}
+
+function mobileTabStyle(active: boolean): CSSProperties {
+    if (active) {
+        return {
+            background: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+            color: 'var(--theme-brand-primary-500)',
+            borderRadius: 'var(--theme-radius-button)',
+        };
+    }
+    return {
+        background: 'color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+        color: 'var(--theme-base-content)',
+        borderRadius: 'var(--theme-radius-button)',
+    };
+}
+
+const cardStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    background: 'var(--theme-base-100)',
+    borderRadius: 'var(--theme-radius-card)',
+    padding: '1.5rem',
+};
+
+const inputStyle: CSSProperties = {
+    background: 'var(--theme-base-surface)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    color: 'var(--theme-base-content)',
+    padding: '0.5rem 0.75rem',
+    fontSize: '0.875rem',
+};
+
+const textareaStyle: CSSProperties = {
+    ...inputStyle,
+    fontFamily: 'monospace',
+    fontSize: '0.75rem',
+    lineHeight: '1.6',
+    resize: 'vertical',
+};
+
+const lockedSectionStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+    padding: '1rem',
+};
+
+const ghostBtnStyle: CSSProperties = {
+    background: 'transparent',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.875rem',
+};
+
+const primaryBtnStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.875rem',
+    gap: '0.375rem',
+};
+
+const ghostPrimaryLinkStyle: CSSProperties = {
+    background: 'transparent',
+    color: 'var(--theme-brand-primary-500)',
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.875rem',
+    gap: '0.375rem',
+};
+
+const iconBtnGhostStyle: CSSProperties = {
+    background: 'transparent',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.25rem 0.5rem',
+    fontSize: '0.75rem',
+};
+
+const promptItemStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    background: 'var(--theme-base-100)',
+    borderRadius: 'var(--theme-radius-card)',
+    padding: '1rem 1.25rem',
+};
+
+const defaultBadgeStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-badge)',
+    padding: '0.125rem 0.5rem',
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+};
+
+const dashedEmptyStyle: CSSProperties = {
+    border: '2px dashed color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const mediaCardStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    background: 'var(--theme-base-100)',
+    borderRadius: 'var(--theme-radius-card)',
+    padding: '1.25rem',
+};
+
+const dashedUploadBoxStyle: CSSProperties = {
+    border: '2px dashed color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+    transition: 'border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+};
+
+const uploaderIconWrapStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)',
+    color: 'var(--theme-brand-primary-500)',
+    borderRadius: '9999px',
+};
+
 export default function SettingsTab({ project, settings }: SettingsTabProps) {
+    const t = useT();
     const [activeTab, setActiveTab] = useState('details');
 
     return (
         <div className="flex flex-col gap-8 lg:flex-row">
             {/* Left nav */}
             <nav className="hidden w-48 flex-shrink-0 space-y-1 lg:block">
-                {TABS.map((tab) => (
-                    <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key)}
-                        className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left text-sm transition-all ${
-                            activeTab === tab.key ? 'bg-primary/10 text-primary' : 'hover:bg-base-200'
-                        }`}
-                    >
-                        <i className={`fa-solid ${tab.icon} w-4 text-center ${
-                            activeTab === tab.key ? 'text-primary' : tab.key === 'danger' ? 'text-error' : 'text-base-content/50'
-                        }`} />
-                        <span className={tab.key === 'danger' && activeTab !== tab.key ? 'text-error' : ''}>{tab.label}</span>
-                    </button>
-                ))}
+                {TABS.map((tab) => {
+                    const isDanger = tab.key === 'danger';
+                    const isActive = activeTab === tab.key;
+                    return (
+                        <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => setActiveTab(tab.key)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm"
+                            style={navTabStyle(isActive, isDanger)}
+                            aria-pressed={isActive}
+                        >
+                            <i
+                                className={`fa-solid ${tab.icon} w-4 text-center`}
+                                style={isActive
+                                    ? { color: 'var(--theme-brand-primary-500)' }
+                                    : isDanger
+                                        ? { color: 'var(--theme-status-error-stroke)' }
+                                        : labelText}
+                                aria-hidden="true"
+                            />
+                            <span>{t(tab.labelKey)}</span>
+                        </button>
+                    );
+                })}
             </nav>
 
             {/* Mobile tabs */}
@@ -48,13 +207,14 @@ export default function SettingsTab({ project, settings }: SettingsTabProps) {
                 {TABS.map((tab) => (
                     <button
                         key={tab.key}
+                        type="button"
                         onClick={() => setActiveTab(tab.key)}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm whitespace-nowrap ${
-                            activeTab === tab.key ? 'bg-primary/10 text-primary' : 'bg-base-200'
-                        }`}
+                        className="flex items-center gap-1.5 px-3 py-2 text-sm whitespace-nowrap"
+                        style={mobileTabStyle(activeTab === tab.key)}
+                        aria-pressed={activeTab === tab.key}
                     >
-                        <i className={`fa-solid ${tab.icon} text-xs`} />
-                        {tab.label}
+                        <i className={`fa-solid ${tab.icon} text-xs`} aria-hidden="true" />
+                        {t(tab.labelKey)}
                     </button>
                 ))}
             </div>
@@ -82,6 +242,12 @@ interface SortingPrompt {
     is_default: boolean;
 }
 
+/**
+ * Default AI prompt content the user sees as a starting point when
+ * creating a new sorting prompt. NOT translated — this is AI-prompt
+ * content where precise wording drives model behavior; localizing it
+ * needs a deeper redesign than swapping strings.
+ */
 const DEFAULT_INSTRUCTIONS = `You are an AI assistant for Alexandria, a worldbuilding application.
 
 Your task is to analyze a note and determine which blueprint(s) it should be categorized under.
@@ -93,7 +259,26 @@ Your task is to analyze a note and determine which blueprint(s) it should be cat
 3. Determine which blueprint(s) best match the note's content
 4. Return your analysis as structured JSON`;
 
+/**
+ * The system-appended portion shown to the user as a locked preview.
+ * Also intentionally English-only for the same AI-prompt-fidelity reason.
+ */
+const LOCKED_PREAMBLE = `## Response Format
+
+Return ONLY valid JSON in this exact format:
+{
+  "analysis": { "summary": "...", "detected_entities": [...] },
+  "categorizations": [{ "blueprint_slug": "...", "confidence": 0.95, "reasoning": "..." }]
+}
+
+## Rules
+- Confidence must be between 0.0 and 1.0
+- Only suggest blueprints that exist in the DATA CONTEXT
+- If no blueprint matches well (confidence < 0.5), return an empty categorizations array
+- A note can match multiple blueprints if it contains different entity types`;
+
 function AiSortingSection({ projectId }: { projectId: number }) {
+    const t = useT();
     const [prompts, setPrompts] = useState<SortingPrompt[]>([]);
     const [editing, setEditing] = useState<SortingPrompt | null>(null);
     const [isNew, setIsNew] = useState(false);
@@ -158,59 +343,53 @@ function AiSortingSection({ projectId }: { projectId: number }) {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-xl font-bold">AI Sorting Prompts</h2>
-                <p className="mt-1 text-sm text-base-content/50">
-                    Customize how AI categorizes your notes into blueprints. The instructions you write here replace the default preamble — the response format and rules are locked to ensure consistency.
+                <h2 className="text-xl font-bold">{t('projects.settings_tab.ai_sorting.title')}</h2>
+                <p className="mt-1 text-sm" style={labelText}>
+                    {t('projects.settings_tab.ai_sorting.subtitle')}
                 </p>
             </div>
 
             {editing ? (
                 /* Editor */
-                <div className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-6">
+                <div className="space-y-4" style={cardStyle}>
                     <div>
-                        <label className="text-xs font-semibold text-base-content/60">Prompt Name</label>
+                        <label className="text-xs font-semibold" style={bodyText}>
+                            {t('projects.settings_tab.ai_sorting.name_label')}
+                        </label>
                         <input
                             type="text"
                             value={editing.name}
                             onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-                            placeholder="e.g., Default Sorting, Character-focused, Location-heavy..."
-                            className="input input-bordered mt-1 w-full rounded-xl text-sm"
+                            placeholder={t('projects.settings_tab.ai_sorting.name_placeholder')}
+                            className="mt-1 w-full"
+                            style={inputStyle}
                         />
                     </div>
 
                     <div>
-                        <label className="text-xs font-semibold text-base-content/60">Instructions</label>
-                        <p className="mt-0.5 text-xs text-base-content/30">
-                            This is the editable preamble that guides the AI. The response format and rules are automatically appended.
+                        <label className="text-xs font-semibold" style={bodyText}>
+                            {t('projects.settings_tab.ai_sorting.instructions_label')}
+                        </label>
+                        <p className="mt-0.5 text-xs" style={microText}>
+                            {t('projects.settings_tab.ai_sorting.instructions_hint')}
                         </p>
                         <textarea
                             value={editing.instructions}
                             onChange={(e) => setEditing({ ...editing, instructions: e.target.value })}
                             rows={12}
-                            className="textarea textarea-bordered mt-2 w-full rounded-xl font-mono text-xs leading-relaxed"
+                            className="mt-2 w-full"
+                            style={textareaStyle}
                         />
                     </div>
 
                     {/* Locked section preview */}
-                    <div className="rounded-xl border border-base-content/5 bg-base-200/20 p-4">
-                        <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-base-content/30">
-                            <i className="fa-solid fa-lock text-[0.625rem]" />
-                            System-locked (appended automatically)
+                    <div style={lockedSectionStyle}>
+                        <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider" style={microText}>
+                            <i className="fa-solid fa-lock text-[0.625rem]" aria-hidden="true" />
+                            {t('projects.settings_tab.ai_sorting.locked_header')}
                         </div>
-                        <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-base-content/30">
-{`## Response Format
-
-Return ONLY valid JSON in this exact format:
-{
-  "analysis": { "summary": "...", "detected_entities": [...] },
-  "categorizations": [{ "blueprint_slug": "...", "confidence": 0.95, "reasoning": "..." }]
-}
-
-## Rules
-- Confidence must be between 0.0 and 1.0
-- Only suggest blueprints that exist in the DATA CONTEXT
-- If no blueprint matches well (confidence < 0.5), return an empty categorizations array
-- A note can match multiple blueprints if it contains different entity types`}
+                        <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed" style={microText}>
+                            {LOCKED_PREAMBLE}
                         </pre>
                     </div>
 
@@ -219,16 +398,27 @@ Return ONLY valid JSON in this exact format:
                             type="checkbox"
                             checked={editing.is_default}
                             onChange={(e) => setEditing({ ...editing, is_default: e.target.checked })}
-                            className="checkbox checkbox-primary checkbox-sm"
+                            className="alex-checkbox"
                         />
-                        <span className="text-sm text-base-content/60">Set as default sorting prompt</span>
+                        <span className="text-sm" style={bodyText}>
+                            {t('projects.settings_tab.ai_sorting.set_default_label')}
+                        </span>
                     </label>
 
                     <div className="flex items-center justify-between">
-                        <button onClick={() => setEditing(null)} className="btn btn-ghost btn-sm">Cancel</button>
+                        <button
+                            type="button"
+                            onClick={() => setEditing(null)}
+                            className="alex-btn"
+                            style={ghostBtnStyle}
+                        >
+                            {t('projects.settings_tab.ai_sorting.cancel')}
+                        </button>
                         <ActionButton
                             icon="fa-solid fa-save"
-                            label={isNew ? 'Create Prompt' : 'Save Changes'}
+                            label={isNew
+                                ? t('projects.settings_tab.ai_sorting.create_prompt')
+                                : t('projects.settings_tab.ai_sorting.save_changes')}
                             onClick={() => void save()}
                             loading={saving}
                             disabled={!editing.name.trim() || !editing.instructions.trim()}
@@ -239,39 +429,81 @@ Return ONLY valid JSON in this exact format:
                 /* List */
                 <>
                     {prompts.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-base-content/10 py-12 text-center">
-                            <i className="fa-solid fa-wand-magic-sparkles mb-3 text-3xl text-base-content/10" />
-                            <p className="text-sm text-base-content/30">No custom sorting prompts</p>
-                            <p className="mt-1 text-xs text-base-content/20">The system default will be used. Create a custom prompt to tailor AI sorting for your project.</p>
-                            <button onClick={startNew} className="btn btn-primary btn-sm mt-4">
-                                <i className="fa-solid fa-plus text-xs" /> Create Sorting Prompt
+                        <div className="py-12 text-center" style={dashedEmptyStyle}>
+                            <i
+                                className="fa-solid fa-wand-magic-sparkles mb-3 text-3xl"
+                                style={{ color: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)' }}
+                                aria-hidden="true"
+                            />
+                            <p className="text-sm" style={microText}>
+                                {t('projects.settings_tab.ai_sorting.empty.title')}
+                            </p>
+                            <p className="mt-1 text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)' }}>
+                                {t('projects.settings_tab.ai_sorting.empty.subtitle')}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={startNew}
+                                className="alex-btn mt-4 inline-flex items-center"
+                                style={primaryBtnStyle}
+                            >
+                                <i className="fa-solid fa-plus text-xs" aria-hidden="true" />
+                                {t('projects.settings_tab.ai_sorting.empty.button')}
                             </button>
                         </div>
                     ) : (
                         <div className="space-y-3">
                             {prompts.map((prompt) => (
-                                <div key={prompt.id} className="group flex items-center gap-4 rounded-2xl border border-base-300 bg-base-100 px-5 py-4">
+                                <div key={prompt.id} className="group flex items-center gap-4" style={promptItemStyle}>
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm font-semibold">{prompt.name}</span>
                                             {prompt.is_default && (
-                                                <span className="badge badge-primary badge-sm">Default</span>
+                                                <span style={defaultBadgeStyle}>
+                                                    {t('projects.settings_tab.ai_sorting.default_badge')}
+                                                </span>
                                             )}
                                         </div>
-                                        <p className="mt-1 truncate text-xs text-base-content/40">{prompt.instructions.slice(0, 120)}...</p>
+                                        <p className="mt-1 truncate text-xs" style={fadedText}>
+                                            {prompt.instructions.slice(0, 120)}...
+                                        </p>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                                        <button onClick={() => startEdit(prompt)} className="btn btn-ghost btn-xs rounded-lg" title="Edit">
-                                            <i className="fa-solid fa-pencil text-xs text-base-content/40" />
+                                        <button
+                                            type="button"
+                                            onClick={() => startEdit(prompt)}
+                                            className="alex-btn"
+                                            style={iconBtnGhostStyle}
+                                            title={t('projects.settings_tab.ai_sorting.tooltip.edit')}
+                                            aria-label={t('projects.settings_tab.ai_sorting.tooltip.edit')}
+                                        >
+                                            <i className="fa-solid fa-pencil text-xs" style={fadedText} aria-hidden="true" />
                                         </button>
-                                        <button onClick={() => void deletePrompt(prompt.id)} className="btn btn-ghost btn-xs rounded-lg" title="Delete">
-                                            <i className="fa-solid fa-trash text-xs text-error/30" />
+                                        <button
+                                            type="button"
+                                            onClick={() => void deletePrompt(prompt.id)}
+                                            className="alex-btn"
+                                            style={iconBtnGhostStyle}
+                                            title={t('projects.settings_tab.ai_sorting.tooltip.delete')}
+                                            aria-label={t('projects.settings_tab.ai_sorting.tooltip.delete')}
+                                        >
+                                            <i
+                                                className="fa-solid fa-trash text-xs"
+                                                style={{ color: 'color-mix(in srgb, var(--theme-status-error-stroke) 30%, transparent)' }}
+                                                aria-hidden="true"
+                                            />
                                         </button>
                                     </div>
                                 </div>
                             ))}
-                            <button onClick={startNew} className="btn btn-ghost btn-sm gap-1.5 text-primary">
-                                <i className="fa-solid fa-plus text-xs" /> Add Another Prompt
+                            <button
+                                type="button"
+                                onClick={startNew}
+                                className="alex-btn inline-flex items-center"
+                                style={ghostPrimaryLinkStyle}
+                            >
+                                <i className="fa-solid fa-plus text-xs" aria-hidden="true" />
+                                {t('projects.settings_tab.ai_sorting.add_another')}
                             </button>
                         </div>
                     )}
@@ -290,6 +522,7 @@ function AnimatedContent({ sectionKey, children }: { sectionKey: string; childre
 /* ── Project Media Section ── */
 
 function ProjectMediaSection({ project }: { project: ProjectDetail }) {
+    const t = useT();
     const projectId = project.id;
     const [media, setMedia] = useState<Array<{ id: number; collection: string; original_url: string; conversions: Record<string, string>; alt_text: string | null; caption: string | null }>>([]);
     const [loading, setLoading] = useState(true);
@@ -330,7 +563,7 @@ function ProjectMediaSection({ project }: { project: ProjectDetail }) {
     }
 
     async function removeMedia(mediaId: number) {
-        if (!confirm('Remove this image?')) return;
+        if (!confirm(t('projects.settings_tab.media.confirm_remove'))) return;
         const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
         await fetch(`/api/v1/projects/${projectId}/media/${mediaId}`, {
             method: 'DELETE',
@@ -343,30 +576,29 @@ function ProjectMediaSection({ project }: { project: ProjectDetail }) {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-bold">Media</h2>
-                <p className="text-sm text-base-content/50">Manage the project's page image and banner.</p>
+                <h2 className="text-lg font-bold">{t('projects.settings_tab.media.title')}</h2>
+                <p className="text-sm" style={labelText}>{t('projects.settings_tab.media.subtitle')}</p>
             </div>
 
             {loading && (
                 <div className="flex items-center justify-center py-12">
-                    <span className="loading loading-spinner loading-md" />
+                    <i className="fa-solid fa-circle-notch fa-spin text-base" style={microText} aria-hidden="true" />
                 </div>
             )}
 
             {/* Inherit downward toggle */}
-            <div className="rounded-xl border border-base-300/50 bg-base-100 p-5">
+            <div style={mediaCardStyle}>
                 <label className="flex cursor-pointer items-start gap-3">
                     <input
                         type="checkbox"
                         checked={inheritDownward}
                         onChange={(e) => void toggleInheritDownward(e.target.checked)}
-                        className="checkbox checkbox-primary checkbox-sm mt-0.5"
+                        className="alex-checkbox mt-0.5"
                     />
                     <div>
-                        <span className="text-sm font-semibold">Inherit media downward</span>
-                        <p className="mt-0.5 text-xs text-base-content/50">
-                            When on, covers and banners set at the project or blueprint level apply
-                            to everything beneath unless overridden.
+                        <span className="text-sm font-semibold">{t('projects.settings_tab.media.inherit_label')}</span>
+                        <p className="mt-0.5 text-xs" style={labelText}>
+                            {t('projects.settings_tab.media.inherit_hint')}
                         </p>
                     </div>
                 </label>
@@ -375,69 +607,63 @@ function ProjectMediaSection({ project }: { project: ProjectDetail }) {
             {!loading && (
                 <div className="grid gap-6 lg:grid-cols-2">
                     {/* Page Image */}
-                    <div className="rounded-xl border border-base-300/50 bg-base-100 p-5">
+                    <div style={mediaCardStyle}>
                         <h3 className="mb-3 text-sm font-semibold">
-                            <i className="fa-solid fa-image mr-2 text-primary/60" />
-                            Page Image
+                            <i
+                                className="fa-solid fa-image mr-2"
+                                style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)' }}
+                                aria-hidden="true"
+                            />
+                            {t('projects.settings_tab.media.page_image_heading')}
                         </h3>
                         {pageImage ? (
-                            <div className="space-y-3">
-                                <img
-                                    src={pageImage.conversions.square ?? pageImage.original_url}
-                                    alt={pageImage.alt_text ?? ''}
-                                    className="h-32 w-32 rounded-xl object-cover"
-                                />
-                                {pageImage.alt_text && (
-                                    <p className="text-xs text-base-content/40">Alt: {pageImage.alt_text}</p>
-                                )}
-                                <div className="flex gap-2">
-                                    <button onClick={() => setShowUploader('page_image')} className="btn btn-ghost btn-xs">Change</button>
-                                    <button onClick={() => void removeMedia(pageImage.id)} className="btn btn-ghost btn-xs text-error">Remove</button>
-                                </div>
-                            </div>
+                            <MediaPreview
+                                src={pageImage.conversions.square ?? pageImage.original_url}
+                                alt={pageImage.alt_text}
+                                aspectClass="h-32 w-32"
+                                onChange={() => setShowUploader('page_image')}
+                                onRemove={() => void removeMedia(pageImage.id)}
+                                t={t}
+                            />
                         ) : (
                             <button
+                                type="button"
                                 onClick={() => setShowUploader('page_image')}
-                                className="flex h-32 w-32 items-center justify-center rounded-xl border-2 border-dashed border-base-300 transition-colors hover:border-primary/30 hover:bg-base-200/20"
+                                className="flex h-32 w-32 items-center justify-center"
+                                style={dashedUploadBoxStyle}
                             >
-                                <div className="text-center">
-                                    <i className="fa-solid fa-plus text-lg text-base-content/20" />
-                                    <p className="mt-1 text-xs text-base-content/30">Upload</p>
-                                </div>
+                                <UploadPlaceholder label={t('projects.settings_tab.media.upload')} />
                             </button>
                         )}
                     </div>
 
                     {/* Banner */}
-                    <div className="rounded-xl border border-base-300/50 bg-base-100 p-5">
+                    <div style={mediaCardStyle}>
                         <h3 className="mb-3 text-sm font-semibold">
-                            <i className="fa-solid fa-panorama mr-2 text-secondary/60" />
-                            Banner
+                            <i
+                                className="fa-solid fa-panorama mr-2"
+                                style={{ color: 'color-mix(in srgb, var(--theme-brand-secondary-500) 60%, transparent)' }}
+                                aria-hidden="true"
+                            />
+                            {t('projects.settings_tab.media.banner_heading')}
                         </h3>
                         {banner ? (
-                            <div className="space-y-3">
-                                <img
-                                    src={banner.conversions.desktop ?? banner.original_url}
-                                    alt={banner.alt_text ?? ''}
-                                    className="aspect-[1920/400] w-full rounded-lg object-cover"
-                                />
-                                {banner.alt_text && (
-                                    <p className="text-xs text-base-content/40">Alt: {banner.alt_text}</p>
-                                )}
-                                <div className="flex gap-2">
-                                    <button onClick={() => setShowUploader('banner')} className="btn btn-ghost btn-xs">Change</button>
-                                    <button onClick={() => void removeMedia(banner.id)} className="btn btn-ghost btn-xs text-error">Remove</button>
-                                </div>
-                            </div>
+                            <MediaPreview
+                                src={banner.conversions.desktop ?? banner.original_url}
+                                alt={banner.alt_text}
+                                aspectClass="aspect-[1920/400] w-full"
+                                onChange={() => setShowUploader('banner')}
+                                onRemove={() => void removeMedia(banner.id)}
+                                t={t}
+                            />
                         ) : (
                             <button
+                                type="button"
                                 onClick={() => setShowUploader('banner')}
-                                className="flex aspect-[1920/400] w-full items-center justify-center rounded-lg border-2 border-dashed border-base-300 transition-colors hover:border-secondary/30 hover:bg-base-200/20"
+                                className="flex aspect-[1920/400] w-full items-center justify-center"
+                                style={dashedUploadBoxStyle}
                             >
-                                <div className="text-center">
-                                    <i className="fa-solid fa-plus text-lg text-base-content/20" />
-                                    <p className="mt-1 text-xs text-base-content/30">Upload Banner</p>
-                                </div>
+                                <UploadPlaceholder label={t('projects.settings_tab.media.upload_banner')} />
                             </button>
                         )}
                     </div>
@@ -445,10 +671,18 @@ function ProjectMediaSection({ project }: { project: ProjectDetail }) {
             )}
 
             {/* Project-wide Media Library placeholder */}
-            <div className="rounded-xl border-2 border-dashed border-base-300 py-12 text-center">
-                <i className="fa-solid fa-photo-film text-3xl text-base-content/15" />
-                <p className="mt-2 text-sm font-medium text-base-content/40">Project Media Library</p>
-                <p className="mt-1 text-xs text-base-content/30">Browse and search all images across this project — coming soon</p>
+            <div className="py-12 text-center" style={dashedEmptyStyle}>
+                <i
+                    className="fa-solid fa-photo-film text-3xl"
+                    style={{ color: 'color-mix(in srgb, var(--theme-base-content) 15%, transparent)' }}
+                    aria-hidden="true"
+                />
+                <p className="mt-2 text-sm font-medium" style={fadedText}>
+                    {t('projects.settings_tab.media.library_title')}
+                </p>
+                <p className="mt-1 text-xs" style={microText}>
+                    {t('projects.settings_tab.media.library_subtitle')}
+                </p>
             </div>
 
             {/* Uploader Modal */}
@@ -459,34 +693,93 @@ function ProjectMediaSection({ project }: { project: ProjectDetail }) {
                     collection={showUploader}
                     onUploaded={() => { setShowUploader(null); void fetchMedia(); }}
                     onClose={() => setShowUploader(null)}
+                    t={t}
                 />
             )}
         </div>
     );
 }
 
+function MediaPreview({ src, alt, aspectClass, onChange, onRemove, t }: {
+    src: string;
+    alt: string | null;
+    aspectClass: string;
+    onChange: () => void;
+    onRemove: () => void;
+    t: Translator;
+}) {
+    return (
+        <div className="space-y-3">
+            <img
+                src={src}
+                alt={alt ?? ''}
+                className={`${aspectClass} rounded-xl object-cover`}
+            />
+            {alt && (
+                <p className="text-xs" style={fadedText}>
+                    {t('projects.settings_tab.media.alt_label')} {alt}
+                </p>
+            )}
+            <div className="flex gap-2">
+                <button type="button" onClick={onChange} className="alex-btn" style={iconBtnGhostStyle}>
+                    {t('projects.settings_tab.media.change')}
+                </button>
+                <button
+                    type="button"
+                    onClick={onRemove}
+                    className="alex-btn"
+                    style={{ ...iconBtnGhostStyle, color: 'var(--theme-status-error-stroke)' }}
+                >
+                    {t('projects.settings_tab.media.remove')}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function UploadPlaceholder({ label }: { label: string }) {
+    return (
+        <div className="text-center">
+            <i
+                className="fa-solid fa-plus text-lg"
+                style={{ color: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)' }}
+                aria-hidden="true"
+            />
+            <p className="mt-1 text-xs" style={microText}>
+                {label}
+            </p>
+        </div>
+    );
+}
+
 /* ── Uploader wrapped in Modal ── */
 
-import Modal from '@alexandria/components/ui/Modal';
-import ImageUploader from '@alexandria/components/media/ImageUploader';
-
-function ImageUploaderModal({ modelType, modelId, collection, onUploaded, onClose }: {
+function ImageUploaderModal({ modelType, modelId, collection, onUploaded, onClose, t }: {
     modelType: 'projects' | 'blueprints' | 'entries';
     modelId: number;
     collection: 'page_image' | 'banner' | 'gallery';
     onUploaded: () => void;
     onClose: () => void;
+    t: Translator;
 }) {
+    const titleKey = collection === 'page_image'
+        ? 'projects.settings_tab.media.uploader.title_page_image'
+        : collection === 'banner'
+            ? 'projects.settings_tab.media.uploader.title_banner'
+            : 'projects.settings_tab.media.uploader.title_default';
+
     return (
         <Modal open={true} onClose={onClose} maxWidth="max-w-lg">
             <div className="p-5">
                 <div className="mb-4 flex items-center gap-3">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/20">
-                        <i className="fa-solid fa-cloud-arrow-up text-primary" />
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center" style={uploaderIconWrapStyle}>
+                        <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" />
                     </div>
                     <div>
-                        <h3 className="font-bold">Upload {collection === 'page_image' ? 'Page Image' : collection === 'banner' ? 'Banner' : 'Image'}</h3>
-                        <p className="text-xs text-base-content/40">JPEG, PNG, or WebP</p>
+                        <h3 className="font-bold">{t(titleKey)}</h3>
+                        <p className="text-xs" style={fadedText}>
+                            {t('projects.settings_tab.media.uploader.file_type_hint')}
+                        </p>
                     </div>
                 </div>
                 <ImageUploader
