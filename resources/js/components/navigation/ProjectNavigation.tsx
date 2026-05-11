@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { useEffect, useState, type ReactNode } from 'react';
+import useT from '@alexandria/hooks/useT';
 import type { ProjectSummary } from '../../types/models';
 
 /**
@@ -49,6 +50,7 @@ export default function ProjectNavigation({
     blueprints: SidebarBlueprint[];
     isRouteProject: boolean;
 }) {
+    const t = useT();
     const [switcherOpen, setSwitcherOpen] = useState(false);
     const [aiOpen, setAiOpen] = useState(false);
 
@@ -57,7 +59,7 @@ export default function ProjectNavigation({
             <SidebarRow
                 href="/dashboard"
                 icon="fa-solid fa-house"
-                label="Dashboard"
+                label={t('nav.dashboard')}
             />
 
             {!isRouteProject && (
@@ -95,22 +97,22 @@ export default function ProjectNavigation({
                 );
             })}
 
-            <SectionDivider>AI &amp; Notes</SectionDivider>
+            <SectionDivider>{t('nav.section.ai_notes')}</SectionDivider>
 
             <SidebarRow
                 href={`/notes/${project.slug}`}
                 icon="fa-solid fa-note-sticky"
-                label="Notes"
+                label={t('nav.notes')}
             />
             <SidebarRow
                 href={`/notes/${project.slug}#notebooks`}
                 icon="fa-solid fa-book"
-                label="Notebooks"
+                label={t('nav.notebooks')}
             />
 
             <SidebarRow
                 icon="fa-solid fa-brain"
-                label="AI Hub"
+                label={t('nav.ai_hub')}
                 onClick={() => setAiOpen(!aiOpen)}
                 trailing={
                     <i
@@ -130,48 +132,48 @@ export default function ProjectNavigation({
                         href={`/ai/${project.slug}/queue`}
                         icon="fa-solid fa-route"
                         iconColor="var(--theme-status-warning-fill)"
-                        label="Note Queue"
+                        label={t('nav.note_queue')}
                         size="sm"
                     />
                     <SidebarRow
                         href={`/ai/${project.slug}/batches`}
                         icon="fa-solid fa-terminal"
                         iconColor="var(--theme-brand-secondary-500)"
-                        label="Commands"
+                        label={t('nav.commands')}
                         size="sm"
                     />
                     <SidebarRow
                         href={`/ai/${project.slug}/models`}
                         icon="fa-solid fa-microchip"
                         iconColor="var(--theme-status-info-fill)"
-                        label="Models"
+                        label={t('nav.models')}
                         size="sm"
                     />
                 </div>
             )}
 
-            <SectionDivider>Tools</SectionDivider>
+            <SectionDivider>{t('nav.section.tools')}</SectionDivider>
 
             <SidebarRow
                 href={`/p/${project.slug}#archive`}
                 icon="fa-solid fa-box-archive"
-                label="Archive"
+                label={t('nav.archive')}
                 trailing={<ArchiveCount projectId={project.id} />}
             />
             <SidebarRow
                 href="#"
                 icon="fa-solid fa-list"
-                label="List Manager"
+                label={t('nav.list_manager')}
             />
             <SidebarRow
                 href="#"
                 icon="fa-solid fa-sitemap"
-                label="Structural Manager"
+                label={t('nav.structural_manager')}
             />
             <SidebarRow
                 href="#"
                 icon="fa-solid fa-people-arrows"
-                label="Relationship Manager"
+                label={t('nav.relationship_manager')}
             />
         </div>
     );
@@ -188,15 +190,16 @@ export default function ProjectNavigation({
  * so it tracks preset / mode flips.
  */
 export function NoProjectState() {
+    const t = useT();
     return (
         <div className="flex flex-col gap-1 p-1">
             <SidebarRow
                 href="/dashboard"
                 icon="fa-solid fa-house"
-                label="Dashboard"
+                label={t('nav.dashboard')}
             />
 
-            <SectionDivider>Projects</SectionDivider>
+            <SectionDivider>{t('nav.section.projects')}</SectionDivider>
 
             <div className="px-3 py-4 text-center">
                 <div
@@ -216,7 +219,7 @@ export function NoProjectState() {
                         color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
                     }}
                 >
-                    No projects yet
+                    {t('nav.no_projects')}
                 </p>
                 <Link
                     href="/dashboard"
@@ -228,7 +231,7 @@ export function NoProjectState() {
                     }}
                 >
                     <i className="fa-solid fa-plus" aria-hidden="true" />
-                    Create Project
+                    {t('nav.create_project')}
                 </Link>
             </div>
         </div>
@@ -339,6 +342,7 @@ function GoToProjectCta({
     href: string;
     projectName: string;
 }) {
+    const t = useT();
     return (
         <Link
             href={href}
@@ -354,7 +358,7 @@ function GoToProjectCta({
                 aria-hidden="true"
                 style={{ width: '1rem', textAlign: 'center' }}
             />
-            <span className="flex-1 truncate">Go to {projectName}</span>
+            <span className="flex-1 truncate">{t('nav.go_to_project').replace(':project', projectName)}</span>
         </Link>
     );
 }

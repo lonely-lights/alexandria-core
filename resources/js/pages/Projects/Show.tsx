@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type CSSProperties } from 'react';
 import { useCmdK } from '@alexandria/hooks/useCmdK';
 import gsap from 'gsap';
 import AppLayout from '@alexandria/layouts/AppLayout';
@@ -17,13 +17,95 @@ import Tooltip from '@alexandria/components/ui/Tooltip';
 import IconTile from '@alexandria/components/ui/IconTile';
 import UserLink from '@alexandria/components/ui/UserHoverCard';
 import MentionAwareContent from '@alexandria/components/ui/MentionAwareContent';
+import useT from '@alexandria/hooks/useT';
 import { classificationLabel } from '@alexandria/config/classifications';
 import type { ProjectShowProps, BlueprintCard } from '@alexandria/types/projects';
 
 type ClassificationTab = 'standard' | 'relationship' | 'list' | 'structural';
 type Tab = ClassificationTab | 'activity' | 'archive' | 'settings';
 
+/* ── Theme styles ── */
+
+const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+const bodyText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)' };
+
+const tabActiveStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const tabIdleStyle: CSSProperties = {
+    background: 'transparent',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const tabCountBadgeStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-badge)',
+    padding: '0 0.375rem',
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+};
+
+const tabActiveCountBadgeStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-brand-primary-content) 25%, transparent)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-badge)',
+    padding: '0 0.375rem',
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+};
+
+const sectionCountBadgeStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-badge)',
+    padding: '0 0.5rem',
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+};
+
+const viewToggleWrapStyle: CSSProperties = {
+    display: 'flex',
+    overflow: 'hidden',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+function viewToggleBtnStyle(active: boolean): CSSProperties {
+    if (active) {
+        return {
+            background: 'var(--theme-brand-primary-500)',
+            color: 'var(--theme-brand-primary-content)',
+            padding: '0.25rem 0.5rem',
+            border: 'none',
+            fontSize: '0.75rem',
+        };
+    }
+    return {
+        background: 'transparent',
+        color: 'var(--theme-base-content)',
+        padding: '0.25rem 0.5rem',
+        border: 'none',
+        fontSize: '0.75rem',
+    };
+}
+
+const ownerLinkStyle: CSSProperties = {
+    color: 'var(--theme-brand-primary-500)',
+    fontWeight: 700,
+};
+
+const detailsToggleStyle: CSSProperties = {
+    color: 'var(--theme-brand-primary-500)',
+    transition: 'color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+};
+
 export default function ProjectShow() {
+    const t = useT();
     const props = usePage().props as unknown as ProjectShowProps;
     const { project, stats, dashboardBlueprints, settings } = props;
     const blueprints: BlueprintCard[] = (props as unknown as { blueprints: BlueprintCard[] }).blueprints ?? [];
@@ -100,58 +182,69 @@ export default function ProjectShow() {
 
     // 3-dot menu items
     const menuItems = [
-        { label: 'Activity', icon: 'fa-solid fa-clock-rotate-left', onClick: () => setActiveTab('activity') },
-        { label: 'AI Batches', icon: 'fa-solid fa-brain', href: `/p/${project.slug}/ai/batches` },
+        { label: t('projects.show.menu.activity'), icon: 'fa-solid fa-clock-rotate-left', onClick: () => setActiveTab('activity') },
+        { label: t('projects.show.menu.ai_batches'), icon: 'fa-solid fa-brain', href: `/p/${project.slug}/ai/batches` },
         ...(project.can.update ? [
             { divider: true as const },
-            { label: 'Archive', icon: 'fa-solid fa-box-archive', badge: stats.archived_count > 0 ? stats.archived_count : undefined, onClick: () => setActiveTab('archive') },
-            { label: 'Settings', icon: 'fa-solid fa-gear', onClick: () => setActiveTab('settings') },
+            { label: t('projects.show.menu.archive'), icon: 'fa-solid fa-box-archive', badge: stats.archived_count > 0 ? stats.archived_count : undefined, onClick: () => setActiveTab('archive') },
+            { label: t('projects.show.menu.settings'), icon: 'fa-solid fa-gear', onClick: () => setActiveTab('settings') },
         ] : []),
     ];
+
+    function TabButton({ tab, icon, label, count }: { tab: Tab; icon: string; label: string; count?: number }) {
+        const active = activeTab === tab;
+        return (
+            <button
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className="alex-btn inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium"
+                style={active ? tabActiveStyle : tabIdleStyle}
+                aria-pressed={active}
+            >
+                <i className={`${icon} text-xs`} aria-hidden="true" />
+                {label}
+                {count !== undefined && count > 0 && (
+                    <span style={active ? tabActiveCountBadgeStyle : tabCountBadgeStyle}>{count}</span>
+                )}
+            </button>
+        );
+    }
 
     return (
         <AppLayout title={project.name} immersive onSearchToggle={() => setSearchOpen(true)}>
             <PageHeader
-                breadcrumbs={[
-                    { label: project.name },
-                ]}
+                breadcrumbs={[{ label: project.name }]}
                 tabs={
                     <>
-                        <button
-                            onClick={() => setActiveTab('standard')}
-                            className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'standard' ? 'btn-primary' : 'btn-ghost'}`}
-                        >
-                            <i className="fa-solid fa-file text-xs" /> {classificationLabel('standard')}
-                            {(classificationCounts.standard ?? 0) > 0 && (
-                                <span className="badge badge-sm">{classificationCounts.standard}</span>
-                            )}
-                        </button>
+                        <TabButton
+                            tab="standard"
+                            icon="fa-solid fa-file"
+                            label={classificationLabel('standard')}
+                            count={classificationCounts.standard ?? 0}
+                        />
                         {(classificationCounts.relationship ?? 0) > 0 && (
-                            <button
-                                onClick={() => setActiveTab('relationship')}
-                                className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'relationship' ? 'btn-primary' : 'btn-ghost'}`}
-                            >
-                                <i className="fa-solid fa-diagram-project text-xs" /> Relationships
-                                <span className="badge badge-sm">{classificationCounts.relationship}</span>
-                            </button>
+                            <TabButton
+                                tab="relationship"
+                                icon="fa-solid fa-diagram-project"
+                                label={t('projects.show.tab.relationships')}
+                                count={classificationCounts.relationship}
+                            />
                         )}
                         {(classificationCounts.list ?? 0) > 0 && (
-                            <button
-                                onClick={() => setActiveTab('list')}
-                                className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'list' ? 'btn-primary' : 'btn-ghost'}`}
-                            >
-                                <i className="fa-solid fa-list text-xs" /> Lists
-                                <span className="badge badge-sm">{classificationCounts.list}</span>
-                            </button>
+                            <TabButton
+                                tab="list"
+                                icon="fa-solid fa-list"
+                                label={t('projects.show.tab.lists')}
+                                count={classificationCounts.list}
+                            />
                         )}
                         {(classificationCounts.structural ?? 0) > 0 && (
-                            <button
-                                onClick={() => setActiveTab('structural')}
-                                className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'structural' ? 'btn-primary' : 'btn-ghost'}`}
-                            >
-                                <i className="fa-solid fa-sitemap text-xs" /> Structures
-                                <span className="badge badge-sm">{classificationCounts.structural}</span>
-                            </button>
+                            <TabButton
+                                tab="structural"
+                                icon="fa-solid fa-sitemap"
+                                label={t('projects.show.tab.structures')}
+                                count={classificationCounts.structural}
+                            />
                         )}
                         <DropdownMenu items={menuItems} />
                     </>
@@ -169,8 +262,16 @@ export default function ProjectShow() {
                     )}
                     <div>
                         <h1 className="font-serif text-3xl md:text-4xl font-bold leading-tight tracking-tight">{project.name}</h1>
-                        <p className="mt-1 text-sm text-base-content/50">
-                            By: <UserLink userId={project.owner.id} href={`/u/${project.owner.username.toLowerCase()}`} className="font-bold text-primary hover:underline">{project.owner.display_name ?? project.owner.name}</UserLink>
+                        <p className="mt-1 text-sm" style={labelText}>
+                            {t('projects.show.owned_by')}{' '}
+                            <UserLink
+                                userId={project.owner.id}
+                                href={`/u/${project.owner.username.toLowerCase()}`}
+                                className="hover:underline"
+                                style={ownerLinkStyle}
+                            >
+                                {project.owner.display_name ?? project.owner.name}
+                            </UserLink>
                         </p>
                     </div>
                 </div>
@@ -178,17 +279,18 @@ export default function ProjectShow() {
                 {project.summary_html && (
                     <MentionAwareContent
                         html={project.summary_html}
-                        className="prose prose-sm mt-4 max-w-none text-base-content/70"
+                        className="prose prose-sm mt-4 max-w-none"
+                        style={bodyText}
                     />
                 )}
                 {project.logline && (
-                    <p className="mt-2 text-xs italic text-base-content/50">
+                    <p className="mt-2 text-xs italic" style={labelText}>
                         {project.logline}
                     </p>
                 )}
 
                 {project.contents_html && (
-                    <ExpandableContents html={project.contents_html} />
+                    <ExpandableContents html={project.contents_html} t={t} />
                 )}
             </PageHeader>
 
@@ -200,36 +302,42 @@ export default function ProjectShow() {
                 {isClassificationTab && (
                     <div>
                         <div className="mb-6 flex items-center justify-between">
-                            <h2 className="flex items-center gap-2 text-sm font-semibold text-base-content/50">
-                                {classificationLabel(activeTab)} Blueprints
-                                <span className="badge badge-primary badge-sm">{allFilteredBlueprints.length}</span>
+                            <h2 className="flex items-center gap-2 text-sm font-semibold" style={labelText}>
+                                {t('projects.show.blueprints_heading').replace(':classification', classificationLabel(activeTab))}
+                                <span style={sectionCountBadgeStyle}>{allFilteredBlueprints.length}</span>
                             </h2>
                             <div className="flex items-center gap-2">
                                 {/* View toggle */}
-                                <div className="flex overflow-hidden rounded-lg border border-base-300">
-                                    <Tooltip content="Expanded view">
+                                <div style={viewToggleWrapStyle}>
+                                    <Tooltip content={t('projects.show.view_toggle.expanded')}>
                                         <button
                                             type="button"
                                             onClick={() => viewModes[activeTab as ClassificationTab] !== 'expanded' && toggleViewMode(activeTab as ClassificationTab)}
-                                            className={`btn btn-xs rounded-none border-0 gap-1 ${viewModes[activeTab as ClassificationTab] === 'expanded' ? 'btn-primary' : 'btn-ghost'}`}
+                                            className="alex-btn inline-flex items-center gap-1"
+                                            style={viewToggleBtnStyle(viewModes[activeTab as ClassificationTab] === 'expanded')}
+                                            aria-pressed={viewModes[activeTab as ClassificationTab] === 'expanded'}
+                                            aria-label={t('projects.show.view_toggle.expanded')}
                                         >
-                                            <i className="fa-solid fa-grid-2 text-[10px]" />
+                                            <i className="fa-solid fa-grid-2 text-[10px]" aria-hidden="true" />
                                         </button>
                                     </Tooltip>
-                                    <Tooltip content="List view">
+                                    <Tooltip content={t('projects.show.view_toggle.list')}>
                                         <button
                                             type="button"
                                             onClick={() => viewModes[activeTab as ClassificationTab] !== 'list' && toggleViewMode(activeTab as ClassificationTab)}
-                                            className={`btn btn-xs rounded-none border-0 gap-1 ${viewModes[activeTab as ClassificationTab] === 'list' ? 'btn-primary' : 'btn-ghost'}`}
+                                            className="alex-btn inline-flex items-center gap-1"
+                                            style={viewToggleBtnStyle(viewModes[activeTab as ClassificationTab] === 'list')}
+                                            aria-pressed={viewModes[activeTab as ClassificationTab] === 'list'}
+                                            aria-label={t('projects.show.view_toggle.list')}
                                         >
-                                            <i className="fa-solid fa-list text-[10px]" />
+                                            <i className="fa-solid fa-list text-[10px]" aria-hidden="true" />
                                         </button>
                                     </Tooltip>
                                 </div>
                                 {project.can.update && (
                                     <ActionButton
                                         icon="fa-solid fa-plus"
-                                        label="New Blueprint"
+                                        label={t('projects.show.new_blueprint')}
                                         href={`/p/${project.slug}/blueprints/create`}
                                     />
                                 )}
@@ -270,7 +378,7 @@ export default function ProjectShow() {
 }
 
 /* ── Expandable Contents ── */
-function ExpandableContents({ html }: { html: string }) {
+function ExpandableContents({ html, t }: { html: string; t: ReturnType<typeof useT> }) {
     const [expanded, setExpanded] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -301,16 +409,21 @@ function ExpandableContents({ html }: { html: string }) {
             <button
                 type="button"
                 onClick={toggle}
-                className="flex items-center gap-2 text-xs font-medium text-primary transition-colors hover:text-primary/80"
+                className="flex items-center gap-2 text-xs font-medium"
+                style={detailsToggleStyle}
             >
-                <i className={`fa-solid fa-chevron-right text-[10px] transition-transform duration-300 ${expanded ? 'rotate-90' : ''}`} />
-                {expanded ? 'Hide Details' : 'Show Details'}
+                <i
+                    className={`fa-solid fa-chevron-right text-[10px] transition-transform duration-300 ${expanded ? 'rotate-90' : ''}`}
+                    aria-hidden="true"
+                />
+                {expanded ? t('projects.show.hide_details') : t('projects.show.show_details')}
             </button>
             <div ref={wrapperRef} className="overflow-hidden" style={{ height: 0 }}>
                 <div ref={contentRef}>
                     <MentionAwareContent
                         html={html}
-                        className="prose prose-sm mt-3 max-w-none text-base-content/70"
+                        className="prose prose-sm mt-3 max-w-none"
+                        style={bodyText}
                     />
                 </div>
             </div>

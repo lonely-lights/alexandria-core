@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import gsap from 'gsap';
 import AvatarWithRing, { type RingSettings } from '@alexandria/components/ui/AvatarWithRing';
@@ -29,9 +29,10 @@ interface UserLinkProps {
     href?: string;
     children: ReactNode;
     className?: string;
+    style?: CSSProperties;
 }
 
-export default function UserLink({ userId, href, children, className }: UserLinkProps) {
+export default function UserLink({ userId, href, children, className, style }: UserLinkProps) {
     const { showCard, triggerRect, triggerRef, handleMouseEnter, scheduleClose, cancelClose } = useHoverCard();
 
     return (
@@ -40,6 +41,7 @@ export default function UserLink({ userId, href, children, className }: UserLink
                 ref={triggerRef}
                 href={href}
                 className={className}
+                style={style}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={scheduleClose}
             >
