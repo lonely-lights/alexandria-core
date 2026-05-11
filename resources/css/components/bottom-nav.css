@@ -124,13 +124,29 @@ nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
 }
 
 /* Navbar avatar trigger — hover lifts via the same soft base tint as
- * the dropdown rows so the trigger and the menu feel related. */
-.alex-user-trigger:hover {
-    background: color-mix(
-        in srgb,
-        var(--theme-base-content) 10%,
-        transparent
-    );
+ * the dropdown rows so the trigger and the menu feel related. Inset
+ * box-shadows draw 1px left + right barriers at a slightly stronger
+ * tint (20% vs the bg's 10%) so the column reads as contained without
+ * pulling a full border. box-shadow doesn't take up layout space (unlike
+ * `border`) so there's zero width shift when the hover kicks in.
+ *
+ * Gated to the `sm` breakpoint and up — on mobile the trigger is just
+ * the avatar (the text + chevron are hidden) and a column-wide hover
+ * highlight reads as out of place against the compact avatar tap target.
+ * Match the same 640px breakpoint Tailwind uses for `sm:`. */
+@media (min-width: 640px) {
+    .alex-user-trigger:hover {
+        background: color-mix(
+            in srgb,
+            var(--theme-base-content) 10%,
+            transparent
+        );
+        box-shadow:
+            inset 1px 0 0
+                color-mix(in srgb, var(--theme-base-content) 20%, transparent),
+            inset -1px 0 0
+                color-mix(in srgb, var(--theme-base-content) 20%, transparent);
+    }
 }
 
 /* Navbar icon buttons (notes, search, hamburger, sidebar close, etc.) —

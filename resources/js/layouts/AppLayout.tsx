@@ -30,7 +30,7 @@ interface FabAction {
 
 /**
  * Default mobile bottom-nav tab set. Five-slot layout: Dashboard +
- * Projects + Notes + Profile + Settings. Profile lands on `/profile`
+ * Search + Notes + Profile + Settings. Profile lands on `/profile`
  * (identity-themed); Settings lands on `/settings` (clinical). Both
  * routes resolve to the same `<SettingsBody>` for now — visual
  * specialisation between them lands in a later step.
@@ -38,6 +38,14 @@ interface FabAction {
  * Notes routes to the current project's notes dashboard when there's
  * a `currentProject` shared prop; otherwise falls back to `/dashboard`
  * so the user can pick a project first.
+ *
+ * Search is an action-only tab (href: '#') that dispatches the same
+ * `alexandria-core:command-palette-toggle` event as the navbar's
+ * search button. On mobile the navbar drops its search button (no
+ * room next to the avatar), so this slot becomes the only entry
+ * point to the palette. A Projects tab used to live here but it
+ * pointed at /dashboard — same destination as the Dashboard slot
+ * next to it, so the slot was redundant.
  */
 function buildDefaultBottomNavTabs(
     currentProjectSlug: string | undefined,
@@ -54,10 +62,16 @@ function buildDefaultBottomNavTabs(
             icon: 'fa-solid fa-house',
         },
         {
-            id: 'projects',
-            label: 'Projects',
-            href: '/dashboard',
-            icon: 'fa-solid fa-folder-tree',
+            id: 'search',
+            label: 'Search',
+            href: '#',
+            icon: 'fa-solid fa-magnifying-glass',
+            onClick: (event) => {
+                event.preventDefault();
+                window.dispatchEvent(
+                    new CustomEvent('alexandria-core:command-palette-toggle'),
+                );
+            },
         },
         {
             id: 'notes',

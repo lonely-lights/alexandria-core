@@ -212,6 +212,16 @@ export default function Navbar({
                 // guarantees content area = full 72px so the user
                 // trigger's 72px box fills the navbar exactly.
                 height: '72px',
+                // DaisyUI's `.navbar` class ships `min-height: 4rem`
+                // (or higher in some configs). When that min-height
+                // exceeds our `height: 72px`, CSS takes the larger of
+                // the two — the nav renders ~80px tall while the user
+                // trigger button stays 72px, leaving an 8px strip of
+                // navbar bg below the button's hover highlight. Pin
+                // min-height inline (highest specificity) so the nav
+                // is exactly 72px and the hover fills edge-to-edge.
+                minHeight: '72px',
+                maxHeight: '72px',
                 paddingTop: 0,
                 paddingBottom: 0,
                 // base-chrome is the elevated-chrome surface (preset- and
@@ -260,7 +270,9 @@ export default function Navbar({
                 <div className="flex flex-1 items-center justify-end gap-3">
                     {user ? (
                         <>
-                            {/* Search Button */}
+                            {/* Search Button — hidden on mobile because
+                                the bottom-nav surfaces a Search tab in
+                                its place (same dispatch behavior). */}
                             {showSearch && (
                                 <Tooltip
                                     content={`Search (${typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac') ? '⌘' : 'Ctrl+'}K)`}
@@ -268,7 +280,7 @@ export default function Navbar({
                                 >
                                     <button
                                         onClick={handleSearchClick}
-                                        className="alex-nav-icon-btn alex-nav-icon-btn--brand flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
+                                        className="alex-nav-icon-btn alex-nav-icon-btn--brand hidden h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors sm:flex"
                                         style={{
                                             background:
                                                 'color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)',
@@ -301,28 +313,39 @@ export default function Navbar({
 
                             {extraActions}
 
-                            {/* User Button + Dropdown */}
-                            <div className="relative min-w-0" ref={dropdownRef}>
+                            {/* User Button + Dropdown
+                                Wrapper is pinned to 72px (= navbar height) so
+                                the button beneath can fill 100% and its hover
+                                BG covers the navbar edge-to-edge. Going via an
+                                explicit wrapper height (rather than putting
+                                72px on the button directly) bypasses a quirk
+                                where the avatar's 80px overflow content can
+                                push the button's effective rendered height
+                                past 72px even with `height: 72px` set, leaving
+                                an ~8px strip of bare navbar bg below the
+                                hover highlight. */}
+                            <div
+                                className="relative min-w-0"
+                                ref={dropdownRef}
+                                style={{ height: '72px', display: 'flex' }}
+                            >
                                 <button
                                     onClick={() => setDropdownOpen(!dropdownOpen)}
                                     className="alex-user-trigger inline-flex min-w-0 max-w-full items-center gap-3 px-3 text-base font-medium transition-all duration-300 focus:outline-none"
                                     style={{
                                         color: 'var(--theme-base-content)',
-                                        borderRadius: 'var(--theme-radius-button)',
-                                        // Hard-cap button height at the navbar's
-                                        // 72px. Without this cap the avatar's
-                                        // ring (size + ringThickness*2 = 80px)
-                                        // sets the flex line height to 80,
-                                        // making the button (and its hover bg)
-                                        // overflow the navbar by 8px below.
-                                        // With explicit 72, the button's BOX
-                                        // matches the navbar, the avatar
-                                        // overflows the button visually via
-                                        // its natural 80px content + the
-                                        // wrapper's translateY transform —
-                                        // neither affects the box, so the
-                                        // hover bg stays inside navbar bounds.
-                                        height: '72px',
+                                        // Hover highlight runs edge-to-edge in
+                                        // the navbar — no rounded corners — so
+                                        // the affordance reads as a full nav
+                                        // column rather than a contained
+                                        // button.
+                                        borderRadius: 0,
+                                        // Fill the wrapper exactly (which is
+                                        // hard-pinned at 72px above). Going
+                                        // through the wrapper means we ignore
+                                        // any auto-sizing the button might do
+                                        // based on its 80px avatar content.
+                                        height: '100%',
                                         // Nudge the content (avatar + text)
                                         // down a few px from items-center's
                                         // pure mathematical center — visually
@@ -385,7 +408,7 @@ export default function Navbar({
                                             style={{
                                                 display: 'inline-block',
                                                 transform: scrolled
-                                                    ? 'translateY(0) scale(0.75)'
+                                                    ? 'translateY(-0.125rem) scale(0.75)'
                                                     : 'translateY(0.625rem) scale(1)',
                                                 transformOrigin: '0 0',
                                                 transition:
@@ -403,7 +426,30 @@ export default function Navbar({
                                             />
                                         </span>
                                     </span>
-                                    <span className="flex min-w-0 flex-col items-start leading-none">
+                                    {/* Text + chevron drop HALF the avatar's
+                                        translateY (0.3125rem vs the avatar's
+                                        0.625rem) when unscrolled. The full
+                                        offset reads as too low relative to
+                                        the navbar; zero offset reads as too
+                                        high relative to the dropped avatar.
+                                        Half-drop sits visually between the
+                                        navbar's center and the avatar's
+                                        hanging position. */}
+                                    {/* Text + chevron hidden on mobile —
+                                        avatar alone is enough affordance for
+                                        the user trigger on small viewports
+                                        and saves horizontal space for the
+                                        action buttons to the left. */}
+                                    <span
+                                        className="hidden min-w-0 flex-col items-start leading-none sm:flex"
+                                        style={{
+                                            transform: scrolled
+                                                ? 'translateY(0)'
+                                                : 'translateY(0.125rem)',
+                                            transition:
+                                                'transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
+                                        }}
+                                    >
                                         <span className="truncate max-w-[180px]">
                                             {user.display_name ?? user.name ?? 'User'}
                                         </span>
@@ -419,9 +465,14 @@ export default function Navbar({
                                         )}
                                     </span>
                                     <svg
-                                        className="h-5 w-5 flex-shrink-0"
+                                        className="hidden h-5 w-5 flex-shrink-0 sm:block"
                                         style={{
                                             color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+                                            transform: scrolled
+                                                ? 'translateY(0)'
+                                                : 'translateY(0.125rem)',
+                                            transition:
+                                                'transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
                                         }}
                                         xmlns="http://www.w3.org/2000/svg"
                                         fill="none"
@@ -437,9 +488,19 @@ export default function Navbar({
                                     </svg>
                                 </button>
 
-                                {/* Dropdown Menu */}
+                                {/* Dropdown Menu — offset varies by scroll
+                                    state because the avatar hangs ~14px below
+                                    the navbar when unscrolled (translateY +
+                                    80px outer in a 72px button) and only the
+                                    larger gap clears the ring's visual bottom.
+                                    When scrolled, the avatar shrinks + sits
+                                    inside the navbar, so the menu can hug
+                                    the navbar's bottom edge. */}
                                 {dropdownOpen && (
-                                    <div className="absolute right-0 top-full z-50 mt-2 w-56">
+                                    <div
+                                        className="absolute right-0 top-full z-50 w-56"
+                                        style={{ marginTop: scrolled ? '0.5rem' : '1.25rem' }}
+                                    >
                                         <div
                                             className="alex-user-menu mt-1 rounded-md p-1 shadow-md"
                                             style={{
