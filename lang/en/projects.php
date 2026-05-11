@@ -47,4 +47,29 @@ return [
     'danger_zone.modal.cancel' => 'Cancel',
     'danger_zone.modal.deleting' => 'Deleting…',
     'danger_zone.modal.submit' => 'Delete Project',
+
+    // ── DashboardTab + BlueprintTable (blueprint grid/list views) ───
+    'dashboard_tab.empty.title' => 'No :classification blueprints',
+    'dashboard_tab.empty.subtitle' => 'Create a blueprint to get started.',
+    'dashboard_tab.table.column.blueprint' => 'Blueprint',
+    'dashboard_tab.table.column.entries' => 'Entries',
+    'dashboard_tab.table.column.last_update' => 'Last Update',
+    'dashboard_tab.table.column.open_aria' => 'Open',
+    'dashboard_tab.table.dashboard_badge' => 'Dashboard',
+    'dashboard_tab.table.dash' => '—',
+
+    // ── BlueprintStatCard (expanded dashboard card) ─────────────────
+    'blueprint_card.count.entry.singular' => 'entry',
+    'blueprint_card.count.entry.plural' => 'entries',
+    'blueprint_card.count.relationship.singular' => 'relationship',
+    'blueprint_card.count.relationship.plural' => 'relationships',
+    'blueprint_card.relationship.source' => 'Source',
+    'blueprint_card.relationship.target' => 'Target',
+    'blueprint_card.relationship.empty' => 'No relationships yet',
+    'blueprint_card.relationship.deleted' => 'Deleted',
+    'blueprint_card.entries.empty' => 'No entries yet',
+    'blueprint_card.view_all' => 'View all',
+
+    // ── RecentActivityFeed (used inside dashboard surfaces) ─────────
+    'activity_feed.empty' => 'No recent activity',
 ];

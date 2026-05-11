@@ -1,7 +1,8 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, type CSSProperties } from 'react';
 import { router } from '@inertiajs/react';
 import gsap from 'gsap';
 import BlueprintStatCard from '@alexandria/components/projects/BlueprintStatCard';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 import { classificationLabel } from '@alexandria/config/classifications';
 import type { DashboardBlueprintCard, BlueprintCard } from '@alexandria/types/projects';
 
@@ -12,7 +13,76 @@ interface DashboardTabProps {
     viewMode?: 'expanded' | 'list';
 }
 
+/* ── Theme styles ── */
+
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
+const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+
+const emptyCardOuterStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const emptyCardInnerStyle: CSSProperties = {
+    background: 'var(--theme-base-100)',
+    borderRadius: 'inherit',
+};
+
+const emptyIconBubbleStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: '9999px',
+};
+
+const tableCardOuterStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const tableInnerStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+    borderRadius: 'inherit',
+    boxShadow: '0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+};
+
+const tableHeaderCellStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    fontWeight: 600,
+};
+
+const rowDividerStyle: CSSProperties = {
+    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+};
+
+const rowIconBubbleStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+    color: 'var(--theme-brand-primary-500)',
+    borderRadius: 'var(--theme-radius-input)',
+};
+
+const dashboardBadgeStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+    borderRadius: 'var(--theme-radius-badge)',
+    padding: '0.0625rem 0.375rem',
+    fontSize: '0.625rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+};
+
+const entriesBadgeStyle: CSSProperties = {
+    background: 'var(--theme-brand-secondary-500)',
+    color: 'var(--theme-brand-secondary-content)',
+    borderRadius: 'var(--theme-radius-badge)',
+    padding: '0.125rem 0.5rem',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    display: 'inline-block',
+};
+
 export default function DashboardTab({ dashboardBlueprints, allBlueprints = [], classification = 'standard', viewMode = 'expanded' }: DashboardTabProps) {
+    const t = useT();
     const containerRef = useRef<HTMLDivElement>(null);
     const prevViewMode = useRef(viewMode);
 
@@ -33,14 +103,16 @@ export default function DashboardTab({ dashboardBlueprints, allBlueprints = [], 
 
     if (dashboardBlueprints.length === 0 && otherBlueprints.length === 0) {
         return (
-            <div className="paper-board rounded-2xl border border-base-300/50">
-                <div className="bg-base-100 py-12 text-center" style={{ borderRadius: 'inherit' }}>
-                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-base-300">
-                        <i className="fa-solid fa-cube text-2xl text-base-content/30" />
+            <div className="paper-board" style={emptyCardOuterStyle}>
+                <div className="py-12 text-center" style={emptyCardInnerStyle}>
+                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center" style={emptyIconBubbleStyle}>
+                        <i className="fa-solid fa-cube text-2xl" style={microText} aria-hidden="true" />
                     </div>
-                    <h3 className="text-lg font-medium">No {classificationLabel(classification).toLowerCase()} blueprints</h3>
-                    <p className="mt-1 text-sm text-base-content/50">
-                        Create a blueprint to get started.
+                    <h3 className="text-lg font-medium">
+                        {t('projects.dashboard_tab.empty.title').replace(':classification', classificationLabel(classification).toLowerCase())}
+                    </h3>
+                    <p className="mt-1 text-sm" style={labelText}>
+                        {t('projects.dashboard_tab.empty.subtitle')}
                     </p>
                 </div>
             </div>
@@ -51,7 +123,7 @@ export default function DashboardTab({ dashboardBlueprints, allBlueprints = [], 
     if (viewMode === 'list') {
         return (
             <div ref={containerRef}>
-                <BlueprintTable blueprints={allBlueprints} dashboardBlueprints={dashboardBlueprints} />
+                <BlueprintTable blueprints={allBlueprints} dashboardBlueprints={dashboardBlueprints} t={t} />
             </div>
         );
     }
@@ -75,7 +147,7 @@ export default function DashboardTab({ dashboardBlueprints, allBlueprints = [], 
 
             {otherBlueprints.length > 0 && (
                 <div className={dashboardBlueprints.length > 0 ? 'mt-4' : ''}>
-                    <BlueprintTable blueprints={otherBlueprints} dashboardBlueprints={dashboardBlueprints} />
+                    <BlueprintTable blueprints={otherBlueprints} dashboardBlueprints={dashboardBlueprints} t={t} />
                 </div>
             )}
         </div>
@@ -85,14 +157,15 @@ export default function DashboardTab({ dashboardBlueprints, allBlueprints = [], 
 /* ── Blueprint Stats Table ──
    Rows are clickable (navigates to the blueprint). Uses .paper-table so
    tf themes get the warm-paper zebra + yellow header; other themes fall
-   through to DaisyUI's default table styles. */
+   through to default table styles. */
 
 interface BlueprintTableProps {
     blueprints: BlueprintCard[];
     dashboardBlueprints: DashboardBlueprintCard[];
+    t: Translator;
 }
 
-function BlueprintTable({ blueprints, dashboardBlueprints }: BlueprintTableProps) {
+function BlueprintTable({ blueprints, dashboardBlueprints, t }: BlueprintTableProps) {
     // Build id → latest recent entry updated_at lookup once so rows can
     // surface a "last updated" column without refetching per row.
     const recentByBp = new Map<number, string>();
@@ -104,24 +177,36 @@ function BlueprintTable({ blueprints, dashboardBlueprints }: BlueprintTableProps
     }
 
     return (
-        <div className="paper-board rounded-2xl border border-base-300/50">
-            <div className="overflow-x-auto bg-base-200 shadow-sm" style={{ borderRadius: 'inherit' }}>
-                {/* Fixed widths on the secondary columns so Blueprint (name
-                    + Dashboard pill) gets the remaining horizontal room,
-                    with a firm min-width to keep the name from collapsing
-                    on narrow viewports. */}
+        <div className="paper-board" style={tableCardOuterStyle}>
+            <div className="overflow-x-auto" style={tableInnerStyle}>
                 <table className="paper-table w-full [&_td]:px-4 [&_td]:py-2.5 [&_th]:px-4 [&_th]:py-3">
                     <thead>
                         <tr className="text-xs tracking-wider [&_th]:normal-case">
-                            <th className="bg-primary font-semibold text-primary-content text-left min-w-[18rem] first:rounded-tl-2xl">Blueprint</th>
-                            <th className="bg-primary font-semibold text-primary-content text-center w-24">Entries</th>
-                            <th className="bg-primary font-semibold text-primary-content text-left w-40">Last Update</th>
-                            <th className="bg-primary font-semibold text-primary-content w-8 last:rounded-tr-2xl" aria-label="Open" />
+                            <th className="text-left min-w-[18rem] first:rounded-tl-2xl" style={tableHeaderCellStyle}>
+                                {t('projects.dashboard_tab.table.column.blueprint')}
+                            </th>
+                            <th className="text-center w-24" style={tableHeaderCellStyle}>
+                                {t('projects.dashboard_tab.table.column.entries')}
+                            </th>
+                            <th className="text-left w-40" style={tableHeaderCellStyle}>
+                                {t('projects.dashboard_tab.table.column.last_update')}
+                            </th>
+                            <th
+                                className="w-8 last:rounded-tr-2xl"
+                                style={tableHeaderCellStyle}
+                                aria-label={t('projects.dashboard_tab.table.column.open_aria')}
+                            />
                         </tr>
                     </thead>
                     <tbody>
-                        {blueprints.map((bp) => (
-                            <BlueprintRow key={bp.id} bp={bp} lastUpdate={recentByBp.get(bp.id) ?? null} />
+                        {blueprints.map((bp, i) => (
+                            <BlueprintRow
+                                key={bp.id}
+                                bp={bp}
+                                lastUpdate={recentByBp.get(bp.id) ?? null}
+                                isFirst={i === 0}
+                                t={t}
+                            />
                         ))}
                     </tbody>
                 </table>
@@ -130,25 +215,26 @@ function BlueprintTable({ blueprints, dashboardBlueprints }: BlueprintTableProps
     );
 }
 
-function BlueprintRow({ bp, lastUpdate }: { bp: BlueprintCard; lastUpdate: string | null }) {
+function BlueprintRow({ bp, lastUpdate, isFirst, t }: { bp: BlueprintCard; lastUpdate: string | null; isFirst: boolean; t: Translator }) {
     const iconClass = bp.icon ? (bp.icon.includes(' ') ? bp.icon : `fa-solid ${bp.icon}`) : 'fa-solid fa-cube';
     return (
         <tr
             onClick={() => router.visit(bp.url)}
             className="group cursor-pointer"
+            style={isFirst ? undefined : rowDividerStyle}
         >
             <td>
                 <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                        <i className={`${iconClass} text-sm text-primary`} />
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center" style={rowIconBubbleStyle}>
+                        <i className={`${iconClass} text-sm`} aria-hidden="true" />
                     </div>
                     <div className="min-w-0">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{bp.name}</span>
                             {bp.show_on_dashboard && (
-                                <span className="badge badge-ghost badge-xs text-[10px]">
-                                    <i className="fa-solid fa-star mr-1 text-[8px]" />
-                                    Dashboard
+                                <span style={dashboardBadgeStyle}>
+                                    <i className="fa-solid fa-star mr-1 text-[8px]" aria-hidden="true" />
+                                    {t('projects.dashboard_tab.table.dashboard_badge')}
                                 </span>
                             )}
                         </div>
@@ -156,13 +242,17 @@ function BlueprintRow({ bp, lastUpdate }: { bp: BlueprintCard; lastUpdate: strin
                 </div>
             </td>
             <td className="text-center">
-                <span className="badge badge-secondary badge-sm tabular-nums">{bp.entries_count.toLocaleString()}</span>
+                <span className="tabular-nums" style={entriesBadgeStyle}>{bp.entries_count.toLocaleString()}</span>
             </td>
-            <td className="text-xs text-base-content/40">
-                {lastUpdate ?? <span className="italic text-base-content/30">—</span>}
+            <td className="text-xs" style={fadedText}>
+                {lastUpdate ?? <span className="italic" style={microText}>{t('projects.dashboard_tab.table.dash')}</span>}
             </td>
             <td className="w-8 text-right">
-                <i className="fa-solid fa-chevron-right text-xs text-base-content/30 transition-transform group-hover:translate-x-0.5" />
+                <i
+                    className="fa-solid fa-chevron-right text-xs transition-transform group-hover:translate-x-0.5"
+                    style={microText}
+                    aria-hidden="true"
+                />
             </td>
         </tr>
     );
