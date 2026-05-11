@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type CSSProperties, type ReactNode } from 'react';
 import UserLink from '@alexandria/components/ui/UserHoverCard';
 import Pagination from '@alexandria/components/ui/Pagination';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 
 interface ActivityItem {
     id: number;
@@ -54,6 +55,111 @@ interface ActivityTabProps {
     projectId: number;
 }
 
+/* ── Theme styles ── */
+
+const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
+const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
+const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+const bodyText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' };
+
+const inputStyle: CSSProperties = {
+    background: 'var(--theme-base-surface)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    color: 'var(--theme-base-content)',
+    padding: '0.375rem 0.625rem',
+    fontSize: '0.875rem',
+};
+
+const selectStyle: CSSProperties = {
+    ...inputStyle,
+    paddingRight: '2rem',
+};
+
+const clearBtnStyle: CSSProperties = {
+    background: 'transparent',
+    color: 'var(--theme-status-error-stroke)',
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.875rem',
+};
+
+const tableCardOuterStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const tableInnerStyle: CSSProperties = {
+    background: 'var(--theme-base-100)',
+    borderRadius: 'inherit',
+    boxShadow: '0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+};
+
+const emptyIconBubbleStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: '9999px',
+};
+
+const tableHeaderCellStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    fontWeight: 600,
+};
+
+const subjectIconBubbleStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+};
+
+const rowBorderDashed: CSSProperties = {
+    borderBottom: '1px dashed color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+};
+
+const causerLinkStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+    transition: 'color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+};
+
+const EVENT_BADGE: Record<string, CSSProperties> = {
+    created: {
+        background: 'var(--theme-status-success-fill)',
+        color: 'var(--theme-status-success-content)',
+        borderRadius: 'var(--theme-radius-badge)',
+    },
+    updated: {
+        background: 'var(--theme-status-info-fill)',
+        color: 'var(--theme-status-info-content)',
+        borderRadius: 'var(--theme-radius-badge)',
+    },
+    deleted: {
+        background: 'var(--theme-status-error-fill)',
+        color: 'var(--theme-status-error-content)',
+        borderRadius: 'var(--theme-radius-badge)',
+    },
+};
+
+const NEUTRAL_EVENT_BADGE: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-badge)',
+};
+
+function eventBadgeStyle(event: string): CSSProperties {
+    return EVENT_BADGE[event] ?? NEUTRAL_EVENT_BADGE;
+}
+
+/**
+ * Resolve a human-readable event label, falling back to title-cased
+ * slug when no translation key exists. Lets unknown server events stay
+ * legible without us needing to enumerate every one in lang files.
+ */
+function eventLabel(t: Translator, event: string): string {
+    const key = `projects.activity_tab.event.${event}`;
+    const lookup = t(key, '');
+    if (lookup) return lookup;
+    return event.charAt(0).toUpperCase() + event.slice(1);
+}
+
 function csrfHeaders(): Record<string, string> {
     return {
         'Accept': 'application/json',
@@ -62,6 +168,7 @@ function csrfHeaders(): Record<string, string> {
 }
 
 export default function ActivityTab({ projectId }: ActivityTabProps) {
+    const t = useT();
     const [items, setItems] = useState<ActivityItem[]>([]);
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [filters, setFilters] = useState<Filters | null>(null);
@@ -144,106 +251,118 @@ export default function ActivityTab({ projectId }: ActivityTabProps) {
         <div className="space-y-4">
             {/* Filters */}
             <div className="flex flex-wrap items-end justify-end gap-3">
-                    <div className="form-control min-w-[120px]">
-                        <label className="label py-0.5"><span className="label-text text-xs">Type</span></label>
-                        <select value={subjectType} onChange={(e) => applyFilter(setSubjectType, e.target.value)} className="select select-bordered select-sm rounded-lg">
-                            <option value="">All</option>
-                            <option value="entry">Entries</option>
-                            <option value="blueprint">Blueprints</option>
-                        </select>
-                    </div>
+                <FilterField label={t('projects.activity_tab.filter.type')} minWidth="120px">
+                    <select value={subjectType} onChange={(e) => applyFilter(setSubjectType, e.target.value)} style={selectStyle}>
+                        <option value="">{t('projects.activity_tab.filter.type_all')}</option>
+                        <option value="entry">{t('projects.activity_tab.filter.type_entry')}</option>
+                        <option value="blueprint">{t('projects.activity_tab.filter.type_blueprint')}</option>
+                    </select>
+                </FilterField>
 
-                    <div className="form-control min-w-[140px]">
-                        <label className="label py-0.5"><span className="label-text text-xs">Blueprint</span></label>
-                        <select value={blueprintId} onChange={(e) => applyFilter(setBlueprintId, e.target.value)} className="select select-bordered select-sm rounded-lg">
-                            <option value="">All</option>
-                            {filters?.blueprints.map((bp) => (
-                                <option key={bp.id} value={bp.id}>{bp.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                <FilterField label={t('projects.activity_tab.filter.blueprint')} minWidth="140px">
+                    <select value={blueprintId} onChange={(e) => applyFilter(setBlueprintId, e.target.value)} style={selectStyle}>
+                        <option value="">{t('projects.activity_tab.filter.all')}</option>
+                        {filters?.blueprints.map((bp) => (
+                            <option key={bp.id} value={bp.id}>{bp.name}</option>
+                        ))}
+                    </select>
+                </FilterField>
 
-                    <div className="form-control min-w-[120px]">
-                        <label className="label py-0.5"><span className="label-text text-xs">Event</span></label>
-                        <select value={event} onChange={(e) => applyFilter(setEvent, e.target.value)} className="select select-bordered select-sm rounded-lg">
-                            <option value="">All</option>
-                            {filters && Object.entries(filters.events).map(([key, label]) => (
-                                <option key={key} value={key}>{label}</option>
-                            ))}
-                        </select>
-                    </div>
+                <FilterField label={t('projects.activity_tab.filter.event')} minWidth="120px">
+                    <select value={event} onChange={(e) => applyFilter(setEvent, e.target.value)} style={selectStyle}>
+                        <option value="">{t('projects.activity_tab.filter.all')}</option>
+                        {filters && Object.entries(filters.events).map(([key]) => (
+                            <option key={key} value={key}>{eventLabel(t, key)}</option>
+                        ))}
+                    </select>
+                </FilterField>
 
-                    <div className="form-control min-w-[140px]">
-                        <label className="label py-0.5"><span className="label-text text-xs">User</span></label>
-                        <select value={userId} onChange={(e) => applyFilter(setUserId, e.target.value)} className="select select-bordered select-sm rounded-lg">
-                            <option value="">All</option>
-                            {filters?.members.map((m) => (
-                                <option key={m.id} value={m.id}>{m.display_name ?? m.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                <FilterField label={t('projects.activity_tab.filter.user')} minWidth="140px">
+                    <select value={userId} onChange={(e) => applyFilter(setUserId, e.target.value)} style={selectStyle}>
+                        <option value="">{t('projects.activity_tab.filter.all')}</option>
+                        {filters?.members.map((m) => (
+                            <option key={m.id} value={m.id}>{m.display_name ?? m.name}</option>
+                        ))}
+                    </select>
+                </FilterField>
 
-                    <div className="form-control">
-                        <label className="label py-0.5"><span className="label-text text-xs">From</span></label>
-                        <input type="date" value={dateFrom} onChange={(e) => applyFilter(setDateFrom, e.target.value)} className="input input-bordered input-sm rounded-lg" />
-                    </div>
-                    <div className="form-control">
-                        <label className="label py-0.5"><span className="label-text text-xs">To</span></label>
-                        <input type="date" value={dateTo} onChange={(e) => applyFilter(setDateTo, e.target.value)} className="input input-bordered input-sm rounded-lg" />
-                    </div>
+                <FilterField label={t('projects.activity_tab.filter.from')}>
+                    <input type="date" value={dateFrom} onChange={(e) => applyFilter(setDateFrom, e.target.value)} style={inputStyle} />
+                </FilterField>
+                <FilterField label={t('projects.activity_tab.filter.to')}>
+                    <input type="date" value={dateTo} onChange={(e) => applyFilter(setDateTo, e.target.value)} style={inputStyle} />
+                </FilterField>
 
-                    <div className="form-control">
-                        <label className="label py-0.5"><span className="label-text text-xs">Per page</span></label>
-                        <select value={perPage} onChange={(e) => { setPerPage(parseInt(e.target.value)); setPage(1); }} className="select select-bordered select-sm rounded-lg">
-                            <option value={15}>15</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                            <option value={100}>100</option>
-                        </select>
-                    </div>
+                <FilterField label={t('projects.activity_tab.filter.per_page')}>
+                    <select value={perPage} onChange={(e) => { setPerPage(parseInt(e.target.value)); setPage(1); }} style={selectStyle}>
+                        <option value={15}>15</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                    </select>
+                </FilterField>
 
-                    {hasActiveFilters && (
-                        <button type="button" onClick={clearFilters} className="btn btn-ghost btn-sm rounded-lg text-error">
-                            <i className="fa-solid fa-xmark mr-1" /> Clear
-                        </button>
-                    )}
+                {hasActiveFilters && (
+                    <button type="button" onClick={clearFilters} className="alex-btn inline-flex items-center" style={clearBtnStyle}>
+                        <i className="fa-solid fa-xmark mr-1" aria-hidden="true" />
+                        {t('projects.activity_tab.filter.clear')}
+                    </button>
+                )}
             </div>
 
             {/* Activity table */}
-            <div className="paper-board rounded-2xl border border-base-300/50">
-                <div className="overflow-x-auto bg-base-100 shadow-sm" style={{ borderRadius: 'inherit' }}>
-                {loading ? (
-                    <div className="flex items-center justify-center py-16">
-                        <span className="loading loading-spinner loading-md text-base-content/30" />
-                    </div>
-                ) : items.length === 0 ? (
-                    <div className="py-16 text-center">
-                        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-base-300">
-                            <i className="fa-solid fa-clock-rotate-left text-xl text-base-content/30" />
+            <div className="paper-board" style={tableCardOuterStyle}>
+                <div className="overflow-x-auto" style={tableInnerStyle}>
+                    {loading ? (
+                        <div className="flex items-center justify-center py-16">
+                            <i
+                                className="fa-solid fa-circle-notch fa-spin text-lg"
+                                style={microText}
+                                aria-hidden="true"
+                            />
                         </div>
-                        <p className="font-medium text-base-content/50">No activity found</p>
-                        {hasActiveFilters && (
-                            <p className="mt-1 text-sm text-base-content/40">Try adjusting your filters.</p>
-                        )}
-                    </div>
-                ) : (
-                    <table className="table w-full">
-                        <thead>
-                            <tr className="text-xs tracking-wider [&_th]:normal-case">
-                                <th className="bg-primary font-semibold text-primary-content first:rounded-tl-2xl">Subject</th>
-                                <th className="bg-primary font-semibold text-primary-content">Event</th>
-                                <th className="bg-primary font-semibold text-primary-content">Description</th>
-                                <th className="bg-primary font-semibold text-primary-content">User</th>
-                                <th className="bg-primary font-semibold text-primary-content text-right last:rounded-tr-2xl">When</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {items.map((item, i) => (
-                                <ActivityRow key={item.id} item={item} isLast={i === items.length - 1} />
-                            ))}
-                        </tbody>
-                    </table>
-                )}
+                    ) : items.length === 0 ? (
+                        <div className="py-16 text-center">
+                            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center" style={emptyIconBubbleStyle}>
+                                <i className="fa-solid fa-clock-rotate-left text-xl" style={microText} aria-hidden="true" />
+                            </div>
+                            <p className="font-medium" style={labelText}>
+                                {t('projects.activity_tab.empty.title')}
+                            </p>
+                            {hasActiveFilters && (
+                                <p className="mt-1 text-sm" style={fadedText}>
+                                    {t('projects.activity_tab.empty.subtitle')}
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        <table className="w-full">
+                            <thead>
+                                <tr className="text-xs tracking-wider [&_th]:normal-case [&_th]:px-4 [&_th]:py-3">
+                                    <th className="first:rounded-tl-2xl text-left" style={tableHeaderCellStyle}>
+                                        {t('projects.activity_tab.column.subject')}
+                                    </th>
+                                    <th className="text-left" style={tableHeaderCellStyle}>
+                                        {t('projects.activity_tab.column.event')}
+                                    </th>
+                                    <th className="text-left" style={tableHeaderCellStyle}>
+                                        {t('projects.activity_tab.column.description')}
+                                    </th>
+                                    <th className="text-left" style={tableHeaderCellStyle}>
+                                        {t('projects.activity_tab.column.user')}
+                                    </th>
+                                    <th className="text-right last:rounded-tr-2xl" style={tableHeaderCellStyle}>
+                                        {t('projects.activity_tab.column.when')}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {items.map((item, i) => (
+                                    <ActivityRow key={item.id} item={item} isLast={i === items.length - 1} t={t} />
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
 
@@ -262,66 +381,81 @@ export default function ActivityTab({ projectId }: ActivityTabProps) {
     );
 }
 
+/* ── FilterField ── label + control wrapper; replaces DaisyUI form-control */
+
+function FilterField({ label, minWidth, children }: { label: string; minWidth?: string; children: ReactNode }) {
+    return (
+        <div className="flex flex-col" style={minWidth ? { minWidth } : undefined}>
+            <label className="mb-0.5 text-xs" style={labelText}>{label}</label>
+            {children}
+        </div>
+    );
+}
+
 /* ── Activity Row ── */
 
-function ActivityRow({ item, isLast }: { item: ActivityItem; isLast: boolean }) {
+function ActivityRow({ item, isLast, t }: { item: ActivityItem; isLast: boolean; t: Translator }) {
     const subjectIcon = getSubjectIcon(item);
-
-    const eventColor = {
-        created: 'badge-success',
-        updated: 'badge-info',
-        deleted: 'badge-error',
-    }[item.event] ?? 'badge-ghost';
-
-    const borderClass = isLast ? 'border-b-0' : 'border-b border-dashed border-base-content/8';
+    const tdBorder = isLast ? undefined : rowBorderDashed;
+    const baseTdStyle: CSSProperties = { padding: '0.625rem 1rem' };
 
     return (
-        <tr className="transition-colors hover:bg-base-200/30">
+        <tr>
             {/* Subject */}
-            <td className={borderClass}>
+            <td style={{ ...baseTdStyle, ...tdBorder }}>
                 <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-base-300/50">
-                        <i className={`${subjectIcon} text-xs text-base-content/50`} />
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center" style={subjectIconBubbleStyle}>
+                        <i className={`${subjectIcon} text-xs`} style={labelText} aria-hidden="true" />
                     </div>
                     <div className="min-w-0">
-                        <p className="font-medium">{item.subject?.name ?? 'Deleted'}</p>
+                        <p className="font-medium">
+                            {item.subject?.name ?? t('projects.activity_tab.subject.deleted')}
+                        </p>
                         {item.subject_type === 'entry' && item.subject?.blueprint_name && (
-                            <p className="text-xs text-base-content/40">{item.subject.blueprint_name}</p>
+                            <p className="text-xs" style={fadedText}>{item.subject.blueprint_name}</p>
                         )}
                         {item.subject_type === 'blueprint' && (
-                            <p className="text-xs text-base-content/40">Blueprint</p>
+                            <p className="text-xs" style={fadedText}>{t('projects.activity_tab.subject.blueprint_label')}</p>
                         )}
                     </div>
                 </div>
             </td>
 
             {/* Event */}
-            <td className={borderClass}>
-                <span className={`badge badge-sm font-bold ${eventColor}`}>{item.event.charAt(0).toUpperCase() + item.event.slice(1)}</span>
+            <td style={{ ...baseTdStyle, ...tdBorder }}>
+                <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold" style={eventBadgeStyle(item.event)}>
+                    {eventLabel(t, item.event)}
+                </span>
             </td>
 
             {/* Description */}
-            <td className={`text-sm text-base-content/60 ${borderClass}`}>
+            <td className="text-sm" style={{ ...baseTdStyle, ...tdBorder, ...bodyText }}>
                 {item.description}
             </td>
 
             {/* User */}
-            <td className={`text-sm ${borderClass}`}>
+            <td className="text-sm" style={{ ...baseTdStyle, ...tdBorder }}>
                 {item.causer ? (
-                    <UserLink userId={item.causer.id} href={`/u/${item.causer.name.toLowerCase()}`} className="text-base-content/60 hover:text-primary hover:underline">
+                    <UserLink
+                        userId={item.causer.id}
+                        href={`/u/${item.causer.name.toLowerCase()}`}
+                        className="hover:underline"
+                        style={causerLinkStyle}
+                    >
                         {item.causer.display_name ?? item.causer.name}
                     </UserLink>
                 ) : (
-                    <span className="italic text-base-content/30">System</span>
+                    <span className="italic" style={microText}>{t('projects.activity_tab.causer.system')}</span>
                 )}
             </td>
 
             {/* When */}
-            <td className={`text-right ${borderClass}`}>
+            <td className="text-right" style={{ ...baseTdStyle, ...tdBorder }}>
                 <time
                     dateTime={item.created_at}
                     title={new Date(item.created_at).toLocaleString()}
-                    className="text-xs text-base-content/40"
+                    className="text-xs"
+                    style={fadedText}
                 >
                     {item.created_at_human}
                 </time>
