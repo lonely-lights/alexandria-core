@@ -130,7 +130,7 @@ function titleCase(slug: string): string {
 }
 
 const STAT_ACCENT: Record<string, string> = {
-    warning: 'var(--theme-status-warning-stroke)',
+    warning: 'var(--theme-brand-secondary-700)',
     secondary: 'var(--theme-brand-secondary-500)',
     primary: 'var(--theme-brand-primary-500)',
     info: 'var(--theme-status-info-stroke)',
