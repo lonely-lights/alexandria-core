@@ -115,7 +115,10 @@ const gearDropdownStyle: CSSProperties = {
     border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
     background: 'var(--theme-base-100)',
     borderRadius: 'var(--theme-radius-card)',
-    boxShadow: '0 10px 20px -5px color-mix(in srgb, var(--theme-base-content) 25%, transparent)',
+    // Match the standard elevated-card shadow recipe used across the
+    // app (Dashboard cards, modals, etc.) so floating menus don't
+    // visually compete with their containers.
+    boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
 };
 
 const gearItemStyle: CSSProperties = {
@@ -314,7 +317,7 @@ export default function ModelsTab({ projectId, providers }: ModelsTabProps) {
                     placeholder={t('ai.models_tab.search_placeholder')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-56"
+                    className="w-full sm:w-56"
                     style={inputStyle}
                 />
 
@@ -385,7 +388,7 @@ export default function ModelsTab({ projectId, providers }: ModelsTabProps) {
                             <i className="fa-solid fa-gear text-xs" aria-hidden="true" />
                         </button>
                         {gearOpen && (
-                            <div className="absolute right-0 top-full z-20 mt-1 w-44 p-2" style={gearDropdownStyle}>
+                            <div className="absolute right-0 top-full z-20 mt-1 w-44 max-w-[calc(100vw-1rem)] p-2" style={gearDropdownStyle}>
                                 <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider" style={labelText}>
                                     {t('ai.models_tab.columns_heading')}
                                 </p>

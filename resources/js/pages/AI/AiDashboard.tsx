@@ -1,9 +1,11 @@
 import { usePage } from '@inertiajs/react';
 import { useState, useEffect, type CSSProperties } from 'react';
 import AppLayout from '@alexandria/layouts/AppLayout';
+import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import IconTile from '@alexandria/components/ui/IconTile';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import NeuralConstellationBg from '@alexandria/components/backgrounds/NeuralConstellationBg';
+import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import useT from '@alexandria/hooks/useT';
 import DashboardTab from './Sections/DashboardTab';
 import CommandsTab from './Sections/CommandsTab';
@@ -50,6 +52,11 @@ export default function AiDashboard() {
     const { project, stats, providers, settings, userSettings } = props;
 
     const [activeTab, setActiveTab] = useState<Tab>(tabFromHash);
+    // Below lg the 5-pill tab row overflows at 375px — collapse to a
+    // single trigger + overflow menu, same pattern Notes Dashboard
+    // uses on mobile.
+    const isMobileAi = useMediaQuery('(max-width: 1023px)');
+    const activeTabMeta = TABS.find((t) => t.key === activeTab) ?? TABS[0];
 
     useEffect(() => {
         window.location.hash = activeTab === 'dashboard' ? '' : `#${activeTab}`;
@@ -77,8 +84,33 @@ export default function AiDashboard() {
                     { label: t('ai.dashboard.breadcrumb') },
                 ]}
                 tabs={
-                    <>
-                        {TABS.map((tab) => (
+                    isMobileAi ? (
+                        // Mobile: single pill showing the active tab +
+                        // overflow menu listing the rest. The pill itself
+                        // is the dropdown trigger so the user knows
+                        // which tab they're on without a separate label.
+                        <DropdownMenu
+                            align="right"
+                            trigger={
+                                <button
+                                    type="button"
+                                    className="alex-btn inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium"
+                                    style={tabActiveStyle}
+                                    aria-label={t('ai.dashboard.tabs.menu_aria', 'Switch tab')}
+                                >
+                                    <i className={`${activeTabMeta.icon} text-xs`} aria-hidden="true" />
+                                    {t(activeTabMeta.labelKey)}
+                                    <i className="fa-solid fa-chevron-down text-[10px]" aria-hidden="true" />
+                                </button>
+                            }
+                            items={TABS.map((tab) => ({
+                                label: t(tab.labelKey),
+                                icon: tab.icon.replace('fa-solid ', ''),
+                                onClick: () => setActiveTab(tab.key),
+                            }))}
+                        />
+                    ) : (
+                        TABS.map((tab) => (
                             <button
                                 key={tab.key}
                                 type="button"
@@ -90,16 +122,19 @@ export default function AiDashboard() {
                                 <i className={`${tab.icon} text-xs`} aria-hidden="true" />
                                 {t(tab.labelKey)}
                             </button>
-                        ))}
-                    </>
+                        ))
+                    )
                 }
             >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                     <IconTile
                         icon="fa-solid fa-bolt"
                         color="primary"
                         variant="solid"
                         animation="beat-fade"
+                        // Smaller tile on mobile so it doesn't claim a
+                        // quarter of the hero row alongside the heading.
+                        size={isMobileAi ? 'sm' : 'lg'}
                         animationStyle={{
                             // Ambient "the AI is thinking" pulse — slow and
                             // subtle, not an attention grab.
@@ -109,10 +144,10 @@ export default function AiDashboard() {
                         } as CSSProperties}
                     />
                     <div className="min-w-0 flex-1">
-                        <h1 className="font-serif text-3xl md:text-4xl font-bold leading-tight tracking-tight">
+                        <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight">
                             {t('ai.dashboard.heading.title')}
                         </h1>
-                        <p className="mt-1 text-sm" style={subtitleStyle}>
+                        <p className="mt-1 text-xs sm:text-sm" style={subtitleStyle}>
                             {t('ai.dashboard.heading.subtitle').replace(':project', project.name)}
                         </p>
                     </div>

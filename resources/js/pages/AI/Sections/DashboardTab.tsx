@@ -15,27 +15,57 @@ const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-c
 const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
 const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
 
+// Stat-card inner surface — opaque base-surface for normal cards.
+// Outer paper-board wraps this in render to hold the ::before yellow
+// bevel; this inner div paints above the bevel within bounds so only
+// the 3px/4px offset peeks out at bottom-right. Same nested pattern
+// as the Note Queue / Recent Batches cards below.
+//
+// `height: 100%` is the critical bit when these cards sit in a grid:
+// CSS Grid stretches each grid item (= the outer paper-board) to the
+// row's max height, but the inner div would otherwise size to its own
+// content. Without this, cards with less content leave the outer
+// extending past the inner — and the yellow bevel shows through the
+// gap. height:100% pins the inner to the outer's stretched height so
+// the bevel only peeks at its proper 3px/4px offset.
 const cardStyle: CSSProperties = {
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
-    borderRadius: 'var(--theme-radius-card)',
-    boxShadow: '0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    background: 'var(--theme-base-surface)',
+    borderRadius: 'inherit',
     padding: '1rem',
+    height: '100%',
 };
 
+// Gradient stat-card inner — same nested-div pattern as `cardStyle`
+// above. The gradient paints over the bevel within bounds; only the
+// 3px/4px offset peeks out at bottom-right. `height: 100%` keeps the
+// inner pinned to the grid-stretched outer height — see cardStyle's
+// comment for the rationale.
 const gradientCardStyle: CSSProperties = {
     background: 'linear-gradient(135deg, var(--theme-brand-primary-500), var(--theme-brand-secondary-500))',
     color: 'var(--theme-brand-primary-content)',
-    borderRadius: 'var(--theme-radius-card)',
-    boxShadow: '0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    borderRadius: 'inherit',
     padding: '1rem',
+    height: '100%',
 };
 
-const paperBoardStyle: CSSProperties = {
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+// Matches the Notes Dashboard's nested-div pattern: outer .paper-board
+// owns the bevel pseudo (transparent bg so ::before isn't covered by
+// the parent's own background), inner div owns the brown surface so it
+// paints ABOVE the ::before within the parent's bounds. Result: brown
+// card body with the yellow ::before bevel peeking out 3px right + 4px
+// down at the bottom-right — exactly the Recent Notes look on the
+// Notes Dashboard.
+const paperBoardOuterStyle: CSSProperties = {
     borderRadius: 'var(--theme-radius-card)',
-    overflow: 'hidden',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+};
+
+const paperBoardInnerStyle: CSSProperties = {
+    background: 'var(--theme-base-surface)',
+    borderRadius: 'inherit',
+    // Match grid-stretched outer height so the inner always covers the
+    // bevel within bounds — same reasoning as cardStyle above.
+    height: '100%',
 };
 
 const paperBoardHeaderStyle: CSSProperties = {
@@ -148,7 +178,12 @@ function statIconWrapStyle(colorKey: string): CSSProperties {
 }
 
 const gradientIconWrapStyle: CSSProperties = {
-    background: 'color-mix(in srgb, #fff 20%, transparent)',
+    // Tracks the brand's contrast colour (typically white-ish across
+    // themes) instead of hardcoded #fff so the icon's frosted-glass
+    // tint stays legible even in themes where pure white isn't the
+    // right brand-content. 20% opacity over the gradient card below
+    // preserves the "soft glass on coloured surface" look.
+    background: 'color-mix(in srgb, var(--theme-brand-primary-content) 20%, transparent)',
     color: 'var(--theme-brand-primary-content)',
     borderRadius: 'var(--theme-radius-input)',
 };
@@ -166,37 +201,42 @@ interface StatCardProps {
 }
 
 function StatCard({ icon, label, value, subLabel, colorKey, gradient, budgetLabel }: StatCardProps) {
+    // Outer paper-board owns the yellow ::before bevel; inner div owns
+    // the card surface + content. Same nested pattern as Note Queue /
+    // Recent Batches below — see paperBoardOuterStyle for the rationale.
     if (gradient) {
         return (
-            <div style={gradientCardStyle}>
-                <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                        <p
-                            className="text-xs font-semibold uppercase tracking-wider"
-                            style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-content) 70%, transparent)' }}
-                        >
-                            {label}
-                        </p>
-                        <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
-                        {subLabel && (
+            <div className="paper-board" style={paperBoardOuterStyle}>
+                <div style={gradientCardStyle}>
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
                             <p
-                                className="mt-0.5 text-xs"
-                                style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-content) 60%, transparent)' }}
+                                className="text-xs font-semibold uppercase tracking-wider"
+                                style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-content) 70%, transparent)' }}
                             >
-                                {subLabel}
+                                {label}
                             </p>
-                        )}
-                        {budgetLabel && (
-                            <p
-                                className="mt-0.5 text-xs"
-                                style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-content) 60%, transparent)' }}
-                            >
-                                {budgetLabel}
-                            </p>
-                        )}
-                    </div>
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center" style={gradientIconWrapStyle}>
-                        <i className={`${icon} text-sm`} aria-hidden="true" />
+                            <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
+                            {subLabel && (
+                                <p
+                                    className="mt-0.5 text-xs"
+                                    style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-content) 60%, transparent)' }}
+                                >
+                                    {subLabel}
+                                </p>
+                            )}
+                            {budgetLabel && (
+                                <p
+                                    className="mt-0.5 text-xs"
+                                    style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-content) 60%, transparent)' }}
+                                >
+                                    {budgetLabel}
+                                </p>
+                            )}
+                        </div>
+                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center" style={gradientIconWrapStyle}>
+                            <i className={`${icon} text-sm`} aria-hidden="true" />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -204,21 +244,23 @@ function StatCard({ icon, label, value, subLabel, colorKey, gradient, budgetLabe
     }
 
     return (
-        <div style={cardStyle}>
-            <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wider" style={labelText}>
-                        {label}
-                    </p>
-                    <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
-                    {subLabel && (
-                        <p className="mt-0.5 text-xs" style={fadedText}>
-                            {subLabel}
+        <div className="paper-board" style={paperBoardOuterStyle}>
+            <div style={cardStyle}>
+                <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-wider" style={labelText}>
+                            {label}
                         </p>
-                    )}
-                </div>
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center" style={statIconWrapStyle(colorKey)}>
-                    <i className={`${icon} text-sm`} aria-hidden="true" />
+                        <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
+                        {subLabel && (
+                            <p className="mt-0.5 text-xs" style={fadedText}>
+                                {subLabel}
+                            </p>
+                        )}
+                    </div>
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center" style={statIconWrapStyle(colorKey)}>
+                        <i className={`${icon} text-sm`} aria-hidden="true" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -255,44 +297,54 @@ function NoteQueue({ projectId, t }: NoteQueueProps) {
     }, [fetchQueue]);
 
     return (
-        <div className="paper-board" style={paperBoardStyle}>
-            <div className="paper-stripe__head flex items-center justify-between px-5 py-4" style={paperBoardHeaderStyle}>
-                <h2 className="font-serif text-xl font-bold tracking-tight">
-                    {t('ai.dashboard_tab.queue.title')}
-                </h2>
-                {!loading && notes.length > 0 && (
-                    <span style={queueCountBadgeStyle}>{notes.length}</span>
+        // Outer paper-board: holds the ::before yellow bevel
+        // (translate 3px,4px) at z-index -1. No background here — the
+        // ::before would be covered if the outer had its own bg.
+        // Inner div: opaque base-surface (brown). In-flow children paint
+        // ABOVE z-index -1 pseudos in the same stacking context, so the
+        // brown body covers the bevel within the outer's bounds; the
+        // 3px/4px offset peeks out at bottom-right. Same recipe as
+        // Notes Dashboard's Recent Notes panel.
+        <div className="paper-board" style={paperBoardOuterStyle}>
+            <div className="overflow-hidden" style={paperBoardInnerStyle}>
+                <div className="flex items-center justify-between px-5 py-4" style={paperBoardHeaderStyle}>
+                    <h2 className="font-serif text-xl font-bold tracking-tight">
+                        {t('ai.dashboard_tab.queue.title')}
+                    </h2>
+                    {!loading && notes.length > 0 && (
+                        <span style={queueCountBadgeStyle}>{notes.length}</span>
+                    )}
+                </div>
+
+                {loading ? (
+                    <div className="flex items-center justify-center py-10">
+                        <i
+                            className="fa-solid fa-circle-notch fa-spin text-base"
+                            style={{ color: 'var(--theme-brand-primary-500)' }}
+                            aria-hidden="true"
+                        />
+                    </div>
+                ) : notes.length === 0 ? (
+                    <div className="py-10 text-center">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center" style={emptyIconWrapStyle}>
+                            <i className="fa-solid fa-inbox text-lg" style={microText} aria-hidden="true" />
+                        </div>
+                        <p className="text-sm font-medium" style={labelText}>
+                            {t('ai.dashboard_tab.queue.empty')}
+                        </p>
+                    </div>
+                ) : (
+                    <div>
+                        {notes.map((note, i) => (
+                            <NoteQueueItem
+                                key={note.note_id}
+                                note={note}
+                                isLast={i === notes.length - 1}
+                            />
+                        ))}
+                    </div>
                 )}
             </div>
-
-            {loading ? (
-                <div className="flex items-center justify-center py-10">
-                    <i
-                        className="fa-solid fa-circle-notch fa-spin text-base"
-                        style={{ color: 'var(--theme-brand-primary-500)' }}
-                        aria-hidden="true"
-                    />
-                </div>
-            ) : notes.length === 0 ? (
-                <div className="py-10 text-center">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center" style={emptyIconWrapStyle}>
-                        <i className="fa-solid fa-inbox text-lg" style={microText} aria-hidden="true" />
-                    </div>
-                    <p className="text-sm font-medium" style={labelText}>
-                        {t('ai.dashboard_tab.queue.empty')}
-                    </p>
-                </div>
-            ) : (
-                <div className="paper-stripe__body">
-                    {notes.map((note, i) => (
-                        <NoteQueueItem
-                            key={note.note_id}
-                            note={note}
-                            isLast={i === notes.length - 1}
-                        />
-                    ))}
-                </div>
-            )}
         </div>
     );
 }
@@ -373,37 +425,41 @@ function RecentBatches({ projectId, t }: RecentBatchesProps) {
     });
 
     return (
-        <div className="paper-board" style={paperBoardStyle}>
-            <div className="paper-stripe__head px-5 py-4" style={paperBoardHeaderStyle}>
-                <h2 className="font-serif text-xl font-bold tracking-tight">
-                    {t('ai.dashboard_tab.batches.title')}
-                </h2>
-            </div>
+        // Same outer-paper-board + inner-bg nested pattern as Note
+        // Queue above — see that comment for the layering rationale.
+        <div className="paper-board" style={paperBoardOuterStyle}>
+            <div className="overflow-hidden" style={paperBoardInnerStyle}>
+                <div className="px-5 py-4" style={paperBoardHeaderStyle}>
+                    <h2 className="font-serif text-xl font-bold tracking-tight">
+                        {t('ai.dashboard_tab.batches.title')}
+                    </h2>
+                </div>
 
-            {loading ? (
-                <div className="flex items-center justify-center py-10">
-                    <i
-                        className="fa-solid fa-circle-notch fa-spin text-base"
-                        style={{ color: 'var(--theme-brand-primary-500)' }}
-                        aria-hidden="true"
-                    />
-                </div>
-            ) : batches.length === 0 ? (
-                <div className="py-10 text-center">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center" style={emptyIconWrapStyle}>
-                        <i className="fa-solid fa-layer-group text-lg" style={microText} aria-hidden="true" />
+                {loading ? (
+                    <div className="flex items-center justify-center py-10">
+                        <i
+                            className="fa-solid fa-circle-notch fa-spin text-base"
+                            style={{ color: 'var(--theme-brand-primary-500)' }}
+                            aria-hidden="true"
+                        />
                     </div>
-                    <p className="text-sm font-medium" style={labelText}>
-                        {t('ai.dashboard_tab.batches.empty')}
-                    </p>
-                </div>
-            ) : (
-                <div className="paper-stripe__body">
-                    {sortedBatches.map((batch, i) => (
-                        <BatchRow key={batch.batch_id} batch={batch} t={t} isLast={i === sortedBatches.length - 1} />
-                    ))}
-                </div>
-            )}
+                ) : batches.length === 0 ? (
+                    <div className="py-10 text-center">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center" style={emptyIconWrapStyle}>
+                            <i className="fa-solid fa-layer-group text-lg" style={microText} aria-hidden="true" />
+                        </div>
+                        <p className="text-sm font-medium" style={labelText}>
+                            {t('ai.dashboard_tab.batches.empty')}
+                        </p>
+                    </div>
+                ) : (
+                    <div>
+                        {sortedBatches.map((batch, i) => (
+                            <BatchRow key={batch.batch_id} batch={batch} t={t} isLast={i === sortedBatches.length - 1} />
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
