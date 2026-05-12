@@ -308,7 +308,11 @@ export default function DashboardView({ projectId, stats, recentNotes, onNavigat
                           Active   — sage     (green = in play)
                           Archived — cream    (parked, neutral warm)
                           Trashed  — coral    (warning / removed) */}
-                    <div className="grid grid-cols-4 gap-2">
+                    {/* Mobile breaks the 4-up row into a 2x2 grid — each
+                        card gets ~165px instead of ~75px, so the labels
+                        and large values read comfortably. sm: returns to
+                        the airy single-row layout the desktop expects. */}
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         <StatCard
                             label={t('notes.dashboard.stat.total')}
                             value={stats.total}

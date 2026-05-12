@@ -28,7 +28,9 @@ return [
 
     // ── Action buttons + overflow menu ──────────────────────────────
     'action.new_note' => 'New Note',
+    'action.new_note_description' => 'Capture an idea. The AI will sort it later.',
     'action.new_notebook' => 'New Notebook',
+    'action.new_notebook_description' => 'Group related notes into a notebook.',
     'action.more_aria' => 'More actions',
     'action.sorting_history' => 'Sorting History',
     'action.import_notes' => 'Import Notes',

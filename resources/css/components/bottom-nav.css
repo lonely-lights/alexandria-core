@@ -11,6 +11,14 @@ nav[aria-label='Primary mobile navigation'] a,
 nav[aria-label='Primary mobile navigation'] button {
     position: relative;
     -webkit-tap-highlight-color: transparent;
+    /* 300ms colour fade overrides Tailwind's `transition-colors` 150ms
+     * default on the inner className so hover/active state changes ease
+     * in instead of snapping. Matched to the active-bar duration below
+     * so both indicators land in lockstep. */
+    transition: background-color var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard),
+        color var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard);
 }
 
 /* Hover (and tap) — read the brand-primary highlight aliases that the
@@ -31,17 +39,33 @@ nav[aria-label='Primary mobile navigation'] button:focus-visible {
     outline-offset: -4px;
 }
 
-/* Active tab indicator: a 2px brand bar across the top edge. */
-nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
+/* Active tab indicator: a 2px brand bar across the full top edge of
+ * the tab cell. Rendered on every tab (not just the active one) so the
+ * transform transition has somewhere to start from when the active tab
+ * changes — `scaleX(0)` keeps it invisibly collapsed at the cell's
+ * centerline, then `scaleX(1)` grows it edge-to-edge over 300ms when
+ * the tab's `aria-current` flips to 'page'. */
+nav[aria-label='Primary mobile navigation'] a::before,
+nav[aria-label='Primary mobile navigation'] button::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2.25rem;
+    left: 0;
+    right: 0;
     height: 2px;
     background: var(--theme-brand-primary-500);
-    border-radius: 0 0 2px 2px;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform var(--theme-motion-duration-interactive)
+        var(--theme-motion-easing-standard);
+}
+
+nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before,
+nav[aria-label='Primary mobile navigation'] a:hover::before,
+nav[aria-label='Primary mobile navigation'] button:hover::before,
+nav[aria-label='Primary mobile navigation'] a:focus-visible::before,
+nav[aria-label='Primary mobile navigation'] button:focus-visible::before {
+    transform: scaleX(1);
 }
 
 /* Modal close-button hover */

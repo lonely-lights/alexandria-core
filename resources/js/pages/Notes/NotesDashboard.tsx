@@ -3,12 +3,10 @@ import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import ActionButton from '@alexandria/components/ui/ActionButton';
-import CommandPalette from '@alexandria/components/search/CommandPalette';
-import { projectSearch } from '@alexandria/lib/projectSearch';
 import IconTile from '@alexandria/components/ui/IconTile';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
+import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import useT from '@alexandria/hooks/useT';
-import { useCmdK } from '@alexandria/hooks/useCmdK';
 import DashboardView from './Sections/DashboardView';
 import NotesView from './Sections/NotesView';
 import NotebooksView from './Sections/NotebooksView';
@@ -31,6 +29,11 @@ export default function NotesDashboard() {
     const { project, stats, recentNotes } = props;
     const t = useT();
 
+    // Below 1024px the breadcrumb strip can't hold the 3 view tabs +
+    // overflow menu + the breadcrumb itself, so we collapse the tab
+    // pills into the existing overflow menu (same trick we used on
+    // Projects Show).
+    const isMobileNotesDashboard = useMediaQuery('(max-width: 1023px)');
     const [activeView, setActiveView] = useState<View>(viewFromHash);
     const [initialStatusFilter, setInitialStatusFilter] = useState<NoteStatusFilter | null>(null);
     const [initialQuickFilter, setInitialQuickFilter] = useState<string | null>(null);
@@ -40,7 +43,6 @@ export default function NotesDashboard() {
     // filter even when the user clicks the same notebook twice in a
     // row (between manual filter clears).
     const [notebookSelectionNonce, setNotebookSelectionNonce] = useState(0);
-    const [searchOpen, setSearchOpen] = useState(false);
     // Sorting History + Import modals live here (not inside NotesView)
     // so the overflow menu can open them from any tab — the menu items
     // are universal, not Notes-tab-scoped.
@@ -73,8 +75,6 @@ export default function NotesDashboard() {
         });
     }, [activeView, visited]);
 
-    useCmdK(useCallback(() => setSearchOpen(true), []));
-
     /**
      * Refresh post-save without a full page navigation. Inertia partial
      * reload pulls fresh `stats` + `recentNotes` props from the server
@@ -99,14 +99,40 @@ export default function NotesDashboard() {
     }
 
     return (
-        <AppLayout title={t('notes.page.title')} immersive onSearchToggle={() => setSearchOpen(true)}>
+        <AppLayout
+            title={t('notes.page.title')}
+            immersive
+            // Wire the bottom-right FAB to the real New Note / New
+            // Notebook actions. AppLayout already renders the FAB as
+            // a slide-up modal chooser when there's >1 action — exactly
+            // the "tap +, pick Note or Notebook, route from there" flow.
+            // On mobile we also hide the page-header buttons so the
+            // FAB is the single canonical add-new entry point.
+            fabActions={[
+                {
+                    label: t('notes.action.new_note'),
+                    description: t('notes.action.new_note_description'),
+                    icon: 'fa-solid fa-note-sticky',
+                    onClick: () => setShowCreate(true),
+                },
+                {
+                    label: t('notes.action.new_notebook'),
+                    description: t('notes.action.new_notebook_description'),
+                    icon: 'fa-solid fa-book-medical',
+                    onClick: () => setShowNotebookForm(true),
+                },
+            ]}
+        >
             <PageHeader
                 breadcrumbs={[
                     { label: project.name, href: `/p/${project.slug}` },
                     { label: t('notes.page.breadcrumb') },
                 ]}
                 actions={
-                    <div className="flex items-center gap-2">
+                    // Hidden on mobile — FAB chooser owns the add-new
+                    // affordance there. Desktop keeps the discoverable
+                    // inline buttons.
+                    <div className="hidden items-center gap-2 sm:flex">
                         <ActionButton
                             icon="fa-solid fa-plus"
                             label={t('notes.action.new_note')}
@@ -129,42 +155,58 @@ export default function NotesDashboard() {
                                 fontSize: '0.875rem',
                                 gap: '0.375rem',
                             }}
+                            aria-label={t('notes.action.new_notebook')}
                         >
                             <i className="fa-solid fa-book-medical text-xs" />
-                            {t('notes.action.new_notebook')}
+                            {/* Label hides below sm: — the + New Note
+                                primary button already takes a chunk of
+                                the row, and the icon alone is enough
+                                signal for the secondary action. */}
+                            <span className="hidden sm:inline">{t('notes.action.new_notebook')}</span>
                         </button>
                     </div>
                 }
                 tabs={
                     <>
-                        <button
-                            type="button"
-                            onClick={() => setActiveView('dashboard')}
-                            className={`alex-notes-tab ${activeView === 'dashboard' ? 'alex-notes-tab--active' : ''}`}
-                        >
-                            <i className="fa-solid fa-gauge text-xs" />
-                            {t('notes.tab.dashboard')}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setActiveView('notes')}
-                            className={`alex-notes-tab ${activeView === 'notes' ? 'alex-notes-tab--active' : ''}`}
-                        >
-                            <i className="fa-solid fa-sticky-note text-xs" />
-                            {t('notes.tab.notes')}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setActiveView('notebooks')}
-                            className={`alex-notes-tab ${activeView === 'notebooks' ? 'alex-notes-tab--active' : ''}`}
-                        >
-                            <i className="fa-solid fa-book text-xs" />
-                            {t('notes.tab.notebooks')}
-                        </button>
+                        {/* Inline tab pills — desktop only. Mobile
+                            collapses them into the overflow menu below
+                            so the breadcrumb strip stays readable at
+                            375px (was: breadcrumb + 3 pills + ⋮ all
+                            jostling for ~343px). */}
+                        {!isMobileNotesDashboard && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveView('dashboard')}
+                                    className={`alex-notes-tab ${activeView === 'dashboard' ? 'alex-notes-tab--active' : ''}`}
+                                >
+                                    <i className="fa-solid fa-gauge text-xs" />
+                                    {t('notes.tab.dashboard')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveView('notes')}
+                                    className={`alex-notes-tab ${activeView === 'notes' ? 'alex-notes-tab--active' : ''}`}
+                                >
+                                    <i className="fa-solid fa-sticky-note text-xs" />
+                                    {t('notes.tab.notes')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveView('notebooks')}
+                                    className={`alex-notes-tab ${activeView === 'notebooks' ? 'alex-notes-tab--active' : ''}`}
+                                >
+                                    <i className="fa-solid fa-book text-xs" />
+                                    {t('notes.tab.notebooks')}
+                                </button>
+                            </>
+                        )}
                         {/* Overflow menu — universal actions available
                             from any tab. Lives in the tabs bar so there's
                             one canonical entry point whether the user is
-                            on Dashboard, Notes, or Notebooks. */}
+                            on Dashboard, Notes, or Notebooks.
+                            On mobile the three view tabs prepend here so
+                            users can still switch views. */}
                         <DropdownMenu
                             align="right"
                             trigger={
@@ -177,6 +219,12 @@ export default function NotesDashboard() {
                                 </button>
                             }
                             items={[
+                                ...(isMobileNotesDashboard ? [
+                                    { label: t('notes.tab.dashboard'), icon: 'fa-gauge', onClick: () => setActiveView('dashboard') },
+                                    { label: t('notes.tab.notes'), icon: 'fa-sticky-note', onClick: () => setActiveView('notes') },
+                                    { label: t('notes.tab.notebooks'), icon: 'fa-book', onClick: () => setActiveView('notebooks') },
+                                    { divider: true as const },
+                                ] : []),
                                 {
                                     label: t('notes.action.sorting_history'),
                                     icon: 'fa-route',
@@ -192,12 +240,16 @@ export default function NotesDashboard() {
                     </>
                 }
             >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                     <IconTile
                         icon="fa-solid fa-sticky-note"
                         color="secondary"
                         variant="solid"
                         animation="beat-fade"
+                        // Mobile uses the `sm` (32×32, smaller icon)
+                        // preset so the tile doesn't claim a quarter
+                        // of the hero row alongside a 24px heading.
+                        size={isMobileNotesDashboard ? 'sm' : 'lg'}
                         animationStyle={{
                             // Slow, subtle — "the notes are alive" ambient pulse,
                             // not attention-grabbing shake.
@@ -207,9 +259,9 @@ export default function NotesDashboard() {
                         } as CSSProperties}
                     />
                     <div className="min-w-0 flex-1">
-                        <h1 className="font-serif text-3xl md:text-4xl font-bold leading-tight tracking-tight">{t('notes.page.heading')}</h1>
+                        <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight">{t('notes.page.heading')}</h1>
                         <p
-                            className="mt-1 text-sm"
+                            className="mt-1 text-xs sm:text-sm"
                             style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}
                         >
                             {t('notes.page.tagline').replace(':project', project.name)}
@@ -297,11 +349,13 @@ export default function NotesDashboard() {
                 onSaved={() => { setShowCreate(false); refreshAfterSave(); }}
             />
 
-            <CommandPalette
-                open={searchOpen}
-                onClose={() => setSearchOpen(false)}
-                onSearch={projectSearch(project.slug)}
-            />
+            {/* CommandPalette + Cmd-K wiring lives in AppLayout — it
+                mounts a single globally-scoped palette whenever there's
+                a currentProject in shared props, listens for the
+                `alexandria-core:command-palette-toggle` event (the
+                navbar + bottom-nav search buttons both dispatch it),
+                and binds Cmd/Ctrl+K. Per-page mounts would stack
+                duplicate palettes that both open on the same event. */}
 
             {/* Universal Sorting History + Import modals — openable from
                 the overflow menu regardless of which tab is active. */}
