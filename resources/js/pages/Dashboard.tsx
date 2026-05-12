@@ -2,6 +2,8 @@ import { usePage } from '@inertiajs/react';
 import { useEffect, useState, type CSSProperties } from 'react';
 
 import AppLayout from '../layouts/AppLayout';
+import Tooltip from '@alexandria/components/ui/Tooltip';
+import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import useT from '@alexandria/hooks/useT';
 
 type ProjectViewMode = 'grid' | 'rows' | 'table';
@@ -80,6 +82,16 @@ export default function Dashboard() {
     const [viewMode, setViewMode] = useState<ProjectViewMode>('grid');
     const [greetingKey, setGreetingKey] = useState<string>(() => greetingKeyForHour(new Date().getHours()));
 
+    // Table view doesn't fit at phone widths — 5 columns at ~40-60px
+    // each would force horizontal scroll. On mobile we hide the Table
+    // button entirely and, if the user's persisted preference is
+    // already 'table', we render Rows instead. We DON'T overwrite
+    // localStorage, so the table preference returns when the user
+    // widens back to desktop.
+    const isMobileDashboard = useMediaQuery('(max-width: 1023px)');
+    const effectiveViewMode: ProjectViewMode =
+        isMobileDashboard && viewMode === 'table' ? 'rows' : viewMode;
+
     // Refresh the greeting every minute so it updates if the user crosses a
     // time-of-day boundary while sitting on the dashboard.
     useEffect(() => {
@@ -124,7 +136,7 @@ export default function Dashboard() {
                             : t('dashboard.section.world_plural')}
                     </span>
                 </div>
-                <ViewToggle current={viewMode} onChange={changeViewMode} t={t} />
+                <ViewToggle current={effectiveViewMode} onChange={changeViewMode} t={t} hideTable={isMobileDashboard} />
             </div>
 
             {projects.length === 0 ? (
@@ -133,13 +145,13 @@ export default function Dashboard() {
                     title={t('dashboard.empty.projects.title')}
                     description={t('dashboard.empty.projects.description')}
                 />
-            ) : viewMode === 'grid' ? (
+            ) : effectiveViewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {projects.map((project) => (
                         <ProjectCard key={project.id} project={project} />
                     ))}
                 </div>
-            ) : viewMode === 'rows' ? (
+            ) : effectiveViewMode === 'rows' ? (
                 <div className="space-y-3">
                     {projects.map((project) => (
                         <ProjectRow key={project.id} project={project} t={t} />
@@ -194,7 +206,7 @@ export default function Dashboard() {
         <AppLayout title={t('dashboard.page.title')}>
             <div className="container mx-auto max-w-7xl px-4 py-8 lg:py-12">
                 {/* Greeting header + inline quick actions */}
-                <header className="mb-10 grid grid-cols-1 items-end gap-6 lg:grid-cols-[1fr_auto] lg:gap-10">
+                <header className="mb-6 grid grid-cols-1 items-end gap-5 sm:mb-10 sm:gap-6 lg:grid-cols-[1fr_auto] lg:gap-10">
                     <div>
                         <div
                             className="text-[11px] font-semibold uppercase tracking-[.25em] mb-2"
@@ -202,14 +214,14 @@ export default function Dashboard() {
                         >
                             {t(`dashboard.greeting.${greetingKey}`)}
                         </div>
-                        <h1 className="font-serif text-5xl md:text-6xl font-bold leading-none tracking-tight">
+                        <h1 className="font-serif text-3xl sm:text-4xl md:text-6xl font-bold leading-tight sm:leading-none tracking-tight">
                             {greeting.name}.
                         </h1>
-                        <p className="mt-3 text-base" style={subtleText}>
+                        <p className="mt-2 text-sm sm:mt-3 sm:text-base" style={subtleText}>
                             {t('dashboard.page.tagline')}
                         </p>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
                         <QuickActionTile href="/profile" icon="fa-user-gear" label={t('dashboard.quick.profile')} />
                         <QuickActionTile href="/ai/suggestions" icon="fa-wand-magic-sparkles" label={t('dashboard.quick.ai_suggestions')} />
                         <QuickActionTile href="/settings#pref-appearance" icon="fa-palette" label={t('dashboard.quick.appearance')} />
@@ -217,7 +229,7 @@ export default function Dashboard() {
                 </header>
 
                 {/* Stats strip */}
-                <div className="grid grid-cols-3 gap-3 md:gap-5 mb-10">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-5 mb-6 sm:mb-10">
                     <StatTile label={t('dashboard.stat.projects')} value={stats.projects} icon="fa-folder-tree" accent="var(--theme-brand-primary-500)" />
                     <StatTile label={t('dashboard.stat.entries')} value={stats.entries} icon="fa-file-lines" accent="var(--theme-brand-secondary-500)" />
                     <StatTile label={t('dashboard.stat.blueprints')} value={stats.blueprints} icon="fa-cubes" accent="var(--theme-brand-accent-500)" />
@@ -241,23 +253,26 @@ export default function Dashboard() {
 function StatTile({ label, value, icon, accent }: { label: string; value: number; icon: string; accent: string }) {
     return (
         <div
-            className="border p-5"
+            className="border p-3 sm:p-5"
             style={{
                 background: 'color-mix(in srgb, var(--theme-base-content) 3%, transparent)',
                 borderColor: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
                 borderRadius: 'var(--theme-radius-card)',
             }}
         >
-            <div className="flex items-center gap-2 mb-3">
-                <i className={`fa-solid ${icon} text-sm`} style={{ color: accent }} aria-hidden="true" />
+            {/* Mobile compresses the wide letter-spacing on the label so
+                "BLUEPRINTS" fits without clipping at ~106px tile width;
+                desktop keeps the airier .25em tracking. */}
+            <div className="flex items-center gap-1.5 mb-2 sm:gap-2 sm:mb-3">
+                <i className={`fa-solid ${icon} text-xs sm:text-sm`} style={{ color: accent }} aria-hidden="true" />
                 <div
-                    className="text-[11px] font-semibold uppercase tracking-[.25em]"
+                    className="text-[9px] font-semibold uppercase tracking-wider sm:text-[11px] sm:tracking-[.25em] truncate"
                     style={fadedText}
                 >
                     {label}
                 </div>
             </div>
-            <div className="font-serif text-4xl md:text-5xl font-bold tracking-tight">{value}</div>
+            <div className="font-serif text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight">{value}</div>
         </div>
     );
 }
@@ -265,15 +280,17 @@ function StatTile({ label, value, icon, accent }: { label: string; value: number
 function ProjectCard({ project }: { project: DashboardProject }) {
     return (
         <a href={`/p/${project.slug}`} className="alex-dash-card group block overflow-hidden">
-            {/* Banner */}
+            {/* Banner — much shorter on mobile (h-14 / 56px) so the
+                card doesn't dedicate ~30% of its height to chrome on a
+                phone screen. Desktop keeps the airier h-28 / 112px. */}
             {project.banner_url ? (
                 <div
-                    className="alex-dash-banner-img h-28 w-full bg-cover bg-center"
+                    className="alex-dash-banner-img h-14 w-full bg-cover bg-center sm:h-28"
                     style={{ backgroundImage: `url(${project.banner_url})` }}
                 />
             ) : (
                 <div
-                    className="h-28 w-full"
+                    className="h-14 w-full sm:h-28"
                     style={{
                         background: 'linear-gradient(to bottom right, color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent), color-mix(in srgb, var(--theme-brand-secondary-500) 10%, transparent), color-mix(in srgb, var(--theme-brand-accent-500) 20%, transparent))',
                     }}
@@ -394,20 +411,23 @@ function QuickActionTile({ href, icon, label }: { href: string; icon: string; la
     return (
         <a
             href={href}
-            className="alex-dash-quick-tile group flex min-w-0 flex-col items-center gap-2 px-4 py-5 text-center"
+            className="alex-dash-quick-tile group flex min-w-0 flex-col items-center gap-1.5 px-2 py-3 text-center sm:gap-2 sm:px-4 sm:py-5"
             aria-label={label}
         >
             <div
-                className="alex-dash-quick-tile-icon flex h-12 w-12 items-center justify-center"
+                className="alex-dash-quick-tile-icon flex h-9 w-9 items-center justify-center sm:h-12 sm:w-12"
                 style={{
                     background: 'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)',
                     color: 'var(--theme-brand-primary-500)',
                     borderRadius: 'var(--theme-radius-card)',
                 }}
             >
-                <i className={`fa-solid ${icon} text-2xl`} aria-hidden="true" />
+                <i className={`fa-solid ${icon} text-lg sm:text-2xl`} aria-hidden="true" />
             </div>
-            <span className="text-xs font-semibold leading-tight truncate w-full">{label}</span>
+            {/* Mobile drops to text-[10px] so longer labels like
+                "AI suggestions" fit at ~106px tile width without
+                truncating to ellipsis. */}
+            <span className="text-[10px] font-semibold leading-tight truncate w-full sm:text-xs">{label}</span>
         </a>
     );
 }
@@ -438,12 +458,17 @@ function EmptyState({ icon, title, description }: { icon: string; title: string;
     );
 }
 
-function ViewToggle({ current, onChange, t }: { current: ProjectViewMode; onChange: (m: ProjectViewMode) => void; t: (k: string) => string }) {
-    const buttons: Array<{ key: ProjectViewMode; icon: string; label: string }> = [
+function ViewToggle({ current, onChange, t, hideTable = false }: { current: ProjectViewMode; onChange: (m: ProjectViewMode) => void; t: (k: string) => string; hideTable?: boolean }) {
+    const allButtons: Array<{ key: ProjectViewMode; icon: string; label: string }> = [
         { key: 'grid', icon: 'fa-grip', label: t('dashboard.view.grid') },
         { key: 'rows', icon: 'fa-bars', label: t('dashboard.view.rows') },
         { key: 'table', icon: 'fa-table', label: t('dashboard.view.table') },
     ];
+    // hideTable strips the Table button at mobile widths — it's a
+    // poor fit on phones (5 columns at narrow viewport) and the
+    // effectiveViewMode in Dashboard already falls back to 'rows'
+    // when a stored 'table' preference hits mobile.
+    const buttons = hideTable ? allButtons.filter((b) => b.key !== 'table') : allButtons;
     return (
         <div
             className="alex-dash-view-toggle inline-flex items-center rounded-full p-1"
@@ -453,18 +478,18 @@ function ViewToggle({ current, onChange, t }: { current: ProjectViewMode; onChan
             {buttons.map((b) => {
                 const active = current === b.key;
                 return (
-                    <button
-                        key={b.key}
-                        type="button"
-                        role="tab"
-                        aria-selected={active}
-                        aria-label={b.label}
-                        title={b.label}
-                        onClick={() => onChange(b.key)}
-                        className="alex-dash-view-btn flex h-7 w-7 items-center justify-center rounded-full text-xs"
-                    >
-                        <i className={`fa-solid ${b.icon}`} aria-hidden="true" />
-                    </button>
+                    <Tooltip key={b.key} content={b.label} placement="bottom">
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={active}
+                            aria-label={b.label}
+                            onClick={() => onChange(b.key)}
+                            className="alex-dash-view-btn flex h-7 w-7 items-center justify-center rounded-full text-xs"
+                        >
+                            <i className={`fa-solid ${b.icon}`} aria-hidden="true" />
+                        </button>
+                    </Tooltip>
                 );
             })}
         </div>
@@ -472,7 +497,7 @@ function ViewToggle({ current, onChange, t }: { current: ProjectViewMode; onChan
 }
 
 function ProjectRow({ project, t }: { project: DashboardProject; t: (k: string) => string }) {
-    // Layout reads as a snapshot of the project page header:
+    // Desktop reads as a snapshot of the project page header:
     //   ┌──────────────────────────────────┐
     //   │ ┌──┐ Banner (top 1/3, full)      │
     //   ├─┤  ├────────────────────────────-┤
@@ -483,14 +508,55 @@ function ProjectRow({ project, t }: { project: DashboardProject; t: (k: string) 
     // sits on a floating absolute layer that overlaps the banner /
     // content boundary, so its top edge pokes up into the banner —
     // mirroring the way an avatar sits over a cover photo.
+    //
+    // Mobile drops the banner strip and the absolute-positioned image
+    // overlay — instead the page image sits inline to the LEFT of the
+    // name, single-row, like a contact list. Plain `flex` rules apply
+    // and we don't need the absolute-layer dance at narrow widths.
+    const projectImage = project.page_image_url ? (
+        <img
+            src={project.page_image_url}
+            alt={project.name}
+            className="h-full w-full object-cover"
+            style={{
+                borderRadius: 'var(--theme-radius-card)',
+                border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
+            }}
+        />
+    ) : (
+        <div
+            className="flex h-full w-full items-center justify-center"
+            style={{
+                borderRadius: 'var(--theme-radius-card)',
+                border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                background: 'var(--theme-base-surface)',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
+            }}
+        >
+            <i
+                className="fa-solid fa-globe text-xl sm:text-2xl"
+                style={{ color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' }}
+                aria-hidden="true"
+            />
+        </div>
+    );
+
     return (
         <a
             href={`/p/${project.slug}`}
-            className="alex-dash-row group relative flex flex-col overflow-hidden"
-            style={{ height: '6.5rem' }}
+            // Mobile: flex-row, auto height, inline image + text.
+            // Desktop: flex-col with 6.5rem height (banner-on-top
+            // layout). The `sm:flex-col` switches direction and the
+            // `sm:h-[6.5rem]` restores the original fixed-row height
+            // so banner (flex-[1]) and content (flex-[2]) divide
+            // it 1:2 instead of each claiming their own size and
+            // stacking to a 200px+ card.
+            className="alex-dash-row group relative flex flex-row items-center overflow-hidden sm:h-[6.5rem] sm:flex-col sm:items-stretch"
         >
-            {/* Banner — full-width strip, top 1/3 */}
-            <div className="relative flex-[1] overflow-hidden">
+            {/* Banner — desktop only. On mobile we go straight to the
+                inline image + name row. */}
+            <div className="relative hidden overflow-hidden sm:flex sm:flex-[1]">
                 {project.banner_url ? (
                     <div
                         className="alex-dash-banner-img absolute inset-0 bg-cover bg-center"
@@ -506,16 +572,23 @@ function ProjectRow({ project, t }: { project: DashboardProject; t: (k: string) 
                 )}
             </div>
 
-            {/* Bottom row — content only; the image floats on its own layer above. */}
-            <div className="flex flex-[2] min-w-0 items-center sm:pl-20">
-                {/* Content cell — name, stats, updated */}
-                <div className="flex flex-1 min-w-0 items-center gap-5 px-5">
+            {/* Content row — image inline at narrow widths (mobile);
+                desktop uses the absolute-positioned overlay below for
+                the avatar-on-banner pose, so the inline image hides. */}
+            <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 sm:flex-[2] sm:gap-5 sm:px-5 sm:py-0 sm:pl-20">
+                {/* Inline image — visible only below sm:. */}
+                <div className="flex h-12 w-12 flex-shrink-0 sm:hidden">
+                    {projectImage}
+                </div>
+
+                {/* Name + logline + stats */}
+                <div className="flex min-w-0 flex-1 items-center gap-5">
                     <div className="min-w-0 flex-1">
-                        <h3 className="alex-dash-row-title font-serif text-xl font-bold leading-tight tracking-tight truncate">
+                        <h3 className="alex-dash-row-title font-serif text-base font-bold leading-tight tracking-tight truncate sm:text-xl">
                             {project.name}
                         </h3>
                         {project.logline && (
-                            <p className="mt-1 text-sm line-clamp-1" style={subtleText}>
+                            <p className="mt-0.5 text-xs line-clamp-1 sm:mt-1 sm:text-sm" style={subtleText}>
                                 {project.logline}
                             </p>
                         )}
@@ -544,17 +617,16 @@ function ProjectRow({ project, t }: { project: DashboardProject; t: (k: string) 
                     </div>
 
                     <i
-                        className="alex-dash-row-chevron fa-solid fa-chevron-right"
+                        className="alex-dash-row-chevron fa-solid fa-chevron-right text-xs sm:text-base"
                         style={{ color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' }}
                         aria-hidden="true"
                     />
                 </div>
             </div>
 
-            {/* Floating image — overlaps the banner / content boundary so
-                the top edge pokes up into the banner like an avatar over
-                a cover photo. Anchored to the card's left edge with a
-                small inset so the image's rounded corners are visible. */}
+            {/* Floating image — desktop only. Overlaps the banner /
+                content boundary so the top edge pokes up into the
+                banner like an avatar over a cover photo. */}
             <div
                 className="absolute hidden sm:flex items-center justify-center"
                 style={{
@@ -564,34 +636,7 @@ function ProjectRow({ project, t }: { project: DashboardProject; t: (k: string) 
                     height: '4.5rem',
                 }}
             >
-                {project.page_image_url ? (
-                    <img
-                        src={project.page_image_url}
-                        alt={project.name}
-                        className="h-full w-full object-cover"
-                        style={{
-                            borderRadius: 'var(--theme-radius-card)',
-                            border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
-                        }}
-                    />
-                ) : (
-                    <div
-                        className="flex h-full w-full items-center justify-center"
-                        style={{
-                            borderRadius: 'var(--theme-radius-card)',
-                            border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-                            background: 'var(--theme-base-surface)',
-                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
-                        }}
-                    >
-                        <i
-                            className="fa-solid fa-globe text-2xl"
-                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' }}
-                            aria-hidden="true"
-                        />
-                    </div>
-                )}
+                {projectImage}
             </div>
         </a>
     );
@@ -617,9 +662,13 @@ function ProjectTable({ projects, t }: { projects: DashboardProject[]; t: (k: st
         ...fadedText,
         borderColor: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
     };
+    // Mobile hides everything except Project + chevron — 5 columns
+    // (entries/blueprints/members/updated/chevron) at 4 chars wide
+    // each can't fit at 375px without the horizontal scroll the user
+    // flagged. The columns return at sm+ where the row has room.
     return (
         <div
-            className="overflow-x-auto border"
+            className="border sm:overflow-x-auto"
             style={{
                 ...surfaceTinted,
                 background: 'color-mix(in srgb, var(--theme-base-content) 3%, transparent)',
@@ -629,11 +678,11 @@ function ProjectTable({ projects, t }: { projects: DashboardProject[]; t: (k: st
             <table className="w-full text-sm">
                 <thead>
                     <tr style={{ borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)' }}>
-                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[.2em]" style={headerStyle}>{t('dashboard.table.project')}</th>
-                        <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[.2em]" style={headerStyle}>{t('dashboard.table.entries')}</th>
-                        <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[.2em]" style={headerStyle}>{t('dashboard.table.blueprints')}</th>
-                        <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[.2em]" style={headerStyle}>{t('dashboard.table.members')}</th>
-                        <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[.2em]" style={headerStyle}>{t('dashboard.table.updated')}</th>
+                        <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-[.2em] sm:px-4" style={headerStyle}>{t('dashboard.table.project')}</th>
+                        <th className="hidden sm:table-cell px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[.2em]" style={headerStyle}>{t('dashboard.table.entries')}</th>
+                        <th className="hidden sm:table-cell px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[.2em]" style={headerStyle}>{t('dashboard.table.blueprints')}</th>
+                        <th className="hidden sm:table-cell px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[.2em]" style={headerStyle}>{t('dashboard.table.members')}</th>
+                        <th className="hidden sm:table-cell px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[.2em]" style={headerStyle}>{t('dashboard.table.updated')}</th>
                         <th className="px-2 py-3" aria-hidden="true" />
                     </tr>
                 </thead>
@@ -649,7 +698,7 @@ function ProjectTable({ projects, t }: { projects: DashboardProject[]; t: (k: st
                             }}
                             onClick={() => { window.location.href = `/p/${project.slug}`; }}
                         >
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-3 sm:px-4">
                                 <div className="flex items-center gap-3">
                                     {project.page_image_url ? (
                                         <img
@@ -683,7 +732,7 @@ function ProjectTable({ projects, t }: { projects: DashboardProject[]; t: (k: st
                                         <a
                                             href={`/p/${project.slug}`}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="alex-dash-table-title font-serif text-base font-bold tracking-tight truncate block"
+                                            className="alex-dash-table-title font-serif text-sm font-bold tracking-tight truncate block sm:text-base"
                                         >
                                             {project.name}
                                         </a>
@@ -693,10 +742,10 @@ function ProjectTable({ projects, t }: { projects: DashboardProject[]; t: (k: st
                                     </div>
                                 </div>
                             </td>
-                            <td className="px-4 py-3 text-right font-medium tabular-nums">{project.entries_count}</td>
-                            <td className="px-4 py-3 text-right font-medium tabular-nums">{project.blueprints_count}</td>
-                            <td className="px-4 py-3 text-right font-medium tabular-nums">{project.members_count}</td>
-                            <td className="px-4 py-3 text-right text-xs whitespace-nowrap" style={subtleText}>
+                            <td className="hidden sm:table-cell px-4 py-3 text-right font-medium tabular-nums">{project.entries_count}</td>
+                            <td className="hidden sm:table-cell px-4 py-3 text-right font-medium tabular-nums">{project.blueprints_count}</td>
+                            <td className="hidden sm:table-cell px-4 py-3 text-right font-medium tabular-nums">{project.members_count}</td>
+                            <td className="hidden sm:table-cell px-4 py-3 text-right text-xs whitespace-nowrap" style={subtleText}>
                                 {project.last_activity ?? '—'}
                             </td>
                             <td className="px-2 py-3 text-right">

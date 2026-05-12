@@ -539,7 +539,13 @@ export default function AppLayout({
             <main
                 className={[
                     immersive ? '' : 'pt-20',
-                    showBottomNav ? 'pb-20 lg:pb-0' : '',
+                    // pb-[calc(5rem+env(safe-area-inset-bottom))] gives the
+                    // bottom nav full clearance on iPhones with a home
+                    // indicator (the nav's own min-height + safe-area
+                    // padding can grow to ~98px there; a flat pb-20 leaves
+                    // the last ~18px of content tucked under the nav).
+                    // lg:pb-0 keeps desktop unchanged.
+                    showBottomNav ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0' : '',
                 ]
                     .filter(Boolean)
                     .join(' ')}

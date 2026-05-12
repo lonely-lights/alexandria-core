@@ -28,7 +28,14 @@ export default function BottomNav({ tabs }: BottomNavProps) {
             aria-label="Primary mobile navigation"
             className="fixed inset-x-0 bottom-0 z-40 flex items-stretch lg:hidden"
             style={{
-                height: '4rem',
+                // `min-height` (not fixed `height`) so the nav grows by
+                // env(safe-area-inset-bottom) on iPhones with a home
+                // indicator. With a fixed 4rem height the safe-area
+                // padding would eat INTO the 64px icon row, leaving
+                // ~30px of usable space on devices with a ~34px
+                // indicator. min-height keeps the 4rem icon area
+                // intact and the safe-area inset adds extra below it.
+                minHeight: 'calc(4rem + env(safe-area-inset-bottom))',
                 paddingBottom: 'env(safe-area-inset-bottom)',
                 // base-chrome is the elevated-chrome surface (darker than
                 // page in light mode, lighter in dark) — same role as
