@@ -56,8 +56,16 @@ export default function Modal({
             />
             <div
                 ref={panelRef}
-                className={`relative w-full ${maxWidth} overflow-hidden`}
+                className={`relative flex w-full flex-col overflow-hidden ${maxWidth}`}
                 style={{
+                    // Cap the panel at the viewport minus our outer
+                    // `p-4` (1rem each side = 2rem total). Without this,
+                    // long modal bodies overflow off-screen on mobile —
+                    // header is visible, footer isn't reachable. Pairing
+                    // this with `flex-col` lets consumer modals mark a
+                    // body section as `flex-1 overflow-y-auto` so the
+                    // body scrolls between fixed header/footer.
+                    maxHeight: 'calc(100vh - 2rem)',
                     background: 'var(--theme-base-surface)',
                     color: 'var(--theme-base-content)',
                     border: '1px solid var(--theme-base-400)',

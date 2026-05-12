@@ -9,6 +9,7 @@ import HistoryModal from '@alexandria/components/notes/modals/HistoryModal';
 import NotebookSelectorModal, { type NotebookData } from '@alexandria/components/notes/modals/NotebookSelectorModal';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { relativeDate } from '@alexandria/lib/formatDate';
+import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import { useNoteActions } from '@alexandria/hooks/useNoteActions';
 import useT from '@alexandria/hooks/useT';
 
@@ -60,6 +61,9 @@ export default function NoteModal({ open, onClose, note, projectId, mode, onSave
     const auth = (usePage().props as unknown as { auth?: { preferences?: { auto_save?: boolean } } }).auth;
     const autoSave = auth?.preferences?.auto_save ?? true;
     const noteActions = useNoteActions(projectId);
+    // Mobile pass: tighter padding, smaller header icon, smaller heading,
+    // truncate the author/created subtitle so it stays on one line.
+    const isMobileNoteModal = useMediaQuery('(max-width: 1023px)');
 
     const [title, setTitle] = useState('');
     const [text, setText] = useState('');
@@ -309,23 +313,27 @@ export default function NoteModal({ open, onClose, note, projectId, mode, onSave
     return (
         <>
             <Modal open={open} onClose={handleClose} maxWidth="max-w-3xl">
-                {/* Header */}
+                {/* Header — tighter on mobile so the avatar + title +
+                    4 action buttons fit on one row at 375px without the
+                    subtitle wrapping. The author/created line is forced
+                    single-line via truncate; on desktop it stays its
+                    original size. */}
                 <div
-                    className="flex items-center gap-4 px-6 py-4"
+                    className={`flex flex-shrink-0 items-center ${isMobileNoteModal ? 'gap-2 px-3 py-2.5' : 'gap-4 px-6 py-4'}`}
                     style={{ borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)' }}
                 >
                     <div
-                        className="flex h-10 w-10 flex-shrink-0 items-center justify-center"
+                        className={`flex flex-shrink-0 items-center justify-center ${isMobileNoteModal ? 'h-8 w-8' : 'h-10 w-10'}`}
                         style={headerIconWrapStyle}
                     >
                         <i className="fa-solid fa-sticky-note" />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h3 className="text-lg font-bold">
+                        <h3 className={`font-bold ${isMobileNoteModal ? 'text-sm' : 'text-lg'}`}>
                             {isEdit ? t('notes.modal.edit_title') : t('notes.modal.create_title')}
                         </h3>
                         {isEdit && note?.creator && (
-                            <p className="text-xs" style={microText}>
+                            <p className={`truncate ${isMobileNoteModal ? 'text-[10px]' : 'text-xs'}`} style={microText}>
                                 {t('notes.modal.author_prefix')} {note.creator.display_name ?? note.creator.name}
                                 {note.created_at && (
                                     <> &middot; {t('notes.modal.created_prefix')} {relativeDate(note.created_at)}</>
@@ -333,7 +341,7 @@ export default function NoteModal({ open, onClose, note, projectId, mode, onSave
                             </p>
                         )}
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className={`flex items-center ${isMobileNoteModal ? 'gap-0.5' : 'gap-1'}`}>
                         {isEdit && note && (
                             <>
                                 <Tooltip content={pinned ? t('notes.modal.tooltip.unpin') : t('notes.modal.tooltip.pin')} placement="bottom">
@@ -381,8 +389,13 @@ export default function NoteModal({ open, onClose, note, projectId, mode, onSave
                     </div>
                 </div>
 
-                {/* Body */}
-                <div className="space-y-4 px-6 py-5">
+                {/* Body — flex-1 + overflow-y-auto so the panel can
+                    fit a long form on mobile (the Modal panel itself
+                    caps at calc(100vh - 2rem) and lays out flex-col,
+                    so this section absorbs the leftover space and
+                    scrolls internally between the fixed header and
+                    footer). */}
+                <div className={`flex-1 overflow-y-auto ${isMobileNoteModal ? 'space-y-3 px-3 py-3' : 'space-y-4 px-6 py-5'}`}>
                     {/* Location & Status info (edit mode) */}
                     {isEdit && note && (
                         <div className="flex flex-wrap items-center gap-2">
