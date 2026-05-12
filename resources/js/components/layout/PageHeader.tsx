@@ -114,11 +114,15 @@ export default function PageHeader({
                 </div>
             </div>
 
-            {/* Bar 2: Breadcrumbs + tabs. Top+bottom borders at a brighter
-                tone so the strip reads as a distinct band sandwiched
-                between the hero bar above and the page content below.
-                All colors route through --theme-base-content via
-                color-mix() so preset swaps repaint the strip. */}
+            {/* Bar 2: Breadcrumbs + tabs. Skip entirely when both are
+                empty — otherwise we'd render an orphaned bordered strip
+                stacked above whatever follows the header. Top+bottom
+                borders at a brighter tone so the strip reads as a
+                distinct band sandwiched between the hero bar above and
+                the page content below. All colors route through
+                --theme-base-content via color-mix() so preset swaps
+                repaint the strip. */}
+            {((breadcrumbs && breadcrumbs.length > 0) || tabs) && (
             <div style={breadcrumbStripStyle}>
                 <div className="container mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
                     {/* Breadcrumbs */}
@@ -166,6 +170,7 @@ export default function PageHeader({
                     )}
                 </div>
             </div>
+            )}
         </>
     );
 }

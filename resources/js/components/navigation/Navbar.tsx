@@ -310,7 +310,7 @@ export default function Navbar({
                                 <Tooltip content="Notes" placement="bottom">
                                     <button
                                         onClick={onNotesToggle}
-                                        className="alex-nav-icon-btn alex-nav-icon-btn--brand flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
+                                        className="alex-nav-icon-btn alex-nav-icon-btn--brand-secondary flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
                                         style={{
                                             background:
                                                 'color-mix(in srgb, var(--theme-brand-secondary-500) 60%, transparent)',

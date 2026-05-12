@@ -27,6 +27,8 @@ return [
     'show.new_blueprint' => 'New Blueprint',
     'show.show_details' => 'Show Details',
     'show.hide_details' => 'Hide Details',
+    'show.read_more' => 'Read More',
+    'show.read_less' => 'Read Less',
 
     // ── StatsBar (header stats strip) ───────────────────────────────
     'stats.entry.singular' => 'Entry',

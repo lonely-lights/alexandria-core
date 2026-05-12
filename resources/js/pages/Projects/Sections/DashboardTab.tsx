@@ -130,11 +130,16 @@ export default function DashboardTab({ dashboardBlueprints, allBlueprints = [], 
     }
 
     // Expanded view — dashboard cards + simple cards for the rest.
-    // Relationship cards are wider (each row spans source → target) so
-    // the grid tops out at 2 columns; other classifications pack 3-up.
+    // Mobile gets an explicit single column. Without grid-cols-1 the
+    // grid defaults to `grid-template-columns: none`, letting card
+    // content (40px icon + min-content title + chevron + gap + p-4) size
+    // the column to its intrinsic width (~420px), which overflows phone
+    // viewports and drags every position:fixed element along with it.
+    // Relationship cards stay 2-up max (each row spans source → target);
+    // other classifications pack 3-up.
     const expandedGridCols = classification === 'relationship'
-        ? 'sm:grid-cols-1 lg:grid-cols-2'
-        : 'sm:grid-cols-2 lg:grid-cols-3';
+        ? 'grid-cols-1 lg:grid-cols-2'
+        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
 
     return (
         <div ref={containerRef}>

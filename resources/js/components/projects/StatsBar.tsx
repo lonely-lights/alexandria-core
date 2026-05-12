@@ -1,9 +1,18 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import useT from '@alexandria/hooks/useT';
 import type { ProjectStats } from '@alexandria/types/projects';
 
 interface StatsBarProps {
     stats: ProjectStats;
+    /**
+     * Right-aligned slot for a dot menu / overflow control. The mobile
+     * Show.tsx layout drops the PageHeader breadcrumb strip entirely
+     * (no breadcrumbs to render, classification tabs already collapsed
+     * into this dot menu), so the menu re-homes here to share a single
+     * band with the stats numbers. Pass `undefined` on viewports where
+     * the menu lives elsewhere (e.g. the desktop PageHeader strip).
+     */
+    menu?: ReactNode;
 }
 
 const STATS_CONFIG = [
@@ -27,20 +36,36 @@ const subtleText: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
 
-export default function StatsBar({ stats }: StatsBarProps) {
+export default function StatsBar({ stats, menu }: StatsBarProps) {
     const t = useT();
     return (
         <div style={barStyle}>
-            <div className="container mx-auto flex max-w-7xl justify-center gap-8 px-4 py-3 sm:justify-start">
-                {STATS_CONFIG.map(({ key, singularKey, pluralKey, icon, accent }) => (
-                    <div key={key} className="flex items-center gap-2 text-sm">
-                        <i className={`fa-solid ${icon}`} style={{ color: accent }} aria-hidden="true" />
-                        <span className="font-semibold">{stats[key].toLocaleString()}</span>
-                        <span className="hidden sm:inline" style={subtleText}>
-                            {stats[key] === 1 ? t(singularKey) : t(pluralKey)}
-                        </span>
-                    </div>
-                ))}
+            {/* gap-4 on mobile (was gap-8) so four numbers + icons fit
+                comfortably at 320–375 viewports without crowding. sm:
+                relaxes back to the original gap-8. The wrapper
+                justify-between pushes the optional menu slot to the
+                right edge so it shares this band with the stats. */}
+            <div className="container mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-4 sm:gap-8">
+                    {STATS_CONFIG.map(({ key, singularKey, pluralKey, icon, accent }) => {
+                        const label = stats[key] === 1 ? t(singularKey) : t(pluralKey);
+                        return (
+                            <div key={key} className="flex items-center gap-2 text-sm">
+                                <i className={`fa-solid ${icon}`} style={{ color: accent }} aria-hidden="true" />
+                                <span className="font-semibold">{stats[key].toLocaleString()}</span>
+                                {/* Label stays in the DOM at every viewport so
+                                    screen readers read "661 entries", not a
+                                    bare "661". sr-only hides it visually
+                                    below sm: to keep the compact icon+number
+                                    layout there. */}
+                                <span className="sr-only sm:not-sr-only sm:inline" style={subtleText}>
+                                    {label}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+                {menu && <div className="flex-shrink-0">{menu}</div>}
             </div>
         </div>
     );

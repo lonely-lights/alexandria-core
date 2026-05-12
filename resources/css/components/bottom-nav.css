@@ -177,6 +177,19 @@ nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before {
     color: var(--theme-brand-primary-content) !important;
 }
 
+/* Mirror of --brand for buttons painted with --theme-brand-secondary-*
+   at rest (e.g. the Notes button). Without this dedicated rule those
+   buttons hover-flip to the brand-primary fill above, which reads as
+   "the green icon became yellow" rather than a normal hover state. */
+.alex-nav-icon-btn--brand-secondary:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-brand-secondary-500) 80%,
+        transparent
+    ) !important;
+    color: var(--theme-brand-secondary-content) !important;
+}
+
 .alex-nav-icon-btn--ghost:hover {
     background: color-mix(
         in srgb,
