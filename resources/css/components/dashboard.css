@@ -104,33 +104,6 @@
         var(--theme-motion-easing-standard);
 }
 
-/* ── Quick-action tile — subtle border + bg lift on hover ────────────── */
-
-.alex-dash-quick-tile {
-    background: color-mix(in srgb, var(--theme-base-content) 4%, transparent);
-    border: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
-    border-radius: var(--theme-radius-card);
-    transition:
-        background-color var(--theme-motion-duration-fast)
-            var(--theme-motion-easing-standard),
-        border-color var(--theme-motion-duration-fast)
-            var(--theme-motion-easing-standard);
-}
-
-.alex-dash-quick-tile:hover {
-    background: color-mix(in srgb, var(--theme-base-content) 7%, transparent);
-    border-color: color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent);
-}
-
-.alex-dash-quick-tile-icon {
-    transition: transform var(--theme-motion-duration-fast)
-        var(--theme-motion-easing-standard);
-}
-
-.alex-dash-quick-tile:hover .alex-dash-quick-tile-icon {
-    transform: scale(1.1);
-}
-
 /* ── View-toggle pill ────────────────────────────────────────────────── */
 
 .alex-dash-view-toggle {

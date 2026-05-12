@@ -2,12 +2,20 @@ import { usePage } from '@inertiajs/react';
 import { useEffect, useState, type CSSProperties } from 'react';
 
 import AppLayout from '../layouts/AppLayout';
+import Select from '@alexandria/components/ui/Select';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import useT from '@alexandria/hooks/useT';
 
 type ProjectViewMode = 'grid' | 'rows' | 'table';
 const PROJECT_VIEW_STORAGE_KEY = 'dashboard:project-view';
+
+type RecentFilter = 'both' | 'entries' | 'notes';
+const RECENT_FILTER_STORAGE_KEY = 'dashboard:recent-filter';
+const RECENT_LIMIT_STORAGE_KEY = 'dashboard:recent-limit';
+const RECENT_LIMIT_OPTIONS = [5, 10, 15, 25] as const;
+type RecentLimit = (typeof RECENT_LIMIT_OPTIONS)[number];
+const DEFAULT_RECENT_LIMIT: RecentLimit = 10;
 
 interface DashboardProject {
     id: number;
@@ -33,7 +41,25 @@ interface RecentEntry {
     project_name: string | null;
     project_slug: string | null;
     updated_at: string | null;
+    updated_at_ts: number | null;
 }
+
+interface RecentNote {
+    id: number;
+    title: string;
+    preview: string | null;
+    project_name: string | null;
+    project_slug: string | null;
+    updated_at: string | null;
+    updated_at_ts: number | null;
+}
+
+// Discriminated union used to interleave entries + notes in the
+// combined "Both" view — the `_kind` tag lets the row renderer pick
+// the right icon, subtitle, and click target without prop-juggling.
+type RecentRow =
+    | { _kind: 'entry'; item: RecentEntry }
+    | { _kind: 'note'; item: RecentNote };
 
 interface DashboardStats {
     projects: number;
@@ -48,6 +74,7 @@ interface DashboardGreeting {
 interface DashboardProps {
     projects: DashboardProject[];
     recentEntries: RecentEntry[];
+    recentNotes: RecentNote[];
     stats: DashboardStats;
     greeting: DashboardGreeting;
 }
@@ -76,21 +103,38 @@ const surfaceTinted: CSSProperties = {
 };
 
 export default function Dashboard() {
-    const { projects, recentEntries, stats, greeting } = usePage<{ props: DashboardProps }>().props as unknown as DashboardProps;
+    const { projects, recentEntries, recentNotes, stats, greeting } = usePage<{ props: DashboardProps }>().props as unknown as DashboardProps;
     const t = useT();
 
-    const [viewMode, setViewMode] = useState<ProjectViewMode>('grid');
+    // Default to 'rows' — grid view is temporarily hidden (see ViewToggle
+    // for the why). The effectiveViewMode below also coerces a persisted
+    // 'grid' preference to 'rows' so returning users don't see an empty
+    // section when the toggle no longer offers that option.
+    const [viewMode, setViewMode] = useState<ProjectViewMode>('rows');
+    const [recentFilter, setRecentFilter] = useState<RecentFilter>('both');
+    const [recentLimit, setRecentLimit] = useState<RecentLimit>(DEFAULT_RECENT_LIMIT);
     const [greetingKey, setGreetingKey] = useState<string>(() => greetingKeyForHour(new Date().getHours()));
 
-    // Table view doesn't fit at phone widths — 5 columns at ~40-60px
-    // each would force horizontal scroll. On mobile we hide the Table
-    // button entirely and, if the user's persisted preference is
-    // already 'table', we render Rows instead. We DON'T overwrite
-    // localStorage, so the table preference returns when the user
-    // widens back to desktop.
+    // View-mode fallbacks. Two cases where we render Rows instead of
+    // what's in state:
+    //   - Mobile + persisted 'table'  → 'rows' (table doesn't fit at
+    //     phone widths; 5 columns force horizontal scroll).
+    //   - Any size + persisted 'grid' → 'rows' (grid view is hidden
+    //     from the toggle while it's being reworked; ProjectCard +
+    //     branch logic remain in the file for the eventual return).
+    // We DON'T overwrite localStorage in either case, so the original
+    // preference returns the moment the gate flips back open.
     const isMobileDashboard = useMediaQuery('(max-width: 1023px)');
-    const effectiveViewMode: ProjectViewMode =
-        isMobileDashboard && viewMode === 'table' ? 'rows' : viewMode;
+    // Explicit IIFE return type widens back to `ProjectViewMode` —
+    // without it, TS narrows the union to `'rows' | 'table'` because
+    // none of the branches actually return `'grid'`, which then makes
+    // the `=== 'grid'` branch below read as a TS2367 dead comparison.
+    // We need that branch alive for when grid view comes back.
+    const effectiveViewMode = ((): ProjectViewMode => {
+        if (viewMode === 'grid') return 'rows';
+        if (isMobileDashboard && viewMode === 'table') return 'rows';
+        return viewMode;
+    })();
 
     // Refresh the greeting every minute so it updates if the user crosses a
     // time-of-day boundary while sitting on the dashboard.
@@ -116,6 +160,46 @@ export default function Dashboard() {
         try { localStorage.setItem(PROJECT_VIEW_STORAGE_KEY, mode); } catch { /* noop */ }
     }
 
+    // Hydrate recent-section preferences from localStorage. Two
+    // independent knobs: which kinds to show, and how many to cap at.
+    useEffect(() => {
+        try {
+            const filter = localStorage.getItem(RECENT_FILTER_STORAGE_KEY);
+            if (filter === 'both' || filter === 'entries' || filter === 'notes') {
+                setRecentFilter(filter);
+            }
+            const limitRaw = localStorage.getItem(RECENT_LIMIT_STORAGE_KEY);
+            const limitNum = limitRaw != null ? Number.parseInt(limitRaw, 10) : NaN;
+            if (RECENT_LIMIT_OPTIONS.includes(limitNum as RecentLimit)) {
+                setRecentLimit(limitNum as RecentLimit);
+            }
+        } catch { /* storage unavailable */ }
+    }, []);
+
+    function changeRecentFilter(filter: RecentFilter) {
+        setRecentFilter(filter);
+        try { localStorage.setItem(RECENT_FILTER_STORAGE_KEY, filter); } catch { /* noop */ }
+    }
+
+    function changeRecentLimit(limit: RecentLimit) {
+        setRecentLimit(limit);
+        try { localStorage.setItem(RECENT_LIMIT_STORAGE_KEY, String(limit)); } catch { /* noop */ }
+    }
+
+    // Derive the actual rows to render. `entries` and `notes` are
+    // already sorted desc by updated_at server-side; for `both` we
+    // merge + re-sort by `updated_at_ts` so the interleave reflects
+    // true recency rather than e.g. all entries first / all notes after.
+    const recentRows: RecentRow[] = (() => {
+        const entriesRows: RecentRow[] = recentEntries.map((e) => ({ _kind: 'entry', item: e }));
+        const notesRows: RecentRow[] = recentNotes.map((n) => ({ _kind: 'note', item: n }));
+        if (recentFilter === 'entries') return entriesRows.slice(0, recentLimit);
+        if (recentFilter === 'notes') return notesRows.slice(0, recentLimit);
+        return [...entriesRows, ...notesRows]
+            .sort((a, b) => (b.item.updated_at_ts ?? 0) - (a.item.updated_at_ts ?? 0))
+            .slice(0, recentLimit);
+    })();
+
     const projectsSection = (
         <section className="min-w-0">
             <div className="mb-5 flex items-center justify-between gap-3">
@@ -132,8 +216,8 @@ export default function Dashboard() {
                     >
                         {projects.length}{' '}
                         {projects.length === 1
-                            ? t('dashboard.section.world_singular')
-                            : t('dashboard.section.world_plural')}
+                            ? t('dashboard.section.project_singular')
+                            : t('dashboard.section.project_plural')}
                     </span>
                 </div>
                 <ViewToggle current={effectiveViewMode} onChange={changeViewMode} t={t} hideTable={isMobileDashboard} />
@@ -148,7 +232,7 @@ export default function Dashboard() {
             ) : effectiveViewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {projects.map((project) => (
-                        <ProjectCard key={project.id} project={project} />
+                        <ProjectCard key={project.id} project={project} t={t} />
                     ))}
                 </div>
             ) : effectiveViewMode === 'rows' ? (
@@ -165,10 +249,27 @@ export default function Dashboard() {
 
     const recentSection = (
         <section>
-            <h2 className="mb-5 font-serif text-2xl md:text-3xl font-bold tracking-tight">
-                {t('dashboard.section.recent')}
-            </h2>
-            {recentEntries.length > 0 ? (
+            {/* Heading + controls share a flex row. Three-pill filter sits
+                left of the heading on mobile (wrap), to the right on
+                desktop. Count picker hugs the far right. */}
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-serif text-2xl md:text-3xl font-bold tracking-tight">
+                    {t('dashboard.section.recent')}
+                </h2>
+                <div className="flex items-center gap-3">
+                    <RecentFilterToggle
+                        value={recentFilter}
+                        onChange={changeRecentFilter}
+                        t={t}
+                    />
+                    <RecentLimitPicker
+                        value={recentLimit}
+                        onChange={changeRecentLimit}
+                        t={t}
+                    />
+                </div>
+            </div>
+            {recentRows.length > 0 ? (
                 <div
                     className="overflow-hidden border"
                     style={{
@@ -177,13 +278,23 @@ export default function Dashboard() {
                         borderRadius: 'var(--theme-radius-card)',
                     }}
                 >
-                    {recentEntries.map((entry, index) => (
-                        <RecentEntryRow
-                            key={entry.id}
-                            entry={entry}
-                            isLast={index === recentEntries.length - 1}
-                        />
-                    ))}
+                    {recentRows.map((row, index) => {
+                        const isLast = index === recentRows.length - 1;
+                        return row._kind === 'entry' ? (
+                            <RecentEntryRow
+                                key={`entry-${row.item.id}`}
+                                entry={row.item}
+                                isLast={isLast}
+                            />
+                        ) : (
+                            <RecentNoteRow
+                                key={`note-${row.item.id}`}
+                                note={row.item}
+                                isLast={isLast}
+                                t={t}
+                            />
+                        );
+                    })}
                 </div>
             ) : (
                 <div
@@ -205,27 +316,20 @@ export default function Dashboard() {
     return (
         <AppLayout title={t('dashboard.page.title')}>
             <div className="container mx-auto max-w-7xl px-4 py-8 lg:py-12">
-                {/* Greeting header + inline quick actions */}
-                <header className="mb-6 grid grid-cols-1 items-end gap-5 sm:mb-10 sm:gap-6 lg:grid-cols-[1fr_auto] lg:gap-10">
-                    <div>
-                        <div
-                            className="text-[11px] font-semibold uppercase tracking-[.25em] mb-2"
-                            style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-500) 80%, transparent)' }}
-                        >
-                            {t(`dashboard.greeting.${greetingKey}`)}
-                        </div>
-                        <h1 className="font-serif text-3xl sm:text-4xl md:text-6xl font-bold leading-tight sm:leading-none tracking-tight">
-                            {greeting.name}.
-                        </h1>
-                        <p className="mt-2 text-sm sm:mt-3 sm:text-base" style={subtleText}>
-                            {t('dashboard.page.tagline')}
-                        </p>
+                {/* Greeting header */}
+                <header className="mb-6 sm:mb-10">
+                    <div
+                        className="text-[11px] font-semibold uppercase tracking-[.25em] mb-2"
+                        style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-500) 80%, transparent)' }}
+                    >
+                        {t(`dashboard.greeting.${greetingKey}`)}
                     </div>
-                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                        <QuickActionTile href="/profile" icon="fa-user-gear" label={t('dashboard.quick.profile')} />
-                        <QuickActionTile href="/ai/suggestions" icon="fa-wand-magic-sparkles" label={t('dashboard.quick.ai_suggestions')} />
-                        <QuickActionTile href="/settings#pref-appearance" icon="fa-palette" label={t('dashboard.quick.appearance')} />
-                    </div>
+                    <h1 className="font-serif text-3xl sm:text-4xl md:text-6xl font-bold leading-tight sm:leading-none tracking-tight">
+                        {greeting.name}.
+                    </h1>
+                    <p className="mt-2 text-sm sm:mt-3 sm:text-base" style={subtleText}>
+                        {t('dashboard.page.tagline')}
+                    </p>
                 </header>
 
                 {/* Stats strip */}
@@ -277,34 +381,65 @@ function StatTile({ label, value, icon, accent }: { label: string; value: number
     );
 }
 
-function ProjectCard({ project }: { project: DashboardProject }) {
+function ProjectCard({ project, t }: { project: DashboardProject; t: (k: string) => string }) {
     return (
         <a href={`/p/${project.slug}`} className="alex-dash-card group block overflow-hidden">
-            {/* Banner — much shorter on mobile (h-14 / 56px) so the
-                card doesn't dedicate ~30% of its height to chrome on a
-                phone screen. Desktop keeps the airier h-28 / 112px. */}
-            {project.banner_url ? (
+            {/* Banner band — sized to the shorter side of the golden
+                ratio against the content body below (φ ≈ 1.618), so the
+                card reads as "small banner, larger content" instead of
+                a half-and-half split. Mobile: h-14 / 56px paired with
+                ~110px content. Desktop: h-16 / 64px paired with ~130px
+                content. The stat-chip pill sits absolutely-positioned
+                + vertically centered in this band so it reads as a
+                "snapshot" badge floating over the banner image. */}
+            <div className="relative">
+                {project.banner_url ? (
+                    <div
+                        className="alex-dash-banner-img h-14 w-full bg-cover bg-center sm:h-16"
+                        style={{ backgroundImage: `url(${project.banner_url})` }}
+                    />
+                ) : (
+                    <div
+                        className="h-14 w-full sm:h-16"
+                        style={{
+                            background: 'linear-gradient(to bottom right, color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent), color-mix(in srgb, var(--theme-brand-secondary-500) 10%, transparent), color-mix(in srgb, var(--theme-brand-accent-500) 20%, transparent))',
+                        }}
+                    />
+                )}
+
+                {/* Stat pill — single dark backdrop wrapping all three
+                    chips. Translucent black + a backdrop blur keeps
+                    the banner image visible behind while guaranteeing
+                    contrast on any banner colour. Vertically centered
+                    in the banner band (`top-1/2 -translate-y-1/2`) so
+                    the pill rides the optical middle regardless of
+                    band height. */}
                 <div
-                    className="alex-dash-banner-img h-14 w-full bg-cover bg-center sm:h-28"
-                    style={{ backgroundImage: `url(${project.banner_url})` }}
-                />
-            ) : (
-                <div
-                    className="h-14 w-full sm:h-28"
+                    className="absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center gap-2.5 px-3 py-1 backdrop-blur-sm"
                     style={{
-                        background: 'linear-gradient(to bottom right, color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent), color-mix(in srgb, var(--theme-brand-secondary-500) 10%, transparent), color-mix(in srgb, var(--theme-brand-accent-500) 20%, transparent))',
+                        background: 'rgba(0, 0, 0, 0.55)',
+                        borderRadius: 'var(--theme-radius-badge, 9999px)',
                     }}
-                />
-            )}
+                >
+                    <StatChip icon="fa-file-lines" value={project.entries_count} label={t('dashboard.stat.entries')} accent="var(--theme-brand-primary-500)" onDark />
+                    <StatChip icon="fa-cubes" value={project.blueprints_count} label={t('dashboard.stat.blueprints')} accent="var(--theme-brand-secondary-500)" onDark />
+                    <StatChip icon="fa-users" value={project.members_count} label={t('dashboard.stat.members')} accent="var(--theme-brand-accent-500)" onDark />
+                </div>
+            </div>
 
             {/* Content */}
             <div className="p-5">
                 <div className="flex items-start gap-4">
+                    {/* Floating thumbnail — bumped from h-16 (64px) to
+                        h-[4.5rem] (72px). The -mt-12 negative margin is
+                        unchanged, so the thumbnail still pokes the same
+                        ~28px up into the banner — only the visible
+                        portion below the banner grows. */}
                     {project.page_image_url ? (
                         <img
                             src={project.page_image_url}
                             alt={project.name}
-                            className="-mt-12 h-16 w-16 flex-shrink-0 object-cover"
+                            className="-mt-12 h-[4.5rem] w-[4.5rem] flex-shrink-0 object-cover"
                             style={{
                                 borderRadius: 'var(--theme-radius-card)',
                                 border: '4px solid var(--theme-base-surface)',
@@ -313,7 +448,7 @@ function ProjectCard({ project }: { project: DashboardProject }) {
                         />
                     ) : (
                         <div
-                            className="-mt-12 flex h-16 w-16 flex-shrink-0 items-center justify-center"
+                            className="-mt-12 flex h-[4.5rem] w-[4.5rem] flex-shrink-0 items-center justify-center"
                             style={{
                                 borderRadius: 'var(--theme-radius-card)',
                                 border: '4px solid var(--theme-base-surface)',
@@ -322,7 +457,7 @@ function ProjectCard({ project }: { project: DashboardProject }) {
                             }}
                         >
                             <i
-                                className="fa-solid fa-globe text-xl"
+                                className="fa-solid fa-globe text-2xl"
                                 style={{ color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' }}
                                 aria-hidden="true"
                             />
@@ -340,33 +475,6 @@ function ProjectCard({ project }: { project: DashboardProject }) {
                         {project.logline}
                     </p>
                 )}
-
-                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs" style={fadedText}>
-                    <span className="flex items-center gap-1.5">
-                        <i
-                            className="fa-solid fa-file-lines"
-                            style={{ color: 'color-mix(in srgb, var(--theme-brand-primary-500) 50%, transparent)' }}
-                            aria-hidden="true"
-                        />
-                        {project.entries_count}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <i
-                            className="fa-solid fa-cubes"
-                            style={{ color: 'color-mix(in srgb, var(--theme-brand-secondary-500) 50%, transparent)' }}
-                            aria-hidden="true"
-                        />
-                        {project.blueprints_count}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <i
-                            className="fa-solid fa-users"
-                            style={{ color: 'color-mix(in srgb, var(--theme-brand-accent-500) 50%, transparent)' }}
-                            aria-hidden="true"
-                        />
-                        {project.members_count}
-                    </span>
-                </div>
             </div>
         </a>
     );
@@ -407,28 +515,154 @@ function RecentEntryRow({ entry, isLast }: { entry: RecentEntry; isLast: boolean
     );
 }
 
-function QuickActionTile({ href, icon, label }: { href: string; icon: string; label: string }) {
-    return (
-        <a
-            href={href}
-            className="alex-dash-quick-tile group flex min-w-0 flex-col items-center gap-1.5 px-2 py-3 text-center sm:gap-2 sm:px-4 sm:py-5"
-            aria-label={label}
-        >
+/**
+ * Recent-row variant for notes. Mirrors `RecentEntryRow`'s shape so the
+ * combined "Both" list reads as one visual rhythm — same icon-circle on
+ * the left, same right-aligned timestamp. The icon swaps to a sticky
+ * note glyph and the subtitle leads with the "Note" kind tag so the
+ * eye can quickly distinguish kinds in mixed mode.
+ *
+ * Click target: routes to the note's primary project's notes page when
+ * a project pivot exists; renders as a static row for orphan notes.
+ * Deep-linking to a specific note id inside the notes drawer can come
+ * later — for now, surfacing the project is enough to get the user to
+ * the right place.
+ */
+function RecentNoteRow({
+    note,
+    isLast,
+    t,
+}: {
+    note: RecentNote;
+    isLast: boolean;
+    t: ReturnType<typeof useT>;
+}) {
+    const borderStyle: CSSProperties = {
+        borderBottom: isLast
+            ? 'none'
+            : '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    };
+
+    const body = (
+        <>
             <div
-                className="alex-dash-quick-tile-icon flex h-9 w-9 items-center justify-center sm:h-12 sm:w-12"
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center"
                 style={{
-                    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)',
-                    color: 'var(--theme-brand-primary-500)',
-                    borderRadius: 'var(--theme-radius-card)',
+                    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+                    borderRadius: 'var(--theme-radius-button)',
                 }}
             >
-                <i className={`fa-solid ${icon} text-lg sm:text-2xl`} aria-hidden="true" />
+                <i className="fa-solid fa-note-sticky text-sm" style={subtleText} aria-hidden="true" />
             </div>
-            {/* Mobile drops to text-[10px] so longer labels like
-                "AI suggestions" fit at ~106px tile width without
-                truncating to ellipsis. */}
-            <span className="text-[10px] font-semibold leading-tight truncate w-full sm:text-xs">{label}</span>
+            <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">
+                    {note.title || t('dashboard.recent.note_untitled')}
+                </p>
+                <p className="text-xs truncate" style={fadedText}>
+                    {t('dashboard.recent.note_kind')}
+                    {note.project_name ? ` · ${note.project_name}` : ''}
+                </p>
+            </div>
+            <span className="flex-shrink-0 text-xs" style={microText}>{note.updated_at}</span>
+        </>
+    );
+
+    // Orphan notes (no project link) render as a non-clickable row.
+    if (!note.project_slug) {
+        return (
+            <div className="alex-dash-recent-row flex items-center gap-3 px-4 py-3" style={borderStyle}>
+                {body}
+            </div>
+        );
+    }
+
+    return (
+        <a
+            href={`/notes/${note.project_slug}`}
+            className="alex-dash-recent-row flex items-center gap-3 px-4 py-3"
+            style={borderStyle}
+        >
+            {body}
         </a>
+    );
+}
+
+/**
+ * Three-pill filter toggle for the Recent section. Same visual family
+ * as `ViewToggle` (the project view-mode pills) but scoped to a smaller
+ * set of options. Renders both/entries/notes; persists via the
+ * `dashboard:recent-filter` localStorage key.
+ */
+function RecentFilterToggle({
+    value,
+    onChange,
+    t,
+}: {
+    value: RecentFilter;
+    onChange: (next: RecentFilter) => void;
+    t: ReturnType<typeof useT>;
+}) {
+    const options: Array<{ key: RecentFilter; label: string }> = [
+        { key: 'both', label: t('dashboard.recent.filter.both') },
+        { key: 'entries', label: t('dashboard.recent.filter.entries') },
+        { key: 'notes', label: t('dashboard.recent.filter.notes') },
+    ];
+
+    return (
+        <div
+            className="alex-dash-view-toggle inline-flex shrink-0 p-0.5"
+            style={{ borderRadius: 'var(--theme-radius-input)' }}
+            role="tablist"
+            aria-label={t('dashboard.recent.filter.aria_label')}
+        >
+            {options.map((opt) => {
+                const active = opt.key === value;
+                return (
+                    <button
+                        key={opt.key}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => onChange(opt.key)}
+                        className={`alex-dash-view-btn px-2.5 py-1 text-xs font-medium ${active ? 'alex-dash-view-btn--active' : ''}`}
+                        style={{ borderRadius: 'var(--theme-radius-input)' }}
+                    >
+                        {opt.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
+/**
+ * Count selector — picks how many recent items to show. Persists via
+ * the `dashboard:recent-limit` localStorage key. Delegates the trigger
+ * + menu chrome to `<Select>` so the option list inherits theme tokens
+ * (the previous native `<select>` rendered its dropdown with stark
+ * OS-default white/black that ignored the theme).
+ */
+function RecentLimitPicker({
+    value,
+    onChange,
+    t,
+}: {
+    value: RecentLimit;
+    onChange: (next: RecentLimit) => void;
+    t: ReturnType<typeof useT>;
+}) {
+    return (
+        <Select<RecentLimit>
+            value={value}
+            options={RECENT_LIMIT_OPTIONS.map((n) => ({ value: n, label: String(n) }))}
+            onChange={onChange}
+            ariaLabel={t('dashboard.recent.limit.aria_label')}
+            // Menu aligns to the trigger's right edge — the trigger sits
+            // at the far-right of the Recent header row, so the menu
+            // would otherwise hang off the viewport on narrow screens.
+            align="right"
+            menuWidth={80}
+        />
     );
 }
 
@@ -460,7 +694,12 @@ function EmptyState({ icon, title, description }: { icon: string; title: string;
 
 function ViewToggle({ current, onChange, t, hideTable = false }: { current: ProjectViewMode; onChange: (m: ProjectViewMode) => void; t: (k: string) => string; hideTable?: boolean }) {
     const allButtons: Array<{ key: ProjectViewMode; icon: string; label: string }> = [
-        { key: 'grid', icon: 'fa-grip', label: t('dashboard.view.grid') },
+        // Grid view is intentionally omitted from the toggle for now —
+        // the layout is being reworked and we want users on the rows /
+        // table presentations until it's ready. ProjectCard + its
+        // grid-render branch stay in the file (deliberately kept, not
+        // deleted) so the visual treatment is one toggle-flip away
+        // when we circle back.
         { key: 'rows', icon: 'fa-bars', label: t('dashboard.view.rows') },
         { key: 'table', icon: 'fa-table', label: t('dashboard.view.table') },
     ];
@@ -574,8 +813,11 @@ function ProjectRow({ project, t }: { project: DashboardProject; t: (k: string) 
 
             {/* Content row — image inline at narrow widths (mobile);
                 desktop uses the absolute-positioned overlay below for
-                the avatar-on-banner pose, so the inline image hides. */}
-            <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 sm:flex-[2] sm:gap-5 sm:px-5 sm:py-0 sm:pl-20">
+                the avatar-on-banner pose, so the inline image hides.
+                `sm:pl-28` (7rem) clears the absolute image (which ends
+                at 5.5rem) and leaves ~1.5rem of breathing room between
+                the image's right edge and the title. */}
+            <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 sm:flex-[2] sm:gap-5 sm:px-5 sm:py-0 sm:pl-28">
                 {/* Inline image — visible only below sm:. */}
                 <div className="flex h-12 w-12 flex-shrink-0 sm:hidden">
                     {projectImage}
@@ -594,12 +836,21 @@ function ProjectRow({ project, t }: { project: DashboardProject; t: (k: string) 
                         )}
                     </div>
 
-                    <div className="hidden md:flex flex-shrink-0 items-center gap-5 text-sm" style={subtleText}>
-                        <StatPair icon="fa-file-lines" value={project.entries_count} label={t('dashboard.row.entries')} accent="var(--theme-brand-primary-500)" />
-                        <StatPair icon="fa-cubes" value={project.blueprints_count} label={t('dashboard.row.blueprints')} accent="var(--theme-brand-secondary-500)" />
-                        <StatPair icon="fa-users" value={project.members_count} label={t('dashboard.row.members')} accent="var(--theme-brand-accent-500)" />
+                    {/* Succinct stat chips — visible at all viewport
+                        widths (was previously `hidden md:flex`). Tooltip
+                        on hover names what each icon represents, so the
+                        cluster reads as "12 · 4 · 1" without a legend
+                        crowding the row. */}
+                    <div className="flex flex-shrink-0 items-center gap-2.5 sm:gap-4">
+                        <StatChip icon="fa-file-lines" value={project.entries_count} label={t('dashboard.stat.entries')} accent="var(--theme-brand-primary-500)" />
+                        <StatChip icon="fa-cubes" value={project.blueprints_count} label={t('dashboard.stat.blueprints')} accent="var(--theme-brand-secondary-500)" />
+                        <StatChip icon="fa-users" value={project.members_count} label={t('dashboard.stat.members')} accent="var(--theme-brand-accent-500)" />
                         {project.last_activity && (
-                            <div className="flex flex-col items-end leading-tight">
+                            // `md:ml-6` puts a clear 1.5rem gap between
+                            // the stats cluster and the Updated block so
+                            // the two read as distinct columns rather
+                            // than a single comma-separated string.
+                            <div className="hidden md:ml-6 md:flex flex-col items-end leading-tight">
                                 <span
                                     className="text-[11px] font-semibold uppercase tracking-wider"
                                     style={fadedText}
@@ -626,11 +877,15 @@ function ProjectRow({ project, t }: { project: DashboardProject; t: (k: string) 
 
             {/* Floating image — desktop only. Overlaps the banner /
                 content boundary so the top edge pokes up into the
-                banner like an avatar over a cover photo. */}
+                banner like an avatar over a cover photo. `left: 1rem`
+                gives the image a comfortable margin from the row's
+                left edge; paired with the content's `sm:pl-28` (7rem)
+                below, the title gets ~1.5rem of breathing room after
+                the image's right edge. */}
             <div
                 className="absolute hidden sm:flex items-center justify-center"
                 style={{
-                    left: '0.5rem',
+                    left: '1rem',
                     top: '1rem',
                     width: '4.5rem',
                     height: '4.5rem',
@@ -642,18 +897,49 @@ function ProjectRow({ project, t }: { project: DashboardProject; t: (k: string) 
     );
 }
 
-function StatPair({ icon, value, label, accent }: { icon: string; value: number; label: string; accent: string }) {
+/**
+ * Compact icon + number chip. The label travels in a hover-revealed
+ * Tooltip so the chip itself stays at a single readable glyph + count,
+ * while still affording "what is this number?" without forcing the
+ * user to bring a legend out into the layout. Used on both ProjectCard
+ * (the grid view) and ProjectRow (the list view) so the stats read
+ * the same across surface modes.
+ */
+function StatChip({
+    icon,
+    value,
+    label,
+    accent,
+    onDark = false,
+}: {
+    icon: string;
+    value: number;
+    label: string;
+    accent: string;
+    /** Renders the number in near-white when the chip sits inside a
+     *  dark pill backdrop (e.g. the grid card's banner overlay). Icon
+     *  keeps its accent colour because saturated brand hues still read
+     *  on a translucent black backdrop and the colour-coding is what
+     *  lets the eye discriminate between entries / blueprints /
+     *  members at a glance. */
+    onDark?: boolean;
+}) {
     return (
-        <div className="flex flex-col items-center leading-tight">
-            <div
-                className="flex items-center gap-1.5 text-base font-semibold"
-                style={{ color: 'color-mix(in srgb, var(--theme-base-content) 85%, transparent)' }}
+        <Tooltip content={label}>
+            {/* No `cursor-default` here — the chip lives inside a
+                clickable anchor (ProjectCard, ProjectRow) and we want
+                the user to see the parent's pointer cursor while
+                hovering. The tooltip still surfaces because Tooltip's
+                hover detection is independent of cursor styling. */}
+            <span
+                className="inline-flex items-center gap-1.5 text-sm"
+                style={onDark ? { color: 'rgba(255, 255, 255, 0.95)' } : fadedText}
+                tabIndex={0}
             >
                 <i className={`fa-solid ${icon}`} style={{ color: accent }} aria-hidden="true" />
-                <span>{value}</span>
-            </div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider" style={fadedText}>{label}</span>
-        </div>
+                {value}
+            </span>
+        </Tooltip>
     );
 }
 

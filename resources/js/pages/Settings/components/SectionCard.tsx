@@ -26,6 +26,12 @@ export default function SectionCard({
 }) {
     return (
         <div
+            // `data-settings-card` is a marker the SettingsDrawer's
+            // scoped CSS targets to flatten the card chrome (no border
+            // radius, no border, no shadow) when this renders inside
+            // the mobile drawer. Outside the drawer the styles below
+            // apply normally.
+            data-settings-card
             className="overflow-hidden border shadow-xl"
             style={{
                 background: 'var(--theme-base-surface)',

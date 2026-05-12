@@ -26,26 +26,32 @@ return [
     'greeting.evening' => 'Good evening',
     'greeting.night' => 'Good night',
 
-    // ── Quick-action tiles ──────────────────────────────────────────
-    'quick.profile' => 'Profile',
-    'quick.ai_suggestions' => 'AI suggestions',
-    'quick.appearance' => 'Appearance',
-
-    // ── Stats strip ─────────────────────────────────────────────────
+    // ── Stats strip + project-row chip tooltips ─────────────────────
     'stat.projects' => 'Projects',
     'stat.entries' => 'Entries',
     'stat.blueprints' => 'Blueprints',
+    'stat.members' => 'Members',
 
     // ── Section headers ─────────────────────────────────────────────
     'section.projects' => 'Projects',
     'section.recent' => 'Recent',
-    'section.world_singular' => 'world',
-    'section.world_plural' => 'worlds',
+    'section.project_singular' => 'project',
+    'section.project_plural' => 'projects',
 
     // ── Empty states ────────────────────────────────────────────────
     'empty.projects.title' => 'No projects yet',
     'empty.projects.description' => 'Create your first project to start building your world.',
     'empty.recent.text' => 'No recent activity',
+
+    // ── Recent section controls ─────────────────────────────────────
+    'recent.filter.aria_label' => 'Recent activity filter',
+    'recent.filter.both' => 'Both',
+    'recent.filter.entries' => 'Entries',
+    'recent.filter.notes' => 'Notes',
+    'recent.limit.label' => 'Show',
+    'recent.limit.aria_label' => 'Number of recent items to show',
+    'recent.note_kind' => 'Note',
+    'recent.note_untitled' => 'Untitled note',
 
     // ── View toggle ─────────────────────────────────────────────────
     'view.aria_label' => 'Project view mode',
@@ -53,10 +59,10 @@ return [
     'view.rows' => 'Rows',
     'view.table' => 'Table',
 
-    // ── Project row stats ───────────────────────────────────────────
-    'row.entries' => 'entries',
-    'row.blueprints' => 'blueprints',
-    'row.members' => 'members',
+    // ── Project row ─────────────────────────────────────────────────
+    // (Stat chip labels live under `stat.*` above — shared with the
+    // top stats strip + the grid-card chips so the same tooltip copy
+    // appears wherever the icons render.)
     'row.updated' => 'Updated',
 
     // ── Table column headers ────────────────────────────────────────

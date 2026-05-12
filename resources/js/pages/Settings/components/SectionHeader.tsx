@@ -24,6 +24,12 @@ export default function SectionHeader({
 
     return (
         <div
+            // `data-settings-section-header` is a marker the
+            // SettingsDrawer hides via scoped CSS — the drawer's top
+            // bar already carries the section's parent-group label,
+            // so this big icon+title+subtitle block reads as redundant
+            // chrome inside the sheet.
+            data-settings-section-header
             className="relative overflow-hidden px-8 py-8"
             style={{
                 background: `linear-gradient(to bottom right, ${brandTint10}, transparent, transparent)`,

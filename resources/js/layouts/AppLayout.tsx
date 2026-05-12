@@ -12,8 +12,20 @@ import { ToastProvider } from '../components/ui/ToastProvider';
 import Logo from '../components/ui/Logo';
 import Fab from '../components/ui/Fab';
 import Modal from '../components/ui/Modal';
+import SettingsDrawer from '../pages/Settings/SettingsDrawer';
+import { preloadSettings, getSettingsSlots } from '../pages/Settings/settingsCache';
 import type { BottomNavTab, UserMenuItem } from '../types/navigation';
 import type { SharedProps } from '../types/index';
+
+/** Event the bottom-nav Settings tab dispatches to open the drawer.
+ *  Any caller can `window.dispatchEvent(new CustomEvent(...))` to open
+ *  it from outside the React tree. */
+export const SETTINGS_DRAWER_TOGGLE_EVENT = 'alexandria-core:settings-drawer-toggle';
+
+/** Fired after the drawer's slide-down animation completes. The
+ *  /settings page listens for this to `router.back()` when the user
+ *  closes the drawer (so they don't land on an empty /settings shell). */
+export const SETTINGS_DRAWER_CLOSED_EVENT = 'alexandria-core:settings-drawer-closed';
 
 /**
  * Default actions surfaced by the global add-new FAB. Stub onClick
@@ -105,10 +117,19 @@ function buildDefaultBottomNavTabs(
             icon: 'fa-solid fa-user',
         },
         {
+            // Settings on mobile is a drawer, not a route — dispatching
+            // the toggle event opens the globally-mounted SettingsDrawer
+            // over whatever page the user is on. Avoids the /settings
+            // page-load latency on every tap; underlying page state
+            // (scroll, open modals, draft notes) survives.
             id: 'settings',
             label: 'Settings',
-            href: '/settings',
+            href: '#',
             icon: 'fa-solid fa-gear',
+            onClick: (event) => {
+                event.preventDefault();
+                window.dispatchEvent(new CustomEvent(SETTINGS_DRAWER_TOGGLE_EVENT));
+            },
         },
     ];
 }
@@ -284,6 +305,7 @@ export default function AppLayout({
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [paletteOpen, setPaletteOpen] = useState(false);
     const [addNewOpen, setAddNewOpen] = useState(false);
+    const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
     const pageProps = usePage<SharedProps>().props;
     const { currentProject, auth } = pageProps;
     const user = auth?.user ?? null;
@@ -451,6 +473,44 @@ export default function AppLayout({
         };
     }, []);
 
+    // Settings drawer wiring. Bottom-nav Settings tap dispatches the
+    // toggle event; any other caller (e.g., a "Quick Settings" button
+    // we might add later) can do the same. Preload the payload in idle
+    // time once the user is authed so the drawer renders with cached
+    // data the first time it opens — no perceptible "loading" state.
+    useEffect(() => {
+        function openDrawer() {
+            setSettingsDrawerOpen(true);
+        }
+        window.addEventListener(SETTINGS_DRAWER_TOGGLE_EVENT, openDrawer);
+        return () => window.removeEventListener(SETTINGS_DRAWER_TOGGLE_EVENT, openDrawer);
+    }, []);
+
+    useEffect(() => {
+        if (!user) return;
+        // `requestIdleCallback` lets the browser run the fetch when it
+        // has spare cycles (after first paint, after any in-flight
+        // navigations settle). Falls back to a short setTimeout in
+        // browsers that don't expose it — Safari pre-17 mostly.
+        type IdleRequest = (cb: () => void) => number;
+        const idle =
+            (window as unknown as { requestIdleCallback?: IdleRequest }).requestIdleCallback
+            ?? ((cb: () => void) => window.setTimeout(cb, 150));
+        const handle = idle(() => {
+            void preloadSettings().catch(() => {
+                // Cache module already logs failures; nothing else to
+                // do here — drawer retries on next open.
+            });
+        });
+        return () => {
+            type CancelIdle = (handle: number) => void;
+            const cancel =
+                (window as unknown as { cancelIdleCallback?: CancelIdle }).cancelIdleCallback
+                ?? window.clearTimeout;
+            cancel(handle);
+        };
+    }, [user]);
+
     // Bottom-nav Notes handler — open the drawer scoped to the current
     // page context. We gate on the non-redundant routes only: on
     // `/notes/{slug}` or `/ai/{slug}` the drawer would duplicate the
@@ -580,6 +640,28 @@ export default function AppLayout({
                 isNotesOrAiPage, so they can't accidentally double-stack
                 a drawer over themselves. */}
             {user && <NotesDrawer />}
+
+            {/* Global mobile settings drawer. Mounted for every authed
+                user; the inner component is `lg:hidden` so it's invisible
+                on desktop where the navbar's Settings link still takes
+                users to the /settings page with the two-column body.
+                Data flows through the module-level cache in
+                settingsCache.ts — preloaded in idle time above, fetched
+                on first open otherwise. */}
+            {user && (() => {
+                const slots = getSettingsSlots();
+                return (
+                    <SettingsDrawer
+                        open={settingsDrawerOpen}
+                        onClose={() => {
+                            setSettingsDrawerOpen(false);
+                            window.dispatchEvent(new CustomEvent(SETTINGS_DRAWER_CLOSED_EVENT));
+                        }}
+                        accountManagementSlot={slots.accountManagementSlot}
+                        applyViewPreferences={slots.applyViewPreferences}
+                    />
+                );
+            })()}
 
             {/* PageTransition listens for `alexandria:transition-close`
                 events and resolves the Promise returned by

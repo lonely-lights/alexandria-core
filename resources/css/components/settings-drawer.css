@@ -1,0 +1,44 @@
+/* Settings drawer — chrome adjustments for section cards rendered
+ * inside the mobile <SettingsDrawer> panes. Outside the drawer (the
+ * desktop /settings page), <SectionCard> and <SectionHeader> render
+ * with their full chrome (rounded corners, brand-tinted header). Inside
+ * the drawer the top bar already carries the parent-group label, the
+ * panes are full-bleed against the sheet's rounded top corners, and
+ * the heavy section-header gradient is visual noise rather than
+ * helpful — flatten everything to read as "this IS the page."
+ *
+ * Scoped under `.alex-settings-drawer-pane` so these rules can't bleed
+ * outside the drawer; the marker class is set on the pane container
+ * in SettingsDrawer.tsx.
+ */
+
+.alex-settings-drawer-pane [data-settings-card] {
+    /* Flatten the card chrome so the body reads as one continuous
+     * surface with the header band above it — no nested-card visual
+     * breaking up the drawer. The sheet's outer container still has
+     * its rounded top corners; the inner card just doesn't compete.
+     *
+     * `!important` is required here: SectionCard sets `borderRadius`
+     * inline (`style={{ borderRadius: 'var(--theme-radius-card)' }}`),
+     * which beats an external CSS rule on specificity regardless of
+     * selector depth. !important is the only way an external rule
+     * can override an inline style without rewriting the component. */
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.alex-settings-drawer-pane [data-settings-section-header] {
+    /* Drawer's top bar already shows the parent-group label
+     * (e.g. "Preferences" when on the Appearance pane), so this
+     * big icon-title-subtitle block reads as redundant chrome. */
+    display: none;
+}
+
+/* Tighten the body padding on cards inside the drawer — the desktop
+ * card has `p-8` for breathing room inside a constrained-width column;
+ * the drawer pane is already mobile-narrow and benefits from a slimmer
+ * inset. */
+.alex-settings-drawer-pane [data-settings-card] > div:last-child {
+    padding: 1rem;
+}

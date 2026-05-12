@@ -6,7 +6,6 @@ import useT from '@alexandria/hooks/useT';
 import { type ViewPreferences } from './Sections/PreferencesSection';
 import { ALL_NAV, type NavItem } from './nav-config';
 import AnimatedPronouns from './components/AnimatedPronouns';
-import MobileNav from './components/MobileNav';
 import RingModal from './components/RingModal';
 import SectionContent from './components/SectionContent';
 
@@ -565,14 +564,6 @@ export default function SettingsBody({
                                 </div>
                             </div>
                         </div>
-
-                        {/* ── MOBILE NAVIGATION ── */}
-                        <MobileNav
-                            activeSection={activeSection}
-                            expandedGroups={expandedGroups}
-                            onSectionChange={setActiveSection}
-                            onToggleGroup={toggleGroup}
-                        />
 
                         {/* ── RIGHT: Content Area ── */}
                         <div className="min-w-0 flex-1 sm:mt-6">
