@@ -289,6 +289,39 @@ export default function AppLayout({
     const user = auth?.user ?? null;
     const url = usePage().url;
 
+    // Persist the most recently seen `currentProject` so routes that
+    // don't carry a project context (the /dashboard landing, /profile,
+    // /settings) can still resolve a "default to the active notes"
+    // target for the bottom-nav Notes button. localStorage keeps it
+    // alive across sessions so a returning user on /dashboard still
+    // gets a sensible drawer scope.
+    const LAST_PROJECT_KEY = 'alexandria:last-project';
+    useEffect(() => {
+        if (!currentProject) return;
+        try {
+            localStorage.setItem(
+                LAST_PROJECT_KEY,
+                JSON.stringify({ id: currentProject.id, slug: currentProject.slug, name: currentProject.name }),
+            );
+        } catch {
+            // localStorage disabled / quota — silently skip.
+        }
+    }, [currentProject?.id, currentProject?.slug, currentProject?.name]);
+
+    function loadLastProject(): { id: number; slug: string; name: string } | null {
+        try {
+            const raw = localStorage.getItem(LAST_PROJECT_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (typeof parsed?.id === 'number' && typeof parsed?.slug === 'string' && typeof parsed?.name === 'string') {
+                return parsed;
+            }
+        } catch {
+            // ignore
+        }
+        return null;
+    }
+
     // Resolve which actions the FAB modal renders. Consumer override
     // wins; otherwise fall back to the three-stub default. `null`
     // suppresses the FAB entirely. The FAB is project-scoped — it only
@@ -419,21 +452,42 @@ export default function AppLayout({
     }, []);
 
     // Bottom-nav Notes handler — open the drawer scoped to the current
-    // page context. We gate on currentProject AND non-redundant routes:
-    // on `/notes/{slug}` or `/ai/{slug}` the drawer would duplicate the
+    // page context. We gate on the non-redundant routes only: on
+    // `/notes/{slug}` or `/ai/{slug}` the drawer would duplicate the
     // page itself, so the Notes tab falls back to its URL behaviour
-    // there. Anywhere else with a current project (entry pages,
-    // blueprint pages, project Show, even /dashboard if it has a
-    // currentProject shared) the drawer becomes the primary access.
+    // there. Anywhere else (entry / blueprint / project Show, or
+    // /dashboard, /profile, /settings with no currentProject), we open
+    // the drawer — using the persisted last-viewed project as the
+    // "active notes" fallback when nothing on the page provides one.
     const isNotesOrAiPage =
         url.startsWith('/notes/') || url.startsWith('/ai/');
-    const bottomNavNotesClick =
-        currentProject && !isNotesOrAiPage
-            ? () => {
-                  const ctx = buildNotesContext();
-                  if (ctx) openNotesDrawer(ctx);
+    const bottomNavNotesClick = !isNotesOrAiPage
+        ? () => {
+              // Priority 1: live context from the current page
+              // (entry → blueprint → project).
+              const live = buildNotesContext();
+              if (live) {
+                  openNotesDrawer(live);
+                  return;
               }
-            : undefined;
+              // Priority 2: last-viewed project from localStorage —
+              // gives /dashboard etc. a meaningful "active notes" target.
+              const last = loadLastProject();
+              if (last) {
+                  openNotesDrawer({
+                      projectId: last.id,
+                      projectSlug: last.slug,
+                      contextType: 'project',
+                      contextId: last.id,
+                      contextLabel: last.name,
+                      contextSlug: last.slug,
+                  });
+              }
+              // No project context at all (first-time user on
+              // /dashboard) — silently no-op; the URL fallback in
+              // buildDefaultBottomNavTabs takes the click instead.
+          }
+        : undefined;
 
     // Resolve which bottom-nav tabs render. Same precedence as the FAB:
     //   - explicit `null`     → suppress the bottom nav
@@ -509,10 +563,17 @@ export default function AppLayout({
             )}
 
             {/* NotesDrawer manages its own state through the global
-                `alexandria:open-notes` event. Mount only on /p/{...}
-                routes so the dedicated Notes / AI dashboards aren't
-                shadowed by a redundant slide-up drawer. */}
-            {currentProject && isProjectScope && <NotesDrawer />}
+                `alexandria:open-notes` event. Mount whenever a user is
+                authed — the drawer returns null until openNotesDrawer()
+                fires, so there's no rendering cost. We dropped the
+                `currentProject && isProjectScope` gate so the bottom-nav
+                Notes button can open the drawer from /dashboard /
+                /profile / /settings using the persisted last-project
+                fallback in bottomNavNotesClick. The /notes/{slug} and
+                /ai/{slug} surfaces already suppress the toggle through
+                isNotesOrAiPage, so they can't accidentally double-stack
+                a drawer over themselves. */}
+            {user && <NotesDrawer />}
 
             {/* PageTransition listens for `alexandria:transition-close`
                 events and resolves the Promise returned by
