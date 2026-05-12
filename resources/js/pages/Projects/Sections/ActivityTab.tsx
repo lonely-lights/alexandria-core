@@ -310,59 +310,65 @@ export default function ActivityTab({ projectId }: ActivityTabProps) {
                 )}
             </div>
 
-            {/* Activity table */}
+            {/* Activity table — header is always rendered so the page
+                stays anchored visually while the body swaps between
+                spinner / empty / rows. */}
             <div className="paper-board" style={tableCardOuterStyle}>
                 <div className="overflow-x-auto" style={tableInnerStyle}>
-                    {loading ? (
-                        <div className="flex items-center justify-center py-16">
-                            <i
-                                className="fa-solid fa-circle-notch fa-spin text-lg"
-                                style={microText}
-                                aria-hidden="true"
-                            />
-                        </div>
-                    ) : items.length === 0 ? (
-                        <div className="py-16 text-center">
-                            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center" style={emptyIconBubbleStyle}>
-                                <i className="fa-solid fa-clock-rotate-left text-xl" style={microText} aria-hidden="true" />
-                            </div>
-                            <p className="font-medium" style={labelText}>
-                                {t('projects.activity_tab.empty.title')}
-                            </p>
-                            {hasActiveFilters && (
-                                <p className="mt-1 text-sm" style={fadedText}>
-                                    {t('projects.activity_tab.empty.subtitle')}
-                                </p>
-                            )}
-                        </div>
-                    ) : (
-                        <table className="w-full">
-                            <thead>
-                                <tr className="text-xs tracking-wider [&_th]:normal-case [&_th]:px-4 [&_th]:py-3">
-                                    <th className="first:rounded-tl-2xl text-left" style={tableHeaderCellStyle}>
-                                        {t('projects.activity_tab.column.subject')}
-                                    </th>
-                                    <th className="text-left" style={tableHeaderCellStyle}>
-                                        {t('projects.activity_tab.column.event')}
-                                    </th>
-                                    <th className="text-left" style={tableHeaderCellStyle}>
-                                        {t('projects.activity_tab.column.description')}
-                                    </th>
-                                    <th className="text-left" style={tableHeaderCellStyle}>
-                                        {t('projects.activity_tab.column.user')}
-                                    </th>
-                                    <th className="text-right last:rounded-tr-2xl" style={tableHeaderCellStyle}>
-                                        {t('projects.activity_tab.column.when')}
-                                    </th>
+                    <table className="w-full">
+                        <thead>
+                            <tr className="text-xs tracking-wider [&_th]:normal-case [&_th]:px-4 [&_th]:py-3">
+                                <th className="first:rounded-tl-2xl text-left" style={tableHeaderCellStyle}>
+                                    {t('projects.activity_tab.column.subject')}
+                                </th>
+                                <th className="text-left" style={tableHeaderCellStyle}>
+                                    {t('projects.activity_tab.column.event')}
+                                </th>
+                                <th className="text-left" style={tableHeaderCellStyle}>
+                                    {t('projects.activity_tab.column.description')}
+                                </th>
+                                <th className="text-left" style={tableHeaderCellStyle}>
+                                    {t('projects.activity_tab.column.user')}
+                                </th>
+                                <th className="text-right last:rounded-tr-2xl" style={tableHeaderCellStyle}>
+                                    {t('projects.activity_tab.column.when')}
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={5} className="py-16 text-center">
+                                        <i
+                                            className="fa-solid fa-circle-notch fa-spin text-lg"
+                                            style={microText}
+                                            aria-hidden="true"
+                                        />
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {items.map((item, i) => (
+                            ) : items.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="py-16 text-center">
+                                        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center" style={emptyIconBubbleStyle}>
+                                            <i className="fa-solid fa-clock-rotate-left text-xl" style={microText} aria-hidden="true" />
+                                        </div>
+                                        <p className="font-medium" style={labelText}>
+                                            {t('projects.activity_tab.empty.title')}
+                                        </p>
+                                        {hasActiveFilters && (
+                                            <p className="mt-1 text-sm" style={fadedText}>
+                                                {t('projects.activity_tab.empty.subtitle')}
+                                            </p>
+                                        )}
+                                    </td>
+                                </tr>
+                            ) : (
+                                items.map((item, i) => (
                                     <ActivityRow key={item.id} item={item} isLast={i === items.length - 1} t={t} />
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

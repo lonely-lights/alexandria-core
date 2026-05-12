@@ -250,11 +250,14 @@ export default function Navbar({
                         <i className="fas fa-bars text-xl" />
                     </button>
 
-                    {/* Brand */}
+                    {/* Brand — sits beside the hamburger at every
+                        breakpoint. Previously hidden on mobile, but
+                        the wordmark anchors the navbar's identity
+                        regardless of viewport. */}
                     <a href="/" className="flex items-center">
                         {brandSlot ?? (brand ? (
                             <span
-                                className="ml-4 hidden font-serif text-xl font-semibold sm:inline"
+                                className="ml-4 font-serif text-xl font-semibold"
                                 style={{ color: 'var(--theme-base-content)' }}
                             >
                                 {brand}
@@ -263,7 +266,10 @@ export default function Navbar({
                     </a>
                 </div>
 
-                {/* Spacer */}
+                {/* Spacer — keeps left/right groups at 33% each so the
+                    absolutely-positioned mobile brand above sits in
+                    front of empty middle space. Desktop's brand lives
+                    in the left group beside the hamburger. */}
                 <div className="flex-1" />
 
                 {/* Right Side */}
@@ -293,20 +299,37 @@ export default function Navbar({
                                 </Tooltip>
                             )}
 
-                            {/* Notes Button */}
+                            {/* Notes Button — mirrors legacy's
+                                color="secondary" on the notable button,
+                                which maps to --theme-brand-secondary-*
+                                in the new system. Same 60%-fill + content-
+                                text shape as the Search button (which
+                                uses brand-primary) so the two read as
+                                a matched pair. */}
                             {onNotesToggle && (
                                 <Tooltip content="Notes" placement="bottom">
                                     <button
                                         onClick={onNotesToggle}
-                                        className="alex-nav-icon-btn flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
+                                        className="alex-nav-icon-btn alex-nav-icon-btn--brand flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
                                         style={{
                                             background:
-                                                'var(--theme-base-200)',
-                                            color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+                                                'color-mix(in srgb, var(--theme-brand-secondary-500) 60%, transparent)',
+                                            color: 'var(--theme-brand-secondary-content)',
                                         }}
                                         aria-label="Notes"
                                     >
-                                        <i className="fa-solid fa-note-sticky" />
+                                        {/* Same custom SVG as legacy's
+                                            x-notable.button + the NotesDrawer
+                                            "Add Note" trigger — folded-corner
+                                            page with three bullet dots. */}
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 640 640"
+                                            className="h-5 w-5 fill-current"
+                                            aria-hidden="true"
+                                        >
+                                            <path d="M160 512L352 512L352 416C352 380.7 380.7 352 416 352L512 352L512 160C512 142.3 497.7 128 480 128L160 128C142.3 128 128 142.3 128 160L128 480C128 497.7 142.3 512 160 512zM384 498.7L498.7 384L416 384C398.3 384 384 398.3 384 416L384 498.7zM160 544C124.7 544 96 515.3 96 480L96 160C96 124.7 124.7 96 160 96L480 96C515.3 96 544 124.7 544 160L544 357.5C544 374.5 537.3 390.8 525.3 402.8L402.7 525.3C390.7 537.3 374.4 544 357.4 544L160 544zM184 432C184 418.7 194.7 408 208 408C221.3 408 232 418.7 232 432C232 445.3 221.3 456 208 456C194.7 456 184 445.3 184 432zM208 232C194.7 232 184 221.3 184 208C184 194.7 194.7 184 208 184C221.3 184 232 194.7 232 208C232 221.3 221.3 232 208 232zM184 320C184 306.7 194.7 296 208 296C221.3 296 232 306.7 232 320C232 333.3 221.3 344 208 344C194.7 344 184 333.3 184 320z" />
+                                        </svg>
                                     </button>
                                 </Tooltip>
                             )}

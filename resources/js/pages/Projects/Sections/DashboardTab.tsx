@@ -35,12 +35,17 @@ const emptyIconBubbleStyle: CSSProperties = {
 };
 
 const tableCardOuterStyle: CSSProperties = {
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-300) 50%, transparent)',
     borderRadius: 'var(--theme-radius-card)',
 };
 
+// The inner wrapper sits on --theme-base-200 so the paper-table tf-dark
+// zebra rule (`tbody tr:nth-child(even) { background: rgba(255,255,255,
+// 0.025); }`) reads as a soft tone shift over the table surface. A
+// uniform base-content overlay here would wash out the per-row tint and
+// flatten the zebra into a single block.
 const tableInnerStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+    background: 'var(--theme-base-200)',
     borderRadius: 'inherit',
     boxShadow: '0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
 };
@@ -49,10 +54,6 @@ const tableHeaderCellStyle: CSSProperties = {
     background: 'var(--theme-brand-primary-500)',
     color: 'var(--theme-brand-primary-content)',
     fontWeight: 600,
-};
-
-const rowDividerStyle: CSSProperties = {
-    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
 };
 
 const rowIconBubbleStyle: CSSProperties = {
@@ -199,12 +200,11 @@ function BlueprintTable({ blueprints, dashboardBlueprints, t }: BlueprintTablePr
                         </tr>
                     </thead>
                     <tbody>
-                        {blueprints.map((bp, i) => (
+                        {blueprints.map((bp) => (
                             <BlueprintRow
                                 key={bp.id}
                                 bp={bp}
                                 lastUpdate={recentByBp.get(bp.id) ?? null}
-                                isFirst={i === 0}
                                 t={t}
                             />
                         ))}
@@ -215,13 +215,12 @@ function BlueprintTable({ blueprints, dashboardBlueprints, t }: BlueprintTablePr
     );
 }
 
-function BlueprintRow({ bp, lastUpdate, isFirst, t }: { bp: BlueprintCard; lastUpdate: string | null; isFirst: boolean; t: Translator }) {
+function BlueprintRow({ bp, lastUpdate, t }: { bp: BlueprintCard; lastUpdate: string | null; t: Translator }) {
     const iconClass = bp.icon ? (bp.icon.includes(' ') ? bp.icon : `fa-solid ${bp.icon}`) : 'fa-solid fa-cube';
     return (
         <tr
             onClick={() => router.visit(bp.url)}
             className="group cursor-pointer"
-            style={isFirst ? undefined : rowDividerStyle}
         >
             <td>
                 <div className="flex items-center gap-3">

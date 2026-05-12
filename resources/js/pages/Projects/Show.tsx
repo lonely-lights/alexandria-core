@@ -18,6 +18,7 @@ import IconTile from '@alexandria/components/ui/IconTile';
 import UserLink from '@alexandria/components/ui/UserHoverCard';
 import MentionAwareContent from '@alexandria/components/ui/MentionAwareContent';
 import useT from '@alexandria/hooks/useT';
+import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import { classificationLabel } from '@alexandria/config/classifications';
 import type { ProjectShowProps, BlueprintCard } from '@alexandria/types/projects';
 
@@ -29,34 +30,46 @@ type Tab = ClassificationTab | 'activity' | 'archive' | 'settings';
 const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
 const bodyText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)' };
 
+// Tabs use a chunkier 0.75rem radius to match legacy's `rounded-xl`
+// override on the btn-sm base. The default --theme-radius-button is
+// 0.5rem which reads too tight for this chrome treatment — the active
+// pill is meant to feel softer / more inviting than a standard CTA.
 const tabActiveStyle: CSSProperties = {
     background: 'var(--theme-brand-primary-500)',
     color: 'var(--theme-brand-primary-content)',
-    borderRadius: 'var(--theme-radius-button)',
+    borderRadius: '0.75rem',
 };
 
 const tabIdleStyle: CSSProperties = {
     background: 'transparent',
     color: 'var(--theme-base-content)',
-    borderRadius: 'var(--theme-radius-button)',
+    borderRadius: '0.75rem',
 };
 
+// Count badges use the page-surface / text contrast pair so the chip
+// reads as inverted against whatever it sits on — dark chip + light
+// text on a light page, light chip + dark text on a dark page. Inside
+// the active yellow pill this gives a base-100 chip that contrasts
+// against the bright fill, matching legacy's DaisyUI `badge` base
+// (bg-base-100 + text-base-content) treatment.
 const tabCountBadgeStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    background: 'var(--theme-base-100)',
     color: 'var(--theme-base-content)',
     borderRadius: 'var(--theme-radius-badge)',
-    padding: '0 0.375rem',
+    padding: '0.125rem 0.375rem',
     fontSize: '0.6875rem',
-    fontWeight: 600,
+    fontWeight: 500,
+    lineHeight: 1,
 };
 
 const tabActiveCountBadgeStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-brand-primary-content) 25%, transparent)',
-    color: 'var(--theme-brand-primary-content)',
+    background: 'var(--theme-base-100)',
+    color: 'var(--theme-base-content)',
     borderRadius: 'var(--theme-radius-badge)',
-    padding: '0 0.375rem',
+    padding: '0.125rem 0.375rem',
     fontSize: '0.6875rem',
-    fontWeight: 600,
+    fontWeight: 500,
+    lineHeight: 1,
 };
 
 const sectionCountBadgeStyle: CSSProperties = {
@@ -100,12 +113,21 @@ const ownerLinkStyle: CSSProperties = {
 };
 
 const detailsToggleStyle: CSSProperties = {
-    color: 'var(--theme-brand-primary-500)',
+    // Muted base-content tint so the trigger reads as auxiliary chrome,
+    // not a primary CTA. Legacy uses a similarly subdued treatment.
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
     transition: 'color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
 };
 
 export default function ProjectShow() {
     const t = useT();
+    // Below 1024px the 4 inline classification tabs + 3-dot menu +
+    // breadcrumb overflow the breadcrumb strip, so collapse all four
+    // tabs into the 3-dot menu. We branch on isMobile to skip rendering
+    // the buttons entirely rather than using a `hidden lg:inline-flex`
+    // class — that keeps the DOM clean and avoids any chance of CSS
+    // specificity collisions hiding the wrong element.
+    const isMobile = useMediaQuery('(max-width: 1023px)');
     const props = usePage().props as unknown as ProjectShowProps;
     const { project, stats, dashboardBlueprints, settings } = props;
     const blueprints: BlueprintCard[] = (props as unknown as { blueprints: BlueprintCard[] }).blueprints ?? [];
@@ -180,10 +202,27 @@ export default function ProjectShow() {
         ? blueprints.filter((bp) => bp.classification === activeTab)
         : [];
 
-    // 3-dot menu items
+    // 3-dot menu items. On mobile (below sm:) the inline classification
+    // tab buttons are hidden, so we prepend them here as menu entries
+    // — that's the only access path to those views below 640px.
+    const classificationMenuItems = isMobile ? [
+        { label: classificationLabel('standard'), icon: 'fa-solid fa-file', onClick: () => setActiveTab('standard'), badge: classificationCounts.standard ?? undefined },
+        ...((classificationCounts.relationship ?? 0) > 0 ? [
+            { label: t('projects.show.tab.relationships'), icon: 'fa-solid fa-diagram-project', onClick: () => setActiveTab('relationship'), badge: classificationCounts.relationship },
+        ] : []),
+        ...((classificationCounts.list ?? 0) > 0 ? [
+            { label: t('projects.show.tab.lists'), icon: 'fa-solid fa-list', onClick: () => setActiveTab('list'), badge: classificationCounts.list },
+        ] : []),
+        ...((classificationCounts.structural ?? 0) > 0 ? [
+            { label: t('projects.show.tab.structures'), icon: 'fa-solid fa-sitemap', onClick: () => setActiveTab('structural'), badge: classificationCounts.structural },
+        ] : []),
+        { divider: true as const },
+    ] : [];
+
     const menuItems = [
+        ...classificationMenuItems,
         { label: t('projects.show.menu.activity'), icon: 'fa-solid fa-clock-rotate-left', onClick: () => setActiveTab('activity') },
-        { label: t('projects.show.menu.ai_batches'), icon: 'fa-solid fa-brain', href: `/p/${project.slug}/ai/batches` },
+        { label: t('projects.show.menu.ai_batches'), icon: 'fa-solid fa-brain', href: `/ai/${project.slug}#commands` },
         ...(project.can.update ? [
             { divider: true as const },
             { label: t('projects.show.menu.archive'), icon: 'fa-solid fa-box-archive', badge: stats.archived_count > 0 ? stats.archived_count : undefined, onClick: () => setActiveTab('archive') },
@@ -197,11 +236,11 @@ export default function ProjectShow() {
             <button
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className="alex-btn inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium"
-                style={active ? tabActiveStyle : tabIdleStyle}
+                className="alex-btn alex-project-tab inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium"
+                style={{ ...(active ? tabActiveStyle : tabIdleStyle), lineHeight: 1 }}
                 aria-pressed={active}
             >
-                <i className={`${icon} text-xs`} aria-hidden="true" />
+                <i className={`${icon} text-[11px]`} aria-hidden="true" />
                 {label}
                 {count !== undefined && count > 0 && (
                     <span style={active ? tabActiveCountBadgeStyle : tabCountBadgeStyle}>{count}</span>
@@ -213,38 +252,41 @@ export default function ProjectShow() {
     return (
         <AppLayout title={project.name} immersive onSearchToggle={() => setSearchOpen(true)}>
             <PageHeader
-                breadcrumbs={[{ label: project.name }]}
                 tabs={
                     <>
-                        <TabButton
-                            tab="standard"
-                            icon="fa-solid fa-file"
-                            label={classificationLabel('standard')}
-                            count={classificationCounts.standard ?? 0}
-                        />
-                        {(classificationCounts.relationship ?? 0) > 0 && (
-                            <TabButton
-                                tab="relationship"
-                                icon="fa-solid fa-diagram-project"
-                                label={t('projects.show.tab.relationships')}
-                                count={classificationCounts.relationship}
-                            />
-                        )}
-                        {(classificationCounts.list ?? 0) > 0 && (
-                            <TabButton
-                                tab="list"
-                                icon="fa-solid fa-list"
-                                label={t('projects.show.tab.lists')}
-                                count={classificationCounts.list}
-                            />
-                        )}
-                        {(classificationCounts.structural ?? 0) > 0 && (
-                            <TabButton
-                                tab="structural"
-                                icon="fa-solid fa-sitemap"
-                                label={t('projects.show.tab.structures')}
-                                count={classificationCounts.structural}
-                            />
+                        {!isMobile && (
+                            <>
+                                <TabButton
+                                    tab="standard"
+                                    icon="fa-solid fa-file"
+                                    label={classificationLabel('standard')}
+                                    count={classificationCounts.standard ?? 0}
+                                />
+                                {(classificationCounts.relationship ?? 0) > 0 && (
+                                    <TabButton
+                                        tab="relationship"
+                                        icon="fa-solid fa-diagram-project"
+                                        label={t('projects.show.tab.relationships')}
+                                        count={classificationCounts.relationship}
+                                    />
+                                )}
+                                {(classificationCounts.list ?? 0) > 0 && (
+                                    <TabButton
+                                        tab="list"
+                                        icon="fa-solid fa-list"
+                                        label={t('projects.show.tab.lists')}
+                                        count={classificationCounts.list}
+                                    />
+                                )}
+                                {(classificationCounts.structural ?? 0) > 0 && (
+                                    <TabButton
+                                        tab="structural"
+                                        icon="fa-solid fa-sitemap"
+                                        label={t('projects.show.tab.structures')}
+                                        count={classificationCounts.structural}
+                                    />
+                                )}
+                            </>
                         )}
                         <DropdownMenu items={menuItems} />
                     </>

@@ -80,3 +80,23 @@
     color: var(--theme-brand-primary-content);
     border-style: solid;
 }
+
+/* Project page classification tab pills. The active/idle background is
+   set as an inline style on the button, so the :hover rules need
+   !important to win specificity. Active pills darken to primary-600;
+   idle pills pick up a 10% base-content wash so the cursor lands on a
+   visible affordance. */
+.alex-project-tab {
+    cursor: pointer;
+    transition: background-color var(--theme-motion-duration-fast)
+        var(--theme-motion-easing-standard);
+}
+
+.alex-project-tab:not([aria-pressed='true']):hover {
+    background: color-mix(in srgb, var(--theme-base-content) 10%, transparent)
+        !important;
+}
+
+.alex-project-tab[aria-pressed='true']:hover {
+    background: var(--theme-brand-primary-600) !important;
+}

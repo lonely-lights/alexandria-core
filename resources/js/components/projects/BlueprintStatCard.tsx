@@ -14,19 +14,30 @@ const fadedText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-c
 const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
 const labelText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
 
+// Card surfaces use the --theme-base-* ramp directly instead of
+// base-content overlays — matches legacy's bg-base-200 / bg-base-300/40
+// pattern and reads correctly on the paper themes (where base-200 is
+// a specific warm cream, not just "ink at low opacity"). The previous
+// content-overlay approach produced a colder, ink-tinted wash that
+// felt foreign against the paper backdrop.
+//
+// `paper-board` (tf themes only) draws a bottom-right tape shadow via
+// ::before with `border-color: transparent !important` forcing the
+// outer border invisible. We don't set our own border on the outer
+// here — let paper-board own the visual edge treatment so we don't
+// double up.
 const cardOuterStyle: CSSProperties = {
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
     borderRadius: 'var(--theme-radius-card)',
     transition: 'border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
 };
 
 const cardInnerStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+    background: 'var(--theme-base-200)',
     borderRadius: 'inherit',
 };
 
 const cardHeaderStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-300) 40%, transparent)',
     transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
 };
 
@@ -37,15 +48,15 @@ const iconWrapStyle: CSSProperties = {
 };
 
 const rowBodyStyle: CSSProperties = {
-    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+    borderTop: '1px solid var(--theme-base-200)',
 };
 
 const rowDividerStyle: CSSProperties = {
-    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+    borderBottom: '1px solid var(--theme-base-200)',
 };
 
 const relationshipSubHeaderStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-300) 40%, transparent)',
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
 
@@ -54,9 +65,9 @@ const entryRowStyle: CSSProperties = {
 };
 
 const footerLinkStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 3%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-300) 20%, transparent)',
     color: 'var(--theme-brand-primary-500)',
-    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+    borderTop: '1px solid var(--theme-base-200)',
     transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
 };
 
@@ -164,7 +175,7 @@ export default function BlueprintStatCard({ blueprint }: BlueprintStatCardProps)
                                     key={entry.id}
                                     entryId={entry.id}
                                     href={entry.url}
-                                    className="alex-notes-tag-row flex items-center gap-2 px-4 py-2 text-sm"
+                                    className="alex-notes-tag-row flex items-center gap-2 px-4 py-1.5 text-sm"
                                     style={{ ...entryRowStyle, ...(divider ?? {}) }}
                                 >
                                     {entry.thumbnail_url ? (

@@ -9,7 +9,12 @@ interface StatsBarProps {
 const STATS_CONFIG = [
     { key: 'total_entries' as const, singularKey: 'projects.stats.entry.singular', pluralKey: 'projects.stats.entry.plural', icon: 'fa-file-lines', accent: 'var(--theme-brand-primary-500)' },
     { key: 'total_blueprints' as const, singularKey: 'projects.stats.blueprint.singular', pluralKey: 'projects.stats.blueprint.plural', icon: 'fa-cube', accent: 'var(--theme-brand-secondary-500)' },
-    { key: 'members_count' as const, singularKey: 'projects.stats.member.singular', pluralKey: 'projects.stats.member.plural', icon: 'fa-users', accent: 'var(--theme-brand-secondary-700)' },
+    // Legacy used DaisyUI's `text-accent` (a third-tier hue, often
+    // teal/green). Our theme tokens don't have an accent stop, so map
+    // to status-success-stroke — closest semantic match + keeps the
+    // members icon visually distinct from the brand-secondary-tinted
+    // blueprints icon next to it.
+    { key: 'members_count' as const, singularKey: 'projects.stats.member.singular', pluralKey: 'projects.stats.member.plural', icon: 'fa-users', accent: 'var(--theme-status-success-stroke)' },
     { key: 'ai_transactions_count' as const, singularKey: 'projects.stats.ai_this_month', pluralKey: 'projects.stats.ai_this_month', icon: 'fa-microchip', accent: 'var(--theme-status-info-stroke)' },
 ];
 
