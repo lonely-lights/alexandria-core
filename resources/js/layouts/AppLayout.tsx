@@ -37,9 +37,12 @@ interface FabAction {
  * routes resolve to the same `<SettingsBody>` for now — visual
  * specialisation between them lands in a later step.
  *
- * Notes routes to the current project's notes dashboard when there's
- * a `currentProject` shared prop; otherwise falls back to `/dashboard`
- * so the user can pick a project first.
+ * Notes is preferred as an inline drawer toggle (same behaviour as the
+ * top-nav Notes button) — pass `onNotesClick` and the slot becomes an
+ * action that opens the drawer scoped to the current page context
+ * (entry / blueprint / project). Without `onNotesClick` (no current
+ * project, or routes where the drawer would be redundant) the slot
+ * falls back to the URL link.
  *
  * Search is an action-only tab (href: '#') that dispatches the same
  * `alexandria-core:command-palette-toggle` event as the navbar's
@@ -51,10 +54,29 @@ interface FabAction {
  */
 function buildDefaultBottomNavTabs(
     currentProjectSlug: string | undefined,
+    onNotesClick?: () => void,
 ): BottomNavTab[] {
     const notesHref = currentProjectSlug
         ? `/notes/${currentProjectSlug}`
         : '/dashboard';
+
+    const notesTab: BottomNavTab = onNotesClick
+        ? {
+              id: 'notes',
+              label: 'Notes',
+              href: '#',
+              icon: 'fa-solid fa-note-sticky',
+              onClick: (event) => {
+                  event.preventDefault();
+                  onNotesClick();
+              },
+          }
+        : {
+              id: 'notes',
+              label: 'Notes',
+              href: notesHref,
+              icon: 'fa-solid fa-note-sticky',
+          };
 
     return [
         {
@@ -75,12 +97,7 @@ function buildDefaultBottomNavTabs(
                 );
             },
         },
-        {
-            id: 'notes',
-            label: 'Notes',
-            href: notesHref,
-            icon: 'fa-solid fa-note-sticky',
-        },
+        notesTab,
         {
             id: 'profile',
             label: 'Profile',
@@ -401,6 +418,23 @@ export default function AppLayout({
         };
     }, []);
 
+    // Bottom-nav Notes handler — open the drawer scoped to the current
+    // page context. We gate on currentProject AND non-redundant routes:
+    // on `/notes/{slug}` or `/ai/{slug}` the drawer would duplicate the
+    // page itself, so the Notes tab falls back to its URL behaviour
+    // there. Anywhere else with a current project (entry pages,
+    // blueprint pages, project Show, even /dashboard if it has a
+    // currentProject shared) the drawer becomes the primary access.
+    const isNotesOrAiPage =
+        url.startsWith('/notes/') || url.startsWith('/ai/');
+    const bottomNavNotesClick =
+        currentProject && !isNotesOrAiPage
+            ? () => {
+                  const ctx = buildNotesContext();
+                  if (ctx) openNotesDrawer(ctx);
+              }
+            : undefined;
+
     // Resolve which bottom-nav tabs render. Same precedence as the FAB:
     //   - explicit `null`     → suppress the bottom nav
     //   - explicit array      → use as-is
@@ -411,7 +445,10 @@ export default function AppLayout({
             ? null
             : (bottomNavTabs ??
               (user
-                  ? buildDefaultBottomNavTabs(currentProject?.slug)
+                  ? buildDefaultBottomNavTabs(
+                        currentProject?.slug,
+                        bottomNavNotesClick,
+                    )
                   : null));
     const showBottomNav =
         !!resolvedBottomNavTabs && resolvedBottomNavTabs.length > 0;

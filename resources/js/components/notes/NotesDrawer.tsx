@@ -8,6 +8,7 @@ import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { useDrawerHeight, type DrawerHeight } from '@alexandria/hooks/useDrawerHeight';
 import { useDrawerMode, type DrawerMode } from '@alexandria/hooks/useDrawerMode';
+import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import { useNoteActions } from '@alexandria/hooks/useNoteActions';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import NoteModal from '@alexandria/pages/Notes/Sections/NoteModal';
@@ -369,6 +370,15 @@ export default function NotesDrawer() {
 
     /* ── Layout mode (split | list), persisted ── */
     const { mode: drawerMode, setMode: setDrawerMode } = useDrawerMode();
+
+    // Below 1024px there isn't room for the two-pane split (375px viewport
+    // squeezes the list AND detail into a single column, neither legible).
+    // We keep the user's persisted preference intact so it restores when
+    // they widen the window, but force `list` at render time on mobile.
+    // The mode/height toggles in the header are already `hidden sm:flex`
+    // so users don't see the unused split option there.
+    const isMobileDrawer = useMediaQuery('(max-width: 1023px)');
+    const effectiveDrawerMode: DrawerMode = isMobileDrawer ? 'list' : drawerMode;
 
     /* ── Shared per-note server actions ── */
     const noteActions = useNoteActions(context?.projectId ?? 0);
@@ -958,10 +968,14 @@ export default function NotesDrawer() {
                 onClick={close}
             />
 
-            {/* Drawer */}
+            {/* Drawer — on mobile we hard-pin to the 'full' preset
+                regardless of the persisted partial/tall/full choice
+                (the height toggle is hidden below sm: anyway, and the
+                shorter presets leave too little room for the notes list
+                + filters at phone widths). */}
             <div
                 ref={drawerRef}
-                className={`fixed inset-x-0 bottom-0 z-50 flex flex-col transition-[height] duration-300 ease-out ${drawerHeightClass}`}
+                className={`fixed inset-x-0 bottom-0 z-50 flex flex-col transition-[height] duration-300 ease-out ${isMobileDrawer ? 'h-[calc(100vh-var(--navbar-height,3.5rem))]' : drawerHeightClass}`}
                 style={drawerBgStyle}
             >
 
@@ -1053,7 +1067,7 @@ export default function NotesDrawer() {
                 </div>
 
                 {/* Two-panel content */}
-                {drawerMode === 'list' && context ? (
+                {effectiveDrawerMode === 'list' && context ? (
                     <div className="min-h-0 flex-grow overflow-y-auto px-4 py-4">
                         <NotesView
                             projectId={context.projectId}
@@ -1068,8 +1082,8 @@ export default function NotesDrawer() {
 
                     {/* ── Left pane: note list ── */}
                     <div
-                        className={`flex min-h-0 flex-col ${drawerMode === 'split' ? 'pr-2 md:col-span-4' : 'md:col-span-12'}`}
-                        style={drawerMode === 'split' ? { borderRight: '1px dashed color-mix(in srgb, var(--theme-base-content) 10%, transparent)' } : undefined}
+                        className={`flex min-h-0 flex-col ${effectiveDrawerMode === 'split' ? 'pr-2 md:col-span-4' : 'md:col-span-12'}`}
+                        style={effectiveDrawerMode === 'split' ? { borderRight: '1px dashed color-mix(in srgb, var(--theme-base-content) 10%, transparent)' } : undefined}
                     >
                         {/* View header + notebook selector */}
                         <h4 className="mb-4 flex items-center justify-between pl-2 text-lg font-bold">
@@ -1269,7 +1283,7 @@ export default function NotesDrawer() {
                                                 key={note.id}
                                                 onClick={() => {
                                                     if (selectMode) { toggleCheck(note.id); }
-                                                    else if (drawerMode === 'list') { setModalMode('view'); setModalNote(note); }
+                                                    else if (effectiveDrawerMode === 'list') { setModalMode('view'); setModalNote(note); }
                                                     else { setSelectedId(note.id); }
                                                 }}
                                                 style={noteRowStyle(rowState)}
@@ -1338,7 +1352,7 @@ export default function NotesDrawer() {
                     </div>
 
                     {/* ── Right pane: detail view ── */}
-                    {drawerMode === 'split' && (
+                    {effectiveDrawerMode === 'split' && (
                     <div className="mt-4 flex min-h-0 flex-col md:col-span-8 md:mt-0">
                         {currentView === 'trashed' && selectedNote ? (
                             <div className="flex h-full flex-col">
