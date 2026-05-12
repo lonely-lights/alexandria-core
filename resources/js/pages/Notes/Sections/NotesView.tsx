@@ -18,6 +18,7 @@ import { useDateFormatters } from '@alexandria/lib/formatDate';
 import { applyViewPreferences } from '@alexandria/lib/applyViewPreferences';
 import { createColumnPersistence } from '@alexandria/lib/persistedColumns';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
+import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import type {
     Note,
@@ -227,6 +228,16 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
     }
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const [columns, setColumns] = useState<ColumnKey[]>(loadColumns);
+    // On phone-sized viewports, drop every column except checkbox +
+    // title at render time. Location / notebook / dates / tags etc.
+    // can't fit in a 343px-wide drawer table — the LOCATION column
+    // gets clipped and shows "--" for most rows anyway. We DON'T mutate
+    // the persisted column list, so the user's desktop preference
+    // returns intact when the viewport widens.
+    const isMobileTable = useMediaQuery('(max-width: 1023px)');
+    const effectiveColumns: ColumnKey[] = isMobileTable
+        ? columns.filter((c) => c === 'checkbox' || c === 'title')
+        : columns;
     const [showTimeFor, setShowTimeForState] = useState<Record<string, boolean>>(loadShowTime);
 
     function toggleShowTime(col: ColumnKey): void {
@@ -684,16 +695,21 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
     };
 
     return (
-        <div className="flex flex-col gap-8 pt-4">
-            {/* Filter bar */}
-            <div className="flex flex-wrap items-center gap-2">
+        <div className={`flex flex-col pt-4 ${isMobileTable ? 'gap-3 text-[13px]' : 'gap-8'}`}>
+            {/* Filter bar. Mobile shrinks the search input + tightens gaps
+                so Search / Filters / Compact fit on a single row at 375px.
+                The columns config gear is mobile-hidden (the persisted
+                column list is overridden by effectiveColumns there
+                anyway, so the gear has nothing to configure that the
+                user can see). */}
+            <div className={`flex items-center ${isMobileTable ? 'gap-2' : 'flex-wrap gap-2'}`}>
                 {/* Search */}
                 <input
                     type="text"
                     placeholder={t('notes.list.search_placeholder')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-56 px-3 py-1.5 text-sm"
+                    className={`px-3 py-1.5 text-xs sm:text-sm ${isMobileTable ? 'min-w-0 flex-1' : 'w-56'}`}
                     style={searchInputStyle}
                 />
 
@@ -702,7 +718,7 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                     <button
                         type="button"
                         onClick={() => setShowFilterModal(true)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-colors"
+                        className="inline-flex flex-shrink-0 items-center gap-1.5 px-2 py-1 text-[11px] font-medium transition-colors sm:px-2.5 sm:text-xs"
                         style={filtersBtnStyle}
                     >
                         <i className="fa-solid fa-filter text-[10px]" />
@@ -807,10 +823,10 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                     </button>
                 )}
 
-                <div className="ml-auto flex items-center gap-3">
+                <div className={`ml-auto flex flex-shrink-0 items-center ${isMobileTable ? 'gap-2' : 'gap-3'}`}>
                     <Tooltip content={t('notes.list.compact.tooltip')} placement="bottom">
                         <label
-                            className="flex cursor-pointer items-center gap-2 text-xs"
+                            className="flex cursor-pointer items-center gap-1.5 text-[11px] sm:gap-2 sm:text-xs"
                             style={muteText}
                         >
                             <input
@@ -823,16 +839,22 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                         </label>
                     </Tooltip>
 
-                    <Tooltip content={t('notes.list.config_columns.tooltip')} placement="bottom">
-                        <button
-                            type="button"
-                            onClick={() => setShowColumnMenu(true)}
-                            className="alex-notes-icon-btn"
-                            aria-label={t('notes.list.config_columns.tooltip')}
-                        >
-                            <i className="fa-solid fa-table-columns text-xs" />
-                        </button>
-                    </Tooltip>
+                    {/* Columns gear is desktop-only — on mobile the
+                        effectiveColumns filter overrides the persisted
+                        list to title-only, so the gear has nothing to
+                        toggle the user can see. */}
+                    {!isMobileTable && (
+                        <Tooltip content={t('notes.list.config_columns.tooltip')} placement="bottom">
+                            <button
+                                type="button"
+                                onClick={() => setShowColumnMenu(true)}
+                                className="alex-notes-icon-btn"
+                                aria-label={t('notes.list.config_columns.tooltip')}
+                            >
+                                <i className="fa-solid fa-table-columns text-xs" />
+                            </button>
+                        </Tooltip>
+                    )}
                 </div>
             </div>
 
@@ -892,7 +914,7 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                     <table className="paper-table w-full">
                         <thead>
                             <tr style={tableHeaderRowStyle}>
-                                {columns.map((col) => {
+                                {effectiveColumns.map((col) => {
                                     const sk = sortKeyForColumn(col);
                                     const isSortable = sk !== null;
 
@@ -938,7 +960,7 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                         <tbody>
                             {loading && !data && (
                                 <tr>
-                                    <td colSpan={columns.length + 1} className="px-4 py-16 text-center">
+                                    <td colSpan={effectiveColumns.length + 1} className="px-4 py-16 text-center">
                                         <i
                                             className="fa-solid fa-circle-notch fa-spin text-3xl"
                                             style={{ color: 'var(--theme-brand-primary-500)' }}
@@ -952,7 +974,7 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                             )}
                             {!loading && (!notes?.data || notes.data.length === 0) && (
                                 <tr>
-                                    <td colSpan={columns.length + 1} className="px-4 py-12 text-center text-sm" style={fadedText}>
+                                    <td colSpan={effectiveColumns.length + 1} className="px-4 py-12 text-center text-sm" style={fadedText}>
                                         {t('notes.list.no_results')}
                                     </td>
                                 </tr>
@@ -972,7 +994,7 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                         setShowModal(true);
                                     }}
                                 >
-                                    {columns.map((col) => {
+                                    {effectiveColumns.map((col) => {
                                         if (col === 'checkbox') {
                                             return (
                                                 <td key={col} className={`w-10 ${cellPadding}`} onClick={(e) => e.stopPropagation()}>

@@ -979,17 +979,19 @@ export default function NotesDrawer() {
                 style={drawerBgStyle}
             >
 
-                {/* Header */}
-                <div className="flex flex-shrink-0 items-center justify-between px-4 py-3" style={headerStyle}>
-                    <h3 className="text-xl font-bold">
+                {/* Header — mobile drops the "Notes for:" prefix and
+                    shrinks the title + chrome so the 4 actions fit
+                    alongside on a 375px viewport. */}
+                <div className={`flex flex-shrink-0 items-center justify-between ${isMobileDrawer ? 'gap-2 px-3 py-2' : 'px-4 py-3'}`} style={headerStyle}>
+                    <h3 className={`min-w-0 truncate font-bold ${isMobileDrawer ? 'text-base' : 'text-xl'}`}>
                         {context && (
                             <>
-                                {t('notes.drawer.title.prefix')}
+                                {!isMobileDrawer && t('notes.drawer.title.prefix')}
                                 <span style={{ color: 'var(--theme-brand-primary-500)' }}>{context.contextLabel}</span>
                             </>
                         )}
                     </h3>
-                    <div className="flex items-center gap-2">
+                    <div className={`flex items-center ${isMobileDrawer ? 'gap-1' : 'gap-2'}`}>
                         {/* Layout mode toggle */}
                         <div className="hidden items-center sm:flex" style={segmentedGroupStyle}>
                             {MODE_OPTIONS.map(({ key, icon, labelKey }) => (
@@ -1060,15 +1062,30 @@ export default function NotesDrawer() {
                                 <span className="hidden sm:inline">{t('notes.drawer.action.dashboard')}</span>
                             </a>
                         </Tooltip>
-                        <button type="button" onClick={close} style={closeBtnStyle}>
-                            {t('notes.drawer.action.close')}
-                        </button>
+                        {isMobileDrawer ? (
+                            <button
+                                type="button"
+                                onClick={close}
+                                className="alex-btn alex-btn--ghost inline-flex items-center justify-center"
+                                style={{ ...btnSm, padding: '0.375rem 0.5rem' }}
+                                aria-label={t('notes.drawer.action.close')}
+                            >
+                                <i className="fa-solid fa-xmark text-sm" aria-hidden="true" />
+                            </button>
+                        ) : (
+                            <button type="button" onClick={close} style={closeBtnStyle}>
+                                {t('notes.drawer.action.close')}
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                {/* Two-panel content */}
+                {/* Two-panel content. Mobile reduces the surrounding
+                    padding + sets a smaller base font-size on the
+                    wrapper so descendants without an explicit size
+                    inherit the tighter scale. */}
                 {effectiveDrawerMode === 'list' && context ? (
-                    <div className="min-h-0 flex-grow overflow-y-auto px-4 py-4">
+                    <div className={`min-h-0 flex-grow overflow-y-auto ${isMobileDrawer ? 'px-3 py-3 text-[13px]' : 'px-4 py-4'}`}>
                         <NotesView
                             projectId={context.projectId}
                             initialStatusFilter="active"
