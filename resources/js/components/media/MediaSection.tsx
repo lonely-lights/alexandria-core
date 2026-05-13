@@ -1,4 +1,5 @@
 import { type CSSProperties, useState, useEffect, useCallback } from "react";
+import useT from "@alexandria/hooks/useT";
 import Modal from "@alexandria/components/ui/Modal";
 import ImageUploader from "./ImageUploader";
 import GalleryGrid from "./GalleryGrid";
@@ -98,6 +99,7 @@ export default function MediaSection({
     compact = false,
     onMediaChanged,
 }: MediaSectionProps) {
+    const t = useT();
     // Compact mode always shows the gallery tile.
     const galleryEnabled = showGallery || compact;
     const [media, setMedia] = useState<MediaItem[]>([]);
@@ -132,7 +134,7 @@ export default function MediaSection({
     const galleryImages = media.filter((m) => m.collection === "gallery");
 
     async function removeMedia(mediaId: number) {
-        if (!confirm("Remove this image?")) return;
+        if (!confirm(t("entries.media.confirm.remove_image"))) return;
         const csrfToken =
             document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
                 ?.content ?? "";
@@ -204,14 +206,14 @@ export default function MediaSection({
                             className="fa-solid fa-image"
                             style={primaryHalfStyle}
                         />
-                        Page Image
+                        {t("entries.media.page_image.title")}
                     </h3>
                     <p className="mt-0.5 text-xs" style={helperStyle}>
-                        Square thumbnail shown across the site.
+                        {t("entries.media.page_image.subtitle")}
                     </p>
                     {pageImage?.alt_text && (
                         <p className="mt-2 text-xs" style={helperFainterStyle}>
-                            Alt: {pageImage.alt_text}
+                            {t("entries.media.alt_prefix").replace(":text", pageImage.alt_text)}
                         </p>
                     )}
                     {pageImage && (
@@ -223,14 +225,14 @@ export default function MediaSection({
                                 className="alex-btn alex-btn--ghost inline-flex items-center px-2 py-1 text-xs"
                                 style={ghostBtnStyle}
                             >
-                                Change
+                                {t("entries.media.action.change")}
                             </button>
                             <button
                                 onClick={() => void removeMedia(pageImage.id)}
                                 className="alex-btn alex-btn--ghost inline-flex items-center px-2 py-1 text-xs"
                                 style={{ ...ghostBtnStyle, ...errorTextStyle }}
                             >
-                                Remove
+                                {t("common.remove")}
                             </button>
                         </div>
                     )}
@@ -246,10 +248,10 @@ export default function MediaSection({
                     className="fa-solid fa-panorama"
                     style={secondaryHalfStyle}
                 />
-                Banner
+                {t("entries.media.banner.title")}
             </h3>
             <p className="mb-3 text-xs" style={helperStyle}>
-                Wide hero image used on pages and listings (approx. 1920×400).
+                {t("entries.media.banner.subtitle")}
             </p>
             {banner ? (
                 <div className="space-y-3">
@@ -260,7 +262,7 @@ export default function MediaSection({
                     />
                     {banner.alt_text && (
                         <p className="text-xs" style={helperFainterStyle}>
-                            Alt: {banner.alt_text}
+                            {t("entries.media.alt_prefix").replace(":text", banner.alt_text)}
                         </p>
                     )}
                     <div className="flex gap-2">
@@ -269,14 +271,14 @@ export default function MediaSection({
                             className="alex-btn alex-btn--ghost inline-flex items-center px-2 py-1 text-xs"
                             style={ghostBtnStyle}
                         >
-                            Change
+                            {t("entries.media.action.change")}
                         </button>
                         <button
                             onClick={() => void removeMedia(banner.id)}
                             className="alex-btn alex-btn--ghost inline-flex items-center px-2 py-1 text-xs"
                             style={{ ...ghostBtnStyle, ...errorTextStyle }}
                         >
-                            Remove
+                            {t("common.remove")}
                         </button>
                     </div>
                 </div>
@@ -292,7 +294,7 @@ export default function MediaSection({
                             style={helperGhostStyle}
                         />
                         <p className="mt-1 text-xs" style={helperSoftStyle}>
-                            Upload Banner
+                            {t("entries.media.banner.upload")}
                         </p>
                     </div>
                 </button>
@@ -314,11 +316,15 @@ export default function MediaSection({
                 <i className="fa-solid fa-images" style={accentStyle} />
             </div>
             <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold">Gallery</h3>
+                <h3 className="text-sm font-semibold">{t("entries.media.gallery.title")}</h3>
                 <p className="text-xs" style={helperStyle}>
                     {galleryImages.length === 0
-                        ? "No images — click to add"
-                        : `${galleryImages.length} image${galleryImages.length === 1 ? "" : "s"} — click to manage`}
+                        ? t("entries.media.gallery.empty")
+                        : t(
+                              galleryImages.length === 1
+                                  ? "entries.media.gallery.summary.singular"
+                                  : "entries.media.gallery.summary.plural",
+                          ).replace(":count", String(galleryImages.length))}
                 </p>
             </div>
             <i
@@ -361,14 +367,16 @@ export default function MediaSection({
                                     />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold">Media</h3>
+                                    <h3 className="text-lg font-bold">{t("entries.media.modal.title")}</h3>
                                     <p
                                         className="text-xs"
                                         style={helperFainterStyle}
                                     >
-                                        {galleryImages.length} gallery image
-                                        {galleryImages.length === 1 ? "" : "s"}{" "}
-                                        attached
+                                        {t(
+                                            galleryImages.length === 1
+                                                ? "entries.media.modal.subtitle.singular"
+                                                : "entries.media.modal.subtitle.plural",
+                                        ).replace(":count", String(galleryImages.length))}
                                     </p>
                                 </div>
                             </div>
@@ -377,8 +385,8 @@ export default function MediaSection({
                                 className="alex-btn alex-btn--primary inline-flex items-center gap-1.5 px-3 py-1.5 text-sm"
                                 style={ghostBtnStyle}
                             >
-                                <i className="fa-solid fa-plus text-xs" /> Add
-                                Image
+                                <i className="fa-solid fa-plus text-xs" />{" "}
+                                {t("entries.media.modal.add_image")}
                             </button>
                         </div>
 
@@ -389,7 +397,7 @@ export default function MediaSection({
                                         className="mb-2 text-xs font-semibold uppercase tracking-wider"
                                         style={helperStyle}
                                     >
-                                        Gallery
+                                        {t("entries.media.gallery.title")}
                                     </h4>
                                     <GalleryGrid
                                         images={galleryImages}
@@ -441,18 +449,20 @@ export default function MediaSection({
                             </div>
                             <div>
                                 <h3 className="font-bold">
-                                    Upload{" "}
-                                    {uploadCollection === "page_image"
-                                        ? "Page Image"
-                                        : uploadCollection === "banner"
-                                          ? "Banner"
-                                          : "Gallery Image"}
+                                    {t("entries.media.upload.title").replace(
+                                        ":type",
+                                        uploadCollection === "page_image"
+                                            ? t("entries.media.upload.types.page_image")
+                                            : uploadCollection === "banner"
+                                              ? t("entries.media.upload.types.banner")
+                                              : t("entries.media.upload.types.gallery_image"),
+                                    )}
                                 </h3>
                                 <p
                                     className="text-xs"
                                     style={helperFainterStyle}
                                 >
-                                    JPEG, PNG, or WebP
+                                    {t("entries.media.upload.formats")}
                                 </p>
                             </div>
                         </div>
