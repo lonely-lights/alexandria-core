@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import useT from '@alexandria/hooks/useT';
 import type { ResolvedView } from './useBlueprintViews';
 
 interface ViewToggleProps {
@@ -42,6 +43,7 @@ const buttonIdleStyle: CSSProperties = {
  * (they're configured via settings, not the toggle).
  */
 export default function ViewToggle({ views, active, onSelect }: ViewToggleProps) {
+    const t = useT();
     const visible = views.filter((v) =>
         v.applicableForBlueprint && v.enabledForBlueprint
     );
@@ -62,6 +64,9 @@ export default function ViewToggle({ views, active, onSelect }: ViewToggleProps)
                 const iconClass = v.definition.icon.includes(' ')
                     ? v.definition.icon
                     : `fa-solid ${v.definition.icon}`;
+                // Look up translated label per view type; fall back to the
+                // registry's English label if the key is missing.
+                const label = t(`views.${v.definition.type}.label`, v.definition.label);
 
                 const style: CSSProperties = {
                     ...(isActive ? buttonActiveStyle : buttonIdleStyle),
@@ -77,10 +82,10 @@ export default function ViewToggle({ views, active, onSelect }: ViewToggleProps)
                         data-active={isActive ? 'true' : 'false'}
                         disabled={locked}
                         style={style}
-                        title={locked ? `Requires upgrade` : v.definition.label}
+                        title={locked ? `Requires upgrade` : label}
                     >
                         <i className={`${iconClass} w-3.5 text-center text-xs`} />
-                        {v.definition.label}
+                        {label}
                         {locked && <i className="fa-solid fa-lock ml-1 text-[9px] opacity-60" />}
                     </button>
                 );

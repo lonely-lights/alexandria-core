@@ -1,12 +1,7 @@
 import type { CSSProperties } from 'react';
+import useT from '@alexandria/hooks/useT';
 import type { ViewSettingsProps } from '../types';
 import { GALLERY_SORTS, defaultGalleryConfig, type GalleryConfig, type GallerySort } from './types';
-
-const SORT_LABELS: Record<GallerySort, string> = {
-    name: 'Name (A→Z)',
-    updated_at: 'Recently updated',
-    created_at: 'Recently created',
-};
 
 const labelStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
@@ -22,7 +17,14 @@ const selectStyle: CSSProperties = {
 };
 
 export default function GalleryPanel({ value, onChange }: ViewSettingsProps) {
+    const t = useT();
     const config = (value.config as unknown as GalleryConfig) ?? defaultGalleryConfig();
+
+    const sortLabels: Record<GallerySort, string> = {
+        name: t('views.gallery.sort.name'),
+        updated_at: t('views.gallery.sort.updated_at'),
+        created_at: t('views.gallery.sort.created_at'),
+    };
 
     function update(next: Partial<GalleryConfig>) {
         onChange({
@@ -40,11 +42,11 @@ export default function GalleryPanel({ value, onChange }: ViewSettingsProps) {
                     onChange={(e) => onChange({ ...value, enabled: e.target.checked })}
                     className="alex-checkbox"
                 />
-                <span className="text-sm">Enable Gallery view</span>
+                <span className="text-sm">{t('views.gallery.enable')}</span>
             </label>
 
             <div>
-                <label className="mb-1 block text-xs font-semibold" style={labelStyle}>Sort by</label>
+                <label className="mb-1 block text-xs font-semibold" style={labelStyle}>{t('views.gallery.sort_by')}</label>
                 <select
                     value={config.sort}
                     onChange={(e) => update({ sort: e.target.value as GallerySort })}
@@ -52,7 +54,7 @@ export default function GalleryPanel({ value, onChange }: ViewSettingsProps) {
                     style={selectStyle}
                 >
                     {GALLERY_SORTS.map((sort) => (
-                        <option key={sort} value={sort}>{SORT_LABELS[sort]}</option>
+                        <option key={sort} value={sort}>{sortLabels[sort]}</option>
                     ))}
                 </select>
             </div>

@@ -16,5 +16,23 @@ declare(strict_types=1);
  * keys in their own lang/<locale>/views.php.
  */
 return [
-    // Filled per-subsection as the i18n sweep progresses.
+    // ── View labels (rendered in ViewToggle segmented control) ──
+    'gallery.label' => 'Gallery',
+    'kanban.label' => 'Board',
+    'graph.label' => 'Graph',
+    'tree.label' => 'Tree',
+    'timeline.label' => 'Timeline',
+
+    // ── GalleryPanel (settings UI in BlueprintSettingsModal) ──
+    'gallery.enable' => 'Enable Gallery view',
+    'gallery.sort_by' => 'Sort by',
+    'gallery.sort.name' => 'Name (A→Z)',
+    'gallery.sort.updated_at' => 'Recently updated',
+    'gallery.sort.created_at' => 'Recently created',
+
+    // ── Per-view registry placeholders ──
+    'kanban.placeholder' => 'Kanban is configured via the dedicated Kanban menu item in Blueprint Settings.',
+    'graph.placeholder' => 'Graph is configured via the dedicated Graph menu item in Blueprint Settings.',
+    'tree.placeholder' => 'Tree view uses the Structure settings panel for configuration.',
+    'timeline.placeholder' => 'Timeline configuration is managed in the Timeline settings panel.',
 ];

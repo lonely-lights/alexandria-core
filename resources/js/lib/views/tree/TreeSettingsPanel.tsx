@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import useT from '@alexandria/hooks/useT';
 import type { ViewSettingsProps } from '../types';
 
 /**
@@ -15,9 +16,10 @@ const stubStyle: CSSProperties = {
 };
 
 export default function TreeSettingsPanel(_: ViewSettingsProps) {
+    const t = useT();
     return (
         <div className="p-4 text-xs" style={stubStyle}>
-            Tree view uses the Structure settings panel for configuration.
+            {t('views.tree.placeholder')}
         </div>
     );
 }

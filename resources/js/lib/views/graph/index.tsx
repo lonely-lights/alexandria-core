@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import useT from '@alexandria/hooks/useT';
 import type { BlueprintViewDefinition, ViewRenderProps, ViewSettingsProps } from '../types';
 import GraphView from './GraphView';
 import type { GraphConfig } from './types';
@@ -31,10 +32,10 @@ function GraphRender({ blueprint, config }: ViewRenderProps) {
 }
 
 function GraphRegistryPanelPlaceholder(_: ViewSettingsProps) {
+    const t = useT();
     return (
         <div className="p-4 text-xs" style={stubStyle}>
-            Graph is configured via the dedicated <span className="font-semibold">Graph</span> menu
-            item in Blueprint Settings.
+            {t('views.graph.placeholder')}
         </div>
     );
 }
