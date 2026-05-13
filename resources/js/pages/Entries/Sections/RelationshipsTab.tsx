@@ -1,6 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type CSSProperties } from 'react';
+import useT from '@alexandria/hooks/useT';
 import EntryLink from '@alexandria/components/entries/EntryLink';
 import Pagination from '@alexandria/components/ui/Pagination';
+import {
+    cardOuter,
+    cardInner,
+    emptyStateInner,
+    emptyIconStyle,
+    emptyLabelStyle,
+    gradientHeaderSecondary,
+    headerIconSecondaryMuted,
+    countBadge,
+    helperFainter,
+    helperFaint,
+    labelMid,
+} from './entriesTabStyles';
 
 interface RelationshipBlueprintMeta {
     slug: string;
@@ -29,15 +43,62 @@ interface RelationshipsTabProps {
     relationshipBlueprints: Record<string, RelationshipBlueprintMeta>;
 }
 
+const tableHeadRowStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-300) 50%, transparent)',
+};
+
+const sortHeaderBtnStyle: CSSProperties = {
+    cursor: 'pointer',
+    userSelect: 'none',
+    padding: '0.5rem 0.75rem',
+    textAlign: 'left',
+    fontSize: '0.75rem',
+    transition: 'background-color var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const sortIconActiveStyle: CSSProperties = {
+    color: 'var(--theme-brand-primary-500)',
+};
+
+const sortIconIdleStyle: CSSProperties = {
+    opacity: 0.2,
+};
+
+const tableCellStyle: CSSProperties = {
+    padding: '0.5rem 0.75rem',
+    fontSize: '0.875rem',
+};
+
+const fieldCellStyle: CSSProperties = {
+    ...tableCellStyle,
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+};
+
+const tableRowStyle: CSSProperties = {
+    transition: 'background-color var(--theme-motion-duration-fast, 150ms) ease',
+    borderTop: '1px dashed color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+};
+
+const spinnerStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
+const paginationWrapStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-300) 40%, transparent)',
+    borderTop: '1px solid var(--theme-base-300)',
+};
+
 export default function RelationshipsTab({ entryId, projectId, relationshipBlueprints }: RelationshipsTabProps) {
+    const t = useT();
     const blueprints = Object.values(relationshipBlueprints);
 
     if (blueprints.length === 0) {
         return (
-            <div className="paper-board rounded-2xl border border-base-content/10">
-                <div className="flex flex-col items-center bg-base-200 py-16 text-center" style={{ borderRadius: 'inherit' }}>
-                    <i className="fa-solid fa-diagram-project mb-3 text-3xl text-base-content/20" />
-                    <p className="text-sm font-medium text-base-content/40">No relationships</p>
+            <div className="paper-board" style={cardOuter}>
+                <div style={emptyStateInner}>
+                    <i className="fa-solid fa-diagram-project mb-3 text-3xl" style={emptyIconStyle} />
+                    <p className="text-sm font-medium" style={emptyLabelStyle}>{t('entries.tab.relationship.empty')}</p>
                 </div>
             </div>
         );
@@ -68,6 +129,7 @@ function RelationshipGroup({ blueprint, entryId, projectId }: {
     entryId: number;
     projectId: number;
 }) {
+    const t = useT();
     const [items, setItems] = useState<ConnectionItem[]>([]);
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [loading, setLoading] = useState(true);
@@ -125,42 +187,41 @@ function RelationshipGroup({ blueprint, entryId, projectId }: {
     const fieldColumns = blueprint.fields.filter((f) => f.name !== 'priority');
 
     const sortIcon = (field: string) => {
-        if (sortField !== field) return <i className="fa-solid fa-sort text-[9px] opacity-20" />;
+        if (sortField !== field) return <i className="fa-solid fa-sort text-[9px]" style={sortIconIdleStyle} />;
         return sortDir === 'asc'
-            ? <i className="fa-solid fa-sort-up text-[9px] text-primary" />
-            : <i className="fa-solid fa-sort-down text-[9px] text-primary" />;
+            ? <i className="fa-solid fa-sort-up text-[9px]" style={sortIconActiveStyle} />
+            : <i className="fa-solid fa-sort-down text-[9px]" style={sortIconActiveStyle} />;
     };
 
     return (
-        <div className="paper-board rounded-2xl border border-base-content/10">
-            <div className="overflow-hidden bg-base-200" style={{ borderRadius: 'inherit' }}>
-                <div
-                    className="flex items-center gap-2 border-b border-base-300 px-5 py-3 text-secondary-content"
-                    style={{ background: 'linear-gradient(90deg, color-mix(in srgb, var(--color-secondary) 80%, transparent), color-mix(in srgb, var(--color-secondary) 60%, transparent))' }}
-                >
-                    <i className="fa-solid fa-diagram-project text-xs text-secondary-content/60" />
+        <div className="paper-board" style={cardOuter}>
+            <div className="overflow-hidden" style={cardInner}>
+                <div className="flex items-center gap-2 px-5 py-3" style={gradientHeaderSecondary}>
+                    <i className="fa-solid fa-diagram-project text-xs" style={headerIconSecondaryMuted} />
                     <h3 className="text-sm font-semibold">{blueprint.name}</h3>
                     {meta && (
-                        <span className="ml-auto rounded-full bg-black/25 px-2.5 py-0.5 text-xs font-semibold text-white">
-                            {meta.total} {meta.total === 1 ? 'relationship' : 'relationships'}
+                        <span style={countBadge}>
+                            {t(meta.total === 1 ? 'entries.tab.relationship.count.singular' : 'entries.tab.relationship.count.plural').replace(':count', String(meta.total))}
                         </span>
                     )}
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="table table-sm w-full">
+                    <table className="w-full">
                         <thead>
-                            <tr className="bg-base-300/50 text-xs [&_th]:bg-transparent">
+                            <tr style={tableHeadRowStyle}>
                                 <th
-                                    className="cursor-pointer select-none transition-colors hover:bg-base-content/5"
+                                    className="alex-row"
+                                    style={sortHeaderBtnStyle}
                                     onClick={() => toggleSort('entry_a')}
                                 >
-                                    <span className="flex items-center gap-1.5">Name {sortIcon('entry_a')}</span>
+                                    <span className="flex items-center gap-1.5">{t('entries.tab.relationship.name_column')} {sortIcon('entry_a')}</span>
                                 </th>
                                 {fieldColumns.map((f) => (
                                     <th
                                         key={f.name}
-                                        className="cursor-pointer select-none transition-colors hover:bg-base-content/5"
+                                        className="alex-row"
+                                        style={sortHeaderBtnStyle}
                                         onClick={() => toggleSort(`field:${f.name}`)}
                                     >
                                         <span className="flex items-center gap-1.5">{f.label} {sortIcon(`field:${f.name}`)}</span>
@@ -172,22 +233,22 @@ function RelationshipGroup({ blueprint, entryId, projectId }: {
                             {loading && (
                                 <tr>
                                     <td colSpan={1 + fieldColumns.length} className="py-8 text-center">
-                                        <span className="loading loading-spinner loading-sm" />
+                                        <i className="fa-solid fa-circle-notch fa-spin" style={spinnerStyle} />
                                     </td>
                                 </tr>
                             )}
                             {!loading && items.length === 0 && (
                                 <tr>
-                                    <td colSpan={1 + fieldColumns.length} className="py-8 text-center text-sm text-base-content/30">
-                                        No relationships found
+                                    <td colSpan={1 + fieldColumns.length} className="py-8 text-center text-sm" style={helperFainter}>
+                                        {t('entries.tab.relationship.no_results')}
                                     </td>
                                 </tr>
                             )}
                             {!loading && items.map((item) => {
                                 const other = otherEntry(item, entryId);
                                 return (
-                                    <tr key={item.id} className="bg-row-tint transition-colors hover:bg-base-200/50">
-                                        <td>
+                                    <tr key={item.id} className="alex-row" style={tableRowStyle}>
+                                        <td style={tableCellStyle}>
                                             <div>
                                                 {other.entry.url ? (
                                                     <EntryLink entryId={other.entry.id} href={other.entry.url} className="text-sm font-medium hover:underline">
@@ -197,13 +258,13 @@ function RelationshipGroup({ blueprint, entryId, projectId }: {
                                                     <span className="text-sm">{other.entry.name}</span>
                                                 )}
                                                 {other.label && (
-                                                    <span className="ml-1.5 text-xs text-base-content/40">{other.label}</span>
+                                                    <span className="ml-1.5 text-xs" style={helperFaint}>{other.label}</span>
                                                 )}
                                             </div>
                                         </td>
                                         {fieldColumns.map((f) => (
-                                            <td key={f.name}>
-                                                <span className="text-xs text-base-content/70">
+                                            <td key={f.name} style={fieldCellStyle}>
+                                                <span style={labelMid}>
                                                     {item.fields[f.label] != null ? String(item.fields[f.label]) : '—'}
                                                 </span>
                                             </td>
@@ -216,7 +277,7 @@ function RelationshipGroup({ blueprint, entryId, projectId }: {
                 </div>
 
                 {meta && meta.last_page > 1 && (
-                    <div className="border-t border-base-300 bg-base-300/40 px-5 py-2">
+                    <div className="px-5 py-2" style={paginationWrapStyle}>
                         <Pagination
                             currentPage={meta.current_page}
                             lastPage={meta.last_page}

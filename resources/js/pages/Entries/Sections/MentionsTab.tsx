@@ -1,7 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 import EntryLink from '@alexandria/components/entries/EntryLink';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import type { MentionEntry } from '../Show';
+import {
+    cardOuter,
+    cardInner,
+    emptyStateInner,
+    emptyIconStyle,
+    emptyLabelStyle,
+    gradientHeaderPrimary,
+    headerIconPrimaryMuted,
+    countBadge,
+    sortTriggerPrimaryActive,
+    sortTriggerPrimaryIdle,
+    rowDivider,
+    chipStyle,
+} from './entriesTabStyles';
 
 interface MentionsTabProps {
     entries: MentionEntry[];
@@ -10,21 +25,29 @@ interface MentionsTabProps {
 
 type SortKey = 'default' | 'name-asc' | 'name-desc' | 'count-desc' | 'count-asc';
 
-const SORT_LABELS: Record<SortKey, string> = {
-    'default': 'Default',
-    'name-asc': 'Name A → Z',
-    'name-desc': 'Name Z → A',
-    'count-desc': 'Most mentions',
-    'count-asc': 'Fewest mentions',
+function sortLabels(t: Translator): Record<SortKey, string> {
+    return {
+        'default': t('entries.tab.sort.default'),
+        'name-asc': t('entries.tab.sort.name_asc'),
+        'name-desc': t('entries.tab.sort.name_desc'),
+        'count-desc': t('entries.tab.mention.sort.most'),
+        'count-asc': t('entries.tab.mention.sort.fewest'),
+    };
+}
+
+const linkStyle: CSSProperties = {
+    color: 'var(--theme-base-content)',
 };
 
 export default function MentionsTab({ entries, title }: MentionsTabProps) {
+    const t = useT();
+
     if (entries.length === 0) {
         return (
-            <div className="paper-board rounded-2xl border border-base-content/10">
-                <div className="flex flex-col items-center bg-base-200 py-16 text-center" style={{ borderRadius: 'inherit' }}>
-                    <i className="fa-solid fa-at mb-3 text-3xl text-base-content/20" />
-                    <p className="text-sm font-medium text-base-content/40">No mentions</p>
+            <div className="paper-board" style={cardOuter}>
+                <div style={emptyStateInner}>
+                    <i className="fa-solid fa-at mb-3 text-3xl" style={emptyIconStyle} />
+                    <p className="text-sm font-medium" style={emptyLabelStyle}>{t('entries.tab.mention.empty')}</p>
                 </div>
             </div>
         );
@@ -32,13 +55,16 @@ export default function MentionsTab({ entries, title }: MentionsTabProps) {
 
     // Group by blueprint name
     const grouped = entries.reduce<Record<string, MentionEntry[]>>((acc, e) => {
-        const key = e.blueprint_name ?? 'Other';
+        const key = e.blueprint_name ?? t('entries.tab.mention.default_group');
         if (!acc[key]) acc[key] = [];
         acc[key].push(e);
         return acc;
     }, {});
 
-    const icon = title === 'Mentioned In' ? 'fa-solid fa-reply' : 'fa-solid fa-at';
+    // Detect the "Mentioned In" variant by comparing the passed title to its
+    // translation; lets the parent control which icon shows up.
+    const mentionedInTitle = t('entries.show.mentions_title.mentioned_in');
+    const icon = title === mentionedInTitle ? 'fa-solid fa-reply' : 'fa-solid fa-at';
 
     return (
         <div className="space-y-6">
@@ -50,55 +76,55 @@ export default function MentionsTab({ entries, title }: MentionsTabProps) {
 }
 
 function MentionGroupCard({ blueprintName, items, icon }: { blueprintName: string; items: MentionEntry[]; icon: string }) {
+    const t = useT();
+    const labels = sortLabels(t);
     const [sort, setSort] = useState<SortKey>('default');
 
     const sorted = useMemo(() => sortMentions(items, sort), [items, sort]);
 
-    const sortItems = (Object.keys(SORT_LABELS) as SortKey[]).map((k) => ({
-        label: SORT_LABELS[k],
+    const sortItems = (Object.keys(labels) as SortKey[]).map((k) => ({
+        label: labels[k],
         icon: sort === k ? 'fa-solid fa-check' : undefined,
         onClick: () => setSort(k),
     }));
 
+    const isActive = sort !== 'default';
+
     return (
-        <div className="paper-board rounded-2xl border border-base-content/10">
-            <div className="overflow-hidden bg-base-200" style={{ borderRadius: 'inherit' }}>
-                <div
-                    className="flex items-center gap-2 border-b border-base-300 px-5 py-3 text-primary-content"
-                    style={{ background: 'linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 80%, transparent), color-mix(in srgb, var(--color-primary) 60%, transparent))' }}
-                >
-                    <i className={`${icon} text-xs text-primary-content/60`} />
+        <div className="paper-board" style={cardOuter}>
+            <div className="overflow-hidden" style={cardInner}>
+                <div className="flex items-center gap-2 px-5 py-3" style={gradientHeaderPrimary}>
+                    <i className={`${icon} text-xs`} style={headerIconPrimaryMuted} />
                     <h3 className="text-sm font-semibold">{blueprintName}</h3>
-                    <span className="ml-auto rounded-full bg-black/25 px-2.5 py-0.5 text-xs font-semibold text-white">
-                        {items.length} {items.length === 1 ? 'mention' : 'mentions'}
+                    <span style={countBadge}>
+                        {t(items.length === 1 ? 'entries.tab.mention.count.singular' : 'entries.tab.mention.count.plural').replace(':count', String(items.length))}
                     </span>
                     <DropdownMenu
                         align="right"
                         trigger={
                             <button
                                 type="button"
-                                className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors ${
-                                    sort !== 'default'
-                                        ? 'bg-primary-content/15 text-primary-content ring-1 ring-primary-content/20'
-                                        : 'text-primary-content/70 hover:bg-primary-content/10 hover:text-primary-content'
-                                }`}
-                                title="Sort"
+                                style={isActive ? sortTriggerPrimaryActive : sortTriggerPrimaryIdle}
                             >
                                 <i className="fa-solid fa-arrow-down-short-wide text-[11px]" />
-                                <span>{SORT_LABELS[sort]}</span>
+                                <span>{labels[sort]}</span>
                             </button>
                         }
                         items={sortItems}
                     />
                 </div>
-                <div className="divide-y divide-dashed divide-base-content/10">
-                    {sorted.map((entry) => (
-                        <div key={entry.id} className="flex items-center gap-3 bg-row-tint px-5 py-3.5 transition-colors hover:bg-base-200/50">
-                            <EntryLink entryId={entry.id} href={entry.url} className="flex-1 text-sm font-medium text-base-content hover:underline">
+                <div>
+                    {sorted.map((entry, i) => (
+                        <div
+                            key={entry.id}
+                            className="alex-row flex items-center gap-3 px-5 py-3.5"
+                            style={i > 0 ? rowDivider : undefined}
+                        >
+                            <EntryLink entryId={entry.id} href={entry.url} className="flex-1 text-sm font-medium hover:underline" style={linkStyle}>
                                 {entry.name}
                             </EntryLink>
                             {entry.mention_count > 1 && (
-                                <span className="badge badge-sm border border-base-content/10 bg-base-100 font-normal text-base-content/80">
+                                <span style={chipStyle}>
                                     {entry.mention_count}×
                                 </span>
                             )}

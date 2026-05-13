@@ -1,7 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 import EntryLink from '@alexandria/components/entries/EntryLink';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import type { ConnectionSection } from '../Show';
+import {
+    cardOuter,
+    cardInner,
+    emptyStateInner,
+    emptyIconStyle,
+    emptyLabelStyle,
+    gradientHeaderSecondary,
+    headerIconSecondaryMuted,
+    headerSubtitleSecondary,
+    countBadge,
+    sortTriggerSecondaryActive,
+    sortTriggerSecondaryIdle,
+    rowDivider,
+    chipStyle,
+} from './entriesTabStyles';
 
 interface ConnectionsTabProps {
     connections: ConnectionSection[];
@@ -15,21 +31,68 @@ type SortKey =
     | 'pt-desc'
     | 'pt-asc';
 
-const SORT_LABELS: Record<SortKey, string> = {
-    'default': 'Default',
-    'name-asc': 'Name A → Z',
-    'name-desc': 'Name Z → A',
-    'pt-desc': 'Most connections',
-    'pt-asc': 'Fewest connections',
+function sortLabels(t: Translator): Record<SortKey, string> {
+    return {
+        'default': t('entries.tab.sort.default'),
+        'name-asc': t('entries.tab.sort.name_asc'),
+        'name-desc': t('entries.tab.sort.name_desc'),
+        'pt-desc': t('entries.tab.connection.sort.most'),
+        'pt-asc': t('entries.tab.connection.sort.fewest'),
+    };
+}
+
+const hubIconWrapStyle: CSSProperties = {
+    display: 'flex',
+    height: '2.5rem',
+    width: '2.5rem',
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 'var(--theme-radius-input)',
+    border: '1px solid var(--theme-base-300)',
+    background: 'var(--theme-base-100)',
+};
+
+const hubIconStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+const ptIconWrapStyle: CSSProperties = {
+    display: 'flex',
+    height: '2rem',
+    width: '2rem',
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 'var(--theme-radius-input)',
+    background: 'color-mix(in srgb, var(--theme-base-100) 70%, transparent)',
+};
+
+const ptIconStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)',
+};
+
+const hubLinkStyle: CSSProperties = {
+    color: 'var(--theme-base-content)',
+};
+
+const ptLinkStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+};
+
+const ptBorderStyle: CSSProperties = {
+    borderLeft: '2px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
 };
 
 export default function ConnectionsTab({ connections }: ConnectionsTabProps) {
+    const t = useT();
+
     if (connections.length === 0) {
         return (
-            <div className="paper-board rounded-2xl border border-base-content/10">
-                <div className="flex flex-col items-center bg-base-200 py-16 text-center" style={{ borderRadius: 'inherit' }}>
-                    <i className="fa-solid fa-share-nodes mb-3 text-3xl text-base-content/20" />
-                    <p className="text-sm font-medium text-base-content/40">No connections</p>
+            <div className="paper-board" style={cardOuter}>
+                <div style={emptyStateInner}>
+                    <i className="fa-solid fa-share-nodes mb-3 text-3xl" style={emptyIconStyle} />
+                    <p className="text-sm font-medium" style={emptyLabelStyle}>{t('entries.tab.connection.empty')}</p>
                 </div>
             </div>
         );
@@ -45,50 +108,46 @@ export default function ConnectionsTab({ connections }: ConnectionsTabProps) {
 }
 
 function ConnectionSectionCard({ section }: { section: ConnectionSection }) {
+    const t = useT();
+    const labels = sortLabels(t);
     const [sort, setSort] = useState<SortKey>('default');
 
     const sortedItems = useMemo(() => sortItems(section.items, sort), [section.items, sort]);
 
-    const sortItemsList = (Object.keys(SORT_LABELS) as SortKey[]).map((k) => ({
-        label: SORT_LABELS[k],
+    const sortItemsList = (Object.keys(labels) as SortKey[]).map((k) => ({
+        label: labels[k],
         icon: sort === k ? 'fa-solid fa-check' : undefined,
         onClick: () => setSort(k),
     }));
 
+    const isActive = sort !== 'default';
+
     return (
-        <div className="paper-board rounded-2xl border border-base-content/10">
-            <div className="overflow-hidden bg-base-200" style={{ borderRadius: 'inherit' }}>
+        <div className="paper-board" style={cardOuter}>
+            <div className="overflow-hidden" style={cardInner}>
                 {/* Section header */}
-                <div
-                    className="flex items-start gap-2 border-b border-base-300 px-5 py-3 text-secondary-content"
-                    style={{ background: 'linear-gradient(90deg, color-mix(in srgb, var(--color-secondary) 80%, transparent), color-mix(in srgb, var(--color-secondary) 60%, transparent))' }}
-                >
+                <div className="flex items-start gap-2 px-5 py-3" style={gradientHeaderSecondary}>
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                            <i className="fa-solid fa-share-nodes text-xs text-secondary-content/60" />
+                            <i className="fa-solid fa-share-nodes text-xs" style={headerIconSecondaryMuted} />
                             <h3 className="text-sm font-semibold">{section.title}</h3>
                         </div>
                         {section.description && (
-                            <p className="mt-0.5 text-xs font-medium text-secondary-content/60">{section.description}</p>
+                            <p className="mt-0.5 text-xs font-medium" style={headerSubtitleSecondary}>{section.description}</p>
                         )}
                     </div>
-                    <span className="flex-shrink-0 rounded-full bg-black/25 px-2.5 py-0.5 text-xs font-semibold text-white">
-                        {section.items.length} {section.items.length === 1 ? 'connection' : 'connections'}
+                    <span style={countBadge}>
+                        {t(section.items.length === 1 ? 'entries.tab.connection.count.singular' : 'entries.tab.connection.count.plural').replace(':count', String(section.items.length))}
                     </span>
                     <DropdownMenu
                         align="right"
                         trigger={
                             <button
                                 type="button"
-                                className={`flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors ${
-                                    sort !== 'default'
-                                        ? 'bg-secondary-content/15 text-secondary-content ring-1 ring-secondary-content/20'
-                                        : 'text-secondary-content/70 hover:bg-secondary-content/10 hover:text-secondary-content'
-                                }`}
-                                title="Sort"
+                                style={isActive ? sortTriggerSecondaryActive : sortTriggerSecondaryIdle}
                             >
                                 <i className="fa-solid fa-arrow-down-short-wide text-[11px]" />
-                                <span>{SORT_LABELS[sort]}</span>
+                                <span>{labels[sort]}</span>
                             </button>
                         }
                         items={sortItemsList}
@@ -96,39 +155,39 @@ function ConnectionSectionCard({ section }: { section: ConnectionSection }) {
                 </div>
 
                 {/* Hub items */}
-                <div className="divide-y divide-dashed divide-base-content/10">
+                <div>
                     {sortedItems.map((item, j) => {
                         const hubIcon = item.hub.icon.includes(' ') ? item.hub.icon : `fa-solid ${item.hub.icon}`;
                         const hasPassThrough = item.pass_through.length > 0;
 
                         return (
-                            <div key={j} className="bg-row-tint px-5 py-3 transition-colors hover:bg-base-200/50">
+                            <div key={j} className="alex-row px-5 py-3" style={j > 0 ? rowDivider : undefined}>
                                 {/* Hub entry */}
                                 <div className="flex items-center gap-4">
-                                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-base-300 bg-base-100">
-                                        <i className={`${hubIcon} text-base text-base-content/50`} />
+                                    <div style={hubIconWrapStyle}>
+                                        <i className={`${hubIcon} text-base`} style={hubIconStyle} />
                                     </div>
-                                    <EntryLink entryId={item.hub.id} href={item.hub.url} className="text-sm font-semibold text-base-content hover:underline">
+                                    <EntryLink entryId={item.hub.id} href={item.hub.url} className="text-sm font-semibold hover:underline" style={hubLinkStyle}>
                                         {item.hub.name}
                                     </EntryLink>
                                 </div>
 
                                 {/* Pass-through entries */}
                                 {hasPassThrough && (
-                                    <div className="ml-5 mt-2 border-l-2 border-base-content/5 pl-5">
+                                    <div className="ml-5 mt-2 pl-5" style={ptBorderStyle}>
                                         <div className="space-y-1.5">
                                             {item.pass_through.map((pt) => {
                                                 const ptIcon = pt.icon.includes(' ') ? pt.icon : `fa-solid ${pt.icon}`;
                                                 return (
                                                     <div key={pt.id} className="flex items-center gap-3">
-                                                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-base-100/70">
-                                                            <i className={`${ptIcon} text-xs text-base-content/30`} />
+                                                        <div style={ptIconWrapStyle}>
+                                                            <i className={`${ptIcon} text-xs`} style={ptIconStyle} />
                                                         </div>
-                                                        <EntryLink entryId={pt.id} href={pt.url} className="text-sm text-base-content/70 hover:text-base-content hover:underline">
+                                                        <EntryLink entryId={pt.id} href={pt.url} className="text-sm hover:underline" style={ptLinkStyle}>
                                                             {pt.name}
                                                         </EntryLink>
                                                         {pt.blueprint_name && (
-                                                            <span className="badge badge-sm border border-base-content/10 bg-base-100 font-normal text-base-content/80">
+                                                            <span style={chipStyle}>
                                                                 {pt.blueprint_name}
                                                             </span>
                                                         )}

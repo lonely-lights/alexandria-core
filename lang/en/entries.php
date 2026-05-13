@@ -143,4 +143,44 @@ return [
     'form.reference_modal.no_entries' => 'No entries found',
     'form.reference_modal.selected_count' => ':count selected',
     'form.reference_modal.apply' => 'Apply',
+
+    // ── Shared sort labels for read tabs (Subsection C) ──
+    'tab.sort.default' => 'Default',
+    'tab.sort.name_asc' => 'Name A → Z',
+    'tab.sort.name_desc' => 'Name Z → A',
+
+    // ── AttributesTab (Subsection C) ──
+    'tab.attribute.empty' => 'No attributes set',
+    'tab.attribute.heading' => 'Attributes',
+    'tab.attribute.field_count.singular' => ':count field',
+    'tab.attribute.field_count.plural' => ':count fields',
+    'tab.attribute.record_count.singular' => ':count record',
+    'tab.attribute.record_count.plural' => ':count records',
+    'tab.attribute.present' => 'Present',
+    'tab.attribute.sort.earliest' => 'Earliest first',
+    'tab.attribute.sort.latest' => 'Latest first',
+    'tab.attribute.sort.most_intense' => 'Most intense',
+    'tab.attribute.sort.least_intense' => 'Least intense',
+
+    // ── ConnectionsTab (Subsection C) ──
+    'tab.connection.empty' => 'No connections',
+    'tab.connection.count.singular' => ':count connection',
+    'tab.connection.count.plural' => ':count connections',
+    'tab.connection.sort.most' => 'Most connections',
+    'tab.connection.sort.fewest' => 'Fewest connections',
+
+    // ── RelationshipsTab (Subsection C) ──
+    'tab.relationship.empty' => 'No relationships',
+    'tab.relationship.count.singular' => ':count relationship',
+    'tab.relationship.count.plural' => ':count relationships',
+    'tab.relationship.no_results' => 'No relationships found',
+    'tab.relationship.name_column' => 'Name',
+
+    // ── MentionsTab (Subsection C) ──
+    'tab.mention.empty' => 'No mentions',
+    'tab.mention.count.singular' => ':count mention',
+    'tab.mention.count.plural' => ':count mentions',
+    'tab.mention.default_group' => 'Other',
+    'tab.mention.sort.most' => 'Most mentions',
+    'tab.mention.sort.fewest' => 'Fewest mentions',
 ];
