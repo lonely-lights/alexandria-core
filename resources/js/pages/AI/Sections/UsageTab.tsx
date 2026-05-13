@@ -176,7 +176,7 @@ export default function UsageTab({ projectId }: UsageTabProps) {
     return (
         <div className="flex flex-col gap-6">
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
                 <StatCard icon="fa-solid fa-arrow-right-arrow-left" label={t('ai.usage_tab.stat.requests')} value={stats?.total_transactions ?? 0} />
                 <StatCard icon="fa-solid fa-arrow-right" label={t('ai.usage_tab.stat.input')} value={stats?.total_input ?? 0} tintKey="info" />
                 <StatCard icon="fa-solid fa-arrow-left" label={t('ai.usage_tab.stat.output')} value={stats?.total_output ?? 0} tintKey="success" />

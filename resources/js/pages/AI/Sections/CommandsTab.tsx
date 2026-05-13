@@ -326,7 +326,7 @@ export default function CommandsTab({ projectId }: CommandsTabProps) {
             {/* Header — title + count + status filter chips */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-baseline gap-2">
-                    <h2 className="font-serif text-2xl font-bold tracking-tight">
+                    <h2 className="font-serif text-xl font-bold tracking-tight sm:text-2xl">
                         {t('ai.commands_tab.title')}
                     </h2>
                     {response && response.total > 0 && (

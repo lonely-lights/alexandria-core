@@ -71,7 +71,7 @@ export default function UsageSidebar({ stats, monthlyBudget }: UsageSidebarProps
                     {t('ai.usage_sidebar.title')}
                 </h3>
             </div>
-            <div className="space-y-4 p-5">
+            <div className="space-y-4 p-3 sm:p-4 lg:p-5">
                 {/* This Month — three mini stats. Cost cell is primary-tinted
                     so it's the first thing you see when budget matters. */}
                 <div>

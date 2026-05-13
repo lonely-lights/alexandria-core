@@ -216,7 +216,7 @@ function StatCard({ icon, label, value, subLabel, colorKey, gradient, budgetLabe
                             >
                                 {label}
                             </p>
-                            <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
+                            <p className="mt-1 text-xl font-bold tabular-nums sm:text-2xl">{value}</p>
                             {subLabel && (
                                 <p
                                     className="mt-0.5 text-xs"
@@ -251,7 +251,7 @@ function StatCard({ icon, label, value, subLabel, colorKey, gradient, budgetLabe
                         <p className="text-xs font-semibold uppercase tracking-wider" style={labelText}>
                             {label}
                         </p>
-                        <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
+                        <p className="mt-1 text-xl font-bold tabular-nums sm:text-2xl">{value}</p>
                         {subLabel && (
                             <p className="mt-0.5 text-xs" style={fadedText}>
                                 {subLabel}
@@ -307,7 +307,7 @@ function NoteQueue({ projectId, t }: NoteQueueProps) {
         // Notes Dashboard's Recent Notes panel.
         <div className="paper-board" style={paperBoardOuterStyle}>
             <div className="overflow-hidden" style={paperBoardInnerStyle}>
-                <div className="flex items-center justify-between px-5 py-4" style={paperBoardHeaderStyle}>
+                <div className="flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 lg:px-5" style={paperBoardHeaderStyle}>
                     <h2 className="font-serif text-xl font-bold tracking-tight">
                         {t('ai.dashboard_tab.queue.title')}
                     </h2>
@@ -429,7 +429,7 @@ function RecentBatches({ projectId, t }: RecentBatchesProps) {
         // Queue above — see that comment for the layering rationale.
         <div className="paper-board" style={paperBoardOuterStyle}>
             <div className="overflow-hidden" style={paperBoardInnerStyle}>
-                <div className="px-5 py-4" style={paperBoardHeaderStyle}>
+                <div className="px-3 py-3 sm:px-4 sm:py-4 lg:px-5" style={paperBoardHeaderStyle}>
                     <h2 className="font-serif text-xl font-bold tracking-tight">
                         {t('ai.dashboard_tab.batches.title')}
                     </h2>
