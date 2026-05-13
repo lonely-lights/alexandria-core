@@ -811,8 +811,16 @@ export default function EntriesTab({
                                 {activeColumns.map((col, i) => (
                                     <th
                                         key={col.key}
-                                        className={`relative ${columnWidthClass(col.key)} ${i === 0 ? "first:rounded-tl-2xl" : ""}`}
-                                        style={tableHeaderCellStyle}
+                                        className={`relative ${columnWidthClass(col.key)}`}
+                                        style={
+                                            i === 0
+                                                ? {
+                                                      ...tableHeaderCellStyle,
+                                                      borderTopLeftRadius:
+                                                          "var(--theme-radius-card)",
+                                                  }
+                                                : tableHeaderCellStyle
+                                        }
                                     >
                                         <div className="flex items-center gap-1.5">
                                             <span>{col.label}</span>
@@ -855,8 +863,11 @@ export default function EntriesTab({
                                     </th>
                                 ))}
                                 <th
-                                    className="last:rounded-tr-2xl"
-                                    style={tableHeaderCellStyle}
+                                    style={{
+                                        ...tableHeaderCellStyle,
+                                        borderTopRightRadius:
+                                            "var(--theme-radius-card)",
+                                    }}
                                 >
                                     <div className="flex items-center justify-end gap-2">
                                         {hasAnyFilter && (

@@ -66,6 +66,14 @@ export default function Input({
                         error && 'alex-input--error',
                         className,
                     )}
+                    // `.alex-input` (inputs.css) sets `padding-inline` which
+                    // overrides Tailwind's `pl-*` utility from `s.iconPadding`.
+                    // Inline style wins specificity so the icon clears the text.
+                    style={
+                        hasIcon
+                            ? { paddingLeft: s.iconPaddingPx, ...props.style }
+                            : props.style
+                    }
                     {...props}
                 />
             </div>
