@@ -23,7 +23,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          tools: composer:v2
+          # composer:2.8+ is required for GitHub's JWT-format installation tokens
+          # (the shorthand `composer:v2` can resolve to an older 2.x that rejects
+          # the dots in JWT tokens — fails with "contains invalid characters").
+          tools: composer:2.8
           coverage: xdebug
 
       - name: Install Composer Dependencies

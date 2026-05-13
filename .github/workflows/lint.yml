@@ -18,6 +18,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+          # composer:2.8+ is required for GitHub's JWT-format installation tokens
+          # (older Composer rejects the dots in JWT tokens — fails with "contains
+          # invalid characters" when setup-php auto-wires github-oauth).
+          tools: composer:2.8
 
       - name: Install Dependencies
         run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
