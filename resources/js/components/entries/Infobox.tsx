@@ -86,6 +86,22 @@ interface InfoboxProps {
     entryName: string;
 }
 
+/* ── Theme tokens ──
+   The infobox panel paints against the secondary brand color — the entry's
+   identity panel relative to base chrome. Children tint the content color at
+   varying strengths via color-mix. Section pills invert (content as fill,
+   brand-secondary as text). */
+
+const PANEL_BG = 'var(--theme-brand-secondary-500)';
+const CONTENT = 'var(--theme-brand-secondary-content)';
+const tintContent = (pct: number) =>
+    `color-mix(in srgb, ${CONTENT} ${pct}%, transparent)`;
+
+const PILL_STYLE: CSSProperties = {
+    background: tintContent(90),
+    color: PANEL_BG,
+};
+
 /* ── Component ── */
 
 export default function Infobox({ blocks, entryName }: InfoboxProps) {
@@ -94,17 +110,27 @@ export default function Infobox({ blocks, entryName }: InfoboxProps) {
     }
 
     // Tint the paper-board drop-shadow with a darker secondary so the
-    // infobox shadow relates to its own fill color — same mechanic the
-    // Notes dashboard uses for its color-coded shortcut cards.
-    const shadowStyle = {
-        '--paper-board-shadow-color': 'color-mix(in srgb, var(--color-secondary) 55%, #000 45%)',
+    // infobox shadow relates to its own fill color.
+    const wrapperStyle = {
+        '--paper-board-shadow-color': `color-mix(in srgb, ${PANEL_BG} 55%, #000 45%)`,
+        borderRadius: 'var(--theme-radius-card)',
     } as CSSProperties;
 
+    const panelStyle: CSSProperties = {
+        background: PANEL_BG,
+        color: CONTENT,
+        borderRadius: 'inherit',
+    };
+
+    const headerStyle: CSSProperties = {
+        borderBottom: `1px solid ${tintContent(15)}`,
+    };
+
     return (
-        <div className="paper-board rounded-2xl" style={shadowStyle}>
-            <div className="overflow-hidden bg-secondary text-secondary-content" style={{ borderRadius: 'inherit' }}>
+        <div className="paper-board" style={wrapperStyle}>
+            <div className="overflow-hidden" style={panelStyle}>
                 {/* Entry name */}
-                <div className="border-b border-secondary-content/15 px-4 py-4 text-center">
+                <div className="px-4 py-4 text-center" style={headerStyle}>
                     <h2 className="text-lg font-bold tracking-tight">{entryName}</h2>
                 </div>
 
@@ -139,24 +165,32 @@ function InfoboxBlockRenderer({ block }: { block: InfoboxBlock }) {
 function SectionPill({ text }: { text: string }) {
     return (
         <div className="pt-2">
-            <h3 className="mx-3 rounded-full bg-secondary-content/90 py-1.5 text-center text-xs font-semibold uppercase text-secondary">
+            <h3
+                className="mx-3 rounded-full py-1.5 text-center text-xs font-semibold uppercase"
+                style={PILL_STYLE}
+            >
                 {text}
             </h3>
         </div>
     );
 }
 
-/* ── Show More Button (shared expand/collapse) ── */
+/* ── Show More Button (shared expand/collapse) ──
+   Idle/hover color lives in ui-polish.css (.alex-infobox-expander) so the
+   :hover transition between the two states can animate via CSS. */
 
 function ShowMoreButton({ hiddenCount, expanded, onToggle }: { hiddenCount: number; expanded: boolean; onToggle: () => void }) {
     return (
         <div className="mb-4 mt-2">
             <button
                 onClick={onToggle}
-                className="group flex w-full items-center gap-2 text-secondary-content/70 transition-colors hover:text-secondary-content"
+                className="group alex-infobox-expander flex w-full items-center gap-2"
             >
                 <div className="h-px flex-grow bg-current" />
-                <div className="rounded-full bg-secondary-content/90 px-3 py-0.5 text-xs font-semibold uppercase tracking-wider text-secondary transition-transform group-hover:scale-105">
+                <div
+                    className="rounded-full px-3 py-0.5 text-xs font-semibold uppercase tracking-wider transition-transform group-hover:scale-105"
+                    style={PILL_STYLE}
+                >
                     {expanded ? 'Show less' : `Show ${hiddenCount} more...`}
                 </div>
                 <div className="h-px flex-grow bg-current" />
@@ -197,7 +231,10 @@ function LabeledItemsBlock({ data }: { data: { label: string; items: InfoboxItem
     return (
         <div>
             <div className="flex gap-x-4">
-                <div className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium text-secondary-content/70">
+                <div
+                    className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium"
+                    style={{ color: tintContent(70) }}
+                >
                     {label}
                 </div>
                 <div className="w-[61.8%] text-sm leading-5">
@@ -263,14 +300,25 @@ function RelationshipsBlock({ data }: { data: InfoboxRelationshipsBlock['data'] 
 }
 
 function RelationshipRow({ item }: { item: InfoboxRelationshipItem }) {
+    // `.alex-infobox-row` + child `.alex-infobox-subtitle` together drive
+    // the parent-hover brighten effect (see ui-polish.css). Inline styles
+    // can't express group-hover, so the colors live in the stylesheet.
     return (
-        <div className="mt-2 flex gap-x-4">
-            <div className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium text-secondary-content/70">
+        <div className="alex-infobox-row mt-2 flex gap-x-4">
+            <div
+                className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium"
+                style={{ color: tintContent(70) }}
+            >
                 {item.show_label && item.label}
             </div>
-            <div className="group w-[61.8%] text-sm leading-5">
+            <div className="w-[61.8%] text-sm leading-5">
                 {item.entry.url ? (
-                    <EntryLink entryId={item.entry.id} href={item.entry.url} className="font-medium text-secondary-content transition hover:underline">
+                    <EntryLink
+                        entryId={item.entry.id}
+                        href={item.entry.url}
+                        className="font-medium transition hover:underline"
+                        style={{ color: CONTENT }}
+                    >
                         {item.entry.name}
                     </EntryLink>
                 ) : (
@@ -279,7 +327,7 @@ function RelationshipRow({ item }: { item: InfoboxRelationshipItem }) {
                 {item.subtitle_html && (
                     <MentionAwareContent
                         html={item.subtitle_html}
-                        className="text-[10px] text-secondary-content/80 transition duration-300 group-hover:text-secondary-content"
+                        className="alex-infobox-subtitle text-[10px]"
                     />
                 )}
             </div>
@@ -298,6 +346,8 @@ function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
     const visibleChildren = limit_enabled ? children.slice(0, visible_limit) : children;
     const hiddenChildren = limit_enabled ? children.slice(visible_limit) : [];
 
+    const labelStyle: CSSProperties = { color: tintContent(70) };
+
     return (
         <div>
             <SectionPill text="Hierarchy" />
@@ -306,7 +356,10 @@ function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
                 {/* Parent */}
                 {parent && (
                     <div className="mt-2 flex gap-x-4">
-                        <div className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium text-secondary-content/70">
+                        <div
+                            className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium"
+                            style={labelStyle}
+                        >
                             Parent
                         </div>
                         <div className="w-[61.8%] text-sm leading-5">
@@ -318,7 +371,10 @@ function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
                 {/* Children */}
                 {children.length > 0 && (
                     <div className="mt-2 flex gap-x-4">
-                        <div className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium text-secondary-content/70">
+                        <div
+                            className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium"
+                            style={labelStyle}
+                        >
                             {children_total === 1 ? 'Child' : 'Children'}
                         </div>
                         <div className="w-[61.8%] space-y-1 text-sm leading-5">
@@ -357,13 +413,26 @@ function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
 function InfoboxEntryLink({ item }: { item: InfoboxItem }) {
     if (item.url && item.entry_id) {
         return (
-            <EntryLink entryId={item.entry_id} href={item.url} className="text-sm leading-5 text-secondary-content transition hover:underline">
+            <EntryLink
+                entryId={item.entry_id}
+                href={item.url}
+                className="text-sm leading-5 transition hover:underline"
+                style={{ color: CONTENT }}
+            >
                 {item.text}
             </EntryLink>
         );
     }
     if (item.url) {
-        return <a href={item.url} className="text-sm leading-5 text-secondary-content transition hover:underline">{item.text}</a>;
+        return (
+            <a
+                href={item.url}
+                className="text-sm leading-5 transition hover:underline"
+                style={{ color: CONTENT }}
+            >
+                {item.text}
+            </a>
+        );
     }
     return <span className="text-sm leading-5">{item.text}</span>;
 }
@@ -372,14 +441,21 @@ function InfoboxHierarchyLink({ entry }: { entry: InfoboxHierarchyEntry }) {
     return (
         <span>
             {entry.url ? (
-                <EntryLink entryId={entry.id} href={entry.url} className="text-sm leading-5 font-medium text-secondary-content transition hover:underline">
+                <EntryLink
+                    entryId={entry.id}
+                    href={entry.url}
+                    className="text-sm leading-5 font-medium transition hover:underline"
+                    style={{ color: CONTENT }}
+                >
                     {entry.name}
                 </EntryLink>
             ) : (
                 <span className="text-sm leading-5 font-medium">{entry.name}</span>
             )}
             {entry.type_name && (
-                <span className="ml-1 text-[10px] text-secondary-content/60">({entry.type_name})</span>
+                <span className="ml-1 text-[10px]" style={{ color: tintContent(60) }}>
+                    ({entry.type_name})
+                </span>
             )}
         </span>
     );

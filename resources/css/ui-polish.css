@@ -430,6 +430,36 @@ button:not(:disabled),
     );
 }
 
+/* Infobox panel — components/entries/Infobox.tsx renders against
+   --theme-brand-secondary-*. The expander button shifts between two
+   tints on hover; the relationship-row subtitle brightens on parent-row
+   hover. Both are :hover / group-hover effects that inline styles
+   can't express, so they live here keyed to the same surface tokens
+   the React component uses inline. */
+.alex-infobox-expander {
+    color: color-mix(
+        in srgb,
+        var(--theme-brand-secondary-content) 70%,
+        transparent
+    );
+    transition: color var(--theme-motion-duration-fast, 150ms)
+        var(--theme-motion-easing-standard, ease);
+}
+.alex-infobox-expander:hover {
+    color: var(--theme-brand-secondary-content);
+}
+.alex-infobox-row .alex-infobox-subtitle {
+    color: color-mix(
+        in srgb,
+        var(--theme-brand-secondary-content) 80%,
+        transparent
+    );
+    transition: color 300ms ease;
+}
+.alex-infobox-row:hover .alex-infobox-subtitle {
+    color: var(--theme-brand-secondary-content);
+}
+
 /* Inline link fallbacks for MentionAwareContent. Used when the
    server-sanitized HTML doesn't include a class attribute on
    <a data-type="mention"> / <a data-type="entry">. The sanitizer

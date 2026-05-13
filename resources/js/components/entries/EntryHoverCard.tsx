@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import gsap from 'gsap';
 import type { EntryPreview } from '@alexandria/types/projects';
@@ -20,6 +20,21 @@ interface EntryHoverCardProps {
     onEnter?: () => void;
     onClose: () => void;
 }
+
+const CARD_STYLE: CSSProperties = {
+    background: 'var(--theme-base-200)',
+    borderColor: 'var(--theme-base-300)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const ICON_WRAP_STYLE: CSSProperties = {
+    background: 'var(--theme-base-300)',
+    borderRadius: 'var(--theme-radius-input)',
+};
+
+const MUTED_50 = `color-mix(in srgb, var(--theme-base-content) 50%, transparent)`;
+const MUTED_60 = `color-mix(in srgb, var(--theme-base-content) 60%, transparent)`;
+const MUTED_70 = `color-mix(in srgb, var(--theme-base-content) 70%, transparent)`;
 
 export default function EntryHoverCard({ entryId, triggerRect, onEnter, onClose }: EntryHoverCardProps) {
     const [preview, setPreview] = useState<EntryPreview | null>(null);
@@ -79,11 +94,11 @@ export default function EntryHoverCard({ entryId, triggerRect, onEnter, onClose 
     if (loading) {
         return createPortal(
             <div
-                className="fixed z-[10000] w-72 rounded-xl border border-base-300 bg-base-200 p-4 shadow-xl"
-                style={positionStyle}
+                className="fixed z-[10000] w-72 border p-4 shadow-xl"
+                style={{ ...CARD_STYLE, ...positionStyle }}
             >
-                <div className="flex items-center gap-2 text-sm text-base-content/50">
-                    <span className="loading loading-spinner loading-xs" />
+                <div className="flex items-center gap-2 text-sm" style={{ color: MUTED_50 }}>
+                    <i className="fa-solid fa-circle-notch fa-spin text-xs" />
                     Loading...
                 </div>
             </div>,
@@ -96,31 +111,42 @@ export default function EntryHoverCard({ entryId, triggerRect, onEnter, onClose 
     return createPortal(
         <div
             ref={cardRef}
-            className="fixed z-[10000] w-72 rounded-xl border border-base-300 bg-base-200 p-4 shadow-xl"
-            style={positionStyle}
+            className="fixed z-[10000] w-72 border p-4 shadow-xl"
+            style={{ ...CARD_STYLE, ...positionStyle }}
             onMouseEnter={onEnter}
             onMouseLeave={onClose}
         >
             {/* Header */}
             <div className="mb-2 flex items-center gap-3">
                 {preview.thumbnail_url ? (
-                    <img src={preview.thumbnail_url} alt="" className="aspect-square w-10 flex-shrink-0 rounded-lg object-cover" />
+                    <img
+                        src={preview.thumbnail_url}
+                        alt=""
+                        className="aspect-square w-10 flex-shrink-0 object-cover"
+                        style={{ borderRadius: 'var(--theme-radius-input)' }}
+                    />
                 ) : preview.blueprint_icon ? (
-                    <div className="flex aspect-square w-8 flex-shrink-0 items-center justify-center rounded-lg bg-base-300">
-                        <i className={`${preview.blueprint_icon.includes(' ') ? preview.blueprint_icon : 'fa-solid ' + preview.blueprint_icon} text-xs text-base-content/60 fa-fw`} />
+                    <div
+                        className="flex aspect-square w-8 flex-shrink-0 items-center justify-center"
+                        style={ICON_WRAP_STYLE}
+                    >
+                        <i
+                            className={`${preview.blueprint_icon.includes(' ') ? preview.blueprint_icon : 'fa-solid ' + preview.blueprint_icon} fa-fw text-xs`}
+                            style={{ color: MUTED_60 }}
+                        />
                     </div>
                 ) : null}
                 <div className="min-w-0">
                     <h4 className="truncate text-sm font-bold">{preview.name}</h4>
                     {preview.blueprint_name && (
-                        <span className="text-xs text-base-content/50">{preview.blueprint_name}</span>
+                        <span className="text-xs" style={{ color: MUTED_50 }}>{preview.blueprint_name}</span>
                     )}
                 </div>
             </div>
 
             {/* Summary */}
             {preview.summary && (
-                <p className="mb-2 text-xs leading-relaxed text-base-content/70">
+                <p className="mb-2 text-xs leading-relaxed" style={{ color: MUTED_70 }}>
                     {truncateWords(stripWikiMarkup(preview.summary), 100)}
                 </p>
             )}
@@ -128,7 +154,8 @@ export default function EntryHoverCard({ entryId, triggerRect, onEnter, onClose 
             {/* Footer */}
             <a
                 href={preview.url}
-                className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline"
+                className="mt-2 flex items-center gap-1 text-xs hover:underline"
+                style={{ color: 'var(--theme-brand-primary-500)' }}
             >
                 View entry <i className="fa-solid fa-arrow-right text-[10px]" />
             </a>
