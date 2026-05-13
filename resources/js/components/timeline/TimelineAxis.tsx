@@ -1,5 +1,5 @@
-import { formatAxisLabel, type Year } from '@alexandria/lib/timelineUtils';
-import type { TimelineZoomLevel } from '@alexandria/types/timeline';
+import { formatAxisLabel, type Year } from "@alexandria/lib/timelineUtils";
+import type { TimelineZoomLevel } from "@alexandria/types/timeline";
 
 interface TimelineAxisProps {
     /** Gridline year numbers produced by useTimelineModel. */
@@ -25,11 +25,17 @@ interface TimelineAxisProps {
  * dozens of times — the tick still renders so structure is visible,
  * only the duplicate label is suppressed.
  */
-export default function TimelineAxis({ gridLines, dateToPos, zoom, width, height }: TimelineAxisProps) {
+export default function TimelineAxis({
+    gridLines,
+    dateToPos,
+    zoom,
+    width,
+    height,
+}: TimelineAxisProps) {
     return (
         <div className="relative flex-shrink-0" style={{ width, height }}>
             {(() => {
-                let lastLabel = '';
+                let lastLabel = "";
                 return gridLines.map((year, i) => {
                     const left = dateToPos(String(year));
                     const label = formatAxisLabel(year, zoom);
@@ -42,11 +48,22 @@ export default function TimelineAxis({ gridLines, dateToPos, zoom, width, height
                             style={{ left }}
                         >
                             {showLabel && (
-                                <span className="whitespace-nowrap pl-1 pb-1 text-[10px] font-medium text-base-content/60">
+                                <span
+                                    className="whitespace-nowrap pl-1 pb-1 text-[10px] font-medium"
+                                    style={{
+                                        color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
+                                    }}
+                                >
                                     {label}
                                 </span>
                             )}
-                            <span className="block h-2 w-px bg-base-content/40" />
+                            <span
+                                className="block h-2 w-px"
+                                style={{
+                                    background:
+                                        "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
+                                }}
+                            />
                         </div>
                     );
                 });

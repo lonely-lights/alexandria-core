@@ -20,22 +20,35 @@ export default function BlueprintGridBg() {
     // sits on a major grid crossing so the pulse reads as "the grid
     // itself lit up," not an orphan dot.
     const nodes: Array<[number, number]> = [
-        [100, 100], [300, 100], [500, 100],
-        [200, 200], [400, 200],
-        [100, 300], [300, 300], [500, 300],
-        [200, 400], [400, 400],
-        [100, 500], [300, 500],
+        [100, 100],
+        [300, 100],
+        [500, 100],
+        [200, 200],
+        [400, 200],
+        [100, 300],
+        [300, 300],
+        [500, 300],
+        [200, 400],
+        [400, 400],
+        [100, 500],
+        [300, 500],
     ];
 
     return (
         <svg
-            className="h-full w-full text-base-content"
+            className="h-full w-full"
+            style={{ color: "var(--theme-base-content)" }}
             aria-hidden="true"
             xmlns="http://www.w3.org/2000/svg"
         >
             <defs>
                 {/* Fine sub-grid — 20px spacing, barely-there. */}
-                <pattern id="bp-sub-grid" patternUnits="userSpaceOnUse" width="20" height="20">
+                <pattern
+                    id="bp-sub-grid"
+                    patternUnits="userSpaceOnUse"
+                    width="20"
+                    height="20"
+                >
                     <path
                         d="M 20 0 L 0 0 0 20"
                         fill="none"
@@ -46,7 +59,12 @@ export default function BlueprintGridBg() {
                 </pattern>
 
                 {/* Major grid — 100px spacing, slightly stronger. */}
-                <pattern id="bp-major-grid" patternUnits="userSpaceOnUse" width="100" height="100">
+                <pattern
+                    id="bp-major-grid"
+                    patternUnits="userSpaceOnUse"
+                    width="100"
+                    height="100"
+                >
                     <rect width="100" height="100" fill="url(#bp-sub-grid)" />
                     <path
                         d="M 100 0 L 0 0 0 100"
@@ -60,11 +78,18 @@ export default function BlueprintGridBg() {
                 {/* Node-pulse pattern — tiles the 12 nodes across a
                     600px square. Each <circle> fades its own opacity
                     over a 24s cycle, offset so they stagger. */}
-                <pattern id="bp-nodes" patternUnits="userSpaceOnUse" width="600" height="600">
+                <pattern
+                    id="bp-nodes"
+                    patternUnits="userSpaceOnUse"
+                    width="600"
+                    height="600"
+                >
                     {nodes.map(([x, y], i) => (
                         <circle
                             key={`${x}-${y}`}
-                            cx={x} cy={y} r="2.5"
+                            cx={x}
+                            cy={y}
+                            r="2.5"
                             fill="currentColor"
                             fillOpacity="0"
                         >

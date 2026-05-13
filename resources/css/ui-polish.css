@@ -429,3 +429,17 @@ button:not(:disabled),
         transparent
     );
 }
+
+/* Inline link fallbacks for MentionAwareContent. Used when the
+   server-sanitized HTML doesn't include a class attribute on
+   <a data-type="mention"> / <a data-type="entry">. The sanitizer
+   usually does, so these are belt-and-suspenders defaults. */
+.alex-mention,
+.alex-entry-link {
+    color: var(--theme-brand-primary-500);
+    text-decoration: none;
+}
+.alex-mention:hover,
+.alex-entry-link:hover {
+    text-decoration: underline;
+}

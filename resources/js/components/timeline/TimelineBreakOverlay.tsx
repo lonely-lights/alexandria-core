@@ -1,6 +1,6 @@
-import type { TimeBreak } from '@alexandria/lib/timelineUtils';
+import type { TimeBreak } from "@alexandria/lib/timelineUtils";
 
-type Orientation = 'horizontal' | 'vertical';
+type Orientation = "horizontal" | "vertical";
 
 interface TimelineBreakOverlayProps {
     breaks: TimeBreak[];
@@ -28,15 +28,14 @@ function buildZigzag(orientation: Orientation, segments: number = 50): string {
     const minor = 25; // oscillation min (%)
     const major = 75; // oscillation max (%)
     const step = 100 / segments;
-    let path = orientation === 'horizontal'
-        ? `M ${minor},0`
-        : `M 0,${minor}`;
+    let path = orientation === "horizontal" ? `M ${minor},0` : `M 0,${minor}`;
     for (let i = 1; i <= segments; i++) {
         const along = i * step;
         const cross = i % 2 === 1 ? major : minor;
-        path += orientation === 'horizontal'
-            ? ` L ${cross},${along}`
-            : ` L ${along},${cross}`;
+        path +=
+            orientation === "horizontal"
+                ? ` L ${cross},${along}`
+                : ` L ${along},${cross}`;
     }
     return path;
 }
@@ -55,35 +54,37 @@ export default function TimelineBreakOverlay({
     breaks,
     breakLefts,
     leftOffset = 0,
-    orientation = 'horizontal',
+    orientation = "horizontal",
 }: TimelineBreakOverlayProps) {
-    const isHorizontal = orientation === 'horizontal';
+    const isHorizontal = orientation === "horizontal";
     return (
         <>
             {breaks.map((br, i) => {
-                const commonClass = 'pointer-events-none absolute z-[5] text-base-content/60';
-                const style = isHorizontal
+                const positioning = isHorizontal
                     ? {
-                        left: leftOffset + breakLefts[i],
-                        top: 0,
-                        bottom: 0,
-                        width: br.compressedPx,
-                        height: '100%' as const,
-                    }
+                          left: leftOffset + breakLefts[i],
+                          top: 0,
+                          bottom: 0,
+                          width: br.compressedPx,
+                          height: "100%" as const,
+                      }
                     : {
-                        top: leftOffset + breakLefts[i],
-                        left: 0,
-                        right: 0,
-                        height: br.compressedPx,
-                        width: '100%' as const,
-                    };
+                          top: leftOffset + breakLefts[i],
+                          left: 0,
+                          right: 0,
+                          height: br.compressedPx,
+                          width: "100%" as const,
+                      };
                 return (
                     <svg
                         key={i}
-                        className={commonClass}
+                        className="pointer-events-none absolute z-[5]"
                         preserveAspectRatio="none"
                         viewBox="0 0 100 100"
-                        style={style}
+                        style={{
+                            ...positioning,
+                            color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
+                        }}
                         aria-hidden="true"
                     >
                         <path

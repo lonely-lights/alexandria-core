@@ -1,10 +1,16 @@
-import { useRef, useLayoutEffect, useState, useCallback, type ComponentProps } from 'react';
-import { createPortal } from 'react-dom';
-import UserLink from '@alexandria/components/ui/UserHoverCard';
-import EntryLink from '@alexandria/components/entries/EntryLink';
+import {
+    useRef,
+    useLayoutEffect,
+    useState,
+    useCallback,
+    type ComponentProps,
+} from "react";
+import { createPortal } from "react-dom";
+import UserLink from "@alexandria/components/ui/UserHoverCard";
+import EntryLink from "@alexandria/components/entries/EntryLink";
 
 interface MentionSlot {
-    type: 'user';
+    type: "user";
     userId: number;
     href: string;
     text: string;
@@ -13,7 +19,7 @@ interface MentionSlot {
 }
 
 interface EntrySlot {
-    type: 'entry';
+    type: "entry";
     entryId: number;
     href: string;
     text: string;
@@ -34,7 +40,13 @@ type Slot = MentionSlot | EntrySlot;
  *
  * The `html` prop must be sanitized server-side (via ContentRendererService + MentionRenderer).
  */
-export default function MentionAwareContent({ html, ...divProps }: { html: string } & Omit<ComponentProps<'div'>, 'dangerouslySetInnerHTML' | 'children'>) {
+export default function MentionAwareContent({
+    html,
+    ...divProps
+}: { html: string } & Omit<
+    ComponentProps<"div">,
+    "dangerouslySetInnerHTML" | "children"
+>) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [slots, setSlots] = useState<Slot[]>([]);
     const htmlRef = useRef(html);
@@ -50,39 +62,46 @@ export default function MentionAwareContent({ html, ...divProps }: { html: strin
         const newSlots: Slot[] = [];
 
         // User mentions
-        node.querySelectorAll<HTMLAnchorElement>('a[data-type="mention"]').forEach((link) => {
-            const userId = parseInt(link.getAttribute('data-id') ?? '0', 10);
+        node.querySelectorAll<HTMLAnchorElement>(
+            'a[data-type="mention"]',
+        ).forEach((link) => {
+            const userId = parseInt(link.getAttribute("data-id") ?? "0", 10);
             if (!userId) return;
 
-            const wrapper = document.createElement('span');
-            wrapper.style.display = 'inline';
+            const wrapper = document.createElement("span");
+            wrapper.style.display = "inline";
             link.replaceWith(wrapper);
 
             newSlots.push({
-                type: 'user',
+                type: "user",
                 userId,
-                href: link.getAttribute('href') ?? `/u/${userId}`,
-                text: link.textContent ?? '',
-                className: link.getAttribute('class') ?? 'mention text-primary hover:underline',
+                href: link.getAttribute("href") ?? `/u/${userId}`,
+                text: link.textContent ?? "",
+                className: link.getAttribute("class") ?? "alex-mention",
                 container: wrapper,
             });
         });
 
         // Entry links
-        node.querySelectorAll<HTMLAnchorElement>('a[data-type="entry"]').forEach((link) => {
-            const entryId = parseInt(link.getAttribute('data-entry-id') ?? '0', 10);
+        node.querySelectorAll<HTMLAnchorElement>(
+            'a[data-type="entry"]',
+        ).forEach((link) => {
+            const entryId = parseInt(
+                link.getAttribute("data-entry-id") ?? "0",
+                10,
+            );
             if (!entryId) return;
 
-            const wrapper = document.createElement('span');
-            wrapper.style.display = 'inline';
+            const wrapper = document.createElement("span");
+            wrapper.style.display = "inline";
             link.replaceWith(wrapper);
 
             newSlots.push({
-                type: 'entry',
+                type: "entry",
                 entryId,
-                href: link.getAttribute('href') ?? '#',
-                text: link.textContent ?? '',
-                className: link.getAttribute('class') ?? 'link link-hover',
+                href: link.getAttribute("href") ?? "#",
+                text: link.textContent ?? "",
+                className: link.getAttribute("class") ?? "alex-entry-link",
                 container: wrapper,
             });
         });
@@ -101,7 +120,7 @@ export default function MentionAwareContent({ html, ...divProps }: { html: strin
         <>
             <div ref={mountRef} {...divProps} />
             {slots.map((slot, i) => {
-                if (slot.type === 'user') {
+                if (slot.type === "user") {
                     return createPortal(
                         <UserLink
                             userId={slot.userId}
