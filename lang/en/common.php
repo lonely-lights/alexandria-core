@@ -58,4 +58,13 @@ return [
     'pagination.previous' => 'Previous page',
     'pagination.next' => 'Next page',
     'pagination.last' => 'Last page',
+
+    // Global search / CommandPalette
+    'search.placeholder' => 'Search…',
+    'search.empty_hint' => 'Start typing to search',
+    'search.no_results' => 'No results for ":query"',
+    'search.hint_navigate' => 'navigate',
+    'search.hint_open' => 'open',
+    'search.result_count.singular' => ':count result',
+    'search.result_count.plural' => ':count results',
 ];

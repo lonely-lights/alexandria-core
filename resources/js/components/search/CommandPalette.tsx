@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
+import useT from "@alexandria/hooks/useT";
 import type {
     PaletteCommand,
     PaletteSearchEntry,
@@ -151,11 +152,13 @@ export default function CommandPalette({
     commands,
     onSearch,
     onSelectEntry,
-    placeholder = "Search...",
+    placeholder,
     emptyHint,
     searchDebounceMs = 250,
     minQueryLength = 2,
 }: CommandPaletteProps) {
+    const t = useT();
+    const resolvedPlaceholder = placeholder ?? t("common.search.placeholder");
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<PaletteSearchResults | null>(null);
     const [loading, setLoading] = useState(false);
@@ -372,7 +375,7 @@ export default function CommandPalette({
                         onKeyDown={handleKeyDown}
                         className="flex-1 bg-transparent text-lg outline-none"
                         style={inputStyle}
-                        placeholder={placeholder}
+                        placeholder={resolvedPlaceholder}
                     />
                     <kbd style={kbdStyle}>ESC</kbd>
                 </div>
@@ -386,7 +389,7 @@ export default function CommandPalette({
                             style={helperFainterStyle}
                         >
                             <i className="fa-solid fa-magnifying-glass mb-2 text-2xl" />
-                            {emptyHint ?? <p>Start typing to search</p>}
+                            {emptyHint ?? <p>{t("common.search.empty_hint")}</p>}
                         </div>
                     )}
 
@@ -411,7 +414,7 @@ export default function CommandPalette({
                                 style={helperFainterStyle}
                             >
                                 <i className="fa-solid fa-search-minus mb-2 text-2xl" />
-                                <p>No results for &quot;{query}&quot;</p>
+                                <p>{t("common.search.no_results").replace(":query", query)}</p>
                             </div>
                         )}
 
@@ -486,16 +489,19 @@ export default function CommandPalette({
                 >
                     <div className="flex items-center gap-3">
                         <span>
-                            <kbd style={kbdXsStyle}>↑↓</kbd> navigate
+                            <kbd style={kbdXsStyle}>↑↓</kbd> {t("common.search.hint_navigate")}
                         </span>
                         <span>
-                            <kbd style={kbdXsStyle}>↵</kbd> open
+                            <kbd style={kbdXsStyle}>↵</kbd> {t("common.search.hint_open")}
                         </span>
                     </div>
                     {showingSearch && results && (
                         <span>
-                            {results.total} result
-                            {results.total !== 1 ? "s" : ""}
+                            {t(
+                                results.total === 1
+                                    ? "common.search.result_count.singular"
+                                    : "common.search.result_count.plural",
+                            ).replace(":count", String(results.total))}
                         </span>
                     )}
                 </div>
