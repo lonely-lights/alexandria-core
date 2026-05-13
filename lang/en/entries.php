@@ -183,4 +183,32 @@ return [
     'tab.mention.default_group' => 'Other',
     'tab.mention.sort.most' => 'Most mentions',
     'tab.mention.sort.fewest' => 'Fewest mentions',
+
+    // ── TimelineTab (Subsection D) ──
+    'tab.timeline.empty' => 'No timeline events',
+    'tab.timeline.event_count.singular' => ':count event',
+    'tab.timeline.event_count.plural' => ':count events',
+    'tab.timeline.table.event' => 'Event',
+    'tab.timeline.table.type' => 'Type',
+    'tab.timeline.table.date' => 'Date',
+    'tab.timeline.empty_cell' => '—',
+
+    // ── HistoryTab (Subsection D) ──
+    'tab.history.empty' => 'No history yet',
+    'tab.history.heading' => 'Revision History',
+    'tab.history.count.singular' => ':count revision',
+    'tab.history.count.plural' => ':count revisions',
+    'tab.history.sort.newest' => 'Newest first',
+    'tab.history.sort.oldest' => 'Oldest first',
+    'tab.history.field_count' => ':count fields',
+    'tab.history.user_attribution' => 'by :name',
+    'tab.history.summary_fallback' => 'Change',
+    'tab.history.summary_multi' => 'Updated :fields',
+    'tab.history.diff.before' => 'Before',
+    'tab.history.diff.after' => 'After',
+    'tab.history.diff.empty' => 'Empty',
+    'tab.history.change_type.field_update' => 'Field Update',
+    'tab.history.change_type.attribute_update' => 'Attribute Update',
+    'tab.history.change_type.metadata_update' => 'Metadata Update',
+    'tab.history.change_type.bulk_update' => 'Bulk Update',
 ];

@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useMemo, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import useT from '@alexandria/hooks/useT';
 import { useDateFormatters } from '@alexandria/lib/formatDate';
 import {
     ZOOM_INDEX, PX_PER_UNIT, ITEM_ROW_HEIGHT, LANE_PADDING,
@@ -13,6 +14,13 @@ import Tooltip from '@alexandria/components/ui/Tooltip';
 import EntryLink from '@alexandria/components/entries/EntryLink';
 import type { TimelineEntry, TimelineZoomLevel } from '@alexandria/types/timeline';
 import { ZOOM_LEVELS } from '@alexandria/types/timeline';
+import {
+    cardOuter,
+    emptyStateInner,
+    emptyIconStyle,
+    emptyLabelStyle,
+    chipStyle,
+} from './entriesTabStyles';
 
 interface TimelineEpoch {
     event_type: string;
@@ -24,6 +32,193 @@ interface TimelineTabProps {
     events: TimelineEntry[];
     epoch: TimelineEpoch | null;
 }
+
+const MONO_FONT_STACK = 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace';
+
+/* ─── Toolbar styles ─── */
+
+const eventCountChipStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    padding: '0 0.5rem',
+    height: '1.5rem',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    borderRadius: 'var(--theme-radius-badge)',
+    background: 'var(--theme-brand-secondary-500)',
+    color: 'var(--theme-brand-secondary-content)',
+};
+
+const eventCountIconStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-brand-secondary-content) 70%, transparent)',
+};
+
+const segWrapStyle: CSSProperties = {
+    display: 'flex',
+    overflow: 'hidden',
+    borderRadius: 'var(--theme-radius-input)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+};
+
+const segBtnBase: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    padding: '0.25rem 0.625rem',
+    fontSize: '0.625rem',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color var(--theme-motion-duration-fast, 150ms) ease, color var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const segBtnActiveStyle: CSSProperties = {
+    ...segBtnBase,
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+};
+
+const segBtnIdleStyle: CSSProperties = {
+    ...segBtnBase,
+    background: 'transparent',
+    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+};
+
+const zoomBtnStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0.25rem 0.375rem',
+    fontSize: '0.75rem',
+    border: 'none',
+    background: 'transparent',
+    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+    borderRadius: 'var(--theme-radius-button)',
+    cursor: 'pointer',
+};
+
+const zoomLabelStyle: CSSProperties = {
+    minWidth: '4.5rem',
+    textAlign: 'center',
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+/* ─── Canvas styles ─── */
+
+const canvasWrapStyle: CSSProperties = {
+    ...cardOuter,
+    overflow: 'auto',
+    background: 'var(--theme-base-100)',
+};
+
+const axisBarStyle: CSSProperties = {
+    position: 'sticky',
+    top: 0,
+    zIndex: 20,
+    height: '2rem',
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-200) 80%, transparent)',
+    backdropFilter: 'blur(4px)',
+};
+
+const gridLineStyle: CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    height: '100%',
+    borderLeft: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+};
+
+const rangeBarStyle: CSSProperties = {
+    pointerEvents: 'none',
+    position: 'absolute',
+    left: '0.375rem',
+    top: '1rem',
+    height: '0.125rem',
+    borderRadius: '9999px',
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)',
+};
+
+const rangeEndDotStyle: CSSProperties = {
+    pointerEvents: 'none',
+    position: 'absolute',
+    height: '0.5rem',
+    width: '0.5rem',
+    borderRadius: '9999px',
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 80%, transparent)',
+};
+
+const eventDotStyle: CSSProperties = {
+    height: '0.75rem',
+    width: '0.75rem',
+    flexShrink: 0,
+    borderRadius: '9999px',
+    border: '2px solid var(--theme-base-100)',
+    background: 'var(--theme-brand-primary-500)',
+    boxShadow: '0 1px 2px rgb(0 0 0 / 0.05)',
+};
+
+/* ─── Table styles ─── */
+
+const tableWrapStyle: CSSProperties = {
+    ...cardOuter,
+    overflow: 'auto',
+    background: 'var(--theme-base-100)',
+};
+
+const tableHeadRowStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-200) 50%, transparent)',
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+};
+
+const tableHeadCellStyle: CSSProperties = {
+    padding: '0.5rem 0.75rem',
+    textAlign: 'left',
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+const tableRowStyle: CSSProperties = {
+    borderTop: '1px dashed color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    transition: 'background-color var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const tableCellStyle: CSSProperties = {
+    padding: '0.5rem 0.75rem',
+    fontSize: '0.875rem',
+};
+
+const tableCellMutedStyle: CSSProperties = {
+    ...tableCellStyle,
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+const tableCellDateStyle: CSSProperties = {
+    ...tableCellStyle,
+    whiteSpace: 'nowrap',
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+};
+
+const tableCellNoWrapStyle: CSSProperties = {
+    ...tableCellStyle,
+    whiteSpace: 'nowrap',
+};
+
+const emDashStyle: CSSProperties = {
+    fontStyle: 'italic',
+    color: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
+};
+
+const tableNameLinkStyle: CSSProperties = {
+    color: 'var(--theme-base-content)',
+};
+
+const elapsedBadgeStyle: CSSProperties = {
+    ...chipStyle,
+    fontFamily: MONO_FONT_STACK,
+};
 
 /* ─── Elapsed time calculation ─── */
 
@@ -67,6 +262,7 @@ function EntryTooltipContent({ entry, fmtDate }: { entry: TimelineEntry; fmtDate
 type ViewMode = 'timeline' | 'table';
 
 export default function TimelineTab({ events, epoch }: TimelineTabProps) {
+    const t = useT();
     const { fmtSmart } = useDateFormatters();
     const [viewMode, setViewMode] = useState<ViewMode>('timeline');
     const [zoom, setZoom] = useState<TimelineZoomLevel>('decade');
@@ -74,9 +270,11 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
 
     if (events.length === 0) {
         return (
-            <div className="rounded-2xl border border-dashed border-base-content/10 py-16 text-center">
-                <i className="fa-solid fa-timeline mb-3 text-3xl text-base-content/10" />
-                <p className="text-sm text-base-content/30">No timeline events</p>
+            <div className="paper-board" style={cardOuter}>
+                <div style={emptyStateInner}>
+                    <i className="fa-solid fa-timeline mb-3 text-3xl" style={emptyIconStyle} />
+                    <p className="text-sm font-medium" style={emptyLabelStyle}>{t('entries.tab.timeline.empty')}</p>
+                </div>
             </div>
         );
     }
@@ -87,11 +285,11 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
         [events],
     );
 
-    // Shared model — gives us year-range, gridlines, break detection,
-    // and the break-aware positioner in one call. Uses 'loose' padding
-    // (~15% of range) since Entries timelines tend to be tightly
-    // clustered where extra breathing room reads better than the 1-unit
-    // cap the Blueprint timeline prefers.
+    // Shared model — year-range, gridlines, break detection, and the
+    // break-aware positioner. 'loose' padding (~15% of range) since
+    // Entries timelines tend to be tightly clustered where extra
+    // breathing room reads better than the 1-unit cap the Blueprint
+    // timeline prefers.
     const model = useTimelineModel({ entries: events, zoom, paddingMode: 'loose' });
     const { dateToPos, totalPx, gridLines, breaks, breakLefts } = model;
 
@@ -140,28 +338,31 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
         if (idx < ZOOM_LEVELS.length - 1) setZoom(ZOOM_LEVELS[idx + 1].key);
     }
 
+    const eventCountLabel = t(events.length === 1 ? 'entries.tab.timeline.event_count.singular' : 'entries.tab.timeline.event_count.plural')
+        .replace(':count', String(events.length));
+
     return (
         <div className="space-y-3">
             {/* Toolbar */}
             <div className="flex items-center gap-2">
-                <span className="badge badge-secondary gap-1 text-xs h-6">
-                    <i className="fa-solid fa-clock-rotate-left text-[9px] text-secondary-content/70" />
-                    {events.length} {events.length === 1 ? 'event' : 'events'}
+                <span style={eventCountChipStyle}>
+                    <i className="fa-solid fa-clock-rotate-left text-[9px]" style={eventCountIconStyle} />
+                    {eventCountLabel}
                 </span>
 
                 {/* View toggle */}
-                <div className="flex overflow-hidden rounded-lg border border-base-content/10">
+                <div style={segWrapStyle}>
                     <button
                         type="button"
                         onClick={() => setViewMode('timeline')}
-                        className={`btn btn-xs gap-1 rounded-none border-0 ${viewMode === 'timeline' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={viewMode === 'timeline' ? segBtnActiveStyle : segBtnIdleStyle}
                     >
                         <i className="fa-solid fa-timeline text-[10px]" />
                     </button>
                     <button
                         type="button"
                         onClick={() => setViewMode('table')}
-                        className={`btn btn-xs gap-1 rounded-none border-0 ${viewMode === 'table' ? 'btn-primary' : 'btn-ghost'}`}
+                        style={viewMode === 'table' ? segBtnActiveStyle : segBtnIdleStyle}
                     >
                         <i className="fa-solid fa-table-list text-[10px]" />
                     </button>
@@ -170,11 +371,11 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
                 {/* Zoom controls (timeline only) */}
                 {viewMode === 'timeline' && (
                     <div className="flex items-center gap-1">
-                        <button type="button" onClick={zoomIn} className="btn btn-ghost btn-xs" title="Zoom in">
+                        <button type="button" onClick={zoomIn} style={zoomBtnStyle}>
                             <i className="fa-solid fa-magnifying-glass-plus text-xs" />
                         </button>
-                        <span className="min-w-[4.5rem] text-center text-xs text-base-content/50">{ZOOM_LEVELS[ZOOM_INDEX[zoom]].label}</span>
-                        <button type="button" onClick={zoomOut} className="btn btn-ghost btn-xs" title="Zoom out">
+                        <span style={zoomLabelStyle}>{ZOOM_LEVELS[ZOOM_INDEX[zoom]].label}</span>
+                        <button type="button" onClick={zoomOut} style={zoomBtnStyle}>
                             <i className="fa-solid fa-magnifying-glass-minus text-xs" />
                         </button>
                     </div>
@@ -183,16 +384,13 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
 
             {/* Timeline View */}
             {viewMode === 'timeline' && (
-                <div className="overflow-auto rounded-xl border border-base-content/10 bg-base-100">
+                <div style={canvasWrapStyle}>
                     <div className="relative" style={{ minWidth: totalPx + 40 }}>
-                        {/* Shared zigzag overlay — compresses huge gaps
-                            (or long range interiors) into a jagged line. */}
+                        {/* Zigzag overlay compresses huge gaps into a jagged line. */}
                         <TimelineBreakOverlay breaks={breaks} breakLefts={breakLefts} />
 
-                        {/* Axis — shared component, offset 16px right of
-                            the content area to match the `ml-4` margin
-                            on the events row. */}
-                        <div className="sticky top-0 z-20 h-8 border-b border-base-content/10 bg-base-200/80 backdrop-blur-sm">
+                        {/* Axis — offset 16px right to match the `ml-4` margin on the events row. */}
+                        <div style={axisBarStyle}>
                             <div className="relative h-full pl-4">
                                 <TimelineAxis gridLines={gridLines} dateToPos={dateToPos} zoom={zoom} width={totalPx} height={32} />
                             </div>
@@ -203,33 +401,20 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
                             {gridLines.map((year, i) => (
                                 <div
                                     key={i}
-                                    className="absolute top-0 h-full border-l border-base-content/5"
-                                    style={{ left: dateToPos(String(year)) }}
+                                    style={{ ...gridLineStyle, left: dateToPos(String(year)) }}
                                 />
                             ))}
 
                             {items.map((item) => {
                                 const left = dateToPos(item.entry.start_date!);
                                 const isRange = !!item.entry.end_date;
-                                // Width = real pixel distance between start
-                                // and end. The legacy MIN_LABEL_PX padding
-                                // was only there because ranges used to
-                                // render as a pill that needed to be wide
-                                // enough to fit the label text — now the
-                                // label sits next to the start dot and the
-                                // bar represents actual duration only.
+                                // Width = real pixel distance between start/end. Ranges render
+                                // as dot + label + thin horizontal bar behind, so duration
+                                // shows without forcing the label inside a shrinking pill.
                                 const width = isRange ? Math.max(dateToPos(item.entry.end_date!) - left, 2) : 0;
                                 const top = LANE_PADDING + item.row * ITEM_ROW_HEIGHT;
                                 const isHovered = hoveredEntry === item.entry.id;
 
-                                // Both range and point entries render as
-                                // dot + label so the entry-side Timeline tab
-                                // matches the blueprint-side TimelineView's
-                                // affordance. Range entries get a thin
-                                // horizontal bar drawn behind the dot to
-                                // visualise duration without forcing the
-                                // label inside a pill that shrinks to nothing
-                                // on small ranges.
                                 return (
                                     <div
                                         key={item.entry.id}
@@ -239,18 +424,10 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
                                         onMouseLeave={() => setHoveredEntry(null)}
                                     >
                                         {isRange && width > 0 && (
-                                            <span
-                                                className="pointer-events-none absolute left-1.5 top-4 h-0.5 rounded-full bg-primary/60"
-                                                style={{ width }}
-                                                aria-hidden="true"
-                                            />
+                                            <span style={{ ...rangeBarStyle, width }} aria-hidden="true" />
                                         )}
                                         {isRange && width > 4 && (
-                                            <span
-                                                className="pointer-events-none absolute h-2 w-2 rounded-full bg-primary/80"
-                                                style={{ left: width - 4, top: 14 }}
-                                                aria-hidden="true"
-                                            />
+                                            <span style={{ ...rangeEndDotStyle, left: width - 4, top: 14 }} aria-hidden="true" />
                                         )}
                                         <Tooltip content={<EntryTooltipContent entry={item.entry} fmtDate={fmtSmart} />} placement="top" delay={200}>
                                             <a
@@ -258,7 +435,8 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
                                                 className="relative flex items-center gap-1.5 no-underline text-inherit hover:text-inherit"
                                             >
                                                 <span
-                                                    className={`h-3 w-3 flex-shrink-0 rounded-full border-2 border-base-100 bg-primary shadow-sm transition-transform ${isHovered ? 'scale-150' : ''}`}
+                                                    className={`transition-transform ${isHovered ? 'scale-150' : ''}`}
+                                                    style={eventDotStyle}
                                                     aria-hidden="true"
                                                 />
                                                 <span className={`whitespace-nowrap text-[10px] font-medium transition-opacity ${isHovered ? 'opacity-100' : 'opacity-70'}`}>
@@ -276,39 +454,39 @@ export default function TimelineTab({ events, epoch }: TimelineTabProps) {
 
             {/* Table View */}
             {viewMode === 'table' && (
-                <div className="overflow-auto rounded-xl border border-base-content/10 bg-base-100">
-                    <table className="table table-sm w-full">
+                <div style={tableWrapStyle}>
+                    <table className="w-full">
                         <thead>
-                            <tr className="border-b border-base-content/10 bg-base-200/50">
-                                <th className="text-xs font-medium text-base-content/50">Event</th>
-                                <th className="text-xs font-medium text-base-content/50">Type</th>
-                                <th className="text-xs font-medium text-base-content/50">Date</th>
+                            <tr style={tableHeadRowStyle}>
+                                <th style={tableHeadCellStyle}>{t('entries.tab.timeline.table.event')}</th>
+                                <th style={tableHeadCellStyle}>{t('entries.tab.timeline.table.type')}</th>
+                                <th style={tableHeadCellStyle}>{t('entries.tab.timeline.table.date')}</th>
                                 {epoch && (
-                                    <th className="text-xs font-medium text-base-content/50">{epoch.label}</th>
+                                    <th style={tableHeadCellStyle}>{epoch.label}</th>
                                 )}
                             </tr>
                         </thead>
                         <tbody>
                             {sortedEvents.map((event) => (
-                                <tr key={event.id} className="border-b border-base-content/5 transition-colors hover:bg-base-200/30">
-                                    <td className="text-sm">
-                                        <EntryLink entryId={event.id} href={event.url} className="font-medium hover:text-primary hover:underline">
+                                <tr key={event.id} className="alex-row" style={tableRowStyle}>
+                                    <td style={tableCellStyle}>
+                                        <EntryLink entryId={event.id} href={event.url} className="font-medium hover:underline" style={tableNameLinkStyle}>
                                             {event.name}
                                         </EntryLink>
                                     </td>
-                                    <td className="text-xs text-base-content/50">
-                                        {event.group_key ?? <span className="italic text-base-content/20">--</span>}
+                                    <td style={tableCellMutedStyle}>
+                                        {event.group_key ?? <span style={emDashStyle}>{t('entries.tab.timeline.empty_cell')}</span>}
                                     </td>
-                                    <td className="whitespace-nowrap text-sm text-base-content/70">
-                                        {event.start_date ? fmtSmart(event.start_date) : '--'}
+                                    <td style={tableCellDateStyle}>
+                                        {event.start_date ? fmtSmart(event.start_date) : t('entries.tab.timeline.empty_cell')}
                                     </td>
                                     {epoch && (
-                                        <td className="whitespace-nowrap">
+                                        <td style={tableCellNoWrapStyle}>
                                             {event.start_date ? (
-                                                <span className="badge badge-ghost badge-sm font-mono">
+                                                <span style={elapsedBadgeStyle}>
                                                     {calcElapsed(epoch.date, event.start_date, epoch.event_type)}
                                                 </span>
-                                            ) : '--'}
+                                            ) : t('entries.tab.timeline.empty_cell')}
                                         </td>
                                     )}
                                 </tr>
