@@ -46,4 +46,20 @@ return [
     'kanban.cta.subtitle' => 'Pick a field whose values will become the board\'s columns.',
     'kanban.cta.action' => 'Configure Kanban',
     'kanban.column.drop_here' => 'Drop here',
+
+    // ── GraphView + GraphSidebar + GraphLegend (F5) ──
+    'graph.cta.empty.title' => 'No graphs configured yet',
+    'graph.cta.empty.subtitle' => 'Create your first graph in Blueprint Settings → Graph.',
+    'graph.cta.empty.action' => 'Configure Graphs',
+    'graph.cta.no_edges.title' => '":name" has no edges yet',
+    'graph.cta.no_edges.subtitle' => 'Pick at least one relationship blueprint for this graph.',
+    'graph.cta.no_edges.action' => 'Edit ":name"',
+    'graph.empty.no_entries' => 'No entries to render.',
+    'graph.capped' => 'Showing :shown of :total entries (capped at :max).',
+    'graph.legend.relationships' => 'Relationships',
+    'graph.legend.colored_by' => 'Colored by :field',
+    'graph.legend.fallback_heading' => 'Legend',
+    'graph.legend.empty' => 'No values yet.',
+    'graph.legend.color_by_empty' => 'No entries have a value for this field yet.',
+    'graph.sidebar.heading' => 'Graphs',
 ];

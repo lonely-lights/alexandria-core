@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import useT from '@alexandria/hooks/useT';
 import type { GraphColorGroup } from './types';
 import { colorForGroup } from './palette';
 
@@ -52,11 +53,15 @@ export default function GraphLegend({
     alwaysShow = false,
     swatchShape = 'circle',
 }: GraphLegendProps) {
+    const t = useT();
     const safeGroups = groups ?? [];
     if (!alwaysShow && safeGroups.length === 0) return null;
 
-    const heading = title ?? (fieldLabel ? `Colored by ${fieldLabel}` : 'Legend');
-    const emptyText = emptyHint ?? 'No values yet.';
+    const heading = title
+        ?? (fieldLabel
+            ? t('views.graph.legend.colored_by').replace(':field', fieldLabel)
+            : t('views.graph.legend.fallback_heading'));
+    const emptyText = emptyHint ?? t('views.graph.legend.empty');
     const isBar = swatchShape === 'bar';
 
     return (

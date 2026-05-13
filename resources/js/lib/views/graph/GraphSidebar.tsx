@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import useT from '@alexandria/hooks/useT';
 import type { SavedGraph } from './types';
 
 interface GraphSidebarProps {
@@ -37,12 +38,13 @@ const buttonIdleStyle: CSSProperties = {
  * is at most one graph — no point showing a switcher with only one option.
  */
 export default function GraphSidebar({ graphs, activeId, onSelect }: GraphSidebarProps) {
+    const t = useT();
     if (graphs.length <= 1) return null;
 
     return (
         <aside className="w-44 shrink-0 p-2" style={railStyle}>
             <div className="mb-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider" style={headingStyle}>
-                Graphs
+                {t('views.graph.sidebar.heading')}
             </div>
             <nav className="space-y-0.5">
                 {graphs.map((g) => {

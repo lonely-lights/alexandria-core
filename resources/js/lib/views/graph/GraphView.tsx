@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { router } from '@inertiajs/react';
+import useT from '@alexandria/hooks/useT';
 import { useBlueprintSettingsModal } from '@alexandria/lib/views/useBlueprintSettingsModal';
 import type { GraphConfig, GraphResponse, GraphNodeData, SavedGraph } from './types';
 import GraphCanvas from './GraphCanvas';
@@ -72,6 +73,7 @@ function writeHashSlug(slug: string) {
 }
 
 export default function GraphView({ projectId, blueprintId, config, onOpenSettings }: GraphViewProps) {
+    const t = useT();
     const { modal: settingsModal, availableColumns } = useBlueprintSettingsModal('graph');
 
     // Belt-and-suspenders guard: if the payload is still Phase 1 shape for
@@ -154,12 +156,12 @@ export default function GraphView({ projectId, blueprintId, config, onOpenSettin
                 <div className="paper-board" style={cardOuterStyle}>
                     <div className="flex flex-col items-center py-16 text-center" style={cardInnerStyle}>
                         <i className="fa-solid fa-diagram-project mb-3 text-3xl" style={ctaIconStyle} />
-                        <p className="text-sm font-medium" style={ctaHeadingStyle}>No graphs configured yet</p>
+                        <p className="text-sm font-medium" style={ctaHeadingStyle}>{t('views.graph.cta.empty.title')}</p>
                         <p className="mt-1 max-w-sm text-xs" style={ctaSubStyle}>
-                            Create your first graph in Blueprint Settings → Graph.
+                            {t('views.graph.cta.empty.subtitle')}
                         </p>
                         <button type="button" onClick={onOpenSettings} className="mt-4" style={ctaButtonStyle}>
-                            <i className="fa-solid fa-sliders text-xs" /> Configure Graphs
+                            <i className="fa-solid fa-sliders text-xs" /> {t('views.graph.cta.empty.action')}
                         </button>
                     </div>
                 </div>
@@ -176,12 +178,15 @@ export default function GraphView({ projectId, blueprintId, config, onOpenSettin
                     <GraphSidebar graphs={graphs} activeId={active.id} onSelect={setActiveId} />
                     <div className="paper-board flex-1" style={cardOuterStyle}>
                         <div className="flex flex-col items-center py-16 text-center" style={cardInnerStyle}>
-                            <p className="text-sm font-medium" style={ctaHeadingStyle}>"{active.name}" has no edges yet</p>
+                            <p className="text-sm font-medium" style={ctaHeadingStyle}>
+                                {t('views.graph.cta.no_edges.title').replace(':name', active.name)}
+                            </p>
                             <p className="mt-1 max-w-sm text-xs" style={ctaSubStyle}>
-                                Pick at least one relationship blueprint for this graph.
+                                {t('views.graph.cta.no_edges.subtitle')}
                             </p>
                             <button type="button" onClick={onOpenSettings} className="mt-4" style={ctaButtonStyle}>
-                                <i className="fa-solid fa-sliders text-xs" /> Edit "{active.name}"
+                                <i className="fa-solid fa-sliders text-xs" />{' '}
+                                {t('views.graph.cta.no_edges.action').replace(':name', active.name)}
                             </button>
                         </div>
                     </div>
@@ -209,7 +214,7 @@ export default function GraphView({ projectId, blueprintId, config, onOpenSettin
                     <GraphSidebar graphs={graphs} activeId={active?.id ?? null} onSelect={setActiveId} />
                     <div className="paper-board flex-1" style={cardOuterStyle}>
                         <div className="py-12 text-center" style={cardInnerStyle}>
-                            <p className="text-sm" style={ctaSubStyle}>No entries to render.</p>
+                            <p className="text-sm" style={ctaSubStyle}>{t('views.graph.empty.no_entries')}</p>
                         </div>
                     </div>
                 </div>
@@ -249,14 +254,17 @@ export default function GraphView({ projectId, blueprintId, config, onOpenSettin
                     {data.capped && (
                         <div className="px-4 py-2 text-xs" style={capWarningStyle}>
                             <i className="fa-solid fa-triangle-exclamation mr-1" />
-                            Showing {data.nodes.length} of {data.total_nodes} entries (capped at {active.max_nodes}).
+                            {t('views.graph.capped')
+                                .replace(':shown', String(data.nodes.length))
+                                .replace(':total', String(data.total_nodes))
+                                .replace(':max', String(active.max_nodes))}
                         </div>
                     )}
                     <div className="flex flex-wrap gap-3">
                         {edgeColorGroups.length > 0 && (
                             <GraphLegend
                                 groups={edgeColorGroups}
-                                title="Relationships"
+                                title={t('views.graph.legend.relationships')}
                                 swatchShape="bar"
                             />
                         )}
@@ -265,7 +273,7 @@ export default function GraphView({ projectId, blueprintId, config, onOpenSettin
                                 groups={data.color_groups ?? []}
                                 fieldLabel={colorByLabel}
                                 alwaysShow
-                                emptyHint="No entries have a value for this field yet."
+                                emptyHint={t('views.graph.legend.color_by_empty')}
                             />
                         )}
                     </div>
