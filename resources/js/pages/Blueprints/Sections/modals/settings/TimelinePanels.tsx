@@ -360,6 +360,9 @@ export function TimelineActivationPanel({
                 list_selection_mode: blueprint.list_selection_mode,
             } as Record<string, FormDataConvertible>,
             {
+                preserveState: true,
+                preserveScroll: true,
+                showProgress: false,
                 onSuccess: () => setSaving(false),
                 onError: () => {
                     setSaving(false);
@@ -491,6 +494,8 @@ export function TimelineSourcesPanel({
                 metadata: JSON.parse(JSON.stringify(metadata)),
             } as Record<string, FormDataConvertible>,
             {
+                preserveState: true,
+                preserveScroll: true,
                 onSuccess: () => setSaving(false),
                 onError: () => setSaving(false),
             },

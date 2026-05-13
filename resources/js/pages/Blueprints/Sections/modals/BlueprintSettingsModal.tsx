@@ -159,6 +159,15 @@ const badgeGhostStyle: CSSProperties = {
     color: "color-mix(in srgb, var(--theme-base-content) 70%, transparent)",
 };
 
+// Neutral chip for use inside any tinted panel (info / warning / etc.) —
+// paints from base tokens so it reads as a discrete elevated item.
+const badgeOnTintedPanelStyle: CSSProperties = {
+    ...badgeBase,
+    background: "var(--theme-base-200)",
+    color: "var(--theme-base-content)",
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)",
+};
+
 const badgeErrorSmallStyle: CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
@@ -269,8 +278,11 @@ const iconPreviewWrapStyle: CSSProperties = {
 const primaryTextStyle: CSSProperties = {
     color: "var(--theme-brand-primary-500)",
 };
+// Heading + icon for an info-tinted panel — uses base-content so it
+// contrasts cleanly against the panel's info-fill tint instead of
+// blending into the same hue family.
 const infoTextStyle: CSSProperties = {
-    color: "var(--theme-status-info-stroke)",
+    color: "var(--theme-base-content)",
 };
 const errorTextStyle: CSSProperties = {
     color: "var(--theme-status-error-stroke)",
@@ -1626,7 +1638,7 @@ function BlueprintMainPanel({
                                     <span
                                         key={rb.id}
                                         style={{
-                                            ...badgeGhostStyle,
+                                            ...badgeOnTintedPanelStyle,
                                             gap: "0.25rem",
                                         }}
                                     >
