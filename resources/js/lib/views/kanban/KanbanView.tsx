@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { useBlueprintSettingsModal } from '@alexandria/lib/views/useBlueprintSettingsModal';
 import type { KanbanColumnData, KanbanConfig } from './types';
@@ -13,6 +13,43 @@ interface KanbanViewProps {
     config: KanbanConfig;
     onOpenSettings: () => void;
 }
+
+const ctaCardStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const ctaInnerStyle: CSSProperties = {
+    background: 'var(--theme-base-200)',
+    borderRadius: 'inherit',
+};
+
+const ctaIconStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
+};
+
+const ctaHeadingStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+const ctaSubStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
+const ctaButtonStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.875rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+};
+
+const spinnerStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
+};
 
 export default function KanbanView({
     projectId,
@@ -89,20 +126,21 @@ export default function KanbanView({
     if (!config.group_field_name) {
         return (
             <>
-                <div className="paper-board rounded-2xl border border-base-content/10">
+                <div className="paper-board" style={ctaCardStyle}>
                     <div
-                        className="flex flex-col items-center bg-base-200 py-16 text-center"
-                        style={{ borderRadius: 'inherit' }}
+                        className="flex flex-col items-center py-16 text-center"
+                        style={ctaInnerStyle}
                     >
-                        <i className="fa-solid fa-table-columns mb-3 text-3xl text-base-content/20" />
-                        <p className="text-sm font-medium text-base-content/50">Kanban isn't configured yet</p>
-                        <p className="mt-1 max-w-sm text-xs text-base-content/40">
+                        <i className="fa-solid fa-table-columns mb-3 text-3xl" style={ctaIconStyle} />
+                        <p className="text-sm font-medium" style={ctaHeadingStyle}>Kanban isn't configured yet</p>
+                        <p className="mt-1 max-w-sm text-xs" style={ctaSubStyle}>
                             Pick a field whose values will become the board's columns.
                         </p>
                         <button
                             type="button"
                             onClick={onOpenSettings}
-                            className="btn btn-primary btn-sm mt-4 gap-1.5 rounded-xl"
+                            className="mt-4"
+                            style={ctaButtonStyle}
                         >
                             <i className="fa-solid fa-sliders text-xs" />
                             Configure Kanban
@@ -118,7 +156,7 @@ export default function KanbanView({
         return (
             <>
                 <div className="flex items-center justify-center py-16">
-                    <span className="loading loading-spinner loading-lg text-base-content/20" />
+                    <i className="fa-solid fa-circle-notch fa-spin text-3xl" style={spinnerStyle} />
                 </div>
                 {settingsModal}
             </>
