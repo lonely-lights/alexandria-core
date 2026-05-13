@@ -40,4 +40,10 @@ return [
     'gallery.error' => 'Could not load gallery entries: :error',
     'gallery.empty.title' => 'No entries to display.',
     'gallery.empty.subtitle' => 'Create one to see it in the gallery.',
+
+    // ── KanbanView (F4) ──
+    'kanban.cta.title' => 'Kanban isn\'t configured yet',
+    'kanban.cta.subtitle' => 'Pick a field whose values will become the board\'s columns.',
+    'kanban.cta.action' => 'Configure Kanban',
+    'kanban.column.drop_here' => 'Drop here',
 ];

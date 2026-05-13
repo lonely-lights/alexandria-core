@@ -1,5 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
 import type { CSSProperties } from 'react';
+import useT from '@alexandria/hooks/useT';
 import type { KanbanColumnData } from './types';
 import KanbanCard from './KanbanCard';
 
@@ -43,6 +44,7 @@ const dropZonePlaceholderStyle: CSSProperties = {
 };
 
 export default function KanbanColumn({ column, entryHrefFor }: KanbanColumnProps) {
+    const t = useT();
     const { setNodeRef, isOver } = useDroppable({
         id: `column-${column.key ?? '__unassigned__'}`,
         data: { columnKey: column.key },
@@ -71,7 +73,7 @@ export default function KanbanColumn({ column, entryHrefFor }: KanbanColumnProps
             >
                 {column.entries.length === 0 ? (
                     <div className="px-3 py-6 text-center text-xs" style={dropZonePlaceholderStyle}>
-                        Drop here
+                        {t('views.kanban.column.drop_here')}
                     </div>
                 ) : (
                     column.entries.map((card) => (

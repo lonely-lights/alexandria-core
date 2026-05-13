@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import useT from '@alexandria/hooks/useT';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { useBlueprintSettingsModal } from '@alexandria/lib/views/useBlueprintSettingsModal';
 import type { KanbanColumnData, KanbanConfig } from './types';
@@ -59,6 +60,7 @@ export default function KanbanView({
     config,
     onOpenSettings,
 }: KanbanViewProps) {
+    const t = useT();
     const { modal: settingsModal } = useBlueprintSettingsModal('kanban');
 
     const [loading, setLoading] = useState(true);
@@ -132,9 +134,9 @@ export default function KanbanView({
                         style={ctaInnerStyle}
                     >
                         <i className="fa-solid fa-table-columns mb-3 text-3xl" style={ctaIconStyle} />
-                        <p className="text-sm font-medium" style={ctaHeadingStyle}>Kanban isn't configured yet</p>
+                        <p className="text-sm font-medium" style={ctaHeadingStyle}>{t('views.kanban.cta.title')}</p>
                         <p className="mt-1 max-w-sm text-xs" style={ctaSubStyle}>
-                            Pick a field whose values will become the board's columns.
+                            {t('views.kanban.cta.subtitle')}
                         </p>
                         <button
                             type="button"
@@ -143,7 +145,7 @@ export default function KanbanView({
                             style={ctaButtonStyle}
                         >
                             <i className="fa-solid fa-sliders text-xs" />
-                            Configure Kanban
+                            {t('views.kanban.cta.action')}
                         </button>
                     </div>
                 </div>
