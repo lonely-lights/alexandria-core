@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { router } from '@inertiajs/react';
-import type { BlueprintDetail } from '@alexandria/types/blueprints';
-import type { FormDataConvertible } from '@inertiajs/core';
+import { useState } from "react";
+import { router } from "@inertiajs/react";
+import useT from "@alexandria/hooks/useT";
+import type { BlueprintDetail } from "@alexandria/types/blueprints";
+import type { FormDataConvertible } from "@inertiajs/core";
+import SettingsActivationToggle from "./SettingsActivationToggle";
 
 /* ── Tree Activation Panel ──
    Shown at the top of the Tree settings menu. Owns the enable/disable
@@ -11,10 +13,14 @@ import type { FormDataConvertible } from '@inertiajs/core';
    Structural blueprints have Tree view implicitly enabled via
    classification — this panel isn't rendered for them.
 */
-export function TreeActivationPanel({ blueprint, project }: {
+export function TreeActivationPanel({
+    blueprint,
+    project,
+}: {
     blueprint: BlueprintDetail;
     project: { slug: string };
 }) {
+    const t = useT();
     const [enabled, setEnabled] = useState<boolean>(blueprint.show_tree_view);
     const [saving, setSaving] = useState(false);
 
@@ -25,7 +31,7 @@ export function TreeActivationPanel({ blueprint, project }: {
             `/p/${project.slug}/${blueprint.slug}`,
             {
                 name: blueprint.name,
-                description: blueprint.description ?? '',
+                description: blueprint.description ?? "",
                 icon: blueprint.icon,
                 show_on_dashboard: blueprint.show_on_dashboard,
                 is_linkable: blueprint.is_linkable,
@@ -46,23 +52,13 @@ export function TreeActivationPanel({ blueprint, project }: {
     }
 
     return (
-        <label className="flex cursor-pointer items-center justify-between rounded-xl border border-base-content/10 bg-base-100 p-4 transition-colors hover:bg-base-200/50">
-            <div>
-                <p className="text-sm font-medium">Hierarchy View</p>
-                <p className="mt-0.5 text-xs text-base-content/50">
-                    Render entries as a nested tree based on their parent/child
-                    relationships. Per-entry structure (children label, depth,
-                    display mode) is configured on each entry individually.
-                </p>
-                {saving && <p className="mt-1 text-[10px] text-base-content/40">Saving…</p>}
-            </div>
-            <input
-                type="checkbox"
-                className="toggle toggle-primary toggle-sm"
-                checked={enabled}
-                onChange={(e) => handleToggle(e.target.checked)}
-                disabled={saving}
-            />
-        </label>
+        <SettingsActivationToggle
+            title={t("blueprints.settings.tree.title")}
+            description={t("blueprints.settings.tree.description")}
+            enabled={enabled}
+            onChange={handleToggle}
+            disabled={saving}
+            statusLine={saving ? t("common.saving") : undefined}
+        />
     );
 }

@@ -1,11 +1,24 @@
-import { useState } from 'react';
-import ActionButton from '@alexandria/components/ui/ActionButton';
-import RevealCollapse from '@alexandria/components/ui/RevealCollapse';
-import type { AvailableColumn, BlueprintDetail } from '@alexandria/types/blueprints';
-import type { BlueprintViewEntry } from '@alexandria/lib/views/types';
-import { saveBlueprintView } from '@alexandria/lib/views/saveBlueprintView';
-import type { KanbanConfig } from '@alexandria/lib/views/kanban/types';
-import { defaultKanbanConfig } from '@alexandria/lib/views/kanban/types';
+import { useState } from "react";
+import ActionButton from "@alexandria/components/ui/ActionButton";
+import RevealCollapse from "@alexandria/components/ui/RevealCollapse";
+import useT from "@alexandria/hooks/useT";
+import type {
+    AvailableColumn,
+    BlueprintDetail,
+} from "@alexandria/types/blueprints";
+import type { BlueprintViewEntry } from "@alexandria/lib/views/types";
+import { saveBlueprintView } from "@alexandria/lib/views/saveBlueprintView";
+import type { KanbanConfig } from "@alexandria/lib/views/kanban/types";
+import { defaultKanbanConfig } from "@alexandria/lib/views/kanban/types";
+import SettingsActivationToggle from "./SettingsActivationToggle";
+import {
+    footerDividerStyle,
+    helperStyle,
+    labelStyle,
+    requiredAsteriskStyle,
+    selectStyle,
+    warningTextStyle,
+} from "./settingsPanelStyles";
 
 interface KanbanPanelProps {
     blueprint: BlueprintDetail;
@@ -22,12 +35,18 @@ interface KanbanPanelProps {
  * integer / boolean fields — no free-form text entry. Saves the
  * entire blueprint payload so views + legacy flags stay in sync.
  */
-export default function KanbanPanel({ blueprint, project, availableColumns }: KanbanPanelProps) {
-    const existingEntry = (blueprint.views ?? []).find((v) => v.type === 'kanban') ?? null;
+export default function KanbanPanel({
+    blueprint,
+    project,
+    availableColumns,
+}: KanbanPanelProps) {
+    const t = useT();
+    const existingEntry =
+        (blueprint.views ?? []).find((v) => v.type === "kanban") ?? null;
 
     const [entry, setEntry] = useState<BlueprintViewEntry>(
         existingEntry ?? {
-            type: 'kanban',
+            type: "kanban",
             enabled: false,
             config: { ...defaultKanbanConfig() },
             sort_order: (blueprint.views ?? []).length,
@@ -51,11 +70,13 @@ export default function KanbanPanel({ blueprint, project, availableColumns }: Ka
     const groupableFields = availableColumns
         .filter(
             (c) =>
-                c.type === 'field'
-                && ['text', 'integer', 'boolean'].includes(c.field_type?.toLowerCase() ?? ''),
+                c.type === "field" &&
+                ["text", "integer", "boolean"].includes(
+                    c.field_type?.toLowerCase() ?? "",
+                ),
         )
         .map((c) => ({
-            name: c.key.replace(/^field:/, ''),
+            name: c.key.replace(/^field:/, ""),
             label: c.label,
         }));
 
@@ -68,7 +89,7 @@ export default function KanbanPanel({ blueprint, project, availableColumns }: Ka
 
     function handleSave() {
         setSaving(true);
-        saveBlueprintView(blueprint, project, 'kanban', entry, {
+        saveBlueprintView(blueprint, project, "kanban", entry, {
             onSuccess: () => setSaving(false),
             onError: () => setSaving(false),
         });
@@ -79,89 +100,121 @@ export default function KanbanPanel({ blueprint, project, availableColumns }: Ka
             <div className="flex-1 space-y-5 overflow-y-auto p-5">
                 {/* Enable/disable — same chrome as Tree/Timeline toggles so
                     users recognize the pattern. */}
-                <label className="flex cursor-pointer items-center justify-between rounded-xl border border-base-content/10 bg-base-100 px-4 py-3 transition-colors hover:bg-base-200/50">
-                    <div>
-                        <p className="text-sm font-medium">Kanban Board</p>
-                        <p className="mt-0.5 text-xs text-base-content/50">
-                            Drag entries between columns defined by a chosen field.
-                            Pick a field whose values become the board's columns.
-                        </p>
-                    </div>
-                    <input
-                        type="checkbox"
-                        className="toggle toggle-primary toggle-sm"
-                        checked={enabled}
-                        onChange={(e) => setEntry((prev) => ({ ...prev, enabled: e.target.checked }))}
-                    />
-                </label>
+                <SettingsActivationToggle
+                    title={t("blueprints.settings.kanban.title")}
+                    description={t("blueprints.settings.kanban.description")}
+                    enabled={enabled}
+                    onChange={(next) =>
+                        setEntry((prev) => ({ ...prev, enabled: next }))
+                    }
+                />
 
                 {/* Form controls — slide in/out based on enable state so users
                     aren't confused by greyed-out controls when the view is off. */}
                 <RevealCollapse open={enabled} innerClassName="pt-1">
-                <fieldset className="space-y-4">
-                    <div>
-                        <label className="mb-1.5 block text-xs font-medium text-base-content/70">
-                            Group field <span className="text-error">*</span>
-                        </label>
-                        <select
-                            value={config.group_field_name ?? ''}
-                            onChange={(e) =>
-                                updateConfig({ group_field_name: e.target.value || null })
-                            }
-                            className="select select-bordered select-sm w-full"
-                        >
-                            <option value="">Select a field...</option>
-                            {groupableFields.map((f) => (
-                                <option key={f.name} value={f.name}>
-                                    {f.label}
+                    <fieldset className="space-y-4">
+                        <div>
+                            <label
+                                className="mb-1.5 block text-xs font-medium"
+                                style={labelStyle}
+                            >
+                                {t("blueprints.settings.kanban.group_field")}{" "}
+                                <span style={requiredAsteriskStyle}>*</span>
+                            </label>
+                            <select
+                                value={config.group_field_name ?? ""}
+                                onChange={(e) =>
+                                    updateConfig({
+                                        group_field_name:
+                                            e.target.value || null,
+                                    })
+                                }
+                                className="w-full px-3 py-1.5 text-sm focus:outline-none focus:ring-2"
+                                style={selectStyle}
+                            >
+                                <option value="">
+                                    {t(
+                                        "blueprints.settings.kanban.group_field_placeholder",
+                                    )}
                                 </option>
-                            ))}
-                        </select>
-                        {groupableFields.length === 0 && enabled && (
-                            <p className="mt-1 text-xs text-warning">
-                                <i className="fa-solid fa-triangle-exclamation mr-1" />
-                                No groupable fields on this blueprint. Add a text,
-                                integer, or boolean field before enabling Kanban.
+                                {groupableFields.map((f) => (
+                                    <option key={f.name} value={f.name}>
+                                        {f.label}
+                                    </option>
+                                ))}
+                            </select>
+                            {groupableFields.length === 0 && enabled && (
+                                <p
+                                    className="mt-1 text-xs"
+                                    style={warningTextStyle}
+                                >
+                                    <i className="fa-solid fa-triangle-exclamation mr-1" />
+                                    {t(
+                                        "blueprints.settings.kanban.no_groupable_fields",
+                                    )}
+                                </p>
+                            )}
+                            <p className="mt-1 text-[11px]" style={helperStyle}>
+                                {t(
+                                    "blueprints.settings.kanban.group_field_hint",
+                                )}
                             </p>
-                        )}
-                        <p className="mt-1 text-[11px] text-base-content/50">
-                            Distinct values of this field become the board's columns.
-                            Entries with no value land in an "Unassigned" column.
-                        </p>
-                    </div>
+                        </div>
 
-                    <div>
-                        <label className="mb-1.5 block text-xs font-medium text-base-content/70">
-                            Sort within each column
-                        </label>
-                        <select
-                            value={config.column_sort ?? 'sort_order'}
-                            onChange={(e) =>
-                                updateConfig({
-                                    column_sort: e.target.value as KanbanConfig['column_sort'],
-                                })
-                            }
-                            className="select select-bordered select-sm w-full"
-                        >
-                            <option value="sort_order">Manual (follows each entry's existing order)</option>
-                            <option value="name">Alphabetical by name</option>
-                            <option value="updated_at">Most recently updated first</option>
-                            <option value="created_at">Most recently created first</option>
-                        </select>
-                        <p className="mt-1 text-[11px] text-base-content/50">
-                            Drag-to-reorder within a column lands in a later phase;
-                            for now, Manual follows the order entries already have
-                            from other views (table, tree, list).
-                        </p>
-                    </div>
-                </fieldset>
+                        <div>
+                            <label
+                                className="mb-1.5 block text-xs font-medium"
+                                style={labelStyle}
+                            >
+                                {t("blueprints.settings.kanban.column_sort")}
+                            </label>
+                            <select
+                                value={config.column_sort ?? "sort_order"}
+                                onChange={(e) =>
+                                    updateConfig({
+                                        column_sort: e.target
+                                            .value as KanbanConfig["column_sort"],
+                                    })
+                                }
+                                className="w-full px-3 py-1.5 text-sm focus:outline-none focus:ring-2"
+                                style={selectStyle}
+                            >
+                                <option value="sort_order">
+                                    {t(
+                                        "blueprints.settings.kanban.sort.manual",
+                                    )}
+                                </option>
+                                <option value="name">
+                                    {t("blueprints.settings.kanban.sort.name")}
+                                </option>
+                                <option value="updated_at">
+                                    {t(
+                                        "blueprints.settings.kanban.sort.updated",
+                                    )}
+                                </option>
+                                <option value="created_at">
+                                    {t(
+                                        "blueprints.settings.kanban.sort.created",
+                                    )}
+                                </option>
+                            </select>
+                            <p className="mt-1 text-[11px]" style={helperStyle}>
+                                {t(
+                                    "blueprints.settings.kanban.column_sort_hint",
+                                )}
+                            </p>
+                        </div>
+                    </fieldset>
                 </RevealCollapse>
             </div>
 
-            <div className="flex items-center justify-end gap-2 border-t border-base-content/10 px-5 py-3">
+            <div
+                className="flex items-center justify-end gap-2 px-5 py-3"
+                style={footerDividerStyle}
+            >
                 <ActionButton
                     icon="fa-solid fa-check"
-                    label="Save"
+                    label={t("common.save")}
                     onClick={handleSave}
                     loading={saving}
                 />
