@@ -1,4 +1,5 @@
 import { type CSSProperties, type ReactNode } from "react";
+import useT from "@alexandria/hooks/useT";
 import Modal from "./Modal";
 import ActionButton from "./ActionButton";
 
@@ -62,12 +63,15 @@ export default function ConfirmModal({
     onConfirm,
     title,
     message,
-    confirmLabel = "Confirm",
-    cancelLabel = "Cancel",
+    confirmLabel,
+    cancelLabel,
     variant = "default",
     loading = false,
 }: ConfirmModalProps) {
+    const t = useT();
     const isDanger = variant === "danger";
+    const resolvedConfirmLabel = confirmLabel ?? t("common.confirm");
+    const resolvedCancelLabel = cancelLabel ?? t("common.cancel");
 
     return (
         <Modal open={open} onClose={onClose} maxWidth="max-w-md">
@@ -101,7 +105,7 @@ export default function ConfirmModal({
                 >
                     <ActionButton
                         icon="fa-solid fa-xmark"
-                        label={cancelLabel}
+                        label={resolvedCancelLabel}
                         variant="ghost"
                         onClick={onClose}
                     />
@@ -109,7 +113,7 @@ export default function ConfirmModal({
                         icon={
                             isDanger ? "fa-solid fa-trash" : "fa-solid fa-check"
                         }
-                        label={confirmLabel}
+                        label={resolvedConfirmLabel}
                         onClick={onConfirm}
                         loading={loading}
                         variant={isDanger ? "error" : "primary"}
