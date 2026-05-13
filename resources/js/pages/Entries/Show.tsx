@@ -1,6 +1,7 @@
 import { usePage, router } from '@inertiajs/react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, type CSSProperties } from 'react';
 import { useCmdK } from '@alexandria/hooks/useCmdK';
+import useT from '@alexandria/hooks/useT';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import CommandPalette from '@alexandria/components/search/CommandPalette';
@@ -171,9 +172,146 @@ interface EntryShowProps {
 
 type Tab = 'overview' | 'structure' | 'attributes' | 'relationships' | 'connections' | 'mentions' | 'mentioned_in' | 'media' | 'history' | 'timeline';
 
+/* ── Theme-token style recipes ──
+   Tab buttons + structure-settings popover repaint from --theme-*
+   tokens so preset swaps reach this chrome alongside the rest. */
+
+const tabBtnBase: CSSProperties = {
+    fontSize: '0.875rem',
+    padding: '0.375rem 0.75rem',
+    borderRadius: 'var(--theme-radius-button)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    transition: 'background-color var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const tabBtnActiveStyle: CSSProperties = {
+    ...tabBtnBase,
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+};
+
+const tabBtnIdleStyle: CSSProperties = {
+    ...tabBtnBase,
+    background: 'transparent',
+    color: 'var(--theme-base-content)',
+};
+
+const thumbRingStyle: CSSProperties = {
+    boxShadow: '0 0 0 1px color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+};
+
+const summaryStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+};
+
+const structureLabelStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+};
+
+const structureBadgeStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '0.0625rem 0.375rem',
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+    borderRadius: 'var(--theme-radius-badge)',
+    background: 'var(--theme-brand-secondary-500)',
+    color: 'var(--theme-brand-secondary-content)',
+};
+
+const configBtnStyle: CSSProperties = {
+    fontSize: '0.75rem',
+    padding: '0.125rem 0.5rem',
+    borderRadius: 'var(--theme-radius-button)',
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    transition: 'background-color var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const popoverStyle: CSSProperties = {
+    background: 'var(--theme-base-100)',
+    border: '1px solid var(--theme-base-300)',
+    borderRadius: 'var(--theme-radius-card)',
+    boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.15)',
+};
+
+const popoverHeaderStyle: CSSProperties = {
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+};
+
+const popoverFooterStyle: CSSProperties = {
+    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+};
+
+const popoverHeadingStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+};
+
+const popoverPrimaryIconStyle: CSSProperties = {
+    color: 'var(--theme-brand-primary-500)',
+};
+
+const popoverLabelStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
+const popoverHelperStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)',
+};
+
+const popoverInputStyle: CSSProperties = {
+    background: 'var(--theme-base-100)',
+    color: 'var(--theme-base-content)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    padding: '0.25rem 0.5rem',
+    fontSize: '0.75rem',
+    width: '100%',
+};
+
+const modeBtnActiveStyle: CSSProperties = {
+    flex: 1,
+    fontSize: '0.75rem',
+    padding: '0.25rem 0.5rem',
+    borderRadius: 'var(--theme-radius-button)',
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.25rem',
+};
+
+const modeBtnIdleStyle: CSSProperties = {
+    flex: 1,
+    fontSize: '0.75rem',
+    padding: '0.25rem 0.5rem',
+    borderRadius: 'var(--theme-radius-button)',
+    background: 'transparent',
+    color: 'var(--theme-base-content)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.25rem',
+};
+
+const saveBtnStyle: CSSProperties = {
+    fontSize: '0.75rem',
+    padding: '0.25rem 0.75rem',
+    borderRadius: 'var(--theme-radius-button)',
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+};
+
 /* ── Page ── */
 
 export default function EntryShow() {
+    const t = useT();
     const props = usePage().props as unknown as EntryShowProps;
     const { project, blueprint, entry, contentHtml, summaryHtml, dynamicProperties, relationships, relationshipBlueprints, connections, mentions, mentionedIn, history, infoboxBlocks, timelineEvents, timelineEpoch } = props;
 
@@ -226,20 +364,20 @@ export default function EntryShow() {
     const menuItems: Array<{ label: string; icon: string; key: Tab; badge?: string | number }> = [];
 
     if (dynamicProperties.length > 0) {
-        menuItems.push({ key: 'attributes', label: 'Attributes', icon: 'fa-solid fa-list', badge: dynamicProperties.length });
+        menuItems.push({ key: 'attributes', label: t('entries.show.menu.attributes'), icon: 'fa-solid fa-list', badge: dynamicProperties.length });
     }
     if (relationships.length > 0) {
-        menuItems.push({ key: 'relationships', label: 'Relationships', icon: 'fa-solid fa-diagram-project', badge: relationships.length });
+        menuItems.push({ key: 'relationships', label: t('entries.show.menu.relationships'), icon: 'fa-solid fa-diagram-project', badge: relationships.length });
     }
     if (mentions.length > 0) {
-        menuItems.push({ key: 'mentions', label: 'Mentions', icon: 'fa-solid fa-at', badge: mentions.length });
+        menuItems.push({ key: 'mentions', label: t('entries.show.menu.mentions'), icon: 'fa-solid fa-at', badge: mentions.length });
     }
     if (mentionedIn.length > 0) {
-        menuItems.push({ key: 'mentioned_in', label: 'Mentioned In', icon: 'fa-solid fa-reply', badge: mentionedIn.length });
+        menuItems.push({ key: 'mentioned_in', label: t('entries.show.menu.mentioned_in'), icon: 'fa-solid fa-reply', badge: mentionedIn.length });
     }
-    menuItems.push({ key: 'media', label: 'Media', icon: 'fa-solid fa-images' });
+    menuItems.push({ key: 'media', label: t('entries.show.menu.media'), icon: 'fa-solid fa-images' });
     if (history.length > 0) {
-        menuItems.push({ key: 'history', label: 'History', icon: 'fa-solid fa-clock-rotate-left' });
+        menuItems.push({ key: 'history', label: t('entries.show.menu.history'), icon: 'fa-solid fa-clock-rotate-left' });
     }
 
     // Build dropdown items with navigation links at the bottom
@@ -251,8 +389,8 @@ export default function EntryShow() {
             onClick: () => setActiveTab(item.key),
         })),
         ...(menuItems.length > 0 ? [{ divider: true as const }] : []),
-        ...(blueprint.show_tree_view ? [{ label: 'View in Tree', icon: 'fa-solid fa-sitemap', href: `/p/${project.slug}/${blueprint.slug}#tree` }] : []),
-        { label: `All ${blueprint.plural_name}`, icon: blueprint.icon, href: `/p/${project.slug}/${blueprint.slug}` },
+        ...(blueprint.show_tree_view ? [{ label: t('entries.show.menu.view_in_tree'), icon: 'fa-solid fa-sitemap', href: `/p/${project.slug}/${blueprint.slug}#tree` }] : []),
+        { label: t('entries.show.menu.all_plural').replace(':plural', blueprint.plural_name), icon: blueprint.icon, href: `/p/${project.slug}/${blueprint.slug}` },
     ];
 
     return (
@@ -266,7 +404,7 @@ export default function EntryShow() {
                 actions={
                     <ActionButton
                         icon="fa-solid fa-pencil"
-                        label="Edit Entry"
+                        label={t('entries.show.edit_entry')}
                         href={`/p/${project.slug}/${blueprint.slug}/${entry.slug}/edit`}
                         size="md"
                     />
@@ -275,32 +413,40 @@ export default function EntryShow() {
                     <>
                         <button
                             onClick={() => setActiveTab('overview')}
-                            className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'overview' ? 'btn-primary' : 'btn-ghost'}`}
+                            className="alex-view-toggle-btn"
+                            data-active={activeTab === 'overview' ? 'true' : 'false'}
+                            style={activeTab === 'overview' ? tabBtnActiveStyle : tabBtnIdleStyle}
                         >
-                            <i className="fa-solid fa-eye text-xs" /> Overview
+                            <i className="fa-solid fa-eye text-xs" /> {t('entries.show.tab.overview')}
                         </button>
                         {entry.has_children && (
                             <button
                                 onClick={() => setActiveTab('structure')}
-                                className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'structure' ? 'btn-primary' : 'btn-ghost'}`}
+                                className="alex-view-toggle-btn"
+                                data-active={activeTab === 'structure' ? 'true' : 'false'}
+                                style={activeTab === 'structure' ? tabBtnActiveStyle : tabBtnIdleStyle}
                             >
-                                <i className="fa-solid fa-sitemap text-xs" /> Structure
+                                <i className="fa-solid fa-sitemap text-xs" /> {t('entries.show.tab.structure')}
                             </button>
                         )}
                         {timelineEvents.length > 0 && (
                             <button
                                 onClick={() => setActiveTab('timeline')}
-                                className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'timeline' ? 'btn-primary' : 'btn-ghost'}`}
+                                className="alex-view-toggle-btn"
+                                data-active={activeTab === 'timeline' ? 'true' : 'false'}
+                                style={activeTab === 'timeline' ? tabBtnActiveStyle : tabBtnIdleStyle}
                             >
-                                <i className="fa-solid fa-timeline text-xs" /> Timeline
+                                <i className="fa-solid fa-timeline text-xs" /> {t('entries.show.tab.timeline')}
                             </button>
                         )}
                         {connections.length > 0 && (
                             <button
                                 onClick={() => setActiveTab('connections')}
-                                className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'connections' ? 'btn-primary' : 'btn-ghost'}`}
+                                className="alex-view-toggle-btn"
+                                data-active={activeTab === 'connections' ? 'true' : 'false'}
+                                style={activeTab === 'connections' ? tabBtnActiveStyle : tabBtnIdleStyle}
                             >
-                                <i className="fa-solid fa-share-nodes text-xs" /> Connections
+                                <i className="fa-solid fa-share-nodes text-xs" /> {t('entries.show.tab.connections')}
                             </button>
                         )}
                         {dropdownItems.length > 0 && (
@@ -314,17 +460,21 @@ export default function EntryShow() {
                         <img
                             src={entry.thumbnail_url}
                             alt={entry.name}
-                            className="h-14 w-14 flex-shrink-0 rounded-2xl object-cover shadow-md ring-1 ring-base-content/5"
+                            className="h-14 w-14 flex-shrink-0 object-cover shadow-md"
+                            style={{ ...thumbRingStyle, borderRadius: 'var(--theme-radius-card)' }}
                         />
                     ) : (
-                        <IconTile icon={iconClass} className="shadow-md ring-1 ring-base-content/5" />
+                        <div style={{ ...thumbRingStyle, borderRadius: 'var(--theme-radius-card)' }}>
+                            <IconTile icon={iconClass} className="shadow-md" />
+                        </div>
                     )}
                     <div>
                         <h1 className="text-3xl font-bold">{entry.name}</h1>
                         {summaryHtml && (
                             <MentionAwareContent
                                 html={summaryHtml}
-                                className="entry-summary-links mt-1 text-sm text-base-content/60"
+                                className="entry-summary-links mt-1 text-sm"
+                                style={summaryStyle}
                             />
                         )}
                     </div>
@@ -361,11 +511,11 @@ export default function EntryShow() {
                 )}
 
                 {activeTab === 'mentions' && (
-                    <MentionsTab entries={mentions} title="Entries Mentioned" />
+                    <MentionsTab entries={mentions} title={t('entries.show.mentions_title.mentions')} />
                 )}
 
                 {activeTab === 'mentioned_in' && (
-                    <MentionsTab entries={mentionedIn} title="Mentioned In" />
+                    <MentionsTab entries={mentionedIn} title={t('entries.show.mentions_title.mentioned_in')} />
                 )}
 
                 {activeTab === 'media' && (
@@ -379,76 +529,79 @@ export default function EntryShow() {
                         {/* Structure toolbar — consistent position between tree/list modes */}
                         <div className="flex items-center gap-2">
                             {localStructureSettings.children_label && (
-                                <span className="text-sm font-semibold text-base-content/70">{localStructureSettings.children_label}</span>
+                                <span className="text-sm font-semibold" style={structureLabelStyle}>{localStructureSettings.children_label}</span>
                             )}
-                            <span className="badge badge-secondary badge-sm">{entry.children_count ?? 0}</span>
+                            <span style={structureBadgeStyle}>{entry.children_count ?? 0}</span>
                             <div className="flex-1" />
                             <div className="relative" ref={structureConfigRef}>
                                 <button
                                     type="button"
                                     onClick={() => setShowStructureConfig(!showStructureConfig)}
-                                    className="btn btn-ghost btn-xs gap-1"
+                                    className="alex-view-toggle-btn"
+                                    style={configBtnStyle}
                                 >
-                                    <i className="fa-solid fa-gear text-xs" /> Configure
+                                    <i className="fa-solid fa-gear text-xs" /> {t('entries.show.structure.configure')}
                                 </button>
                                 {showStructureConfig && (
-                                    <div className="absolute right-0 top-full z-30 mt-1 w-64 overflow-hidden rounded-lg border border-base-300 bg-base-100 shadow-xl">
-                                        <div className="border-b border-base-content/10 px-3 py-2">
-                                            <span className="text-xs font-medium text-base-content/70">
-                                                <i className="fa-solid fa-sliders mr-1 text-primary" />
-                                                Structure Settings
+                                    <div className="absolute right-0 top-full z-30 mt-1 w-64 overflow-hidden" style={popoverStyle}>
+                                        <div className="px-3 py-2" style={popoverHeaderStyle}>
+                                            <span className="text-xs font-medium" style={popoverHeadingStyle}>
+                                                <i className="fa-solid fa-sliders mr-1" style={popoverPrimaryIconStyle} />
+                                                {t('entries.show.structure.heading')}
                                             </span>
                                         </div>
                                         <div className="space-y-3 p-3">
                                             <div>
-                                                <label className="mb-1 block text-[11px] text-base-content/40">Section Label</label>
+                                                <label className="mb-1 block text-[11px]" style={popoverLabelStyle}>{t('entries.show.structure.section_label')}</label>
                                                 <input
                                                     type="text"
-                                                    placeholder="e.g., Adaptations, Chapters"
-                                                    className="input input-bordered input-sm w-full"
+                                                    placeholder={t('entries.show.structure.section_placeholder')}
+                                                    style={popoverInputStyle}
                                                     value={localStructureSettings.children_label ?? ''}
                                                     onChange={(e) => setLocalStructureSettings({ ...localStructureSettings, children_label: e.target.value || undefined })}
                                                 />
                                             </div>
                                             <div>
-                                                <label className="mb-1 block text-[11px] text-base-content/40">Display Mode</label>
+                                                <label className="mb-1 block text-[11px]" style={popoverLabelStyle}>{t('entries.show.structure.display_mode')}</label>
                                                 <div className="flex gap-1">
                                                     <button
                                                         type="button"
                                                         onClick={() => setLocalStructureSettings({ ...localStructureSettings, show_as: 'tree' })}
-                                                        className={`btn btn-xs flex-1 gap-1 ${(!localStructureSettings.show_as || localStructureSettings.show_as === 'tree') ? 'btn-primary' : 'btn-ghost border-base-content/10'}`}
+                                                        style={(!localStructureSettings.show_as || localStructureSettings.show_as === 'tree') ? modeBtnActiveStyle : modeBtnIdleStyle}
                                                     >
-                                                        <i className="fa-solid fa-sitemap text-[10px]" /> Tree
+                                                        <i className="fa-solid fa-sitemap text-[10px]" /> {t('entries.show.structure.mode_tree')}
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => setLocalStructureSettings({ ...localStructureSettings, show_as: 'list' })}
-                                                        className={`btn btn-xs flex-1 gap-1 ${localStructureSettings.show_as === 'list' ? 'btn-primary' : 'btn-ghost border-base-content/10'}`}
+                                                        style={localStructureSettings.show_as === 'list' ? modeBtnActiveStyle : modeBtnIdleStyle}
                                                     >
-                                                        <i className="fa-solid fa-list text-[10px]" /> List
+                                                        <i className="fa-solid fa-list text-[10px]" /> {t('entries.show.structure.mode_list')}
                                                     </button>
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="mb-1 block text-[11px] text-base-content/40">Max Depth</label>
+                                                <label className="mb-1 block text-[11px]" style={popoverLabelStyle}>{t('entries.show.structure.max_depth')}</label>
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="number"
                                                         min={0}
                                                         max={10}
-                                                        placeholder="All"
-                                                        className="input input-bordered input-sm w-20"
+                                                        placeholder={t('entries.show.structure.max_depth_placeholder')}
+                                                        style={{ ...popoverInputStyle, width: '5rem' }}
                                                         value={localStructureSettings.max_depth ?? ''}
                                                         onChange={(e) => setLocalStructureSettings({ ...localStructureSettings, max_depth: e.target.value ? parseInt(e.target.value) : undefined })}
                                                     />
-                                                    <span className="text-[11px] text-base-content/30">
-                                                        {!localStructureSettings.max_depth ? 'All levels' : `${localStructureSettings.max_depth} level${localStructureSettings.max_depth > 1 ? 's' : ''}`}
+                                                    <span className="text-[11px]" style={popoverHelperStyle}>
+                                                        {!localStructureSettings.max_depth
+                                                            ? t('entries.show.structure.all_levels')
+                                                            : t(localStructureSettings.max_depth === 1 ? 'entries.show.structure.levels.singular' : 'entries.show.structure.levels.plural').replace(':count', String(localStructureSettings.max_depth))}
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex justify-end border-t border-base-content/10 px-3 py-2">
-                                            <button type="button" onClick={saveStructureSettings} className="btn btn-primary btn-xs">Save</button>
+                                        <div className="flex justify-end px-3 py-2" style={popoverFooterStyle}>
+                                            <button type="button" onClick={saveStructureSettings} style={saveBtnStyle}>{t('entries.show.structure.save')}</button>
                                         </div>
                                     </div>
                                 )}
