@@ -1,4 +1,5 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
+import useT from '@alexandria/hooks/useT';
 import EntryLink from '@alexandria/components/entries/EntryLink';
 import MentionAwareContent from '@alexandria/components/ui/MentionAwareContent';
 
@@ -180,6 +181,7 @@ function SectionPill({ text }: { text: string }) {
    :hover transition between the two states can animate via CSS. */
 
 function ShowMoreButton({ hiddenCount, expanded, onToggle }: { hiddenCount: number; expanded: boolean; onToggle: () => void }) {
+    const t = useT();
     return (
         <div className="mb-4 mt-2">
             <button
@@ -191,7 +193,9 @@ function ShowMoreButton({ hiddenCount, expanded, onToggle }: { hiddenCount: numb
                     className="rounded-full px-3 py-0.5 text-xs font-semibold uppercase tracking-wider transition-transform group-hover:scale-105"
                     style={PILL_STYLE}
                 >
-                    {expanded ? 'Show less' : `Show ${hiddenCount} more...`}
+                    {expanded
+                        ? t('entries.infobox.show_less')
+                        : t('entries.infobox.show_more').replace(':count', String(hiddenCount))}
                 </div>
                 <div className="h-px flex-grow bg-current" />
             </button>
@@ -338,6 +342,7 @@ function RelationshipRow({ item }: { item: InfoboxRelationshipItem }) {
 /* ── Hierarchy ── */
 
 function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
+    const t = useT();
     const [expanded, setExpanded] = useState(false);
     const { parent, children, children_total, limit_enabled, visible_limit } = data;
 
@@ -350,7 +355,7 @@ function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
 
     return (
         <div>
-            <SectionPill text="Hierarchy" />
+            <SectionPill text={t('entries.infobox.hierarchy')} />
 
             <div className="mt-1">
                 {/* Parent */}
@@ -360,7 +365,7 @@ function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
                             className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium"
                             style={labelStyle}
                         >
-                            Parent
+                            {t('entries.infobox.parent')}
                         </div>
                         <div className="w-[61.8%] text-sm leading-5">
                             <InfoboxHierarchyLink entry={parent} />
@@ -375,7 +380,7 @@ function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
                             className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium"
                             style={labelStyle}
                         >
-                            {children_total === 1 ? 'Child' : 'Children'}
+                            {t(children_total === 1 ? 'entries.infobox.child.singular' : 'entries.infobox.child.plural')}
                         </div>
                         <div className="w-[61.8%] space-y-1 text-sm leading-5">
                             {visibleChildren.map((child, j) => (

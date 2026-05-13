@@ -37,6 +37,15 @@ return [
     'stub.not_found' => 'Not Found',
     'stub.not_found_body' => 'Could not load entry data.',
 
+    // ── Infobox + EntryHoverCard (F1) ──
+    'infobox.hierarchy' => 'Hierarchy',
+    'infobox.parent' => 'Parent',
+    'infobox.child.singular' => 'Child',
+    'infobox.child.plural' => 'Children',
+    'infobox.show_less' => 'Show less',
+    'infobox.show_more' => 'Show :count more…',
+    'hover_card.view_entry' => 'View entry',
+
     // ── MediaSection (E3b) ──
     'media.page_image.title' => 'Page Image',
     'media.page_image.subtitle' => 'Square thumbnail shown across the site.',

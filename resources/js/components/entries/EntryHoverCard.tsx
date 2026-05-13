@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import gsap from 'gsap';
+import useT from '@alexandria/hooks/useT';
 import type { EntryPreview } from '@alexandria/types/projects';
 import { computeHoverPosition } from '@alexandria/lib/hoverPosition';
 import { stripWikiMarkup } from '@alexandria/lib/stripWikiMarkup';
@@ -37,6 +38,7 @@ const MUTED_60 = `color-mix(in srgb, var(--theme-base-content) 60%, transparent)
 const MUTED_70 = `color-mix(in srgb, var(--theme-base-content) 70%, transparent)`;
 
 export default function EntryHoverCard({ entryId, triggerRect, onEnter, onClose }: EntryHoverCardProps) {
+    const t = useT();
     const [preview, setPreview] = useState<EntryPreview | null>(null);
     const [loading, setLoading] = useState(true);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -99,7 +101,7 @@ export default function EntryHoverCard({ entryId, triggerRect, onEnter, onClose 
             >
                 <div className="flex items-center gap-2 text-sm" style={{ color: MUTED_50 }}>
                     <i className="fa-solid fa-circle-notch fa-spin text-xs" />
-                    Loading...
+                    {t('common.loading')}
                 </div>
             </div>,
             document.body,
@@ -157,7 +159,7 @@ export default function EntryHoverCard({ entryId, triggerRect, onEnter, onClose 
                 className="mt-2 flex items-center gap-1 text-xs hover:underline"
                 style={{ color: 'var(--theme-brand-primary-500)' }}
             >
-                View entry <i className="fa-solid fa-arrow-right text-[10px]" />
+                {t('entries.hover_card.view_entry')} <i className="fa-solid fa-arrow-right text-[10px]" />
             </a>
         </div>,
         document.body,
