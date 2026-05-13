@@ -430,6 +430,24 @@ button:not(:disabled),
     );
 }
 
+/* Graph sidebar idle row — :hover wash + brighten. Active rows skip
+   this via data-active="true" since their inline brand-primary
+   styling already conveys the state. */
+.alex-graph-sidebar-btn {
+    transition: background-color var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease),
+        color var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease);
+}
+.alex-graph-sidebar-btn:hover:not([data-active="true"]) {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-base-content) 5%,
+        transparent
+    );
+    color: var(--theme-base-content);
+}
+
 /* Gallery tile — border + shadow animate on hover so the tile lifts
    subtly when the user can interact with it. Inner image scale is
    handled by Tailwind's group-hover:scale-105 (CSS-level :hover too,

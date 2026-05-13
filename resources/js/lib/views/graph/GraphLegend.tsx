@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { GraphColorGroup } from './types';
 import { colorForGroup } from './palette';
 
@@ -19,6 +20,30 @@ interface GraphLegendProps {
     swatchShape?: 'circle' | 'bar';
 }
 
+const wrapStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-200) 40%, transparent)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const headingStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+const emptyHintStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
+const groupLabelStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
+};
+
+const groupCountStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
+const circleSwatchBorder = 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)';
+
 export default function GraphLegend({
     groups,
     fieldLabel,
@@ -32,27 +57,28 @@ export default function GraphLegend({
 
     const heading = title ?? (fieldLabel ? `Colored by ${fieldLabel}` : 'Legend');
     const emptyText = emptyHint ?? 'No values yet.';
-    const swatchClass = swatchShape === 'bar'
-        ? 'h-1 w-5 rounded-full'
-        : 'h-3 w-3 rounded-full border border-base-content/20';
+    const isBar = swatchShape === 'bar';
 
     return (
-        <div className="rounded-xl border border-base-content/10 bg-base-200/40 p-3">
-            <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-base-content/50">
+        <div className="p-3" style={wrapStyle}>
+            <p className="mb-2 text-[11px] font-medium uppercase tracking-wider" style={headingStyle}>
                 {heading}
             </p>
             {safeGroups.length === 0 ? (
-                <p className="text-xs italic text-base-content/40">{emptyText}</p>
+                <p className="text-xs italic" style={emptyHintStyle}>{emptyText}</p>
             ) : (
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                     {safeGroups.map((g) => (
                         <div key={g.key} className="flex items-center gap-2">
                             <span
-                                className={swatchClass}
-                                style={{ backgroundColor: colorForGroup(g.key) }}
+                                className={isBar ? 'h-1 w-5 rounded-full' : 'h-3 w-3 rounded-full'}
+                                style={{
+                                    backgroundColor: colorForGroup(g.key),
+                                    ...(isBar ? {} : { border: `1px solid ${circleSwatchBorder}` }),
+                                }}
                             />
-                            <span className="text-xs text-base-content/80">{g.label}</span>
-                            <span className="text-[10px] text-base-content/40">{g.count}</span>
+                            <span className="text-xs" style={groupLabelStyle}>{g.label}</span>
+                            <span className="text-[10px]" style={groupCountStyle}>{g.count}</span>
                         </div>
                     ))}
                 </div>

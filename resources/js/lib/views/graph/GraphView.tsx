@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { router } from '@inertiajs/react';
 import { useBlueprintSettingsModal } from '@alexandria/lib/views/useBlueprintSettingsModal';
 import type { GraphConfig, GraphResponse, GraphNodeData, SavedGraph } from './types';
@@ -13,6 +13,50 @@ interface GraphViewProps {
     config: GraphConfig;
     onOpenSettings: () => void;
 }
+
+const cardOuterStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const cardInnerStyle: CSSProperties = {
+    background: 'var(--theme-base-200)',
+    borderRadius: 'inherit',
+};
+
+const ctaIconStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
+};
+
+const ctaHeadingStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+const ctaSubStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
+const ctaButtonStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-button)',
+    padding: '0.375rem 0.75rem',
+    fontSize: '0.875rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+};
+
+const spinnerStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
+};
+
+const capWarningStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-status-warning-fill) 10%, transparent)',
+    border: '1px solid color-mix(in srgb, var(--theme-status-warning-stroke) 30%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    color: 'var(--theme-status-warning-stroke)',
+};
 
 function readHashSlug(): string | null {
     if (typeof window === 'undefined') return null;
@@ -107,14 +151,14 @@ export default function GraphView({ projectId, blueprintId, config, onOpenSettin
     if (graphs.length === 0) {
         return (
             <>
-                <div className="paper-board rounded-2xl border border-base-content/10">
-                    <div className="flex flex-col items-center bg-base-200 py-16 text-center" style={{ borderRadius: 'inherit' }}>
-                        <i className="fa-solid fa-diagram-project mb-3 text-3xl text-base-content/20" />
-                        <p className="text-sm font-medium text-base-content/50">No graphs configured yet</p>
-                        <p className="mt-1 max-w-sm text-xs text-base-content/40">
+                <div className="paper-board" style={cardOuterStyle}>
+                    <div className="flex flex-col items-center py-16 text-center" style={cardInnerStyle}>
+                        <i className="fa-solid fa-diagram-project mb-3 text-3xl" style={ctaIconStyle} />
+                        <p className="text-sm font-medium" style={ctaHeadingStyle}>No graphs configured yet</p>
+                        <p className="mt-1 max-w-sm text-xs" style={ctaSubStyle}>
                             Create your first graph in Blueprint Settings → Graph.
                         </p>
-                        <button type="button" onClick={onOpenSettings} className="btn btn-primary btn-sm mt-4 gap-1.5 rounded-xl">
+                        <button type="button" onClick={onOpenSettings} className="mt-4" style={ctaButtonStyle}>
                             <i className="fa-solid fa-sliders text-xs" /> Configure Graphs
                         </button>
                     </div>
@@ -130,13 +174,13 @@ export default function GraphView({ projectId, blueprintId, config, onOpenSettin
             <>
                 <div className="flex gap-4">
                     <GraphSidebar graphs={graphs} activeId={active.id} onSelect={setActiveId} />
-                    <div className="paper-board flex-1 rounded-2xl border border-base-content/10">
-                        <div className="flex flex-col items-center bg-base-200 py-16 text-center" style={{ borderRadius: 'inherit' }}>
-                            <p className="text-sm font-medium text-base-content/50">"{active.name}" has no edges yet</p>
-                            <p className="mt-1 max-w-sm text-xs text-base-content/40">
+                    <div className="paper-board flex-1" style={cardOuterStyle}>
+                        <div className="flex flex-col items-center py-16 text-center" style={cardInnerStyle}>
+                            <p className="text-sm font-medium" style={ctaHeadingStyle}>"{active.name}" has no edges yet</p>
+                            <p className="mt-1 max-w-sm text-xs" style={ctaSubStyle}>
                                 Pick at least one relationship blueprint for this graph.
                             </p>
-                            <button type="button" onClick={onOpenSettings} className="btn btn-primary btn-sm mt-4 gap-1.5 rounded-xl">
+                            <button type="button" onClick={onOpenSettings} className="mt-4" style={ctaButtonStyle}>
                                 <i className="fa-solid fa-sliders text-xs" /> Edit "{active.name}"
                             </button>
                         </div>
@@ -151,7 +195,7 @@ export default function GraphView({ projectId, blueprintId, config, onOpenSettin
         return (
             <>
                 <div className="flex items-center justify-center py-16">
-                    <span className="loading loading-spinner loading-lg text-base-content/20" />
+                    <i className="fa-solid fa-circle-notch fa-spin text-3xl" style={spinnerStyle} />
                 </div>
                 {settingsModal}
             </>
@@ -163,9 +207,9 @@ export default function GraphView({ projectId, blueprintId, config, onOpenSettin
             <>
                 <div className="flex gap-4">
                     <GraphSidebar graphs={graphs} activeId={active?.id ?? null} onSelect={setActiveId} />
-                    <div className="paper-board flex-1 rounded-2xl border border-base-content/10">
-                        <div className="bg-base-200 py-12 text-center" style={{ borderRadius: 'inherit' }}>
-                            <p className="text-sm text-base-content/40">No entries to render.</p>
+                    <div className="paper-board flex-1" style={cardOuterStyle}>
+                        <div className="py-12 text-center" style={cardInnerStyle}>
+                            <p className="text-sm" style={ctaSubStyle}>No entries to render.</p>
                         </div>
                     </div>
                 </div>
@@ -203,7 +247,7 @@ export default function GraphView({ projectId, blueprintId, config, onOpenSettin
                 <GraphSidebar graphs={graphs} activeId={active.id} onSelect={setActiveId} />
                 <div className="flex flex-1 flex-col gap-3 overflow-hidden">
                     {data.capped && (
-                        <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-2 text-xs text-warning">
+                        <div className="px-4 py-2 text-xs" style={capWarningStyle}>
                             <i className="fa-solid fa-triangle-exclamation mr-1" />
                             Showing {data.nodes.length} of {data.total_nodes} entries (capped at {active.max_nodes}).
                         </div>
@@ -225,8 +269,8 @@ export default function GraphView({ projectId, blueprintId, config, onOpenSettin
                             />
                         )}
                     </div>
-                    <div className="paper-board flex-1 overflow-hidden rounded-2xl border border-base-content/10">
-                        <div className="h-full overflow-hidden bg-base-200" style={{ borderRadius: 'inherit' }}>
+                    <div className="paper-board flex-1 overflow-hidden" style={cardOuterStyle}>
+                        <div className="h-full overflow-hidden" style={cardInnerStyle}>
                             <GraphCanvas
                                 nodes={data.nodes}
                                 edges={data.edges}
