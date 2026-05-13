@@ -4,7 +4,8 @@
 // kanban/graph/timeline panels). Re-export here so consumers
 // importing the public Blueprint shape get the same type without
 // having to reach into lib/views.
-export type { BlueprintViewEntry } from '../lib/views/types';
+import type { BlueprintViewEntry } from '../lib/views/types';
+export type { BlueprintViewEntry };
 
 export interface BlueprintField {
     id: number | null;

@@ -18,7 +18,7 @@
  * reduced-motion, compact, high-contrast, dyslexia-friendly font, focus
  * indicators) so consumer apps don't have to add a separate @import — a
  * single ui-polish.css import covers both layers. */
-@import './view-preferences.css';
+@import "./view-preferences.css";
 
 /* ====================================================================== */
 /* Restore v3 button cursor.                                              */
@@ -30,11 +30,10 @@
 /* disabled controls.                                                     */
 /* ====================================================================== */
 button:not(:disabled),
-[role='button']:not(:disabled),
+[role="button"]:not(:disabled),
 .btn:not(:disabled) {
     cursor: pointer;
 }
-
 
 /* DaisyUI .toggle / .checkbox border-tinting rules used to live here when
  * the form primitives still rendered native + DaisyUI markup. The toggle
@@ -47,26 +46,87 @@ button:not(:disabled),
 /* ====================================================================== */
 /* Custom Scrollbar Styles                                                */
 /* ====================================================================== */
-.inline-scroll { scrollbar-width: thin; scrollbar-color: rgba(0, 204, 255, 0.4) transparent; }
-.inline-scroll::-webkit-scrollbar { width: 6px; }
-.inline-scroll::-webkit-scrollbar-thumb { background-color: rgba(0, 204, 255, 0.4); border-radius: 10px; transition: background-color 0.3s ease; }
-.inline-scroll::-webkit-scrollbar-thumb:hover { background-color: rgba(0, 204, 255, 1); }
-.inline-scroll::-webkit-scrollbar-track { background-color: transparent; }
-.thin-scrollbar::-webkit-scrollbar { width: 6px; }
-.thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.thin-scrollbar::-webkit-scrollbar-thumb { background-color: color-mix(in srgb, var(--theme-brand-primary-500) 40%, transparent); border-radius: 20px; border: 3px solid transparent; }
-.thin-scrollbar::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--theme-brand-primary-500) 70%, transparent); }
+.inline-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 204, 255, 0.4) transparent;
+}
+.inline-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+.inline-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 204, 255, 0.4);
+    border-radius: 10px;
+    transition: background-color 0.3s ease;
+}
+.inline-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 204, 255, 1);
+}
+.inline-scroll::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 40%,
+        transparent
+    );
+    border-radius: 20px;
+    border: 3px solid transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 70%,
+        transparent
+    );
+}
 
 /* Subtle neutral scrollbar for large scroll surfaces (timeline canvas,
    etc.). Thin track, muted thumb, transparent corners — the 2px
    background-clip trick inset-pads the thumb so it sits with breathing
    room instead of flush against the edge. */
-.scrollbar-subtle { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--theme-base-content) 25%, transparent) transparent; }
-.scrollbar-subtle::-webkit-scrollbar { width: 10px; height: 10px; }
-.scrollbar-subtle::-webkit-scrollbar-track { background: transparent; }
-.scrollbar-subtle::-webkit-scrollbar-thumb { background-color: color-mix(in srgb, var(--theme-base-content) 20%, transparent); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
-.scrollbar-subtle::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--theme-base-content) 40%, transparent); }
-.scrollbar-subtle::-webkit-scrollbar-corner { background: transparent; }
+.scrollbar-subtle {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(
+            in srgb,
+            var(--theme-base-content) 25%,
+            transparent
+        )
+        transparent;
+}
+.scrollbar-subtle::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+.scrollbar-subtle::-webkit-scrollbar-track {
+    background: transparent;
+}
+.scrollbar-subtle::-webkit-scrollbar-thumb {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-base-content) 20%,
+        transparent
+    );
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+.scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-base-content) 40%,
+        transparent
+    );
+}
+.scrollbar-subtle::-webkit-scrollbar-corner {
+    background: transparent;
+}
 
 /* ----------------------------------------------------------------------
    TipTap / ProseMirror editor surface
@@ -86,7 +146,9 @@ button:not(:disabled),
     min-height: 8rem;
     padding: 1rem;
 }
-.tiptap-editor .ProseMirror p { margin-bottom: 0.5rem; }
+.tiptap-editor .ProseMirror p {
+    margin-bottom: 0.5rem;
+}
 .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     float: left;
@@ -95,17 +157,18 @@ button:not(:disabled),
     color: color-mix(in srgb, var(--theme-base-content) 40%, transparent);
 }
 .tiptap-editor .ProseMirror h2 {
-    font-family: 'Libre Baskerville', serif;
+    font-family: "Libre Baskerville", serif;
     font-size: 1.875rem;
     line-height: 2.25rem;
     font-weight: 700;
     margin-top: 2rem;
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent);
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--theme-base-content) 20%, transparent);
 }
 .tiptap-editor .ProseMirror h3 {
-    font-family: 'Libre Baskerville', serif;
+    font-family: "Libre Baskerville", serif;
     font-size: 1.5rem;
     line-height: 2rem;
     font-weight: 700;
@@ -113,25 +176,51 @@ button:not(:disabled),
     margin-bottom: 0.75rem;
 }
 .tiptap-editor .ProseMirror > h2:first-child,
-.tiptap-editor .ProseMirror > h3:first-child { margin-top: 0; }
-.tiptap-editor .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; }
-.tiptap-editor .ProseMirror ol { list-style-type: decimal; padding-left: 1.5rem; }
-.tiptap-editor .ProseMirror a { color: var(--theme-brand-primary-500); text-decoration: underline; }
-.tiptap-editor .ProseMirror a.mention { text-decoration: none; }
+.tiptap-editor .ProseMirror > h3:first-child {
+    margin-top: 0;
+}
+.tiptap-editor .ProseMirror ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+}
+.tiptap-editor .ProseMirror ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+}
+.tiptap-editor .ProseMirror a {
+    color: var(--theme-brand-primary-500);
+    text-decoration: underline;
+}
+.tiptap-editor .ProseMirror a.mention {
+    text-decoration: none;
+}
 .tiptap-editor .ProseMirror .mention {
-    background-color: color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent);
+    background-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 10%,
+        transparent
+    );
     border-radius: var(--theme-radius-button);
     padding: 0.125rem 0.25rem;
 }
 .tiptap-editor .ProseMirror .entry-link {
-    background-color: color-mix(in srgb, var(--theme-brand-secondary-500) 10%, transparent);
+    background-color: color-mix(
+        in srgb,
+        var(--theme-brand-secondary-500) 10%,
+        transparent
+    );
     border-radius: var(--theme-radius-button);
     padding: 0.125rem 0.25rem;
     color: var(--theme-brand-primary-500);
     text-decoration: none;
 }
-.tiptap-editor .ProseMirror .entry-link:hover { text-decoration: underline; }
-.tiptap-mention-popup { position: fixed; z-index: 9999; }
+.tiptap-editor .ProseMirror .entry-link:hover {
+    text-decoration: underline;
+}
+.tiptap-mention-popup {
+    position: fixed;
+    z-index: 9999;
+}
 
 /*
  * RichTextEditor toolbar buttons — hover treatment lives here because
@@ -202,15 +291,28 @@ button:not(:disabled),
 }
 .prose .wiki-h2 {
     @apply text-3xl font-bold mt-8 mb-4 pb-2 overflow-hidden;
-    border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent);
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--theme-base-content) 20%, transparent);
 }
-.prose .wiki-h3 { @apply text-2xl font-bold mt-6 mb-3; }
-.prose .wiki-h4 { @apply text-xl font-bold mt-4 mb-2; }
-.prose .wiki-h5 { @apply text-lg font-semibold mt-4 mb-2; }
-.prose .wiki-h6 { @apply text-base font-semibold mt-4 mb-2; }
+.prose .wiki-h3 {
+    @apply text-2xl font-bold mt-6 mb-3;
+}
+.prose .wiki-h4 {
+    @apply text-xl font-bold mt-4 mb-2;
+}
+.prose .wiki-h5 {
+    @apply text-lg font-semibold mt-4 mb-2;
+}
+.prose .wiki-h6 {
+    @apply text-base font-semibold mt-4 mb-2;
+}
 
-.prose blockquote p:first-of-type::before { content: ''; }
-.prose blockquote p:last-of-type::after { content: ''; }
+.prose blockquote p:first-of-type::before {
+    content: "";
+}
+.prose blockquote p:last-of-type::after {
+    content: "";
+}
 
 .prose a {
     @apply text-primary/70 underline decoration-dashed decoration-2 underline-offset-4 transition-all duration-200;
@@ -221,21 +323,93 @@ button:not(:disabled),
 
 .wiki-table-wrapper {
     @apply rounded-xl overflow-hidden my-8;
-    border: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+    border: 1px solid
+        color-mix(in srgb, var(--theme-base-content) 10%, transparent);
 }
-.wiki-table { @apply w-full border-collapse text-sm; }
+.wiki-table {
+    @apply w-full border-collapse text-sm;
+}
 .wiki-table th {
     @apply px-4 py-2.5 text-left text-xs font-semibold;
-    background-color: color-mix(in srgb, var(--theme-base-200) 70%, transparent);
+    background-color: color-mix(
+        in srgb,
+        var(--theme-base-200) 70%,
+        transparent
+    );
     color: color-mix(in srgb, var(--theme-base-content) 70%, transparent);
-    border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--theme-base-content) 10%, transparent);
 }
 .wiki-table td {
     @apply px-4 py-2 text-sm;
-    border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent);
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--theme-base-content) 5%, transparent);
 }
-.wiki-table tbody tr:nth-child(even) td { background-color: color-mix(in srgb, var(--theme-base-200) 20%, transparent); }
-.wiki-table tbody tr:hover td { background-color: color-mix(in srgb, var(--theme-base-200) 40%, transparent); }
-.wiki-table tbody tr:last-child td { border-bottom: 0; }
+.wiki-table tbody tr:nth-child(even) td {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-base-200) 20%,
+        transparent
+    );
+}
+.wiki-table tbody tr:hover td {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-base-200) 40%,
+        transparent
+    );
+}
+.wiki-table tbody tr:last-child td {
+    border-bottom: 0;
+}
 .wiki-table th:not(:last-child),
-.wiki-table td:not(:last-child) { border-right: 1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent); }
+.wiki-table td:not(:last-child) {
+    border-right: 1px solid
+        color-mix(in srgb, var(--theme-base-content) 5%, transparent);
+}
+
+/* Blueprint entries table — paper-style shell with primary-tinted header.
+   The headers always carry brand-primary; row hover gets a subtle base-200
+   tint. Used by Blueprints/Sections/EntriesTab.tsx. */
+.alex-entries-table tbody tr {
+    transition: background-color var(--theme-motion-duration-fast, 150ms)
+        var(--theme-motion-easing-standard, ease);
+}
+.alex-entries-table tbody tr:hover td {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-base-200) 30%,
+        transparent
+    );
+}
+.alex-entries-table .alex-entries-header-icon {
+    color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-content) 50%,
+        transparent
+    );
+    transition: color var(--theme-motion-duration-fast, 150ms)
+        var(--theme-motion-easing-standard, ease);
+}
+.alex-entries-table .alex-entries-header-icon:hover {
+    color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-content) 80%,
+        transparent
+    );
+}
+.alex-entries-table .alex-entries-header-icon[data-active="true"] {
+    color: var(--theme-brand-primary-content);
+}
+.alex-entries-table .alex-entries-clear-filters {
+    color: color-mix(
+        in srgb,
+        var(--theme-status-warning-stroke) 80%,
+        transparent
+    );
+    transition: color var(--theme-motion-duration-fast, 150ms)
+        var(--theme-motion-easing-standard, ease);
+}
+.alex-entries-table .alex-entries-clear-filters:hover {
+    color: var(--theme-status-warning-stroke);
+}
