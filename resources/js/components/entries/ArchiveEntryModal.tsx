@@ -1,4 +1,5 @@
 import { type CSSProperties, useState, useEffect } from "react";
+import useT from "@alexandria/hooks/useT";
 import Modal from "@alexandria/components/ui/Modal";
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import { csrfHeaders } from "@alexandria/lib/csrfHeaders";
@@ -107,6 +108,7 @@ export default function ArchiveEntryModal({
             .catch(() => setArchiving(false));
     }
 
+    const t = useT();
     const childEntries = dependencies.filter((d) => d.type === "entry");
     const connections = dependencies.filter((d) => d.type === "connection");
 
@@ -122,11 +124,15 @@ export default function ArchiveEntryModal({
                         style={warningIconStyle}
                     />
                 </div>
-                <h3 className="text-lg font-bold">Archive Entry?</h3>
+                <h3 className="text-lg font-bold">{t("entries.archive.title")}</h3>
                 <p className="mt-2 text-sm" style={bodyTextStyle}>
-                    <strong>{entryName}</strong> will be archived and hidden
-                    from active views. Linked entries from other blueprints are
-                    not affected.
+                    {t("entries.archive.body")
+                        .split(":name")
+                        .flatMap((part, i, arr) =>
+                            i < arr.length - 1
+                                ? [part, <strong key={i}>{entryName}</strong>]
+                                : [part],
+                        )}
                 </p>
 
                 {!loaded ? (
@@ -135,7 +141,7 @@ export default function ArchiveEntryModal({
                         style={helperFainterStyle}
                     >
                         <i className="fa-solid fa-circle-notch fa-spin text-xs" />
-                        Checking dependencies...
+                        {t("entries.archive.checking_dependencies")}
                     </div>
                 ) : dependencies.length > 0 ? (
                     <div className="mt-4 text-left">
@@ -148,8 +154,11 @@ export default function ArchiveEntryModal({
                         >
                             <i className="fa-solid fa-sitemap text-xs" />
                             <span>
-                                {dependencies.length} dependenc
-                                {dependencies.length !== 1 ? "ies" : "y"} found
+                                {t(
+                                    dependencies.length === 1
+                                        ? "entries.archive.dependency_count.singular"
+                                        : "entries.archive.dependency_count.plural",
+                                ).replace(":count", String(dependencies.length))}
                             </span>
                             <i
                                 className={`fa-solid fa-chevron-down text-[10px] transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
@@ -219,15 +228,16 @@ export default function ArchiveEntryModal({
                                     className="text-sm"
                                     style={helperStrongStyle}
                                 >
-                                    Archive {childEntries.length} child entr
-                                    {childEntries.length !== 1 ? "ies" : "y"}{" "}
-                                    with it
+                                    {t(
+                                        childEntries.length === 1
+                                            ? "entries.archive.cascade_label.singular"
+                                            : "entries.archive.cascade_label.plural",
+                                    ).replace(":count", String(childEntries.length))}
                                     <span
                                         className="block text-xs"
                                         style={helperFainterStyle}
                                     >
-                                        If unchecked, children will appear in
-                                        the Unsorted folder
+                                        {t("entries.archive.cascade_hint")}
                                     </span>
                                 </span>
                             </label>
@@ -239,28 +249,30 @@ export default function ArchiveEntryModal({
                                 style={helperFainterStyle}
                             >
                                 <i className="fa-solid fa-diagram-project mr-1 text-[9px]" />
-                                {connections.length} connection
-                                {connections.length !== 1 ? "s" : ""} will
-                                always be archived with this entry
+                                {t(
+                                    connections.length === 1
+                                        ? "entries.archive.connections_note.singular"
+                                        : "entries.archive.connections_note.plural",
+                                ).replace(":count", String(connections.length))}
                             </p>
                         )}
                     </div>
                 ) : (
                     <p className="mt-4 text-sm" style={helperFainterStyle}>
-                        No dependencies will be affected.
+                        {t("entries.archive.no_dependencies")}
                     </p>
                 )}
 
                 <div className="mt-6 flex justify-center gap-2">
                     <ActionButton
                         icon="fa-solid fa-xmark"
-                        label="Cancel"
+                        label={t("common.cancel")}
                         variant="ghost"
                         onClick={onClose}
                     />
                     <ActionButton
                         icon="fa-solid fa-box-archive"
-                        label="Archive"
+                        label={t("entries.archive.action")}
                         variant="warning"
                         onClick={handleArchive}
                         loading={archiving}

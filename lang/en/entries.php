@@ -17,5 +17,23 @@ declare(strict_types=1);
  * keys in their own lang/<locale>/entries.php.
  */
 return [
-    // Filled per-subsection as the i18n sweep progresses.
+    // ── ArchiveEntryModal (E2) ──
+    'archive.title' => 'Archive Entry?',
+    'archive.body' => ':name will be archived and hidden from active views. Linked entries from other blueprints are not affected.',
+    'archive.checking_dependencies' => 'Checking dependencies…',
+    'archive.dependency_count.singular' => ':count dependency found',
+    'archive.dependency_count.plural' => ':count dependencies found',
+    'archive.cascade_label.singular' => 'Archive :count child entry with it',
+    'archive.cascade_label.plural' => 'Archive :count child entries with it',
+    'archive.cascade_hint' => 'If unchecked, children will appear in the Unsorted folder',
+    'archive.connections_note.singular' => ':count connection will always be archived with this entry',
+    'archive.connections_note.plural' => ':count connections will always be archived with this entry',
+    'archive.no_dependencies' => 'No dependencies will be affected.',
+    'archive.action' => 'Archive',
+
+    // ── StubPreviewModal (E2) ──
+    'stub.badge' => 'Stub',
+    'stub.no_summary' => 'No summary yet.',
+    'stub.not_found' => 'Not Found',
+    'stub.not_found_body' => 'Could not load entry data.',
 ];

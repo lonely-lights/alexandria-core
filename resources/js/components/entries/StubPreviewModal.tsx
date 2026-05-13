@@ -1,4 +1,5 @@
 import { type CSSProperties, useState, useEffect } from "react";
+import useT from "@alexandria/hooks/useT";
 import Modal, { ModalHeader } from "@alexandria/components/ui/Modal";
 import type { EntryPreview } from "@alexandria/types/projects";
 import { stripWikiMarkup } from "@alexandria/lib/stripWikiMarkup";
@@ -58,6 +59,7 @@ export default function StubPreviewModal({
     open,
     onClose,
 }: StubPreviewModalProps) {
+    const t = useT();
     const [preview, setPreview] = useState<EntryPreview | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -86,7 +88,7 @@ export default function StubPreviewModal({
         <Modal open={open} onClose={onClose} maxWidth="max-w-lg">
             {loading && (
                 <>
-                    <ModalHeader title="Loading..." onClose={onClose} />
+                    <ModalHeader title={t("common.loading")} onClose={onClose} />
                     <div className="flex items-center justify-center p-8">
                         <i
                             className="fa-solid fa-circle-notch fa-spin text-base"
@@ -117,7 +119,7 @@ export default function StubPreviewModal({
                                     className="ml-1"
                                     style={badgeWarningStyle}
                                 >
-                                    Stub
+                                    {t("entries.stub.badge")}
                                 </span>
                             </div>
                         )}
@@ -144,7 +146,7 @@ export default function StubPreviewModal({
                                         className="text-sm italic"
                                         style={emptySummaryStyle}
                                     >
-                                        No summary yet.
+                                        {t("entries.stub.no_summary")}
                                     </p>
                                 )}
                             </div>
@@ -177,12 +179,12 @@ export default function StubPreviewModal({
 
             {!loading && !preview && (
                 <>
-                    <ModalHeader title="Not Found" onClose={onClose} />
+                    <ModalHeader title={t("entries.stub.not_found")} onClose={onClose} />
                     <div
                         className="p-6 text-center text-sm"
                         style={notFoundStyle}
                     >
-                        Could not load entry data.
+                        {t("entries.stub.not_found_body")}
                     </div>
                 </>
             )}
