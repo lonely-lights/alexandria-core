@@ -103,6 +103,31 @@ return [
     'tree.detail.empty_subtitle.plural' => ':total entries across :roots root nodes',
     'tree.detail.empty_hint' => 'Choose an entry from the tree to view its details.',
 
+    // ── Timeline view (TimelineView.tsx) ────────────────────────────
+    'timeline.intro.title' => 'Timeline View',
+    'timeline.intro.body' => 'Choose a date field to position entries on a timeline. Optionally add an end date for ranges and group entries into swim lanes.',
+    'timeline.intro.configure' => 'Configure Timeline',
+    'timeline.count.singular' => ':count entry',
+    'timeline.count.plural' => ':count entries',
+    'timeline.capped' => '(max :max)',
+    'timeline.hidden_range.label' => ':count outside range',
+    'timeline.hidden_range.tooltip' => 'Click to adjust display range',
+    'timeline.zoom_in' => 'Zoom in',
+    'timeline.zoom_out' => 'Zoom out',
+    'timeline.configure' => 'Configure',
+    'timeline.empty.no_dated_entries' => 'No entries with date values found.',
+    'timeline.lane.all_entries' => 'All Entries',
+    'timeline.lane.all_events' => 'All Events',
+    'timeline.lane.ungrouped' => 'Ungrouped',
+    'timeline.lane.split' => 'Split',
+    'timeline.lane.merge' => 'Merge',
+    'timeline.lane.split_tooltip' => 'Split into lanes',
+    'timeline.lane.merge_tooltip' => 'Merge all lanes',
+    'timeline.lane.filter_label' => 'Lanes',
+    'timeline.lane.show_lanes' => 'Show Lanes',
+    'timeline.lane.all' => 'All',
+    'timeline.lane.none' => 'None',
+
     // ── Tree modals (modals/tree/*.tsx) ─────────────────────────────
     // Child blueprint picker
     'tree.child_blueprints.title' => 'Child Blueprints',

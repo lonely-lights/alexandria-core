@@ -1,25 +1,48 @@
-import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
-import { useDateFormatters } from '@alexandria/lib/formatDate';
 import {
-    ZOOM_INDEX, PX_PER_UNIT, ITEM_ROW_HEIGHT, LANE_PADDING, gridUnitYears, formatAxisLabel,
-    layoutItems, laneHeight, formatEntryDate, parseYear,
-    type DateFmt, type LayoutItem, type TimeBreak, type Year,
-} from '@alexandria/lib/timelineUtils';
-import { useTimelineModel } from '@alexandria/lib/useTimelineModel';
-import TimelineAxis from '@alexandria/components/timeline/TimelineAxis';
-import TimelineBreakOverlay from '@alexandria/components/timeline/TimelineBreakOverlay';
-import Tooltip from '@alexandria/components/ui/Tooltip';
-import MentionAwareContent from '@alexandria/components/ui/MentionAwareContent';
-import { ColumnConfigModal } from './modals/BlueprintSettingsModal';
-import type { AvailableColumn, BlueprintDetail, SiblingBlueprint } from '@alexandria/types/blueprints';
+    type CSSProperties,
+    useState,
+    useEffect,
+    useRef,
+    useMemo,
+    type ReactNode,
+} from "react";
+import { useDateFormatters } from "@alexandria/lib/formatDate";
+import useT from "@alexandria/hooks/useT";
+import {
+    ZOOM_INDEX,
+    PX_PER_UNIT,
+    ITEM_ROW_HEIGHT,
+    LANE_PADDING,
+    gridUnitYears,
+    formatAxisLabel,
+    layoutItems,
+    laneHeight,
+    formatEntryDate,
+    parseYear,
+    type DateFmt,
+    type LayoutItem,
+    type TimeBreak,
+    type Year,
+} from "@alexandria/lib/timelineUtils";
+import { useTimelineModel } from "@alexandria/lib/useTimelineModel";
+import TimelineAxis from "@alexandria/components/timeline/TimelineAxis";
+import TimelineBreakOverlay from "@alexandria/components/timeline/TimelineBreakOverlay";
+import Tooltip from "@alexandria/components/ui/Tooltip";
+import MentionAwareContent from "@alexandria/components/ui/MentionAwareContent";
+import { ColumnConfigModal } from "./modals/BlueprintSettingsModal";
+import type {
+    AvailableColumn,
+    BlueprintDetail,
+    SiblingBlueprint,
+} from "@alexandria/types/blueprints";
 import type {
     TimelineConfig,
     TimelineEntry,
     TimelineLane,
     TimelineDataResponse,
     TimelineZoomLevel,
-} from '@alexandria/types/timeline';
-import { ZOOM_LEVELS, defaultTimelineConfig } from '@alexandria/types/timeline';
+} from "@alexandria/types/timeline";
+import { ZOOM_LEVELS, defaultTimelineConfig } from "@alexandria/types/timeline";
 
 interface Props {
     projectId: number;
@@ -31,19 +54,39 @@ interface Props {
     listableBlueprints: SiblingBlueprint[];
     relationshipBlueprints: SiblingBlueprint[];
     referencingRelationshipBlueprints: SiblingBlueprint[];
-    timelineBlueprints?: Array<{ id: number; name: string; slug: string; icon: string; fields: Array<{ name: string; label: string; type: string; target_blueprint_slug: string | null }> }>;
+    timelineBlueprints?: Array<{
+        id: number;
+        name: string;
+        slug: string;
+        icon: string;
+        fields: Array<{
+            name: string;
+            label: string;
+            type: string;
+            target_blueprint_slug: string | null;
+        }>;
+    }>;
 }
 
 /* ─── Rich tooltip content ─── */
 
-function EntryTooltipContent({ entry, fmtDate }: { entry: TimelineEntry; fmtDate: DateFmt }): ReactNode {
+function EntryTooltipContent({
+    entry,
+    fmtDate,
+}: {
+    entry: TimelineEntry;
+    fmtDate: DateFmt;
+}): ReactNode {
     return (
         <div className="max-w-xs space-y-1 text-left">
             <div className="font-semibold text-xs">{entry.name}</div>
-            <div className="text-[10px] opacity-80">{formatEntryDate(entry, fmtDate)}</div>
+            <div className="text-[10px] opacity-80">
+                {formatEntryDate(entry, fmtDate)}
+            </div>
             {entry.group_key && (
                 <div className="text-[10px] opacity-60">
-                    <i className="fa-solid fa-tag mr-1" />{entry.group_key}
+                    <i className="fa-solid fa-tag mr-1" />
+                    {entry.group_key}
                 </div>
             )}
             {entry.summary_html ? (
@@ -57,71 +100,282 @@ function EntryTooltipContent({ entry, fmtDate }: { entry: TimelineEntry; fmtDate
                     className="prose prose-sm line-clamp-3 max-w-none text-[10px] opacity-80 pt-0.5 [&_p]:m-0 [&_a]:!text-inherit [&_a]:underline [&_a]:font-semibold [&_strong]:text-inherit [&_em]:text-inherit"
                 />
             ) : entry.summary ? (
-                <div className="text-[10px] opacity-70 line-clamp-3 pt-0.5">{entry.summary}</div>
+                <div className="text-[10px] opacity-70 line-clamp-3 pt-0.5">
+                    {entry.summary}
+                </div>
             ) : null}
         </div>
     );
 }
 
 /* ─── Lane color palette ──
-   The previous LANE_COLORS shipped `border-<color>/30` without a width
-   utility, so those border classes were dead weight — the lane header
-   never got a visible rail. Splitting the palette into explicit
-   header-tint + rail-color lists means both parts actually render. */
+   Each lane cycles through 7 named tokens. Centralising the token
+   reference per row means the four visual pieces (header tint,
+   colored rail, dot, range-bar) stay color-correlated; previously
+   the parallel-array shape (one array per piece) made it easy to
+   drift them out of sync.
 
-const LANE_HEADER_TINTS = [
-    'bg-primary/10',
-    'bg-secondary/10',
-    'bg-accent/10',
-    'bg-info/10',
-    'bg-success/10',
-    'bg-warning/10',
-    'bg-error/10',
+   Tokens are theme-driven (brand or status) so a preset swap
+   repaints the whole timeline without touching this file. */
+
+interface LanePaletteEntry {
+    token: string; // CSS var or value expression
+    label: string;
+}
+
+const LANE_PALETTE: LanePaletteEntry[] = [
+    { token: "var(--theme-brand-primary-500)", label: "primary" },
+    { token: "var(--theme-brand-secondary-500)", label: "secondary" },
+    { token: "var(--theme-brand-accent-500)", label: "accent" },
+    { token: "var(--theme-status-info-stroke)", label: "info" },
+    { token: "var(--theme-status-success-stroke)", label: "success" },
+    { token: "var(--theme-status-warning-stroke)", label: "warning" },
+    { token: "var(--theme-status-error-stroke)", label: "error" },
 ];
 
-const LANE_RAIL_COLORS = [
-    'border-l-primary',
-    'border-l-secondary',
-    'border-l-accent',
-    'border-l-info',
-    'border-l-success',
-    'border-l-warning',
-    'border-l-error',
-];
+/* Per-lane visual style derived from the palette index. */
+function laneHeaderStyle(idx: number): CSSProperties {
+    const token = LANE_PALETTE[idx % LANE_PALETTE.length].token;
+    return {
+        background: `color-mix(in srgb, ${token} 10%, transparent)`,
+        borderLeftColor: token,
+    };
+}
 
-const DOT_COLORS = [
-    'bg-primary',
-    'bg-secondary',
-    'bg-accent',
-    'bg-info',
-    'bg-success',
-    'bg-warning',
-    'bg-error',
-];
+function laneDotStyle(idx: number): CSSProperties {
+    return { background: LANE_PALETTE[idx % LANE_PALETTE.length].token };
+}
 
-/* Range-bar tints for entries that span a date range. Paired index-
-   for-index with DOT_COLORS so the bar reads as a dimmer version of
-   the lane's dot color. */
-const RANGE_BAR_COLORS = [
-    'bg-primary/40',
-    'bg-secondary/40',
-    'bg-accent/40',
-    'bg-info/40',
-    'bg-success/40',
-    'bg-warning/40',
-    'bg-error/40',
-];
+function laneRangeBarStyle(idx: number): CSSProperties {
+    const token = LANE_PALETTE[idx % LANE_PALETTE.length].token;
+    return { background: `color-mix(in srgb, ${token} 40%, transparent)` };
+}
+
+/* Hollow stub-dot — used in place of the lane's solid dot when an
+   entry is a stub. Border = faded base-content, no fill. */
+const stubDotStyle: CSSProperties = {
+    background: "transparent",
+    borderColor:
+        "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
+};
+
+const stubRangeBarStyle: CSSProperties = {
+    background: "transparent",
+    borderTop:
+        "1px dashed color-mix(in srgb, var(--theme-base-content) 30%, transparent)",
+};
+
+const stubRangeBarVerticalStyle: CSSProperties = {
+    background: "transparent",
+    borderLeft:
+        "1px dashed color-mix(in srgb, var(--theme-base-content) 30%, transparent)",
+};
+
+/* ── Theme-token style recipes ──────────────────────────────────── */
+
+const subtitle70: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 70%, transparent)",
+};
+const subtitle60: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
+};
+const subtitle50: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+};
+const subtitle30: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 30%, transparent)",
+};
+
+const panelShellStyle: CSSProperties = {
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    borderRadius: "var(--theme-radius-card)",
+};
+
+const panelInnerStyle: CSSProperties = {
+    background: "var(--theme-base-200)",
+    boxShadow:
+        "0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 8%, transparent)",
+    borderRadius: "inherit",
+};
+
+const axisStickyStyle: CSSProperties = {
+    borderBottom:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 25%, transparent)",
+    background: "color-mix(in srgb, var(--theme-base-200) 95%, transparent)",
+    backdropFilter: "blur(4px)",
+};
+
+const axisCornerStyle: CSSProperties = {
+    borderRight:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
+};
+
+const laneRowBorderStyle: CSSProperties = {
+    borderBottom:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+};
+
+const laneHeaderColumnStyle: CSSProperties = {
+    borderLeftWidth: "4px",
+    borderLeftStyle: "solid",
+    borderRight:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
+};
+
+function laneRowBgStyle(isEven: boolean): CSSProperties {
+    return {
+        background: isEven
+            ? "color-mix(in srgb, var(--theme-base-100) 60%, transparent)"
+            : "color-mix(in srgb, var(--theme-base-200) 40%, transparent)",
+    };
+}
+
+const gridLineStyle: CSSProperties = {
+    borderLeft:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+};
+
+const gridLineHorizontalStyle: CSSProperties = {
+    borderTop:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+};
+
+const axisTickStyle: CSSProperties = {
+    background:
+        "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
+};
+
+const verticalAxisColStyle: CSSProperties = {
+    borderRight:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 25%, transparent)",
+    background: "color-mix(in srgb, var(--theme-base-200) 80%, transparent)",
+};
+
+const segmentedToolbarStyle: CSSProperties = {
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    borderRadius: "var(--theme-radius-button)",
+    overflow: "hidden",
+};
+
+const segmentBtnActiveStyle: CSSProperties = {
+    background: "var(--theme-brand-primary-500)",
+    color: "var(--theme-brand-primary-content)",
+};
+
+const segmentBtnIdleStyle: CSSProperties = {
+    background: "transparent",
+    color: "var(--theme-base-content)",
+};
+
+const ghostBtnClass =
+    "alex-btn alex-btn--ghost inline-flex items-center justify-center gap-1 px-2 py-1 text-xs";
+const primaryBtnClass =
+    "alex-btn alex-btn--primary inline-flex items-center justify-center gap-1 px-2 py-1 text-xs";
+const warningBtnClass =
+    "alex-btn alex-btn--warning inline-flex items-center justify-center gap-1 px-2 py-1 text-xs";
+
+const ghostBtnBorderedStyle: CSSProperties = {
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    borderRadius: "var(--theme-radius-button)",
+};
+
+const statBadgeBase: CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "0.25rem",
+    height: "1.5rem",
+    padding: "0 0.5rem",
+    fontSize: "0.75rem",
+    fontWeight: 400,
+    borderRadius: "var(--theme-radius-badge)",
+};
+
+const secondaryBadgeStyle: CSSProperties = {
+    ...statBadgeBase,
+    background: "var(--theme-brand-secondary-500)",
+    color: "var(--theme-brand-secondary-content)",
+};
+
+const warningBadgeStyle: CSSProperties = {
+    ...statBadgeBase,
+    background: "var(--theme-status-warning-stroke)",
+    color: "var(--theme-status-warning-content)",
+    cursor: "pointer",
+    border: "none",
+};
+
+const cappedTextStyle: CSSProperties = {
+    color: "var(--theme-status-warning-stroke)",
+};
+
+const laneFilterPopupStyle: CSSProperties = {
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    background: "var(--theme-base-100)",
+    borderRadius: "var(--theme-radius-card)",
+    boxShadow: "0 12px 32px rgba(0, 0, 0, 0.18)",
+    overflow: "hidden",
+};
+
+const laneFilterHeaderStyle: CSSProperties = {
+    borderBottom:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+};
+
+const primaryLinkStyle: CSSProperties = {
+    color: "var(--theme-brand-primary-500)",
+};
+
+const dotMiniBadgeStyle: CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "0.0625rem 0.375rem",
+    fontSize: "0.625rem",
+    fontWeight: 600,
+    borderRadius: "var(--theme-radius-badge)",
+    background:
+        "color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    color: "color-mix(in srgb, var(--theme-base-content) 70%, transparent)",
+};
+
+const introIconWrapStyle: CSSProperties = {
+    background:
+        "color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)",
+};
+
+const dotBorderStyle: CSSProperties = {
+    borderWidth: "2px",
+    borderStyle: "solid",
+    borderColor: "var(--theme-base-100)",
+    boxShadow:
+        "0 1px 2px 0 color-mix(in srgb, var(--theme-base-content) 8%, transparent)",
+};
 
 /* ─── Main Component ─── */
 
-export default function TimelineView({ projectId, blueprintId, availableColumns, initialConfig, blueprint, project, listableBlueprints, relationshipBlueprints, referencingRelationshipBlueprints, timelineBlueprints }: Props) {
+export default function TimelineView({
+    projectId,
+    blueprintId,
+    availableColumns,
+    initialConfig,
+    blueprint,
+    project,
+    listableBlueprints,
+    relationshipBlueprints,
+    referencingRelationshipBlueprints,
+    timelineBlueprints,
+}: Props) {
+    const t = useT();
     const { fmtSmart } = useDateFormatters();
-    const [config, setConfig] = useState<TimelineConfig>(initialConfig ?? defaultTimelineConfig());
+    const [config, setConfig] = useState<TimelineConfig>(
+        initialConfig ?? defaultTimelineConfig(),
+    );
     const [data, setData] = useState<TimelineDataResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [hoveredEntry, setHoveredEntry] = useState<number | null>(null);
     const [showSettingsModal, setShowSettingsModal] = useState(false);
-    const [settingsInitialMenu, setSettingsInitialMenu] = useState<string | undefined>(undefined);
+    const [settingsInitialMenu, setSettingsInitialMenu] = useState<
+        string | undefined
+    >(undefined);
     const [hiddenLanes, setHiddenLanes] = useState<Set<string>>(new Set());
     const [mergeLanes, setMergeLanes] = useState(false);
     const [showLaneFilter, setShowLaneFilter] = useState(false);
@@ -132,12 +386,15 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
     useEffect(() => {
         if (!showLaneFilter) return;
         function handleClick(e: MouseEvent) {
-            if (laneFilterRef.current && !laneFilterRef.current.contains(e.target as Node)) {
+            if (
+                laneFilterRef.current &&
+                !laneFilterRef.current.contains(e.target as Node)
+            ) {
                 setShowLaneFilter(false);
             }
         }
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
     }, [showLaneFilter]);
 
     const isConfigured = !!config.date_field;
@@ -146,11 +403,18 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
     useEffect(() => {
         function handleOpenSettings(e: Event) {
             const detail = (e as CustomEvent).detail;
-            setSettingsInitialMenu(detail?.menu ?? 'main');
+            setSettingsInitialMenu(detail?.menu ?? "main");
             setShowSettingsModal(true);
         }
-        window.addEventListener('alexandria:open-blueprint-settings', handleOpenSettings);
-        return () => window.removeEventListener('alexandria:open-blueprint-settings', handleOpenSettings);
+        window.addEventListener(
+            "alexandria:open-blueprint-settings",
+            handleOpenSettings,
+        );
+        return () =>
+            window.removeEventListener(
+                "alexandria:open-blueprint-settings",
+                handleOpenSettings,
+            );
     }, []);
 
     /* ── Fetch data ── */
@@ -161,19 +425,29 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
         const params = new URLSearchParams({
             date_field: config.date_field!,
         });
-        if (config.end_date_field) params.set('end_date_field', config.end_date_field);
-        if (config.group_by) params.set('group_by', config.group_by);
+        if (config.end_date_field)
+            params.set("end_date_field", config.end_date_field);
+        if (config.group_by) params.set("group_by", config.group_by);
 
-        fetch(`/api/v1/projects/${projectId}/blueprints/${blueprintId}/timeline?${params}`, {
-            credentials: 'same-origin',
-        })
+        fetch(
+            `/api/v1/projects/${projectId}/blueprints/${blueprintId}/timeline?${params}`,
+            {
+                credentials: "same-origin",
+            },
+        )
             .then((r) => r.json())
             .then((json: TimelineDataResponse) => {
                 setData(json);
                 setLoading(false);
             })
             .catch(() => setLoading(false));
-    }, [projectId, blueprintId, config.date_field, config.end_date_field, config.group_by]);
+    }, [
+        projectId,
+        blueprintId,
+        config.date_field,
+        config.end_date_field,
+        config.group_by,
+    ]);
 
     /* ── Timeline model (shared) ──
        All positioning math — year range, window-filtering, break
@@ -186,14 +460,29 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
         displayStartYear: config.display_start_year,
         displayEndYear: config.display_end_year,
     });
-    const { visibleEntries, hiddenCount, pxPerYear, breaks, dateToPos, totalPx, breakLefts, gridLines } = model;
+    const {
+        visibleEntries,
+        hiddenCount,
+        pxPerYear,
+        breaks,
+        dateToPos,
+        totalPx,
+        breakLefts,
+        gridLines,
+    } = model;
 
     /* ── Build lanes ── */
     const lanes: TimelineLane[] = useMemo(() => {
         if (!visibleEntries.length) return [];
 
         if (!config.group_by) {
-            return [{ key: '__all', label: 'All Entries', entries: visibleEntries }];
+            return [
+                {
+                    key: "__all",
+                    label: t("blueprints.timeline.lane.all_entries"),
+                    entries: visibleEntries,
+                },
+            ];
         }
 
         const grouped = new Map<string, TimelineEntry[]>();
@@ -217,11 +506,15 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
         result.sort((a, b) => a.label.localeCompare(b.label));
 
         if (ungrouped.length > 0) {
-            result.push({ key: '__ungrouped', label: 'Ungrouped', entries: ungrouped });
+            result.push({
+                key: "__ungrouped",
+                label: t("blueprints.timeline.lane.ungrouped"),
+                entries: ungrouped,
+            });
         }
 
         return result;
-    }, [visibleEntries, config.group_by]);
+    }, [visibleEntries, config.group_by, t]);
 
     /* ── Apply lane filtering and merging ── */
     const visibleLanes: TimelineLane[] = useMemo(() => {
@@ -231,8 +524,14 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
 
         // Merge all visible lanes into one
         const allEntries = filtered.flatMap((l) => l.entries);
-        return [{ key: '__merged', label: 'All Events', entries: allEntries }];
-    }, [lanes, hiddenLanes, mergeLanes]);
+        return [
+            {
+                key: "__merged",
+                label: t("blueprints.timeline.lane.all_events"),
+                entries: allEntries,
+            },
+        ];
+    }, [lanes, hiddenLanes, mergeLanes, t]);
 
     void pxPerYear; // destructured from the model for future needs
 
@@ -244,7 +543,8 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
 
     function zoomOut() {
         const idx = ZOOM_INDEX[config.zoom];
-        if (idx < ZOOM_LEVELS.length - 1) setConfig({ ...config, zoom: ZOOM_LEVELS[idx + 1].key });
+        if (idx < ZOOM_LEVELS.length - 1)
+            setConfig({ ...config, zoom: ZOOM_LEVELS[idx + 1].key });
     }
 
     /* ── Auto-detect zoom from data range (now year-based) ── */
@@ -266,7 +566,7 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
     }, [data?.date_range]);
 
     function openTimelineSettings() {
-        setSettingsInitialMenu('timeline');
+        setSettingsInitialMenu("timeline");
         setShowSettingsModal(true);
     }
 
@@ -275,21 +575,40 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
         return (
             <>
                 <div className="flex flex-col items-center justify-center py-24">
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                        <i className="fa-solid fa-timeline text-2xl text-primary" />
+                    <div
+                        className="mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+                        style={introIconWrapStyle}
+                    >
+                        <i
+                            className="fa-solid fa-timeline text-2xl"
+                            style={{ color: "var(--theme-brand-primary-500)" }}
+                        />
                     </div>
-                    <h3 className="mb-2 text-lg font-semibold">Timeline View</h3>
-                    <p className="mb-6 max-w-sm text-center text-sm text-base-content/50">
-                        Choose a date field to position entries on a timeline. Optionally add an end date for ranges and group entries into swim lanes.
+                    <h3 className="mb-2 text-lg font-semibold">
+                        {t("blueprints.timeline.intro.title")}
+                    </h3>
+                    <p
+                        className="mb-6 max-w-sm text-center text-sm"
+                        style={subtitle50}
+                    >
+                        {t("blueprints.timeline.intro.body")}
                     </p>
-                    <button type="button" onClick={openTimelineSettings} className="btn btn-primary btn-sm gap-2">
+                    <button
+                        type="button"
+                        onClick={openTimelineSettings}
+                        className="alex-btn alex-btn--primary inline-flex items-center gap-2 px-3 py-1.5 text-sm"
+                        style={{ borderRadius: "var(--theme-radius-button)" }}
+                    >
                         <i className="fa-solid fa-gear text-xs" />
-                        Configure Timeline
+                        {t("blueprints.timeline.intro.configure")}
                     </button>
                 </div>
                 <ColumnConfigModal
                     open={showSettingsModal}
-                    onClose={() => { setShowSettingsModal(false); setSettingsInitialMenu(undefined); }}
+                    onClose={() => {
+                        setShowSettingsModal(false);
+                        setSettingsInitialMenu(undefined);
+                    }}
                     columns={[]}
                     sortableColumns={[]}
                     availableColumns={availableColumns}
@@ -300,7 +619,9 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
                     project={project}
                     listableBlueprints={listableBlueprints}
                     relationshipBlueprints={relationshipBlueprints}
-                    referencingRelationshipBlueprints={referencingRelationshipBlueprints}
+                    referencingRelationshipBlueprints={
+                        referencingRelationshipBlueprints
+                    }
                     initialMenu={settingsInitialMenu}
                     timelineConfig={config}
                     onTimelineConfigChange={setConfig}
@@ -310,7 +631,7 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
         );
     }
 
-    const isHorizontal = config.orientation === 'horizontal';
+    const isHorizontal = config.orientation === "horizontal";
     const LANE_HEADER_SIZE = 140; // px for lane label column/row
     const AXIS_SIZE = 40; // px for the date axis
 
@@ -320,10 +641,26 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
             <div className="flex flex-wrap items-center gap-2">
                 {/* Stats badge */}
                 {data && (
-                    <span className="badge badge-secondary h-6 gap-1 font-normal text-xs">
-                        <i className="fa-solid fa-clock-rotate-left text-[9px] text-secondary-content/70" />
-                        {data.total} {data.total === 1 ? 'entry' : 'entries'}
-                        {data.capped && <span className="text-warning">(max 500)</span>}
+                    <span style={secondaryBadgeStyle}>
+                        <i
+                            className="fa-solid fa-clock-rotate-left text-[9px]"
+                            style={{
+                                color: "color-mix(in srgb, var(--theme-brand-secondary-content) 70%, transparent)",
+                            }}
+                        />
+                        {t(
+                            data.total === 1
+                                ? "blueprints.timeline.count.singular"
+                                : "blueprints.timeline.count.plural",
+                        ).replace(":count", String(data.total))}
+                        {data.capped && (
+                            <span style={cappedTextStyle}>
+                                {t("blueprints.timeline.capped").replace(
+                                    ":max",
+                                    "500",
+                                )}
+                            </span>
+                        )}
                     </span>
                 )}
 
@@ -335,27 +672,44 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
                     <button
                         type="button"
                         onClick={openTimelineSettings}
-                        className="badge badge-warning h-6 gap-1 font-normal text-xs"
-                        title="Click to adjust display range"
+                        style={warningBadgeStyle}
+                        title={t("blueprints.timeline.hidden_range.tooltip")}
                     >
                         <i className="fa-solid fa-eye-slash text-[9px]" />
-                        {hiddenCount} outside range
+                        {t("blueprints.timeline.hidden_range.label").replace(
+                            ":count",
+                            String(hiddenCount),
+                        )}
                     </button>
                 )}
 
                 {/* Orientation toggle */}
-                <div className="flex overflow-hidden rounded-lg border border-base-content/10">
+                <div className="flex" style={segmentedToolbarStyle}>
                     <button
                         type="button"
-                        onClick={() => setConfig({ ...config, orientation: 'horizontal' })}
-                        className={`btn btn-xs gap-1 rounded-none border-0 ${isHorizontal ? 'btn-primary' : 'btn-ghost'}`}
+                        onClick={() =>
+                            setConfig({ ...config, orientation: "horizontal" })
+                        }
+                        className="inline-flex items-center justify-center gap-1 px-2 py-1 text-xs"
+                        style={
+                            isHorizontal
+                                ? segmentBtnActiveStyle
+                                : segmentBtnIdleStyle
+                        }
                     >
                         <i className="fa-solid fa-arrows-left-right text-[10px]" />
                     </button>
                     <button
                         type="button"
-                        onClick={() => setConfig({ ...config, orientation: 'vertical' })}
-                        className={`btn btn-xs gap-1 rounded-none border-0 ${!isHorizontal ? 'btn-primary' : 'btn-ghost'}`}
+                        onClick={() =>
+                            setConfig({ ...config, orientation: "vertical" })
+                        }
+                        className="inline-flex items-center justify-center gap-1 px-2 py-1 text-xs"
+                        style={
+                            !isHorizontal
+                                ? segmentBtnActiveStyle
+                                : segmentBtnIdleStyle
+                        }
                     >
                         <i className="fa-solid fa-arrows-up-down text-[10px]" />
                     </button>
@@ -363,11 +717,26 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
 
                 {/* Zoom controls */}
                 <div className="flex items-center gap-1">
-                    <button type="button" onClick={zoomIn} className="btn btn-ghost btn-xs" title="Zoom in">
+                    <button
+                        type="button"
+                        onClick={zoomIn}
+                        className={ghostBtnClass}
+                        title={t("blueprints.timeline.zoom_in")}
+                    >
                         <i className="fa-solid fa-magnifying-glass-plus text-xs" />
                     </button>
-                    <span className="min-w-[4.5rem] text-center text-xs text-base-content/50">{ZOOM_LEVELS[ZOOM_INDEX[config.zoom]].label}</span>
-                    <button type="button" onClick={zoomOut} className="btn btn-ghost btn-xs" title="Zoom out">
+                    <span
+                        className="min-w-[4.5rem] text-center text-xs"
+                        style={subtitle50}
+                    >
+                        {ZOOM_LEVELS[ZOOM_INDEX[config.zoom]].label}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={zoomOut}
+                        className={ghostBtnClass}
+                        title={t("blueprints.timeline.zoom_out")}
+                    >
                         <i className="fa-solid fa-magnifying-glass-minus text-xs" />
                     </button>
                 </div>
@@ -381,43 +750,116 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
                         <button
                             type="button"
                             onClick={() => setMergeLanes(!mergeLanes)}
-                            className={`btn btn-xs gap-1 ${mergeLanes ? 'btn-primary' : 'btn-ghost border-base-content/10'}`}
-                            title={mergeLanes ? 'Split into lanes' : 'Merge all lanes'}
+                            className={
+                                mergeLanes ? primaryBtnClass : ghostBtnClass
+                            }
+                            style={
+                                mergeLanes ? undefined : ghostBtnBorderedStyle
+                            }
+                            title={
+                                mergeLanes
+                                    ? t(
+                                          "blueprints.timeline.lane.split_tooltip",
+                                      )
+                                    : t(
+                                          "blueprints.timeline.lane.merge_tooltip",
+                                      )
+                            }
                         >
-                            <i className={`fa-solid ${mergeLanes ? 'fa-table-columns' : 'fa-compress'} text-[10px]`} />
-                            {mergeLanes ? 'Split' : 'Merge'}
+                            <i
+                                className={`fa-solid ${mergeLanes ? "fa-table-columns" : "fa-compress"} text-[10px]`}
+                            />
+                            {mergeLanes
+                                ? t("blueprints.timeline.lane.split")
+                                : t("blueprints.timeline.lane.merge")}
                         </button>
 
                         {/* Lane visibility filter */}
                         <div className="relative" ref={laneFilterRef}>
                             <button
                                 type="button"
-                                onClick={() => setShowLaneFilter(!showLaneFilter)}
-                                className={`btn btn-xs gap-1 ${hiddenLanes.size > 0 ? 'btn-warning' : 'btn-ghost border-base-content/10'}`}
+                                onClick={() =>
+                                    setShowLaneFilter(!showLaneFilter)
+                                }
+                                className={
+                                    hiddenLanes.size > 0
+                                        ? warningBtnClass
+                                        : ghostBtnClass
+                                }
+                                style={
+                                    hiddenLanes.size > 0
+                                        ? undefined
+                                        : ghostBtnBorderedStyle
+                                }
                             >
                                 <i className="fa-solid fa-filter text-[10px]" />
-                                Lanes
+                                {t("blueprints.timeline.lane.filter_label")}
                                 {hiddenLanes.size > 0 && (
-                                    <span className="badge badge-xs">{lanes.length - hiddenLanes.size}/{lanes.length}</span>
+                                    <span style={dotMiniBadgeStyle}>
+                                        {lanes.length - hiddenLanes.size}/
+                                        {lanes.length}
+                                    </span>
                                 )}
                             </button>
                             {showLaneFilter && (
-                                <div className="absolute right-0 top-full z-30 mt-1 w-56 overflow-hidden rounded-lg border border-base-content/10 bg-base-100 shadow-xl">
-                                    <div className="border-b border-base-content/10 px-3 py-2">
+                                <div
+                                    className="absolute right-0 top-full z-30 mt-1 w-56"
+                                    style={laneFilterPopupStyle}
+                                >
+                                    <div
+                                        className="px-3 py-2"
+                                        style={laneFilterHeaderStyle}
+                                    >
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-medium text-base-content/70">Show Lanes</span>
+                                            <span
+                                                className="text-xs font-medium"
+                                                style={subtitle70}
+                                            >
+                                                {t(
+                                                    "blueprints.timeline.lane.show_lanes",
+                                                )}
+                                            </span>
                                             <div className="flex gap-1">
                                                 <button
                                                     type="button"
-                                                    onClick={() => setHiddenLanes(new Set())}
-                                                    className="text-[10px] text-primary hover:underline"
-                                                >All</button>
-                                                <span className="text-base-content/20">|</span>
+                                                    onClick={() =>
+                                                        setHiddenLanes(
+                                                            new Set(),
+                                                        )
+                                                    }
+                                                    className="text-[10px] hover:underline"
+                                                    style={primaryLinkStyle}
+                                                >
+                                                    {t(
+                                                        "blueprints.timeline.lane.all",
+                                                    )}
+                                                </button>
+                                                <span
+                                                    style={{
+                                                        color: "color-mix(in srgb, var(--theme-base-content) 20%, transparent)",
+                                                    }}
+                                                >
+                                                    |
+                                                </span>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setHiddenLanes(new Set(lanes.map((l) => l.key)))}
-                                                    className="text-[10px] text-primary hover:underline"
-                                                >None</button>
+                                                    onClick={() =>
+                                                        setHiddenLanes(
+                                                            new Set(
+                                                                lanes.map(
+                                                                    (l) =>
+                                                                        l.key,
+                                                                ),
+                                                            ),
+                                                        )
+                                                    }
+                                                    className="text-[10px] hover:underline"
+                                                    style={primaryLinkStyle}
+                                                >
+                                                    {t(
+                                                        "blueprints.timeline.lane.none",
+                                                    )}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -425,22 +867,41 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
                                         {lanes.map((lane, i) => (
                                             <label
                                                 key={lane.key}
-                                                className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-base-200/50"
+                                                className="alex-row flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs"
                                             >
                                                 <input
                                                     type="checkbox"
-                                                    className="checkbox checkbox-xs checkbox-primary"
-                                                    checked={!hiddenLanes.has(lane.key)}
+                                                    checked={
+                                                        !hiddenLanes.has(
+                                                            lane.key,
+                                                        )
+                                                    }
                                                     onChange={() => {
-                                                        const next = new Set(hiddenLanes);
-                                                        if (next.has(lane.key)) next.delete(lane.key);
+                                                        const next = new Set(
+                                                            hiddenLanes,
+                                                        );
+                                                        if (next.has(lane.key))
+                                                            next.delete(
+                                                                lane.key,
+                                                            );
                                                         else next.add(lane.key);
                                                         setHiddenLanes(next);
                                                     }}
+                                                    style={{
+                                                        accentColor:
+                                                            "var(--theme-brand-primary-500)",
+                                                    }}
                                                 />
-                                                <div className={`h-2.5 w-2.5 rounded-full ${DOT_COLORS[i % DOT_COLORS.length]}`} />
-                                                <span className="flex-1 truncate">{lane.label}</span>
-                                                <span className="text-base-content/30">{lane.entries.length}</span>
+                                                <div
+                                                    className="h-2.5 w-2.5 rounded-full"
+                                                    style={laneDotStyle(i)}
+                                                />
+                                                <span className="flex-1 truncate">
+                                                    {lane.label}
+                                                </span>
+                                                <span style={subtitle30}>
+                                                    {lane.entries.length}
+                                                </span>
                                             </label>
                                         ))}
                                     </div>
@@ -451,9 +912,13 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
                 )}
 
                 {/* Config button */}
-                <button type="button" onClick={openTimelineSettings} className="btn btn-ghost btn-xs gap-1">
+                <button
+                    type="button"
+                    onClick={openTimelineSettings}
+                    className={ghostBtnClass}
+                >
                     <i className="fa-solid fa-gear text-xs" />
-                    Configure
+                    {t("blueprints.timeline.configure")}
                 </button>
             </div>
 
@@ -468,53 +933,66 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
                 vertical scrollbar stacked against the window's. The
                 sticky axis / lane headers now stick relative to the
                 page viewport. */}
-            <div className={`paper-board relative w-full rounded-xl border border-base-content/10 ${loading ? 'opacity-60 animate-pulse' : ''}`}>
             <div
-                ref={scrollRef}
-                className="scrollbar-subtle overflow-x-auto bg-base-200 shadow-sm"
-                style={{ borderRadius: 'inherit' }}
+                className={`relative w-full ${loading ? "opacity-60 animate-pulse" : ""}`}
+                style={panelShellStyle}
             >
-                {!data || data.entries.length === 0 ? (
-                    <div className="flex items-center justify-center py-20 text-sm text-base-content/30">
-                        {loading ? 'Loading...' : 'No entries with date values found.'}
-                    </div>
-                ) : isHorizontal ? (
-                    <HorizontalTimeline
-                        lanes={visibleLanes}
-                        gridLines={gridLines}
-                        dateToPos={dateToPos}
-                        totalPx={totalPx}
-                        zoom={config.zoom}
-                        laneHeaderSize={LANE_HEADER_SIZE}
-                        axisSize={AXIS_SIZE}
-                        hoveredEntry={hoveredEntry}
-                        onHover={setHoveredEntry}
-                        fmtDate={fmtSmart}
-                        breaks={breaks}
-                        breakLefts={breakLefts}
-                    />
-                ) : (
-                    <VerticalTimeline
-                        lanes={visibleLanes}
-                        gridLines={gridLines}
-                        dateToPos={dateToPos}
-                        totalPx={totalPx}
-                        zoom={config.zoom}
-                        laneHeaderSize={LANE_HEADER_SIZE}
-                        axisSize={AXIS_SIZE}
-                        hoveredEntry={hoveredEntry}
-                        onHover={setHoveredEntry}
-                        fmtDate={fmtSmart}
-                        breaks={breaks}
-                        breakLefts={breakLefts}
-                    />
-                )}
-            </div>
+                <div
+                    ref={scrollRef}
+                    className="scrollbar-subtle overflow-x-auto"
+                    style={panelInnerStyle}
+                >
+                    {!data || data.entries.length === 0 ? (
+                        <div
+                            className="flex items-center justify-center py-20 text-sm"
+                            style={subtitle30}
+                        >
+                            {loading
+                                ? t("common.loading")
+                                : t(
+                                      "blueprints.timeline.empty.no_dated_entries",
+                                  )}
+                        </div>
+                    ) : isHorizontal ? (
+                        <HorizontalTimeline
+                            lanes={visibleLanes}
+                            gridLines={gridLines}
+                            dateToPos={dateToPos}
+                            totalPx={totalPx}
+                            zoom={config.zoom}
+                            laneHeaderSize={LANE_HEADER_SIZE}
+                            axisSize={AXIS_SIZE}
+                            hoveredEntry={hoveredEntry}
+                            onHover={setHoveredEntry}
+                            fmtDate={fmtSmart}
+                            breaks={breaks}
+                            breakLefts={breakLefts}
+                        />
+                    ) : (
+                        <VerticalTimeline
+                            lanes={visibleLanes}
+                            gridLines={gridLines}
+                            dateToPos={dateToPos}
+                            totalPx={totalPx}
+                            zoom={config.zoom}
+                            laneHeaderSize={LANE_HEADER_SIZE}
+                            axisSize={AXIS_SIZE}
+                            hoveredEntry={hoveredEntry}
+                            onHover={setHoveredEntry}
+                            fmtDate={fmtSmart}
+                            breaks={breaks}
+                            breakLefts={breakLefts}
+                        />
+                    )}
+                </div>
             </div>
 
             <ColumnConfigModal
                 open={showSettingsModal}
-                onClose={() => { setShowSettingsModal(false); setSettingsInitialMenu(undefined); }}
+                onClose={() => {
+                    setShowSettingsModal(false);
+                    setSettingsInitialMenu(undefined);
+                }}
                 columns={[]}
                 sortableColumns={[]}
                 availableColumns={availableColumns}
@@ -525,7 +1003,9 @@ export default function TimelineView({ projectId, blueprintId, availableColumns,
                 project={project}
                 listableBlueprints={listableBlueprints}
                 relationshipBlueprints={relationshipBlueprints}
-                referencingRelationshipBlueprints={referencingRelationshipBlueprints}
+                referencingRelationshipBlueprints={
+                    referencingRelationshipBlueprints
+                }
                 initialMenu={settingsInitialMenu}
                 timelineConfig={config}
                 onTimelineConfigChange={setConfig}
@@ -553,7 +1033,20 @@ interface TimelineCanvasProps {
     breakLefts: number[];
 }
 
-function HorizontalTimeline({ lanes, gridLines, dateToPos, totalPx, zoom, laneHeaderSize, axisSize, hoveredEntry, onHover, fmtDate, breaks, breakLefts }: TimelineCanvasProps) {
+function HorizontalTimeline({
+    lanes,
+    gridLines,
+    dateToPos,
+    totalPx,
+    zoom,
+    laneHeaderSize,
+    axisSize,
+    hoveredEntry,
+    onHover,
+    fmtDate,
+    breaks,
+    breakLefts,
+}: TimelineCanvasProps) {
     // Pre-compute layout for each lane
     const laneLayouts = useMemo(
         () => lanes.map((lane) => layoutItems(lane.entries, dateToPos)),
@@ -563,10 +1056,17 @@ function HorizontalTimeline({ lanes, gridLines, dateToPos, totalPx, zoom, laneHe
     const TRAIL = 40; // right-side breathing room past the final grid line
 
     return (
-        <div className="relative" style={{ minWidth: totalPx + laneHeaderSize + TRAIL }}>
+        <div
+            className="relative"
+            style={{ minWidth: totalPx + laneHeaderSize + TRAIL }}
+        >
             {/* Shared zigzag overlay — offset by laneHeaderSize since
                 the lane-header column is a non-timeline sibling column. */}
-            <TimelineBreakOverlay breaks={breaks} breakLefts={breakLefts} leftOffset={laneHeaderSize} />
+            <TimelineBreakOverlay
+                breaks={breaks}
+                breakLefts={breakLefts}
+                leftOffset={laneHeaderSize}
+            />
 
             {/* Axis row — sticky top. Label container explicitly sized to
                 totalPx + trail so labels/ticks stay aligned with the lane
@@ -574,15 +1074,24 @@ function HorizontalTimeline({ lanes, gridLines, dateToPos, totalPx, zoom, laneHe
                 Bottom border is intentionally stronger (content/25) to
                 read as a clear axis line. */}
             <div
-                className="sticky top-0 z-20 flex border-b border-base-content/25 bg-base-200/95 backdrop-blur-sm"
-                style={{ height: axisSize }}
+                className="sticky top-0 z-20 flex"
+                style={{ height: axisSize, ...axisStickyStyle }}
             >
                 {/* Corner spacer */}
-                <div className="flex-shrink-0 border-r border-base-content/15" style={{ width: laneHeaderSize }} />
+                <div
+                    className="flex-shrink-0"
+                    style={{ width: laneHeaderSize, ...axisCornerStyle }}
+                />
                 {/* Shared axis — break boundaries are flanked by regular
                     gridlines (since break.endYears is snapped to a grid
                     boundary), so no bespoke boundary labels are needed. */}
-                <TimelineAxis gridLines={gridLines} dateToPos={dateToPos} zoom={zoom} width={totalPx + TRAIL} height={axisSize} />
+                <TimelineAxis
+                    gridLines={gridLines}
+                    dateToPos={dateToPos}
+                    zoom={zoom}
+                    width={totalPx + TRAIL}
+                    height={axisSize}
+                />
             </div>
 
             {/* Lanes — alternating bg + colored left-rail on the header
@@ -593,35 +1102,61 @@ function HorizontalTimeline({ lanes, gridLines, dateToPos, totalPx, zoom, laneHe
                 const { items, rowCount } = laneLayouts[laneIdx];
                 const height = laneHeight(rowCount);
                 const isEven = laneIdx % 2 === 0;
-                const rail = LANE_RAIL_COLORS[laneIdx % LANE_RAIL_COLORS.length];
-                const tint = LANE_HEADER_TINTS[laneIdx % LANE_HEADER_TINTS.length];
-                const dot = DOT_COLORS[laneIdx % DOT_COLORS.length];
+                const isLast = laneIdx === lanes.length - 1;
 
                 return (
                     <div
                         key={lane.key}
-                        className={`flex border-b border-base-content/10 last:border-b-0 ${isEven ? 'bg-base-100/60' : 'bg-base-200/40'}`}
-                        style={{ height }}
+                        className="flex"
+                        style={{
+                            height,
+                            ...laneRowBgStyle(isEven),
+                            ...(isLast ? {} : laneRowBorderStyle),
+                        }}
                     >
                         {/* Lane header — colored left rail + tint + count pill */}
                         <div
-                            className={`sticky left-0 z-10 flex flex-shrink-0 items-center gap-2 border-l-4 border-r border-base-content/15 px-3 ${rail} ${tint}`}
-                            style={{ width: laneHeaderSize }}
+                            className="sticky left-0 z-10 flex flex-shrink-0 items-center gap-2 px-3"
+                            style={{
+                                width: laneHeaderSize,
+                                ...laneHeaderColumnStyle,
+                                ...laneHeaderStyle(laneIdx),
+                            }}
                         >
-                            <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${dot}`} aria-hidden="true" />
-                            <span className="flex-1 truncate text-xs font-medium" title={lane.label}>{lane.label}</span>
-                            <span className="text-[10px] tabular-nums text-base-content/50">{lane.entries.length}</span>
+                            <span
+                                className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                                style={laneDotStyle(laneIdx)}
+                                aria-hidden="true"
+                            />
+                            <span
+                                className="flex-1 truncate text-xs font-medium"
+                                title={lane.label}
+                            >
+                                {lane.label}
+                            </span>
+                            <span
+                                className="text-[10px] tabular-nums"
+                                style={subtitle50}
+                            >
+                                {lane.entries.length}
+                            </span>
                         </div>
 
                         {/* Lane content */}
-                        <div className="relative flex-shrink-0" style={{ width: totalPx + TRAIL }}>
+                        <div
+                            className="relative flex-shrink-0"
+                            style={{ width: totalPx + TRAIL }}
+                        >
                             {/* Grid lines — darkened from /5 to /10 so the
                                 column structure reads at a glance. */}
                             {gridLines.map((year, i) => (
                                 <div
                                     key={i}
-                                    className="absolute top-0 h-full border-l border-base-content/10"
-                                    style={{ left: dateToPos(String(year)) }}
+                                    className="absolute top-0 h-full"
+                                    style={{
+                                        left: dateToPos(String(year)),
+                                        ...gridLineStyle,
+                                    }}
                                 />
                             ))}
 
@@ -632,7 +1167,7 @@ function HorizontalTimeline({ lanes, gridLines, dateToPos, totalPx, zoom, laneHe
                                     entry={item.entry}
                                     dateToPos={dateToPos}
                                     row={item.row}
-                                    paletteIdx={laneIdx % DOT_COLORS.length}
+                                    paletteIdx={laneIdx % LANE_PALETTE.length}
                                     isHovered={hoveredEntry === item.entry.id}
                                     onHover={onHover}
                                     fmtDate={fmtDate}
@@ -666,14 +1201,15 @@ function TimelineItemHorizontal({
     if (!entry.start_date) return null;
     const left = dateToPos(entry.start_date);
     const isRange = !!entry.end_date;
-    const rangeWidth = isRange ? Math.max(dateToPos(entry.end_date!) - left, 4) : 0;
+    const rangeWidth = isRange
+        ? Math.max(dateToPos(entry.end_date!) - left, 4)
+        : 0;
     const top = LANE_PADDING + row * ITEM_ROW_HEIGHT;
     const isStub = entry.is_stub;
 
-    const dotClass = DOT_COLORS[paletteIdx];
-    const rangeBarClass = RANGE_BAR_COLORS[paletteIdx];
-
-    const tooltipContent = <EntryTooltipContent entry={entry} fmtDate={fmtDate} />;
+    const tooltipContent = (
+        <EntryTooltipContent entry={entry} fmtDate={fmtDate} />
+    );
 
     /* Dot + name rendering for every entry:
         - Full entries: colored solid dot, name linkable to the entry.
@@ -684,17 +1220,22 @@ function TimelineItemHorizontal({
        below the dot so the duration reads visually without forcing the
        name inside a pill that shrinks to nothing on small ranges. */
     const dotAndLabel = (
-        <span className={`relative flex items-center gap-1.5 ${isStub ? 'cursor-default' : 'cursor-pointer'}`}>
+        <span
+            className={`relative flex items-center gap-1.5 ${isStub ? "cursor-default" : "cursor-pointer"}`}
+        >
             <span
-                className={`h-3 w-3 flex-shrink-0 rounded-full border-2 border-base-100 shadow-sm transition-transform ${
-                    isStub ? 'border-base-content/40 bg-transparent' : dotClass
-                } ${isHovered ? 'scale-150' : ''}`}
+                className={`h-3 w-3 flex-shrink-0 rounded-full transition-transform ${isHovered ? "scale-150" : ""}`}
+                style={{
+                    ...dotBorderStyle,
+                    ...(isStub ? stubDotStyle : laneDotStyle(paletteIdx)),
+                }}
                 aria-hidden="true"
             />
             <span
                 className={`max-w-[14rem] truncate whitespace-nowrap text-[10px] font-medium transition-opacity ${
-                    isStub ? 'italic pr-0.5 text-base-content/50' : 'text-base-content'
-                } ${isHovered ? 'opacity-100' : 'opacity-80'}`}
+                    isStub ? "italic pr-0.5" : ""
+                } ${isHovered ? "opacity-100" : "opacity-80"}`}
+                style={isStub ? subtitle50 : undefined}
             >
                 {entry.name}
             </span>
@@ -703,7 +1244,7 @@ function TimelineItemHorizontal({
 
     return (
         <div
-            className={`absolute ${isHovered ? 'z-30' : 'z-10'}`}
+            className={`absolute ${isHovered ? "z-30" : "z-10"}`}
             style={{ left, top }}
             onMouseEnter={() => onHover(entry.id)}
             onMouseLeave={() => onHover(null)}
@@ -712,10 +1253,13 @@ function TimelineItemHorizontal({
                 vertical center. Dashed for stubs, tinted for full. */}
             {isRange && rangeWidth > 0 && (
                 <span
-                    className={`pointer-events-none absolute left-1.5 top-[5px] h-0.5 rounded-full ${
-                        isStub ? 'border-t border-dashed border-base-content/30 bg-transparent' : rangeBarClass
-                    }`}
-                    style={{ width: rangeWidth }}
+                    className="pointer-events-none absolute left-1.5 top-[5px] h-0.5 rounded-full"
+                    style={{
+                        width: rangeWidth,
+                        ...(isStub
+                            ? stubRangeBarStyle
+                            : laneRangeBarStyle(paletteIdx)),
+                    }}
                     aria-hidden="true"
                 />
             )}
@@ -727,10 +1271,13 @@ function TimelineItemHorizontal({
                 bar visually exits the compressed region). */}
             {isRange && rangeWidth > 4 && (
                 <span
-                    className={`pointer-events-none absolute h-3 w-3 rounded-full border-2 border-base-100 shadow-sm ${
-                        isStub ? 'border-base-content/40 bg-transparent' : dotClass
-                    }`}
-                    style={{ left: rangeWidth, top: 0 }}
+                    className="pointer-events-none absolute h-3 w-3 rounded-full"
+                    style={{
+                        left: rangeWidth,
+                        top: 0,
+                        ...dotBorderStyle,
+                        ...(isStub ? stubDotStyle : laneDotStyle(paletteIdx)),
+                    }}
                     aria-hidden="true"
                 />
             )}
@@ -754,46 +1301,59 @@ function TimelineItemHorizontal({
    Vertical Timeline — time flows top to bottom, lanes side by side
    ═══════════════════════════════════════════════════════════════ */
 
-function VerticalTimeline({ lanes, gridLines, dateToPos, totalPx, zoom, axisSize, hoveredEntry, onHover, fmtDate, breaks, breakLefts }: TimelineCanvasProps) {
+function VerticalTimeline({
+    lanes,
+    gridLines,
+    dateToPos,
+    totalPx,
+    zoom,
+    axisSize,
+    hoveredEntry,
+    onHover,
+    fmtDate,
+    breaks,
+    breakLefts,
+}: TimelineCanvasProps) {
     const BASE_LANE_WIDTH = 140;
     const COL_WIDTH = 120; // px per stacked column within a lane
 
     // Pre-compute layout for each lane (reuses layoutItems with vertical item extents)
     const laneLayouts = useMemo(
-        () => lanes.map((lane) => {
-            // For vertical, "pos" is the top position and "extent" is the vertical height of the item
-            const items: LayoutItem[] = lane.entries
-                .filter((e) => e.start_date)
-                .map((entry) => {
-                    const pos = dateToPos(entry.start_date!);
-                    const isRange = !!entry.end_date;
-                    const extent = isRange
-                        ? Math.max(dateToPos(entry.end_date!) - pos, 24)
-                        : 18; // height of a point event
-                    return { entry, pos, extent, row: 0 };
-                })
-                .sort((a, b) => a.pos - b.pos);
+        () =>
+            lanes.map((lane) => {
+                // For vertical, "pos" is the top position and "extent" is the vertical height of the item
+                const items: LayoutItem[] = lane.entries
+                    .filter((e) => e.start_date)
+                    .map((entry) => {
+                        const pos = dateToPos(entry.start_date!);
+                        const isRange = !!entry.end_date;
+                        const extent = isRange
+                            ? Math.max(dateToPos(entry.end_date!) - pos, 24)
+                            : 18; // height of a point event
+                        return { entry, pos, extent, row: 0 };
+                    })
+                    .sort((a, b) => a.pos - b.pos);
 
-            // Greedy column assignment
-            const colEnds: number[] = [];
-            for (const item of items) {
-                let placed = false;
-                for (let c = 0; c < colEnds.length; c++) {
-                    if (item.pos >= colEnds[c] + 4) {
-                        item.row = c;
-                        colEnds[c] = item.pos + item.extent;
-                        placed = true;
-                        break;
+                // Greedy column assignment
+                const colEnds: number[] = [];
+                for (const item of items) {
+                    let placed = false;
+                    for (let c = 0; c < colEnds.length; c++) {
+                        if (item.pos >= colEnds[c] + 4) {
+                            item.row = c;
+                            colEnds[c] = item.pos + item.extent;
+                            placed = true;
+                            break;
+                        }
+                    }
+                    if (!placed) {
+                        item.row = colEnds.length;
+                        colEnds.push(item.pos + item.extent);
                     }
                 }
-                if (!placed) {
-                    item.row = colEnds.length;
-                    colEnds.push(item.pos + item.extent);
-                }
-            }
 
-            return { items, colCount: Math.max(colEnds.length, 1) };
-        }),
+                return { items, colCount: Math.max(colEnds.length, 1) };
+            }),
         [lanes, dateToPos],
     );
 
@@ -801,32 +1361,69 @@ function VerticalTimeline({ lanes, gridLines, dateToPos, totalPx, zoom, axisSize
     const TRAIL = 40;
 
     return (
-        <div className="relative" style={{ minHeight: totalPx + axisSize + TRAIL }}>
+        <div
+            className="relative"
+            style={{ minHeight: totalPx + axisSize + TRAIL }}
+        >
             {/* Shared zigzag overlay — vertical mode paints each break as
                 a horizontal band spanning the full canvas width. Offset
                 by the lane-header row height (40px) so breakLefts are
                 relative to the scrollable canvas content. */}
-            <TimelineBreakOverlay breaks={breaks} breakLefts={breakLefts} leftOffset={40} orientation="vertical" />
+            <TimelineBreakOverlay
+                breaks={breaks}
+                breakLefts={breakLefts}
+                leftOffset={40}
+                orientation="vertical"
+            />
 
             {/* Header row with lane labels */}
-            <div className="sticky top-0 z-20 flex h-10 border-b border-base-content/25 bg-base-200/95 backdrop-blur-sm">
+            <div
+                className="sticky top-0 z-20 flex h-10"
+                style={axisStickyStyle}
+            >
                 {/* Corner spacer for axis */}
-                <div className="flex-shrink-0 border-r border-base-content/15" style={{ width: AXIS_W }} />
+                <div
+                    className="flex-shrink-0"
+                    style={{ width: AXIS_W, ...axisCornerStyle }}
+                />
                 {/* Lane headers — colored top rail + tint + count pill */}
                 {lanes.map((lane, laneIdx) => {
                     const { colCount } = laneLayouts[laneIdx];
-                    const width = Math.max(BASE_LANE_WIDTH, colCount * COL_WIDTH);
-                    const tint = LANE_HEADER_TINTS[laneIdx % LANE_HEADER_TINTS.length];
-                    const dot = DOT_COLORS[laneIdx % DOT_COLORS.length];
+                    const width = Math.max(
+                        BASE_LANE_WIDTH,
+                        colCount * COL_WIDTH,
+                    );
+                    const isLast = laneIdx === lanes.length - 1;
                     return (
                         <div
                             key={lane.key}
-                            className={`flex flex-shrink-0 items-center gap-2 border-r border-base-content/15 px-3 ${tint}`}
-                            style={{ width, borderTop: '3px solid transparent' }}
+                            className="flex flex-shrink-0 items-center gap-2 px-3"
+                            style={{
+                                width,
+                                borderTop: "3px solid transparent",
+                                ...(isLast ? {} : axisCornerStyle),
+                                ...laneHeaderStyle(laneIdx),
+                                // Drop the left-rail border for the horizontal header bar
+                                borderLeftWidth: 0,
+                            }}
                         >
-                            <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${dot}`} aria-hidden="true" />
-                            <span className="flex-1 truncate text-xs font-medium" title={lane.label}>{lane.label}</span>
-                            <span className="text-[10px] tabular-nums text-base-content/50">{lane.entries.length}</span>
+                            <span
+                                className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                                style={laneDotStyle(laneIdx)}
+                                aria-hidden="true"
+                            />
+                            <span
+                                className="flex-1 truncate text-xs font-medium"
+                                title={lane.label}
+                            >
+                                {lane.label}
+                            </span>
+                            <span
+                                className="text-[10px] tabular-nums"
+                                style={subtitle50}
+                            >
+                                {lane.entries.length}
+                            </span>
                         </div>
                     );
                 })}
@@ -836,22 +1433,34 @@ function VerticalTimeline({ lanes, gridLines, dateToPos, totalPx, zoom, axisSize
             <div className="flex" style={{ minHeight: totalPx + TRAIL }}>
                 {/* Axis column — sticky, with tick marks anchored to its right edge */}
                 <div
-                    className="sticky left-0 z-10 flex-shrink-0 border-r border-base-content/25 bg-base-200/80"
-                    style={{ width: AXIS_W }}
+                    className="sticky left-0 z-10 flex-shrink-0"
+                    style={{ width: AXIS_W, ...verticalAxisColStyle }}
                 >
-                    <div className="relative" style={{ height: totalPx + TRAIL }}>
+                    <div
+                        className="relative"
+                        style={{ height: totalPx + TRAIL }}
+                    >
                         {gridLines.map((year, i) => {
                             const top = dateToPos(String(year));
                             return (
                                 <div
                                     key={i}
                                     className="pointer-events-none absolute left-0 right-0 flex items-center justify-end gap-1 pr-1"
-                                    style={{ top, transform: 'translateY(-50%)' }}
+                                    style={{
+                                        top,
+                                        transform: "translateY(-50%)",
+                                    }}
                                 >
-                                    <span className="whitespace-nowrap text-[10px] font-medium text-base-content/60">
+                                    <span
+                                        className="whitespace-nowrap text-[10px] font-medium"
+                                        style={subtitle60}
+                                    >
                                         {formatAxisLabel(year, zoom)}
                                     </span>
-                                    <span className="block h-px w-2 bg-base-content/40" />
+                                    <span
+                                        className="block h-px w-2"
+                                        style={axisTickStyle}
+                                    />
                                 </div>
                             );
                         })}
@@ -861,22 +1470,40 @@ function VerticalTimeline({ lanes, gridLines, dateToPos, totalPx, zoom, axisSize
                 {/* Lane columns — alternating tint + colored left rail */}
                 {lanes.map((lane, laneIdx) => {
                     const { items, colCount } = laneLayouts[laneIdx];
-                    const width = Math.max(BASE_LANE_WIDTH, colCount * COL_WIDTH);
+                    const width = Math.max(
+                        BASE_LANE_WIDTH,
+                        colCount * COL_WIDTH,
+                    );
                     const isEven = laneIdx % 2 === 0;
-                    const rail = LANE_RAIL_COLORS[laneIdx % LANE_RAIL_COLORS.length];
+                    const isLast = laneIdx === lanes.length - 1;
 
                     return (
                         <div
                             key={lane.key}
-                            className={`relative flex-shrink-0 border-l-4 border-r border-base-content/10 last:border-r-0 ${rail} ${isEven ? 'bg-base-100/60' : 'bg-base-200/40'}`}
-                            style={{ width, height: totalPx + TRAIL }}
+                            className="relative flex-shrink-0"
+                            style={{
+                                width,
+                                height: totalPx + TRAIL,
+                                ...laneRowBgStyle(isEven),
+                                ...laneHeaderStyle(laneIdx),
+                                // Right border (none on last lane)
+                                ...(isLast
+                                    ? { borderRight: "none" }
+                                    : {
+                                          borderRight:
+                                              "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+                                      }),
+                            }}
                         >
                             {/* Grid lines */}
                             {gridLines.map((year, i) => (
                                 <div
                                     key={i}
-                                    className="absolute left-0 w-full border-t border-base-content/10"
-                                    style={{ top: dateToPos(String(year)) }}
+                                    className="absolute left-0 w-full"
+                                    style={{
+                                        top: dateToPos(String(year)),
+                                        ...gridLineHorizontalStyle,
+                                    }}
                                 />
                             ))}
 
@@ -888,7 +1515,7 @@ function VerticalTimeline({ lanes, gridLines, dateToPos, totalPx, zoom, axisSize
                                     dateToPos={dateToPos}
                                     col={item.row}
                                     colWidth={COL_WIDTH}
-                                    paletteIdx={laneIdx % DOT_COLORS.length}
+                                    paletteIdx={laneIdx % LANE_PALETTE.length}
                                     isHovered={hoveredEntry === item.entry.id}
                                     onHover={onHover}
                                     fmtDate={fmtDate}
@@ -924,27 +1551,33 @@ function TimelineItemVertical({
     if (!entry.start_date) return null;
     const top = dateToPos(entry.start_date);
     const isRange = !!entry.end_date;
-    const rangeHeight = isRange ? Math.max(dateToPos(entry.end_date!) - top, 4) : 0;
+    const rangeHeight = isRange
+        ? Math.max(dateToPos(entry.end_date!) - top, 4)
+        : 0;
     const left = 8 + col * colWidth;
     const isStub = entry.is_stub;
 
-    const dotClass = DOT_COLORS[paletteIdx];
-    const rangeBarClass = RANGE_BAR_COLORS[paletteIdx];
-
-    const tooltipContent = <EntryTooltipContent entry={entry} fmtDate={fmtDate} />;
+    const tooltipContent = (
+        <EntryTooltipContent entry={entry} fmtDate={fmtDate} />
+    );
 
     const dotAndLabel = (
-        <span className={`relative flex items-center gap-1.5 ${isStub ? 'cursor-default' : 'cursor-pointer'}`}>
+        <span
+            className={`relative flex items-center gap-1.5 ${isStub ? "cursor-default" : "cursor-pointer"}`}
+        >
             <span
-                className={`h-3 w-3 flex-shrink-0 rounded-full border-2 border-base-100 shadow-sm transition-transform ${
-                    isStub ? 'border-base-content/40 bg-transparent' : dotClass
-                } ${isHovered ? 'scale-150' : ''}`}
+                className={`h-3 w-3 flex-shrink-0 rounded-full transition-transform ${isHovered ? "scale-150" : ""}`}
+                style={{
+                    ...dotBorderStyle,
+                    ...(isStub ? stubDotStyle : laneDotStyle(paletteIdx)),
+                }}
                 aria-hidden="true"
             />
             <span
                 className={`truncate text-[10px] font-medium transition-opacity ${
-                    isStub ? 'italic pr-0.5 text-base-content/50' : 'text-base-content'
-                } ${isHovered ? 'opacity-100' : 'opacity-80'}`}
+                    isStub ? "italic pr-0.5" : ""
+                } ${isHovered ? "opacity-100" : "opacity-80"}`}
+                style={isStub ? subtitle50 : undefined}
             >
                 {entry.name}
             </span>
@@ -953,7 +1586,7 @@ function TimelineItemVertical({
 
     return (
         <div
-            className={`absolute ${isHovered ? 'z-30' : 'z-10'}`}
+            className={`absolute ${isHovered ? "z-30" : "z-10"}`}
             style={{ top, left, width: colWidth - 8 }}
             onMouseEnter={() => onHover(entry.id)}
             onMouseLeave={() => onHover(null)}
@@ -962,10 +1595,13 @@ function TimelineItemVertical({
                 the end_date position. Dashed for stubs, tinted for full. */}
             {isRange && rangeHeight > 0 && (
                 <span
-                    className={`pointer-events-none absolute left-[5px] top-3 w-0.5 rounded-full ${
-                        isStub ? 'border-l border-dashed border-base-content/30 bg-transparent' : rangeBarClass
-                    }`}
-                    style={{ height: rangeHeight }}
+                    className="pointer-events-none absolute left-[5px] top-3 w-0.5 rounded-full"
+                    style={{
+                        height: rangeHeight,
+                        ...(isStub
+                            ? stubRangeBarVerticalStyle
+                            : laneRangeBarStyle(paletteIdx)),
+                    }}
                     aria-hidden="true"
                 />
             )}
@@ -975,10 +1611,13 @@ function TimelineItemVertical({
                 crosses a zigzag. */}
             {isRange && rangeHeight > 4 && (
                 <span
-                    className={`pointer-events-none absolute h-3 w-3 rounded-full border-2 border-base-100 shadow-sm ${
-                        isStub ? 'border-base-content/40 bg-transparent' : dotClass
-                    }`}
-                    style={{ left: 0, top: rangeHeight }}
+                    className="pointer-events-none absolute h-3 w-3 rounded-full"
+                    style={{
+                        left: 0,
+                        top: rangeHeight,
+                        ...dotBorderStyle,
+                        ...(isStub ? stubDotStyle : laneDotStyle(paletteIdx)),
+                    }}
                     aria-hidden="true"
                 />
             )}
