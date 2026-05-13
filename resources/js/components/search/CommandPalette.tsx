@@ -1,18 +1,19 @@
 import {
+    type CSSProperties,
     useState,
     useEffect,
     useRef,
     useCallback,
     type KeyboardEvent,
     type ReactNode,
-} from 'react';
-import { createPortal } from 'react-dom';
-import gsap from 'gsap';
+} from "react";
+import { createPortal } from "react-dom";
+import gsap from "gsap";
 import type {
     PaletteCommand,
     PaletteSearchEntry,
     PaletteSearchResults,
-} from '../../types/navigation';
+} from "../../types/navigation";
 
 interface CommandPaletteProps {
     /** Open / closed state — controlled by the consumer. */
@@ -60,6 +61,79 @@ interface CommandPaletteProps {
     minQueryLength?: number;
 }
 
+/* ── Theme-token style recipes ──────────────────────────────────── */
+
+const panelStyle: CSSProperties = {
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    background: "var(--theme-base-200)",
+    borderRadius: "var(--theme-radius-card)",
+    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+};
+
+const inputRowStyle: CSSProperties = {
+    borderBottom:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+};
+
+const footerStyle: CSSProperties = {
+    borderTop:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
+};
+
+const groupHeaderStyle: CSSProperties = {
+    borderBottom:
+        "1px solid color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)",
+    background:
+        "color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)",
+    color: "var(--theme-brand-primary-500)",
+    backdropFilter: "blur(4px)",
+};
+
+const selectedRowStyle: CSSProperties = {
+    background:
+        "color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)",
+    color: "var(--theme-brand-primary-500)",
+};
+
+const helperFainterStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
+};
+
+const helperStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+};
+
+const inputStyle: CSSProperties = {
+    color: "var(--theme-base-content)",
+};
+
+const kbdStyle: CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: "1.5rem",
+    height: "1.5rem",
+    padding: "0 0.375rem",
+    fontSize: "0.6875rem",
+    fontFamily:
+        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    background: "var(--theme-base-100)",
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
+    borderRadius: "0.25rem",
+    color: "color-mix(in srgb, var(--theme-base-content) 70%, transparent)",
+    boxShadow:
+        "0 1px 0 color-mix(in srgb, var(--theme-base-content) 8%, transparent)",
+};
+
+const kbdXsStyle: CSSProperties = {
+    ...kbdStyle,
+    minWidth: "1.25rem",
+    height: "1.25rem",
+    fontSize: "0.625rem",
+    padding: "0 0.25rem",
+};
+
 /**
  * Modal command palette: a Cmd+K-style overlay with a search input, scrolling
  * results list, keyboard navigation, and a footer hint row. The consumer
@@ -77,12 +151,12 @@ export default function CommandPalette({
     commands,
     onSearch,
     onSelectEntry,
-    placeholder = 'Search...',
+    placeholder = "Search...",
     emptyHint,
     searchDebounceMs = 250,
     minQueryLength = 2,
 }: CommandPaletteProps) {
-    const [query, setQuery] = useState('');
+    const [query, setQuery] = useState("");
     const [results, setResults] = useState<PaletteSearchResults | null>(null);
     const [loading, setLoading] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -104,26 +178,31 @@ export default function CommandPalette({
         return commands.filter((c) => {
             const haystack = [
                 c.label,
-                c.description ?? '',
-                c.section ?? '',
+                c.description ?? "",
+                c.section ?? "",
                 ...(c.keywords ?? []),
-            ].join(' ').toLowerCase();
+            ]
+                .join(" ")
+                .toLowerCase();
             return haystack.includes(q);
         });
     })();
 
     // Flatten search results for keyboard navigation
-    const flatEntries = results?.groups.flatMap((g) =>
-        g.entries.map((e) => ({ ...e, groupLabel: g.label })),
-    ) ?? [];
+    const flatEntries =
+        results?.groups.flatMap((g) =>
+            g.entries.map((e) => ({ ...e, groupLabel: g.label })),
+        ) ?? [];
 
-    const flatNavigableLength = showingSearch ? flatEntries.length : filteredCommands.length;
+    const flatNavigableLength = showingSearch
+        ? flatEntries.length
+        : filteredCommands.length;
 
     // Animate in
     useEffect(() => {
         if (!open) return;
         closingRef.current = false;
-        setQuery('');
+        setQuery("");
         setResults(null);
         setSelectedIndex(0);
 
@@ -133,14 +212,20 @@ export default function CommandPalette({
                 gsap.fromTo(
                     backdropRef.current,
                     { opacity: 0 },
-                    { opacity: 1, duration: 0.15, ease: 'power2.out' },
+                    { opacity: 1, duration: 0.15, ease: "power2.out" },
                 );
             }
             if (panelRef.current) {
                 gsap.fromTo(
                     panelRef.current,
                     { opacity: 0, y: -20, scale: 0.97 },
-                    { opacity: 1, y: 0, scale: 1, duration: 0.25, ease: 'back.out(1.4)' },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        duration: 0.25,
+                        ease: "back.out(1.4)",
+                    },
                 );
             }
         });
@@ -154,12 +239,22 @@ export default function CommandPalette({
         if (panelRef.current) {
             tl.to(
                 panelRef.current,
-                { opacity: 0, y: -10, scale: 0.98, duration: 0.15, ease: 'power2.in' },
+                {
+                    opacity: 0,
+                    y: -10,
+                    scale: 0.98,
+                    duration: 0.15,
+                    ease: "power2.in",
+                },
                 0,
             );
         }
         if (backdropRef.current) {
-            tl.to(backdropRef.current, { opacity: 0, duration: 0.15, ease: 'power2.in' }, 0);
+            tl.to(
+                backdropRef.current,
+                { opacity: 0, duration: 0.15, ease: "power2.in" },
+                0,
+            );
         }
     }, [onClose]);
 
@@ -190,7 +285,10 @@ export default function CommandPalette({
         setSelectedIndex(0);
         if (debounceRef.current) clearTimeout(debounceRef.current);
         if (onSearch) {
-            debounceRef.current = setTimeout(() => performSearch(value), searchDebounceMs);
+            debounceRef.current = setTimeout(
+                () => performSearch(value),
+                searchDebounceMs,
+            );
         }
     }
 
@@ -218,19 +316,22 @@ export default function CommandPalette({
     }
 
     function handleKeyDown(e: KeyboardEvent) {
-        if (e.key === 'Escape') {
+        if (e.key === "Escape") {
             e.preventDefault();
             animateClose();
-        } else if (e.key === 'ArrowDown') {
+        } else if (e.key === "ArrowDown") {
             e.preventDefault();
-            setSelectedIndex((prev) => Math.min(prev + 1, flatNavigableLength - 1));
-        } else if (e.key === 'ArrowUp') {
+            setSelectedIndex((prev) =>
+                Math.min(prev + 1, flatNavigableLength - 1),
+            );
+        } else if (e.key === "ArrowUp") {
             e.preventDefault();
             setSelectedIndex((prev) => Math.max(prev - 1, 0));
-        } else if (e.key === 'Enter') {
+        } else if (e.key === "Enter") {
             e.preventDefault();
             if (showingSearch && flatEntries[selectedIndex]) {
-                const { groupLabel: _ignored, ...entry } = flatEntries[selectedIndex];
+                const { groupLabel: _ignored, ...entry } =
+                    flatEntries[selectedIndex];
                 void _ignored;
                 activateSearchEntry(entry);
             } else if (!showingSearch && filteredCommands[selectedIndex]) {
@@ -251,12 +352,17 @@ export default function CommandPalette({
 
             <div
                 ref={panelRef}
-                className="relative w-full max-w-3xl overflow-hidden rounded-2xl border border-base-content/10 bg-base-200 shadow-2xl"
+                className="relative w-full max-w-3xl overflow-hidden"
+                style={panelStyle}
             >
                 {/* Search input */}
-                <div className="flex items-center gap-3 border-b border-base-content/10 px-4 py-3">
+                <div
+                    className="flex items-center gap-3 px-4 py-3"
+                    style={inputRowStyle}
+                >
                     <i
-                        className={`fa-solid fa-magnifying-glass ${loading ? 'animate-pulse' : ''} text-base-content/40`}
+                        className={`fa-solid fa-magnifying-glass ${loading ? "animate-pulse" : ""}`}
+                        style={helperFainterStyle}
                     />
                     <input
                         ref={inputRef}
@@ -264,17 +370,21 @@ export default function CommandPalette({
                         value={query}
                         onChange={(e) => handleInputChange(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        className="flex-1 bg-transparent text-lg outline-none placeholder:text-base-content/30"
+                        className="flex-1 bg-transparent text-lg outline-none"
+                        style={inputStyle}
                         placeholder={placeholder}
                     />
-                    <kbd className="kbd kbd-sm text-xs">ESC</kbd>
+                    <kbd style={kbdStyle}>ESC</kbd>
                 </div>
 
                 {/* Body */}
                 <div className="max-h-[50vh] overflow-y-auto">
                     {/* Empty-input state */}
                     {!query && filteredCommands.length === 0 && (
-                        <div className="px-4 py-8 text-center text-sm text-base-content/40">
+                        <div
+                            className="px-4 py-8 text-center text-sm"
+                            style={helperFainterStyle}
+                        >
                             <i className="fa-solid fa-magnifying-glass mb-2 text-2xl" />
                             {emptyHint ?? <p>Start typing to search</p>}
                         </div>
@@ -284,67 +394,108 @@ export default function CommandPalette({
                         the input is below the search threshold) */}
                     {!showingSearch &&
                         filteredCommands.length > 0 &&
-                        renderCommandList(filteredCommands, selectedIndex, (i) => setSelectedIndex(i), activateCommand)}
+                        renderCommandList(
+                            filteredCommands,
+                            selectedIndex,
+                            (i) => setSelectedIndex(i),
+                            activateCommand,
+                        )}
 
                     {/* Search results */}
-                    {showingSearch && !loading && results && results.total === 0 && (
-                        <div className="px-4 py-8 text-center text-sm text-base-content/40">
-                            <i className="fa-solid fa-search-minus mb-2 text-2xl" />
-                            <p>No results for &quot;{query}&quot;</p>
-                        </div>
-                    )}
-
-                    {showingSearch && results && results.total > 0 && results.groups.map((group) => {
-                        const groupIcon = renderIcon(group.icon, 'fa-solid fa-cube');
-
-                        return (
-                            <div key={group.label}>
-                                <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-primary/20 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-primary backdrop-blur-sm">
-                                    {groupIcon}
-                                    {group.label}
-                                </div>
-                                {group.entries.map((entry) => {
-                                    const globalIdx = flatEntries.findIndex((e) => e.id === entry.id);
-                                    const isSelected = globalIdx === selectedIndex;
-
-                                    return (
-                                        <a
-                                            key={entry.id}
-                                            href={entry.href}
-                                            className={`flex flex-col gap-1 px-4 py-3 transition-colors ${
-                                                isSelected ? 'bg-primary/10 text-primary' : 'hover:bg-base-300/50'
-                                            }`}
-                                            onMouseEnter={() => setSelectedIndex(globalIdx)}
-                                            onClick={(e) => {
-                                                if (onSelectEntry) {
-                                                    e.preventDefault();
-                                                    onSelectEntry(entry);
-                                                }
-                                            }}
-                                        >
-                                            <span className="font-medium leading-snug">{entry.label}</span>
-                                            {entry.description && (
-                                                <span className="line-clamp-2 text-xs leading-snug text-base-content/50">
-                                                    {entry.description}
-                                                </span>
-                                            )}
-                                        </a>
-                                    );
-                                })}
+                    {showingSearch &&
+                        !loading &&
+                        results &&
+                        results.total === 0 && (
+                            <div
+                                className="px-4 py-8 text-center text-sm"
+                                style={helperFainterStyle}
+                            >
+                                <i className="fa-solid fa-search-minus mb-2 text-2xl" />
+                                <p>No results for &quot;{query}&quot;</p>
                             </div>
-                        );
-                    })}
+                        )}
+
+                    {showingSearch &&
+                        results &&
+                        results.total > 0 &&
+                        results.groups.map((group) => {
+                            const groupIcon = renderIcon(
+                                group.icon,
+                                "fa-solid fa-cube",
+                            );
+
+                            return (
+                                <div key={group.label}>
+                                    <div
+                                        className="sticky top-0 z-10 flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider"
+                                        style={groupHeaderStyle}
+                                    >
+                                        {groupIcon}
+                                        {group.label}
+                                    </div>
+                                    {group.entries.map((entry) => {
+                                        const globalIdx = flatEntries.findIndex(
+                                            (e) => e.id === entry.id,
+                                        );
+                                        const isSelected =
+                                            globalIdx === selectedIndex;
+
+                                        return (
+                                            <a
+                                                key={entry.id}
+                                                href={entry.href}
+                                                className="alex-row flex flex-col gap-1 px-4 py-3"
+                                                style={
+                                                    isSelected
+                                                        ? selectedRowStyle
+                                                        : undefined
+                                                }
+                                                onMouseEnter={() =>
+                                                    setSelectedIndex(globalIdx)
+                                                }
+                                                onClick={(e) => {
+                                                    if (onSelectEntry) {
+                                                        e.preventDefault();
+                                                        onSelectEntry(entry);
+                                                    }
+                                                }}
+                                            >
+                                                <span className="font-medium leading-snug">
+                                                    {entry.label}
+                                                </span>
+                                                {entry.description && (
+                                                    <span
+                                                        className="line-clamp-2 text-xs leading-snug"
+                                                        style={helperStyle}
+                                                    >
+                                                        {entry.description}
+                                                    </span>
+                                                )}
+                                            </a>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })}
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between border-t border-base-content/10 px-4 py-2 text-xs text-base-content/40">
+                <div
+                    className="flex items-center justify-between px-4 py-2 text-xs"
+                    style={footerStyle}
+                >
                     <div className="flex items-center gap-3">
-                        <span><kbd className="kbd kbd-xs">↑↓</kbd> navigate</span>
-                        <span><kbd className="kbd kbd-xs">↵</kbd> open</span>
+                        <span>
+                            <kbd style={kbdXsStyle}>↑↓</kbd> navigate
+                        </span>
+                        <span>
+                            <kbd style={kbdXsStyle}>↵</kbd> open
+                        </span>
                     </div>
                     {showingSearch && results && (
                         <span>
-                            {results.total} result{results.total !== 1 ? 's' : ''}
+                            {results.total} result
+                            {results.total !== 1 ? "s" : ""}
                         </span>
                     )}
                 </div>
@@ -366,7 +517,10 @@ function renderCommandList(
     activate: (cmd: PaletteCommand) => void,
 ): ReactNode {
     // Group by `section` while preserving insertion order.
-    const sections: Array<{ label: string | null; commands: Array<{ cmd: PaletteCommand; index: number }> }> = [];
+    const sections: Array<{
+        label: string | null;
+        commands: Array<{ cmd: PaletteCommand; index: number }>;
+    }> = [];
     commands.forEach((cmd, index) => {
         const label = cmd.section ?? null;
         const existing = sections.find((s) => s.label === label);
@@ -380,7 +534,10 @@ function renderCommandList(
     return sections.map((section, sIdx) => (
         <div key={section.label ?? `__nosection_${sIdx}`}>
             {section.label && (
-                <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-primary/20 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-primary backdrop-blur-sm">
+                <div
+                    className="sticky top-0 z-10 flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider"
+                    style={groupHeaderStyle}
+                >
                     {section.label}
                 </div>
             )}
@@ -396,15 +553,21 @@ function renderCommandList(
                         disabled={disabled}
                         onClick={() => activate(cmd)}
                         onMouseEnter={() => setSelectedIndex(index)}
-                        className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors disabled:opacity-50 ${
-                            isSelected ? 'bg-primary/10 text-primary' : 'hover:bg-base-300/50'
-                        }`}
+                        className="alex-row flex w-full items-center gap-3 px-4 py-3 text-left disabled:opacity-50"
+                        style={isSelected ? selectedRowStyle : undefined}
                     >
-                        {icon && <span className="w-5 text-center">{icon}</span>}
+                        {icon && (
+                            <span className="w-5 text-center">{icon}</span>
+                        )}
                         <span className="flex flex-1 flex-col gap-1">
-                            <span className="font-medium leading-snug">{cmd.label}</span>
+                            <span className="font-medium leading-snug">
+                                {cmd.label}
+                            </span>
                             {cmd.description && (
-                                <span className="line-clamp-2 text-xs leading-snug text-base-content/50">
+                                <span
+                                    className="line-clamp-2 text-xs leading-snug"
+                                    style={helperStyle}
+                                >
                                     {cmd.description}
                                 </span>
                             )}
@@ -417,12 +580,17 @@ function renderCommandList(
 }
 
 /** Renders a string-as-FA-class icon, a ReactNode icon, or the fallback. */
-function renderIcon(icon: ReactNode | string | undefined, fallbackClass: string | null): ReactNode {
-    if (icon == null || icon === '') {
-        return fallbackClass ? <i className={`${fallbackClass} text-[10px]`} /> : null;
+function renderIcon(
+    icon: ReactNode | string | undefined,
+    fallbackClass: string | null,
+): ReactNode {
+    if (icon == null || icon === "") {
+        return fallbackClass ? (
+            <i className={`${fallbackClass} text-[10px]`} />
+        ) : null;
     }
-    if (typeof icon === 'string') {
-        const cls = icon.includes(' ') ? icon : `fa-solid ${icon}`;
+    if (typeof icon === "string") {
+        const cls = icon.includes(" ") ? icon : `fa-solid ${icon}`;
         return <i className={`${cls} text-[10px]`} />;
     }
     return icon;

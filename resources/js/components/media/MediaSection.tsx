@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import Modal from '@alexandria/components/ui/Modal';
-import ImageUploader from './ImageUploader';
-import GalleryGrid from './GalleryGrid';
-import type { MediaItem, MediaModelType } from '@alexandria/types/media';
+import { type CSSProperties, useState, useEffect, useCallback } from "react";
+import Modal from "@alexandria/components/ui/Modal";
+import ImageUploader from "./ImageUploader";
+import GalleryGrid from "./GalleryGrid";
+import type { MediaItem, MediaModelType } from "@alexandria/types/media";
 
 interface MediaSectionProps {
     modelType: MediaModelType;
@@ -21,20 +21,101 @@ interface MediaSectionProps {
     onMediaChanged?: () => void;
 }
 
-export default function MediaSection({ modelType, modelId, showGallery = false, compact = false, onMediaChanged }: MediaSectionProps) {
+/* ── Theme-token style recipes ────────────────────────────────────
+ * MediaSection has three media-type accents (page_image=primary,
+ * banner=secondary, gallery=accent). The shared card chrome lives
+ * here; per-type hover tints derive from the brand palette. */
+
+const cardStyle: CSSProperties = {
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    background: "var(--theme-base-200)",
+    borderRadius: "var(--theme-radius-card)",
+    transition:
+        "all var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
+};
+
+const dashedDropStyle: CSSProperties = {
+    border: "2px dashed color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
+    borderRadius: "var(--theme-radius-card)",
+    transition:
+        "all var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
+};
+
+function iconWrapStyle(
+    brand: "primary" | "secondary" | "accent",
+    strength: number,
+): CSSProperties {
+    return {
+        background: `color-mix(in srgb, var(--theme-brand-${brand}-500) ${strength}%, transparent)`,
+        borderRadius: "9999px",
+    };
+}
+
+function iconWrapSquareStyle(
+    brand: "primary" | "secondary" | "accent",
+    strength: number,
+): CSSProperties {
+    return {
+        background: `color-mix(in srgb, var(--theme-brand-${brand}-500) ${strength}%, transparent)`,
+        borderRadius: "var(--theme-radius-card)",
+    };
+}
+
+const primaryHalfStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)",
+};
+const secondaryHalfStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-brand-secondary-500) 60%, transparent)",
+};
+const accentStyle: CSSProperties = { color: "var(--theme-brand-accent-500)" };
+const primaryStyle: CSSProperties = { color: "var(--theme-brand-primary-500)" };
+
+const helperStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+};
+const helperFainterStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
+};
+const helperSoftStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 30%, transparent)",
+};
+const helperGhostStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 20%, transparent)",
+};
+
+const errorTextStyle: CSSProperties = {
+    color: "var(--theme-status-error-stroke)",
+};
+
+const ghostBtnStyle: CSSProperties = {
+    borderRadius: "var(--theme-radius-button)",
+};
+
+export default function MediaSection({
+    modelType,
+    modelId,
+    showGallery = false,
+    compact = false,
+    onMediaChanged,
+}: MediaSectionProps) {
     // Compact mode always shows the gallery tile.
     const galleryEnabled = showGallery || compact;
     const [media, setMedia] = useState<MediaItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [uploadCollection, setUploadCollection] = useState<'page_image' | 'banner' | 'gallery' | null>(null);
+    const [uploadCollection, setUploadCollection] = useState<
+        "page_image" | "banner" | "gallery" | null
+    >(null);
     const [galleryModalOpen, setGalleryModalOpen] = useState(false);
 
     const fetchMedia = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch(`/api/v1/${modelType}/${modelId}/media`, {
-                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                credentials: 'same-origin',
+                headers: {
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                credentials: "same-origin",
             });
             if (res.ok) setMedia(await res.json());
         } finally {
@@ -42,19 +123,27 @@ export default function MediaSection({ modelType, modelId, showGallery = false, 
         }
     }, [modelType, modelId]);
 
-    useEffect(() => { void fetchMedia(); }, [fetchMedia]);
+    useEffect(() => {
+        void fetchMedia();
+    }, [fetchMedia]);
 
-    const pageImage = media.find((m) => m.collection === 'page_image');
-    const banner = media.find((m) => m.collection === 'banner');
-    const galleryImages = media.filter((m) => m.collection === 'gallery');
+    const pageImage = media.find((m) => m.collection === "page_image");
+    const banner = media.find((m) => m.collection === "banner");
+    const galleryImages = media.filter((m) => m.collection === "gallery");
 
     async function removeMedia(mediaId: number) {
-        if (!confirm('Remove this image?')) return;
-        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+        if (!confirm("Remove this image?")) return;
+        const csrfToken =
+            document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+                ?.content ?? "";
         await fetch(`/api/v1/${modelType}/${modelId}/media/${mediaId}`, {
-            method: 'DELETE',
-            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
-            credentials: 'same-origin',
+            method: "DELETE",
+            headers: {
+                Accept: "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRF-TOKEN": csrfToken,
+            },
+            credentials: "same-origin",
         });
         void fetchMedia();
         onMediaChanged?.();
@@ -69,46 +158,80 @@ export default function MediaSection({ modelType, modelId, showGallery = false, 
     if (loading) {
         return (
             <div className="flex items-center justify-center py-12">
-                <span className="loading loading-spinner loading-md" />
+                <i
+                    className="fa-solid fa-circle-notch fa-spin text-base"
+                    style={helperFainterStyle}
+                />
             </div>
         );
     }
 
     const pageImageCard = (
-        <div className="rounded-xl border border-base-content/10 bg-base-200 p-5">
+        <div className="p-5" style={cardStyle}>
             <div className="flex items-start gap-5">
                 {pageImage ? (
                     <img
-                        src={pageImage.conversions.square ?? pageImage.original_url}
-                        alt={pageImage.alt_text ?? ''}
+                        src={
+                            pageImage.conversions.square ??
+                            pageImage.original_url
+                        }
+                        alt={pageImage.alt_text ?? ""}
                         className="h-24 w-24 flex-shrink-0 rounded-xl object-cover shadow-sm"
                     />
                 ) : (
                     <button
-                        onClick={() => setUploadCollection('page_image')}
-                        className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-base-content/15 transition-colors hover:border-primary/30 hover:bg-base-300/40"
+                        onClick={() => setUploadCollection("page_image")}
+                        className="alex-row flex h-24 w-24 flex-shrink-0 items-center justify-center"
+                        style={dashedDropStyle}
                     >
                         <div className="text-center">
-                            <i className="fa-solid fa-plus text-lg text-base-content/20" />
-                            <p className="mt-1 text-[10px] text-base-content/30">Upload</p>
+                            <i
+                                className="fa-solid fa-plus text-lg"
+                                style={helperGhostStyle}
+                            />
+                            <p
+                                className="mt-1 text-[10px]"
+                                style={helperSoftStyle}
+                            >
+                                Upload
+                            </p>
                         </div>
                     </button>
                 )}
                 <div className="min-w-0 flex-1">
                     <h3 className="flex items-center gap-2 text-sm font-semibold">
-                        <i className="fa-solid fa-image text-primary/60" />
+                        <i
+                            className="fa-solid fa-image"
+                            style={primaryHalfStyle}
+                        />
                         Page Image
                     </h3>
-                    <p className="mt-0.5 text-xs text-base-content/50">
+                    <p className="mt-0.5 text-xs" style={helperStyle}>
                         Square thumbnail shown across the site.
                     </p>
                     {pageImage?.alt_text && (
-                        <p className="mt-2 text-xs text-base-content/40">Alt: {pageImage.alt_text}</p>
+                        <p className="mt-2 text-xs" style={helperFainterStyle}>
+                            Alt: {pageImage.alt_text}
+                        </p>
                     )}
                     {pageImage && (
                         <div className="mt-3 flex gap-2">
-                            <button onClick={() => setUploadCollection('page_image')} className="btn btn-ghost btn-xs">Change</button>
-                            <button onClick={() => void removeMedia(pageImage.id)} className="btn btn-ghost btn-xs text-error">Remove</button>
+                            <button
+                                onClick={() =>
+                                    setUploadCollection("page_image")
+                                }
+                                className="alex-btn alex-btn--ghost inline-flex items-center px-2 py-1 text-xs"
+                                style={ghostBtnStyle}
+                            >
+                                Change
+                            </button>
+                            <button
+                                onClick={() => void removeMedia(pageImage.id)}
+                                className="alex-btn alex-btn--ghost inline-flex items-center px-2 py-1 text-xs"
+                                style={{ ...ghostBtnStyle, ...errorTextStyle }}
+                            >
+                                Remove
+                            </button>
                         </div>
                     )}
                 </div>
@@ -117,35 +240,60 @@ export default function MediaSection({ modelType, modelId, showGallery = false, 
     );
 
     const bannerCard = (
-        <div className="rounded-xl border border-base-content/10 bg-base-200 p-5">
+        <div className="p-5" style={cardStyle}>
             <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold">
-                <i className="fa-solid fa-panorama text-secondary/60" />
+                <i
+                    className="fa-solid fa-panorama"
+                    style={secondaryHalfStyle}
+                />
                 Banner
             </h3>
-            <p className="mb-3 text-xs text-base-content/50">
+            <p className="mb-3 text-xs" style={helperStyle}>
                 Wide hero image used on pages and listings (approx. 1920×400).
             </p>
             {banner ? (
                 <div className="space-y-3">
                     <img
                         src={banner.conversions.desktop ?? banner.original_url}
-                        alt={banner.alt_text ?? ''}
+                        alt={banner.alt_text ?? ""}
                         className="aspect-[1920/400] w-full rounded-lg object-cover shadow-sm"
                     />
-                    {banner.alt_text && <p className="text-xs text-base-content/40">Alt: {banner.alt_text}</p>}
+                    {banner.alt_text && (
+                        <p className="text-xs" style={helperFainterStyle}>
+                            Alt: {banner.alt_text}
+                        </p>
+                    )}
                     <div className="flex gap-2">
-                        <button onClick={() => setUploadCollection('banner')} className="btn btn-ghost btn-xs">Change</button>
-                        <button onClick={() => void removeMedia(banner.id)} className="btn btn-ghost btn-xs text-error">Remove</button>
+                        <button
+                            onClick={() => setUploadCollection("banner")}
+                            className="alex-btn alex-btn--ghost inline-flex items-center px-2 py-1 text-xs"
+                            style={ghostBtnStyle}
+                        >
+                            Change
+                        </button>
+                        <button
+                            onClick={() => void removeMedia(banner.id)}
+                            className="alex-btn alex-btn--ghost inline-flex items-center px-2 py-1 text-xs"
+                            style={{ ...ghostBtnStyle, ...errorTextStyle }}
+                        >
+                            Remove
+                        </button>
                     </div>
                 </div>
             ) : (
                 <button
-                    onClick={() => setUploadCollection('banner')}
-                    className="flex aspect-[1920/400] w-full items-center justify-center rounded-lg border-2 border-dashed border-base-content/15 transition-colors hover:border-secondary/30 hover:bg-base-300/40"
+                    onClick={() => setUploadCollection("banner")}
+                    className="alex-row flex aspect-[1920/400] w-full items-center justify-center"
+                    style={dashedDropStyle}
                 >
                     <div className="text-center">
-                        <i className="fa-solid fa-plus text-lg text-base-content/20" />
-                        <p className="mt-1 text-xs text-base-content/30">Upload Banner</p>
+                        <i
+                            className="fa-solid fa-plus text-lg"
+                            style={helperGhostStyle}
+                        />
+                        <p className="mt-1 text-xs" style={helperSoftStyle}>
+                            Upload Banner
+                        </p>
                     </div>
                 </button>
             )}
@@ -156,20 +304,27 @@ export default function MediaSection({ modelType, modelId, showGallery = false, 
         <button
             type="button"
             onClick={() => setGalleryModalOpen(true)}
-            className="flex w-full items-center gap-3 rounded-xl border border-base-content/10 bg-base-200 p-4 text-left transition-colors hover:border-accent/30 hover:bg-base-300/40"
+            className="alex-row flex w-full items-center gap-3 p-4 text-left"
+            style={cardStyle}
         >
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-accent/15">
-                <i className="fa-solid fa-images text-accent" />
+            <div
+                className="flex h-12 w-12 flex-shrink-0 items-center justify-center"
+                style={iconWrapSquareStyle("accent", 15)}
+            >
+                <i className="fa-solid fa-images" style={accentStyle} />
             </div>
             <div className="min-w-0 flex-1">
                 <h3 className="text-sm font-semibold">Gallery</h3>
-                <p className="text-xs text-base-content/50">
+                <p className="text-xs" style={helperStyle}>
                     {galleryImages.length === 0
-                        ? 'No images — click to add'
-                        : `${galleryImages.length} image${galleryImages.length === 1 ? '' : 's'} — click to manage`}
+                        ? "No images — click to add"
+                        : `${galleryImages.length} image${galleryImages.length === 1 ? "" : "s"} — click to manage`}
                 </p>
             </div>
-            <i className="fa-solid fa-arrow-right text-xs text-base-content/30" />
+            <i
+                className="fa-solid fa-arrow-right text-xs"
+                style={helperSoftStyle}
+            />
         </button>
     ) : null;
 
@@ -188,37 +343,62 @@ export default function MediaSection({ modelType, modelId, showGallery = false, 
                 the entry). In non-compact mode it's gallery-only since
                 page+banner are already inline. */}
             {galleryModalOpen && (
-                <Modal open={true} onClose={() => setGalleryModalOpen(false)} maxWidth="max-w-6xl">
+                <Modal
+                    open={true}
+                    onClose={() => setGalleryModalOpen(false)}
+                    maxWidth="max-w-6xl"
+                >
                     <div className="p-6">
                         <div className="mb-5 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent/20">
-                                    <i className="fa-solid fa-photo-film text-accent" />
+                                <div
+                                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center"
+                                    style={iconWrapStyle("accent", 20)}
+                                >
+                                    <i
+                                        className="fa-solid fa-photo-film"
+                                        style={accentStyle}
+                                    />
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-bold">Media</h3>
-                                    <p className="text-xs text-base-content/40">
-                                        {galleryImages.length} gallery image{galleryImages.length === 1 ? '' : 's'} attached
+                                    <p
+                                        className="text-xs"
+                                        style={helperFainterStyle}
+                                    >
+                                        {galleryImages.length} gallery image
+                                        {galleryImages.length === 1 ? "" : "s"}{" "}
+                                        attached
                                     </p>
                                 </div>
                             </div>
                             <button
-                                onClick={() => setUploadCollection('gallery')}
-                                className="btn btn-primary btn-sm gap-1.5"
+                                onClick={() => setUploadCollection("gallery")}
+                                className="alex-btn alex-btn--primary inline-flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                                style={ghostBtnStyle}
                             >
-                                <i className="fa-solid fa-plus text-xs" /> Add Image
+                                <i className="fa-solid fa-plus text-xs" /> Add
+                                Image
                             </button>
                         </div>
 
                         {compact ? (
                             <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
                                 <div>
-                                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-base-content/50">Gallery</h4>
+                                    <h4
+                                        className="mb-2 text-xs font-semibold uppercase tracking-wider"
+                                        style={helperStyle}
+                                    >
+                                        Gallery
+                                    </h4>
                                     <GalleryGrid
                                         images={galleryImages}
                                         modelType={modelType}
                                         modelId={modelId}
-                                        onChanged={() => { void fetchMedia(); onMediaChanged?.(); }}
+                                        onChanged={() => {
+                                            void fetchMedia();
+                                            onMediaChanged?.();
+                                        }}
                                     />
                                 </div>
                                 <div className="space-y-4">
@@ -231,7 +411,10 @@ export default function MediaSection({ modelType, modelId, showGallery = false, 
                                 images={galleryImages}
                                 modelType={modelType}
                                 modelId={modelId}
-                                onChanged={() => { void fetchMedia(); onMediaChanged?.(); }}
+                                onChanged={() => {
+                                    void fetchMedia();
+                                    onMediaChanged?.();
+                                }}
                             />
                         )}
                     </div>
@@ -240,17 +423,37 @@ export default function MediaSection({ modelType, modelId, showGallery = false, 
 
             {/* Upload Modal */}
             {uploadCollection && (
-                <Modal open={true} onClose={() => setUploadCollection(null)} maxWidth="max-w-lg">
+                <Modal
+                    open={true}
+                    onClose={() => setUploadCollection(null)}
+                    maxWidth="max-w-lg"
+                >
                     <div className="p-5">
                         <div className="mb-4 flex items-center gap-3">
-                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/20">
-                                <i className="fa-solid fa-cloud-arrow-up text-primary" />
+                            <div
+                                className="flex h-10 w-10 flex-shrink-0 items-center justify-center"
+                                style={iconWrapStyle("primary", 20)}
+                            >
+                                <i
+                                    className="fa-solid fa-cloud-arrow-up"
+                                    style={primaryStyle}
+                                />
                             </div>
                             <div>
                                 <h3 className="font-bold">
-                                    Upload {uploadCollection === 'page_image' ? 'Page Image' : uploadCollection === 'banner' ? 'Banner' : 'Gallery Image'}
+                                    Upload{" "}
+                                    {uploadCollection === "page_image"
+                                        ? "Page Image"
+                                        : uploadCollection === "banner"
+                                          ? "Banner"
+                                          : "Gallery Image"}
                                 </h3>
-                                <p className="text-xs text-base-content/40">JPEG, PNG, or WebP</p>
+                                <p
+                                    className="text-xs"
+                                    style={helperFainterStyle}
+                                >
+                                    JPEG, PNG, or WebP
+                                </p>
                             </div>
                         </div>
                         <ImageUploader
