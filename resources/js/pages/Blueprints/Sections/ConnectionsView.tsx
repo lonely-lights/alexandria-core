@@ -7,6 +7,7 @@ import React, {
     useRef,
 } from "react";
 import EntryLink from "@alexandria/components/entries/EntryLink";
+import useT from "@alexandria/hooks/useT";
 import Input from "@alexandria/components/form/Input";
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import Modal from "@alexandria/components/ui/Modal";
@@ -144,6 +145,7 @@ export default function ConnectionsView({
     relationshipBlueprints,
     referencingRelationshipBlueprints,
 }: ConnectionsViewProps) {
+    const t = useT();
     const availableColumns = buildAvailableColumns(blueprint);
     const defaultFieldColumns = blueprint.fields
         .filter((f) => !["priority", "details"].includes(f.name))
@@ -484,13 +486,18 @@ export default function ConnectionsView({
                             onChange={(e) =>
                                 handleSearchChange(e.currentTarget.value)
                             }
-                            placeholder="Search connections..."
+                            placeholder={t(
+                                "blueprints.connections.search_placeholder",
+                            )}
                         />
                     </div>
                     {meta && (
                         <span style={badgeGhostStyle}>
-                            {meta.total}{" "}
-                            {meta.total === 1 ? "connection" : "connections"}
+                            {t(
+                                meta.total === 1
+                                    ? "blueprints.connections.count.singular"
+                                    : "blueprints.connections.count.plural",
+                            ).replace(":count", String(meta.total))}
                         </span>
                     )}
                 </div>
@@ -503,7 +510,7 @@ export default function ConnectionsView({
                     />
                     <ActionButton
                         icon="fa-solid fa-table-columns"
-                        label="Columns"
+                        label={t("blueprints.entries.action.columns")}
                         variant="ghost"
                         onClick={() => {
                             setSettingsInitialMenu("columns");
@@ -513,7 +520,7 @@ export default function ConnectionsView({
                     {viewDirty && (
                         <ActionButton
                             icon="fa-solid fa-floppy-disk"
-                            label="Save View"
+                            label={t("blueprints.entries.action.save_view")}
                             onClick={() => setShowSaveModal(true)}
                             disabled={saving}
                         />
@@ -606,7 +613,9 @@ export default function ConnectionsView({
                                                 type="button"
                                                 onClick={clearAllFilters}
                                                 className="alex-entries-clear-filters"
-                                                title="Clear all filters"
+                                                title={t(
+                                                    "blueprints.entries.header.clear_filters",
+                                                )}
                                             >
                                                 <i className="fa-solid fa-filter-circle-xmark text-xs" />
                                             </button>
@@ -653,8 +662,12 @@ export default function ConnectionsView({
                                                 style={subtitle50}
                                             >
                                                 {search
-                                                    ? "No connections match your search"
-                                                    : "No connections yet"}
+                                                    ? t(
+                                                          "blueprints.connections.empty.no_match",
+                                                      )
+                                                    : t(
+                                                          "blueprints.connections.empty.none",
+                                                      )}
                                             </p>
                                         </div>
                                     </td>
@@ -772,7 +785,9 @@ export default function ConnectionsView({
                                                         borderRadius:
                                                             "var(--theme-radius-button)",
                                                     }}
-                                                    title="Archive connection"
+                                                    title={t(
+                                                        "blueprints.connections.archive.row_button",
+                                                    )}
                                                 >
                                                     <i
                                                         className="fa-solid fa-box-archive text-xs"
@@ -847,26 +862,43 @@ export default function ConnectionsView({
                             />
                         </div>
                         <h3 className="text-lg font-bold">
-                            Archive Connection?
+                            {t("blueprints.connections.archive.title")}
                         </h3>
                         <p className="mt-2 text-sm" style={subtitle60}>
-                            This will archive the connection between{" "}
-                            <strong>{confirmDelete.parent.name}</strong> and{" "}
-                            <strong>{confirmDelete.child.name}</strong>.
+                            {(() => {
+                                const parts = t(
+                                    "blueprints.connections.archive.body",
+                                ).split(/:parent|:child/);
+                                return (
+                                    <>
+                                        {parts[0]}
+                                        <strong>
+                                            {confirmDelete.parent.name}
+                                        </strong>
+                                        {parts[1]}
+                                        <strong>
+                                            {confirmDelete.child.name}
+                                        </strong>
+                                        {parts[2]}
+                                    </>
+                                );
+                            })()}
                         </p>
                         <p className="mt-1 text-xs" style={subtitle40}>
-                            Archived items can be restored from the trash.
+                            {t("blueprints.connections.archive.helper")}
                         </p>
                         <div className="mt-6 flex justify-center gap-2">
                             <ActionButton
                                 icon="fa-solid fa-xmark"
-                                label="Cancel"
+                                label={t("common.cancel")}
                                 variant="ghost"
                                 onClick={() => setConfirmDelete(null)}
                             />
                             <ActionButton
                                 icon="fa-solid fa-box-archive"
-                                label="Archive"
+                                label={t(
+                                    "blueprints.connections.archive.confirm",
+                                )}
                                 variant="warning"
                                 onClick={() =>
                                     executeArchiveConnection(confirmDelete.id)

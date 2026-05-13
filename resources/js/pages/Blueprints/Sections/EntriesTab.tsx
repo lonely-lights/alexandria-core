@@ -8,6 +8,7 @@ import {
 } from "react";
 import { stripWikiMarkup } from "@alexandria/lib/stripWikiMarkup";
 import { useDateFormatters } from "@alexandria/lib/formatDate";
+import useT from "@alexandria/hooks/useT";
 import Tooltip from "@alexandria/components/ui/Tooltip";
 import EntryLink from "@alexandria/components/entries/EntryLink";
 import Pagination from "@alexandria/components/ui/Pagination";
@@ -161,6 +162,7 @@ export default function EntriesTab({
     timelineBlueprints,
     onRegisterOpenSettings,
 }: EntriesTabProps) {
+    const t = useT();
     const { fmtDate, fmtSmart } = useDateFormatters();
     const [items, setItems] = useState<EntryListItem[]>([]);
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
@@ -534,9 +536,13 @@ export default function EntriesTab({
                 );
             case "status":
                 return entry.is_stub ? (
-                    <span style={badgeGhostStyle}>Stub</span>
+                    <span style={badgeGhostStyle}>
+                        {t("blueprints.entries.status.stub")}
+                    </span>
                 ) : (
-                    <span style={badgeSuccessStyle}>Page</span>
+                    <span style={badgeSuccessStyle}>
+                        {t("blueprints.entries.status.page")}
+                    </span>
                 );
             case "sort_order":
                 return <span>{entry.sort_order}</span>;
@@ -575,7 +581,9 @@ export default function EntriesTab({
                         };
                         return (
                             <Tooltip
-                                content={`View ${col.label}`}
+                                content={t(
+                                    "blueprints.entries.tooltip.view_col",
+                                ).replace(":label", col.label)}
                                 disabled={tv.count <= 0}
                             >
                                 <button
@@ -693,7 +701,9 @@ export default function EntriesTab({
                     const calcValue = entry.calculated?.[calcKey] ?? 0;
                     return (
                         <Tooltip
-                            content={`View ${col.label}`}
+                            content={t(
+                                "blueprints.entries.tooltip.view_col",
+                            ).replace(":label", col.label)}
                             disabled={calcValue <= 0}
                         >
                             <button
@@ -736,12 +746,17 @@ export default function EntriesTab({
                             onChange={(e) =>
                                 handleSearchChange(e.currentTarget.value)
                             }
-                            placeholder="Search entries..."
+                            placeholder={t(
+                                "blueprints.entries.search_placeholder",
+                            )}
                         />
                     </div>
                     <span style={badgeGhostStyle}>
-                        {meta?.total ?? 0}{" "}
-                        {meta?.total === 1 ? "entry" : "entries"}
+                        {t(
+                            meta?.total === 1
+                                ? "blueprints.entries.count.singular"
+                                : "blueprints.entries.count.plural",
+                        ).replace(":count", String(meta?.total ?? 0))}
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -755,7 +770,7 @@ export default function EntriesTab({
 
                     <ActionButton
                         icon="fa-solid fa-table-columns"
-                        label="Columns"
+                        label={t("blueprints.entries.action.columns")}
                         variant="ghost"
                         onClick={() => {
                             setModalInitialMenu("columns");
@@ -767,14 +782,14 @@ export default function EntriesTab({
                         <>
                             <ActionButton
                                 icon="fa-solid fa-floppy-disk"
-                                label="Save View"
+                                label={t("blueprints.entries.action.save_view")}
                                 onClick={() => setShowSaveModal(true)}
                                 disabled={saving}
                             />
                             {viewConfig.is_personal && (
                                 <ActionButton
                                     icon="fa-solid fa-rotate-left"
-                                    label="Reset"
+                                    label={t("common.reset")}
                                     variant="error"
                                     onClick={handleResetView}
                                 />
@@ -802,7 +817,9 @@ export default function EntriesTab({
                                         <div className="flex items-center gap-1.5">
                                             <span>{col.label}</span>
                                             <Tooltip
-                                                content={`Filter ${col.label}`}
+                                                content={t(
+                                                    "blueprints.entries.tooltip.filter_col",
+                                                ).replace(":label", col.label)}
                                                 variant="primary"
                                             >
                                                 <button
@@ -844,7 +861,9 @@ export default function EntriesTab({
                                     <div className="flex items-center justify-end gap-2">
                                         {hasAnyFilter && (
                                             <Tooltip
-                                                content="Clear all filters"
+                                                content={t(
+                                                    "blueprints.entries.header.clear_filters",
+                                                )}
                                                 variant="primary"
                                             >
                                                 <button
@@ -856,7 +875,11 @@ export default function EntriesTab({
                                                 </button>
                                             </Tooltip>
                                         )}
-                                        <span>Actions</span>
+                                        <span>
+                                            {t(
+                                                "blueprints.entries.header.actions",
+                                            )}
+                                        </span>
                                     </div>
                                 </th>
                             </tr>
@@ -899,16 +922,21 @@ export default function EntriesTab({
                                                 style={subtitle50}
                                             >
                                                 {search || hasAnyFilter
-                                                    ? "No entries match your filters"
-                                                    : "No entries yet"}
+                                                    ? t(
+                                                          "blueprints.entries.empty.no_match",
+                                                      )
+                                                    : t(
+                                                          "blueprints.entries.empty.none",
+                                                      )}
                                             </p>
                                             {!search && !hasAnyFilter && (
                                                 <p
                                                     className="mt-1 text-sm"
                                                     style={subtitle30}
                                                 >
-                                                    Use the "New Entry" button
-                                                    above to get started.
+                                                    {t(
+                                                        "blueprints.entries.empty.hint",
+                                                    )}
                                                 </p>
                                             )}
                                         </div>
@@ -951,14 +979,18 @@ export default function EntriesTab({
                                                             ...(!entry.is_stub
                                                                 ? [
                                                                       {
-                                                                          label: "View",
+                                                                          label: t(
+                                                                              "blueprints.entries.row.view",
+                                                                          ),
                                                                           icon: "fa-solid fa-eye",
                                                                           href: entry.url,
                                                                       },
                                                                   ]
                                                                 : []),
                                                             {
-                                                                label: "Edit",
+                                                                label: t(
+                                                                    "blueprints.entries.row.edit",
+                                                                ),
                                                                 icon: "fa-solid fa-pen",
                                                                 href: `${entry.url}/edit`,
                                                             },
@@ -967,7 +999,9 @@ export default function EntriesTab({
                                                                     true as const,
                                                             },
                                                             {
-                                                                label: "Archive",
+                                                                label: t(
+                                                                    "blueprints.entries.row.archive",
+                                                                ),
                                                                 icon: "fa-solid fa-box-archive",
                                                                 onClick: () =>
                                                                     setArchiveConfirm(
