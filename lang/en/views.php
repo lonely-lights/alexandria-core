@@ -35,4 +35,9 @@ return [
     'graph.placeholder' => 'Graph is configured via the dedicated Graph menu item in Blueprint Settings.',
     'tree.placeholder' => 'Tree view uses the Structure settings panel for configuration.',
     'timeline.placeholder' => 'Timeline configuration is managed in the Timeline settings panel.',
+
+    // ── GalleryView (F3) ──
+    'gallery.error' => 'Could not load gallery entries: :error',
+    'gallery.empty.title' => 'No entries to display.',
+    'gallery.empty.subtitle' => 'Create one to see it in the gallery.',
 ];

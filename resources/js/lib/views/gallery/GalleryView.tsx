@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import useT from '@alexandria/hooks/useT';
 import GalleryTile, { type GalleryEntry } from './GalleryTile';
 import type { GalleryConfig } from './types';
 
@@ -37,6 +38,7 @@ const spinnerStyle: CSSProperties = {
 };
 
 export default function GalleryView({ projectId, blueprintId, config }: GalleryViewProps) {
+    const t = useT();
     const [entries, setEntries] = useState<GalleryEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -97,7 +99,7 @@ export default function GalleryView({ projectId, blueprintId, config }: GalleryV
     if (error) {
         return (
             <div className="p-4 text-sm" style={errorBoxStyle}>
-                Could not load gallery entries: {error}
+                {t('views.gallery.error').replace(':error', error)}
             </div>
         );
     }
@@ -106,8 +108,8 @@ export default function GalleryView({ projectId, blueprintId, config }: GalleryV
         return (
             <div className="py-16 text-center" style={emptyStateStyle}>
                 <i className="fa-solid fa-images mb-3 text-3xl" style={emptyIconStyle} />
-                <p className="text-sm" style={emptyHeadingStyle}>No entries to display.</p>
-                <p className="mt-1 text-xs" style={emptySubStyle}>Create one to see it in the gallery.</p>
+                <p className="text-sm" style={emptyHeadingStyle}>{t('views.gallery.empty.title')}</p>
+                <p className="mt-1 text-xs" style={emptySubStyle}>{t('views.gallery.empty.subtitle')}</p>
             </div>
         );
     }
