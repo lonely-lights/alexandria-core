@@ -1,5 +1,29 @@
 import { usePage } from '@inertiajs/react';
 import { useState, useEffect, useRef, useCallback, type CSSProperties } from 'react';
+
+/* Tab pill style tokens — same recipe AiDashboard uses for its tab
+ * row. Active = brand-primary fill + content text; idle = transparent
+ * + base-content text. Replaces the DaisyUI `btn btn-sm btn-primary`/
+ * `btn-ghost` utility classes inherited from the legacy app. */
+const tabActiveStyle: CSSProperties = {
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const tabIdleStyle: CSSProperties = {
+    background: 'transparent',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const tabButtonClass = 'alex-btn inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium';
+
+/* Subtitle text fades — replace the DaisyUI `text-base-content/40` and
+ * `text-base-content/50` opacity utilities, which compile against a
+ * different content token than what the theme system uses. */
+const subtitle50: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+const subtitle40: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
 import { useCmdK } from '@alexandria/hooks/useCmdK';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import EntriesTab from './Sections/EntriesTab';
@@ -144,7 +168,9 @@ export default function BlueprintShow() {
                         {blueprint.classification === 'relationship' ? (
                             <button
                                 onClick={() => setActiveTab('entries')}
-                                className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'entries' ? 'btn-primary' : 'btn-ghost'}`}
+                                className={tabButtonClass}
+                                style={activeTab === 'entries' ? tabActiveStyle : tabIdleStyle}
+                                aria-pressed={activeTab === 'entries'}
                             >
                                 <i className="fa-solid fa-diagram-project w-3.5 text-center text-xs" />
                                 Connections
@@ -152,7 +178,9 @@ export default function BlueprintShow() {
                         ) : blueprint.classification === 'structural' ? (
                             <button
                                 onClick={() => setActiveTab('entries')}
-                                className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'entries' ? 'btn-primary' : 'btn-ghost'}`}
+                                className={tabButtonClass}
+                                style={activeTab === 'entries' ? tabActiveStyle : tabIdleStyle}
+                                aria-pressed={activeTab === 'entries'}
                             >
                                 <i className={`${TreeViewDef.icon} w-3.5 text-center text-xs`} />
                                 {TreeViewDef.label}
@@ -161,7 +189,9 @@ export default function BlueprintShow() {
                             <>
                                 <button
                                     onClick={() => { setActiveTab('entries'); setViewMode('table'); }}
-                                    className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'entries' && viewMode === 'table' ? 'btn-primary' : 'btn-ghost'}`}
+                                    className={tabButtonClass}
+                                    style={activeTab === 'entries' && viewMode === 'table' ? tabActiveStyle : tabIdleStyle}
+                                    aria-pressed={activeTab === 'entries' && viewMode === 'table'}
                                 >
                                     <i className="fa-solid fa-table-list w-3.5 text-center text-xs" />
                                     Table
@@ -178,7 +208,9 @@ export default function BlueprintShow() {
                         ) : (
                             <button
                                 onClick={() => setActiveTab('entries')}
-                                className={`btn btn-sm gap-1.5 rounded-xl ${activeTab === 'entries' ? 'btn-primary' : 'btn-ghost'}`}
+                                className={tabButtonClass}
+                                style={activeTab === 'entries' ? tabActiveStyle : tabIdleStyle}
+                                aria-pressed={activeTab === 'entries'}
                             >
                                 <i className="fa-solid fa-table-list w-3.5 text-center text-xs" />
                                 Table View
@@ -187,7 +219,8 @@ export default function BlueprintShow() {
                         {blueprint.can.update && (
                             <button
                                 onClick={() => openSettings('main')}
-                                className="btn btn-ghost btn-sm gap-1.5 rounded-xl"
+                                className={tabButtonClass}
+                                style={tabIdleStyle}
                             >
                                 <i className="fa-solid fa-gear w-3.5 text-center text-xs" /> Settings
                             </button>
@@ -208,9 +241,9 @@ export default function BlueprintShow() {
                     <div className="min-w-0 flex-1">
                         <h1 className="font-serif text-3xl md:text-4xl font-bold leading-tight tracking-tight">{blueprint.name}</h1>
                         {blueprint.description ? (
-                            <p className="mt-1 text-sm text-base-content/50">{blueprint.description}</p>
+                            <p className="mt-1 text-sm" style={subtitle50}>{blueprint.description}</p>
                         ) : (
-                            <p className="mt-1 text-sm capitalize text-base-content/40">{blueprint.classification} blueprint</p>
+                            <p className="mt-1 text-sm capitalize" style={subtitle40}>{blueprint.classification} blueprint</p>
                         )}
                     </div>
                 </div>
