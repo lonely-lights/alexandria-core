@@ -128,6 +128,103 @@ return [
     'timeline.lane.all' => 'All',
     'timeline.lane.none' => 'None',
 
+    // ── Infobox designer (InfoboxTab.tsx) ───────────────────────────
+    'infobox.title' => 'Infobox Designer',
+    'infobox.subtitle' => 'Configure what appears in the entry infobox sidebar.',
+    'infobox.unsaved' => 'Unsaved changes',
+    'infobox.add_block' => 'Add Block',
+    'infobox.empty.title' => 'No blocks yet',
+    'infobox.empty.hint' => 'Add blocks from the palette on the right',
+    'infobox.palette.title' => 'Add Block',
+
+    // Block types
+    'infobox.block_type.header.label' => 'Header',
+    'infobox.block_type.header.description' => 'Section divider label',
+    'infobox.block_type.attribute.label' => 'Attribute',
+    'infobox.block_type.attribute.description' => 'Display a field value',
+    'infobox.block_type.relationships.label' => 'Relationships',
+    'infobox.block_type.relationships.description' => 'Show related entries',
+    'infobox.block_type.hierarchy.label' => 'Hierarchy',
+    'infobox.block_type.hierarchy.description' => 'Parent and children',
+    'infobox.block_type.mentioned_in.label' => 'Mentioned In',
+    'infobox.block_type.mentioned_in.description' => 'Show works that mention this entry',
+
+    // Block summary fallbacks
+    'infobox.summary.hierarchy.both' => 'Parent & Children',
+    'infobox.summary.hierarchy.parent' => 'Parent only',
+    'infobox.summary.hierarchy.children' => 'Children only',
+
+    // Shared editor controls
+    'infobox.editor.limit_items' => 'Limit items',
+    'infobox.editor.show_first' => 'Show first',
+
+    // Header editor
+    'infobox.editor.header.text_label' => 'Header Text',
+    'infobox.editor.header.text_placeholder' => 'Section title',
+
+    // Attribute editor
+    'infobox.editor.attribute.field' => 'Field',
+    'infobox.editor.attribute.field_placeholder' => 'Pick a field…',
+
+    // Relationships editor
+    'infobox.editor.relationships.blueprint' => 'Relationship Blueprint',
+    'infobox.editor.relationships.blueprint_placeholder' => 'Pick a blueprint…',
+    'infobox.editor.relationships.direction' => 'Direction',
+    'infobox.editor.relationships.direction_both' => 'Both',
+    'infobox.editor.relationships.direction_outgoing' => 'Outgoing only',
+    'infobox.editor.relationships.direction_incoming' => 'Incoming only',
+    'infobox.editor.relationships.header_label' => 'Header text (optional)',
+    'infobox.editor.relationships.header_placeholder' => 'Auto-generated from blueprint name',
+    'infobox.editor.relationships.subtitle_label' => 'Subtitle',
+    'infobox.editor.relationships.subtitle_configured' => 'Subtitle configured',
+    'infobox.editor.relationships.subtitle_none' => 'No subtitle',
+
+    // Hierarchy editor
+    'infobox.editor.hierarchy.direction' => 'Direction',
+    'infobox.editor.hierarchy.direction_both' => 'Both parent and children',
+    'infobox.editor.hierarchy.direction_parent' => 'Parent only',
+    'infobox.editor.hierarchy.direction_children' => 'Children only',
+    'infobox.editor.hierarchy.limit_children' => 'Limit children',
+
+    // Mentioned-in editor
+    'infobox.editor.mentioned.label' => 'Label',
+    'infobox.editor.mentioned.label_placeholder' => 'First Appears',
+    'infobox.editor.mentioned.targets' => 'Target blueprint slugs (comma-separated)',
+    'infobox.editor.mentioned.targets_placeholder' => 'work',
+    'infobox.editor.mentioned.trace_parents' => 'Trace parent chain',
+    'infobox.editor.mentioned.sort_by' => 'Sort by',
+    'infobox.editor.mentioned.sort_direction' => 'Direction',
+    'infobox.editor.mentioned.sort_asc' => 'Ascending',
+    'infobox.editor.mentioned.sort_desc' => 'Descending',
+    'infobox.editor.mentioned.limit_results' => 'Limit results',
+
+    // Subtitle builder modal
+    'infobox.subtitle.title' => 'Subtitle Builder',
+    'infobox.subtitle.subtitle_prefix' => 'Configure what appears below each entry in the ',
+    'infobox.subtitle.subtitle_suffix' => ' section',
+    'infobox.subtitle.intro_prefix' => 'Add fields from the relationship blueprint to build a subtitle line. Each field can optionally traverse into a referenced entry\'s property (e.g., ',
+    'infobox.subtitle.intro_suffix' => '). The separator only appears between fields that have values — no hanging separators.',
+    'infobox.subtitle.display_fields' => 'Display Fields',
+    'infobox.subtitle.add_field' => 'Add Field',
+    'infobox.subtitle.empty.title' => 'No fields added yet',
+    'infobox.subtitle.empty.hint' => 'Click "Add Field" to build the subtitle',
+    'infobox.subtitle.field_placeholder' => 'Pick a field…',
+    'infobox.subtitle.linkable_tooltip' => 'Make this segment a clickable link to the entry',
+    'infobox.subtitle.properties' => 'Properties to display',
+    'infobox.subtitle.property_placeholder' => 'Pick a property…',
+    'infobox.subtitle.format.raw' => 'Raw',
+    'infobox.subtitle.format.year' => 'Year',
+    'infobox.subtitle.format.date' => 'Date',
+    'infobox.subtitle.options' => 'Options',
+    'infobox.subtitle.separator_label' => 'Separator between fields',
+    'infobox.subtitle.separator_hint' => 'Only shows between fields that both have values',
+    'infobox.subtitle.wrap_label' => 'Wrap with',
+    'infobox.subtitle.wrap_hint' => 'Only if any field has data',
+    'infobox.subtitle.preview' => 'Preview',
+    'infobox.subtitle.preview_empty' => 'No fields configured',
+    'infobox.subtitle.clear_all' => 'Clear All',
+    'infobox.subtitle.apply' => 'Apply',
+
     // ── Settings panels (modals/settings/*.tsx) ─────────────────────
     // Tree activation
     'settings.tree.title' => 'Hierarchy View',
