@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { ResolvedView } from './useBlueprintViews';
 
 interface ViewToggleProps {
@@ -5,6 +6,33 @@ interface ViewToggleProps {
     active: string | null;
     onSelect: (type: string) => void;
 }
+
+const containerStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const buttonBase: CSSProperties = {
+    fontSize: '0.875rem',
+    padding: '0.25rem 0.75rem',
+    border: 0,
+    borderRadius: 0,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+};
+
+const buttonActiveStyle: CSSProperties = {
+    ...buttonBase,
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+};
+
+const buttonIdleStyle: CSSProperties = {
+    ...buttonBase,
+    background: 'transparent',
+    color: 'var(--theme-base-content)',
+};
 
 /**
  * Renders one button per registered + enabled + applicable view.
@@ -27,7 +55,7 @@ export default function ViewToggle({ views, active, onSelect }: ViewToggleProps)
     }
 
     return (
-        <div className="flex overflow-hidden rounded-xl border border-base-content/10">
+        <div className="flex overflow-hidden" style={containerStyle}>
             {visible.map((v) => {
                 const isActive = active === v.definition.type;
                 const locked = !v.accessibleForUser;
@@ -35,14 +63,20 @@ export default function ViewToggle({ views, active, onSelect }: ViewToggleProps)
                     ? v.definition.icon
                     : `fa-solid ${v.definition.icon}`;
 
+                const style: CSSProperties = {
+                    ...(isActive ? buttonActiveStyle : buttonIdleStyle),
+                    ...(locked ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+                };
+
                 return (
                     <button
                         key={v.definition.type}
                         type="button"
                         onClick={() => !locked && onSelect(v.definition.type)}
-                        className={`btn btn-sm gap-1.5 rounded-none border-0 ${
-                            isActive ? 'btn-primary' : 'btn-ghost'
-                        } ${locked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className="alex-view-toggle-btn"
+                        data-active={isActive ? 'true' : 'false'}
+                        disabled={locked}
+                        style={style}
                         title={locked ? `Requires upgrade` : v.definition.label}
                     >
                         <i className={`${iconClass} w-3.5 text-center text-xs`} />

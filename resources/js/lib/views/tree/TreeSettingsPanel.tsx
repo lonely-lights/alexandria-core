@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { ViewSettingsProps } from '../types';
 
 /**
@@ -6,9 +7,16 @@ import type { ViewSettingsProps } from '../types';
  * This stub exists so the registry contract is satisfied;
  * when tree-specific view settings are added, replace with real UI.
  */
+const stubStyle: CSSProperties = {
+    background: 'var(--theme-base-100)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
 export default function TreeSettingsPanel(_: ViewSettingsProps) {
     return (
-        <div className="rounded-lg border border-base-content/10 bg-base-100 p-4 text-xs text-base-content/50">
+        <div className="p-4 text-xs" style={stubStyle}>
             Tree view uses the Structure settings panel for configuration.
         </div>
     );

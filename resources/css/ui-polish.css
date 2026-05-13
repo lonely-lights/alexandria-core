@@ -430,6 +430,21 @@ button:not(:disabled),
     );
 }
 
+/* ViewToggle segmented buttons — idle button background animates on
+   hover; active buttons (marked data-active="true") skip the hover wash
+   because their inline-style brand fill already conveys the state. */
+.alex-view-toggle-btn {
+    transition: background-color var(--theme-motion-duration-fast, 150ms)
+        var(--theme-motion-easing-standard, ease);
+}
+.alex-view-toggle-btn:hover:not([data-active="true"]):not(:disabled) {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-base-content) 8%,
+        transparent
+    );
+}
+
 /* Infobox panel — components/entries/Infobox.tsx renders against
    --theme-brand-secondary-*. The expander button shifts between two
    tints on hover; the relationship-row subtitle brightens on parent-row

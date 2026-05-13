@@ -1,7 +1,15 @@
+import type { CSSProperties } from 'react';
 import type { BlueprintViewDefinition, ViewRenderProps, ViewSettingsProps } from '../types';
 import GraphView from './GraphView';
 import type { GraphConfig } from './types';
 import { defaultGraphConfig } from './types';
+
+const stubStyle: CSSProperties = {
+    background: 'var(--theme-base-100)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
 
 function GraphRender({ blueprint, config }: ViewRenderProps) {
     const graphConfig = config as unknown as GraphConfig;
@@ -24,7 +32,7 @@ function GraphRender({ blueprint, config }: ViewRenderProps) {
 
 function GraphRegistryPanelPlaceholder(_: ViewSettingsProps) {
     return (
-        <div className="rounded-lg border border-base-content/10 bg-base-100 p-4 text-xs text-base-content/50">
+        <div className="p-4 text-xs" style={stubStyle}>
             Graph is configured via the dedicated <span className="font-semibold">Graph</span> menu
             item in Blueprint Settings.
         </div>
