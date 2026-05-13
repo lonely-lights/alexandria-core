@@ -1,4 +1,5 @@
 import { router } from '@inertiajs/react';
+import type { CSSProperties } from 'react';
 
 export interface GalleryEntry {
     id: number;
@@ -15,6 +16,26 @@ export interface GalleryEntry {
 interface GalleryTileProps {
     entry: GalleryEntry;
 }
+
+const tileStyle: CSSProperties = {
+    background: 'var(--theme-base-200)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const imageWellStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-300) 40%, transparent)',
+};
+
+const captionStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-100) 80%, transparent)',
+    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+    color: 'var(--theme-base-content)',
+};
+
+const placeholderIconStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
+};
 
 /**
  * Resolve the tile image source via the three-step fallback:
@@ -38,9 +59,10 @@ export default function GalleryTile({ entry }: GalleryTileProps) {
         <button
             type="button"
             onClick={() => router.visit(entry.url)}
-            className="group flex aspect-[1/1] w-full flex-col overflow-hidden rounded-xl border border-base-content/10 bg-base-200 text-left transition-all hover:border-primary/30 hover:shadow-md"
+            className="alex-gallery-tile group flex aspect-[1/1] w-full flex-col overflow-hidden text-left"
+            style={tileStyle}
         >
-            <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-base-300/40">
+            <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={imageWellStyle}>
                 {src ? (
                     <img
                         src={src}
@@ -48,11 +70,11 @@ export default function GalleryTile({ entry }: GalleryTileProps) {
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                 ) : (
-                    <i className={`${iconClass} text-4xl text-base-content/20`} aria-hidden="true" />
+                    <i className={`${iconClass} text-4xl`} style={placeholderIconStyle} aria-hidden="true" />
                 )}
             </div>
-            <div className="border-t border-base-content/5 bg-base-100/80 px-3 py-2">
-                <p className="truncate text-sm font-medium text-base-content">{entry.name}</p>
+            <div className="px-3 py-2" style={captionStyle}>
+                <p className="truncate text-sm font-medium">{entry.name}</p>
             </div>
         </button>
     );

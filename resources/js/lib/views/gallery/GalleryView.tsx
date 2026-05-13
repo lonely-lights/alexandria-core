@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import GalleryTile, { type GalleryEntry } from './GalleryTile';
 import type { GalleryConfig } from './types';
 
@@ -7,6 +7,34 @@ interface GalleryViewProps {
     blueprintId: number;
     config: GalleryConfig;
 }
+
+const errorBoxStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-status-error-fill) 5%, transparent)',
+    border: '1px solid color-mix(in srgb, var(--theme-status-error-stroke) 30%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+    color: 'var(--theme-status-error-stroke)',
+};
+
+const emptyStateStyle: CSSProperties = {
+    border: '1px dashed color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+};
+
+const emptyIconStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+};
+
+const emptyHeadingStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
+const emptySubStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)',
+};
+
+const spinnerStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+};
 
 export default function GalleryView({ projectId, blueprintId, config }: GalleryViewProps) {
     const [entries, setEntries] = useState<GalleryEntry[]>([]);
@@ -61,14 +89,14 @@ export default function GalleryView({ projectId, blueprintId, config }: GalleryV
     if (loading) {
         return (
             <div className="flex items-center justify-center py-16">
-                <span className="loading loading-spinner loading-md" />
+                <i className="fa-solid fa-circle-notch fa-spin text-2xl" style={spinnerStyle} />
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="rounded-xl border border-error/30 bg-error/5 p-4 text-sm text-error">
+            <div className="p-4 text-sm" style={errorBoxStyle}>
                 Could not load gallery entries: {error}
             </div>
         );
@@ -76,10 +104,10 @@ export default function GalleryView({ projectId, blueprintId, config }: GalleryV
 
     if (sorted.length === 0) {
         return (
-            <div className="rounded-2xl border border-dashed border-base-content/15 py-16 text-center">
-                <i className="fa-solid fa-images mb-3 text-3xl text-base-content/15" />
-                <p className="text-sm text-base-content/40">No entries to display.</p>
-                <p className="mt-1 text-xs text-base-content/30">Create one to see it in the gallery.</p>
+            <div className="py-16 text-center" style={emptyStateStyle}>
+                <i className="fa-solid fa-images mb-3 text-3xl" style={emptyIconStyle} />
+                <p className="text-sm" style={emptyHeadingStyle}>No entries to display.</p>
+                <p className="mt-1 text-xs" style={emptySubStyle}>Create one to see it in the gallery.</p>
             </div>
         );
     }

@@ -430,6 +430,27 @@ button:not(:disabled),
     );
 }
 
+/* Gallery tile — border + shadow animate on hover so the tile lifts
+   subtly when the user can interact with it. Inner image scale is
+   handled by Tailwind's group-hover:scale-105 (CSS-level :hover too,
+   composed via the .group ancestor). */
+.alex-gallery-tile {
+    transition: border-color var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease),
+        box-shadow var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease);
+}
+.alex-gallery-tile:hover {
+    border-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 30%,
+        transparent
+    );
+    box-shadow:
+        0 4px 6px -1px rgb(0 0 0 / 0.1),
+        0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
 /* ViewToggle segmented buttons — idle button background animates on
    hover; active buttons (marked data-active="true") skip the hover wash
    because their inline-style brand fill already conveys the state. */
