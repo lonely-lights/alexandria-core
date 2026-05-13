@@ -39,6 +39,7 @@ import { TreeActivationPanel } from "./settings/TreePanels";
 import KanbanPanel from "./settings/KanbanPanel";
 import GraphPanel from "./settings/GraphPanel";
 import RevealCollapse from "@alexandria/components/ui/RevealCollapse";
+import SettingsActivationToggle from "./settings/SettingsActivationToggle";
 import SubtitleBuilderModal from "./settings/SubtitleBuilderModal";
 import FieldTypesHelp from "@alexandria/components/blueprints/FieldTypesHelp";
 import HelpModal from "@alexandria/components/ui/HelpModal";
@@ -49,7 +50,6 @@ import {
     helperStyle,
     labelStyle,
     selectStyle,
-    toggleCardStyle,
     warningTextStyle,
 } from "./settings/settingsPanelStyles";
 
@@ -1708,72 +1708,35 @@ function BlueprintSettingsPanel({
         });
     }
 
-    function ToggleRow({
-        title,
-        description,
-        checked,
-        onChange,
-    }: {
-        title: string;
-        description: string;
-        checked: boolean;
-        onChange: (v: boolean) => void;
-    }) {
-        return (
-            <label
-                className="alex-row flex cursor-pointer items-center justify-between gap-4 px-4 py-3"
-                style={toggleCardStyle}
-            >
-                <div>
-                    <span className="text-sm font-medium">{title}</span>
-                    <p className="text-xs" style={helperStyle}>
-                        {description}
-                    </p>
-                </div>
-                <input
-                    type="checkbox"
-                    role="switch"
-                    checked={checked}
-                    onChange={(e) => onChange(e.target.checked)}
-                    style={{
-                        accentColor: TOGGLE_ACCENT_COLOR,
-                        width: "2rem",
-                        height: "1.25rem",
-                    }}
-                />
-            </label>
-        );
-    }
-
     return (
         <>
             <div className="flex-1 space-y-3 overflow-y-auto p-5">
-                <ToggleRow
+                <SettingsActivationToggle
                     title={t(
                         "blueprints.bp_settings.behavior.show_dashboard.title",
                     )}
                     description={t(
                         "blueprints.bp_settings.behavior.show_dashboard.description",
                     )}
-                    checked={form.data.show_on_dashboard}
+                    enabled={form.data.show_on_dashboard}
                     onChange={(v) => form.setData("show_on_dashboard", v)}
                 />
-                <ToggleRow
+                <SettingsActivationToggle
                     title={t(
                         "blueprints.bp_settings.behavior.wiki_links.title",
                     )}
                     description={t(
                         "blueprints.bp_settings.behavior.wiki_links.description",
                     )}
-                    checked={form.data.is_linkable}
+                    enabled={form.data.is_linkable}
                     onChange={(v) => form.setData("is_linkable", v)}
                 />
-                <ToggleRow
+                <SettingsActivationToggle
                     title={t("blueprints.bp_settings.behavior.nav_hub.title")}
                     description={t(
                         "blueprints.bp_settings.behavior.nav_hub.description",
                     )}
-                    checked={form.data.is_hub}
+                    enabled={form.data.is_hub}
                     onChange={(v) => form.setData("is_hub", v)}
                 />
             </div>
