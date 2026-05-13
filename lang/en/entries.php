@@ -100,4 +100,47 @@ return [
     'show.mentions_title.mentioned_in' => 'Mentioned In',
     'overview.empty.title' => 'No content yet',
     'overview.empty.subtitle' => 'Add content from the Edit page to see it here.',
+
+    // ── Create + Edit (Subsection B) ──
+    'form.create.title' => 'New :blueprint',
+    'form.create.subtitle' => 'Create a new entry',
+    'form.edit.title' => 'Edit :entry',
+    'form.edit.breadcrumb' => 'Edit',
+
+    // ── EntryForm (Subsection B) ──
+    'form.name_placeholder' => ':blueprint name',
+    'form.summary_label' => 'Summary',
+    'form.summary_placeholder' => 'A brief summary of this entry',
+    'form.content_heading' => 'Content',
+    'form.content_placeholder' => 'Write your content here… Supports [[wiki links]] and wiki markup.',
+    'form.fields_heading' => 'Fields',
+    'form.media_heading' => 'Media',
+    'form.parent_label' => 'Parent Entry',
+    'form.parent_helper' => 'Place this entry under another entry in the hierarchy. Used for structural organization like chapters, sections, or locations within locations.',
+    'form.parent_none' => 'No parent',
+    'form.action.create' => 'Create :blueprint',
+    'form.action.save' => 'Save Changes',
+    'form.boolean.yes' => 'Yes',
+    'form.boolean.no' => 'No',
+
+    // ── TemporalFieldEditor (Subsection B) ──
+    'form.temporal.intensity_default' => 'Intensity',
+    'form.temporal.record_count.singular' => ':count record',
+    'form.temporal.record_count.plural' => ':count records',
+    'form.temporal.title_placeholder' => 'Title',
+    'form.temporal.end_placeholder' => 'Present',
+    'form.temporal.notes_placeholder' => 'Notes…',
+    'form.temporal.add' => 'Add :label',
+
+    // ── EntryReferencePicker + Modal (Subsection B) ──
+    'form.reference.no_config' => 'No reference config',
+    'form.reference.placeholder' => 'Select :label…',
+    'form.reference_modal.subtitle_fallback' => 'Select entries',
+    'form.reference_modal.subtitle_multi_suffix' => ' — select multiple, drag to reorder',
+    'form.reference_modal.selected_heading' => 'Selected (:count) — drag to reorder',
+    'form.reference_modal.search_placeholder' => 'Filter or type to create…',
+    'form.reference_modal.create' => 'Create',
+    'form.reference_modal.no_entries' => 'No entries found',
+    'form.reference_modal.selected_count' => ':count selected',
+    'form.reference_modal.apply' => 'Apply',
 ];
