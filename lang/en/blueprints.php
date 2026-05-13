@@ -72,6 +72,50 @@ return [
     'entries.header.actions' => 'Actions',
     'entries.header.clear_filters' => 'Clear all filters',
 
+    // ── Tree modals (modals/tree/*.tsx) ─────────────────────────────
+    // Child blueprint picker
+    'tree.child_blueprints.title' => 'Child Blueprints',
+    'tree.child_blueprints.search_placeholder' => 'Search blueprints…',
+    'tree.child_blueprints.selected_count' => ':count selected',
+    'tree.child_blueprints.none_selected' => 'None selected',
+
+    // Stub → entry converter
+    'tree.convert_stub.title' => 'Convert to Entry',
+    'tree.convert_stub.choose.create.title' => 'Create New',
+    'tree.convert_stub.choose.create.subtitle' => 'Create a new entry page',
+    'tree.convert_stub.choose.link.title' => 'Link Existing',
+    'tree.convert_stub.choose.link.subtitle' => 'Attach an existing entry',
+    'tree.convert_stub.create.prompt' => 'Select a blueprint for the new entry:',
+    'tree.convert_stub.create.search_placeholder' => 'Search blueprints…',
+    'tree.convert_stub.create.no_matches' => 'No matches',
+    'tree.convert_stub.link.label' => 'Search entries',
+    'tree.convert_stub.link.placeholder' => 'Start typing to search…',
+    'tree.convert_stub.link.no_results' => 'No results found',
+    'tree.convert_stub.link.action' => 'Link',
+
+    // Add-entry modal
+    'tree.add_entry.title' => 'Add to :parent',
+    'tree.add_entry.root_label' => 'Root',
+    'tree.add_entry.tab.folder' => 'Folder',
+    'tree.add_entry.tab.entry' => 'Entry',
+    'tree.add_entry.tab.link' => 'Link',
+    'tree.add_entry.folder.intro' => 'Create an organizational container to group items.',
+    'tree.add_entry.folder.action' => 'Create Folder',
+    'tree.add_entry.create.intro' => 'Create a new entry with its own detail page.',
+    'tree.add_entry.create.action' => 'Create Entry',
+    'tree.add_entry.field.name' => 'Name',
+    'tree.add_entry.field.name_placeholder' => 'Entry name…',
+    'tree.add_entry.field.summary' => 'Summary',
+    'tree.add_entry.field.summary_placeholder' => 'Brief description (optional)…',
+    'tree.add_entry.children_blueprints.label' => 'Children Blueprints',
+    'tree.add_entry.children_blueprints.count' => ':count selected',
+    'tree.add_entry.children_blueprints.filter' => 'Filter blueprints…',
+    'tree.add_entry.children_blueprints.no_matches' => 'No matches',
+    'tree.add_entry.link.intro' => 'Attach an existing entry from your project into this tree.',
+    'tree.add_entry.link.search_scoped' => 'Search :name',
+    'tree.add_entry.link.search_all' => 'Search all entries',
+    'tree.add_entry.link.toggle_all' => 'Search all',
+
     // ── Connections view (ConnectionsView.tsx) ──────────────────────
     'connections.search_placeholder' => 'Search connections…',
     'connections.count.singular' => ':count connection',

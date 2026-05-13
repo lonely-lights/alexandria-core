@@ -1,9 +1,52 @@
-import { useRef, useState } from 'react';
-import ActionButton from '@alexandria/components/ui/ActionButton';
-import Modal from '@alexandria/components/ui/Modal';
-import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
-import type { BlueprintDetail, SiblingBlueprint } from '@alexandria/types/blueprints';
-import type { TreeNode } from '../../TreeView';
+import { type CSSProperties, useRef, useState } from "react";
+import ActionButton from "@alexandria/components/ui/ActionButton";
+import Modal from "@alexandria/components/ui/Modal";
+import useT from "@alexandria/hooks/useT";
+import { csrfHeaders } from "@alexandria/lib/csrfHeaders";
+import type {
+    BlueprintDetail,
+    SiblingBlueprint,
+} from "@alexandria/types/blueprints";
+import type { TreeNode } from "../../TreeView";
+import EntryLinkSearch from "./EntryLinkSearch";
+import {
+    closeBtnStyle,
+    headerStyle,
+    inputStyle,
+    listShellStyle,
+    rowBorderStyle,
+    selectedChipStyle,
+    selectedRowStyle,
+    subtitle40,
+    subtitle50,
+    subtitle60,
+} from "./treeModalStyles";
+
+/* Recipes specific to this modal — the tab bar and the children-
+   blueprint selector wrapper don't appear in the sibling modals, so
+   they stay local. */
+const tabBarStyle: CSSProperties = {
+    borderBottom: "1px solid var(--theme-base-300)",
+};
+
+const childSelectorWrapStyle: CSSProperties = {
+    background: "color-mix(in srgb, var(--theme-base-200) 40%, transparent)",
+    borderRadius: "var(--theme-radius-card)",
+};
+
+/* Tab pill = active vs idle. Active gets a 2px bottom border in the
+   semantic color (folder=secondary, entry=success, link=primary) and
+   matching text color. */
+function tabActiveStyle(color: string): CSSProperties {
+    return {
+        borderBottom: `2px solid ${color}`,
+        color,
+    };
+}
+
+const tabIdleStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+};
 
 /**
  * Add an entry to the tree — three modes:
@@ -16,7 +59,15 @@ import type { TreeNode } from '../../TreeView';
  * via "Search all"). Newly-created folders/entries can carry their
  * own child_blueprint_ids via the shared selector at the bottom.
  */
-export default function AddEntryModal({ parentId, parentEntry, projectId, blueprint, projectBlueprints, onCreated, onClose }: {
+export default function AddEntryModal({
+    parentId,
+    parentEntry,
+    projectId,
+    blueprint,
+    projectBlueprints,
+    onCreated,
+    onClose,
+}: {
     parentId: number | null;
     parentEntry: TreeNode | null;
     projectId: number;
@@ -25,37 +76,54 @@ export default function AddEntryModal({ parentId, parentEntry, projectId, bluepr
     onCreated: (entryId: number) => void;
     onClose: () => void;
 }) {
+    const t = useT();
     const parentChildBpIds = parentEntry?.child_blueprint_ids ?? [];
     const canLink = parentChildBpIds.length > 0;
-    const effectiveBlueprintId = parentChildBpIds.length === 1 ? parentChildBpIds[0] : blueprint.id;
-    const effectiveBpName = parentChildBpIds.length > 0
-        ? parentChildBpIds.map((id) => projectBlueprints.find((b) => b.id === id)?.name).filter(Boolean).join(', ')
-        : blueprint.name;
+    const effectiveBlueprintId =
+        parentChildBpIds.length === 1 ? parentChildBpIds[0] : blueprint.id;
+    const effectiveBpName =
+        parentChildBpIds.length > 0
+            ? parentChildBpIds
+                  .map((id) => projectBlueprints.find((b) => b.id === id)?.name)
+                  .filter(Boolean)
+                  .join(", ")
+            : blueprint.name;
 
-    const [mode, setMode] = useState<'folder' | 'create' | 'link'>('folder');
+    const [mode, setMode] = useState<"folder" | "create" | "link">("folder");
     const [childBlueprintIds, setChildBlueprintIds] = useState<number[]>([]);
     const [showAllSearch, setShowAllSearch] = useState(false);
 
     // Create state
-    const [name, setName] = useState('');
-    const [summary, setSummary] = useState('');
+    const [name, setName] = useState("");
+    const [summary, setSummary] = useState("");
     const [saving, setSaving] = useState(false);
 
     // Link state
-    const [linkSearch, setLinkSearch] = useState('');
-    const [linkResults, setLinkResults] = useState<Array<{ id: number; name: string; blueprint_name: string; blueprint_id?: number }>>([]);
+    const [linkSearch, setLinkSearch] = useState("");
+    const [linkResults, setLinkResults] = useState<
+        Array<{
+            id: number;
+            name: string;
+            blueprint_name: string;
+            blueprint_id?: number;
+        }>
+    >([]);
     const [searching, setSearching] = useState(false);
     const [linking, setLinking] = useState(false);
-    const [selectedLink, setSelectedLink] = useState<{ id: number; name: string; blueprint_name: string } | null>(null);
+    const [selectedLink, setSelectedLink] = useState<{
+        id: number;
+        name: string;
+        blueprint_name: string;
+    } | null>(null);
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     function handleCreate() {
         if (!name.trim()) return;
         setSaving(true);
         fetch(`/api/v1/projects/${projectId}/tree/entries`, {
-            method: 'POST',
-            headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
+            method: "POST",
+            headers: { ...csrfHeaders(), "Content-Type": "application/json" },
+            credentials: "same-origin",
             body: JSON.stringify({
                 name: name.trim(),
                 blueprint_id: effectiveBlueprintId,
@@ -67,16 +135,23 @@ export default function AddEntryModal({ parentId, parentEntry, projectId, bluepr
             .then((r) => r.json())
             .then(async (data) => {
                 const entryId = data.entry?.id;
-                if (!entryId) { setSaving(false); return; }
+                if (!entryId) {
+                    setSaving(false);
+                    return;
+                }
 
                 const metaPayload: Record<string, unknown> = {};
-                if (childBlueprintIds.length > 0) metaPayload.child_blueprint_ids = childBlueprintIds;
+                if (childBlueprintIds.length > 0)
+                    metaPayload.child_blueprint_ids = childBlueprintIds;
 
                 if (Object.keys(metaPayload).length > 0) {
                     await fetch(`/api/v1/entries/${entryId}/meta`, {
-                        method: 'PATCH',
-                        headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
-                        credentials: 'same-origin',
+                        method: "PATCH",
+                        headers: {
+                            ...csrfHeaders(),
+                            "Content-Type": "application/json",
+                        },
+                        credentials: "same-origin",
                         body: JSON.stringify(metaPayload),
                     });
                 }
@@ -88,18 +163,30 @@ export default function AddEntryModal({ parentId, parentEntry, projectId, bluepr
     }
 
     function doSearch(query: string) {
-        if (!query.trim()) { setLinkResults([]); return; }
+        if (!query.trim()) {
+            setLinkResults([]);
+            return;
+        }
         setSearching(true);
-        fetch(`/api/v1/entries/search?q=${encodeURIComponent(query)}&project_id=${projectId}&limit=10`, {
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'same-origin',
-        })
+        fetch(
+            `/api/v1/entries/search?q=${encodeURIComponent(query)}&project_id=${projectId}&limit=10`,
+            {
+                headers: {
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                credentials: "same-origin",
+            },
+        )
             .then((r) => r.json())
             .then((data) => {
                 const results = data.data ?? [];
-                const filtered = (!showAllSearch && parentChildBpIds.length > 0)
-                    ? results.filter((r: { blueprint_id?: number }) => parentChildBpIds.includes(r.blueprint_id ?? 0))
-                    : results;
+                const filtered =
+                    !showAllSearch && parentChildBpIds.length > 0
+                        ? results.filter((r: { blueprint_id?: number }) =>
+                              parentChildBpIds.includes(r.blueprint_id ?? 0),
+                          )
+                        : results;
                 setLinkResults(filtered);
                 setSearching(false);
             })
@@ -117,133 +204,240 @@ export default function AddEntryModal({ parentId, parentEntry, projectId, bluepr
         setLinking(true);
         const entryId = selectedLink.id;
         fetch(`/api/v1/entries/${entryId}/reparent`, {
-            method: 'PUT',
-            headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
+            method: "PUT",
+            headers: { ...csrfHeaders(), "Content-Type": "application/json" },
+            credentials: "same-origin",
             body: JSON.stringify({ parent_id: parentId }),
-        }).then(async () => {
-            if (childBlueprintIds.length > 0) {
-                await fetch(`/api/v1/entries/${entryId}/meta`, {
-                    method: 'PATCH',
-                    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ child_blueprint_ids: childBlueprintIds }),
-                });
-            }
-            setLinking(false);
-            onCreated(entryId);
-        }).catch(() => setLinking(false));
+        })
+            .then(async () => {
+                if (childBlueprintIds.length > 0) {
+                    await fetch(`/api/v1/entries/${entryId}/meta`, {
+                        method: "PATCH",
+                        headers: {
+                            ...csrfHeaders(),
+                            "Content-Type": "application/json",
+                        },
+                        credentials: "same-origin",
+                        body: JSON.stringify({
+                            child_blueprint_ids: childBlueprintIds,
+                        }),
+                    });
+                }
+                setLinking(false);
+                onCreated(entryId);
+            })
+            .catch(() => setLinking(false));
     }
 
     // Shared children blueprint selector
-    const [bpSearch, setBpSearch] = useState('');
+    const [bpSearch, setBpSearch] = useState("");
     const filteredBlueprints = bpSearch.trim()
-        ? projectBlueprints.filter((bp) => bp.name.toLowerCase().includes(bpSearch.toLowerCase()))
+        ? projectBlueprints.filter((bp) =>
+              bp.name.toLowerCase().includes(bpSearch.toLowerCase()),
+          )
         : projectBlueprints;
 
     const childBlueprintSelect = (
-        <div className="rounded-xl bg-base-200/40 p-3">
+        <div className="p-3" style={childSelectorWrapStyle}>
             <div className="mb-1 flex items-center justify-between">
-                <label className="text-xs font-medium text-base-content/60">Children Blueprints</label>
+                <label className="text-xs font-medium" style={subtitle60}>
+                    {t("blueprints.tree.add_entry.children_blueprints.label")}
+                </label>
                 {childBlueprintIds.length > 0 && (
-                    <span className="text-xs text-base-content/40">{childBlueprintIds.length} selected</span>
+                    <span className="text-xs" style={subtitle40}>
+                        {t(
+                            "blueprints.tree.add_entry.children_blueprints.count",
+                        ).replace(":count", String(childBlueprintIds.length))}
+                    </span>
                 )}
             </div>
             <input
                 type="text"
                 value={bpSearch}
                 onChange={(e) => setBpSearch(e.target.value)}
-                placeholder="Filter blueprints..."
-                className="input input-bordered mb-1 h-8 min-h-0 w-full rounded-xl text-xs"
+                placeholder={t(
+                    "blueprints.tree.add_entry.children_blueprints.filter",
+                )}
+                className="mb-1 h-8 w-full px-3 text-xs focus:outline-none focus:ring-2"
+                style={inputStyle}
             />
-            <div className="max-h-[150px] overflow-y-auto rounded-xl border border-base-content/10">
-                {filteredBlueprints.map((bp) => {
+            <div
+                className="max-h-[150px] overflow-y-auto"
+                style={listShellStyle}
+            >
+                {filteredBlueprints.map((bp, i) => {
                     const checked = childBlueprintIds.includes(bp.id);
+                    const isLast = i === filteredBlueprints.length - 1;
                     return (
-                        <label key={bp.id} className={`flex cursor-pointer items-center gap-2 border-b border-base-content/5 px-3 py-2 text-sm transition-colors last:border-b-0 hover:bg-base-200/50 ${checked ? 'bg-primary/5' : ''}`}>
+                        <label
+                            key={bp.id}
+                            className="alex-row flex cursor-pointer items-center gap-2 px-3 py-2 text-sm"
+                            style={{
+                                ...(checked ? selectedRowStyle : {}),
+                                ...(isLast ? {} : rowBorderStyle),
+                            }}
+                        >
                             <input
                                 type="checkbox"
                                 checked={checked}
-                                onChange={() => setChildBlueprintIds((prev) => checked ? prev.filter((id) => id !== bp.id) : [...prev, bp.id])}
-                                className="checkbox checkbox-primary checkbox-xs"
+                                onChange={() =>
+                                    setChildBlueprintIds((prev) =>
+                                        checked
+                                            ? prev.filter((id) => id !== bp.id)
+                                            : [...prev, bp.id],
+                                    )
+                                }
+                                style={{
+                                    accentColor:
+                                        "var(--theme-brand-primary-500)",
+                                }}
                             />
-                            <span className={checked ? 'font-medium text-primary' : ''}>{bp.name}</span>
+                            <span
+                                className={checked ? "font-medium" : ""}
+                                style={
+                                    checked
+                                        ? {
+                                              color: "var(--theme-brand-primary-500)",
+                                          }
+                                        : undefined
+                                }
+                            >
+                                {bp.name}
+                            </span>
                         </label>
                     );
                 })}
                 {filteredBlueprints.length === 0 && (
-                    <p className="px-3 py-2 text-xs text-base-content/40">No matches</p>
+                    <p className="px-3 py-2 text-xs" style={subtitle40}>
+                        {t(
+                            "blueprints.tree.add_entry.children_blueprints.no_matches",
+                        )}
+                    </p>
                 )}
             </div>
         </div>
     );
 
-    const parentLabel = parentEntry ? parentEntry.name : 'Root';
+    const parentLabel = parentEntry
+        ? parentEntry.name
+        : t("blueprints.tree.add_entry.root_label");
 
     return (
         <Modal open onClose={onClose} maxWidth="max-w-md">
             {/* Header */}
-            <div className="flex items-center justify-between bg-base-300 px-5 py-3">
+            <div
+                className="flex items-center justify-between px-5 py-3"
+                style={headerStyle}
+            >
                 <div>
-                    <h3 className="text-sm font-semibold">Add to {parentLabel}</h3>
+                    <h3 className="text-sm font-semibold">
+                        {t("blueprints.tree.add_entry.title").replace(
+                            ":parent",
+                            parentLabel,
+                        )}
+                    </h3>
                 </div>
-                <button type="button" onClick={onClose} className="btn btn-ghost btn-xs btn-circle">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="alex-btn alex-btn--ghost inline-flex items-center justify-center"
+                    style={closeBtnStyle}
+                >
                     <i className="fa-solid fa-xmark text-xs" />
                 </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-base-300">
+            <div className="flex" style={tabBarStyle}>
                 <button
                     type="button"
-                    onClick={() => setMode('folder')}
-                    className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${mode === 'folder' ? 'border-b-2 border-secondary text-secondary' : 'text-base-content/50 hover:text-base-content/70'}`}
+                    onClick={() => setMode("folder")}
+                    className="alex-row flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors"
+                    style={
+                        mode === "folder"
+                            ? tabActiveStyle("var(--theme-brand-secondary-500)")
+                            : tabIdleStyle
+                    }
                 >
-                    <i className="fa-solid fa-folder-plus text-xs" /> Folder
+                    <i className="fa-solid fa-folder-plus text-xs" />{" "}
+                    {t("blueprints.tree.add_entry.tab.folder")}
                 </button>
                 <button
                     type="button"
-                    onClick={() => setMode('create')}
-                    className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${mode === 'create' ? 'border-b-2 border-success text-success' : 'text-base-content/50 hover:text-base-content/70'}`}
+                    onClick={() => setMode("create")}
+                    className="alex-row flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors"
+                    style={
+                        mode === "create"
+                            ? tabActiveStyle(
+                                  "var(--theme-status-success-stroke)",
+                              )
+                            : tabIdleStyle
+                    }
                 >
-                    <i className="fa-solid fa-file-circle-plus text-xs" /> Entry
+                    <i className="fa-solid fa-file-circle-plus text-xs" />{" "}
+                    {t("blueprints.tree.add_entry.tab.entry")}
                 </button>
                 <button
                     type="button"
-                    onClick={() => setMode('link')}
-                    className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${mode === 'link' ? 'border-b-2 border-primary text-primary' : 'text-base-content/50 hover:text-base-content/70'}`}
+                    onClick={() => setMode("link")}
+                    className="alex-row flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors"
+                    style={
+                        mode === "link"
+                            ? tabActiveStyle("var(--theme-brand-primary-500)")
+                            : tabIdleStyle
+                    }
                 >
-                    <i className="fa-solid fa-link text-xs" /> Link
+                    <i className="fa-solid fa-link text-xs" />{" "}
+                    {t("blueprints.tree.add_entry.tab.link")}
                 </button>
             </div>
 
-            {(mode === 'create' || mode === 'folder') ? (
+            {mode === "create" || mode === "folder" ? (
                 <div className="space-y-4 p-6">
-                    <p className="text-xs text-base-content/50">
-                        {mode === 'folder'
-                            ? 'Create an organizational container to group items.'
-                            : 'Create a new entry with its own detail page.'}
+                    <p className="text-xs" style={subtitle50}>
+                        {mode === "folder"
+                            ? t("blueprints.tree.add_entry.folder.intro")
+                            : t("blueprints.tree.add_entry.create.intro")}
                     </p>
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-base-content/60">Name</label>
+                        <label
+                            className="mb-1 block text-xs font-medium"
+                            style={subtitle60}
+                        >
+                            {t("blueprints.tree.add_entry.field.name")}
+                        </label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) handleCreate(); }}
-                            placeholder="Entry name..."
-                            className="input input-bordered w-full rounded-xl text-sm"
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && name.trim())
+                                    handleCreate();
+                            }}
+                            placeholder={t(
+                                "blueprints.tree.add_entry.field.name_placeholder",
+                            )}
+                            className="w-full px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                            style={inputStyle}
                             autoFocus
                         />
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-base-content/60">Summary</label>
+                        <label
+                            className="mb-1 block text-xs font-medium"
+                            style={subtitle60}
+                        >
+                            {t("blueprints.tree.add_entry.field.summary")}
+                        </label>
                         <textarea
                             value={summary}
                             onChange={(e) => setSummary(e.target.value)}
-                            placeholder="Brief description (optional)..."
-                            className="textarea textarea-bordered w-full rounded-xl text-sm"
+                            placeholder={t(
+                                "blueprints.tree.add_entry.field.summary_placeholder",
+                            )}
+                            className="w-full px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                            style={inputStyle}
                             rows={2}
                         />
                     </div>
@@ -252,33 +446,60 @@ export default function AddEntryModal({ parentId, parentEntry, projectId, bluepr
 
                     <div className="flex items-center gap-2 pt-2">
                         <ActionButton
-                            icon={mode === 'folder' ? 'fa-solid fa-folder-plus' : 'fa-solid fa-plus'}
-                            label={mode === 'folder' ? 'Create Folder' : 'Create Entry'}
-                            variant={mode === 'folder' ? 'secondary' : 'primary'}
+                            icon={
+                                mode === "folder"
+                                    ? "fa-solid fa-folder-plus"
+                                    : "fa-solid fa-plus"
+                            }
+                            label={
+                                mode === "folder"
+                                    ? t(
+                                          "blueprints.tree.add_entry.folder.action",
+                                      )
+                                    : t(
+                                          "blueprints.tree.add_entry.create.action",
+                                      )
+                            }
+                            variant={
+                                mode === "folder" ? "secondary" : "primary"
+                            }
                             onClick={handleCreate}
                             loading={saving}
                             disabled={!name.trim()}
                         />
-                        <ActionButton icon="fa-solid fa-xmark" label="Cancel" variant="ghost" onClick={onClose} />
+                        <ActionButton
+                            icon="fa-solid fa-xmark"
+                            label={t("common.cancel")}
+                            variant="ghost"
+                            onClick={onClose}
+                        />
                     </div>
                 </div>
             ) : (
                 /* ── Link form ── */
                 <div className="space-y-4 p-6">
-                    <p className="text-xs text-base-content/50">
-                        Attach an existing entry from your project into this tree.
+                    <p className="text-xs" style={subtitle50}>
+                        {t("blueprints.tree.add_entry.link.intro")}
                     </p>
                     {selectedLink ? (
                         /* Selected entry */
-                        <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                        <div
+                            className="flex items-center gap-3 px-4 py-3"
+                            style={selectedChipStyle}
+                        >
                             <div className="flex-1">
-                                <p className="font-medium">{selectedLink.name}</p>
-                                <p className="text-xs text-base-content/50">{selectedLink.blueprint_name}</p>
+                                <p className="font-medium">
+                                    {selectedLink.name}
+                                </p>
+                                <p className="text-xs" style={subtitle50}>
+                                    {selectedLink.blueprint_name}
+                                </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setSelectedLink(null)}
-                                className="btn btn-ghost btn-xs btn-circle"
+                                className="alex-btn alex-btn--ghost inline-flex items-center justify-center"
+                                style={closeBtnStyle}
                             >
                                 <i className="fa-solid fa-xmark text-xs" />
                             </button>
@@ -288,57 +509,67 @@ export default function AddEntryModal({ parentId, parentEntry, projectId, bluepr
                         <>
                             <div>
                                 <div className="mb-1 flex items-center justify-between">
-                                    <label className="text-xs font-medium text-base-content/60">
-                                        {!showAllSearch && canLink ? `Search ${effectiveBpName}` : 'Search all entries'}
+                                    <label
+                                        className="text-xs font-medium"
+                                        style={subtitle60}
+                                    >
+                                        {!showAllSearch && canLink
+                                            ? t(
+                                                  "blueprints.tree.add_entry.link.search_scoped",
+                                              ).replace(
+                                                  ":name",
+                                                  effectiveBpName,
+                                              )
+                                            : t(
+                                                  "blueprints.tree.add_entry.link.search_all",
+                                              )}
                                     </label>
                                     {canLink && (
                                         <label className="flex cursor-pointer items-center gap-1.5">
                                             <input
                                                 type="checkbox"
                                                 checked={showAllSearch}
-                                                onChange={(e) => { setShowAllSearch(e.target.checked); setLinkResults([]); setLinkSearch(''); }}
-                                                className="checkbox checkbox-xs"
+                                                onChange={(e) => {
+                                                    setShowAllSearch(
+                                                        e.target.checked,
+                                                    );
+                                                    setLinkResults([]);
+                                                    setLinkSearch("");
+                                                }}
+                                                style={{
+                                                    accentColor:
+                                                        "var(--theme-brand-primary-500)",
+                                                }}
                                             />
-                                            <span className="text-xs text-base-content/40">Search all</span>
+                                            <span
+                                                className="text-xs"
+                                                style={subtitle40}
+                                            >
+                                                {t(
+                                                    "blueprints.tree.add_entry.link.toggle_all",
+                                                )}
+                                            </span>
                                         </label>
                                     )}
                                 </div>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={linkSearch}
-                                        onChange={(e) => handleLinkSearchChange(e.target.value)}
-                                        placeholder="Start typing to search..."
-                                        className="input input-bordered w-full rounded-xl pr-8 text-sm"
-                                        autoFocus
-                                    />
-                                    {searching && (
-                                        <span className="loading loading-spinner loading-xs absolute right-3 top-1/2 -translate-y-1/2 text-base-content/30" />
+                                <EntryLinkSearch
+                                    query={linkSearch}
+                                    onQueryChange={handleLinkSearchChange}
+                                    results={linkResults}
+                                    searching={searching}
+                                    placeholder={t(
+                                        "blueprints.tree.convert_stub.link.placeholder",
                                     )}
-                                </div>
+                                    noResultsLabel={t(
+                                        "blueprints.tree.convert_stub.link.no_results",
+                                    )}
+                                    onSelect={(r) => {
+                                        setSelectedLink(r);
+                                        setLinkSearch("");
+                                        setLinkResults([]);
+                                    }}
+                                />
                             </div>
-
-                            {linkResults.length > 0 && (
-                                <div className="max-h-48 overflow-y-auto rounded-xl border border-base-content/10">
-                                    {linkResults.map((r) => (
-                                        <button
-                                            key={r.id}
-                                            type="button"
-                                            onClick={() => { setSelectedLink(r); setLinkSearch(''); setLinkResults([]); }}
-                                            className="flex w-full items-center justify-between border-b border-base-content/5 px-3 py-2 text-left text-sm transition-colors last:border-b-0 hover:bg-base-200/50"
-                                        >
-                                            <div>
-                                                <p className="font-medium">{r.name}</p>
-                                                <p className="text-xs text-base-content/40">{r.blueprint_name}</p>
-                                            </div>
-                                            <i className="fa-solid fa-check text-xs text-base-content/30" />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                            {linkResults.length === 0 && linkSearch.trim().length >= 2 && !searching && (
-                                <p className="text-center text-sm text-base-content/40">No results found</p>
-                            )}
                         </>
                     )}
 
@@ -347,12 +578,19 @@ export default function AddEntryModal({ parentId, parentEntry, projectId, bluepr
                     <div className="flex items-center gap-2 pt-2">
                         <ActionButton
                             icon="fa-solid fa-link"
-                            label="Link"
+                            label={t(
+                                "blueprints.tree.convert_stub.link.action",
+                            )}
                             onClick={handleLink}
                             loading={linking}
                             disabled={!selectedLink}
                         />
-                        <ActionButton icon="fa-solid fa-xmark" label="Cancel" variant="ghost" onClick={onClose} />
+                        <ActionButton
+                            icon="fa-solid fa-xmark"
+                            label={t("common.cancel")}
+                            variant="ghost"
+                            onClick={onClose}
+                        />
                     </div>
                 </div>
             )}

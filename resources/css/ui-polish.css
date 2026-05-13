@@ -413,3 +413,19 @@ button:not(:disabled),
 .alex-entries-table .alex-entries-clear-filters:hover {
     color: var(--theme-status-warning-stroke);
 }
+
+/* Interactive list row — used inside modals + dropdowns where each
+   row is a clickable target (blueprint picker, action list, etc.).
+   Hover tints a subtle base-200 wash; the selected/active state is
+   set via inline style at the call site. */
+.alex-row {
+    transition: background-color var(--theme-motion-duration-fast, 150ms)
+        var(--theme-motion-easing-standard, ease);
+}
+.alex-row:hover {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-base-200) 50%,
+        transparent
+    );
+}
