@@ -1,5 +1,5 @@
-import { type ReactNode } from 'react';
-import Modal from './Modal';
+import { type CSSProperties, type ReactNode } from "react";
+import Modal from "./Modal";
 
 interface HelpModalProps {
     open: boolean;
@@ -13,6 +13,30 @@ interface HelpModalProps {
     maxWidth?: string;
 }
 
+const headerStyle: CSSProperties = {
+    borderBottom:
+        "1px solid color-mix(in srgb, var(--theme-status-info-stroke) 30%, transparent)",
+    background:
+        "color-mix(in srgb, var(--theme-status-info-fill) 50%, transparent)",
+};
+
+const iconWrapStyle: CSSProperties = {
+    background:
+        "color-mix(in srgb, var(--theme-status-info-fill) 70%, transparent)",
+    color: "var(--theme-status-info-stroke)",
+};
+
+const descriptionStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
+};
+
+const closeBtnStyle: CSSProperties = {
+    borderRadius: "9999px",
+    width: "1.5rem",
+    height: "1.5rem",
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+};
+
 /**
  * Reusable help modal for in-context reference material. Uses an info-accented
  * header to signal "this is reference, not an action," with the content area
@@ -24,7 +48,7 @@ export default function HelpModal({
     title,
     description,
     children,
-    maxWidth = 'max-w-2xl',
+    maxWidth = "max-w-2xl",
 }: HelpModalProps) {
     return (
         <Modal open={open} onClose={onClose} maxWidth={maxWidth}>
@@ -32,15 +56,26 @@ export default function HelpModal({
                 {/* Info-accented header: border + tinted background signal
                     "reference material," matching the Referenced By card style
                     used elsewhere in Blueprint settings. */}
-                <div className="flex items-start justify-between gap-3 border-b border-info/30 bg-info/5 px-5 py-3">
+                <div
+                    className="flex items-start justify-between gap-3 px-5 py-3"
+                    style={headerStyle}
+                >
                     <div className="flex items-start gap-3">
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-info/20 text-info">
+                        <div
+                            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+                            style={iconWrapStyle}
+                        >
                             <i className="fa-solid fa-circle-info text-sm" />
                         </div>
                         <div>
-                            <h2 className="text-sm font-semibold text-base-content">{title}</h2>
+                            <h2 className="text-sm font-semibold">{title}</h2>
                             {description && (
-                                <p className="mt-0.5 text-xs text-base-content/60">{description}</p>
+                                <p
+                                    className="mt-0.5 text-xs"
+                                    style={descriptionStyle}
+                                >
+                                    {description}
+                                </p>
                             )}
                         </div>
                     </div>
@@ -48,15 +83,14 @@ export default function HelpModal({
                         type="button"
                         onClick={onClose}
                         aria-label="Close help"
-                        className="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-base-content"
+                        className="alex-btn alex-btn--ghost inline-flex items-center justify-center"
+                        style={closeBtnStyle}
                     >
                         <i className="fa-solid fa-xmark text-xs" />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-5">
-                    {children}
-                </div>
+                <div className="flex-1 overflow-y-auto p-5">{children}</div>
             </div>
         </Modal>
     );

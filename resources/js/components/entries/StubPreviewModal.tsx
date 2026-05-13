@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
-import type { EntryPreview } from '@alexandria/types/projects';
-import { stripWikiMarkup } from '@alexandria/lib/stripWikiMarkup';
+import { type CSSProperties, useState, useEffect } from "react";
+import Modal, { ModalHeader } from "@alexandria/components/ui/Modal";
+import type { EntryPreview } from "@alexandria/types/projects";
+import { stripWikiMarkup } from "@alexandria/lib/stripWikiMarkup";
 
 interface StubPreviewModalProps {
     entryId: number | null;
@@ -9,7 +9,55 @@ interface StubPreviewModalProps {
     onClose: () => void;
 }
 
-export default function StubPreviewModal({ entryId, open, onClose }: StubPreviewModalProps) {
+const badgeBase: CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "0.25rem",
+    padding: "0.125rem 0.5rem",
+    fontSize: "0.6875rem",
+    fontWeight: 600,
+    borderRadius: "var(--theme-radius-badge)",
+};
+
+const badgeGhostStyle: CSSProperties = {
+    ...badgeBase,
+    background:
+        "color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    color: "color-mix(in srgb, var(--theme-base-content) 70%, transparent)",
+};
+
+const badgeWarningStyle: CSSProperties = {
+    ...badgeBase,
+    background: "var(--theme-status-warning-stroke)",
+    color: "var(--theme-status-warning-content)",
+};
+
+const summaryStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 70%, transparent)",
+};
+const emptySummaryStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 30%, transparent)",
+};
+const attrLabelStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+};
+const attrValueStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 80%, transparent)",
+};
+const notFoundStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+};
+
+const attributesBoxStyle: CSSProperties = {
+    background: "color-mix(in srgb, var(--theme-base-300) 50%, transparent)",
+    borderRadius: "var(--theme-radius-card)",
+};
+
+export default function StubPreviewModal({
+    entryId,
+    open,
+    onClose,
+}: StubPreviewModalProps) {
     const [preview, setPreview] = useState<EntryPreview | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -20,8 +68,11 @@ export default function StubPreviewModal({ entryId, open, onClose }: StubPreview
         setPreview(null);
 
         fetch(`/api/v1/entries/${entryId}/preview`, {
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'same-origin',
+            headers: {
+                Accept: "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            credentials: "same-origin",
         })
             .then((r) => (r.ok ? r.json() : null))
             .then((data) => {
@@ -37,7 +88,12 @@ export default function StubPreviewModal({ entryId, open, onClose }: StubPreview
                 <>
                     <ModalHeader title="Loading..." onClose={onClose} />
                     <div className="flex items-center justify-center p-8">
-                        <span className="loading loading-spinner loading-md" />
+                        <i
+                            className="fa-solid fa-circle-notch fa-spin text-base"
+                            style={{
+                                color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+                            }}
+                        />
                     </div>
                 </>
             )}
@@ -49,13 +105,20 @@ export default function StubPreviewModal({ entryId, open, onClose }: StubPreview
                         {/* Blueprint badge */}
                         {preview.blueprint_name && (
                             <div className="mb-3">
-                                <span className="badge badge-ghost badge-sm gap-1">
+                                <span style={badgeGhostStyle}>
                                     {preview.blueprint_icon && (
-                                        <i className={`${preview.blueprint_icon.includes(' ') ? preview.blueprint_icon : 'fa-solid ' + preview.blueprint_icon} text-[10px] fa-fw`} />
+                                        <i
+                                            className={`${preview.blueprint_icon.includes(" ") ? preview.blueprint_icon : "fa-solid " + preview.blueprint_icon} text-[10px] fa-fw`}
+                                        />
                                     )}
                                     {preview.blueprint_name}
                                 </span>
-                                <span className="badge badge-warning badge-sm ml-1">Stub</span>
+                                <span
+                                    className="ml-1"
+                                    style={badgeWarningStyle}
+                                >
+                                    Stub
+                                </span>
                             </div>
                         )}
 
@@ -70,24 +133,40 @@ export default function StubPreviewModal({ entryId, open, onClose }: StubPreview
                             )}
                             <div className="min-w-0 flex-1">
                                 {preview.summary ? (
-                                    <p className="text-sm leading-relaxed text-base-content/70">
+                                    <p
+                                        className="text-sm leading-relaxed"
+                                        style={summaryStyle}
+                                    >
                                         {stripWikiMarkup(preview.summary)}
                                     </p>
                                 ) : (
-                                    <p className="text-sm italic text-base-content/30">No summary yet.</p>
+                                    <p
+                                        className="text-sm italic"
+                                        style={emptySummaryStyle}
+                                    >
+                                        No summary yet.
+                                    </p>
                                 )}
                             </div>
                         </div>
 
                         {/* Attributes */}
                         {preview.attributes.length > 0 && (
-                            <div className="mt-4 space-y-1 rounded-xl bg-base-300/50 p-3">
+                            <div
+                                className="mt-4 space-y-1 p-3"
+                                style={attributesBoxStyle}
+                            >
                                 {preview.attributes.map((attr, i) => (
                                     <div key={i} className="flex gap-3 text-sm">
-                                        <span className="w-[38.2%] flex-shrink-0 font-medium text-base-content/50">
+                                        <span
+                                            className="w-[38.2%] flex-shrink-0 font-medium"
+                                            style={attrLabelStyle}
+                                        >
                                             {attr.label}
                                         </span>
-                                        <span className="text-base-content/80">{attr.value}</span>
+                                        <span style={attrValueStyle}>
+                                            {attr.value}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
@@ -99,7 +178,10 @@ export default function StubPreviewModal({ entryId, open, onClose }: StubPreview
             {!loading && !preview && (
                 <>
                     <ModalHeader title="Not Found" onClose={onClose} />
-                    <div className="p-6 text-center text-sm text-base-content/50">
+                    <div
+                        className="p-6 text-center text-sm"
+                        style={notFoundStyle}
+                    >
                         Could not load entry data.
                     </div>
                 </>
