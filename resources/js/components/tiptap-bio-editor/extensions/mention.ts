@@ -49,7 +49,7 @@ export default function createMentionExtension(options: MentionExtensionOptions 
 
     const mentionConfig = {
         HTMLAttributes: {
-            class: 'mention mention-user text-primary font-medium cursor-pointer hover:underline',
+            class: 'mention mention-user font-medium cursor-pointer hover:underline',
         },
         // noinspection JSUnusedGlobalSymbols — consumed by Tiptap MentionExtension via .configure()
         renderText({ node }: { node: PMNode }): string {
@@ -223,14 +223,25 @@ function createSuggestionComponent(
 
         if (items.length === 0) {
             const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'bg-base-200 rounded-xl shadow-xl border border-base-300 p-3 text-sm text-base-content/60';
+            emptyDiv.className = 'shadow-xl p-3 text-sm';
+            Object.assign(emptyDiv.style, {
+                background: 'var(--theme-base-200)',
+                border: '1px solid var(--theme-base-300)',
+                borderRadius: 'var(--theme-radius-card)',
+                color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+            });
             emptyDiv.textContent = 'No users found';
             container.appendChild(emptyDiv);
             return;
         }
 
         const listContainer = document.createElement('div');
-        listContainer.className = 'bg-base-200 rounded-xl shadow-xl border border-base-300 overflow-hidden max-h-64 overflow-y-auto';
+        listContainer.className = 'shadow-xl overflow-hidden max-h-64 overflow-y-auto';
+        Object.assign(listContainer.style, {
+            background: 'var(--theme-base-200)',
+            border: '1px solid var(--theme-base-300)',
+            borderRadius: 'var(--theme-radius-card)',
+        });
 
         items.forEach((item, index) => {
             const button = createUserButton(item, index, index === selectedIndex);
@@ -247,12 +258,15 @@ function createSuggestionComponent(
     function createUserButton(item: MentionUser, index: number, isSelected: boolean): HTMLButtonElement {
         const button = document.createElement('button');
         button.type = 'button';
-        button.className = `mention-suggestion-item w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${isSelected ? 'bg-primary/20' : 'hover:bg-base-300'}`;
+        button.className = 'alex-row mention-suggestion-item w-full flex items-center gap-3 px-3 py-2 text-left transition-colors';
+        if (isSelected) {
+            button.style.background = 'color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)';
+        }
         button.dataset.index = String(index);
 
-        // Avatar container - using mask-squircle to match app style
+        // Avatar container — squircle shape from .alex-mask-squircle (ui-polish.css).
         const avatarContainer = document.createElement('div');
-        avatarContainer.className = 'w-8 h-8 mask mask-squircle overflow-hidden flex-shrink-0';
+        avatarContainer.className = 'w-8 h-8 alex-mask-squircle overflow-hidden flex-shrink-0';
 
         if (item.avatar_thumb_url) {
             const img = document.createElement('img');
@@ -261,11 +275,13 @@ function createSuggestionComponent(
             img.className = 'w-full h-full object-cover';
             avatarContainer.appendChild(img);
         } else {
-            // Gradient background with initial - matches avatar-with-ring component
+            // Gradient placeholder with initial — matches AvatarWithRing.
             const placeholder = document.createElement('div');
-            placeholder.className = 'w-full h-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center';
+            placeholder.className = 'w-full h-full flex items-center justify-center';
+            placeholder.style.background = 'linear-gradient(to bottom right, color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent), color-mix(in srgb, var(--theme-brand-secondary-500) 30%, transparent))';
             const initial = document.createElement('span');
-            initial.className = 'text-sm font-bold text-primary/50 select-none';
+            initial.className = 'text-sm font-bold select-none';
+            initial.style.color = 'color-mix(in srgb, var(--theme-brand-primary-500) 50%, transparent)';
             initial.textContent = (item.display_name || item.username || '?').charAt(0).toUpperCase();
             placeholder.appendChild(initial);
             avatarContainer.appendChild(placeholder);
@@ -280,7 +296,8 @@ function createSuggestionComponent(
         nameDiv.textContent = item.display_name || item.username;
 
         const usernameDiv = document.createElement('div');
-        usernameDiv.className = 'text-xs text-base-content/60 truncate';
+        usernameDiv.className = 'text-xs truncate';
+        usernameDiv.style.color = 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)';
         usernameDiv.textContent = `@${item.username}`;
 
         textContainer.appendChild(nameDiv);

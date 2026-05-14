@@ -110,7 +110,7 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
                     'data-name': attrs.name,
                     'data-slug': attrs.slug,
                     'data-blueprint-slug': attrs.blueprintSlug,
-                    'class': 'entry-link text-primary font-medium cursor-pointer hover:underline',
+                    'class': 'entry-link font-medium cursor-pointer hover:underline',
                     'href': attrs.slug && attrs.blueprintSlug
                         ? `/entries/${attrs.blueprintSlug}/${attrs.slug}`
                         : '#',
@@ -238,7 +238,12 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
                 }
 
                 popup = document.createElement('div');
-                popup.className = 'entry-link-popup fixed z-[9999] bg-base-200 rounded-xl shadow-xl border border-base-300 overflow-hidden max-h-64 overflow-y-auto min-w-[280px]';
+                popup.className = 'entry-link-popup fixed z-[9999] shadow-xl overflow-hidden max-h-64 overflow-y-auto min-w-[280px]';
+                Object.assign(popup.style, {
+                    background: 'var(--theme-base-200)',
+                    border: '1px solid var(--theme-base-300)',
+                    borderRadius: 'var(--theme-radius-card)',
+                });
                 document.body.appendChild(popup);
 
                 updatePopupPosition(view);
@@ -321,9 +326,12 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
 
                 clearPopup();
 
+                const mutedColor = 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)';
+
                 if (message) {
                     const msgDiv = document.createElement('div');
-                    msgDiv.className = 'p-3 text-sm text-base-content/60';
+                    msgDiv.className = 'p-3 text-sm';
+                    msgDiv.style.color = mutedColor;
                     msgDiv.textContent = message;
                     popup.appendChild(msgDiv);
                     return;
@@ -331,7 +339,8 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
 
                 if (items.length === 0) {
                     const emptyDiv = document.createElement('div');
-                    emptyDiv.className = 'p-3 text-sm text-base-content/60';
+                    emptyDiv.className = 'p-3 text-sm';
+                    emptyDiv.style.color = mutedColor;
                     emptyDiv.textContent = 'No entries found';
                     popup.appendChild(emptyDiv);
                     return;
@@ -354,16 +363,22 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
             function createEntryButton(item: EntryLinkSearchResult, isSelected: boolean): HTMLButtonElement {
                 const button = document.createElement('button');
                 button.type = 'button';
-                button.className = `w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
-                    isSelected ? 'bg-primary/20' : 'hover:bg-base-300'
-                }`;
+                button.className = 'alex-row w-full flex items-center gap-3 px-3 py-2 text-left transition-colors';
+                if (isSelected) {
+                    button.style.background = 'color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)';
+                }
 
                 // Icon container
                 const iconContainer = document.createElement('div');
-                iconContainer.className = 'w-8 h-8 rounded-lg bg-base-300 flex items-center justify-center flex-shrink-0';
+                iconContainer.className = 'w-8 h-8 flex items-center justify-center flex-shrink-0';
+                Object.assign(iconContainer.style, {
+                    background: 'var(--theme-base-300)',
+                    borderRadius: 'var(--theme-radius-input)',
+                });
 
                 const icon = document.createElement('i');
-                icon.className = `fa-solid ${item.blueprint_icon || 'fa-file'} text-sm text-base-content/60`;
+                icon.className = `fa-solid ${item.blueprint_icon || 'fa-file'} text-sm`;
+                icon.style.color = 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)';
                 iconContainer.appendChild(icon);
 
                 // Text container
@@ -375,7 +390,8 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
                 nameDiv.textContent = item.name;
 
                 const typeDiv = document.createElement('div');
-                typeDiv.className = 'text-xs text-base-content/60 truncate';
+                typeDiv.className = 'text-xs truncate';
+                typeDiv.style.color = 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)';
                 typeDiv.textContent = item.blueprint_name || 'Entry';
 
                 textContainer.appendChild(nameDiv);

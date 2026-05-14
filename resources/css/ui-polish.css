@@ -463,6 +463,36 @@ button:not(:disabled),
     color: var(--theme-status-error-stroke);
 }
 
+/* Squircle mask shape (DaisyUI mask-squircle replacement). Used on
+   avatar containers (AvatarWithRing, tiptap mention suggestions). */
+.alex-mask-squircle {
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><path d='M100 0C20 0 0 20 0 100s20 100 100 100 100-20 100-100S180 0 100 0z'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><path d='M100 0C20 0 0 20 0 100s20 100 100 100 100-20 100-100S180 0 100 0z'/></svg>");
+    -webkit-mask-size: cover;
+    mask-size: cover;
+}
+
+/* Dark/light mode toggle button — circle ghost button with brightening
+   text + base-content wash on hover. */
+.alex-mode-toggle-btn {
+    transition:
+        background-color var(--theme-motion-duration-fast, 150ms) ease,
+        color var(--theme-motion-duration-fast, 150ms) ease;
+}
+.alex-mode-toggle-btn:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
+    color: var(--theme-base-content);
+}
+
+/* Navbar guest CTAs — Register (neutral surface) and Login (brand-primary).
+   Both keep their pill radius; hover deepens the surface tint. */
+.alex-guest-cta-register:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 12%, transparent);
+}
+.alex-guest-cta-login:hover {
+    background: color-mix(in srgb, var(--theme-brand-primary-500) 85%, white);
+}
+
 /* Inline link fallbacks for MentionAwareContent — kicks in if the server
    sanitizer drops the class on <a data-type="mention|entry">. */
 .alex-mention,

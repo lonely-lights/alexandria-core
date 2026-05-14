@@ -138,7 +138,14 @@ export default function Sidebar({
                     {/* Profile Link */}
                     {auth?.user && userMenuLink && (
                         <>
-                            <div className="divider my-1 h-px" />
+                            <div
+                                style={{
+                                    height: '1px',
+                                    marginTop: '0.25rem',
+                                    marginBottom: '0.25rem',
+                                    background: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                                }}
+                            />
                             <a
                                 href={userMenuLink}
                                 className="alex-sidebar-user flex items-center gap-4 px-2 py-1.5 transition-colors"

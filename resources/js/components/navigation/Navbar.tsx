@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import type { SharedProps } from '../../types/index';
 import AvatarWithRing from '../ui/AvatarWithRing';
 import Tooltip from '../ui/Tooltip';
@@ -565,17 +565,47 @@ export default function Navbar({
     );
 }
 
+const guestCtaBaseStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.5rem 1rem',
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    borderRadius: '9999px',
+    textDecoration: 'none',
+    transition: 'background var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const guestCtaRegisterStyle: CSSProperties = {
+    ...guestCtaBaseStyle,
+    background: 'var(--theme-base-300)',
+    color: 'var(--theme-base-content)',
+    marginRight: '0.5rem',
+};
+
+const guestCtaLoginStyle: CSSProperties = {
+    ...guestCtaBaseStyle,
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+};
+
 function DefaultGuestActions() {
     return (
         <div className="inline-flex items-center" role="group" aria-label="Button group">
             <a
                 href="/register"
-                className="btn btn-neutral mr-2 hidden rounded-full border-none hover:bg-neutral md:inline-flex"
+                className="alex-guest-cta-register hidden md:inline-flex"
+                style={guestCtaRegisterStyle}
             >
                 <i className="fas fa-user-plus" />
                 Register
             </a>
-            <a href="/login" className="btn btn-primary gap-2 rounded-full">
+            <a
+                href="/login"
+                className="alex-guest-cta-login"
+                style={guestCtaLoginStyle}
+            >
                 <i className="fas fa-user" />
                 <span>Login</span>
             </a>
