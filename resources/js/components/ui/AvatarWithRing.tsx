@@ -61,7 +61,7 @@ export default function AvatarWithRing({
                 <>
                     {/* Outer ring container (static mask) */}
                     <div
-                        className="absolute mask mask-squircle overflow-hidden"
+                        className="absolute alex-mask-squircle overflow-hidden"
                         style={{ width: ringSize, height: ringSize }}
                     >
                         {ring === 'solid' ? (
@@ -95,7 +95,7 @@ export default function AvatarWithRing({
 
                     {/* Gap layer */}
                     <div
-                        className="absolute mask mask-squircle"
+                        className="absolute alex-mask-squircle"
                         style={{
                             width: gapSize,
                             height: gapSize,
@@ -107,7 +107,7 @@ export default function AvatarWithRing({
 
             {/* Avatar */}
             <div
-                className="relative mask mask-squircle overflow-hidden shadow-xl"
+                className="relative alex-mask-squircle overflow-hidden shadow-xl"
                 style={{
                     width: avatarSize,
                     height: avatarSize,

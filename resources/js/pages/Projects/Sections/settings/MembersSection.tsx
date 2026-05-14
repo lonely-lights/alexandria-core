@@ -154,9 +154,9 @@ export default function MembersSection({ project, settings }: MembersSectionProp
                             style={i === arr.length - 1 ? undefined : rowDividerStyle}
                         >
                             {member.has_avatar ? (
-                                <img src={member.avatar_thumb_url} className="mask mask-squircle h-9 w-9 object-cover" alt="" />
+                                <img src={member.avatar_thumb_url} className="alex-mask-squircle h-9 w-9 object-cover" alt="" />
                             ) : (
-                                <div className="mask mask-squircle flex h-9 w-9 items-center justify-center" style={avatarFallbackStyle}>
+                                <div className="alex-mask-squircle flex h-9 w-9 items-center justify-center" style={avatarFallbackStyle}>
                                     <i className="fa-solid fa-user text-sm" aria-hidden="true" />
                                 </div>
                             )}

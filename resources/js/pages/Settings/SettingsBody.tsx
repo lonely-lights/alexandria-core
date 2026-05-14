@@ -387,7 +387,7 @@ export default function SettingsBody({
                                             Mask matches the squircle avatar shape. */}
                                         <div className="alex-avatar-overlay absolute inset-0 flex items-center justify-center">
                                             <div
-                                                className="mask mask-squircle flex h-32 w-32 items-center justify-center gap-1"
+                                                className="alex-mask-squircle flex h-32 w-32 items-center justify-center gap-1"
                                                 style={{ background: 'rgba(0, 0, 0, 0.6)' }}
                                             >
                                                 <button
