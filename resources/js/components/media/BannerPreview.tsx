@@ -1,7 +1,6 @@
-/* ── BannerPreview ── */
-
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import Button from '@alexandria/components/ui/Button';
 
 interface BannerData {
     id: number;
@@ -16,6 +15,24 @@ interface BannerPreviewProps {
     modelId: number;
     onChanged: () => void;
 }
+
+const emptyStateStyle: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    padding: '4rem 0',
+    textAlign: 'center',
+    borderRadius: 'var(--theme-radius-card)',
+    border: `2px dashed color-mix(in srgb, var(--theme-base-content) 20%, transparent)`,
+};
+
+const previewBackdropStyle: CSSProperties = {
+    overflow: 'hidden',
+    borderRadius: 'var(--theme-radius-input)',
+    background: 'var(--theme-base-200)',
+};
 
 export default function BannerPreview({ banner, modelType, modelId, onChanged }: BannerPreviewProps) {
     const [isRemoving, setIsRemoving] = useState(false);
@@ -40,7 +57,7 @@ export default function BannerPreview({ banner, modelType, modelId, onChanged }:
 
     if (!banner) {
         return (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-base-content/20 py-16 text-center">
+            <div style={emptyStateStyle}>
                 <p className="text-sm opacity-50">No banner uploaded</p>
                 <p className="text-xs opacity-40">Upload a banner image to get started</p>
             </div>
@@ -57,7 +74,7 @@ export default function BannerPreview({ banner, modelType, modelId, onChanged }:
                 {/* Desktop preview */}
                 <div className="flex flex-1 flex-col gap-1.5">
                     <p className="text-xs font-medium uppercase tracking-wide opacity-60">Desktop</p>
-                    <div className="aspect-[1920/400] overflow-hidden rounded-lg bg-base-200">
+                    <div className="aspect-[1920/400]" style={previewBackdropStyle}>
                         <img
                             src={desktopUrl}
                             alt={banner.alt_text ?? 'Banner desktop preview'}
@@ -69,7 +86,7 @@ export default function BannerPreview({ banner, modelType, modelId, onChanged }:
                 {/* Mobile preview */}
                 <div className="flex w-full flex-col gap-1.5 sm:w-40">
                     <p className="text-xs font-medium uppercase tracking-wide opacity-60">Mobile</p>
-                    <div className="aspect-[800/600] overflow-hidden rounded-lg bg-base-200">
+                    <div className="aspect-[800/600]" style={previewBackdropStyle}>
                         <img
                             src={mobileUrl}
                             alt={banner.alt_text ?? 'Banner mobile preview'}
@@ -81,29 +98,15 @@ export default function BannerPreview({ banner, modelType, modelId, onChanged }:
 
             {/* Actions */}
             <div className="flex items-center gap-2">
-                <button
-                    type="button"
-                    className="btn btn-sm btn-outline"
-                    onClick={onChanged}
-                >
+                <Button variant="outline" size="sm" onClick={onChanged}>
                     Change
-                </button>
-                <button
-                    type="button"
-                    className="btn btn-sm btn-ghost"
-                    onClick={onChanged}
-                >
+                </Button>
+                <Button variant="ghost" size="sm" onClick={onChanged}>
                     Adjust Crop
-                </button>
-                <button
-                    type="button"
-                    className="btn btn-sm btn-ghost text-error hover:bg-error/10"
-                    disabled={isRemoving}
-                    onClick={handleRemove}
-                >
-                    {isRemoving && <span className="loading loading-spinner loading-xs" />}
+                </Button>
+                <Button variant="danger" size="sm" loading={isRemoving} onClick={handleRemove}>
                     Remove
-                </button>
+                </Button>
             </div>
         </div>
     );

@@ -1,7 +1,8 @@
-/* ── MediaMetadataForm ── */
-
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import Button from '@alexandria/components/ui/Button';
+import Input from '@alexandria/components/form/Input';
+import Textarea from '@alexandria/components/form/Textarea';
 
 interface MediaMetadataFormProps {
     media: { id: number; alt_text: string | null; caption: string | null };
@@ -11,6 +12,46 @@ interface MediaMetadataFormProps {
 }
 
 const ALT_TEXT_MAX = 1000;
+
+const labelRowStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: '0.25rem',
+};
+
+const labelStyle: CSSProperties = {
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+};
+
+const labelAltStyle: CSSProperties = {
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+const errorColor = 'var(--theme-status-error-stroke)';
+
+const errorTextStyle: CSSProperties = {
+    fontSize: '0.75rem',
+    color: errorColor,
+};
+
+const requiredStarStyle: CSSProperties = {
+    color: errorColor,
+};
+
+const formWrapStyle: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+};
+
+const saveButtonWrapStyle: CSSProperties = {
+    display: 'flex',
+    justifyContent: 'flex-end',
+};
 
 export default function MediaMetadataForm({ media, modelType, modelId, onSaved }: MediaMetadataFormProps) {
     const [altText, setAltText] = useState(media.alt_text ?? '');
@@ -55,20 +96,25 @@ export default function MediaMetadataForm({ media, modelType, modelId, onSaved }
     };
 
     const altTextRemaining = ALT_TEXT_MAX - altText.length;
+    const altCounterStyle: CSSProperties = altTextRemaining < 0
+        ? { ...labelAltStyle, color: errorColor }
+        : labelAltStyle;
 
     return (
-        <div className="flex flex-col gap-3">
+        <div style={formWrapStyle}>
             {/* Alt text */}
-            <div className="form-control gap-1">
-                <label className="label py-0">
-                    <span className="label-text font-medium">Alt text <span className="text-error">*</span></span>
-                    <span className={`label-text-alt ${altTextRemaining < 0 ? 'text-error' : 'opacity-50'}`}>
+            <div>
+                <div style={labelRowStyle}>
+                    <label htmlFor="media-alt-text" style={labelStyle}>
+                        Alt text <span style={requiredStarStyle}>*</span>
+                    </label>
+                    <span style={altCounterStyle}>
                         {altText.length}/{ALT_TEXT_MAX}
                     </span>
-                </label>
-                <input
+                </div>
+                <Input
+                    id="media-alt-text"
                     type="text"
-                    className="input input-bordered input-sm w-full"
                     placeholder="Describe the image for screen readers"
                     value={altText}
                     maxLength={ALT_TEXT_MAX}
@@ -77,33 +123,36 @@ export default function MediaMetadataForm({ media, modelType, modelId, onSaved }
             </div>
 
             {/* Caption */}
-            <div className="form-control gap-1">
-                <label className="label py-0">
-                    <span className="label-text font-medium">Caption</span>
-                    <span className="label-text-alt opacity-50">Optional</span>
-                </label>
-                <textarea
-                    className="textarea textarea-bordered textarea-sm w-full resize-none"
+            <div>
+                <div style={labelRowStyle}>
+                    <label htmlFor="media-caption" style={labelStyle}>Caption</label>
+                    <span style={labelAltStyle}>Optional</span>
+                </div>
+                <Textarea
+                    id="media-caption"
                     placeholder="Add a caption..."
                     rows={2}
                     value={caption}
                     onChange={(e) => setCaption(e.target.value)}
+                    style={{ resize: 'none' }}
                 />
             </div>
 
             {error && (
-                <p className="text-xs text-error">{error}</p>
+                <p style={errorTextStyle}>{error}</p>
             )}
 
-            <button
-                type="button"
-                className="btn btn-primary btn-sm self-end"
-                disabled={isSaving || altTextRemaining < 0}
-                onClick={handleSave}
-            >
-                {isSaving && <span className="loading loading-spinner loading-xs" />}
-                Save
-            </button>
+            <div style={saveButtonWrapStyle}>
+                <Button
+                    variant="primary"
+                    size="sm"
+                    loading={isSaving}
+                    disabled={altTextRemaining < 0}
+                    onClick={handleSave}
+                >
+                    Save
+                </Button>
+            </div>
         </div>
     );
 }
