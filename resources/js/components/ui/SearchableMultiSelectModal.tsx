@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Modal from './Modal';
+import Input from '../form/Input';
+import Button from './Button';
 
 export interface SearchableItem {
     id: number | string;
@@ -25,11 +27,156 @@ interface SearchableMultiSelectModalProps {
     searchPlaceholder?: string;
 }
 
+const sectionDividerStyle: CSSProperties = {
+    borderBottom: '1px solid var(--theme-base-300)',
+};
+
+const headerStyle: CSSProperties = {
+    ...sectionDividerStyle,
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    padding: '1rem 1.25rem',
+};
+
+const subtitleStyle: CSSProperties = {
+    marginTop: '0.125rem',
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
+const closeBtnStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '2rem',
+    height: '2rem',
+    border: 'none',
+    background: 'transparent',
+    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+    borderRadius: 'var(--theme-radius-input)',
+    cursor: 'pointer',
+};
+
+const selectedHeaderRowStyle: CSSProperties = {
+    marginBottom: '0.375rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+};
+
+const selectedLabelStyle: CSSProperties = {
+    fontSize: '0.625rem',
+    fontWeight: 500,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)',
+};
+
+const clearAllBtnStyle: CSSProperties = {
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '0.625rem',
+    fontWeight: 500,
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+    transition: 'color var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const selectedChipStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    borderRadius: 'var(--theme-radius-input)',
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    padding: '0.25rem 0.625rem',
+    fontSize: '0.75rem',
+    fontWeight: 500,
+};
+
+const chipDismissBtnStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    border: 'none',
+    background: 'transparent',
+    cursor: 'pointer',
+    padding: 0,
+    color: 'color-mix(in srgb, var(--theme-brand-primary-content) 60%, transparent)',
+    transition: 'color var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const searchWrapStyle: CSSProperties = {
+    ...sectionDividerStyle,
+    padding: '0.75rem 1.25rem',
+};
+
+const emptyStateStyle: CSSProperties = {
+    padding: '2rem 0',
+    textAlign: 'center',
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)',
+};
+
+const rowBaseStyle: CSSProperties = {
+    display: 'flex',
+    width: '100%',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.625rem 1.25rem',
+    textAlign: 'left',
+    fontSize: '0.875rem',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+};
+
+const rowSelectedStyle: CSSProperties = {
+    ...rowBaseStyle,
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent)',
+};
+
+const checkboxStyle: CSSProperties = {
+    width: '0.875rem',
+    height: '0.875rem',
+    accentColor: 'var(--theme-brand-primary-500)',
+    cursor: 'pointer',
+};
+
+const swatchStyle: CSSProperties = {
+    display: 'inline-block',
+    width: '0.75rem',
+    height: '0.75rem',
+    flexShrink: 0,
+    borderRadius: '9999px',
+};
+
+const itemIconStyle: CSSProperties = {
+    fontSize: '0.6875rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
+const selectedLabelTextStyle: CSSProperties = {
+    fontWeight: 500,
+    color: 'var(--theme-brand-primary-500)',
+};
+
+const countStyle: CSSProperties = {
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)',
+};
+
+const footerStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    borderTop: '1px solid var(--theme-base-300)',
+    padding: '0.75rem 1.25rem',
+};
+
 /**
- * Generic two-stage picker: shows a search box + scrollable list with
- * checkboxes, and a "Selected" chip row so it's obvious what's active
- * without scrolling. Mirrors TagPickerModal's layout so the two feel
- * like members of the same family.
+ * Generic two-stage picker: search box + scrollable list + "Selected" chip row.
+ * Mirrors TagPickerModal's layout so the two feel like members of the same family.
  */
 export default function SearchableMultiSelectModal({
     open,
@@ -62,29 +209,29 @@ export default function SearchableMultiSelectModal({
         <Modal open={open} onClose={onClose} maxWidth="max-w-sm">
             <div className="flex max-h-[70vh] flex-col">
                 {/* Header */}
-                <div className="flex items-start justify-between border-b border-base-300 px-5 py-4">
+                <div style={headerStyle}>
                     <div>
                         <h2 className="text-base font-bold">{title}</h2>
-                        {subtitle && <p className="mt-0.5 text-xs text-base-content/40">{subtitle}</p>}
+                        {subtitle && <p style={subtitleStyle}>{subtitle}</p>}
                     </div>
-                    <button onClick={onClose} className="btn btn-ghost btn-sm btn-square rounded-xl">
+                    <button type="button" onClick={onClose} style={closeBtnStyle} aria-label="Close">
                         <i className="fa-solid fa-xmark" />
                     </button>
                 </div>
 
-                {/* Selected chips — only shown when something's selected so
-                    the header doesn't take space unnecessarily. */}
+                {/* Selected chips */}
                 {selectedItems.length > 0 && (
-                    <div className="border-b border-base-300 px-5 py-3">
-                        <div className="mb-1.5 flex items-center justify-between">
-                            <span className="text-[10px] font-medium uppercase tracking-wider text-base-content/30">
+                    <div style={{ ...sectionDividerStyle, padding: '0.75rem 1.25rem' }}>
+                        <div style={selectedHeaderRowStyle}>
+                            <span style={selectedLabelStyle}>
                                 Selected ({selectedItems.length})
                             </span>
                             {onClear && (
                                 <button
                                     type="button"
                                     onClick={onClear}
-                                    className="text-[10px] font-medium text-base-content/40 hover:text-error"
+                                    className="alex-clear-link"
+                                    style={clearAllBtnStyle}
                                 >
                                     Clear all
                                 </button>
@@ -92,16 +239,13 @@ export default function SearchableMultiSelectModal({
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                             {selectedItems.map((it) => (
-                                <span
-                                    key={`sel-${it.id}`}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-content"
-                                >
+                                <span key={`sel-${it.id}`} style={selectedChipStyle}>
                                     {it.icon && <i className={`${it.icon} text-[9px]`} />}
                                     {it.label}
                                     <button
                                         type="button"
                                         onClick={() => onToggle(it.id, false)}
-                                        className="flex items-center text-primary-content/60 hover:text-primary-content"
+                                        style={chipDismissBtnStyle}
                                         aria-label={`Remove ${it.label}`}
                                     >
                                         <i className="fa-solid fa-xmark text-[9px]" />
@@ -113,24 +257,22 @@ export default function SearchableMultiSelectModal({
                 )}
 
                 {/* Search */}
-                <div className="border-b border-base-300 px-5 py-3">
-                    <div className="relative">
-                        <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-base-content/20" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder={searchPlaceholder}
-                            autoFocus
-                            className="input input-bordered h-8 min-h-0 w-full rounded-xl pl-9 text-sm"
-                        />
-                    </div>
+                <div style={searchWrapStyle}>
+                    <Input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder={searchPlaceholder}
+                        autoFocus
+                        icon="fa-solid fa-search"
+                        size="sm"
+                    />
                 </div>
 
                 {/* List */}
                 <div className="flex-1 overflow-y-auto">
                     {filtered.length === 0 ? (
-                        <div className="py-8 text-center text-xs text-base-content/30">
+                        <div style={emptyStateStyle}>
                             {search ? 'No matches' : emptyLabel}
                         </div>
                     ) : (
@@ -141,29 +283,25 @@ export default function SearchableMultiSelectModal({
                                     key={it.id}
                                     type="button"
                                     onClick={() => onToggle(it.id, !isSelected)}
-                                    className={`flex w-full items-center gap-3 px-5 py-2.5 text-left text-sm transition-colors hover:bg-base-200/30 ${
-                                        isSelected ? 'bg-primary/5' : ''
-                                    }`}
+                                    className="alex-row"
+                                    style={isSelected ? rowSelectedStyle : rowBaseStyle}
                                 >
                                     <input
                                         type="checkbox"
                                         checked={isSelected}
                                         readOnly
-                                        className="checkbox checkbox-xs checkbox-primary"
+                                        style={checkboxStyle}
                                     />
                                     {it.color ? (
-                                        <span
-                                            className="inline-block h-3 w-3 flex-shrink-0 rounded-full"
-                                            style={{ backgroundColor: it.color }}
-                                        />
+                                        <span style={{ ...swatchStyle, backgroundColor: it.color }} />
                                     ) : it.icon ? (
-                                        <i className={`${it.icon} text-[11px] text-base-content/40`} />
+                                        <i className={it.icon} style={itemIconStyle} />
                                     ) : null}
-                                    <span className={`flex-1 truncate ${isSelected ? 'font-medium text-primary' : ''}`}>
+                                    <span className="flex-1 truncate" style={isSelected ? selectedLabelTextStyle : undefined}>
                                         {it.label}
                                     </span>
                                     {typeof it.count === 'number' && (
-                                        <span className="text-xs text-base-content/30">{it.count}</span>
+                                        <span style={countStyle}>{it.count}</span>
                                     )}
                                 </button>
                             );
@@ -172,8 +310,8 @@ export default function SearchableMultiSelectModal({
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end border-t border-base-300 px-5 py-3">
-                    <button onClick={onClose} className="btn btn-ghost btn-sm text-xs">Done</button>
+                <div style={footerStyle}>
+                    <Button variant="ghost" size="sm" onClick={onClose}>Done</Button>
                 </div>
             </div>
         </Modal>

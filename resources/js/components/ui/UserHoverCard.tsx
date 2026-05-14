@@ -22,6 +22,56 @@ interface UserPreview {
 // Module-level cache — one fetch per user per page session
 const userCache = new Map<number, UserPreview | 'loading' | 'error'>();
 
+const cardShellStyle: CSSProperties = {
+    position: 'fixed',
+    zIndex: 10000,
+    borderRadius: 'var(--theme-radius-card)',
+    border: '1px solid var(--theme-base-300)',
+    background: 'var(--theme-base-200)',
+    padding: '1rem',
+    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04)',
+};
+
+const loadingTextStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    fontSize: '0.875rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+const usernameStyle: CSSProperties = {
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+const pronounsStyle: CSSProperties = {
+    marginTop: '0.5rem',
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
+const taglineStyle: CSSProperties = {
+    marginTop: '0.5rem',
+    fontSize: '0.875rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+};
+
+const locationStyle: CSSProperties = {
+    marginTop: '0.25rem',
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+const viewProfileStyle: CSSProperties = {
+    marginTop: '0.75rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    fontSize: '0.75rem',
+    color: 'var(--theme-brand-primary-500)',
+};
+
 /* ── UserLink: wraps any element and triggers hover card ── */
 
 interface UserLinkProps {
@@ -130,12 +180,9 @@ function UserHoverCardPortal({ userId, triggerRect, onEnter, onClose }: {
 
     if (loading) {
         return createPortal(
-            <div
-                className="fixed z-[10000] rounded-xl border border-base-300 bg-base-200 px-4 py-4 shadow-xl"
-                style={positionStyle}
-            >
-                <div className="flex items-center gap-2 text-sm text-base-content/50">
-                    <span className="loading loading-spinner loading-xs" />
+            <div style={{ ...cardShellStyle, ...positionStyle }}>
+                <div style={loadingTextStyle}>
+                    <i className="fa-solid fa-circle-notch fa-spin" />
                     Loading...
                 </div>
             </div>,
@@ -148,8 +195,7 @@ function UserHoverCardPortal({ userId, triggerRect, onEnter, onClose }: {
     return createPortal(
         <div
             ref={cardRef}
-            className="fixed z-[10000] rounded-xl border border-base-300 bg-base-200 px-4 py-4 shadow-xl"
-            style={positionStyle}
+            style={{ ...cardShellStyle, ...positionStyle }}
             onMouseEnter={onEnter}
             onMouseLeave={onClose}
         >
@@ -166,23 +212,23 @@ function UserHoverCardPortal({ userId, triggerRect, onEnter, onClose }: {
                 />
                 <div className="min-w-0">
                     <h4 className="truncate font-bold">{user.display_name ?? user.name}</h4>
-                    <p className="text-xs text-base-content/50">@{user.name}</p>
+                    <p style={usernameStyle}>@{user.name}</p>
                 </div>
             </div>
 
             {/* Pronouns */}
             {user.pronouns && (
-                <p className="mt-2 text-xs text-base-content/40">{user.pronouns}</p>
+                <p style={pronounsStyle}>{user.pronouns}</p>
             )}
 
             {/* Tagline */}
             {user.tagline && (
-                <p className="mt-2 text-sm text-base-content/70 line-clamp-2">{user.tagline}</p>
+                <p className="line-clamp-2" style={taglineStyle}>{user.tagline}</p>
             )}
 
             {/* Location */}
             {user.location && (
-                <p className="mt-1 text-xs text-base-content/50">
+                <p style={locationStyle}>
                     <i className="fa-solid fa-location-dot mr-1" />{user.location}
                 </p>
             )}
@@ -190,7 +236,8 @@ function UserHoverCardPortal({ userId, triggerRect, onEnter, onClose }: {
             {/* View profile */}
             <a
                 href={`/u/${user.name.toLowerCase()}`}
-                className="mt-3 flex items-center gap-1 text-xs text-primary hover:underline"
+                className="hover:underline"
+                style={viewProfileStyle}
             >
                 View profile <i className="fa-solid fa-arrow-right text-[10px]" />
             </a>

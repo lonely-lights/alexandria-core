@@ -1,28 +1,70 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type CSSProperties } from 'react';
 import { fromEarthDate, formatStardate, parseStardate } from '@alexandria/lib/stardate';
+import Input from '../form/Input';
 
 interface StardateInputProps {
     value: unknown;
     onChange: (v: string) => void;
 }
 
+const MONO_FONT_STACK = 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace';
+
+const modeBtnBase: CSSProperties = {
+    padding: '0.125rem 0.5rem',
+    fontSize: '0.625rem',
+    fontWeight: 500,
+    borderRadius: 'var(--theme-radius-button)',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background var(--theme-motion-duration-fast, 150ms) ease, color var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const modeBtnActive: CSSProperties = {
+    ...modeBtnBase,
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+};
+
+const modeBtnIdle: CSSProperties = {
+    ...modeBtnBase,
+    background: 'var(--theme-base-300)',
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+const previewBoxStyle: CSSProperties = {
+    borderRadius: 'var(--theme-radius-input)',
+    background: 'color-mix(in srgb, var(--theme-base-300) 50%, transparent)',
+    padding: '0.5rem 0.75rem',
+};
+
+const previewFullStyle: CSSProperties = {
+    fontFamily: MONO_FONT_STACK,
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
+};
+
+const previewShortStyle: CSSProperties = {
+    marginTop: '0.125rem',
+    fontFamily: MONO_FONT_STACK,
+    fontSize: '0.625rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
 /**
- * A field input that accepts an Earth date and converts it to an ISS stardate.
- * Shows the stardate in real-time as the date changes.
- * Also supports direct stardate entry.
+ * Field input that accepts an Earth date and converts it to an ISS stardate.
+ * Also supports direct stardate entry. Shows the stardate in real-time.
  */
 export default function StardateInput({ value, onChange }: StardateInputProps) {
     const [mode, setMode] = useState<'earth' | 'stardate'>('earth');
     const [earthDate, setEarthDate] = useState(() => {
-        // If we have an ISS value, don't try to reverse it for the date picker
-        // (the reverse conversion loses precision). Just start blank.
+        // We don't reverse-derive an Earth date from an existing ISS value (lossy);
+        // just start blank.
         return '';
     });
     const [stardateText, setStardateText] = useState('');
 
     const issValue = (value as string) || '';
 
-    // Format current ISS value for display
     const displayFull = useMemo(() => {
         if (!issValue) return null;
         try {
@@ -80,14 +122,14 @@ export default function StardateInput({ value, onChange }: StardateInputProps) {
                 <button
                     type="button"
                     onClick={() => setMode('earth')}
-                    className={`rounded-md px-2 py-0.5 text-[10px] font-medium transition ${mode === 'earth' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/50 hover:text-base-content'}`}
+                    style={mode === 'earth' ? modeBtnActive : modeBtnIdle}
                 >
                     Earth Date
                 </button>
                 <button
                     type="button"
                     onClick={() => setMode('stardate')}
-                    className={`rounded-md px-2 py-0.5 text-[10px] font-medium transition ${mode === 'stardate' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/50 hover:text-base-content'}`}
+                    style={mode === 'stardate' ? modeBtnActive : modeBtnIdle}
                 >
                     Stardate
                 </button>
@@ -95,27 +137,28 @@ export default function StardateInput({ value, onChange }: StardateInputProps) {
 
             {/* Input */}
             {mode === 'earth' ? (
-                <input
+                <Input
                     type="datetime-local"
                     value={earthDate}
                     onChange={(e) => handleEarthDateChange(e.target.value)}
-                    className="input input-bordered h-8 min-h-0 w-full rounded-lg text-xs"
+                    size="sm"
                 />
             ) : (
-                <input
+                <Input
                     type="text"
                     value={stardateText}
                     onChange={(e) => handleStardateChange(e.target.value)}
                     placeholder="5·5·04·36E·78·529  2·41·5E"
-                    className="input input-bordered h-8 min-h-0 w-full rounded-lg font-mono text-xs"
+                    size="sm"
+                    style={{ fontFamily: MONO_FONT_STACK }}
                 />
             )}
 
             {/* Live preview */}
             {displayFull && (
-                <div className="rounded-lg bg-base-300/50 px-3 py-2">
-                    <div className="font-mono text-xs text-base-content/80">{displayFull}</div>
-                    <div className="mt-0.5 font-mono text-[10px] text-base-content/40">Shorthand: {displayShort}</div>
+                <div style={previewBoxStyle}>
+                    <div style={previewFullStyle}>{displayFull}</div>
+                    <div style={previewShortStyle}>Shorthand: {displayShort}</div>
                 </div>
             )}
         </div>

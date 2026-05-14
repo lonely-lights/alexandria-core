@@ -457,6 +457,12 @@ button:not(:disabled),
     background: color-mix(in srgb, var(--theme-base-content) 12%, transparent);
 }
 
+/* Muted-text link that turns danger-coloured on hover — Clear all,
+   reset-state actions, etc. */
+.alex-clear-link:hover {
+    color: var(--theme-status-error-stroke);
+}
+
 /* Inline link fallbacks for MentionAwareContent — kicks in if the server
    sanitizer drops the class on <a data-type="mention|entry">. */
 .alex-mention,

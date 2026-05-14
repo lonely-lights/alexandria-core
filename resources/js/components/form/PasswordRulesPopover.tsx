@@ -202,8 +202,17 @@ export default function PasswordRulesPopover({
         <FloatingPortal>
             <div
                 ref={floatingRefs.setFloating}
-                style={floatingStyles}
-                className="bg-base-200 border border-base-300 rounded-lg shadow-xl p-4 z-50 w-72 text-sm"
+                style={{
+                    ...floatingStyles,
+                    background: 'var(--theme-base-200)',
+                    border: '1px solid var(--theme-base-300)',
+                    borderRadius: 'var(--theme-radius-input)',
+                    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04)',
+                    padding: '1rem',
+                    zIndex: 50,
+                    width: '18rem',
+                    fontSize: '0.875rem',
+                }}
                 role="tooltip"
                 aria-live="polite"
             >

@@ -38,7 +38,8 @@ export default function NeuralConstellationBg() {
 
     return (
         <svg
-            className="h-full w-full text-primary"
+            className="h-full w-full"
+            style={{ color: 'var(--theme-brand-primary-500)' }}
             aria-hidden="true"
             xmlns="http://www.w3.org/2000/svg"
         >
