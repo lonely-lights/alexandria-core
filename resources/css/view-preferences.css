@@ -45,20 +45,20 @@ html[data-high-contrast="true"] .text-base-content\/40,
 html[data-high-contrast="true"] .text-base-content\/50,
 html[data-high-contrast="true"] .text-base-content\/60,
 html[data-high-contrast="true"] .text-base-content\/70 {
-    color: var(--color-base-content) !important;
+    color: var(--theme-base-content) !important;
     opacity: 0.9 !important;
 }
 html[data-high-contrast="true"] .border-base-content\/5,
 html[data-high-contrast="true"] .border-base-content\/10 {
-    border-color: color-mix(in srgb, var(--color-base-content) 35%, transparent) !important;
+    border-color: color-mix(in srgb, var(--theme-base-content) 35%, transparent) !important;
 }
 
 /* Enhanced focus rings — thicker + more saturated for keyboard users who
    want clearer indicators. */
 html[data-focus-indicators="enhanced"] *:focus-visible {
-    outline: 3px solid var(--color-primary) !important;
+    outline: 3px solid var(--theme-brand-primary-500) !important;
     outline-offset: 3px !important;
-    box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-primary) 25%, transparent) !important;
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--theme-brand-primary-500) 25%, transparent) !important;
     border-radius: 4px;
 }
 
