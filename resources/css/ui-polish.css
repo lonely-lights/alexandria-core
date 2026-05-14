@@ -1,51 +1,18 @@
-/*
- * Generic UI polish lifted from alexandria-legacy/resources/css/app.css.
- * Cross-browser hygiene that any Alexandria consumer benefits from:
- * checkbox/radio antialiasing, toggle border, scrollbar styling.
- *
- * Content-specific rules (.nebula, .auth-card, .script-container,
- * prose/wiki/tiptap) deliberately stay in legacy — they're worldbuilding
- * content concerns, not framework defaults.
- *
- * Color tokens use Alexandria's `--theme-*` family via color-mix() for
- * alpha blending, so preset swaps repaint these surfaces alongside the
- * rest of the chrome. DaisyUI's `--color-*` names are intentionally NOT
- * referenced — they're preset-agnostic and would freeze on a single
- * palette regardless of the active preset.
- */
+/* Generic UI polish — cross-browser hygiene + theme-token-driven chrome.
+   Uses --theme-* directly (not DaisyUI's --color-*) so preset swaps repaint. */
 
-/* Pull in the a11y/appearance data-* attribute rules (font-size scale,
- * reduced-motion, compact, high-contrast, dyslexia-friendly font, focus
- * indicators) so consumer apps don't have to add a separate @import — a
- * single ui-polish.css import covers both layers. */
+/* Bundles view-preferences a11y rules so consumers only import this one file. */
 @import "./view-preferences.css";
 
-/* ====================================================================== */
-/* Restore v3 button cursor.                                              */
-/* Tailwind v4 changed the default cursor on <button> to `default` (the   */
-/* browser default) instead of v3's `pointer`. "Click target should show  */
-/* a finger" is universal in our UI — keeping the v3 behaviour app-wide   */
-/* is clearer than dotting cursor-pointer utilities through every         */
-/* component. :not(:disabled) preserves the not-allowed cursor on         */
-/* disabled controls.                                                     */
-/* ====================================================================== */
+/* Restore v3 button cursor — Tailwind v4 made <button> cursor default `default`.
+   :not(:disabled) keeps `not-allowed` on disabled controls. */
 button:not(:disabled),
 [role="button"]:not(:disabled),
 .btn:not(:disabled) {
     cursor: pointer;
 }
 
-/* DaisyUI .toggle / .checkbox border-tinting rules used to live here when
- * the form primitives still rendered native + DaisyUI markup. The toggle
- * and checkbox primitives now ship as `.alex-toggle` / `.alex-checkbox`
- * (see core/resources/css/components/inputs.css + checkboxes.css) and
- * paint via `--theme-*` tokens directly — no DaisyUI utility hooks left
- * to override. Removed to avoid pinning two parallel surface stacks.
- */
-
-/* ====================================================================== */
-/* Custom Scrollbar Styles                                                */
-/* ====================================================================== */
+/* Custom scrollbar styles */
 .inline-scroll {
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 204, 255, 0.4) transparent;
@@ -87,10 +54,7 @@ button:not(:disabled),
     );
 }
 
-/* Subtle neutral scrollbar for large scroll surfaces (timeline canvas,
-   etc.). Thin track, muted thumb, transparent corners — the 2px
-   background-clip trick inset-pads the thumb so it sits with breathing
-   room instead of flush against the edge. */
+/* Subtle neutral scrollbar for large scroll surfaces (timeline canvas, etc.). */
 .scrollbar-subtle {
     scrollbar-width: thin;
     scrollbar-color: color-mix(
@@ -128,19 +92,8 @@ button:not(:disabled),
     background: transparent;
 }
 
-/* ----------------------------------------------------------------------
-   TipTap / ProseMirror editor surface
-   ----------------------------------------------------------------------
-   Targeted styles for `.tiptap-editor .ProseMirror` because:
-   - Tiptap renders the content into a `.ProseMirror` div with no
-     intrinsic min-height, so without this the editor collapses to a
-     single line until the user types.
-   - The placeholder is rendered via Placeholder extension as a `::before`
-     pseudo-element on the empty paragraph; needs the float + colour
-     setup below to look right.
-   - Mention + entry-link nodes get a subtle pill background so they
-     read as inline tokens rather than plain text.
-*/
+/* TipTap / ProseMirror editor surface — min-height, placeholder pseudo,
+   mention + entry-link pill backgrounds. */
 .tiptap-editor .ProseMirror {
     outline: none;
     min-height: 8rem;
@@ -222,18 +175,13 @@ button:not(:disabled),
     z-index: 9999;
 }
 
-/*
- * RichTextEditor toolbar buttons — hover treatment lives here because
- * `:hover` can't be expressed via inline style. Active state is owned
- * by inline style on the React component (paints from
- * `--theme-brand-secondary-*`).
- */
+/* RichTextEditor toolbar buttons — :hover only (active state painted inline
+   from --theme-brand-secondary-* on the React component). */
 .alex-toolbar-btn:hover:not(:disabled):not(.alex-toolbar-btn--active) {
     background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
 }
 
-/* Legend / formatting-help row hover — same idle-tint as the toolbar
-   buttons so the modal feels related to the editor surface. */
+/* Legend / formatting-help row hover — same idle-tint as toolbar buttons. */
 .alex-legend-row {
     border-radius: var(--theme-radius-input);
     transition: background var(--theme-motion-duration-interactive)
@@ -243,29 +191,14 @@ button:not(:disabled),
     background: color-mix(in srgb, var(--theme-base-content) 6%, transparent);
 }
 
-/* Toast dismiss-button hover — paint via theme tokens so preset swaps
-   reach into the toast surface. Idle state lives inline on the button. */
+/* Toast dismiss-button hover — idle state lives inline on the button. */
 .alex-toast-close:hover {
     background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
     color: color-mix(in srgb, var(--theme-base-content) 65%, transparent);
 }
 
-/* ----------------------------------------------------------------------
-   Server-rendered wiki/prose content surface
-   ----------------------------------------------------------------------
-   ContentRendererService converts wiki markup → HTML at request time.
-   The output uses serif-styled `.wiki-h2`/`h3`/`h4`/`h5`/`h6` headings,
-   `.wiki-table-wrapper`/`.wiki-table` for tables, and `<a class="link">`
-   for processor-generated links. These selectors paint that output so
-   it matches legacy's typography + readable link styling.
-
-   Two scopes:
-   - `.entry-summary-links a.link` — the EntryHeader summary block (a
-     dense one-paragraph blurb at the top of every entry page). Dashed
-     underline style differentiates it from the body's prose links.
-   - `.prose ...` — the body content area. `.prose` is Tailwind's
-     typography utility plus our own wiki-class augmentations.
-*/
+/* Server-rendered wiki/prose content surface — typography + link styling
+   for ContentRendererService output (.wiki-h2..h6, .wiki-table, a.link). */
 
 .entry-summary-links a.link {
     color: color-mix(in srgb, var(--theme-brand-primary-500) 70%, transparent);
@@ -372,9 +305,8 @@ button:not(:disabled),
         color-mix(in srgb, var(--theme-base-content) 5%, transparent);
 }
 
-/* Blueprint entries table — paper-style shell with primary-tinted header.
-   The headers always carry brand-primary; row hover gets a subtle base-200
-   tint. Used by Blueprints/Sections/EntriesTab.tsx. */
+/* Blueprint entries table — primary-tinted headers, subtle base-200 row hover.
+   Used by Blueprints/Sections/EntriesTab.tsx. */
 .alex-entries-table tbody tr {
     transition: background-color var(--theme-motion-duration-fast, 150ms)
         var(--theme-motion-easing-standard, ease);
@@ -418,10 +350,8 @@ button:not(:disabled),
     color: var(--theme-status-warning-stroke);
 }
 
-/* Interactive list row — used inside modals + dropdowns where each
-   row is a clickable target (blueprint picker, action list, etc.).
-   Hover tints a subtle base-200 wash; the selected/active state is
-   set via inline style at the call site. */
+/* Interactive list row — hover tints base-200; active state via inline
+   style at the call site. */
 .alex-row {
     transition: background-color var(--theme-motion-duration-fast, 150ms)
         var(--theme-motion-easing-standard, ease);
@@ -434,9 +364,8 @@ button:not(:disabled),
     );
 }
 
-/* Graph sidebar idle row — :hover wash + brighten. Active rows skip
-   this via data-active="true" since their inline brand-primary
-   styling already conveys the state. */
+/* Graph sidebar idle row — :hover wash; active rows skip via
+   data-active="true" (inline brand-primary already paints state). */
 .alex-graph-sidebar-btn {
     transition: background-color var(--theme-motion-duration-fast, 150ms)
             var(--theme-motion-easing-standard, ease),
@@ -452,10 +381,7 @@ button:not(:disabled),
     color: var(--theme-base-content);
 }
 
-/* Gallery tile — border + shadow animate on hover so the tile lifts
-   subtly when the user can interact with it. Inner image scale is
-   handled by Tailwind's group-hover:scale-105 (CSS-level :hover too,
-   composed via the .group ancestor). */
+/* Gallery tile — border + shadow lift on hover (image scale via Tailwind). */
 .alex-gallery-tile {
     transition: border-color var(--theme-motion-duration-fast, 150ms)
             var(--theme-motion-easing-standard, ease),
@@ -473,9 +399,8 @@ button:not(:disabled),
         0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
-/* ViewToggle segmented buttons — idle button background animates on
-   hover; active buttons (marked data-active="true") skip the hover wash
-   because their inline-style brand fill already conveys the state. */
+/* ViewToggle segmented buttons — hover wash on idle; active buttons skip via
+   data-active="true" (inline brand fill carries state). */
 .alex-view-toggle-btn {
     transition: background-color var(--theme-motion-duration-fast, 150ms)
         var(--theme-motion-easing-standard, ease);
@@ -488,12 +413,8 @@ button:not(:disabled),
     );
 }
 
-/* Infobox panel — components/entries/Infobox.tsx renders against
-   --theme-brand-secondary-*. The expander button shifts between two
-   tints on hover; the relationship-row subtitle brightens on parent-row
-   hover. Both are :hover / group-hover effects that inline styles
-   can't express, so they live here keyed to the same surface tokens
-   the React component uses inline. */
+/* Infobox panel — :hover / group-hover effects (expander + relationship-row
+   subtitle) that inline style can't express. */
 .alex-infobox-expander {
     color: color-mix(
         in srgb,
@@ -518,10 +439,8 @@ button:not(:disabled),
     color: var(--theme-brand-secondary-content);
 }
 
-/* Inline link fallbacks for MentionAwareContent. Used when the
-   server-sanitized HTML doesn't include a class attribute on
-   <a data-type="mention"> / <a data-type="entry">. The sanitizer
-   usually does, so these are belt-and-suspenders defaults. */
+/* Inline link fallbacks for MentionAwareContent — kicks in if the server
+   sanitizer drops the class on <a data-type="mention|entry">. */
 .alex-mention,
 .alex-entry-link {
     color: var(--theme-brand-primary-500);

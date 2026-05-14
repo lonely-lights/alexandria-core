@@ -1,37 +1,18 @@
-/* Thought Fragments motif layer.
-   Active when <html data-theme="tf-dark"> or "tf-light". */
+/* Thought Fragments motif layer. Active when <html data-theme="tf-dark|tf-light">. */
 
 [data-theme^="tf"] {
     --tf-handwriting: 'Caveat', 'Comic Sans MS', cursive;
 
-    /* Defaults for the paper-action / paper-card / paper-board shadow
-       radius + color tokens. Each rule that uses them does
-       var(--name, fallback) so these declarations exist primarily so
-       static analysis (PhpStorm CSS inspector) sees the tokens declared.
-       Consumers can override per-host or per-theme.
-
-       Radii derive from `--theme-radius-button` (paper-action, since
-       it's a button) and `--theme-radius-card` (paper-card +
-       paper-board, both panels) so the offset bevel shadow tracks
-       the active theme's roundedness — soft / sharp / pill all
-       repaint correctly.
-
-       Shadow color tracks `--theme-brand-primary-700` (the darker
-       brand variant) so the offset bevel picks up the active preset's
-       palette instead of the legacy warm gold. On tf themes whose
-       brand is gold this still reads warm; on cyberpunk it picks up
-       the deeper neon; on default it picks up the default brand. */
+    /* Paper-action/card/board shadow tokens — radii track theme radius,
+       shadow color tracks --theme-brand-primary-700. Overridable per-host. */
     --paper-action-shadow-radius: var(--theme-radius-button);
     --paper-card-shadow-radius: var(--theme-radius-card);
     --paper-board-shadow-radius: var(--theme-radius-card);
     --paper-board-shadow-color: var(--theme-brand-primary-700);
 }
 
-/* Per-theme paper palette tokens. Legacy declared these inside
-   tailwind.config.js DaisyUI theme blocks (Tailwind 3 syntax);
-   Tailwind 4's DaisyUI theme plugin only accepts standard --color-*
-   tokens, so the --tf-* customs are declared here alongside the
-   styling that uses them. */
+/* Per-theme paper palette tokens (Tailwind 4's DaisyUI theme blocks accept
+   only --color-* names, so --tf-* customs live here). */
 [data-theme="tf-dark"] {
     --tf-pencil: #d4a017;
     --tf-rule: #2a1f1c;
@@ -56,8 +37,7 @@
     --tf-paper-cream: #fff8e7;
 }
 
-/* Grid paper ambient background — horizontal + vertical lines, for
-   blueprint-style grids. */
+/* Grid paper ambient background — for blueprint-style grids. */
 [data-theme^="tf"] .grid-paper {
     background-image:
         linear-gradient(rgba(251,191,36,.045) 1px, transparent 1px),
@@ -70,10 +50,8 @@
         linear-gradient(90deg, rgba(139,90,43,.08) 1px, transparent 1px);
 }
 
-/* Ruled paper — parallel lines tilted 23° above horizontal, rising
-   to the right. Tileable via repeating-linear-gradient; a 157deg
-   direction is perpendicular to 23° forward-slash lines. Gives notes
-   pages a hand-ruled-notebook feel without shouting. */
+/* Ruled paper — parallel lines at 157deg (perpendicular to 23° forward-slash).
+   Hand-ruled-notebook feel without shouting. */
 [data-theme^="tf"] .ruled-paper {
     background-image: repeating-linear-gradient(
         157deg,
@@ -93,31 +71,21 @@
     );
 }
 
-/* Cursive + ruled SVG overlay — hidden on non-tf themes so the
-   notebook ambience is a Paper-family signature only. The actual
-   lines/cursive pattern lives in the component's inline SVG so both
-   share one coordinate system (see NotesDashboard.tsx → RuledCursiveBg). */
+/* Cursive + ruled SVG overlay — tf-only motif. Lines/cursive pattern lives
+   in NotesDashboard.tsx → RuledCursiveBg. */
 [data-theme^="tf"] .cursive-overlay { display: block; }
 html:not([data-theme^="tf"]) .cursive-overlay { display: none; }
 
-/* Blueprint-paper grid overlay — engineering/architectural feel for
-   the Blueprints section. Same scoping as the notebook overlay so the
-   ambient motif stays tf-only. See BlueprintGridBg.tsx. */
+/* Blueprint-paper grid overlay — tf-only motif. See BlueprintGridBg.tsx. */
 [data-theme^="tf"] .grid-overlay { display: block; }
 html:not([data-theme^="tf"]) .grid-overlay { display: none; }
 
-/* Neural-constellation overlay for AI surfaces — scattered dots with
-   faint connecting lines, faint pulses. See NeuralConstellationBg.tsx. */
+/* Neural-constellation overlay for AI surfaces. See NeuralConstellationBg.tsx. */
 [data-theme^="tf"] .neural-overlay { display: block; }
 html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 
-/* Top-down fade for page-background SVG overlays. The full SVG still
-   renders; the mask clips the visible pixels to the top band. 33vh
-   height + this mask gives "strong at the top, gone at the bottom"
-   regardless of how tall the content happens to be.
-
-   Both the standard (`mask-image`) and legacy WebKit properties are
-   set so Chrome, Firefox, and Safari all apply the fade. */
+/* Top-down fade for page-background SVG overlays — clips pixels to top band.
+   Both standard + WebKit properties set for cross-browser support. */
 .bg-fade-out {
     -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
     mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
@@ -164,14 +132,8 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     opacity: .55;
 }
 
-/* Offset-shadow button style (paper-tape feel).
-   ─────
-   Shadow anatomy mirrors .paper-card: ::before is the offset shadow
-   with an independent, larger border-radius for the bevel; ::after
-   paints the paper surface above it so the shadow only pokes out at
-   the bottom-right. Shadow color is derived from the paper tint
-   itself (color-mix 35% paper + 65% deep warm brown) so the drop
-   reads as a darker sibling of the button face. */
+/* Offset-shadow button (paper-tape feel). Shadow via ::before with independent
+   radius; ::after paints the paper surface. Shadow tint = paper + warm brown. */
 [data-theme^="tf"] .btn-offset,
 [data-theme^="tf"] .btn.paper-action {
     position: relative;
@@ -248,17 +210,8 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     border: 1px dashed var(--tf-tape-shadow);
 }
 
-/* Paper card — a card-sized variant of sticky-note for in-app surfaces
-   (notes dashboard, workflow cards, etc). Keeps the UI font for
-   readability — unlike .sticky-note which forces handwriting.
-   ─────
-   Shadow anatomy: the offset shadow is drawn via ::before (not
-   box-shadow) so its radius can be larger than the card's own radius,
-   matching the paper-board "bevel" treatment. The paper surface itself
-   is painted via ::after so the ::before pseudo can sit at z-index: -1
-   underneath without being clipped by the element's own background.
-   Host rules still win color — !important on bg/border overrides any
-   Tailwind utilities applied alongside paper-card-- variants. */
+/* Paper card — sticky-note variant for in-app surfaces. Shadow via ::before
+   (independent radius), surface via ::after. !important wins host bg/border. */
 [data-theme^="tf"] .paper-card {
     position: relative;
     isolation: isolate;
@@ -267,14 +220,12 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     border-color: transparent !important;
     box-shadow: none !important;
     transition: transform .12s ease;
-    /* Default (cream) surface + shadow-tint. Overridden by .paper-card--* */
+    /* Default cream surface. Overridden by .paper-card--*. */
     --paper-card-bg: var(--tf-paper-cream);
     --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-cream) 35%, #2b1810);
 }
 [data-theme^="tf"] .paper-card::before {
-    /* Offset shadow — radius is independent via --paper-card-shadow-radius
-       so an element with a 12px (rounded-xl) radius can cast a 16px
-       shadow, giving the edge a cleaner proportional curve. */
+    /* Offset shadow — radius independent so curves stay proportional. */
     content: '';
     position: absolute;
     inset: 0;
@@ -285,10 +236,8 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     transition: transform .12s ease;
 }
 [data-theme^="tf"] .paper-card::after {
-    /* Paper surface — covers the shadow within the element bounds so
-       the ::before offset only pokes out on the bottom/right. Button
-       text & icons paint on top (they're non-positioned in-flow
-       content, above negative-z pseudos). */
+    /* Paper surface — covers shadow inside bounds; ::before only pokes
+       out bottom/right. Text & icons paint on top. */
     content: '';
     position: absolute;
     inset: 0;
@@ -320,10 +269,8 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-cream) 35%, #2b1810);
 }
 
-/* Paper cards always sit on a warm light tint, regardless of mode.
-   DaisyUI's base-content tracks the theme's BC (near-white on tf-dark),
-   so nested text-base-content utilities need a local override to keep
-   contrast readable against paper. */
+/* Paper cards always sit on warm light tint. Nested text-base-content needs
+   a local override (base-content is near-white on tf-dark). */
 [data-theme^="tf"] .paper-card,
 [data-theme^="tf"] .paper-card * { --paper-ink: #2b1d0f; }
 [data-theme^="tf"] .paper-card--sage,
@@ -338,10 +285,8 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 [data-theme^="tf"] .paper-card .text-base-content\/60 { color: color-mix(in srgb, var(--paper-ink) 82%, transparent) !important; }
 [data-theme^="tf"] .paper-card .text-base-content\/70 { color: color-mix(in srgb, var(--paper-ink) 92%, transparent) !important; }
 
-/* Semantic accents (warning/info/primary/etc) can't be trusted to
-   contrast against the paper — e.g. text-warning on --tf-paper-yellow
-   is yellow-on-yellow. Remap to paper-ink for any semantic text or
-   /10 bg utility used inside a paper-card. */
+/* Semantic accents (warning/info/primary/etc) can't contrast against paper —
+   e.g. text-warning on yellow paper. Remap to paper-ink inside paper-cards. */
 [data-theme^="tf"] .paper-card .text-warning,
 [data-theme^="tf"] .paper-card .text-info,
 [data-theme^="tf"] .paper-card .text-primary,
@@ -360,11 +305,8 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     background-color: color-mix(in srgb, var(--paper-ink) 14%, transparent) !important;
 }
 
-/* Hover lift only applies to actually-interactive paper-cards (buttons
-   and links). Plain container usage (e.g. a list wrapper) stays still.
-   The card itself nudges up-left while the ::before shadow slides
-   down-right — the combined motion doubles the apparent offset without
-   stretching the shadow's shape. */
+/* Hover lift — only on button/link paper-cards. Card nudges up-left,
+   shadow slides down-right to double apparent offset. */
 [data-theme^="tf"] button.paper-card:hover,
 [data-theme^="tf"] a.paper-card:hover {
     transform: translate(-1px, -1px);
@@ -389,19 +331,9 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     [data-theme^="tf"] button.paper-card:active::before { transform: translate(3px, 4px); }
 }
 
-/* Paper-board: the container element wrapping a paper-table. The
-   shadow is drawn via a ::before pseudo-element (not box-shadow) so
-   its corner radius can be larger than the host's radius — an element
-   with 16px radius gets a shadow with 20px radius, giving the offset
-   edge a cleaner, more proportional curve.
-   ─────
-   Host requirements:
-     • no overflow clipping on the root element (move overflow-x-auto /
-       overflow-hidden to an inner wrapper when scrolling is needed)
-     • the host keeps its own rounded-* + bg-* classes; the shadow
-       renders behind it thanks to the z-index: -1 pseudo.
-   isolation: isolate traps the -1 z-index inside this element's
-   stacking context so it doesn't slip behind the page body. */
+/* Paper-board — paper-table container. Shadow via ::before (independent radius).
+   Host requirements: no overflow clipping on root; keeps its own rounded/bg utilities.
+   isolation: isolate traps the -1 z-index in the local stacking context. */
 [data-theme^="tf"] .paper-board {
     position: relative;
     isolation: isolate;
@@ -412,31 +344,15 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     position: absolute;
     inset: 0;
     border-radius: var(--paper-board-shadow-radius, var(--theme-radius-card));
-    /* Host can override --paper-board-shadow-color (e.g. to tint the
-       shadow with a card-specific color like the secondary infobox).
-       Falls back to the generic tape-shadow. */
+    /* Host can override --paper-board-shadow-color; falls back to tape-shadow. */
     background: var(--paper-board-shadow-color, var(--theme-brand-primary-700));
     transform: translate(3px, 4px);
     z-index: -1;
 }
 
-/* Paper-styled data tables. Rows are solid bright paper (not just
-   tinted) — the whole table should read as a stack of paper. Text
-   inside rows is always paper-ink regardless of theme mode, and
-   base-content opacity utilities get remapped so they stay
-   readable against the warm background (same mechanic as paper-card). */
-/* ────────────────────────────────────────────────────────────────────
-   Paper-stripe pattern — theme-adaptive striped list.
-   Shared by .paper-table (native HTML table on Notes tab) and
-   .paper-stripe (div-based lists on the Notes Dashboard).
-
-   Light mode: warm paper — cream body, yellow/cream zebra, yellow
-     header that matches the .btn-offset / .paper-action button family.
-   Dark mode:  subtle white-overlay zebra sitting on the theme's dark
-     base — no forced paper tint, so the panel feels native to dark.
-
-   Both surfaces (table + div-list) render identically per theme.
-   ──────────────────────────────────────────────────────────────────── */
+/* Paper-stripe pattern — theme-adaptive striped list. Shared by .paper-table
+   (HTML table) and .paper-stripe (div list). Light: cream + yellow zebra.
+   Dark: subtle white-overlay zebra on theme base. */
 
 /* Shared transitions */
 [data-theme^="tf"] .paper-table tbody tr,
@@ -465,9 +381,7 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     background-color: color-mix(in srgb, var(--tf-paper-yellow) 28%, var(--tf-paper-cream));
 }
 
-/* Ink remapping — cream bg needs dark text; base-content opacity
-   utilities get recomputed against paper-ink so descriptions don't
-   wash out. */
+/* Ink remapping — cream bg needs dark text; opacity utilities recomputed. */
 [data-theme="tf-light"] .paper-table tbody td,
 [data-theme="tf-light"] .paper-table tbody td *,
 [data-theme="tf-light"] .paper-stripe__body > *,
