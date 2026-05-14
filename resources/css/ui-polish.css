@@ -268,10 +268,12 @@ button:not(:disabled),
 */
 
 .entry-summary-links a.link {
-    @apply text-primary/70 underline decoration-dashed decoration-2 underline-offset-4 transition-all duration-200;
+    color: color-mix(in srgb, var(--theme-brand-primary-500) 70%, transparent);
+    @apply underline decoration-dashed decoration-2 underline-offset-4 transition-all duration-200;
 }
 .entry-summary-links a.link:hover {
-    @apply text-primary/90 decoration-solid;
+    color: color-mix(in srgb, var(--theme-brand-primary-500) 90%, transparent);
+    @apply decoration-solid;
 }
 
 .prose h1,
@@ -315,10 +317,12 @@ button:not(:disabled),
 }
 
 .prose a {
-    @apply text-primary/70 underline decoration-dashed decoration-2 underline-offset-4 transition-all duration-200;
+    color: color-mix(in srgb, var(--theme-brand-primary-500) 70%, transparent);
+    @apply underline decoration-dashed decoration-2 underline-offset-4 transition-all duration-200;
 }
 .prose a:hover {
-    @apply text-primary/90 decoration-solid;
+    color: color-mix(in srgb, var(--theme-brand-primary-500) 90%, transparent);
+    @apply decoration-solid;
 }
 
 .wiki-table-wrapper {
