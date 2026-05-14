@@ -493,6 +493,81 @@ button:not(:disabled),
     background: color-mix(in srgb, var(--theme-brand-primary-500) 85%, white);
 }
 
+/* PublicProfile floating buttons — translucent base-100 surface; deepens
+   on hover. Backdrop-blur preserves the see-through-banner feel. */
+.alex-public-floating-btn {
+    background: color-mix(in srgb, var(--theme-base-100) 80%, transparent);
+    backdrop-filter: blur(4px);
+    transition: background-color var(--theme-motion-duration-fast, 150ms) ease;
+}
+.alex-public-floating-btn:hover {
+    background: var(--theme-base-100);
+}
+
+/* PublicProfile link row — bg shift on hover; child title/arrow elements
+   adopt brand-primary tint. */
+.alex-public-link-row {
+    background: color-mix(in srgb, var(--theme-base-300) 50%, transparent);
+    transition:
+        background-color var(--theme-motion-duration-fast, 150ms) ease,
+        box-shadow var(--theme-motion-duration-fast, 150ms) ease;
+}
+.alex-public-link-row:hover {
+    background: var(--theme-base-300);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+}
+.alex-public-link-title {
+    transition: color var(--theme-motion-duration-fast, 150ms) ease;
+}
+.alex-public-link-row:hover .alex-public-link-title {
+    color: var(--theme-brand-primary-500);
+}
+.alex-public-link-arrow {
+    color: color-mix(in srgb, var(--theme-base-content) 30%, transparent);
+    transition:
+        color var(--theme-motion-duration-fast, 150ms) ease,
+        transform var(--theme-motion-duration-fast, 150ms) ease;
+}
+.alex-public-link-row:hover .alex-public-link-arrow {
+    color: color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent);
+    transform: translate(0.125rem, -0.125rem);
+}
+
+/* PublicProfile project card — border highlight + banner scale on hover. */
+.alex-public-project-card {
+    border: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+    background: color-mix(in srgb, var(--theme-base-300) 40%, transparent);
+    transition:
+        border-color var(--theme-motion-duration-fast, 150ms) ease,
+        box-shadow var(--theme-motion-duration-fast, 150ms) ease;
+}
+.alex-public-project-card:hover {
+    border-color: color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+.alex-public-project-banner {
+    transition: transform 300ms ease;
+}
+.alex-public-project-card:hover .alex-public-project-banner {
+    transform: scale(1.02);
+}
+.alex-public-project-title {
+    transition: color var(--theme-motion-duration-fast, 150ms) ease;
+}
+.alex-public-project-card:hover .alex-public-project-title {
+    color: var(--theme-brand-primary-500);
+}
+
+/* PublicProfile "Privacy Settings" CTA — primary tint that deepens on hover. */
+.alex-public-privacy-cta {
+    background: color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent);
+    color: var(--theme-brand-primary-500);
+    transition: background-color var(--theme-motion-duration-fast, 150ms) ease;
+}
+.alex-public-privacy-cta:hover {
+    background: color-mix(in srgb, var(--theme-brand-primary-500) 15%, transparent);
+}
+
 /* Inline link fallbacks for MentionAwareContent — kicks in if the server
    sanitizer drops the class on <a data-type="mention|entry">. */
 .alex-mention,
