@@ -1,6 +1,4 @@
-/* ── GalleryGrid ── */
-
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import MediaMetadataForm from './MediaMetadataForm';
 
@@ -18,6 +16,102 @@ interface GalleryGridProps {
     modelId: number;
     onChanged: () => void;
 }
+
+const emptyStateStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '3rem 0',
+    textAlign: 'center',
+    borderRadius: 'var(--theme-radius-card)',
+    border: '2px dashed color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
+};
+
+const tileBaseStyle: CSSProperties = {
+    position: 'relative',
+    aspectRatio: '1 / 1',
+    overflow: 'hidden',
+    borderRadius: 'var(--theme-radius-input)',
+    background: 'var(--theme-base-200)',
+    transition: 'box-shadow var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const tileActiveStyle: CSSProperties = {
+    boxShadow: '0 0 0 2px var(--theme-brand-primary-500)',
+};
+
+const tileIdleStyle: CSSProperties = {
+    boxShadow: '0 0 0 2px transparent',
+};
+
+const overlayStyle: CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.375rem',
+    background: 'color-mix(in srgb, var(--theme-base-300) 80%, transparent)',
+};
+
+const overlayBtnBase: CSSProperties = {
+    width: '7rem',
+    padding: '0.25rem 0.5rem',
+    fontSize: '0.6875rem',
+    fontWeight: 500,
+    border: 'none',
+    cursor: 'pointer',
+    borderRadius: 'var(--theme-radius-button)',
+    background: 'transparent',
+    color: 'var(--theme-base-content)',
+    transition: 'background var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const overlayBtnDangerStyle: CSSProperties = {
+    ...overlayBtnBase,
+    background: 'var(--theme-status-error-stroke)',
+    color: 'var(--theme-status-error-content, white)',
+};
+
+const altCaptionOverlayStyle: CSSProperties = {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    background: 'color-mix(in srgb, var(--theme-base-300) 70%, transparent)',
+    padding: '0.125rem 0.375rem',
+    fontSize: '0.625rem',
+    color: 'var(--theme-base-content)',
+};
+
+const editPanelStyle: CSSProperties = {
+    borderRadius: 'var(--theme-radius-card)',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'var(--theme-base-200)',
+    padding: '1rem',
+};
+
+const closeBtnStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '1.5rem',
+    height: '1.5rem',
+    border: 'none',
+    background: 'transparent',
+    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+    borderRadius: 'var(--theme-radius-button)',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+};
+
+const spinnerStyle: CSSProperties = {
+    fontSize: '0.625rem',
+};
 
 export default function GalleryGrid({ images, modelType, modelId, onChanged }: GalleryGridProps) {
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -66,7 +160,7 @@ export default function GalleryGrid({ images, modelType, modelId, onChanged }: G
 
     if (images.length === 0) {
         return (
-            <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-base-content/20 py-12 text-center">
+            <div style={emptyStateStyle}>
                 <p className="text-sm opacity-50">No images</p>
             </div>
         );
@@ -75,80 +169,95 @@ export default function GalleryGrid({ images, modelType, modelId, onChanged }: G
     return (
         <div className="flex flex-col gap-4">
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-                {images.map((image) => (
-                    <div
-                        key={image.id}
-                        className={`group relative aspect-square overflow-hidden rounded-lg bg-base-200 ring-2 transition-all ${
-                            editingId === image.id ? 'ring-primary' : 'ring-transparent'
-                        }`}
-                    >
-                        <img
-                            src={thumbnailUrl(image)}
-                            alt={image.alt_text ?? ''}
-                            className="h-full w-full object-cover"
-                        />
+                {images.map((image) => {
+                    const isPromotingPage = promotingId?.id === image.id && promotingId?.target === 'page_image';
+                    const isPromotingBanner = promotingId?.id === image.id && promotingId?.target === 'banner';
+                    const isDeleting = deletingId === image.id;
+                    const isEditing = editingId === image.id;
 
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-base-300/80 opacity-0 transition-opacity group-hover:opacity-100">
-                            <button
-                                type="button"
-                                className="btn btn-xs btn-ghost w-28"
-                                disabled={promotingId?.id === image.id && promotingId?.target === 'page_image'}
-                                onClick={() => handlePromote(image, 'page_image')}
-                                title="Use this image as the entry's page image"
-                            >
-                                {promotingId?.id === image.id && promotingId?.target === 'page_image'
-                                    ? <span className="loading loading-spinner loading-xs" />
-                                    : 'Use as page'}
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn-xs btn-ghost w-28"
-                                disabled={promotingId?.id === image.id && promotingId?.target === 'banner'}
-                                onClick={() => handlePromote(image, 'banner')}
-                                title="Use this image as the entry's banner"
-                            >
-                                {promotingId?.id === image.id && promotingId?.target === 'banner'
-                                    ? <span className="loading loading-spinner loading-xs" />
-                                    : 'Use as banner'}
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn-xs btn-ghost w-28"
-                                onClick={() => setEditingId(editingId === image.id ? null : image.id)}
-                            >
-                                Edit
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn-xs btn-error w-28"
-                                disabled={deletingId === image.id}
-                                onClick={() => handleDelete(image)}
-                            >
-                                {deletingId === image.id
-                                    ? <span className="loading loading-spinner loading-xs" />
-                                    : 'Delete'}
-                            </button>
-                        </div>
+                    return (
+                        <div
+                            key={image.id}
+                            className="group"
+                            style={{ ...tileBaseStyle, ...(isEditing ? tileActiveStyle : tileIdleStyle) }}
+                        >
+                            <img
+                                src={thumbnailUrl(image)}
+                                alt={image.alt_text ?? ''}
+                                className="h-full w-full object-cover"
+                            />
 
-                        {/* Alt text overlay at bottom */}
-                        {image.alt_text && (
-                            <div className="absolute bottom-0 left-0 right-0 truncate bg-base-300/70 px-1.5 py-0.5 text-[10px] opacity-0 transition-opacity group-hover:opacity-100">
-                                {image.alt_text}
+                            {/* Hover overlay */}
+                            <div
+                                className="opacity-0 transition-opacity group-hover:opacity-100"
+                                style={overlayStyle}
+                            >
+                                <button
+                                    type="button"
+                                    className="alex-gallery-overlay-btn"
+                                    style={overlayBtnBase}
+                                    disabled={isPromotingPage}
+                                    onClick={() => handlePromote(image, 'page_image')}
+                                    title="Use this image as the entry's page image"
+                                >
+                                    {isPromotingPage
+                                        ? <i className="fa-solid fa-circle-notch fa-spin" style={spinnerStyle} />
+                                        : 'Use as page'}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="alex-gallery-overlay-btn"
+                                    style={overlayBtnBase}
+                                    disabled={isPromotingBanner}
+                                    onClick={() => handlePromote(image, 'banner')}
+                                    title="Use this image as the entry's banner"
+                                >
+                                    {isPromotingBanner
+                                        ? <i className="fa-solid fa-circle-notch fa-spin" style={spinnerStyle} />
+                                        : 'Use as banner'}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="alex-gallery-overlay-btn"
+                                    style={overlayBtnBase}
+                                    onClick={() => setEditingId(isEditing ? null : image.id)}
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    type="button"
+                                    style={overlayBtnDangerStyle}
+                                    disabled={isDeleting}
+                                    onClick={() => handleDelete(image)}
+                                >
+                                    {isDeleting
+                                        ? <i className="fa-solid fa-circle-notch fa-spin" style={spinnerStyle} />
+                                        : 'Delete'}
+                                </button>
                             </div>
-                        )}
-                    </div>
-                ))}
+
+                            {/* Alt text overlay at bottom */}
+                            {image.alt_text && (
+                                <div
+                                    className="opacity-0 transition-opacity group-hover:opacity-100"
+                                    style={altCaptionOverlayStyle}
+                                >
+                                    {image.alt_text}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Expanded metadata form */}
             {editingImage && (
-                <div className="rounded-xl border border-base-content/10 bg-base-200 p-4">
+                <div style={editPanelStyle}>
                     <div className="mb-3 flex items-center justify-between">
                         <p className="text-sm font-medium">Edit image metadata</p>
                         <button
                             type="button"
-                            className="btn btn-ghost btn-xs btn-square"
+                            style={closeBtnStyle}
                             onClick={() => setEditingId(null)}
                             aria-label="Close"
                         >

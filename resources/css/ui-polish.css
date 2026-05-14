@@ -439,6 +439,24 @@ button:not(:disabled),
     color: var(--theme-brand-secondary-content);
 }
 
+/* Image dropzone — hover wash on idle; drag-over state via data-active="true"
+   carries inline tinted styling, so skip the hover treatment then. */
+.alex-image-dropzone {
+    transition:
+        background-color var(--theme-motion-duration-fast, 150ms) ease,
+        border-color var(--theme-motion-duration-fast, 150ms) ease;
+}
+.alex-image-dropzone:hover:not([data-active="true"]) {
+    border-color: color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent);
+    background-color: color-mix(in srgb, var(--theme-base-200) 20%, transparent);
+}
+
+/* Gallery-tile overlay buttons — subtle hover tint per individual button
+   inside the hover-revealed overlay. */
+.alex-gallery-overlay-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-base-content) 12%, transparent);
+}
+
 /* Inline link fallbacks for MentionAwareContent — kicks in if the server
    sanitizer drops the class on <a data-type="mention|entry">. */
 .alex-mention,
