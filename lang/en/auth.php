@@ -66,4 +66,10 @@ return [
         'terms_of_service' => 'Terms of Service',
         'privacy_policy' => 'Privacy Policy',
     ],
+
+    'divider' => [
+        // Between the password-reset / forgot-password form and the "back to
+        // login" link. Surfaced via copy['divider.remembered'] on those pages.
+        'remembered' => 'Remembered it?',
+    ],
 ];

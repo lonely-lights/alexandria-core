@@ -47,4 +47,12 @@ return [
     'temporal.reference_blueprint_placeholder' => 'Select a blueprint...',
     'temporal.allow_overlap_label' => 'Allow Overlapping Dates',
     'temporal.allow_overlap_description' => 'Multiple records can be active at the same time',
+
+    // ── Media (uploader + metadata form) ─────────────────────────────
+    'media.alt_placeholder' => 'Describe the image for screen readers…',
+    'media.caption_placeholder' => 'Add a caption…',
+    'media.error.alt_required' => 'Alt text is required.',
+    'media.error.file_too_large' => 'File exceeds the :limit KB size limit.',
+    'media.error.upload_failed' => 'Upload failed (HTTP :status)',
+    'media.error.metadata_save_failed' => 'Failed to save metadata.',
 ];

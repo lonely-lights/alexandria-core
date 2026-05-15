@@ -1,95 +1,106 @@
-import { useState, useRef, useCallback, type CSSProperties, type DragEvent, type ChangeEvent } from 'react';
-import { type MediaItem } from '@alexandria/types/media';
-import Button from '@alexandria/components/ui/Button';
-import Input from '@alexandria/components/form/Input';
+import {
+    useState,
+    useRef,
+    useCallback,
+    type CSSProperties,
+    type DragEvent,
+    type ChangeEvent,
+} from "react";
+import { type MediaItem } from "@alexandria/types/media";
+import Button from "@alexandria/components/ui/Button";
+import Input from "@alexandria/components/form/Input";
+import useT from "@alexandria/hooks/useT";
 
 interface ImageUploaderProps {
-    modelType: 'projects' | 'blueprints' | 'entries';
+    modelType: "projects" | "blueprints" | "entries";
     modelId: number;
-    collection: 'page_image' | 'banner' | 'gallery';
+    collection: "page_image" | "banner" | "gallery";
     onUploaded: (media: MediaItem) => void;
     onClose?: () => void;
     maxSizeKb?: number;
 }
 
 const dropzoneBaseStyle: CSSProperties = {
-    borderRadius: 'var(--theme-radius-card)',
-    borderWidth: '2px',
-    borderStyle: 'dashed',
-    padding: '2rem 0',
-    textAlign: 'center',
-    cursor: 'pointer',
+    borderRadius: "var(--theme-radius-card)",
+    borderWidth: "2px",
+    borderStyle: "dashed",
+    padding: "2rem 0",
+    textAlign: "center",
+    cursor: "pointer",
 };
 
 const dropzoneActiveStyle: CSSProperties = {
     ...dropzoneBaseStyle,
-    borderColor: 'color-mix(in srgb, var(--theme-brand-primary-500) 50%, transparent)',
-    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent)',
+    borderColor:
+        "color-mix(in srgb, var(--theme-brand-primary-500) 50%, transparent)",
+    background:
+        "color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent)",
 };
 
 const dropzoneIdleStyle: CSSProperties = {
     ...dropzoneBaseStyle,
-    borderColor: 'var(--theme-base-300)',
+    borderColor: "var(--theme-base-300)",
 };
 
 const previewFilenameStyle: CSSProperties = {
-    fontSize: '0.75rem',
-    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+    fontSize: "0.75rem",
+    color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
 };
 
 const previewReplaceHintStyle: CSSProperties = {
-    fontSize: '0.75rem',
-    color: 'color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)',
+    fontSize: "0.75rem",
+    color: "color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)",
 };
 
 const uploadIconStyle: CSSProperties = {
-    marginBottom: '0.5rem',
-    fontSize: '1.5rem',
-    color: 'color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    marginBottom: "0.5rem",
+    fontSize: "1.5rem",
+    color: "color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
 };
 
 const uploadPromptStyle: CSSProperties = {
-    fontSize: '0.875rem',
-    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+    fontSize: "0.875rem",
+    color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
 };
 
 const uploadSubPromptStyle: CSSProperties = {
-    marginTop: '0.25rem',
-    fontSize: '0.75rem',
-    color: 'color-mix(in srgb, var(--theme-base-content) 25%, transparent)',
+    marginTop: "0.25rem",
+    fontSize: "0.75rem",
+    color: "color-mix(in srgb, var(--theme-base-content) 25%, transparent)",
 };
 
 const labelStyle: CSSProperties = {
-    fontSize: '0.75rem',
+    fontSize: "0.75rem",
     fontWeight: 500,
-    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+    color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
 };
 
 const labelOptionalStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 25%, transparent)',
+    color: "color-mix(in srgb, var(--theme-base-content) 25%, transparent)",
 };
 
-const errorColor = 'var(--theme-status-error-stroke)';
+const errorColor = "var(--theme-status-error-stroke)";
 
 const requiredStarStyle: CSSProperties = {
     color: errorColor,
 };
 
 const counterIdleStyle: CSSProperties = {
-    fontSize: '0.75rem',
-    color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)',
+    fontSize: "0.75rem",
+    color: "color-mix(in srgb, var(--theme-base-content) 30%, transparent)",
 };
 
 const counterOverStyle: CSSProperties = {
-    fontSize: '0.75rem',
+    fontSize: "0.75rem",
     color: errorColor,
 };
 
 const errorBoxStyle: CSSProperties = {
-    borderRadius: 'var(--theme-radius-input)',
-    background: 'color-mix(in srgb, var(--theme-status-error-stroke) 10%, transparent)',
-    padding: '0.5rem 0.75rem',
-    fontSize: '0.75rem',
+    borderRadius: "var(--theme-radius-input)",
+    background:
+        "color-mix(in srgb, var(--theme-status-error-stroke) 10%, transparent)",
+    padding: "0.5rem 0.75rem",
+    fontSize: "0.75rem",
     color: errorColor,
 };
 
@@ -101,10 +112,11 @@ export default function ImageUploader({
     onClose,
     maxSizeKb = 10240,
 }: ImageUploaderProps) {
+    const t = useT();
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
-    const [altText, setAltText] = useState('');
-    const [caption, setCaption] = useState('');
+    const [altText, setAltText] = useState("");
+    const [caption, setCaption] = useState("");
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isDragOver, setIsDragOver] = useState(false);
@@ -116,14 +128,19 @@ export default function ImageUploader({
             setError(null);
 
             if (selected.size > maxSizeKb * 1024) {
-                setError(`File exceeds the ${maxSizeKb} KB size limit.`);
+                setError(
+                    t("forms.media.error.file_too_large").replace(
+                        ":limit",
+                        String(maxSizeKb),
+                    ),
+                );
                 return;
             }
 
             setFile(selected);
             setPreview(URL.createObjectURL(selected));
         },
-        [maxSizeKb],
+        [maxSizeKb, t],
     );
 
     function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
@@ -161,35 +178,48 @@ export default function ImageUploader({
         setUploading(true);
         setError(null);
 
-        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+        const csrfToken =
+            document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+                ?.content ?? "";
         const formData = new FormData();
-        formData.append('image', file);
-        formData.append('alt_text', altText.trim());
+        formData.append("image", file);
+        formData.append("alt_text", altText.trim());
         if (caption.trim()) {
-            formData.append('caption', caption.trim());
+            formData.append("caption", caption.trim());
         }
 
         try {
-            const res = await fetch(`/api/v1/${modelType}/${modelId}/media/${collection}`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken,
+            const res = await fetch(
+                `/api/v1/${modelType}/${modelId}/media/${collection}`,
+                {
+                    method: "POST",
+                    headers: {
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-CSRF-TOKEN": csrfToken,
+                    },
+                    credentials: "same-origin",
+                    body: formData,
                 },
-                credentials: 'same-origin',
-                body: formData,
-            });
+            );
 
             if (res.status === 201) {
                 const media = (await res.json()) as MediaItem;
                 onUploaded(media);
             } else {
-                const data = await res.json().catch(() => ({})) as { message?: string };
-                setError(data.message ?? `Upload failed (HTTP ${res.status})`);
+                const data = (await res.json().catch(() => ({}))) as {
+                    message?: string;
+                };
+                setError(
+                    data.message ??
+                        t("forms.media.error.upload_failed").replace(
+                            ":status",
+                            String(res.status),
+                        ),
+                );
             }
         } catch {
-            setError('An unexpected error occurred. Please try again.');
+            setError(t("common.error.unexpected_retry"));
         } finally {
             setUploading(false);
         }
@@ -203,7 +233,7 @@ export default function ImageUploader({
             {/* Drop zone */}
             <div
                 className="alex-image-dropzone transition-colors"
-                data-active={isDragOver ? 'true' : 'false'}
+                data-active={isDragOver ? "true" : "false"}
                 onClick={() => fileRef.current?.click()}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -216,19 +246,27 @@ export default function ImageUploader({
                             src={preview}
                             alt="Preview"
                             className="mx-auto max-h-40 max-w-full object-contain"
-                            style={{ borderRadius: 'var(--theme-radius-input)' }}
+                            style={{
+                                borderRadius: "var(--theme-radius-input)",
+                            }}
                         />
                         <p style={previewFilenameStyle}>{file?.name}</p>
                         <p style={previewReplaceHintStyle}>Click to replace</p>
                     </div>
                 ) : (
                     <>
-                        <i className="fa-solid fa-cloud-upload" style={uploadIconStyle} />
+                        <i
+                            className="fa-solid fa-cloud-upload"
+                            style={uploadIconStyle}
+                        />
                         <p style={uploadPromptStyle}>
                             Drag &amp; drop an image, or click to browse
                         </p>
                         <p style={uploadSubPromptStyle}>
-                            JPEG, PNG, WebP — max {maxSizeKb >= 1024 ? `${Math.round(maxSizeKb / 1024)} MB` : `${maxSizeKb} KB`}
+                            JPEG, PNG, WebP — max{" "}
+                            {maxSizeKb >= 1024
+                                ? `${Math.round(maxSizeKb / 1024)} MB`
+                                : `${maxSizeKb} KB`}
                         </p>
                     </>
                 )}
@@ -257,7 +295,7 @@ export default function ImageUploader({
                     value={altText}
                     onChange={(e) => setAltText(e.target.value)}
                     maxLength={1000}
-                    placeholder="Describe the image for screen readers…"
+                    placeholder={t("forms.media.alt_placeholder")}
                     size="md"
                 />
             </div>
@@ -272,17 +310,13 @@ export default function ImageUploader({
                     type="text"
                     value={caption}
                     onChange={(e) => setCaption(e.target.value)}
-                    placeholder="Add a caption…"
+                    placeholder={t("forms.media.caption_placeholder")}
                     size="md"
                 />
             </div>
 
             {/* Error */}
-            {error && (
-                <div style={errorBoxStyle}>
-                    {error}
-                </div>
-            )}
+            {error && <div style={errorBoxStyle}>{error}</div>}
 
             {/* Actions */}
             <div className="flex justify-end gap-2">

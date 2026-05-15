@@ -1,13 +1,13 @@
-import { useForm } from '@inertiajs/react';
-import type { SyntheticEvent } from 'react';
+import { useForm } from "@inertiajs/react";
+import type { SyntheticEvent } from "react";
 
-import FormGroup from '../../components/form/FormGroup';
-import TextField from '../../components/form/TextField';
-import AuthLayout from '../../components/layouts/AuthLayout';
-import Alert from '../../components/ui/Alert';
-import Button from '../../components/ui/Button';
-import ButtonLink from '../../components/ui/ButtonLink';
-import Divider from '../../components/ui/Divider';
+import FormGroup from "../../components/form/FormGroup";
+import TextField from "../../components/form/TextField";
+import AuthLayout from "../../components/layouts/AuthLayout";
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+import ButtonLink from "../../components/ui/ButtonLink";
+import Divider from "../../components/ui/Divider";
 
 interface ForgotPasswordProps {
     copy: Record<string, string>;
@@ -24,21 +24,21 @@ export default function ForgotPassword({
     privacyUrl,
     status,
 }: ForgotPasswordProps) {
-    const form = useForm({ email: '' });
+    const form = useForm({ email: "" });
 
     const handleSubmit = (e: SyntheticEvent) => {
         e.preventDefault();
-        form.post('/forgot-password');
+        form.post("/forgot-password");
     };
 
     const canSubmit =
-        form.data.email.includes('@') && form.data.email.includes('.');
+        form.data.email.includes("@") && form.data.email.includes(".");
 
     return (
         <AuthLayout
             pageTitle="Forgot your password?"
             formTitle="Forgot your password?"
-            formIntro={copy['forgot_password.intro']}
+            formIntro={copy["forgot_password.intro"]}
         >
             {status && <Alert role="success">{status}</Alert>}
 
@@ -53,13 +53,13 @@ export default function ForgotPassword({
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                <FormGroup label={copy['fields.email']} htmlFor="email">
+                <FormGroup label={copy["fields.email"]} htmlFor="email">
                     <TextField
                         id="email"
                         name="email"
                         type="email"
                         value={form.data.email}
-                        onChange={(e) => form.setData('email', e.target.value)}
+                        onChange={(e) => form.setData("email", e.target.value)}
                         required
                         autoFocus
                         autoComplete="username"
@@ -90,34 +90,34 @@ export default function ForgotPassword({
                     loading={form.processing}
                     disabled={form.processing || !canSubmit}
                 >
-                    {copy['actions.email_reset_link']}
+                    {copy["actions.email_reset_link"]}
                     <span aria-hidden="true">→</span>
                 </Button>
             </form>
 
-            <Divider>Remembered it?</Divider>
+            <Divider>{copy["divider.remembered"]}</Divider>
             <ButtonLink href={loginUrl} variant="outline" size="lg" fullWidth>
-                {copy['actions.login']}
+                {copy["actions.login"]}
                 <span aria-hidden="true">→</span>
             </ButtonLink>
 
             <p
                 className="text-center text-xs pt-4"
-                style={{ color: 'var(--theme-base-content)', opacity: 0.4 }}
+                style={{ color: "var(--theme-base-content)", opacity: 0.4 }}
             >
-                {copy['login.agree_terms']}{' '}
+                {copy["login.agree_terms"]}{" "}
                 <a
                     href={termsUrl}
                     className="underline hover:opacity-80 transition-opacity"
                 >
-                    {copy['legal.terms_of_service']}
-                </a>{' '}
-                {copy['login.and']}{' '}
+                    {copy["legal.terms_of_service"]}
+                </a>{" "}
+                {copy["login.and"]}{" "}
                 <a
                     href={privacyUrl}
                     className="underline hover:opacity-80 transition-opacity"
                 >
-                    {copy['legal.privacy_policy']}
+                    {copy["legal.privacy_policy"]}
                 </a>
                 .
             </p>

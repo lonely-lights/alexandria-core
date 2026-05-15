@@ -1,12 +1,13 @@
-import { useEffect, useState, type CSSProperties } from 'react';
-import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
-import Button from '@alexandria/components/ui/Button';
-import Input from '@alexandria/components/form/Input';
-import Textarea from '@alexandria/components/form/Textarea';
+import { useEffect, useState, type CSSProperties } from "react";
+import { csrfHeaders } from "@alexandria/lib/csrfHeaders";
+import Button from "@alexandria/components/ui/Button";
+import Input from "@alexandria/components/form/Input";
+import Textarea from "@alexandria/components/form/Textarea";
+import useT from "@alexandria/hooks/useT";
 
 interface MediaMetadataFormProps {
     media: { id: number; alt_text: string | null; caption: string | null };
-    modelType: 'projects' | 'blueprints' | 'entries';
+    modelType: "projects" | "blueprints" | "entries";
     modelId: number;
     onSaved: () => void;
 }
@@ -14,27 +15,27 @@ interface MediaMetadataFormProps {
 const ALT_TEXT_MAX = 1000;
 
 const labelRowStyle: CSSProperties = {
-    display: 'flex',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    marginBottom: '0.25rem',
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    marginBottom: "0.25rem",
 };
 
 const labelStyle: CSSProperties = {
-    fontSize: '0.75rem',
+    fontSize: "0.75rem",
     fontWeight: 500,
-    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+    color: "color-mix(in srgb, var(--theme-base-content) 70%, transparent)",
 };
 
 const labelAltStyle: CSSProperties = {
-    fontSize: '0.75rem',
-    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    fontSize: "0.75rem",
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
 };
 
-const errorColor = 'var(--theme-status-error-stroke)';
+const errorColor = "var(--theme-status-error-stroke)";
 
 const errorTextStyle: CSSProperties = {
-    fontSize: '0.75rem',
+    fontSize: "0.75rem",
     color: errorColor,
 };
 
@@ -43,30 +44,36 @@ const requiredStarStyle: CSSProperties = {
 };
 
 const formWrapStyle: CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.75rem',
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.75rem",
 };
 
 const saveButtonWrapStyle: CSSProperties = {
-    display: 'flex',
-    justifyContent: 'flex-end',
+    display: "flex",
+    justifyContent: "flex-end",
 };
 
-export default function MediaMetadataForm({ media, modelType, modelId, onSaved }: MediaMetadataFormProps) {
-    const [altText, setAltText] = useState(media.alt_text ?? '');
-    const [caption, setCaption] = useState(media.caption ?? '');
+export default function MediaMetadataForm({
+    media,
+    modelType,
+    modelId,
+    onSaved,
+}: MediaMetadataFormProps) {
+    const t = useT();
+    const [altText, setAltText] = useState(media.alt_text ?? "");
+    const [caption, setCaption] = useState(media.caption ?? "");
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        setAltText(media.alt_text ?? '');
-        setCaption(media.caption ?? '');
+        setAltText(media.alt_text ?? "");
+        setCaption(media.caption ?? "");
     }, [media.id, media.alt_text, media.caption]);
 
     const handleSave = async () => {
         if (!altText.trim()) {
-            setError('Alt text is required.');
+            setError(t("forms.media.error.alt_required"));
             return;
         }
 
@@ -74,31 +81,38 @@ export default function MediaMetadataForm({ media, modelType, modelId, onSaved }
         setError(null);
 
         try {
-            const response = await fetch(`/api/v1/${modelType}/${modelId}/media/${media.id}`, {
-                method: 'PUT',
-                credentials: 'same-origin',
-                headers: csrfHeaders(),
-                body: JSON.stringify({ alt_text: altText, caption }),
-            });
+            const response = await fetch(
+                `/api/v1/${modelType}/${modelId}/media/${media.id}`,
+                {
+                    method: "PUT",
+                    credentials: "same-origin",
+                    headers: csrfHeaders(),
+                    body: JSON.stringify({ alt_text: altText, caption }),
+                },
+            );
 
             if (!response.ok) {
                 const data = await response.json().catch(() => ({}));
-                setError(data?.message ?? 'Failed to save metadata.');
+                setError(
+                    data?.message ??
+                        t("forms.media.error.metadata_save_failed"),
+                );
                 return;
             }
 
             onSaved();
         } catch {
-            setError('An unexpected error occurred.');
+            setError(t("common.error.unexpected"));
         } finally {
             setIsSaving(false);
         }
     };
 
     const altTextRemaining = ALT_TEXT_MAX - altText.length;
-    const altCounterStyle: CSSProperties = altTextRemaining < 0
-        ? { ...labelAltStyle, color: errorColor }
-        : labelAltStyle;
+    const altCounterStyle: CSSProperties =
+        altTextRemaining < 0
+            ? { ...labelAltStyle, color: errorColor }
+            : labelAltStyle;
 
     return (
         <div style={formWrapStyle}>
@@ -115,7 +129,7 @@ export default function MediaMetadataForm({ media, modelType, modelId, onSaved }
                 <Input
                     id="media-alt-text"
                     type="text"
-                    placeholder="Describe the image for screen readers"
+                    placeholder={t("forms.media.alt_placeholder")}
                     value={altText}
                     maxLength={ALT_TEXT_MAX}
                     onChange={(e) => setAltText(e.target.value)}
@@ -125,22 +139,22 @@ export default function MediaMetadataForm({ media, modelType, modelId, onSaved }
             {/* Caption */}
             <div>
                 <div style={labelRowStyle}>
-                    <label htmlFor="media-caption" style={labelStyle}>Caption</label>
+                    <label htmlFor="media-caption" style={labelStyle}>
+                        Caption
+                    </label>
                     <span style={labelAltStyle}>Optional</span>
                 </div>
                 <Textarea
                     id="media-caption"
-                    placeholder="Add a caption..."
+                    placeholder={t("forms.media.caption_placeholder")}
                     rows={2}
                     value={caption}
                     onChange={(e) => setCaption(e.target.value)}
-                    style={{ resize: 'none' }}
+                    style={{ resize: "none" }}
                 />
             </div>
 
-            {error && (
-                <p style={errorTextStyle}>{error}</p>
-            )}
+            {error && <p style={errorTextStyle}>{error}</p>}
 
             <div style={saveButtonWrapStyle}>
                 <Button

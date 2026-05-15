@@ -51,6 +51,12 @@ return [
     'required' => 'Required',
     'optional' => 'Optional',
 
+    // Generic error messages — shared across components for any "the
+    // server failed in a way we don't have a more-specific message for"
+    // surface (network errors, unhandled exception bodies, etc.).
+    'error.unexpected' => 'An unexpected error occurred.',
+    'error.unexpected_retry' => 'An unexpected error occurred. Please try again.',
+
     // Pagination
     'pagination.showing' => 'Showing :from–:to of :total',
     'pagination.page' => 'Page :current of :last',
