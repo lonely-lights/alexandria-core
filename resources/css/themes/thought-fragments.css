@@ -1,7 +1,7 @@
 /* Thought Fragments motif layer. Active when <html data-theme="tf-dark|tf-light">. */
 
 [data-theme^="tf"] {
-    --tf-handwriting: 'Caveat', 'Comic Sans MS', cursive;
+    --tf-handwriting: "Caveat", "Comic Sans MS", cursive;
 
     /* Paper-action/card/board shadow tokens — radii track theme radius,
        shadow color tracks --theme-brand-primary-700. Overridable per-host. */
@@ -40,14 +40,14 @@
 /* Grid paper ambient background — for blueprint-style grids. */
 [data-theme^="tf"] .grid-paper {
     background-image:
-        linear-gradient(rgba(251,191,36,.045) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(251,191,36,.045) 1px, transparent 1px);
+        linear-gradient(rgba(251, 191, 36, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(251, 191, 36, 0.045) 1px, transparent 1px);
     background-size: 28px 28px;
 }
 [data-theme="tf-light"] .grid-paper {
     background-image:
-        linear-gradient(rgba(139,90,43,.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(139,90,43,.08) 1px, transparent 1px);
+        linear-gradient(rgba(139, 90, 43, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(139, 90, 43, 0.08) 1px, transparent 1px);
 }
 
 /* Ruled paper — parallel lines at 157deg (perpendicular to 23° forward-slash).
@@ -57,8 +57,8 @@
         157deg,
         transparent 0,
         transparent 27px,
-        rgba(251,191,36,.05) 27px,
-        rgba(251,191,36,.05) 28px
+        rgba(251, 191, 36, 0.05) 27px,
+        rgba(251, 191, 36, 0.05) 28px
     );
 }
 [data-theme="tf-light"] .ruled-paper {
@@ -66,23 +66,35 @@
         157deg,
         transparent 0,
         transparent 27px,
-        rgba(139,90,43,.08) 27px,
-        rgba(139,90,43,.08) 28px
+        rgba(139, 90, 43, 0.08) 27px,
+        rgba(139, 90, 43, 0.08) 28px
     );
 }
 
 /* Cursive + ruled SVG overlay — tf-only motif. Lines/cursive pattern lives
    in NotesDashboard.tsx → RuledCursiveBg. */
-[data-theme^="tf"] .cursive-overlay { display: block; }
-html:not([data-theme^="tf"]) .cursive-overlay { display: none; }
+[data-theme^="tf"] .cursive-overlay {
+    display: block;
+}
+html:not([data-theme^="tf"]) .cursive-overlay {
+    display: none;
+}
 
 /* Blueprint-paper grid overlay — tf-only motif. See BlueprintGridBg.tsx. */
-[data-theme^="tf"] .grid-overlay { display: block; }
-html:not([data-theme^="tf"]) .grid-overlay { display: none; }
+[data-theme^="tf"] .grid-overlay {
+    display: block;
+}
+html:not([data-theme^="tf"]) .grid-overlay {
+    display: none;
+}
 
 /* Neural-constellation overlay for AI surfaces. See NeuralConstellationBg.tsx. */
-[data-theme^="tf"] .neural-overlay { display: block; }
-html:not([data-theme^="tf"]) .neural-overlay { display: none; }
+[data-theme^="tf"] .neural-overlay {
+    display: block;
+}
+html:not([data-theme^="tf"]) .neural-overlay {
+    display: none;
+}
 
 /* Top-down fade for page-background SVG overlays — clips pixels to top band.
    Both standard + WebKit properties set for cross-browser support. */
@@ -103,11 +115,24 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     box-shadow: 4px 6px 0 var(--tf-shadow);
     color: #2b1d0f;
 }
-[data-theme^="tf"] .sticky-note--yellow   { background: var(--tf-paper-yellow); }
-[data-theme^="tf"] .sticky-note--sage     { background: var(--tf-paper-sage);   color: #1f2d24; }
-[data-theme^="tf"] .sticky-note--coral    { background: var(--tf-paper-coral);  color: #2b1510; }
-[data-theme^="tf"] .sticky-note--lavender { background: var(--tf-paper-lavender); color: #1f1930; }
-[data-theme^="tf"] .sticky-note--cream    { background: var(--tf-paper-cream); }
+[data-theme^="tf"] .sticky-note--yellow {
+    background: var(--tf-paper-yellow);
+}
+[data-theme^="tf"] .sticky-note--sage {
+    background: var(--tf-paper-sage);
+    color: #1f2d24;
+}
+[data-theme^="tf"] .sticky-note--coral {
+    background: var(--tf-paper-coral);
+    color: #2b1510;
+}
+[data-theme^="tf"] .sticky-note--lavender {
+    background: var(--tf-paper-lavender);
+    color: #1f1930;
+}
+[data-theme^="tf"] .sticky-note--cream {
+    background: var(--tf-paper-cream);
+}
 
 /* Tape-style small label (card tag). */
 [data-theme^="tf"] .tape-tag {
@@ -118,10 +143,25 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     box-shadow: 2px 2px 0 var(--tf-shadow);
     color: #2b1d0f;
 }
-[data-theme^="tf"] .tape-tag--yellow   { background: var(--tf-paper-yellow); transform: rotate(-2deg); }
-[data-theme^="tf"] .tape-tag--sage     { background: var(--tf-paper-sage);   transform: rotate(2deg);  color: #1f2d24; }
-[data-theme^="tf"] .tape-tag--coral    { background: var(--tf-paper-coral);  transform: rotate(-2deg); color: #2b1510; }
-[data-theme^="tf"] .tape-tag--lavender { background: var(--tf-paper-lavender); transform: rotate(2deg); color: #1f1930; }
+[data-theme^="tf"] .tape-tag--yellow {
+    background: var(--tf-paper-yellow);
+    transform: rotate(-2deg);
+}
+[data-theme^="tf"] .tape-tag--sage {
+    background: var(--tf-paper-sage);
+    transform: rotate(2deg);
+    color: #1f2d24;
+}
+[data-theme^="tf"] .tape-tag--coral {
+    background: var(--tf-paper-coral);
+    transform: rotate(-2deg);
+    color: #2b1510;
+}
+[data-theme^="tf"] .tape-tag--lavender {
+    background: var(--tf-paper-lavender);
+    transform: rotate(2deg);
+    color: #1f1930;
+}
 
 /* Pencil-dashed path (SVG stroke). */
 [data-theme^="tf"] .pencil-path {
@@ -129,85 +169,73 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     stroke-width: 1.2;
     stroke-dasharray: 3 4;
     fill: none;
-    opacity: .55;
+    opacity: 0.55;
 }
 
-/* Offset-shadow button (paper-tape feel). Shadow via ::before with independent
-   radius; ::after paints the paper surface. Shadow tint = paper + warm brown. */
-[data-theme^="tf"] .btn-offset,
-[data-theme^="tf"] .btn.paper-action {
+/* Paper-tape feel button (paper-action). Shadow via ::before with independent
+   radius; ::after paints the paper surface. Shadow tint = paper + warm brown.
+   Stage 7.1 dropped the `.btn` co-requirement (was `.btn.paper-action`) since
+   alex-btn replaced bare `.btn` — `.paper-action` standalone is unique enough. */
+[data-theme^="tf"] .paper-action {
     position: relative;
     isolation: isolate;
     background: transparent !important;
     color: #1a1210 !important;
     border: none !important;
     box-shadow: none !important;
-    transition: transform .12s ease;
+    transition: transform 0.12s ease;
 }
-[data-theme^="tf"] .btn-offset::before,
-[data-theme^="tf"] .btn.paper-action::before {
-    content: '';
+[data-theme^="tf"] .paper-action::before {
+    content: "";
     position: absolute;
     inset: 0;
-    border-radius: var(--paper-action-shadow-radius, var(--theme-radius-button));
+    border-radius: var(
+        --paper-action-shadow-radius,
+        var(--theme-radius-button)
+    );
     background: color-mix(in srgb, var(--tf-paper-yellow) 35%, #2b1810);
     transform: translate(3px, 3px);
     z-index: -1;
-    transition: transform .12s ease;
+    transition: transform 0.12s ease;
 }
-[data-theme^="tf"] .btn-offset::after,
-[data-theme^="tf"] .btn.paper-action::after {
-    content: '';
+[data-theme^="tf"] .paper-action::after {
+    content: "";
     position: absolute;
     inset: 0;
     border-radius: inherit;
     background: var(--tf-paper-yellow);
     z-index: -1;
 }
-[data-theme^="tf"] .btn-offset:hover,
-[data-theme^="tf"] .btn.paper-action:hover {
+[data-theme^="tf"] .paper-action:hover {
     background: transparent !important;
     transform: translate(-1px, -1px);
 }
-[data-theme^="tf"] .btn-offset:hover::before,
-[data-theme^="tf"] .btn.paper-action:hover::before {
+[data-theme^="tf"] .paper-action:hover::before {
     transform: translate(5px, 5px);
 }
-[data-theme^="tf"] .btn-offset:active,
-[data-theme^="tf"] .btn.paper-action:active {
+[data-theme^="tf"] .paper-action:active {
     transform: translate(2px, 2px);
 }
-[data-theme^="tf"] .btn-offset:active::before,
-[data-theme^="tf"] .btn.paper-action:active::before {
+[data-theme^="tf"] .paper-action:active::before {
     transform: translate(1px, 1px);
 }
 
-[data-theme^="tf"] .btn-offset:focus-visible,
-[data-theme^="tf"] .btn-dashed:focus-visible {
+[data-theme^="tf"] .paper-action:focus-visible {
     outline: 2px solid currentColor;
     outline-offset: 3px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    [data-theme^="tf"] .btn-offset,
-    [data-theme^="tf"] .btn-offset:hover,
-    [data-theme^="tf"] .btn-offset:active,
-    [data-theme^="tf"] .btn.paper-action,
-    [data-theme^="tf"] .btn.paper-action:hover,
-    [data-theme^="tf"] .btn.paper-action:active { transform: none; }
-    [data-theme^="tf"] .btn-offset::before,
-    [data-theme^="tf"] .btn-offset:hover::before,
-    [data-theme^="tf"] .btn-offset:active::before,
-    [data-theme^="tf"] .btn.paper-action::before,
-    [data-theme^="tf"] .btn.paper-action:hover::before,
-    [data-theme^="tf"] .btn.paper-action:active::before { transform: translate(3px, 3px); }
-}
-
-/* Dashed ghost button. */
-[data-theme^="tf"] .btn-dashed {
-    background: transparent;
-    color: var(--theme-base-content);
-    border: 1px dashed var(--tf-tape-shadow);
+    [data-theme^="tf"] .paper-action,
+    [data-theme^="tf"] .paper-action:hover,
+    [data-theme^="tf"] .paper-action:active {
+        transform: none;
+    }
+    [data-theme^="tf"] .paper-action::before,
+    [data-theme^="tf"] .paper-action:hover::before,
+    [data-theme^="tf"] .paper-action:active::before {
+        transform: translate(3px, 3px);
+    }
 }
 
 /* Paper card — sticky-note variant for in-app surfaces. Shadow via ::before
@@ -219,26 +247,30 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     color: #2b1d0f;
     border-color: transparent !important;
     box-shadow: none !important;
-    transition: transform .12s ease;
+    transition: transform 0.12s ease;
     /* Default cream surface. Overridden by .paper-card--*. */
     --paper-card-bg: var(--tf-paper-cream);
-    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-cream) 35%, #2b1810);
+    --paper-card-shadow-color: color-mix(
+        in srgb,
+        var(--tf-paper-cream) 35%,
+        #2b1810
+    );
 }
 [data-theme^="tf"] .paper-card::before {
     /* Offset shadow — radius independent so curves stay proportional. */
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     border-radius: var(--paper-card-shadow-radius, var(--theme-radius-card));
     background: var(--paper-card-shadow-color);
     transform: translate(3px, 4px);
     z-index: -1;
-    transition: transform .12s ease;
+    transition: transform 0.12s ease;
 }
 [data-theme^="tf"] .paper-card::after {
     /* Paper surface — covers shadow inside bounds; ::before only pokes
        out bottom/right. Text & icons paint on top. */
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     border-radius: inherit;
@@ -247,38 +279,66 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 }
 [data-theme^="tf"] .paper-card--yellow {
     --paper-card-bg: var(--tf-paper-yellow);
-    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-yellow) 35%, #2b1810);
+    --paper-card-shadow-color: color-mix(
+        in srgb,
+        var(--tf-paper-yellow) 35%,
+        #2b1810
+    );
 }
 [data-theme^="tf"] .paper-card--sage {
     color: #1f2d24;
     --paper-card-bg: var(--tf-paper-sage);
-    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-sage) 35%, #0f2519);
+    --paper-card-shadow-color: color-mix(
+        in srgb,
+        var(--tf-paper-sage) 35%,
+        #0f2519
+    );
 }
 [data-theme^="tf"] .paper-card--coral {
     color: #2b1510;
     --paper-card-bg: var(--tf-paper-coral);
-    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-coral) 35%, #2b0f07);
+    --paper-card-shadow-color: color-mix(
+        in srgb,
+        var(--tf-paper-coral) 35%,
+        #2b0f07
+    );
 }
 [data-theme^="tf"] .paper-card--lavender {
     color: #1f1930;
     --paper-card-bg: var(--tf-paper-lavender);
-    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-lavender) 35%, #0f0a1f);
+    --paper-card-shadow-color: color-mix(
+        in srgb,
+        var(--tf-paper-lavender) 35%,
+        #0f0a1f
+    );
 }
 [data-theme^="tf"] .paper-card--cream {
     --paper-card-bg: var(--tf-paper-cream);
-    --paper-card-shadow-color: color-mix(in srgb, var(--tf-paper-cream) 35%, #2b1810);
+    --paper-card-shadow-color: color-mix(
+        in srgb,
+        var(--tf-paper-cream) 35%,
+        #2b1810
+    );
 }
 
 /* Paper cards always sit on warm light tint. Nested text-base-content needs
    a local override (base-content is near-white on tf-dark). */
 [data-theme^="tf"] .paper-card,
-[data-theme^="tf"] .paper-card * { --paper-ink: #2b1d0f; }
+[data-theme^="tf"] .paper-card * {
+    --paper-ink: #2b1d0f;
+}
 [data-theme^="tf"] .paper-card--sage,
-[data-theme^="tf"] .paper-card--sage * { --paper-ink: #1f2d24; }
+[data-theme^="tf"] .paper-card--sage * {
+    --paper-ink: #1f2d24;
+}
 [data-theme^="tf"] .paper-card--coral,
-[data-theme^="tf"] .paper-card--coral * { --paper-ink: #2b1510; }
+[data-theme^="tf"] .paper-card--coral * {
+    --paper-ink: #2b1510;
+}
 [data-theme^="tf"] .paper-card--lavender,
-[data-theme^="tf"] .paper-card--lavender * { --paper-ink: #1f1930; }
+[data-theme^="tf"] .paper-card--lavender * {
+    --paper-ink: #1f1930;
+}
 
 /* Hover lift — only on button/link paper-cards. Card nudges up-left,
    shadow slides down-right to double apparent offset. */
@@ -300,10 +360,14 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 @media (prefers-reduced-motion: reduce) {
     [data-theme^="tf"] .paper-card,
     [data-theme^="tf"] .paper-card:hover,
-    [data-theme^="tf"] button.paper-card:active { transform: none; }
+    [data-theme^="tf"] button.paper-card:active {
+        transform: none;
+    }
     [data-theme^="tf"] .paper-card::before,
     [data-theme^="tf"] .paper-card:hover::before,
-    [data-theme^="tf"] button.paper-card:active::before { transform: translate(3px, 4px); }
+    [data-theme^="tf"] button.paper-card:active::before {
+        transform: translate(3px, 4px);
+    }
 }
 
 /* Paper-board — paper-table container. Shadow via ::before (independent radius).
@@ -315,7 +379,7 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     border-color: transparent !important;
 }
 [data-theme^="tf"] .paper-board::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     border-radius: var(--paper-board-shadow-radius, var(--theme-radius-card));
@@ -332,7 +396,9 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 /* Shared transitions */
 [data-theme^="tf"] .paper-table tbody tr,
 [data-theme^="tf"] .paper-stripe__body > * {
-    transition: background-color .12s ease, box-shadow .12s ease;
+    transition:
+        background-color 0.12s ease,
+        box-shadow 0.12s ease;
 }
 
 /* ── LIGHT MODE (warm paper) ───────────────────────────────────────── */
@@ -345,7 +411,9 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 [data-theme="tf-light"] .paper-table thead th,
 [data-theme="tf-light"] .paper-table thead th *,
 [data-theme="tf-light"] .paper-stripe__head,
-[data-theme="tf-light"] .paper-stripe__head * { color: #1a1210 !important; }
+[data-theme="tf-light"] .paper-stripe__head * {
+    color: #1a1210 !important;
+}
 
 [data-theme="tf-light"] .paper-table tbody tr:nth-child(odd),
 [data-theme="tf-light"] .paper-stripe__body > *:nth-child(odd) {
@@ -353,18 +421,28 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 }
 [data-theme="tf-light"] .paper-table tbody tr:nth-child(even),
 [data-theme="tf-light"] .paper-stripe__body > *:nth-child(even) {
-    background-color: color-mix(in srgb, var(--tf-paper-yellow) 28%, var(--tf-paper-cream));
+    background-color: color-mix(
+        in srgb,
+        var(--tf-paper-yellow) 28%,
+        var(--tf-paper-cream)
+    );
 }
 
 /* Ink remapping — cream bg needs dark text. */
 [data-theme="tf-light"] .paper-table tbody td,
 [data-theme="tf-light"] .paper-table tbody td *,
 [data-theme="tf-light"] .paper-stripe__body > *,
-[data-theme="tf-light"] .paper-stripe__body > * * { color: #2b1d0f; }
+[data-theme="tf-light"] .paper-stripe__body > * * {
+    color: #2b1d0f;
+}
 
 [data-theme="tf-light"] .paper-table tbody tr:hover,
 [data-theme="tf-light"] .paper-stripe__body > *:hover {
-    background-color: color-mix(in srgb, var(--tf-paper-yellow) 55%, var(--tf-paper-cream)) !important;
+    background-color: color-mix(
+        in srgb,
+        var(--tf-paper-yellow) 55%,
+        var(--tf-paper-cream)
+    ) !important;
     box-shadow: inset 0 0 0 1px var(--tf-tape-shadow);
 }
 
@@ -373,7 +451,8 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 [data-theme="tf-dark"] .paper-table thead tr,
 [data-theme="tf-dark"] .paper-stripe__head {
     background-color: rgba(255, 255, 255, 0.05);
-    border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent);
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--theme-base-content) 15%, transparent);
 }
 
 [data-theme="tf-dark"] .paper-table tbody tr:nth-child(even),
@@ -391,14 +470,8 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     background: var(--theme-base-200);
     border: 1px solid var(--tf-rule);
     border-radius: var(--theme-radius-card);
-    box-shadow: inset 0 0 80px rgba(0,0,0,.18);
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.18);
 }
 [data-theme="tf-light"] .pin-board {
-    box-shadow: inset 0 0 40px rgba(139,90,43,.08);
-}
-
-@media (prefers-reduced-motion: reduce) {
-    [data-theme^="tf"] .btn-offset,
-    [data-theme^="tf"] .btn-offset:hover,
-    [data-theme^="tf"] .btn-offset:active { transform: none; }
+    box-shadow: inset 0 0 40px rgba(139, 90, 43, 0.08);
 }
