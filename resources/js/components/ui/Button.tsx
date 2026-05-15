@@ -23,22 +23,22 @@
  * For Inertia link-shaped destinations use `<ButtonLink>` instead.
  */
 
-import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 
 export type ButtonVariant =
-    | 'primary'
-    | 'secondary'
-    | 'accent'
-    | 'ghost'
-    | 'outline'
-    | 'danger';
+    | "primary"
+    | "secondary"
+    | "accent"
+    | "ghost"
+    | "outline"
+    | "danger";
 
-export type ButtonSize = 'sm' | 'md' | 'lg';
+export type ButtonSize = "sm" | "md" | "lg";
 
 /** FontAwesome class string or any ReactNode (SVG, custom JSX, etc.). */
 export type ButtonIcon = ReactNode | string;
 
-export type ButtonIconPosition = 'before' | 'after';
+export type ButtonIconPosition = "before" | "after";
 
 export interface ButtonStyleProps {
     variant?: ButtonVariant;
@@ -48,7 +48,8 @@ export interface ButtonStyleProps {
 }
 
 export interface ButtonProps
-    extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>,
+    extends
+        Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">,
         ButtonStyleProps {
     children: ReactNode;
     loading?: boolean;
@@ -61,15 +62,15 @@ export interface ButtonProps
 }
 
 export default function Button({
-    variant = 'primary',
-    size = 'md',
+    variant = "primary",
+    size = "md",
     fullWidth = false,
     loading = false,
     disabled,
     icon,
-    iconPosition = 'after',
+    iconPosition = "after",
     children,
-    className = '',
+    className = "",
     ...rest
 }: ButtonProps) {
     const isDisabled = disabled || loading;
@@ -77,7 +78,7 @@ export default function Button({
 
     return (
         <button
-            type={rest.type ?? 'button'}
+            type={rest.type ?? "button"}
             disabled={isDisabled}
             className={`alex-btn alex-btn--${variant} ${className}`}
             style={buttonStyles({
@@ -94,9 +95,9 @@ export default function Button({
                     aria-hidden="true"
                 />
             )}
-            {!loading && iconPosition === 'before' && iconElement}
+            {!loading && iconPosition === "before" && iconElement}
             {children}
-            {!loading && iconPosition === 'after' && iconElement}
+            {!loading && iconPosition === "after" && iconElement}
         </button>
     );
 }
@@ -112,24 +113,24 @@ export default function Button({
  * out of this object.
  */
 export function buttonStyles({
-    size = 'md',
+    size = "md",
     fullWidth = false,
     disabled = false,
 }: ButtonStyleProps): CSSProperties {
     const s = SIZE_STYLES[size];
 
     return {
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '0.5rem',
-        width: fullWidth ? '100%' : undefined,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "0.5rem",
+        width: fullWidth ? "100%" : undefined,
         fontWeight: 600,
-        textDecoration: 'none',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        borderRadius: 'var(--theme-radius-button)',
+        textDecoration: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+        borderRadius: "var(--theme-radius-button)",
         transition:
-            'background var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), color var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), border-color var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), opacity var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard)',
+            "background var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), color var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), border-color var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), opacity var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), outline-width 300ms var(--theme-motion-easing-standard), outline-color 300ms var(--theme-motion-easing-standard)",
         padding: s.padding,
         fontSize: s.fontSize,
         opacity: disabled ? 0.4 : 1,
@@ -145,7 +146,7 @@ export function renderIcon(icon: ButtonIcon | undefined): ReactNode {
         return null;
     }
 
-    if (typeof icon === 'string') {
+    if (typeof icon === "string") {
         return <i className={icon} aria-hidden="true" />;
     }
 
@@ -153,7 +154,7 @@ export function renderIcon(icon: ButtonIcon | undefined): ReactNode {
 }
 
 const SIZE_STYLES: Record<ButtonSize, { padding: string; fontSize: string }> = {
-    sm: { padding: '0.375rem 0.75rem', fontSize: '0.875rem' },
-    md: { padding: '0.5rem 1rem', fontSize: '1rem' },
-    lg: { padding: '0.75rem 1.5rem', fontSize: '1.125rem' },
+    sm: { padding: "0.375rem 0.75rem", fontSize: "0.875rem" },
+    md: { padding: "0.5rem 1rem", fontSize: "1rem" },
+    lg: { padding: "0.75rem 1.5rem", fontSize: "1.125rem" },
 };

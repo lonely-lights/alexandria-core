@@ -1,5 +1,11 @@
-import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import {
+    useState,
+    useEffect,
+    useRef,
+    type CSSProperties,
+    type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 
 /**
  * Reusable theme-aware select primitive — picks a single value from a
@@ -41,7 +47,9 @@ interface SelectProps<T extends string | number> {
     /** Width override for the menu (px). Defaults to trigger width. */
     menuWidth?: number;
     /** Alignment of the menu relative to the trigger. Defaults to 'left' (menu's left edge aligns with the trigger's left edge). */
-    align?: 'left' | 'right';
+    align?: "left" | "right";
+    /** When true, the trigger fills its parent (display: flex; width: 100%). Menu width follows the trigger. */
+    fullWidth?: boolean;
 }
 
 export default function Select<T extends string | number>({
@@ -52,7 +60,8 @@ export default function Select<T extends string | number>({
     ariaLabel,
     className,
     menuWidth,
-    align = 'left',
+    align = "left",
+    fullWidth = false,
 }: SelectProps<T>) {
     const [open, setOpen] = useState(false);
     const [triggerHovered, setTriggerHovered] = useState(false);
@@ -72,7 +81,7 @@ export default function Select<T extends string | number>({
         const spaceBelow = viewportH - rect.bottom;
         const flipUp = spaceBelow < desiredHeight + 16;
         const width = menuWidth ?? rect.width;
-        const left = align === 'right' ? rect.right - width : rect.left;
+        const left = align === "right" ? rect.right - width : rect.left;
 
         if (flipUp) {
             return { bottom: viewportH - rect.top + 4, left, width };
@@ -85,60 +94,63 @@ export default function Select<T extends string | number>({
         function handleClick(e: MouseEvent) {
             const target = e.target as Node;
             if (
-                triggerRef.current && !triggerRef.current.contains(target) &&
-                menuRef.current && !menuRef.current.contains(target)
+                triggerRef.current &&
+                !triggerRef.current.contains(target) &&
+                menuRef.current &&
+                !menuRef.current.contains(target)
             ) {
                 setOpen(false);
             }
         }
         function handleKey(e: KeyboardEvent) {
-            if (e.key === 'Escape') {
+            if (e.key === "Escape") {
                 setOpen(false);
                 triggerRef.current?.focus();
             }
         }
-        document.addEventListener('mousedown', handleClick);
-        document.addEventListener('keydown', handleKey);
+        document.addEventListener("mousedown", handleClick);
+        document.addEventListener("keydown", handleKey);
         return () => {
-            document.removeEventListener('mousedown', handleClick);
-            document.removeEventListener('keydown', handleKey);
+            document.removeEventListener("mousedown", handleClick);
+            document.removeEventListener("keydown", handleKey);
         };
     }, [open]);
 
     useEffect(() => {
         if (!open) return;
         const handleScroll = () => setOpen(false);
-        window.addEventListener('scroll', handleScroll, true);
-        return () => window.removeEventListener('scroll', handleScroll, true);
+        window.addEventListener("scroll", handleScroll, true);
+        return () => window.removeEventListener("scroll", handleScroll, true);
     }, [open]);
 
     const triggerStyle: CSSProperties = {
         // `pr-7` (~1.75rem) opens room for the chevron at `right: 0.5rem`
         // — the previous native <select> jammed its arrow against the
         // right edge with no breathing room.
-        paddingInline: '0.625rem 1.75rem',
-        paddingBlock: '0.375rem',
+        paddingInline: "0.625rem 1.75rem",
+        paddingBlock: "0.375rem",
         background: triggerHovered
-            ? 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)'
-            : 'color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-        borderRadius: 'var(--theme-radius-input)',
-        color: 'var(--theme-base-content)',
-        fontSize: '0.75rem',
+            ? "color-mix(in srgb, var(--theme-base-content) 10%, transparent)"
+            : "color-mix(in srgb, var(--theme-base-content) 6%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+        borderRadius: "var(--theme-radius-input)",
+        color: "var(--theme-base-content)",
+        fontSize: "0.75rem",
         fontWeight: 500,
-        cursor: 'pointer',
-        transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+        cursor: "pointer",
+        transition:
+            "background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
     };
 
     const menuStyle: CSSProperties = {
         ...getPosition(),
-        background: 'var(--theme-base-surface)',
-        border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
-        borderRadius: 'var(--theme-radius-card)',
-        color: 'var(--theme-base-content)',
-        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
-        maxHeight: '280px',
-        overflowY: 'auto',
+        background: "var(--theme-base-surface)",
+        border: "1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)",
+        borderRadius: "var(--theme-radius-card)",
+        color: "var(--theme-base-content)",
+        boxShadow: "0 12px 32px rgba(0, 0, 0, 0.18)",
+        maxHeight: "280px",
+        overflowY: "auto",
     };
 
     return (
@@ -149,51 +161,59 @@ export default function Select<T extends string | number>({
                 onClick={() => setOpen(!open)}
                 onMouseEnter={() => setTriggerHovered(true)}
                 onMouseLeave={() => setTriggerHovered(false)}
-                className={`relative inline-flex items-center gap-1.5 ${className ?? ''}`}
+                className={`relative ${fullWidth ? "flex w-full" : "inline-flex"} items-center gap-1.5 ${className ?? ""}`}
                 style={triggerStyle}
                 aria-label={ariaLabel}
                 aria-haspopup="listbox"
                 aria-expanded={open}
             >
                 {triggerLabel != null && (
-                    <span style={{ color: 'color-mix(in srgb, var(--theme-base-content) 65%, transparent)' }}>
+                    <span
+                        style={{
+                            color: "color-mix(in srgb, var(--theme-base-content) 65%, transparent)",
+                        }}
+                    >
                         {triggerLabel}
                     </span>
                 )}
                 <span>{selectedOption?.label ?? String(value)}</span>
                 <i
-                    className={`fa-solid fa-chevron-down absolute text-[10px] transition-transform ${open ? 'rotate-180' : ''}`}
+                    className="fa-solid fa-chevron-down absolute text-[10px] transition-transform"
                     style={{
-                        right: '0.625rem',
-                        top: '50%',
-                        transform: `translateY(-50%) ${open ? 'rotate(180deg)' : ''}`,
-                        color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)',
+                        right: "0.625rem",
+                        top: "50%",
+                        // Both functions always present — keeps the transform
+                        // function-list stable across states so CSS can
+                        // interpolate smoothly and the chevron stays centered.
+                        transform: `translateY(-50%) rotate(${open ? 180 : 0}deg)`,
+                        color: "color-mix(in srgb, var(--theme-base-content) 55%, transparent)",
                     }}
                     aria-hidden="true"
                 />
             </button>
 
-            {open && createPortal(
-                <div
-                    ref={menuRef}
-                    className="fixed z-[9999] overflow-hidden"
-                    style={menuStyle}
-                    role="listbox"
-                >
-                    {options.map((opt) => (
-                        <SelectRow
-                            key={String(opt.value)}
-                            option={opt}
-                            active={opt.value === value}
-                            onSelect={() => {
-                                onChange(opt.value);
-                                setOpen(false);
-                            }}
-                        />
-                    ))}
-                </div>,
-                document.body,
-            )}
+            {open &&
+                createPortal(
+                    <div
+                        ref={menuRef}
+                        className="fixed z-[9999] overflow-hidden"
+                        style={menuStyle}
+                        role="listbox"
+                    >
+                        {options.map((opt) => (
+                            <SelectRow
+                                key={String(opt.value)}
+                                option={opt}
+                                active={opt.value === value}
+                                onSelect={() => {
+                                    onChange(opt.value);
+                                    setOpen(false);
+                                }}
+                            />
+                        ))}
+                    </div>,
+                    document.body,
+                )}
         </>
     );
 }
@@ -216,16 +236,17 @@ function SelectRow<T extends string | number>({
 
     const rowStyle: CSSProperties = {
         background: active
-            ? 'var(--theme-brand-primary-highlight-bg)'
+            ? "var(--theme-brand-primary-highlight-bg)"
             : hovered
-                ? 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)'
-                : 'transparent',
+              ? "color-mix(in srgb, var(--theme-base-content) 8%, transparent)"
+              : "transparent",
         color: active
-            ? 'var(--theme-brand-primary-highlight-fg)'
-            : 'var(--theme-base-content)',
-        transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
+            ? "var(--theme-brand-primary-highlight-fg)"
+            : "var(--theme-base-content)",
+        transition:
+            "background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
         fontWeight: active ? 600 : 500,
-        fontSize: '0.8125rem',
+        fontSize: "0.8125rem",
     };
 
     return (
@@ -241,7 +262,10 @@ function SelectRow<T extends string | number>({
         >
             <span className="truncate">{option.label}</span>
             {active && (
-                <i className="fa-solid fa-check text-[10px]" aria-hidden="true" />
+                <i
+                    className="fa-solid fa-check text-[10px]"
+                    aria-hidden="true"
+                />
             )}
         </button>
     );

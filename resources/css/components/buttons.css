@@ -49,6 +49,86 @@
     border: none;
 }
 
+/* ── Focus ring ────────────────────────────────────────────────────────
+ * Themed per variant — the ring picks up the button's own color so it
+ * reads as "this element is focused" without competing with the brand
+ * palette. Uses outline + outline-offset (not box-shadow) so the 3px
+ * gap between button edge and ring shows whatever surface sits behind
+ * the button, no per-context color tuning needed.
+ *
+ * Resting state: outline width 0, color transparent — outline is
+ * present-but-invisible so `outline-width` + `outline-color` can
+ * smoothly transition to the focused values over 300ms. (CSS can't
+ * interpolate between `outline-style: none` and `outline-style: solid`,
+ * so the style stays solid throughout.)
+ *
+ * Uses :focus (not :focus-visible) so the ring appears on click as
+ * well as keyboard nav — replaces the browser's default outline rather
+ * than supplementing it.
+ */
+
+.alex-btn {
+    outline: 0 solid transparent;
+    outline-offset: 3px;
+    transition:
+        outline-width 300ms var(--theme-motion-easing-standard, ease),
+        outline-color 300ms var(--theme-motion-easing-standard, ease);
+}
+
+.alex-btn--primary:focus {
+    outline-width: 3px;
+    outline-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 45%,
+        transparent
+    );
+}
+
+.alex-btn--secondary:focus {
+    outline-width: 3px;
+    outline-color: color-mix(
+        in srgb,
+        var(--theme-brand-secondary-500) 45%,
+        transparent
+    );
+}
+
+.alex-btn--accent:focus {
+    outline-width: 3px;
+    outline-color: color-mix(
+        in srgb,
+        var(--theme-brand-accent-500) 45%,
+        transparent
+    );
+}
+
+.alex-btn--ghost:focus {
+    outline-width: 3px;
+    outline-color: color-mix(
+        in srgb,
+        var(--theme-base-content) 30%,
+        transparent
+    );
+}
+
+.alex-btn--outline:focus {
+    outline-width: 3px;
+    outline-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 45%,
+        transparent
+    );
+}
+
+.alex-btn--danger:focus {
+    outline-width: 3px;
+    outline-color: color-mix(
+        in srgb,
+        var(--theme-status-error-stroke) 45%,
+        transparent
+    );
+}
+
 /* ── Hover ─────────────────────────────────────────────────────────── */
 
 .alex-btn--primary:hover:not(:disabled) {
@@ -92,11 +172,14 @@
         var(--theme-motion-easing-standard);
 }
 
-.alex-project-tab:not([aria-pressed='true']):hover {
-    background: color-mix(in srgb, var(--theme-base-content) 10%, transparent)
-        !important;
+.alex-project-tab:not([aria-pressed="true"]):hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 10%,
+        transparent
+    ) !important;
 }
 
-.alex-project-tab[aria-pressed='true']:hover {
+.alex-project-tab[aria-pressed="true"]:hover {
     background: var(--theme-brand-primary-600) !important;
 }
