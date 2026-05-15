@@ -1,21 +1,24 @@
-import { useForm } from '@inertiajs/react';
-import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
+import { useForm } from "@inertiajs/react";
+import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 
 import PasswordRulesPopover, {
     evaluatePasswordRules,
-} from '@alexandria/components/form/PasswordRulesPopover';
-import { ToastProvider, useToastContext } from '@alexandria/components/ui/ToastProvider';
+} from "@alexandria/components/form/PasswordRulesPopover";
+import {
+    ToastProvider,
+    useToastContext,
+} from "@alexandria/components/ui/ToastProvider";
 import AvailabilityIndicator, {
     type AvailabilityStatus,
-} from '../../components/form/AvailabilityIndicator';
-import CheckboxField from '../../components/form/CheckboxField';
-import FormGroup from '../../components/form/FormGroup';
-import TextField from '../../components/form/TextField';
-import AuthLayout from '../../components/layouts/AuthLayout';
-import Alert from '../../components/ui/Alert';
-import Button from '../../components/ui/Button';
-import ButtonLink from '../../components/ui/ButtonLink';
-import Divider from '../../components/ui/Divider';
+} from "../../components/form/AvailabilityIndicator";
+import CheckboxField from "../../components/form/CheckboxField";
+import FormGroup from "../../components/form/FormGroup";
+import TextField from "../../components/form/TextField";
+import AuthLayout from "../../components/layouts/AuthLayout";
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+import ButtonLink from "../../components/ui/ButtonLink";
+import Divider from "../../components/ui/Divider";
 
 interface AvailabilityState {
     status: AvailabilityStatus;
@@ -42,16 +45,16 @@ export default function Register(props: RegisterProps) {
 function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
     const { show: showToast } = useToastContext();
     const form = useForm({
-        name: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
+        name: "",
+        email: "",
+        password: "",
+        password_confirmation: "",
         terms: false as boolean,
     });
 
     const handleSubmit = (e: SyntheticEvent) => {
         e.preventDefault();
-        form.post('/register');
+        form.post("/register");
     };
 
     // PasswordRulesPopover anchor + focus state for live rule feedback.
@@ -68,11 +71,11 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
 
     // ── Live availability checks ─────────────────────────────────────
     const [usernameStatus, setUsernameStatus] = useState<AvailabilityState>({
-        status: 'idle',
+        status: "idle",
         message: null,
     });
     const [emailStatus, setEmailStatus] = useState<AvailabilityState>({
-        status: 'idle',
+        status: "idle",
         message: null,
     });
     const usernameTimer = useRef<number | null>(null);
@@ -81,11 +84,15 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
     function csrfToken(): string {
         return (
             document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-                ?.content ?? ''
+                ?.content ?? ""
         );
     }
 
-    // Debounced availability check for the username field.
+    // Debounced availability check for the username field. The toast
+    // dispatch lives inside the fetch's .then() — sibling to the
+    // setUsernameStatus call — so the action and its user-feedback fire
+    // at the same site instead of via a downstream useEffect listening
+    // to the resolved state.
     useEffect(() => {
         if (usernameTimer.current) {
             window.clearTimeout(usernameTimer.current);
@@ -94,20 +101,20 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
         const name = form.data.name.trim();
 
         if (!name) {
-            setUsernameStatus({ status: 'idle', message: null });
+            setUsernameStatus({ status: "idle", message: null });
 
             return;
         }
 
-        setUsernameStatus({ status: 'checking', message: null });
+        setUsernameStatus({ status: "checking", message: null });
         usernameTimer.current = window.setTimeout(() => {
-            fetch('/register/check-username', {
-                method: 'POST',
+            fetch("/register/check-username", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    "X-CSRF-TOKEN": csrfToken(),
+                    "X-Requested-With": "XMLHttpRequest",
                 },
                 body: JSON.stringify({ username: name }),
             })
@@ -119,22 +126,38 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                     }) => {
                         if (body.available === null) {
                             setUsernameStatus({
-                                status: 'idle',
+                                status: "idle",
                                 message: body.message,
                             });
-                        } else {
-                            setUsernameStatus({
-                                status: body.available ? 'available' : 'taken',
-                                message: body.message,
-                            });
+
+                            return;
                         }
+
+                        const status = body.available ? "available" : "taken";
+                        setUsernameStatus({ status, message: body.message });
+                        showToast(
+                            body.message ??
+                                (body.available
+                                    ? "Username is available."
+                                    : "Username is already in use."),
+                            { type: body.available ? "success" : "warning" },
+                        );
                     },
                 )
-                .catch(() => setUsernameStatus({ status: 'idle', message: null }));
+                .catch(() =>
+                    setUsernameStatus({ status: "idle", message: null }),
+                );
         }, 400);
-    }, [form.data.name]);
 
-    // Debounced availability check for the email field.
+        return () => {
+            if (usernameTimer.current) {
+                window.clearTimeout(usernameTimer.current);
+            }
+        };
+    }, [form.data.name, showToast]);
+
+    // Debounced availability check for the email field. Same site-of-action
+    // toast pattern as the username check above.
     useEffect(() => {
         if (emailTimer.current) {
             window.clearTimeout(emailTimer.current);
@@ -142,21 +165,21 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
 
         const email = form.data.email.trim();
 
-        if (!email || !email.includes('@') || !email.includes('.')) {
-            setEmailStatus({ status: 'idle', message: null });
+        if (!email || !email.includes("@") || !email.includes(".")) {
+            setEmailStatus({ status: "idle", message: null });
 
             return;
         }
 
-        setEmailStatus({ status: 'checking', message: null });
+        setEmailStatus({ status: "checking", message: null });
         emailTimer.current = window.setTimeout(() => {
-            fetch('/register/check-email', {
-                method: 'POST',
+            fetch("/register/check-email", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    "X-CSRF-TOKEN": csrfToken(),
+                    "X-Requested-With": "XMLHttpRequest",
                 },
                 body: JSON.stringify({ email }),
             })
@@ -166,59 +189,49 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                         available: boolean | null;
                         message: string | null;
                     }) => {
-                        setEmailStatus({
-                            status: body.available ? 'available' : 'taken',
-                            message: body.message,
-                        });
+                        const status = body.available ? "available" : "taken";
+                        setEmailStatus({ status, message: body.message });
+                        showToast(
+                            body.message ??
+                                (body.available
+                                    ? "Email is available."
+                                    : "Email is already registered."),
+                            { type: body.available ? "success" : "warning" },
+                        );
                     },
                 )
-                .catch(() => setEmailStatus({ status: 'idle', message: null }));
+                .catch(() => setEmailStatus({ status: "idle", message: null }));
         }, 500);
-    }, [form.data.email]);
 
-    // Toast on availability resolutions to avoid layout-shifty inline messages.
-    useEffect(() => {
-        if (usernameStatus.status === 'available') {
-            showToast(usernameStatus.message ?? 'Username is available.', {
-                type: 'success',
-            });
-        } else if (usernameStatus.status === 'taken') {
-            showToast(usernameStatus.message ?? 'Username is already in use.', {
-                type: 'warning',
-            });
-        }
-    }, [usernameStatus.status, usernameStatus.message, showToast]);
-
-    useEffect(() => {
-        if (emailStatus.status === 'available') {
-            showToast(emailStatus.message ?? 'Email is available.', {
-                type: 'success',
-            });
-        } else if (emailStatus.status === 'taken') {
-            showToast(emailStatus.message ?? 'Email is already registered.', {
-                type: 'warning',
-            });
-        }
-    }, [emailStatus.status, emailStatus.message, showToast]);
+        return () => {
+            if (emailTimer.current) {
+                window.clearTimeout(emailTimer.current);
+            }
+        };
+    }, [form.data.email, showToast]);
 
     // Build the terms agreement line by replacing :terms_of_service /
     // :privacy_policy placeholders.
     const agreeTemplate =
-        copy['actions.agree_terms_privacy'] ??
-        'I agree to the :terms_of_service and :privacy_policy.';
-    const termsLabel = copy['legal.terms_of_service'] ?? 'Terms of Service';
-    const privacyLabel = copy['legal.privacy_policy'] ?? 'Privacy Policy';
+        copy["actions.agree_terms_privacy"] ??
+        "I agree to the :terms_of_service and :privacy_policy.";
+    const termsLabel = copy["legal.terms_of_service"] ?? "Terms of Service";
+    const privacyLabel = copy["legal.privacy_policy"] ?? "Privacy Policy";
     const termsRegex = /(:terms_of_service|:privacy_policy)/g;
     const agreeParts = agreeTemplate.split(termsRegex);
 
     const fieldStateFor = (status: AvailabilityStatus) =>
-        status === 'available' ? 'success' : status === 'taken' ? 'error' : 'idle';
+        status === "available"
+            ? "success"
+            : status === "taken"
+              ? "error"
+              : "idle";
 
-    const passwordFieldState = passwordsValid ? 'success' : 'idle';
+    const passwordFieldState = passwordsValid ? "success" : "idle";
 
     return (
         <AuthLayout
-            pageTitle={copy['actions.enlist'] ?? 'Register'}
+            pageTitle={copy["actions.enlist"] ?? "Register"}
             formTitle="Join the wordbench"
             motif={<RegisterPapersPanel />}
         >
@@ -234,7 +247,7 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <FormGroup
-                    label={copy['fields.name']}
+                    label={copy["fields.name"]}
                     labelHint="(3–30 characters)"
                     htmlFor="name"
                 >
@@ -243,52 +256,73 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                         name="name"
                         type="text"
                         value={form.data.name}
-                        onChange={(e) => form.setData('name', e.target.value)}
+                        onChange={(e) => form.setData("name", e.target.value)}
                         required
                         autoFocus
                         autoComplete="username"
                         placeholder="letters, numbers, dashes, underscores"
                         state={fieldStateFor(usernameStatus.status)}
-                        icon={<i className="fa-solid fa-user" aria-hidden="true" />}
+                        icon={
+                            <i
+                                className="fa-solid fa-user"
+                                aria-hidden="true"
+                            />
+                        }
                         trailing={
-                            <AvailabilityIndicator status={usernameStatus.status} />
+                            <AvailabilityIndicator
+                                status={usernameStatus.status}
+                            />
                         }
                     />
                 </FormGroup>
 
-                <FormGroup label={copy['fields.email']} htmlFor="email">
+                <FormGroup label={copy["fields.email"]} htmlFor="email">
                     <TextField
                         id="email"
                         name="email"
                         type="email"
                         value={form.data.email}
-                        onChange={(e) => form.setData('email', e.target.value)}
+                        onChange={(e) => form.setData("email", e.target.value)}
                         required
                         autoComplete="username"
                         placeholder="you@example.com"
                         state={fieldStateFor(emailStatus.status)}
-                        icon={<i className="fa-solid fa-envelope" aria-hidden="true" />}
+                        icon={
+                            <i
+                                className="fa-solid fa-envelope"
+                                aria-hidden="true"
+                            />
+                        }
                         trailing={
-                            <AvailabilityIndicator status={emailStatus.status} />
+                            <AvailabilityIndicator
+                                status={emailStatus.status}
+                            />
                         }
                     />
                 </FormGroup>
 
-                <FormGroup label={copy['fields.password']} htmlFor="password">
+                <FormGroup label={copy["fields.password"]} htmlFor="password">
                     <TextField
                         ref={setPasswordEl}
                         id="password"
                         name="password"
                         type="password"
                         value={form.data.password}
-                        onChange={(e) => form.setData('password', e.target.value)}
+                        onChange={(e) =>
+                            form.setData("password", e.target.value)
+                        }
                         onFocus={() => setPasswordFocused(true)}
                         onBlur={() => setPasswordFocused(false)}
                         required
                         autoComplete="new-password"
                         placeholder="••••••••"
                         state={passwordFieldState}
-                        icon={<i className="fa-solid fa-lock" aria-hidden="true" />}
+                        icon={
+                            <i
+                                className="fa-solid fa-lock"
+                                aria-hidden="true"
+                            />
+                        }
                     />
                     <PasswordRulesPopover
                         value={form.data.password}
@@ -299,7 +333,7 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                 </FormGroup>
 
                 <FormGroup
-                    label={copy['actions.confirm_password']}
+                    label={copy["actions.confirm_password"]}
                     htmlFor="password_confirmation"
                 >
                     <TextField
@@ -308,7 +342,10 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                         type="password"
                         value={form.data.password_confirmation}
                         onChange={(e) =>
-                            form.setData('password_confirmation', e.target.value)
+                            form.setData(
+                                "password_confirmation",
+                                e.target.value,
+                            )
                         }
                         onFocus={() => setConfirmationFocused(true)}
                         onBlur={() => setConfirmationFocused(false)}
@@ -316,7 +353,12 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                         autoComplete="new-password"
                         placeholder="••••••••"
                         state={passwordFieldState}
-                        icon={<i className="fa-solid fa-lock" aria-hidden="true" />}
+                        icon={
+                            <i
+                                className="fa-solid fa-lock"
+                                aria-hidden="true"
+                            />
+                        }
                     />
                 </FormGroup>
 
@@ -325,10 +367,10 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                     name="terms"
                     align="start"
                     checked={form.data.terms}
-                    onChange={(e) => form.setData('terms', e.target.checked)}
+                    onChange={(e) => form.setData("terms", e.target.checked)}
                     required
                     label={agreeParts.map((part, i) => {
-                        if (part === ':terms_of_service') {
+                        if (part === ":terms_of_service") {
                             return (
                                 <a
                                     key={i}
@@ -342,7 +384,7 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                             );
                         }
 
-                        if (part === ':privacy_policy') {
+                        if (part === ":privacy_policy") {
                             return (
                                 <a
                                     key={i}
@@ -371,25 +413,20 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                     loading={form.processing}
                     disabled={
                         form.processing ||
-                        usernameStatus.status !== 'available' ||
-                        emailStatus.status !== 'available' ||
+                        usernameStatus.status !== "available" ||
+                        emailStatus.status !== "available" ||
                         !passwordsValid ||
                         !form.data.terms
                     }
                 >
-                    {copy['actions.enlist']}
+                    {copy["actions.enlist"]}
                     <span aria-hidden="true">→</span>
                 </Button>
             </form>
 
-            <Divider>{copy['actions.already_registered']}</Divider>
-            <ButtonLink
-                href={loginUrl}
-                variant="outline"
-                size="lg"
-                fullWidth
-            >
-                {copy['actions.login']}
+            <Divider>{copy["actions.already_registered"]}</Divider>
+            <ButtonLink href={loginUrl} variant="outline" size="lg" fullWidth>
+                {copy["actions.login"]}
                 <span aria-hidden="true">→</span>
             </ButtonLink>
         </AuthLayout>
@@ -424,25 +461,45 @@ function RegisterPapersPanel() {
 
             <div
                 className="sticky-note sticky-note--yellow absolute text-[15px]"
-                style={{ top: 30, left: 60, width: 170, transform: 'rotate(-4deg)' }}
+                style={{
+                    top: 30,
+                    left: 60,
+                    width: 170,
+                    transform: "rotate(-4deg)",
+                }}
             >
                 every idea gets a home
             </div>
             <div
                 className="sticky-note sticky-note--sage absolute text-[15px]"
-                style={{ top: 40, right: 40, width: 180, transform: 'rotate(3deg)' }}
+                style={{
+                    top: 40,
+                    right: 40,
+                    width: 180,
+                    transform: "rotate(3deg)",
+                }}
             >
                 worlds grow, one note at a time
             </div>
             <div
                 className="sticky-note sticky-note--coral absolute text-[15px]"
-                style={{ top: 160, left: 80, width: 160, transform: 'rotate(-2deg)' }}
+                style={{
+                    top: 160,
+                    left: 80,
+                    width: 160,
+                    transform: "rotate(-2deg)",
+                }}
             >
                 characters remember
             </div>
             <div
                 className="sticky-note sticky-note--lavender absolute text-[15px]"
-                style={{ top: 200, right: 80, width: 170, transform: 'rotate(2deg)' }}
+                style={{
+                    top: 200,
+                    right: 80,
+                    width: 170,
+                    transform: "rotate(2deg)",
+                }}
             >
                 nothing gets lost
             </div>
