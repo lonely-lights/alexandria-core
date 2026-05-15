@@ -1,13 +1,23 @@
-import { usePage } from '@inertiajs/react';
-import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
-import type { SharedProps } from '../../types/index';
-import AvatarWithRing from '../ui/AvatarWithRing';
-import Tooltip from '../ui/Tooltip';
-import ThemePicker from '../theme/ThemePicker';
-import type { UserMenuItem, UserMenuItemDivider, UserMenuItemRow } from '../../types/navigation';
+import { usePage } from "@inertiajs/react";
+import {
+    useState,
+    useEffect,
+    useRef,
+    type CSSProperties,
+    type ReactNode,
+} from "react";
+import type { SharedProps } from "../../types/index";
+import AvatarWithRing from "../ui/AvatarWithRing";
+import Tooltip from "../ui/Tooltip";
+import ThemePicker from "../theme/ThemePicker";
+import type {
+    UserMenuItem,
+    UserMenuItemDivider,
+    UserMenuItemRow,
+} from "../../types/navigation";
 
 function isDivider(item: UserMenuItem): item is UserMenuItemDivider {
-    return 'divider' in item && item.divider;
+    return "divider" in item && item.divider;
 }
 
 interface NavbarProps {
@@ -91,34 +101,56 @@ interface NavbarProps {
  * the click handler below.
  */
 const DEFAULT_USER_MENU_ITEMS: UserMenuItem[] = [
-    { label: 'Profile', href: '/profile', icon: 'fa-solid fa-user', shortcut: '⇧⌘P' },
-    { label: 'Settings', href: '/settings', icon: 'fa-solid fa-gear', shortcut: '⌘S' },
-    { label: 'Keyboard shortcuts', href: '/settings', icon: 'fa-solid fa-keyboard', shortcut: '⌘K' },
+    {
+        label: "Profile",
+        href: "/profile",
+        icon: "fa-solid fa-user",
+        shortcut: "⇧⌘P",
+    },
+    {
+        label: "Settings",
+        href: "/settings",
+        icon: "fa-solid fa-gear",
+        shortcut: "⌘S",
+    },
+    {
+        label: "Keyboard shortcuts",
+        href: "/settings",
+        icon: "fa-solid fa-keyboard",
+        shortcut: "⌘K",
+    },
 ];
 
 const DEFAULT_USER_MENU_FOOTER_ITEMS: UserMenuItem[] = [
     { divider: true },
-    { label: 'Support', href: '/support', icon: 'fa-solid fa-life-ring' },
-    { label: 'API', href: '#', icon: 'fa-solid fa-circle-nodes', disabled: true },
+    { label: "Support", href: "/support", icon: "fa-solid fa-life-ring" },
+    {
+        label: "API",
+        href: "#",
+        icon: "fa-solid fa-circle-nodes",
+        disabled: true,
+    },
     { divider: true },
     {
-        label: 'Log out',
-        href: '/logout',
-        icon: 'fa-solid fa-arrow-right-from-bracket',
-        shortcut: '⇧⌘Q',
+        label: "Log out",
+        href: "/logout",
+        icon: "fa-solid fa-arrow-right-from-bracket",
+        shortcut: "⇧⌘Q",
         onClick: (event) => {
             event.preventDefault();
             // Submit a POST to /logout — Fortify's destroy endpoint is
             // POST-protected, so we mimic the auth form pattern by
             // synthesizing a one-shot form submit.
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/logout';
-            const csrfMeta = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]');
+            const form = document.createElement("form");
+            form.method = "POST";
+            form.action = "/logout";
+            const csrfMeta = document.querySelector<HTMLMetaElement>(
+                'meta[name="csrf-token"]',
+            );
             if (csrfMeta) {
-                const csrf = document.createElement('input');
-                csrf.type = 'hidden';
-                csrf.name = '_token';
+                const csrf = document.createElement("input");
+                csrf.type = "hidden";
+                csrf.name = "_token";
                 csrf.value = csrfMeta.content;
                 form.appendChild(csrf);
             }
@@ -130,7 +162,7 @@ const DEFAULT_USER_MENU_FOOTER_ITEMS: UserMenuItem[] = [
 
 export default function Navbar({
     onMenuToggle,
-    brand = 'Alexandria',
+    brand = "Alexandria",
     brandSlot,
     onSearchToggle,
     showSearch = true,
@@ -156,23 +188,27 @@ export default function Navbar({
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
 
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener("scroll", handleScroll);
 
-        return () => window.removeEventListener('scroll', handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(e.target as Node)
+            ) {
                 setDropdownOpen(false);
             }
         }
 
         if (dropdownOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener("mousedown", handleClickOutside);
         }
 
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
     }, [dropdownOpen]);
 
     function handleSearchClick() {
@@ -180,38 +216,33 @@ export default function Navbar({
             onSearchToggle();
             return;
         }
-        window.dispatchEvent(new CustomEvent('alexandria-core:command-palette-toggle'));
+        window.dispatchEvent(
+            new CustomEvent("alexandria-core:command-palette-toggle"),
+        );
     }
 
     return (
         <nav
             ref={(el) => {
                 if (el) {
-                    document.documentElement.style.setProperty('--navbar-height', `${el.offsetHeight}px`);
+                    document.documentElement.style.setProperty(
+                        "--navbar-height",
+                        `${el.offsetHeight}px`,
+                    );
                 }
             }}
-            className="fixed top-0 z-20 w-full px-2 py-0 navbar backdrop-blur-lg transition-all duration-300 overflow-visible"
+            className="fixed top-0 z-40 w-full px-2 py-0 backdrop-blur-lg transition-all duration-300 overflow-visible"
             style={{
-                // Hard-cap the navbar at legacy's 72px height. Without
-                // this cap, sizing the user avatar bigger than 48px
-                // would stretch the navbar; with it, the avatar can
-                // overflow below for the "hanging seal" effect while
-                // the chrome stays the same height it always was.
+                // Hard-cap at legacy's 72px height. Sizing the user
+                // avatar bigger than 48px would otherwise stretch the
+                // navbar; with the cap, the avatar can overflow below
+                // for the "hanging seal" effect while chrome stays put.
                 //
-                // Note: `border-b` is intentionally NOT used here. With
-                // border-box sizing the 1px border eats from the
-                // content area, throwing off items-center's symmetry
-                // by half a pixel each direction. The bottom hairline
-                // when scrolled is layered on via inset box-shadow
-                // instead — paint-only, doesn't affect layout.
-                //
-                // Inline padding-y override: DaisyUI's `.navbar` class
-                // ships `padding: 0.5rem` (shorthand, all four sides)
-                // which can outweigh Tailwind's `py-0` utility on
-                // cascade ties. Inline style is highest specificity,
-                // guarantees content area = full 72px so the user
-                // trigger's 72px box fills the navbar exactly.
-                height: '72px',
+                // `border-b` is intentionally NOT used — border-box
+                // sizing eats 1px from the content area, throwing off
+                // items-center's symmetry. The bottom hairline when
+                // scrolled is layered via inset box-shadow instead.
+                height: "72px",
                 // DaisyUI's `.navbar` class ships `min-height: 4rem`
                 // (or higher in some configs). When that min-height
                 // exceeds our `height: 72px`, CSS takes the larger of
@@ -220,19 +251,19 @@ export default function Navbar({
                 // navbar bg below the button's hover highlight. Pin
                 // min-height inline (highest specificity) so the nav
                 // is exactly 72px and the hover fills edge-to-edge.
-                minHeight: '72px',
-                maxHeight: '72px',
+                minHeight: "72px",
+                maxHeight: "72px",
                 paddingTop: 0,
                 paddingBottom: 0,
                 // base-chrome is the elevated-chrome surface (preset- and
                 // mode-aware). Translucency lets the page bg show through
                 // for the frosted-glass feel; scrolled state firms up.
                 background: scrolled
-                    ? 'color-mix(in srgb, var(--theme-base-chrome) 70%, transparent)'
-                    : 'color-mix(in srgb, var(--theme-base-chrome) 30%, transparent)',
+                    ? "color-mix(in srgb, var(--theme-base-chrome) 70%, transparent)"
+                    : "color-mix(in srgb, var(--theme-base-chrome) 30%, transparent)",
                 boxShadow: scrolled
-                    ? '0 8px 16px rgba(0, 0, 0, 0.18), inset 0 -1px 0 var(--theme-base-400)'
-                    : 'none',
+                    ? "0 8px 16px rgba(0, 0, 0, 0.18), inset 0 -1px 0 var(--theme-base-400)"
+                    : "none",
             }}
         >
             <div className="container mx-auto flex max-w-7xl items-center justify-between px-2">
@@ -242,8 +273,8 @@ export default function Navbar({
                         onClick={onMenuToggle}
                         className="alex-nav-icon-btn alex-nav-icon-btn--ghost mr-2 flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
                         style={{
-                            background: 'transparent',
-                            color: 'var(--theme-base-content)',
+                            background: "transparent",
+                            color: "var(--theme-base-content)",
                         }}
                         aria-label="Open sidebar"
                     >
@@ -255,14 +286,17 @@ export default function Navbar({
                         the wordmark anchors the navbar's identity
                         regardless of viewport. */}
                     <a href="/" className="flex items-center">
-                        {brandSlot ?? (brand ? (
-                            <span
-                                className="ml-4 font-serif text-xl font-semibold"
-                                style={{ color: 'var(--theme-base-content)' }}
-                            >
-                                {brand}
-                            </span>
-                        ) : null)}
+                        {brandSlot ??
+                            (brand ? (
+                                <span
+                                    className="ml-4 font-serif text-xl font-semibold"
+                                    style={{
+                                        color: "var(--theme-base-content)",
+                                    }}
+                                >
+                                    {brand}
+                                </span>
+                            ) : null)}
                     </a>
                 </div>
 
@@ -281,7 +315,7 @@ export default function Navbar({
                                 its place (same dispatch behavior). */}
                             {showSearch && (
                                 <Tooltip
-                                    content={`Search (${typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac') ? '⌘' : 'Ctrl+'}K)`}
+                                    content={`Search (${typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("mac") ? "⌘" : "Ctrl+"}K)`}
                                     placement="bottom"
                                 >
                                     <button
@@ -289,8 +323,8 @@ export default function Navbar({
                                         className="alex-nav-icon-btn alex-nav-icon-btn--brand hidden h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors sm:flex"
                                         style={{
                                             background:
-                                                'color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)',
-                                            color: 'var(--theme-brand-primary-content)',
+                                                "color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)",
+                                            color: "var(--theme-brand-primary-content)",
                                         }}
                                         aria-label="Search (⌘K)"
                                     >
@@ -313,8 +347,8 @@ export default function Navbar({
                                         className="alex-nav-icon-btn alex-nav-icon-btn--brand-secondary flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors"
                                         style={{
                                             background:
-                                                'color-mix(in srgb, var(--theme-brand-secondary-500) 60%, transparent)',
-                                            color: 'var(--theme-brand-secondary-content)',
+                                                "color-mix(in srgb, var(--theme-brand-secondary-500) 60%, transparent)",
+                                            color: "var(--theme-brand-secondary-content)",
                                         }}
                                         aria-label="Notes"
                                     >
@@ -350,13 +384,15 @@ export default function Navbar({
                             <div
                                 className="relative min-w-0"
                                 ref={dropdownRef}
-                                style={{ height: '72px', display: 'flex' }}
+                                style={{ height: "72px", display: "flex" }}
                             >
                                 <button
-                                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                                    onClick={() =>
+                                        setDropdownOpen(!dropdownOpen)
+                                    }
                                     className="alex-user-trigger inline-flex min-w-0 max-w-full items-center gap-3 px-3 text-base font-medium transition-all duration-300 focus:outline-none"
                                     style={{
-                                        color: 'var(--theme-base-content)',
+                                        color: "var(--theme-base-content)",
                                         // Hover highlight runs edge-to-edge in
                                         // the navbar — no rounded corners — so
                                         // the affordance reads as a full nav
@@ -368,13 +404,13 @@ export default function Navbar({
                                         // through the wrapper means we ignore
                                         // any auto-sizing the button might do
                                         // based on its 80px avatar content.
-                                        height: '100%',
+                                        height: "100%",
                                         // Nudge the content (avatar + text)
                                         // down a few px from items-center's
                                         // pure mathematical center — visually
                                         // the chrome reads better with a
                                         // slight bias toward the bottom.
-                                        paddingTop: '0.25rem',
+                                        paddingTop: "0.25rem",
                                     }}
                                 >
                                     {/* Avatar overflows below the navbar's
@@ -418,33 +454,49 @@ export default function Navbar({
                                             // when scrolled. Forcing min-* to
                                             // 0 lets the explicit sizes
                                             // actually take effect.
-                                            display: 'inline-block',
+                                            display: "inline-block",
                                             minWidth: 0,
                                             minHeight: 0,
-                                            width: scrolled ? '60px' : '80px',
-                                            height: scrolled ? '60px' : '80px',
+                                            width: scrolled ? "60px" : "80px",
+                                            height: scrolled ? "60px" : "80px",
                                             transition:
-                                                'width var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease), height var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
+                                                "width var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease), height var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)",
                                         }}
                                     >
                                         <span
                                             style={{
-                                                display: 'inline-block',
+                                                display: "inline-block",
                                                 transform: scrolled
-                                                    ? 'translateY(-0.125rem) scale(0.75)'
-                                                    : 'translateY(0.625rem) scale(1)',
-                                                transformOrigin: '0 0',
+                                                    ? "translateY(-0.125rem) scale(0.75)"
+                                                    : "translateY(0.625rem) scale(1)",
+                                                transformOrigin: "0 0",
                                                 transition:
-                                                    'transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
+                                                    "transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)",
                                             }}
                                         >
                                             <AvatarWithRing
-                                                src={user.has_avatar && user.avatar_thumb_url ? user.avatar_thumb_url : null}
-                                                alt={user.name ?? 'User'}
-                                                initials={(user.display_name ?? user.name ?? 'U').charAt(0).toUpperCase()}
+                                                src={
+                                                    user.has_avatar &&
+                                                    user.avatar_thumb_url
+                                                        ? user.avatar_thumb_url
+                                                        : null
+                                                }
+                                                alt={user.name ?? "User"}
+                                                initials={(
+                                                    user.display_name ??
+                                                    user.name ??
+                                                    "U"
+                                                )
+                                                    .charAt(0)
+                                                    .toUpperCase()}
                                                 size={72}
-                                                ring={user.avatar_ring_slug ?? 'none'}
-                                                ringSettings={user.avatar_ring_settings as never}
+                                                ring={
+                                                    user.avatar_ring_slug ??
+                                                    "none"
+                                                }
+                                                ringSettings={
+                                                    user.avatar_ring_settings as never
+                                                }
                                                 ringThickness={4}
                                             />
                                         </span>
@@ -467,20 +519,22 @@ export default function Navbar({
                                         className="hidden min-w-0 flex-col items-start leading-none sm:flex"
                                         style={{
                                             transform: scrolled
-                                                ? 'translateY(0)'
-                                                : 'translateY(0.125rem)',
+                                                ? "translateY(0)"
+                                                : "translateY(0.125rem)",
                                             transition:
-                                                'transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
+                                                "transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)",
                                         }}
                                     >
                                         <span className="truncate max-w-[180px]">
-                                            {user.display_name ?? user.name ?? 'User'}
+                                            {user.display_name ??
+                                                user.name ??
+                                                "User"}
                                         </span>
                                         {user.display_name && user.name && (
                                             <span
                                                 className="truncate max-w-[180px] text-sm"
                                                 style={{
-                                                    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                                                    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
                                                 }}
                                             >
                                                 @{user.name}
@@ -490,12 +544,12 @@ export default function Navbar({
                                     <svg
                                         className="hidden h-5 w-5 flex-shrink-0 sm:block"
                                         style={{
-                                            color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+                                            color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
                                             transform: scrolled
-                                                ? 'translateY(0)'
-                                                : 'translateY(0.125rem)',
+                                                ? "translateY(0)"
+                                                : "translateY(0.125rem)",
                                             transition:
-                                                'transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)',
+                                                "transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)",
                                         }}
                                         xmlns="http://www.w3.org/2000/svg"
                                         fill="none"
@@ -522,14 +576,19 @@ export default function Navbar({
                                 {dropdownOpen && (
                                     <div
                                         className="absolute right-0 top-full z-50 w-56"
-                                        style={{ marginTop: scrolled ? '0.5rem' : '1.25rem' }}
+                                        style={{
+                                            marginTop: scrolled
+                                                ? "0.5rem"
+                                                : "1.25rem",
+                                        }}
                                     >
                                         <div
                                             className="alex-user-menu mt-1 rounded-md p-1 shadow-md"
                                             style={{
-                                                background: 'var(--theme-base-surface)',
-                                                color: 'var(--theme-base-content)',
-                                                border: '1px solid var(--theme-base-400)',
+                                                background:
+                                                    "var(--theme-base-surface)",
+                                                color: "var(--theme-base-content)",
+                                                border: "1px solid var(--theme-base-400)",
                                             }}
                                         >
                                             <ThemePicker />
@@ -537,11 +596,17 @@ export default function Navbar({
                                             <MenuDivider />
 
                                             {useCustomMenu ? (
-                                                userMenuItems!.map(renderMenuItem)
+                                                userMenuItems!.map(
+                                                    renderMenuItem,
+                                                )
                                             ) : (
                                                 <>
-                                                    {DEFAULT_USER_MENU_ITEMS.map(renderMenuItem)}
-                                                    {DEFAULT_USER_MENU_FOOTER_ITEMS.map(renderMenuItem)}
+                                                    {DEFAULT_USER_MENU_ITEMS.map(
+                                                        renderMenuItem,
+                                                    )}
+                                                    {DEFAULT_USER_MENU_FOOTER_ITEMS.map(
+                                                        renderMenuItem,
+                                                    )}
                                                 </>
                                             )}
 
@@ -557,7 +622,7 @@ export default function Navbar({
                             </div>
                         </>
                     ) : (
-                        guestActions ?? <DefaultGuestActions />
+                        (guestActions ?? <DefaultGuestActions />)
                     )}
                 </div>
             </div>
@@ -566,33 +631,37 @@ export default function Navbar({
 }
 
 const guestCtaBaseStyle: CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem 1rem',
-    fontSize: '0.875rem',
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    padding: "0.5rem 1rem",
+    fontSize: "0.875rem",
     fontWeight: 600,
-    borderRadius: '9999px',
-    textDecoration: 'none',
-    transition: 'background var(--theme-motion-duration-fast, 150ms) ease',
+    borderRadius: "9999px",
+    textDecoration: "none",
+    transition: "background var(--theme-motion-duration-fast, 150ms) ease",
 };
 
 const guestCtaRegisterStyle: CSSProperties = {
     ...guestCtaBaseStyle,
-    background: 'var(--theme-base-300)',
-    color: 'var(--theme-base-content)',
-    marginRight: '0.5rem',
+    background: "var(--theme-base-300)",
+    color: "var(--theme-base-content)",
+    marginRight: "0.5rem",
 };
 
 const guestCtaLoginStyle: CSSProperties = {
     ...guestCtaBaseStyle,
-    background: 'var(--theme-brand-primary-500)',
-    color: 'var(--theme-brand-primary-content)',
+    background: "var(--theme-brand-primary-500)",
+    color: "var(--theme-brand-primary-content)",
 };
 
 function DefaultGuestActions() {
     return (
-        <div className="inline-flex items-center" role="group" aria-label="Button group">
+        <div
+            className="inline-flex items-center"
+            role="group"
+            aria-label="Button group"
+        >
             <a
                 href="/register"
                 className="alex-guest-cta-register hidden md:inline-flex"
@@ -626,15 +695,16 @@ function MenuDivider() {
             className="-mx-1 my-1 h-px"
             style={{
                 background:
-                    'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                    "color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
             }}
         />
     );
 }
 
 function renderMenuRow(item: UserMenuItemRow, idx: number): ReactNode {
-    const baseClass = 'relative flex select-none items-center px-2 py-1.5 text-sm outline-none transition-colors';
-    const baseStyle = { borderRadius: 'var(--theme-radius-button)' };
+    const baseClass =
+        "relative flex select-none items-center px-2 py-1.5 text-sm outline-none transition-colors";
+    const baseStyle = { borderRadius: "var(--theme-radius-button)" };
 
     if (item.disabled) {
         return (
@@ -646,7 +716,9 @@ function renderMenuRow(item: UserMenuItemRow, idx: number): ReactNode {
                 {renderMenuIcon(item.icon)}
                 <span>{item.label}</span>
                 {item.shortcut && (
-                    <span className="ml-auto text-xs tracking-widest opacity-80">{item.shortcut}</span>
+                    <span className="ml-auto text-xs tracking-widest opacity-80">
+                        {item.shortcut}
+                    </span>
                 )}
             </span>
         );
@@ -657,13 +729,15 @@ function renderMenuRow(item: UserMenuItemRow, idx: number): ReactNode {
             key={`item-${idx}`}
             href={item.href}
             onClick={item.onClick}
-            className={`${baseClass} ${item.danger ? 'alex-menu-row--danger' : ''}`}
+            className={`${baseClass} ${item.danger ? "alex-menu-row--danger" : ""}`}
             style={baseStyle}
         >
             {renderMenuIcon(item.icon)}
             <span>{item.label}</span>
             {item.shortcut && (
-                <span className="ml-auto text-xs tracking-widest opacity-80">{item.shortcut}</span>
+                <span className="ml-auto text-xs tracking-widest opacity-80">
+                    {item.shortcut}
+                </span>
             )}
         </a>
     );
@@ -671,9 +745,13 @@ function renderMenuRow(item: UserMenuItemRow, idx: number): ReactNode {
 
 function renderMenuIcon(icon: string | ReactNode | undefined): ReactNode {
     if (icon == null) return null;
-    if (typeof icon === 'string') {
-        const cls = icon.includes(' ') ? icon : `fa-solid ${icon}`;
+    if (typeof icon === "string") {
+        const cls = icon.includes(" ") ? icon : `fa-solid ${icon}`;
         return <i className={`${cls} mr-2 h-4 w-4`} />;
     }
-    return <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">{icon}</span>;
+    return (
+        <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
+            {icon}
+        </span>
+    );
 }

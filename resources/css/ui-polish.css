@@ -305,7 +305,15 @@ button:not(:disabled),
 }
 
 /* Blueprint entries table — primary-tinted headers, subtle base-200 row hover.
-   Used by Blueprints/Sections/EntriesTab.tsx. */
+   Used by Blueprints/Sections/EntriesTab.tsx + ConnectionsView.tsx.
+   Cell padding lives here because Stage 7.1 removed DaisyUI's `.table`
+   defaults — `<table className="alex-entries-table table">` once inherited
+   `padding: 0.5rem 1rem` from DaisyUI; with that gone, alex- owns the
+   chrome. */
+.alex-entries-table th,
+.alex-entries-table td {
+    padding: 0.5rem 1rem;
+}
 .alex-entries-table tbody tr {
     transition: background-color var(--theme-motion-duration-fast, 150ms)
         var(--theme-motion-easing-standard, ease);
@@ -366,7 +374,8 @@ button:not(:disabled),
 /* Graph sidebar idle row — :hover wash; active rows skip via
    data-active="true" (inline brand-primary already paints state). */
 .alex-graph-sidebar-btn {
-    transition: background-color var(--theme-motion-duration-fast, 150ms)
+    transition:
+        background-color var(--theme-motion-duration-fast, 150ms)
             var(--theme-motion-easing-standard, ease),
         color var(--theme-motion-duration-fast, 150ms)
             var(--theme-motion-easing-standard, ease);
@@ -382,7 +391,8 @@ button:not(:disabled),
 
 /* Gallery tile — border + shadow lift on hover (image scale via Tailwind). */
 .alex-gallery-tile {
-    transition: border-color var(--theme-motion-duration-fast, 150ms)
+    transition:
+        border-color var(--theme-motion-duration-fast, 150ms)
             var(--theme-motion-easing-standard, ease),
         box-shadow var(--theme-motion-duration-fast, 150ms)
             var(--theme-motion-easing-standard, ease);
@@ -446,8 +456,16 @@ button:not(:disabled),
         border-color var(--theme-motion-duration-fast, 150ms) ease;
 }
 .alex-image-dropzone:hover:not([data-active="true"]) {
-    border-color: color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent);
-    background-color: color-mix(in srgb, var(--theme-base-200) 20%, transparent);
+    border-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 30%,
+        transparent
+    );
+    background-color: color-mix(
+        in srgb,
+        var(--theme-base-200) 20%,
+        transparent
+    );
 }
 
 /* Gallery-tile overlay buttons — subtle hover tint per individual button
@@ -534,14 +552,19 @@ button:not(:disabled),
 
 /* PublicProfile project card — border highlight + banner scale on hover. */
 .alex-public-project-card {
-    border: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+    border: 1px solid
+        color-mix(in srgb, var(--theme-base-content) 10%, transparent);
     background: color-mix(in srgb, var(--theme-base-300) 40%, transparent);
     transition:
         border-color var(--theme-motion-duration-fast, 150ms) ease,
         box-shadow var(--theme-motion-duration-fast, 150ms) ease;
 }
 .alex-public-project-card:hover {
-    border-color: color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent);
+    border-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 30%,
+        transparent
+    );
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 .alex-public-project-banner {
@@ -559,12 +582,20 @@ button:not(:disabled),
 
 /* PublicProfile "Privacy Settings" CTA — primary tint that deepens on hover. */
 .alex-public-privacy-cta {
-    background: color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent);
+    background: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 10%,
+        transparent
+    );
     color: var(--theme-brand-primary-500);
     transition: background-color var(--theme-motion-duration-fast, 150ms) ease;
 }
 .alex-public-privacy-cta:hover {
-    background: color-mix(in srgb, var(--theme-brand-primary-500) 15%, transparent);
+    background: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 15%,
+        transparent
+    );
 }
 
 /* Inline link fallbacks for MentionAwareContent — kicks in if the server
