@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
  *
  * @method static ProjectSortingPromptFactory factory(int|callable|array|null $count = null, array $state = [])
  * @method static ProjectSortingPrompt create(array $attributes = [])
+ * @method static ProjectSortingPrompt firstOrCreate(array $attributes, array $values = [])
  * @method static Builder<static> query()
  * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
  * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
