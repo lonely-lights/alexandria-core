@@ -280,31 +280,6 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
 [data-theme^="tf"] .paper-card--lavender,
 [data-theme^="tf"] .paper-card--lavender * { --paper-ink: #1f1930; }
 
-[data-theme^="tf"] .paper-card .text-base-content\/40 { color: color-mix(in srgb, var(--paper-ink) 62%, transparent) !important; }
-[data-theme^="tf"] .paper-card .text-base-content\/50 { color: color-mix(in srgb, var(--paper-ink) 72%, transparent) !important; }
-[data-theme^="tf"] .paper-card .text-base-content\/60 { color: color-mix(in srgb, var(--paper-ink) 82%, transparent) !important; }
-[data-theme^="tf"] .paper-card .text-base-content\/70 { color: color-mix(in srgb, var(--paper-ink) 92%, transparent) !important; }
-
-/* Semantic accents (warning/info/primary/etc) can't contrast against paper —
-   e.g. text-warning on yellow paper. Remap to paper-ink inside paper-cards. */
-[data-theme^="tf"] .paper-card .text-warning,
-[data-theme^="tf"] .paper-card .text-info,
-[data-theme^="tf"] .paper-card .text-primary,
-[data-theme^="tf"] .paper-card .text-secondary,
-[data-theme^="tf"] .paper-card .text-accent,
-[data-theme^="tf"] .paper-card .text-success,
-[data-theme^="tf"] .paper-card .text-error { color: var(--paper-ink) !important; }
-
-[data-theme^="tf"] .paper-card .bg-warning\/10,
-[data-theme^="tf"] .paper-card .bg-info\/10,
-[data-theme^="tf"] .paper-card .bg-primary\/10,
-[data-theme^="tf"] .paper-card .bg-secondary\/10,
-[data-theme^="tf"] .paper-card .bg-accent\/10,
-[data-theme^="tf"] .paper-card .bg-success\/10,
-[data-theme^="tf"] .paper-card .bg-error\/10 {
-    background-color: color-mix(in srgb, var(--paper-ink) 14%, transparent) !important;
-}
-
 /* Hover lift — only on button/link paper-cards. Card nudges up-left,
    shadow slides down-right to double apparent offset. */
 [data-theme^="tf"] button.paper-card:hover,
@@ -381,31 +356,11 @@ html:not([data-theme^="tf"]) .neural-overlay { display: none; }
     background-color: color-mix(in srgb, var(--tf-paper-yellow) 28%, var(--tf-paper-cream));
 }
 
-/* Ink remapping — cream bg needs dark text; opacity utilities recomputed. */
+/* Ink remapping — cream bg needs dark text. */
 [data-theme="tf-light"] .paper-table tbody td,
 [data-theme="tf-light"] .paper-table tbody td *,
 [data-theme="tf-light"] .paper-stripe__body > *,
 [data-theme="tf-light"] .paper-stripe__body > * * { color: #2b1d0f; }
-[data-theme="tf-light"] .paper-table tbody td .text-base-content\/30,
-[data-theme="tf-light"] .paper-stripe__body > * .text-base-content\/30 { color: color-mix(in srgb, #2b1d0f 45%, transparent) !important; }
-[data-theme="tf-light"] .paper-table tbody td .text-base-content\/40,
-[data-theme="tf-light"] .paper-stripe__body > * .text-base-content\/40 { color: color-mix(in srgb, #2b1d0f 55%, transparent) !important; }
-[data-theme="tf-light"] .paper-table tbody td .text-base-content\/50,
-[data-theme="tf-light"] .paper-stripe__body > * .text-base-content\/50 { color: color-mix(in srgb, #2b1d0f 68%, transparent) !important; }
-[data-theme="tf-light"] .paper-table tbody td .text-base-content\/60,
-[data-theme="tf-light"] .paper-stripe__body > * .text-base-content\/60 { color: color-mix(in srgb, #2b1d0f 78%, transparent) !important; }
-[data-theme="tf-light"] .paper-table tbody td .text-base-content\/70,
-[data-theme="tf-light"] .paper-stripe__body > * .text-base-content\/70 { color: color-mix(in srgb, #2b1d0f 88%, transparent) !important; }
-[data-theme="tf-light"] .paper-table tbody td .text-primary,
-[data-theme="tf-light"] .paper-table tbody td .text-warning,
-[data-theme="tf-light"] .paper-table tbody td .text-info,
-[data-theme="tf-light"] .paper-table tbody td .text-success,
-[data-theme="tf-light"] .paper-table tbody td .text-error,
-[data-theme="tf-light"] .paper-stripe__body > * .text-primary,
-[data-theme="tf-light"] .paper-stripe__body > * .text-warning,
-[data-theme="tf-light"] .paper-stripe__body > * .text-info,
-[data-theme="tf-light"] .paper-stripe__body > * .text-success,
-[data-theme="tf-light"] .paper-stripe__body > * .text-error { color: #2b1d0f !important; }
 
 [data-theme="tf-light"] .paper-table tbody tr:hover,
 [data-theme="tf-light"] .paper-stripe__body > *:hover {

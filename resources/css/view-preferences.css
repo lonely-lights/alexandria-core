@@ -21,7 +21,6 @@ html[data-reduced-motion="true"] *::after {
 }
 
 /* Compact mode — trims padding on heavy containers only. */
-html[data-compact="true"] .card-body { padding: 0.75rem 1rem !important; }
 html[data-compact="true"] .p-8 { padding: 1.25rem !important; }
 html[data-compact="true"] .p-7 { padding: 1rem !important; }
 html[data-compact="true"] .p-6 { padding: 1rem !important; }
@@ -33,19 +32,6 @@ html[data-compact="true"] .lg\:py-24 { padding-top: 3.5rem !important; padding-b
 html[data-compact="true"] .gap-8 { gap: 1.5rem !important; }
 html[data-compact="true"] .space-y-6 > * + * { margin-top: 1rem !important; }
 html[data-compact="true"] .space-y-8 > * + * { margin-top: 1.5rem !important; }
-
-/* High contrast — boost faded text opacity, strengthen borders. */
-html[data-high-contrast="true"] .text-base-content\/40,
-html[data-high-contrast="true"] .text-base-content\/50,
-html[data-high-contrast="true"] .text-base-content\/60,
-html[data-high-contrast="true"] .text-base-content\/70 {
-    color: var(--theme-base-content) !important;
-    opacity: 0.9 !important;
-}
-html[data-high-contrast="true"] .border-base-content\/5,
-html[data-high-contrast="true"] .border-base-content\/10 {
-    border-color: color-mix(in srgb, var(--theme-base-content) 35%, transparent) !important;
-}
 
 /* Enhanced focus rings — thicker + more saturated for keyboard users. */
 html[data-focus-indicators="enhanced"] *:focus-visible {

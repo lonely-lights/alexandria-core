@@ -7,8 +7,7 @@
 /* Restore v3 button cursor — Tailwind v4 made <button> cursor default `default`.
    :not(:disabled) keeps `not-allowed` on disabled controls. */
 button:not(:disabled),
-[role="button"]:not(:disabled),
-.btn:not(:disabled) {
+[role="button"]:not(:disabled) {
     cursor: pointer;
 }
 
