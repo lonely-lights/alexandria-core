@@ -38,6 +38,7 @@ import { TreeActivationPanel } from "./settings/TreePanels";
 import KanbanPanel from "./settings/KanbanPanel";
 import GraphPanel from "./settings/GraphPanel";
 import RevealCollapse from "@alexandria/components/ui/RevealCollapse";
+import PanelHeader from "./settings/PanelHeader";
 import SettingsActivationToggle from "./settings/SettingsActivationToggle";
 import SubtitleBuilderModal from "./settings/SubtitleBuilderModal";
 import FieldTypesHelp from "@alexandria/components/blueprints/FieldTypesHelp";
@@ -75,7 +76,6 @@ import {
     navItemActiveStyle,
     navItemIdleStyle,
     navSidebarStyle,
-    panelHeaderDividerStyle,
     primaryHalfStyle,
     primaryTextStyle,
     relCardActiveStyle,
@@ -94,35 +94,6 @@ import {
     warningHalfStyle,
     warningTextStyle,
 } from "./settings/settingsPanelStyles";
-
-/* ── Panel Header ── */
-
-function PanelHeader({
-    title,
-    description,
-    action,
-}: {
-    title: string;
-    description?: string;
-    action?: ReactNode;
-}) {
-    return (
-        <>
-            <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-3">
-                <div>
-                    <h2 className="text-sm font-semibold">{title}</h2>
-                    {description && (
-                        <p className="mt-0.5 text-xs" style={helperStyle}>
-                            {description}
-                        </p>
-                    )}
-                </div>
-                {action && <div className="flex-shrink-0">{action}</div>}
-            </div>
-            <div className="mx-5" style={panelHeaderDividerStyle} />
-        </>
-    );
-}
 
 /* ── Column Configuration Modal ── */
 
