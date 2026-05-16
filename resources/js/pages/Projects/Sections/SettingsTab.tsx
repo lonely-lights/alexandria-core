@@ -10,6 +10,7 @@ import ProjectDetailsSection from "./settings/ProjectDetailsSection";
 import AiHelpersSection from "./settings/AiHelpersSection";
 import MembersSection from "./settings/MembersSection";
 import DangerZoneSection from "./settings/DangerZoneSection";
+import ThemeSection from "./settings/ThemeSection";
 import Modal from "@alexandria/components/ui/Modal";
 import ImageUploader from "@alexandria/components/media/ImageUploader";
 import useT, { type Translator } from "@alexandria/hooks/useT";
@@ -34,6 +35,11 @@ const TABS: { key: string; labelKey: string; icon: string }[] = [
         key: "media",
         labelKey: "projects.settings_tab.tab.media",
         icon: "fa-image",
+    },
+    {
+        key: "theme",
+        labelKey: "projects.settings_tab.tab.theme",
+        icon: "fa-palette",
     },
     {
         key: "ai-helpers",
@@ -215,6 +221,9 @@ export default function SettingsTab({ project, settings }: SettingsTabProps) {
                     )}
                     {activeTab === "media" && (
                         <ProjectMediaSection project={project} />
+                    )}
+                    {activeTab === "theme" && (
+                        <ThemeSection project={project} />
                     )}
                     {activeTab === "ai-helpers" && (
                         <AiHelpersSection

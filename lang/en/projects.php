@@ -193,9 +193,21 @@ return [
     // ── SettingsTab (left nav + tab-specific sub-sections) ──────────
     'settings_tab.tab.project' => 'Project',
     'settings_tab.tab.media' => 'Media',
+    'settings_tab.tab.theme' => 'Theme',
     'settings_tab.tab.ai_helpers' => 'AI Helpers',
     'settings_tab.tab.members' => 'Members',
     'settings_tab.tab.danger' => 'Danger Zone',
+
+    // ── Theme section (Stage 8b M1.B) ───────────────────────────────
+    'settings_tab.theme.title' => 'Theme',
+    'settings_tab.theme.subtitle' => 'Pick how this project looks. The chrome (navbar + sidebar) and content area both follow this theme. Per-blueprint and per-entry overrides only adjust the content area.',
+    'settings_tab.theme.active' => 'Active',
+    'settings_tab.theme.inherit_user' => 'Inherit user theme',
+    'settings_tab.theme.inherit_hint' => 'Clears the project theme so this project follows your personal preset choice.',
+    'settings_tab.theme.preset.default.name' => 'Default',
+    'settings_tab.theme.preset.default.description' => 'Warm bronze + sage palette designed for long reading sessions.',
+    'settings_tab.theme.preset.cyberpunk.name' => 'Cyberpunk',
+    'settings_tab.theme.preset.cyberpunk.description' => 'High-chroma neon magenta, cyan, and acid green on deep surfaces.',
 
     // ── AiHelpersSection › Writing Style card (style guides for AI drafting) ──
     'settings_tab.ai_writing_style.title' => 'Writing Style Guides',

@@ -32,6 +32,10 @@ export interface ProjectDetail {
     page_image_thumb_url: string | null;
     banner_desktop_url: string | null;
     inherit_media_downward: boolean;
+    /** Stage 8b — preset slug from the theming registry; null inherits the user-level preset. */
+    theme_preset_slug: string | null;
+    /** Stage 8b — sparse DeepPartial<ThemeTokens> JSON; null means no token-level overrides. */
+    theme_override: Record<string, unknown> | null;
     created_at: string | null;
     can: {
         update: boolean;
