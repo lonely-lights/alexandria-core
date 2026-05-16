@@ -1,9 +1,4 @@
-import {
-    type ReactNode,
-    useState,
-    useEffect,
-    useRef,
-} from "react";
+import { useState, useEffect, useRef } from "react";
 import Sortable from "sortablejs";
 import Modal from "@alexandria/components/ui/Modal";
 import Tooltip from "@alexandria/components/ui/Tooltip";
@@ -38,6 +33,7 @@ import { TreeActivationPanel } from "./settings/TreePanels";
 import KanbanPanel from "./settings/KanbanPanel";
 import GraphPanel from "./settings/GraphPanel";
 import RevealCollapse from "@alexandria/components/ui/RevealCollapse";
+import { NavGroup, NavItem } from "./settings/Nav";
 import PanelHeader from "./settings/PanelHeader";
 import SettingsActivationToggle from "./settings/SettingsActivationToggle";
 import SubtitleBuilderModal from "./settings/SubtitleBuilderModal";
@@ -73,8 +69,6 @@ import {
     infoHalfStyle,
     infoTextStyle,
     labelStyle,
-    navItemActiveStyle,
-    navItemIdleStyle,
     navSidebarStyle,
     primaryHalfStyle,
     primaryTextStyle,
@@ -300,49 +294,10 @@ export function ColumnConfigModal({
         );
     }
 
-    function NavItem({
-        menu,
-        icon,
-        label,
-    }: {
-        menu: MenuPanel;
-        icon: string;
-        label: string;
-    }) {
-        const active = activeMenu === menu;
-        return (
-            <button
-                type="button"
-                onClick={() => setActiveMenu(menu)}
-                aria-current={active ? "page" : undefined}
-                className="alex-row flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm"
-                style={active ? navItemActiveStyle : navItemIdleStyle}
-            >
-                <i className={`${icon} w-4 text-center text-xs`} />
-                <span>{label}</span>
-            </button>
-        );
-    }
-
-    function NavGroup({
-        title,
-        children,
-    }: {
-        title: string;
-        children: ReactNode;
-    }) {
-        return (
-            <div className="mb-2">
-                <div
-                    className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider"
-                    style={helperFainterStyle}
-                >
-                    {title}
-                </div>
-                {children}
-            </div>
-        );
-    }
+    const navProps = (menu: MenuPanel) => ({
+        active: activeMenu === menu,
+        onClick: () => setActiveMenu(menu),
+    });
 
     return (
         <Modal open={open} onClose={onClose} maxWidth="max-w-5xl">
@@ -380,14 +335,14 @@ export function ColumnConfigModal({
                                     )}
                                 >
                                     <NavItem
-                                        menu="main"
+                                        {...navProps("main")}
                                         icon="fa-solid fa-id-card"
                                         label={t(
                                             "blueprints.bp_settings.nav.main",
                                         )}
                                     />
                                     <NavItem
-                                        menu="settings"
+                                        {...navProps("settings")}
                                         icon="fa-solid fa-gear"
                                         label={t(
                                             "blueprints.bp_settings.nav.settings",
@@ -401,7 +356,7 @@ export function ColumnConfigModal({
                                     {blueprint.classification !==
                                         "structural" && (
                                         <NavItem
-                                            menu="fields"
+                                            {...navProps("fields")}
                                             icon="fa-solid fa-layer-group"
                                             label={t(
                                                 "blueprints.bp_settings.nav.fields",
@@ -409,14 +364,14 @@ export function ColumnConfigModal({
                                         />
                                     )}
                                     <NavItem
-                                        menu="relationships"
+                                        {...navProps("relationships")}
                                         icon="fa-solid fa-diagram-project"
                                         label={t(
                                             "blueprints.bp_settings.nav.relationships",
                                         )}
                                     />
                                     <NavItem
-                                        menu="infobox"
+                                        {...navProps("infobox")}
                                         icon="fa-solid fa-table-cells"
                                         label={t(
                                             "blueprints.bp_settings.nav.infobox",
@@ -425,7 +380,7 @@ export function ColumnConfigModal({
                                     {blueprint.classification ===
                                         "relationship" && (
                                         <NavItem
-                                            menu="display"
+                                            {...navProps("display")}
                                             icon="fa-solid fa-eye"
                                             label={t(
                                                 "blueprints.bp_settings.nav.display",
@@ -433,7 +388,7 @@ export function ColumnConfigModal({
                                         />
                                     )}
                                     <NavItem
-                                        menu="media"
+                                        {...navProps("media")}
                                         icon="fa-solid fa-image"
                                         label={t(
                                             "blueprints.bp_settings.nav.media",
@@ -449,7 +404,7 @@ export function ColumnConfigModal({
                             )}
                         >
                             <NavItem
-                                menu="columns"
+                                {...navProps("columns")}
                                 icon="fa-solid fa-table-list"
                                 label={t("blueprints.bp_settings.nav.table")}
                             />
@@ -459,14 +414,14 @@ export function ColumnConfigModal({
                                 ) && (
                                     <>
                                         <NavItem
-                                            menu="tree"
+                                            {...navProps("tree")}
                                             icon="fa-solid fa-sitemap"
                                             label={t(
                                                 "blueprints.bp_settings.nav.hierarchy",
                                             )}
                                         />
                                         <NavItem
-                                            menu="timeline"
+                                            {...navProps("timeline")}
                                             icon="fa-solid fa-timeline"
                                             label={t(
                                                 "blueprints.bp_settings.nav.timeline",
@@ -480,14 +435,14 @@ export function ColumnConfigModal({
                                 ) && (
                                     <>
                                         <NavItem
-                                            menu="kanban"
+                                            {...navProps("kanban")}
                                             icon="fa-solid fa-table-columns"
                                             label={t(
                                                 "blueprints.bp_settings.nav.kanban",
                                             )}
                                         />
                                         <NavItem
-                                            menu="graph"
+                                            {...navProps("graph")}
                                             icon="fa-solid fa-diagram-project"
                                             label={t(
                                                 "blueprints.bp_settings.nav.graph",
