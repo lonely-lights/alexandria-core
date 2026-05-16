@@ -12,7 +12,7 @@ import MediaSection from "@alexandria/components/media/MediaSection";
 import { useBlueprintFields } from "@alexandria/hooks/useBlueprintFields";
 import TemporalFieldConfig from "@alexandria/components/form/TemporalFieldConfig";
 import useT from "@alexandria/hooks/useT";
-import { useForm, router } from "@inertiajs/react";
+import { router } from "@inertiajs/react";
 import InfoboxDesigner from "../InfoboxTab";
 import type { FormDataConvertible } from "@inertiajs/core";
 import type {
@@ -31,10 +31,10 @@ import { TreeActivationPanel } from "./settings/TreePanels";
 import KanbanPanel from "./settings/KanbanPanel";
 import GraphPanel from "./settings/GraphPanel";
 import RevealCollapse from "@alexandria/components/ui/RevealCollapse";
+import BlueprintBehaviorPanel from "./settings/BlueprintBehaviorPanel";
 import BlueprintMainPanel from "./settings/BlueprintMainPanel";
 import { NavGroup, NavItem } from "./settings/Nav";
 import PanelHeader from "./settings/PanelHeader";
-import SettingsActivationToggle from "./settings/SettingsActivationToggle";
 import SubtitleBuilderModal from "./settings/SubtitleBuilderModal";
 import FieldTypesHelp from "@alexandria/components/blueprints/FieldTypesHelp";
 import HelpModal from "@alexandria/components/ui/HelpModal";
@@ -825,7 +825,7 @@ export function ColumnConfigModal({
                                     )}
                                 />
                                 <div className="flex flex-1 flex-col overflow-hidden">
-                                    <BlueprintSettingsPanel
+                                    <BlueprintBehaviorPanel
                                         blueprint={blueprint}
                                         project={project}
                                         onClose={onClose}
@@ -1109,93 +1109,6 @@ export function ColumnConfigModal({
                 </div>
             </div>
         </Modal>
-    );
-}
-
-/* ── Blueprint Settings Panel (Behavior) ── */
-
-function BlueprintSettingsPanel({
-    blueprint,
-    project,
-    onClose,
-}: {
-    blueprint: BlueprintDetail;
-    project: { slug: string };
-    onClose: () => void;
-}) {
-    const t = useT();
-    const form = useForm({
-        // Preserve identity values
-        name: blueprint.name,
-        description: blueprint.description ?? "",
-        icon: blueprint.icon,
-        // Editable behavior values
-        show_on_dashboard: blueprint.show_on_dashboard,
-        is_linkable: blueprint.is_linkable,
-        is_hub: blueprint.is_hub,
-        show_tree_view: blueprint.show_tree_view,
-        enable_timeline: blueprint.enable_timeline,
-        classification: blueprint.classification,
-        list_selection_mode: blueprint.list_selection_mode,
-    });
-
-    function handleSave() {
-        form.put(`/p/${project.slug}/${blueprint.slug}`, {
-            onSuccess: () => onClose(),
-        });
-    }
-
-    return (
-        <>
-            <div className="flex-1 space-y-3 overflow-y-auto p-5">
-                <SettingsActivationToggle
-                    title={t(
-                        "blueprints.bp_settings.behavior.show_dashboard.title",
-                    )}
-                    description={t(
-                        "blueprints.bp_settings.behavior.show_dashboard.description",
-                    )}
-                    enabled={form.data.show_on_dashboard}
-                    onChange={(v) => form.setData("show_on_dashboard", v)}
-                />
-                <SettingsActivationToggle
-                    title={t(
-                        "blueprints.bp_settings.behavior.wiki_links.title",
-                    )}
-                    description={t(
-                        "blueprints.bp_settings.behavior.wiki_links.description",
-                    )}
-                    enabled={form.data.is_linkable}
-                    onChange={(v) => form.setData("is_linkable", v)}
-                />
-                <SettingsActivationToggle
-                    title={t("blueprints.bp_settings.behavior.nav_hub.title")}
-                    description={t(
-                        "blueprints.bp_settings.behavior.nav_hub.description",
-                    )}
-                    enabled={form.data.is_hub}
-                    onChange={(v) => form.setData("is_hub", v)}
-                />
-            </div>
-
-            <div
-                className="flex items-center justify-end gap-2 px-5 py-3"
-                style={footerDividerStyle}
-            >
-                <ActionButton
-                    icon="fa-solid fa-xmark"
-                    label={t("common.cancel")}
-                    variant="ghost"
-                    onClick={onClose}
-                />
-                <ActionButton
-                    icon="fa-solid fa-check"
-                    label={t("common.save")}
-                    onClick={handleSave}
-                    loading={form.processing}
-                />
-            </div>
-        </>
     );
 }
 
