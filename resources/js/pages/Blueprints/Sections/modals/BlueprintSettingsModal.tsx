@@ -1,5 +1,4 @@
 import {
-    type CSSProperties,
     type ReactNode,
     useState,
     useEffect,
@@ -44,281 +43,57 @@ import SubtitleBuilderModal from "./settings/SubtitleBuilderModal";
 import FieldTypesHelp from "@alexandria/components/blueprints/FieldTypesHelp";
 import HelpModal from "@alexandria/components/ui/HelpModal";
 import {
+    FIELD_TYPE_BADGE_STYLES,
     TOGGLE_ACCENT_COLOR,
+    aboutRowStyle,
+    activeColumnRowStyle,
+    addFieldBtnStyle,
+    availableColumnRowStyle,
+    badgeErrorSmallStyle,
+    badgeGhostStyle,
+    badgeInfoStyle,
+    badgeOnTintedPanelStyle,
+    badgePrimaryStyle,
+    badgeSuccessStyle,
+    badgeWarningStyle,
+    closeBtnStyle,
+    columnsDividerStyle,
+    dragHandleStyle,
+    errorTextStyle,
+    fadedIconStyle,
+    fieldExpandedBodyStyle,
+    fieldRowStyle,
+    footerDividerStyle,
     helperFainterStyle,
     helperSoftStyle,
     helperStyle,
+    iconPreviewWrapStyle,
+    infoBoxStyle,
+    infoHalfStyle,
+    infoTextStyle,
     labelStyle,
+    navItemActiveStyle,
+    navItemIdleStyle,
+    navSidebarStyle,
+    panelHeaderDividerStyle,
+    primaryHalfStyle,
+    primaryTextStyle,
+    relCardActiveStyle,
+    relCardIconWrapIdleStyle,
+    relCardIconWrapStyle,
+    relCardIdleStyle,
+    rightPaneStyle,
+    rosePanelStyle,
     selectStyle,
+    sortableBadgeActiveStyle,
+    sortableBadgeIdleStyle,
+    subtitlePickerBtnStyle,
+    titleBarStyle,
+    veryFadedStyle,
+    violetPanelStyle,
+    warningHalfStyle,
     warningTextStyle,
 } from "./settings/settingsPanelStyles";
-
-/* ── Theme-token style recipes ───────────────────────────────────── */
-
-const titleBarStyle: CSSProperties = {
-    borderBottom:
-        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    background: "var(--theme-base-300)",
-};
-
-const navSidebarStyle: CSSProperties = {
-    borderRight:
-        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    background: "color-mix(in srgb, var(--theme-base-200) 40%, transparent)",
-};
-
-const rightPaneStyle: CSSProperties = { background: "var(--theme-base-100)" };
-
-const panelHeaderDividerStyle: CSSProperties = {
-    borderBottom:
-        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-};
-
-const footerDividerStyle: CSSProperties = {
-    borderTop:
-        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-};
-
-const navItemActiveStyle: CSSProperties = {
-    background:
-        "color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)",
-    color: "var(--theme-brand-primary-500)",
-};
-
-const navItemIdleStyle: CSSProperties = {
-    color: "color-mix(in srgb, var(--theme-base-content) 70%, transparent)",
-};
-
-const columnsDividerStyle: CSSProperties = {
-    borderRight: "1px solid var(--theme-base-300)",
-};
-
-const activeColumnRowStyle: CSSProperties = {
-    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    background: "var(--theme-base-200)",
-    borderRadius: "var(--theme-radius-card)",
-    transition:
-        "border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
-};
-
-const availableColumnRowStyle: CSSProperties = {
-    border: "1px dashed color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    borderRadius: "var(--theme-radius-input)",
-    transition:
-        "border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
-};
-
-const closeBtnStyle: CSSProperties = {
-    borderRadius: "9999px",
-    width: "1.5rem",
-    height: "1.5rem",
-    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
-};
-
-const dragHandleStyle: CSSProperties = {
-    color: "color-mix(in srgb, var(--theme-base-content) 25%, transparent)",
-};
-
-const badgeBase: CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "0.125rem 0.5rem",
-    fontSize: "0.625rem",
-    fontWeight: 600,
-    borderRadius: "var(--theme-radius-badge)",
-};
-
-const badgeInfoStyle: CSSProperties = {
-    ...badgeBase,
-    background: "var(--theme-status-info-fill)",
-    color: "var(--theme-status-info-content)",
-};
-
-const badgePrimaryStyle: CSSProperties = {
-    ...badgeBase,
-    background: "var(--theme-brand-primary-500)",
-    color: "var(--theme-brand-primary-content)",
-};
-
-const badgeWarningStyle: CSSProperties = {
-    ...badgeBase,
-    background: "var(--theme-status-warning-stroke)",
-    color: "var(--theme-status-warning-content)",
-};
-
-const badgeSuccessStyle: CSSProperties = {
-    ...badgeBase,
-    background: "var(--theme-status-success-fill)",
-    color: "var(--theme-status-success-content)",
-};
-
-const badgeGhostStyle: CSSProperties = {
-    ...badgeBase,
-    background:
-        "color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    color: "color-mix(in srgb, var(--theme-base-content) 70%, transparent)",
-};
-
-// Neutral chip for use inside any tinted panel (info / warning / etc.) —
-// paints from base tokens so it reads as a discrete elevated item.
-const badgeOnTintedPanelStyle: CSSProperties = {
-    ...badgeBase,
-    background: "var(--theme-base-200)",
-    color: "var(--theme-base-content)",
-    border: "1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)",
-};
-
-const badgeErrorSmallStyle: CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "0.0625rem 0.375rem",
-    fontSize: "0.5625rem",
-    fontWeight: 600,
-    borderRadius: "var(--theme-radius-badge)",
-    background: "var(--theme-status-error-fill)",
-    color: "var(--theme-status-error-content)",
-};
-
-const sortableBadgeActiveStyle: CSSProperties = {
-    ...badgeBase,
-    gap: "0.25rem",
-    background: "var(--theme-status-success-fill)",
-    color: "var(--theme-status-success-content)",
-    cursor: "pointer",
-    border: "none",
-};
-
-const sortableBadgeIdleStyle: CSSProperties = {
-    ...sortableBadgeActiveStyle,
-    background:
-        "color-mix(in srgb, var(--theme-status-success-fill) 40%, transparent)",
-    opacity: 0.4,
-};
-
-const fieldRowStyle: CSSProperties = {
-    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    borderRadius: "var(--theme-radius-card)",
-    overflow: "hidden",
-    transition:
-        "border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
-};
-
-const fieldExpandedBodyStyle: CSSProperties = {
-    borderTop:
-        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    background: "var(--theme-base-200)",
-};
-
-const violetPanelStyle: CSSProperties = {
-    background: "color-mix(in srgb, #8b5cf6 5%, transparent)",
-    border: "1px solid color-mix(in srgb, #8b5cf6 20%, transparent)",
-    borderRadius: "var(--theme-radius-input)",
-};
-
-const rosePanelStyle: CSSProperties = {
-    background: "color-mix(in srgb, #f43f5e 5%, transparent)",
-    border: "1px solid color-mix(in srgb, #f43f5e 20%, transparent)",
-    borderRadius: "var(--theme-radius-input)",
-};
-
-const addFieldBtnStyle: CSSProperties = {
-    border: "2px dashed color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
-    borderRadius: "var(--theme-radius-card)",
-    transition:
-        "border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
-};
-
-const relCardActiveStyle: CSSProperties = {
-    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    borderRadius: "var(--theme-radius-card)",
-};
-
-const relCardIdleStyle: CSSProperties = {
-    border: "1px dashed color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    borderRadius: "var(--theme-radius-card)",
-};
-
-const relCardIconWrapStyle: CSSProperties = {
-    background: "color-mix(in srgb, #f43f5e 10%, transparent)",
-    borderRadius: "var(--theme-radius-input)",
-};
-
-const relCardIconWrapIdleStyle: CSSProperties = {
-    background: "color-mix(in srgb, var(--theme-base-300) 50%, transparent)",
-    borderRadius: "var(--theme-radius-input)",
-};
-
-const infoBoxStyle: CSSProperties = {
-    border: "1px solid color-mix(in srgb, var(--theme-status-info-stroke) 30%, transparent)",
-    background:
-        "color-mix(in srgb, var(--theme-status-info-fill) 50%, transparent)",
-    borderRadius: "var(--theme-radius-card)",
-};
-
-const subtitlePickerBtnStyle: CSSProperties = {
-    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    background: "var(--theme-base-200)",
-    borderRadius: "var(--theme-radius-input)",
-    transition:
-        "background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
-};
-
-const aboutRowStyle: CSSProperties = {
-    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    borderRadius: "var(--theme-radius-card)",
-};
-
-const iconPreviewWrapStyle: CSSProperties = {
-    background:
-        "color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)",
-    borderRadius: "var(--theme-radius-card)",
-};
-
-const primaryTextStyle: CSSProperties = {
-    color: "var(--theme-brand-primary-500)",
-};
-// Heading + icon for an info-tinted panel — uses base-content so it
-// contrasts cleanly against the panel's info-fill tint instead of
-// blending into the same hue family.
-const infoTextStyle: CSSProperties = {
-    color: "var(--theme-base-content)",
-};
-const errorTextStyle: CSSProperties = {
-    color: "var(--theme-status-error-stroke)",
-};
-const primaryHalfStyle: CSSProperties = {
-    color: "color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)",
-};
-const infoHalfStyle: CSSProperties = {
-    color: "color-mix(in srgb, var(--theme-status-info-stroke) 60%, transparent)",
-};
-const warningHalfStyle: CSSProperties = {
-    color: "color-mix(in srgb, var(--theme-status-warning-stroke) 60%, transparent)",
-};
-const fadedIconStyle: CSSProperties = {
-    color: "color-mix(in srgb, var(--theme-base-content) 20%, transparent)",
-};
-const veryFadedStyle: CSSProperties = {
-    color: "color-mix(in srgb, var(--theme-base-content) 25%, transparent)",
-};
-
-/* Field-type-specific badge palette — hardcoded RGB stays because
-   these colors are *semantic identity markers* for field types
-   (text=slate, integer=blue, date=amber, etc.), not theme-driven
-   chrome. Each field type's color is its visual fingerprint and
-   should NOT swap with the active preset. */
-const FIELD_TYPE_BADGE_STYLES: Record<string, { bg: string; text: string }> = {
-    text: { bg: "rgba(148,163,184,0.35)", text: "#cbd5e1" },
-    textarea: { bg: "rgba(129,140,248,0.35)", text: "#c7d2fe" },
-    integer: { bg: "rgba(96,165,250,0.35)", text: "#bfdbfe" },
-    boolean: { bg: "rgba(52,211,153,0.35)", text: "#a7f3d0" },
-    date: { bg: "rgba(251,191,36,0.35)", text: "#fde68a" },
-    datetime: { bg: "rgba(251,191,36,0.35)", text: "#fde68a" },
-    entry_reference: { bg: "rgba(167,139,250,0.35)", text: "#ddd6fe" },
-    relationship_manager: { bg: "rgba(251,113,133,0.35)", text: "#fecdd3" },
-    temporal: { bg: "rgba(45,212,191,0.35)", text: "#99f6e4" },
-};
 
 /* ── Panel Header ── */
 
