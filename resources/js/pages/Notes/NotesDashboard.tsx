@@ -7,6 +7,7 @@ import IconTile from '@alexandria/components/ui/IconTile';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import useT from '@alexandria/hooks/useT';
+import { useVisitedTabs } from '@alexandria/hooks/useVisitedTabs';
 import DashboardView from './Sections/DashboardView';
 import NotesView from './Sections/NotesView';
 import NotebooksView from './Sections/NotebooksView';
@@ -65,15 +66,7 @@ export default function NotesDashboard() {
     // (with visibility toggled) so tab-switching preserves their state
     // — no refetches, filter resets, or loading flashes when the user
     // returns to a tab they've already opened.
-    const [visited, setVisited] = useState<Set<View>>(() => new Set([viewFromHash()]));
-    useEffect(() => {
-        if (visited.has(activeView)) return;
-        setVisited((prev) => {
-            const next = new Set(prev);
-            next.add(activeView);
-            return next;
-        });
-    }, [activeView, visited]);
+    const visited = useVisitedTabs(activeView);
 
     /**
      * Refresh post-save without a full page navigation. Inertia partial

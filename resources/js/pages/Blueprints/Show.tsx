@@ -37,6 +37,7 @@ const subtitle40: CSSProperties = {
 };
 import { useCmdK } from "@alexandria/hooks/useCmdK";
 import useT from "@alexandria/hooks/useT";
+import { useVisitedTabs } from "@alexandria/hooks/useVisitedTabs";
 import AppLayout from "@alexandria/layouts/AppLayout";
 import EntriesTab from "./Sections/EntriesTab";
 import ConnectionsView from "./Sections/ConnectionsView";
@@ -133,17 +134,7 @@ export default function BlueprintShow() {
     // table/tree/timeline preserves fetched data + scroll position.
     // Applied only to standard/list blueprints where multiple views
     // are available; relationship + structural have a single view.
-    const [visited, setVisited] = useState<Set<ViewMode>>(
-        () => new Set([viewMode]),
-    );
-    useEffect(() => {
-        if (visited.has(viewMode)) return;
-        setVisited((prev) => {
-            const next = new Set(prev);
-            next.add(viewMode);
-            return next;
-        });
-    }, [viewMode, visited]);
+    const visited = useVisitedTabs(viewMode);
 
     function openSettings(menu?: string) {
         const isRegistryView =

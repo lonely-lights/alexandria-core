@@ -7,6 +7,7 @@ import PageHeader from '@alexandria/components/layout/PageHeader';
 import NeuralConstellationBg from '@alexandria/components/backgrounds/NeuralConstellationBg';
 import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import useT from '@alexandria/hooks/useT';
+import { useVisitedTabs } from '@alexandria/hooks/useVisitedTabs';
 import DashboardTab from './Sections/DashboardTab';
 import CommandsTab from './Sections/CommandsTab';
 import UsageTab from './Sections/UsageTab';
@@ -66,15 +67,7 @@ export default function AiDashboard() {
     // unmount) when the user switches away so fetched data, scroll
     // position, and local filter state all survive. Same pattern used
     // on Notes Dashboard.
-    const [visited, setVisited] = useState<Set<Tab>>(() => new Set([tabFromHash()]));
-    useEffect(() => {
-        if (visited.has(activeTab)) return;
-        setVisited((prev) => {
-            const next = new Set(prev);
-            next.add(activeTab);
-            return next;
-        });
-    }, [activeTab, visited]);
+    const visited = useVisitedTabs(activeTab);
 
     return (
         <AppLayout title={t('ai.dashboard.breadcrumb')} immersive>
