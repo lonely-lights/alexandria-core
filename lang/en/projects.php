@@ -208,6 +208,8 @@ return [
     'settings_tab.theme.preset.default.description' => 'Warm bronze + sage palette designed for long reading sessions.',
     'settings_tab.theme.preset.cyberpunk.name' => 'Cyberpunk',
     'settings_tab.theme.preset.cyberpunk.description' => 'High-chroma neon magenta, cyan, and acid green on deep surfaces.',
+    'settings_tab.theme.fine_tune.title' => 'Fine-tune tokens',
+    'settings_tab.theme.fine_tune.subtitle' => 'Override individual tokens on top of the preset. Changes preview live as you edit and only persist when you save.',
 
     // ── AiHelpersSection › Writing Style card (style guides for AI drafting) ──
     'settings_tab.ai_writing_style.title' => 'Writing Style Guides',

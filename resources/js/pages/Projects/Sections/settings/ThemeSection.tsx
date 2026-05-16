@@ -1,8 +1,10 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { router } from '@inertiajs/react';
 import type { FormDataConvertible } from '@inertiajs/core';
 
+import TokenOverrideEditor from '@alexandria/components/theming/TokenOverrideEditor';
 import useT from '@alexandria/hooks/useT';
+import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
 import type { ProjectDetail } from '@alexandria/types/projects';
 
 /**
@@ -90,6 +92,11 @@ const swatchRowStyle: CSSProperties = {
     gap: '0.375rem',
 };
 
+const fineTuneDividerStyle: CSSProperties = {
+    borderColor:
+        'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+};
+
 const swatchStyle = (color: string): CSSProperties => ({
     width: '1.5rem',
     height: '1.5rem',
@@ -106,14 +113,25 @@ export default function ThemeSection({
     const t = useT();
     // Inactive slug = inherit user-level preset.
     const active = project.theme_preset_slug ?? 'default';
+    const [editorOpen, setEditorOpen] = useState(false);
 
     function applyPreset(slug: string | null) {
         router.patch(
             `/p/${project.slug}/theme`,
             {
                 theme_preset_slug: slug,
-                // M1.B doesn't touch overrides — those land in M1.C.
                 theme_override: project.theme_override,
+            } as Record<string, FormDataConvertible>,
+            { preserveScroll: true },
+        );
+    }
+
+    function saveOverride(next: ThemeOverridePatch | null) {
+        router.patch(
+            `/p/${project.slug}/theme`,
+            {
+                theme_preset_slug: project.theme_preset_slug,
+                theme_override: next as Record<string, unknown> | null,
             } as Record<string, FormDataConvertible>,
             { preserveScroll: true },
         );
@@ -203,6 +221,36 @@ export default function ThemeSection({
                     </p>
                 </div>
             )}
+
+            {/* Fine-tune disclosure — Stage 8b M1.C.1 */}
+            <div className="border-t pt-6" style={fineTuneDividerStyle}>
+                <button
+                    type="button"
+                    onClick={() => setEditorOpen((open) => !open)}
+                    aria-expanded={editorOpen}
+                    className="flex items-center gap-2 text-sm font-semibold"
+                >
+                    <i
+                        className={`fa-solid fa-chevron-right text-xs ${editorOpen ? 'rotate-90' : ''} transition-transform`}
+                        aria-hidden="true"
+                    />
+                    {t('projects.settings_tab.theme.fine_tune.title')}
+                </button>
+                <p className="ml-5 mt-1 text-xs" style={subtleText}>
+                    {t('projects.settings_tab.theme.fine_tune.subtitle')}
+                </p>
+                {editorOpen && (
+                    <div className="mt-4">
+                        <TokenOverrideEditor
+                            initialOverride={
+                                (project.theme_override as ThemeOverridePatch | null) ??
+                                null
+                            }
+                            onSave={saveOverride}
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

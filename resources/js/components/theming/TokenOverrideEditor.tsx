@@ -1,0 +1,229 @@
+import { useEffect, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
+
+import ActionButton from '@alexandria/components/ui/ActionButton';
+import useT from '@alexandria/hooks/useT';
+import {
+    hasPath,
+    setPath,
+    unsetPath,
+    type ThemeOverridePatch,
+} from '@alexandria/lib/themeOverride';
+import { useThemePreview } from '@alexandria/lib/themePreview';
+
+import ColorAnchorEditor from './ColorAnchorEditor';
+import TokenCategoryRow from './TokenCategoryRow';
+import TokenLeafRow from './TokenLeafRow';
+import {
+    TOKEN_CATEGORIES,
+    readProvenanceScope,
+    readResolvedLeaf,
+    type TokenCategory,
+    type TokenLeaf,
+} from './tokenCategories';
+
+/**
+ * The full token-tree override editor. Stage 8b M1.C.1.
+ *
+ * Owned by `<ThemeSection>` in Project Settings → Theme tab. Renders an
+ * accordion of all token categories; user expands one at a time, sees
+ * each leaf's current value + provenance badge + appropriate input,
+ * commits changes on blur. Live preview pushes the WIP override
+ * through `useThemePreview()` so the rest of the page repaints as the
+ * user edits.
+ *
+ * Maintains its own dirty WIP-override state separate from the
+ * persisted `initialOverride`. Save fires the parent's `onSave` with
+ * the final shape; Cancel rolls back to the initial value and clears
+ * the preview.
+ */
+
+interface TokenOverrideEditorProps {
+    /** Persisted override the user is editing on top of. */
+    initialOverride: ThemeOverridePatch | null;
+    /** Called on Save with the final override (null = no overrides). */
+    onSave: (next: ThemeOverridePatch | null) => void;
+}
+
+const footerStyle: CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '0.75rem',
+    paddingTop: '1rem',
+    marginTop: '0.75rem',
+    borderTop:
+        '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+};
+
+const dirtyHintStyle: CSSProperties = {
+    fontSize: '0.6875rem',
+    color: 'color-mix(in srgb, var(--theme-status-warning-stroke) 80%, transparent)',
+};
+
+const placeholderStyle: CSSProperties = {
+    padding: '0.5rem 0',
+    fontSize: '0.75rem',
+    color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)',
+    fontStyle: 'italic',
+};
+
+export default function TokenOverrideEditor({
+    initialOverride,
+    onSave,
+}: TokenOverrideEditorProps) {
+    const t = useT();
+    const { setPreviewOverride, resolvedContentTheme } = useThemePreview();
+
+    // WIP override the user is editing — independent from persisted.
+    const [wip, setWip] = useState<ThemeOverridePatch | null>(initialOverride);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
+
+    // Resync if the persisted override changes externally (e.g. after Save
+    // the server reloads with the new value).
+    useEffect(() => {
+        setWip(initialOverride);
+    }, [initialOverride]);
+
+    // Live-preview wiring — every WIP change pushes through the context.
+    // Cleared on unmount so closing the editor doesn't leave the preview
+    // active (which would mismatch the persisted value).
+    useEffect(() => {
+        setPreviewOverride(wip);
+        return () => {
+            setPreviewOverride(null);
+        };
+    }, [wip, setPreviewOverride]);
+
+    const dirty = useMemo(
+        () => JSON.stringify(wip) !== JSON.stringify(initialOverride),
+        [wip, initialOverride],
+    );
+
+    function commitLeaf(path: string, value: string) {
+        setWip((prev) => setPath(prev, path, value));
+    }
+
+    function resetLeaf(path: string) {
+        setWip((prev) => unsetPath(prev, path));
+    }
+
+    function handleSave() {
+        onSave(wip);
+        // Preview gets cleared by the effect cleanup when initialOverride
+        // updates from the server reload — no need to clear here.
+    }
+
+    function handleCancel() {
+        setWip(initialOverride);
+    }
+
+    function countOverridden(category: TokenCategory): number {
+        return category.leaves.reduce(
+            (acc, leaf) => acc + (hasPath(wip, leaf.path) ? 1 : 0),
+            0,
+        );
+    }
+
+    function renderLeaf(leaf: TokenLeaf) {
+        const overridden = hasPath(wip, leaf.path);
+        const scope = readProvenanceScope(resolvedContentTheme, leaf.path);
+        const value = readResolvedLeaf(resolvedContentTheme, leaf.path);
+
+        let editor;
+        switch (leaf.type) {
+            case 'color-anchor':
+                editor = (
+                    <ColorAnchorEditor
+                        value={value}
+                        overridden={overridden}
+                        onCommit={(next) => commitLeaf(leaf.path, next)}
+                    />
+                );
+                break;
+            // M1.C.2 + M1.C.3 will wire the remaining types.
+            default:
+                editor = (
+                    <span style={placeholderStyle}>
+                        {t('theming.token_editor.leaf.editor_pending')}
+                    </span>
+                );
+        }
+
+        return (
+            <TokenLeafRow
+                key={leaf.path}
+                label={t(leaf.labelKey)}
+                description={leaf.descriptionKey ? t(leaf.descriptionKey) : undefined}
+                scope={scope}
+                overridden={overridden}
+                onReset={() => resetLeaf(leaf.path)}
+            >
+                {editor}
+            </TokenLeafRow>
+        );
+    }
+
+    return (
+        <div className="space-y-3">
+            <div className="space-y-2">
+                {TOKEN_CATEGORIES.map((category) => {
+                    const overriddenCount = countOverridden(category);
+                    const totalCount = category.leaves.length;
+                    const expanded = expandedId === category.id;
+                    return (
+                        <TokenCategoryRow
+                            key={category.id}
+                            label={t(category.labelKey)}
+                            description={
+                                category.descriptionKey
+                                    ? t(category.descriptionKey)
+                                    : undefined
+                            }
+                            icon={category.icon}
+                            expanded={expanded}
+                            onToggle={() =>
+                                setExpandedId(expanded ? null : category.id)
+                            }
+                            overriddenCount={overriddenCount}
+                            totalCount={totalCount}
+                        >
+                            {category.placeholder ? (
+                                <p style={placeholderStyle}>
+                                    {t(
+                                        'theming.token_editor.category.placeholder',
+                                    )}
+                                </p>
+                            ) : (
+                                category.leaves.map(renderLeaf)
+                            )}
+                        </TokenCategoryRow>
+                    );
+                })}
+            </div>
+
+            <div style={footerStyle}>
+                <span style={dirtyHintStyle}>
+                    {dirty
+                        ? t('theming.token_editor.dirty')
+                        : t('theming.token_editor.no_changes')}
+                </span>
+                <div className="flex gap-2">
+                    <ActionButton
+                        icon="fa-solid fa-xmark"
+                        label={t('common.cancel')}
+                        variant="ghost"
+                        onClick={handleCancel}
+                        disabled={!dirty}
+                    />
+                    <ActionButton
+                        icon="fa-solid fa-check"
+                        label={t('common.save')}
+                        onClick={handleSave}
+                        disabled={!dirty}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
