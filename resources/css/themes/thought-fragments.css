@@ -2,14 +2,26 @@
 
 [data-theme^="tf"] {
     --tf-handwriting: "Caveat", "Comic Sans MS", cursive;
-
-    /* Paper-action/card/board shadow tokens — radii track theme radius,
-       shadow color tracks --theme-brand-primary-700. Overridable per-host. */
-    --paper-action-shadow-radius: var(--theme-radius-button);
-    --paper-card-shadow-radius: var(--theme-radius-card);
-    --paper-board-shadow-radius: var(--theme-radius-card);
-    --paper-board-shadow-color: var(--theme-brand-primary-700);
 }
+
+/* Paper-action/card/board shadow defaults — intentionally NOT declared at
+   the [data-theme^="tf"] root. The Stage 8b M1.A theming split emits
+   --theme-radius-* / --theme-brand-* onto <body data-theme-target="chrome">
+   and <main data-theme-target="content">, NOT onto <html>. A bridge like
+   `--paper-board-shadow-radius: var(--theme-radius-card)` declared at <html>
+   would resolve `var(--theme-radius-card)` against <html>'s empty scope, mark
+   the custom property as Invalid At Computed-Value Time, and (per spec) any
+   consuming `var(..., fallback)` chain would NOT use its fallback —
+   border-radius would collapse to 0 and shadows would render square.
+
+   Instead, the consumer rules below each say
+   `var(--paper-board-shadow-radius, var(--theme-radius-card))`. With no
+   bridge declared, the custom property is genuinely undefined → the
+   fallback fires → `var(--theme-radius-card)` resolves at the consumer's
+   own element (inside <main>) where the theme tokens are defined.
+
+   Hosts that want to override the radius/color still can — they set the
+   custom property on a parent element themselves, with a real value. */
 
 /* Per-theme paper palette tokens (Tailwind 4's DaisyUI theme blocks accept
    only --color-* names, so --tf-* customs live here). */
