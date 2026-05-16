@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import type { CSSProperties, KeyboardEvent } from 'react';
+import type { CSSProperties } from 'react';
 
+import { useCommitOnBlur } from '@alexandria/hooks/useCommitOnBlur';
 import useT from '@alexandria/hooks/useT';
 
 /**
@@ -8,11 +8,11 @@ import useT from '@alexandria/hooks/useT';
  * surface base, etc.). Stage 8b M1.C.1.
  *
  * Two coordinated inputs:
- *   - Native `<input type="color">` for hex picking — fires on every
- *     keystroke of the picker, but we commit to the parent only on blur
- *     of the text input (commit-on-blur semantics for live preview).
+ *   - Native `<input type="color">` for hex picking — commits
+ *     immediately on the picker change.
  *   - `<input type="text">` for any CSS color string (OKLCH, hex,
- *     `color(...)`, named colors, etc.). This is the source of truth.
+ *     `color(...)`, named colors, etc.). Commits on blur or Enter
+ *     via the shared `useCommitOnBlur` state machine.
  *
  * Color anchors in the resolved theme can be OKLCH or hex; we accept
  * whatever the user types verbatim and let the CSS pipeline handle it.
@@ -63,30 +63,10 @@ export default function ColorAnchorEditor({
     onCommit,
 }: ColorAnchorEditorProps) {
     const t = useT();
-    const [draft, setDraft] = useState(value);
-
-    // Resync local draft when the resolved value changes from outside
-    // (e.g. parent reset, preset swap). Only updates the draft when the
-    // input isn't being edited — `value` is the authoritative source
-    // once the user blurs/cancels.
-    useEffect(() => {
-        setDraft(value);
-    }, [value]);
-
-    function commit() {
-        if (draft !== value) {
-            onCommit(draft);
-        }
-    }
-
-    function handleKey(e: KeyboardEvent<HTMLInputElement>) {
-        if (e.key === 'Enter') {
-            e.currentTarget.blur();
-        } else if (e.key === 'Escape') {
-            setDraft(value);
-            e.currentTarget.blur();
-        }
-    }
+    const { draft, setDraft, commit, handleKey } = useCommitOnBlur(
+        value,
+        onCommit,
+    );
 
     // `<input type="color">` only accepts #rrggbb. If the current draft
     // isn't that shape, the picker falls back to its own remembered

@@ -45,15 +45,20 @@ export interface LeafEditorContext {
 export type LeafRenderer = (ctx: LeafEditorContext) => ReactNode;
 
 export type LeafType =
-    | 'color-anchor'
-    | 'radius-size'  // M1.C.2
-    | 'duration-ms'  // M1.C.2
-    | 'intensity'    // M1.C.2 (0..10 number)
-    | 'enum';        // M1.C.2 (select)
+    | 'color-anchor'  // M1.C.1 — hex / oklch picker + text input
+    | 'text'          // M1.C.2 — any CSS-string value (radius lengths, easing functions, ShapeChoice)
+    | 'number'        // M1.C.2 — numeric with optional unit (ms, count)
+    | 'enum';         // M1.C.2 — select dropdown from fixed options
 
 // ----------------------------------------------------------------------------
 // Leaf + category shape
 // ----------------------------------------------------------------------------
+
+export interface EnumOption {
+    value: string;
+    /** Translation key for the display label of this option. */
+    labelKey: string;
+}
 
 export interface TokenLeaf {
     /**
@@ -67,6 +72,16 @@ export interface TokenLeaf {
     descriptionKey?: string;
     /** Type discriminator — picks which editor renders. */
     type: LeafType;
+    /** Required when `type === 'enum'` — the list of valid options. */
+    enumOptions?: EnumOption[];
+    /** Optional unit suffix shown next to a `number` input (ms, rem, …). */
+    numberUnit?: string;
+    /** Inclusive minimum for `number` inputs — clamped on commit. */
+    numberMin?: number;
+    /** Inclusive maximum for `number` inputs — clamped on commit. */
+    numberMax?: number;
+    /** Optional placeholder for `text` inputs. */
+    textPlaceholder?: string;
 }
 
 export interface TokenCategory {
@@ -192,55 +207,314 @@ export const TOKEN_CATEGORIES: TokenCategory[] = [
             },
         ],
     },
-    // M1.C.2 placeholders — visible but not yet editable.
+    // ── Radius — Stage 8b M1.C.2 ───────────────────────────────────
     {
         id: 'radius',
         labelKey: 'theming.token_editor.category.radius.label',
+        descriptionKey: 'theming.token_editor.category.radius.description',
         icon: 'fa-solid fa-square-rounded',
-        leaves: [],
-        placeholder: true,
+        leaves: [
+            {
+                path: 'radius.style',
+                labelKey: 'theming.token_editor.leaf.radius.style.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'none', labelKey: 'theming.token_editor.leaf.radius.style.option.none' },
+                    { value: 'sharp', labelKey: 'theming.token_editor.leaf.radius.style.option.sharp' },
+                    { value: 'soft', labelKey: 'theming.token_editor.leaf.radius.style.option.soft' },
+                    { value: 'rounded', labelKey: 'theming.token_editor.leaf.radius.style.option.rounded' },
+                    { value: 'ornamental', labelKey: 'theming.token_editor.leaf.radius.style.option.ornamental' },
+                ],
+            },
+            {
+                path: 'radius.button',
+                labelKey: 'theming.token_editor.leaf.radius.button.label',
+                type: 'text',
+                textPlaceholder: '0.5rem',
+            },
+            {
+                path: 'radius.input',
+                labelKey: 'theming.token_editor.leaf.radius.input.label',
+                type: 'text',
+                textPlaceholder: '0.625rem',
+            },
+            {
+                path: 'radius.card',
+                labelKey: 'theming.token_editor.leaf.radius.card.label',
+                type: 'text',
+                textPlaceholder: '1rem',
+            },
+            {
+                path: 'radius.modal',
+                labelKey: 'theming.token_editor.leaf.radius.modal.label',
+                type: 'text',
+                textPlaceholder: '1rem',
+            },
+            {
+                path: 'radius.badge',
+                labelKey: 'theming.token_editor.leaf.radius.badge.label',
+                type: 'text',
+                textPlaceholder: '9999px',
+            },
+            {
+                path: 'radius.avatar',
+                labelKey: 'theming.token_editor.leaf.radius.avatar.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'square', labelKey: 'theming.token_editor.shape.square' },
+                    { value: 'rounded', labelKey: 'theming.token_editor.shape.rounded' },
+                    { value: 'circle', labelKey: 'theming.token_editor.shape.circle' },
+                ],
+            },
+            {
+                path: 'radius.checkbox',
+                labelKey: 'theming.token_editor.leaf.radius.checkbox.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'square', labelKey: 'theming.token_editor.shape.square' },
+                    { value: 'rounded', labelKey: 'theming.token_editor.shape.rounded' },
+                    { value: 'circle', labelKey: 'theming.token_editor.shape.circle' },
+                ],
+            },
+        ],
     },
+
+    // ── Motion — Stage 8b M1.C.2 ───────────────────────────────────
     {
         id: 'motion',
         labelKey: 'theming.token_editor.category.motion.label',
+        descriptionKey: 'theming.token_editor.category.motion.description',
         icon: 'fa-solid fa-wave-square',
-        leaves: [],
-        placeholder: true,
+        leaves: [
+            {
+                path: 'motion.style',
+                labelKey: 'theming.token_editor.leaf.motion.style.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'subtle', labelKey: 'theming.token_editor.leaf.motion.style.option.subtle' },
+                    { value: 'standard', labelKey: 'theming.token_editor.leaf.motion.style.option.standard' },
+                    { value: 'expressive', labelKey: 'theming.token_editor.leaf.motion.style.option.expressive' },
+                ],
+            },
+            {
+                path: 'motion.intensity',
+                labelKey: 'theming.token_editor.leaf.motion.intensity.label',
+                descriptionKey: 'theming.token_editor.leaf.motion.intensity.description',
+                type: 'number',
+                numberMin: 0,
+                numberMax: 10,
+            },
+            {
+                path: 'motion.durations.fast',
+                labelKey: 'theming.token_editor.leaf.motion.durations.fast.label',
+                type: 'number',
+                numberUnit: 'ms',
+                numberMin: 0,
+            },
+            {
+                path: 'motion.durations.interactive',
+                labelKey: 'theming.token_editor.leaf.motion.durations.interactive.label',
+                type: 'number',
+                numberUnit: 'ms',
+                numberMin: 0,
+            },
+            {
+                path: 'motion.durations.normal',
+                labelKey: 'theming.token_editor.leaf.motion.durations.normal.label',
+                type: 'number',
+                numberUnit: 'ms',
+                numberMin: 0,
+            },
+            {
+                path: 'motion.durations.slow',
+                labelKey: 'theming.token_editor.leaf.motion.durations.slow.label',
+                type: 'number',
+                numberUnit: 'ms',
+                numberMin: 0,
+            },
+            {
+                path: 'motion.easing.standard',
+                labelKey: 'theming.token_editor.leaf.motion.easing.standard.label',
+                type: 'text',
+                textPlaceholder: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            },
+            {
+                path: 'motion.easing.accelerate',
+                labelKey: 'theming.token_editor.leaf.motion.easing.accelerate.label',
+                type: 'text',
+                textPlaceholder: 'cubic-bezier(0.4, 0, 1, 1)',
+            },
+            {
+                path: 'motion.easing.decelerate',
+                labelKey: 'theming.token_editor.leaf.motion.easing.decelerate.label',
+                type: 'text',
+                textPlaceholder: 'cubic-bezier(0, 0, 0.2, 1)',
+            },
+        ],
     },
+
+    // ── Border — Stage 8b M1.C.2 ───────────────────────────────────
     {
         id: 'border',
         labelKey: 'theming.token_editor.category.border.label',
+        descriptionKey: 'theming.token_editor.category.border.description',
         icon: 'fa-solid fa-border-all',
-        leaves: [],
-        placeholder: true,
+        leaves: [
+            {
+                path: 'border.width',
+                labelKey: 'theming.token_editor.leaf.border.width.label',
+                type: 'number',
+                numberUnit: 'px',
+                numberMin: 1,
+                numberMax: 3,
+            },
+            {
+                path: 'border.style',
+                labelKey: 'theming.token_editor.leaf.border.style.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'solid', labelKey: 'theming.token_editor.leaf.border.style.option.solid' },
+                    { value: 'dashed', labelKey: 'theming.token_editor.leaf.border.style.option.dashed' },
+                    { value: 'dotted', labelKey: 'theming.token_editor.leaf.border.style.option.dotted' },
+                    { value: 'double', labelKey: 'theming.token_editor.leaf.border.style.option.double' },
+                ],
+            },
+            {
+                path: 'border.treatment',
+                labelKey: 'theming.token_editor.leaf.border.treatment.label',
+                descriptionKey: 'theming.token_editor.leaf.border.treatment.description',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'none', labelKey: 'theming.token_editor.leaf.border.treatment.option.none' },
+                    { value: 'glow', labelKey: 'theming.token_editor.leaf.border.treatment.option.glow' },
+                    { value: 'inset', labelKey: 'theming.token_editor.leaf.border.treatment.option.inset' },
+                    { value: 'shadow', labelKey: 'theming.token_editor.leaf.border.treatment.option.shadow' },
+                    { value: 'ornamental', labelKey: 'theming.token_editor.leaf.border.treatment.option.ornamental' },
+                ],
+            },
+        ],
     },
+
+    // ── Shadow — Stage 8b M1.C.2 ───────────────────────────────────
     {
         id: 'shadow',
         labelKey: 'theming.token_editor.category.shadow.label',
+        descriptionKey: 'theming.token_editor.category.shadow.description',
         icon: 'fa-solid fa-clone',
-        leaves: [],
-        placeholder: true,
+        leaves: [
+            {
+                path: 'shadow.style',
+                labelKey: 'theming.token_editor.leaf.shadow.style.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'none', labelKey: 'theming.token_editor.leaf.shadow.style.option.none' },
+                    { value: 'flat', labelKey: 'theming.token_editor.leaf.shadow.style.option.flat' },
+                    { value: 'soft', labelKey: 'theming.token_editor.leaf.shadow.style.option.soft' },
+                    { value: 'lifted', labelKey: 'theming.token_editor.leaf.shadow.style.option.lifted' },
+                    { value: 'dramatic', labelKey: 'theming.token_editor.leaf.shadow.style.option.dramatic' },
+                    { value: 'neon', labelKey: 'theming.token_editor.leaf.shadow.style.option.neon' },
+                ],
+            },
+            {
+                path: 'shadow.intensity',
+                labelKey: 'theming.token_editor.leaf.shadow.intensity.label',
+                descriptionKey: 'theming.token_editor.leaf.shadow.intensity.description',
+                type: 'number',
+                numberMin: 0,
+                numberMax: 10,
+            },
+            // shadow.tint is nullable ColorAnchor — deferred to M1.C.3
+        ],
     },
+
+    // ── Surface — Stage 8b M1.C.2 (base only; elevation deferred to M1.C.3)
     {
         id: 'surface',
         labelKey: 'theming.token_editor.category.surface.label',
+        descriptionKey: 'theming.token_editor.category.surface.description',
         icon: 'fa-solid fa-layer-group',
-        leaves: [],
-        placeholder: true,
+        leaves: [
+            {
+                path: 'surface.base',
+                labelKey: 'theming.token_editor.leaf.surface.base.label',
+                descriptionKey: 'theming.token_editor.leaf.surface.base.description',
+                type: 'color-anchor',
+            },
+            {
+                path: 'surface.sunkenDelta',
+                labelKey: 'theming.token_editor.leaf.surface.sunken_delta.label',
+                type: 'number',
+                numberMin: -10,
+                numberMax: 10,
+            },
+            {
+                path: 'surface.raisedDelta',
+                labelKey: 'theming.token_editor.leaf.surface.raised_delta.label',
+                type: 'number',
+                numberMin: -10,
+                numberMax: 10,
+            },
+        ],
     },
+
+    // ── Neutral — Stage 8b M1.C.2 ──────────────────────────────────
     {
         id: 'neutral',
         labelKey: 'theming.token_editor.category.neutral.label',
+        descriptionKey: 'theming.token_editor.category.neutral.description',
         icon: 'fa-solid fa-circle-half-stroke',
-        leaves: [],
-        placeholder: true,
+        leaves: [
+            {
+                path: 'neutral',
+                labelKey: 'theming.token_editor.leaf.neutral.label',
+                type: 'color-anchor',
+            },
+        ],
     },
+
+    // ── Semantic — Stage 8b M1.C.2 ─────────────────────────────────
     {
         id: 'semantic',
         labelKey: 'theming.token_editor.category.semantic.label',
+        descriptionKey: 'theming.token_editor.category.semantic.description',
         icon: 'fa-solid fa-link',
-        leaves: [],
-        placeholder: true,
+        leaves: [
+            {
+                path: 'semantic.link',
+                labelKey: 'theming.token_editor.leaf.semantic.link.label',
+                type: 'color-anchor',
+            },
+            {
+                path: 'semantic.linkHover',
+                labelKey: 'theming.token_editor.leaf.semantic.link_hover.label',
+                type: 'color-anchor',
+            },
+            {
+                path: 'semantic.linkVisited',
+                labelKey: 'theming.token_editor.leaf.semantic.link_visited.label',
+                type: 'color-anchor',
+            },
+            {
+                path: 'semantic.focusRing',
+                labelKey: 'theming.token_editor.leaf.semantic.focus_ring.label',
+                type: 'color-anchor',
+            },
+            {
+                path: 'semantic.selection',
+                labelKey: 'theming.token_editor.leaf.semantic.selection.label',
+                type: 'color-anchor',
+            },
+            {
+                path: 'semantic.overlay',
+                labelKey: 'theming.token_editor.leaf.semantic.overlay.label',
+                type: 'color-anchor',
+            },
+            {
+                path: 'semantic.scrim',
+                labelKey: 'theming.token_editor.leaf.semantic.scrim.label',
+                type: 'color-anchor',
+            },
+        ],
     },
     // M1.C.3 placeholders
     {

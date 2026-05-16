@@ -12,6 +12,9 @@ import {
 import { useThemePreview } from '@alexandria/lib/themePreview';
 
 import ColorAnchorEditor from './ColorAnchorEditor';
+import EnumSelect from './EnumSelect';
+import NumberInput from './NumberInput';
+import TextInput from './TextInput';
 import TokenCategoryRow from './TokenCategoryRow';
 import TokenLeafRow from './TokenLeafRow';
 import {
@@ -100,8 +103,19 @@ export default function TokenOverrideEditor({
         [wip, initialOverride],
     );
 
-    function commitLeaf(path: string, value: string) {
-        setWip((prev) => setPath(prev, path, value));
+    function commitLeaf(leaf: TokenLeaf, raw: string) {
+        // Number-typed leaves must land in the override as actual numbers;
+        // editors emit strings for keyboard-handling simplicity. Other
+        // types pass through verbatim.
+        let value: string | number = raw;
+        if (leaf.type === 'number') {
+            const parsed = parseFloat(raw);
+            if (Number.isNaN(parsed)) {
+                return;
+            }
+            value = parsed;
+        }
+        setWip((prev) => setPath(prev, leaf.path, value));
     }
 
     function resetLeaf(path: string) {
@@ -137,11 +151,46 @@ export default function TokenOverrideEditor({
                     <ColorAnchorEditor
                         value={value}
                         overridden={overridden}
-                        onCommit={(next) => commitLeaf(leaf.path, next)}
+                        onCommit={(next) => commitLeaf(leaf, next)}
                     />
                 );
                 break;
-            // M1.C.2 + M1.C.3 will wire the remaining types.
+            case 'text':
+                editor = (
+                    <TextInput
+                        value={value}
+                        overridden={overridden}
+                        onCommit={(next) => commitLeaf(leaf, next)}
+                        placeholder={leaf.textPlaceholder}
+                    />
+                );
+                break;
+            case 'number':
+                editor = (
+                    <NumberInput
+                        value={value}
+                        overridden={overridden}
+                        onCommit={(next) => commitLeaf(leaf, next)}
+                        unit={leaf.numberUnit}
+                        min={leaf.numberMin}
+                        max={leaf.numberMax}
+                    />
+                );
+                break;
+            case 'enum':
+                editor = leaf.enumOptions ? (
+                    <EnumSelect
+                        value={value}
+                        overridden={overridden}
+                        onCommit={(next) => commitLeaf(leaf, next)}
+                        options={leaf.enumOptions}
+                    />
+                ) : (
+                    <span style={placeholderStyle}>
+                        {t('theming.token_editor.leaf.editor_pending')}
+                    </span>
+                );
+                break;
             default:
                 editor = (
                     <span style={placeholderStyle}>
