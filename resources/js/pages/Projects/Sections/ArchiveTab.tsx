@@ -286,7 +286,7 @@ export default function ArchiveTab({ projectId }: ArchiveTabProps) {
                     <table className="w-full">
                         <thead>
                             <tr className="text-xs tracking-wider [&_th]:normal-case [&_th]:px-4 [&_th]:py-3">
-                                <th className="first:rounded-tl-2xl text-left" style={tableHeaderCellStyle}>
+                                <th className="first:rounded-tl-[var(--theme-radius-card)] text-left" style={tableHeaderCellStyle}>
                                     {t('projects.archive_tab.column.item')}
                                 </th>
                                 <th className="text-left" style={tableHeaderCellStyle}>
@@ -298,7 +298,7 @@ export default function ArchiveTab({ projectId }: ArchiveTabProps) {
                                 <th className="text-left" style={tableHeaderCellStyle}>
                                     {t('projects.archive_tab.column.when')}
                                 </th>
-                                <th className="text-right last:rounded-tr-2xl" style={tableHeaderCellStyle}>
+                                <th className="text-right last:rounded-tr-[var(--theme-radius-card)]" style={tableHeaderCellStyle}>
                                     {t('projects.archive_tab.column.actions')}
                                 </th>
                             </tr>

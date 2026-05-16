@@ -194,7 +194,7 @@ function BlueprintTable({ blueprints, dashboardBlueprints, t }: BlueprintTablePr
                 <table className="paper-table w-full [&_td]:px-4 [&_td]:py-2.5 [&_th]:px-4 [&_th]:py-3">
                     <thead>
                         <tr className="text-xs tracking-wider [&_th]:normal-case">
-                            <th className="text-left min-w-[18rem] first:rounded-tl-2xl" style={tableHeaderCellStyle}>
+                            <th className="text-left min-w-[18rem] first:rounded-tl-[var(--theme-radius-card)]" style={tableHeaderCellStyle}>
                                 {t('projects.dashboard_tab.table.column.blueprint')}
                             </th>
                             <th className="text-center w-24" style={tableHeaderCellStyle}>
@@ -204,7 +204,7 @@ function BlueprintTable({ blueprints, dashboardBlueprints, t }: BlueprintTablePr
                                 {t('projects.dashboard_tab.table.column.last_update')}
                             </th>
                             <th
-                                className="w-8 last:rounded-tr-2xl"
+                                className="w-8 last:rounded-tr-[var(--theme-radius-card)]"
                                 style={tableHeaderCellStyle}
                                 aria-label={t('projects.dashboard_tab.table.column.open_aria')}
                             />

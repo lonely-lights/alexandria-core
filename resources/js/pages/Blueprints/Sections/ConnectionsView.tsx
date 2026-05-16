@@ -554,7 +554,7 @@ export default function ConnectionsView({
                                             <th
                                                 className={
                                                     i === 0
-                                                        ? "first:rounded-tl-2xl"
+                                                        ? "first:rounded-tl-[var(--theme-radius-card)]"
                                                         : ""
                                                 }
                                                 style={tableHeaderCellStyle}
@@ -604,7 +604,7 @@ export default function ConnectionsView({
                                     );
                                 })}
                                 <th
-                                    className="last:rounded-tr-2xl"
+                                    className="last:rounded-tr-[var(--theme-radius-card)]"
                                     style={tableHeaderCellStyle}
                                 >
                                     <div className="flex items-center justify-end gap-2">
