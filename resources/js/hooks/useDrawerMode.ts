@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { usePersistedPreference } from './usePersistedPreference';
 
 export type DrawerMode = 'split' | 'list';
 
@@ -12,43 +12,16 @@ const DEFAULT_MODE: DrawerMode = 'split';
  * shared NoteModal overlay for a bigger editing canvas.
  */
 
-function loadMode(): DrawerMode {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw === 'split' || raw === 'list') return raw;
-    } catch {
-        // localStorage may be disabled or quota-full; fall through.
-    }
-    return DEFAULT_MODE;
-}
-
-function saveMode(mode: DrawerMode): void {
-    try {
-        localStorage.setItem(STORAGE_KEY, mode);
-    } catch {
-        // ignore
-    }
+function isDrawerMode(raw: string): raw is DrawerMode {
+    return raw === 'split' || raw === 'list';
 }
 
 export function useDrawerMode() {
-    const [mode, setModeState] = useState<DrawerMode>(loadMode);
-
-    const setMode = useCallback((next: DrawerMode) => {
-        setModeState(next);
-        saveMode(next);
-    }, []);
-
-    // Cross-tab sync so multiple open tabs stay aligned.
-    useEffect(() => {
-        function onStorage(e: StorageEvent) {
-            if (e.key !== STORAGE_KEY || !e.newValue) return;
-            if (e.newValue === 'split' || e.newValue === 'list') {
-                setModeState(e.newValue);
-            }
-        }
-        window.addEventListener('storage', onStorage);
-        return () => window.removeEventListener('storage', onStorage);
-    }, []);
+    const [mode, setMode] = usePersistedPreference<DrawerMode>(
+        STORAGE_KEY,
+        isDrawerMode,
+        DEFAULT_MODE,
+    );
 
     return { mode, setMode };
 }

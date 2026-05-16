@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { usePersistedPreference } from './usePersistedPreference';
 
 export type DrawerHeight = 'partial' | 'tall' | 'full';
 
@@ -22,51 +22,21 @@ const HEIGHT_CLASSES: Record<DrawerHeight, string> = {
     full: 'h-[calc(100vh-var(--navbar-height,3.5rem))]',
 };
 
-function loadHeight(): DrawerHeight {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw === 'partial' || raw === 'tall' || raw === 'full') return raw;
-    } catch {
-        // ignore — localStorage can be disabled or quota-full
-    }
-    return DEFAULT_HEIGHT;
-}
-
-function saveHeight(height: DrawerHeight): void {
-    try {
-        localStorage.setItem(STORAGE_KEY, height);
-    } catch {
-        // ignore
-    }
+function isDrawerHeight(raw: string): raw is DrawerHeight {
+    return raw === 'partial' || raw === 'tall' || raw === 'full';
 }
 
 /**
  * React hook that manages the drawer's `partial | tall | full` height
- * with localStorage persistence. Returns the current height key, its
- * Tailwind className, and a setter that both updates state and
- * persists.
+ * with localStorage persistence + cross-tab sync. Returns the current
+ * height key, its Tailwind className, and a setter.
  */
 export function useDrawerHeight() {
-    const [height, setHeightState] = useState<DrawerHeight>(loadHeight);
-
-    const setHeight = useCallback((next: DrawerHeight) => {
-        setHeightState(next);
-        saveHeight(next);
-    }, []);
-
-    // Cross-tab sync: another tab that changes this setting should
-    // propagate here. Keeps the drawer behavior consistent when a
-    // user has multiple tabs open.
-    useEffect(() => {
-        function onStorage(e: StorageEvent) {
-            if (e.key !== STORAGE_KEY || !e.newValue) return;
-            if (e.newValue === 'partial' || e.newValue === 'tall' || e.newValue === 'full') {
-                setHeightState(e.newValue);
-            }
-        }
-        window.addEventListener('storage', onStorage);
-        return () => window.removeEventListener('storage', onStorage);
-    }, []);
+    const [height, setHeight] = usePersistedPreference<DrawerHeight>(
+        STORAGE_KEY,
+        isDrawerHeight,
+        DEFAULT_HEIGHT,
+    );
 
     return {
         height,
