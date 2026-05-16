@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useForm } from '@inertiajs/react';
 import Select from '@alexandria/components/form/Select';
 import Toggle from '@alexandria/components/form/Toggle';
 import Input from '@alexandria/components/form/Input';
 import Button from '@alexandria/components/ui/Button';
 import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
-import gsap from 'gsap';
+import { useEnterAnimation } from '@alexandria/hooks/useEnterAnimation';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useToastContext } from '@alexandria/components/ui/ToastProvider';
@@ -512,13 +512,7 @@ function PrivacyListsSection({ privacyLists: initialLists, privacyOptions, onDat
 }
 
 function ListCard({ t, list, onEdit, onDelete }: { t: Translator; list: PrivacyList; onEdit: () => void; onDelete: () => void }) {
-    const cardRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (cardRef.current) {
-            gsap.fromTo(cardRef.current, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' });
-        }
-    }, []);
+    const cardRef = useEnterAnimation<HTMLDivElement>({ y: 8, duration: 0.3 });
 
     const colorVar = resolveColorVar(list.color);
     const cardStyle = {
@@ -575,13 +569,7 @@ function ListForm({ t, iconOptions, colorOptions, initialData, onSave, onCancel 
     const [description, setDescription] = useState(initialData?.description ?? '');
     const [icon, setIcon] = useState(initialData?.icon ?? 'fa-users');
     const [color, setColor] = useState(initialData?.color ?? 'primary');
-    const formRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (formRef.current) {
-            gsap.fromTo(formRef.current, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3, ease: 'back.out(1.2)' });
-        }
-    }, []);
+    const formRef = useEnterAnimation<HTMLDivElement>({ y: 12, duration: 0.3, ease: 'back.out(1.2)' });
 
     const containerStyle = {
         background: 'color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent)',

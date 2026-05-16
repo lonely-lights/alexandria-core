@@ -88,13 +88,19 @@ export default function DashboardTab({ dashboardBlueprints, allBlueprints = [], 
     const prevViewMode = useRef(viewMode);
 
     useEffect(() => {
-        if (prevViewMode.current !== viewMode && containerRef.current) {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 8 },
-                { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' },
-            );
-        }
+        const el = containerRef.current;
+        if (prevViewMode.current === viewMode || !el) return;
         prevViewMode.current = viewMode;
+        gsap.fromTo(
+            el,
+            { opacity: 0, y: 8 },
+            { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' },
+        );
+        // Kill in-flight tween if the component unmounts mid-fade —
+        // closes H-EFFECT-7 family. (Intentionally skip-on-mount via
+        // the prevViewMode ref above, so useEnterAnimation's always-
+        // fire-on-mount semantic doesn't fit here.)
+        return () => { gsap.killTweensOf(el); };
     }, [viewMode]);
 
     // Blueprints with dashboard cards (have recent entries)

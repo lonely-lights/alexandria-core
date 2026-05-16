@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import Toggle from '@alexandria/components/form/Toggle';
 import Modal from '@alexandria/components/ui/Modal';
 import Button from '@alexandria/components/ui/Button';
 import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
-import gsap from 'gsap';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import { useEnterAnimation } from '@alexandria/hooks/useEnterAnimation';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 
@@ -278,11 +278,7 @@ function AddKeyForm({ t, provider, onAdd, onCancel }: {
     const [validating, setValidating] = useState(false);
     const [saving, setSaving] = useState(false);
     const [skipValidation, setSkipValidation] = useState(false);
-    const formRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (formRef.current) gsap.fromTo(formRef.current, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3, ease: 'back.out(1.2)' });
-    }, []);
+    const formRef = useEnterAnimation<HTMLDivElement>({ y: 12, duration: 0.3, ease: 'back.out(1.2)' });
 
     function handleValidate() {
         setValidating(true);

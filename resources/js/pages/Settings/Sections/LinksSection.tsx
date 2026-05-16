@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
-import gsap from 'gsap';
+import { useState, useEffect, type ReactNode } from 'react';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import Button from '@alexandria/components/ui/Button';
 import Input from '@alexandria/components/form/Input';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import { useEnterAnimation } from '@alexandria/hooks/useEnterAnimation';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 
@@ -202,14 +202,8 @@ export default function LinksSection({ links: initialLinks, platforms, onLinksCh
 
 /* ── Link Card ── */
 function LinkCard({ t, link, onEdit, onDelete }: { t: Translator; link: UserLink; onEdit: () => void; onDelete: () => void }) {
-    const cardRef = useRef<HTMLDivElement>(null);
+    const cardRef = useEnterAnimation<HTMLDivElement>({ y: 8, duration: 0.3 });
     const vis = VISIBILITY_CONFIG[link.visibility] ?? VISIBILITY_CONFIG.private;
-
-    useEffect(() => {
-        if (cardRef.current) {
-            gsap.fromTo(cardRef.current, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' });
-        }
-    }, []);
 
     const cardStyle = {
         background: 'var(--theme-base-page)',
@@ -292,13 +286,7 @@ function AddLinkForm({ t, platforms, onAdd, onCancel }: {
     const [visibility, setVisibility] = useState('public');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const formRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (formRef.current) {
-            gsap.fromTo(formRef.current, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3, ease: 'back.out(1.2)' });
-        }
-    }, []);
+    const formRef = useEnterAnimation<HTMLDivElement>({ y: 12, duration: 0.3, ease: 'back.out(1.2)' });
 
     const allPlatforms = Object.values(platforms).flat();
     const selectedPlatform = platformId ? allPlatforms.find((p) => p.id === parseInt(platformId)) : null;

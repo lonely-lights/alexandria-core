@@ -627,7 +627,7 @@ export default function SettingsBody({
 
 /* ── Animated Section Wrapper ── */
 function AnimatedSection({ sectionKey, children }: { sectionKey: string; children: ReactNode }) {
-    const ref = useEnterAnimation<HTMLDivElement>(sectionKey);
+    const ref = useEnterAnimation<HTMLDivElement>({ key: sectionKey });
 
     return <div ref={ref}>{children}</div>;
 }

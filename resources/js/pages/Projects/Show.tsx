@@ -531,6 +531,9 @@ function ExpandableContents({ html, t, controlledExpanded }: ExpandableContentsP
                 ease: 'power2.inOut',
             });
         }
+        // Kill the in-flight tween + onComplete handler if the component
+        // unmounts mid-animation — closes H-EFFECT-7 family.
+        return () => { gsap.killTweensOf(wrapper); };
     }, [expanded]);
 
     return (

@@ -242,7 +242,7 @@ function AnimatedContent({
     sectionKey: string;
     children: ReactNode;
 }) {
-    const ref = useEnterAnimation<HTMLDivElement>(sectionKey);
+    const ref = useEnterAnimation<HTMLDivElement>({ key: sectionKey });
 
     return <div ref={ref}>{children}</div>;
 }
