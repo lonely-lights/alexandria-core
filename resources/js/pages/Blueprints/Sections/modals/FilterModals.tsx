@@ -1,5 +1,6 @@
-import { type CSSProperties, useState, useEffect } from "react";
+import { type CSSProperties, useState, useEffect, useRef } from "react";
 import Modal from "@alexandria/components/ui/Modal";
+import { useJsonFetch } from "@alexandria/lib/fetchJson";
 import useT from "@alexandria/hooks/useT";
 import type { Translator } from "@alexandria/hooks/useT";
 import type { AvailableColumn } from "@alexandria/types/blueprints";
@@ -255,9 +256,6 @@ function ValueFilterModal({
     valuesUrl?: string;
 }) {
     const t = useT();
-    const [availableValues, setAvailableValues] = useState<string[]>([]);
-    const [hasBlank, setHasBlank] = useState(false);
-    const [loadingValues, setLoadingValues] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
 
     const [selected, setSelected] = useState<Set<string>>(
@@ -267,34 +265,41 @@ function ValueFilterModal({
         filter?.include_blanks ?? false,
     );
 
-    useEffect(() => {
-        if (!open) return;
-        setLoadingValues(true);
-        setSearchTerm("");
-
-        const url = valuesUrl
+    const url = open
+        ? (valuesUrl
             ? `${valuesUrl}?column=${encodeURIComponent(column.key)}`
-            : `/api/v1/projects/${projectId}/blueprints/${blueprintId}/column-values?column=${encodeURIComponent(column.key)}`;
+            : `/api/v1/projects/${projectId}/blueprints/${blueprintId}/column-values?column=${encodeURIComponent(column.key)}`)
+        : null;
 
-        fetch(url, {
-            headers: {
-                Accept: "application/json",
-                "X-Requested-With": "XMLHttpRequest",
-            },
-            credentials: "same-origin",
-        })
-            .then((r) => r.json())
-            .then((data) => {
-                setAvailableValues(data.values ?? []);
-                setHasBlank(data.has_blank ?? false);
-                if (!filter) {
-                    setSelected(new Set(data.values ?? []));
-                    setIncludeBlanks(data.has_blank ?? false);
-                }
-                setLoadingValues(false);
-            })
-            .catch(() => setLoadingValues(false));
-    }, [open, column.key]);
+    const { data: valuesData, loading: loadingValues } = useJsonFetch<{
+        values?: string[];
+        has_blank?: boolean;
+    }>(url);
+
+    const availableValues = valuesData?.values ?? [];
+    const hasBlank = valuesData?.has_blank ?? false;
+
+    // Reset the search input each time the modal opens.
+    useEffect(() => {
+        if (open) setSearchTerm("");
+    }, [open]);
+
+    // New-filter default-initialization: when the values arrive on a fresh
+    // open of the modal (no existing filter), default-select everything.
+    // initializedRef guards against re-firing if the user later clears their
+    // selection; reset on close so the next open re-initializes.
+    const initializedRef = useRef(false);
+    useEffect(() => {
+        if (!open) {
+            initializedRef.current = false;
+            return;
+        }
+        if (valuesData && !filter && !initializedRef.current) {
+            initializedRef.current = true;
+            setSelected(new Set(valuesData.values ?? []));
+            setIncludeBlanks(valuesData.has_blank ?? false);
+        }
+    }, [open, valuesData, filter]);
 
     const filteredValues = searchTerm
         ? availableValues.filter((v) =>

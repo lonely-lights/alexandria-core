@@ -7,6 +7,7 @@ import {
     type ReactNode,
 } from "react";
 import { useDateFormatters } from "@alexandria/lib/formatDate";
+import { useJsonFetch } from "@alexandria/lib/fetchJson";
 import useT from "@alexandria/hooks/useT";
 import {
     ZOOM_INDEX,
@@ -369,8 +370,6 @@ export default function TimelineView({
     const [config, setConfig] = useState<TimelineConfig>(
         initialConfig ?? defaultTimelineConfig(),
     );
-    const [data, setData] = useState<TimelineDataResponse | null>(null);
-    const [loading, setLoading] = useState(false);
     const [hoveredEntry, setHoveredEntry] = useState<number | null>(null);
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [settingsInitialMenu, setSettingsInitialMenu] = useState<
@@ -417,37 +416,18 @@ export default function TimelineView({
             );
     }, []);
 
-    /* ── Fetch data ── */
-    useEffect(() => {
-        if (!isConfigured) return;
-
-        setLoading(true);
-        const params = new URLSearchParams({
-            date_field: config.date_field!,
-        });
-        if (config.end_date_field)
-            params.set("end_date_field", config.end_date_field);
+    /* ── Fetch data — recomputes whenever date / end-date / group-by config changes.
+       Null URL while not configured skips the fetch entirely (and resets data to null
+       if config was cleared mid-session). */
+    const dataUrl = useMemo(() => {
+        if (!isConfigured) return null;
+        const params = new URLSearchParams({ date_field: config.date_field! });
+        if (config.end_date_field) params.set("end_date_field", config.end_date_field);
         if (config.group_by) params.set("group_by", config.group_by);
+        return `/api/v1/projects/${projectId}/blueprints/${blueprintId}/timeline?${params}`;
+    }, [projectId, blueprintId, config.date_field, config.end_date_field, config.group_by]);
 
-        fetch(
-            `/api/v1/projects/${projectId}/blueprints/${blueprintId}/timeline?${params}`,
-            {
-                credentials: "same-origin",
-            },
-        )
-            .then((r) => r.json())
-            .then((json: TimelineDataResponse) => {
-                setData(json);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, [
-        projectId,
-        blueprintId,
-        config.date_field,
-        config.end_date_field,
-        config.group_by,
-    ]);
+    const { data, loading } = useJsonFetch<TimelineDataResponse>(dataUrl);
 
     /* ── Timeline model (shared) ──
        All positioning math — year range, window-filtering, break

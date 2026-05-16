@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import useT from '@alexandria/hooks/useT';
 import EntryLink from '@alexandria/components/entries/EntryLink';
 import Pagination from '@alexandria/components/ui/Pagination';
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
 import {
     cardOuter,
     cardInner,
@@ -130,48 +131,36 @@ function RelationshipGroup({ blueprint, entryId, projectId }: {
     projectId: number;
 }) {
     const t = useT();
-    const [items, setItems] = useState<ConnectionItem[]>([]);
-    const [meta, setMeta] = useState<PaginationMeta | null>(null);
-    const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [sortField, setSortField] = useState('created_at');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams({
-                entry_id: String(entryId),
-                per_page: '25',
-                page: String(page),
-                sort_field: sortField,
-                sort_direction: sortDir,
-            });
-
-            const res = await fetch(
-                `/api/v1/projects/${projectId}/blueprints/${blueprint.slug}/connections?${params}`,
-                {
-                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    credentials: 'same-origin',
-                },
-            );
-
-            if (res.ok) {
-                const data = await res.json();
-                setItems(data.data ?? []);
-                setMeta({
-                    current_page: data.current_page,
-                    last_page: data.last_page,
-                    per_page: data.per_page,
-                    total: data.total,
-                });
-            }
-        } finally {
-            setLoading(false);
-        }
+    const url = useMemo(() => {
+        const params = new URLSearchParams({
+            entry_id: String(entryId),
+            per_page: '25',
+            page: String(page),
+            sort_field: sortField,
+            sort_direction: sortDir,
+        });
+        return `/api/v1/projects/${projectId}/blueprints/${blueprint.slug}/connections?${params}`;
     }, [entryId, projectId, blueprint.slug, page, sortField, sortDir]);
 
-    useEffect(() => { void fetchData(); }, [fetchData]);
+    const { data, loading } = useJsonFetch<{
+        data: ConnectionItem[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+    }>(url);
+
+    const items = data?.data ?? [];
+    const meta: PaginationMeta | null = data ? {
+        current_page: data.current_page,
+        last_page: data.last_page,
+        per_page: data.per_page,
+        total: data.total,
+    } : null;
 
     const toggleSort = (field: string) => {
         if (sortField === field) {

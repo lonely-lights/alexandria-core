@@ -3,6 +3,7 @@ import { router } from "@inertiajs/react";
 import Sortable from "sortablejs";
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import Modal from "@alexandria/components/ui/Modal";
+import { useJsonFetch } from "@alexandria/lib/fetchJson";
 import { useReorderMode } from "@alexandria/hooks/useReorderMode";
 import ReorderModeToggle from "@alexandria/components/ui/ReorderModeToggle";
 import useT from "@alexandria/hooks/useT";
@@ -1262,7 +1263,15 @@ function SubtitleBuilderModal({
     selectedSlug: string;
 }) {
     const t = useT();
-    const [relFields, setRelFields] = useState<BlueprintField[]>([]);
+
+    // Fetch fields for the selected relationship blueprint. Null URL
+    // when no slug selected OR modal is closed → skip fetch + reset.
+    const relBlueprint = relationshipBlueprints.find((b) => b.slug === selectedSlug);
+    const { data: relFieldsData } = useJsonFetch<BlueprintField[]>(
+        open && relBlueprint ? `/api/v1/blueprints/${relBlueprint.id}/fields` : null,
+    );
+    const relFields = relFieldsData ?? [];
+
     const [segments, setSegmentsState] = useState<SubtitleSegment[]>(
         (data.subtitle_segments as SubtitleSegment[] | undefined) ?? [],
     );
@@ -1275,23 +1284,6 @@ function SubtitleBuilderModal({
     const [wrapSuffix, setWrapSuffix] = useState(
         (data.subtitle_wrap_suffix as string) ?? "",
     );
-
-    // Fetch fields for the selected relationship blueprint
-    useEffect(() => {
-        if (!selectedSlug || !open) return;
-        const rb = relationshipBlueprints.find((b) => b.slug === selectedSlug);
-        if (!rb) return;
-        fetch(`/api/v1/blueprints/${rb.id}/fields`, {
-            headers: {
-                Accept: "application/json",
-                "X-Requested-With": "XMLHttpRequest",
-            },
-            credentials: "same-origin",
-        })
-            .then((r) => (r.ok ? r.json() : []))
-            .then((fields) => setRelFields(fields))
-            .catch(() => setRelFields([]));
-    }, [selectedSlug, open]);
 
     // Sync local state when modal opens
     useEffect(() => {
