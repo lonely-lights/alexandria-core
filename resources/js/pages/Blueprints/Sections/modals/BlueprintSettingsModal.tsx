@@ -20,6 +20,7 @@ import KanbanPanel from "./settings/KanbanPanel";
 import GraphPanel from "./settings/GraphPanel";
 import RevealCollapse from "@alexandria/components/ui/RevealCollapse";
 import BlueprintBehaviorPanel from "./settings/BlueprintBehaviorPanel";
+import BlueprintThemePanel from "./settings/BlueprintThemePanel";
 import BlueprintFieldsPanel from "./settings/BlueprintFieldsPanel";
 import BlueprintMainPanel from "./settings/BlueprintMainPanel";
 import BlueprintRelationshipsPanel from "./settings/BlueprintRelationshipsPanel";
@@ -98,6 +99,7 @@ export function ColumnConfigModal({
         | "columns"
         | "main"
         | "settings"
+        | "theme"
         | "media"
         | "fields"
         | "relationships"
@@ -167,6 +169,13 @@ export function ColumnConfigModal({
                                         icon="fa-solid fa-gear"
                                         label={t(
                                             "blueprints.bp_settings.nav.settings",
+                                        )}
+                                    />
+                                    <NavItem
+                                        {...navProps("theme")}
+                                        icon="fa-solid fa-palette"
+                                        label={t(
+                                            "blueprints.bp_settings.nav.theme",
                                         )}
                                     />
                                 </NavGroup>
@@ -353,6 +362,26 @@ export function ColumnConfigModal({
                                         blueprint={blueprint}
                                         project={project}
                                         onClose={onClose}
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* Theme panel (Stage 8b M2) */}
+                        {activeMenu === "theme" && blueprint && project && (
+                            <>
+                                <PanelHeader
+                                    title={t(
+                                        "blueprints.bp_settings.theme.title",
+                                    )}
+                                    description={t(
+                                        "blueprints.bp_settings.theme.description",
+                                    )}
+                                />
+                                <div className="flex flex-1 flex-col overflow-y-auto">
+                                    <BlueprintThemePanel
+                                        blueprint={blueprint}
+                                        project={project}
                                     />
                                 </div>
                             </>

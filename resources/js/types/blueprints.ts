@@ -41,6 +41,10 @@ export interface BlueprintDetail {
     entries_count: number;
     fields: BlueprintField[];
     views?: BlueprintViewEntry[];
+    /** Stage 8b M2 — preset slug; null inherits the project cascade. */
+    theme_preset_slug?: string | null;
+    /** Stage 8b M2 — sparse DeepPartial<ThemeTokens> JSON layered on content scope only. */
+    theme_override?: Record<string, unknown> | null;
     can: {
         update: boolean;
         delete: boolean;

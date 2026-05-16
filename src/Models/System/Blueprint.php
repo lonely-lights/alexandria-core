@@ -46,6 +46,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property array<int, array<string, mixed>>|null $views
  * @property string|null $ai_prompt_instructions
  * @property bool $allow_ai_sorting
+ * @property string|null $theme_preset_slug
+ * @property array<string, mixed>|null $theme_override
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -116,6 +118,7 @@ class Blueprint extends Model implements HasMedia
             'metadata' => 'array',
             'views' => 'array',
             'infobox_schema' => 'array',
+            'theme_override' => 'array',
             'show_on_dashboard' => 'boolean',
             'is_linkable' => 'boolean',
             'is_hub' => 'boolean',

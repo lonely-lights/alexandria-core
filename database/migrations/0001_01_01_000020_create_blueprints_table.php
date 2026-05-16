@@ -93,6 +93,18 @@ return new class extends Migration
                 ->default(false)
                 ->comment('Whether this blueprint should be considered for top-level AI note sorting');
 
+            // Theming cascade (Stage 8b M2) — content-area only per the
+            // project_chrome_themed_at_project_scope guarantee. When the
+            // user views entries of this blueprint, the content cascade
+            // layers these overrides on top of project + user; chrome
+            // stays at project scope and ignores them.
+            $table->string('theme_preset_slug')
+                ->nullable()
+                ->comment('Named preset slug. NULL inherits project-level cascade.');
+            $table->json('theme_override')
+                ->nullable()
+                ->comment('Sparse DeepPartial<ThemeTokens> JSON layered on top of project + user');
+
             $table->timestamps();
             $table->softDeletes();
 

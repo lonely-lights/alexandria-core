@@ -6,20 +6,18 @@ import ThemePresetPicker from '@alexandria/components/theming/ThemePresetPicker'
 import TokenOverrideEditor from '@alexandria/components/theming/TokenOverrideEditor';
 import useT from '@alexandria/hooks/useT';
 import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
-import type { ProjectDetail } from '@alexandria/types/projects';
+import type { BlueprintDetail } from '@alexandria/types/blueprints';
 
 /**
- * Project Settings → Theme tab — Stage 8b M1.B + M1.C + M2.
+ * Blueprint Settings Modal → Theme panel — Stage 8b M2.
  *
- * Two layered surfaces:
- *   - Preset picker (M1.B) — picks the base theme via ThemePresetPicker
- *   - Fine-tune token editor (M1.C) — sparse DeepPartial<ThemeTokens>
- *     overrides layered on top, with live preview through the cascade
+ * Per-blueprint preset + token override layered on top of the project
+ * cascade for the CONTENT area only. Chrome (navbar, sidebar) stays at
+ * project scope per the project_chrome_themed_at_project_scope memory.
  *
- * Both surfaces save through PATCH /p/{slug}/theme. The picker passes
- * `theme_preset_slug`; the editor passes `theme_override`. Both pass
- * the OTHER field's current value verbatim so the unchanged side is
- * preserved.
+ * Surface mirrors Project Settings → Theme (same picker + same fine-
+ * tune editor) — the only differences are the API endpoint, the
+ * inherit-button copy, and the parent scope being project vs user.
  */
 
 const subtleText: CSSProperties = {
@@ -31,20 +29,24 @@ const fineTuneDividerStyle: CSSProperties = {
         'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
 };
 
-export default function ThemeSection({
+interface BlueprintThemePanelProps {
+    project: { slug: string };
+    blueprint: BlueprintDetail;
+}
+
+export default function BlueprintThemePanel({
     project,
-}: {
-    project: ProjectDetail;
-}) {
+    blueprint,
+}: BlueprintThemePanelProps) {
     const t = useT();
     const [editorOpen, setEditorOpen] = useState(false);
 
     function applyPreset(slug: string | null) {
         router.patch(
-            `/p/${project.slug}/theme`,
+            `/p/${project.slug}/${blueprint.slug}/theme`,
             {
                 theme_preset_slug: slug,
-                theme_override: project.theme_override,
+                theme_override: blueprint.theme_override,
             } as Record<string, FormDataConvertible>,
             { preserveScroll: true },
         );
@@ -52,9 +54,9 @@ export default function ThemeSection({
 
     function saveOverride(next: ThemeOverridePatch | null) {
         router.patch(
-            `/p/${project.slug}/theme`,
+            `/p/${project.slug}/${blueprint.slug}/theme`,
             {
-                theme_preset_slug: project.theme_preset_slug,
+                theme_preset_slug: blueprint.theme_preset_slug ?? null,
                 theme_override: next as Record<string, unknown> | null,
             } as Record<string, FormDataConvertible>,
             { preserveScroll: true },
@@ -62,24 +64,21 @@ export default function ThemeSection({
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-5">
             <div>
-                <h2 className="text-lg font-bold">
-                    {t('projects.settings_tab.theme.title')}
-                </h2>
                 <p className="text-sm" style={subtleText}>
-                    {t('projects.settings_tab.theme.subtitle')}
+                    {t('blueprints.bp_settings.theme.subtitle')}
                 </p>
             </div>
 
             <ThemePresetPicker
-                activeSlug={project.theme_preset_slug}
+                activeSlug={blueprint.theme_preset_slug}
                 onPick={applyPreset}
-                inheritLabelKey="projects.settings_tab.theme.inherit_user"
-                inheritHintKey="projects.settings_tab.theme.inherit_hint"
+                inheritLabelKey="blueprints.bp_settings.theme.inherit_project"
+                inheritHintKey="blueprints.bp_settings.theme.inherit_hint"
             />
 
-            {/* Fine-tune disclosure — Stage 8b M1.C.1 */}
+            {/* Fine-tune disclosure */}
             <div className="border-t pt-6" style={fineTuneDividerStyle}>
                 <button
                     type="button"
@@ -91,16 +90,16 @@ export default function ThemeSection({
                         className={`fa-solid fa-chevron-right text-xs ${editorOpen ? 'rotate-90' : ''} transition-transform`}
                         aria-hidden="true"
                     />
-                    {t('projects.settings_tab.theme.fine_tune.title')}
+                    {t('blueprints.bp_settings.theme.fine_tune.title')}
                 </button>
                 <p className="ml-5 mt-1 text-xs" style={subtleText}>
-                    {t('projects.settings_tab.theme.fine_tune.subtitle')}
+                    {t('blueprints.bp_settings.theme.fine_tune.subtitle')}
                 </p>
                 {editorOpen && (
                     <div className="mt-4">
                         <TokenOverrideEditor
                             initialOverride={
-                                (project.theme_override as ThemeOverridePatch | null) ??
+                                (blueprint.theme_override as ThemeOverridePatch | null) ??
                                 null
                             }
                             onSave={saveOverride}

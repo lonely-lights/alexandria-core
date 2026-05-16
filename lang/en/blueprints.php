@@ -263,6 +263,7 @@ return [
     'bp_settings.nav.display_group' => 'Display',
     'bp_settings.nav.main' => 'Main',
     'bp_settings.nav.settings' => 'Settings',
+    'bp_settings.nav.theme' => 'Theme',
     'bp_settings.nav.fields' => 'Fields',
     'bp_settings.nav.relationships' => 'Relationships',
     'bp_settings.nav.infobox' => 'Infobox',
@@ -315,6 +316,15 @@ return [
     'bp_settings.about.selection_single' => 'Single',
     'bp_settings.about.selection_multiple' => 'Multiple',
     'bp_settings.about.referenced_by' => 'Referenced By',
+
+    // Theme panel (Stage 8b M2)
+    'bp_settings.theme.title' => 'Theme',
+    'bp_settings.theme.description' => 'Per-blueprint theme override — only affects the content area when viewing entries of this type. Chrome (navbar + sidebar) stays at the project theme.',
+    'bp_settings.theme.subtitle' => 'Pick a base preset and (optionally) fine-tune any token. These overrides only paint the content area below the chrome.',
+    'bp_settings.theme.inherit_project' => 'Inherit project theme',
+    'bp_settings.theme.inherit_hint' => 'Clears the blueprint theme so this blueprint follows the project cascade.',
+    'bp_settings.theme.fine_tune.title' => 'Fine-tune tokens',
+    'bp_settings.theme.fine_tune.subtitle' => 'Override individual tokens on top of the preset. Changes preview live as you edit and only persist when you save.',
 
     // Behavior (Settings) panel
     'bp_settings.behavior.title' => 'Settings',
