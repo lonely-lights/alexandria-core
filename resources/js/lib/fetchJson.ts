@@ -22,7 +22,7 @@
  * implementation Phase 2.E flagged as the pattern card model.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Headers attached to every JSON request issued through this helper.
@@ -184,10 +184,9 @@ export function useJsonFetch<T = unknown>(
         };
     }, [url, nonce]);
 
-    return {
-        data,
-        loading,
-        error,
-        refetch: () => setNonce((n) => n + 1),
-    };
+    // useCallback so consumers can safely include `refetch` in their
+    // own effect deps without re-firing on every parent render.
+    const refetch = useCallback(() => setNonce((n) => n + 1), []);
+
+    return { data, loading, error, refetch };
 }

@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import Modal from '@alexandria/components/ui/Modal';
 import Input from '@alexandria/components/form/Input';
 import ActionButton from '@alexandria/components/ui/ActionButton';
 import Pagination from '@alexandria/components/ui/Pagination';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 
 interface ArchiveItem {
@@ -146,9 +147,6 @@ const modalIconWrapStyle = (kind: 'danger' | 'success' | 'warning'): CSSProperti
 
 export default function ArchiveTab({ projectId }: ArchiveTabProps) {
     const t = useT();
-    const [items, setItems] = useState<ArchiveItem[]>([]);
-    const [meta, setMeta] = useState<PaginationMeta | null>(null);
-    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
     const [page, setPage] = useState(1);
@@ -158,35 +156,34 @@ export default function ArchiveTab({ projectId }: ArchiveTabProps) {
     const [restoreConfirm, setRestoreConfirm] = useState<ArchiveItem | null>(null);
     const [restoreDeps, setRestoreDeps] = useState(true);
 
-    const fetchArchive = useCallback(() => {
-        setLoading(true);
+    const url = useMemo(() => {
         const params = new URLSearchParams();
         params.set('page', String(page));
         params.set('per_page', '25');
         if (search) params.set('search', search);
         if (typeFilter !== 'all') params.set('type', typeFilter);
-
-        fetch(`/api/v1/projects/${projectId}/archive?${params}`, {
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'same-origin',
-        })
-            .then((r) => r.json())
-            .then((data) => {
-                setItems(data.data ?? []);
-                setMeta({
-                    current_page: data.current_page,
-                    last_page: data.last_page,
-                    per_page: data.per_page,
-                    total: data.total,
-                    from: data.from,
-                    to: data.to,
-                });
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
+        return `/api/v1/projects/${projectId}/archive?${params}`;
     }, [projectId, page, search, typeFilter]);
 
-    useEffect(() => { fetchArchive(); }, [fetchArchive]);
+    const { data, loading, refetch: fetchArchive } = useJsonFetch<{
+        data: ArchiveItem[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number | null;
+        to: number | null;
+    }>(url);
+
+    const items = data?.data ?? [];
+    const meta: PaginationMeta | null = data ? {
+        current_page: data.current_page,
+        last_page: data.last_page,
+        per_page: data.per_page,
+        total: data.total,
+        from: data.from,
+        to: data.to,
+    } : null;
 
     function handleRestore(item: ArchiveItem) {
         // Entries with dependencies get a confirm modal

@@ -1,11 +1,10 @@
 import {
     useState,
-    useEffect,
-    useCallback,
     type CSSProperties,
     type ReactNode,
 } from "react";
 import { router } from "@inertiajs/react";
+import { useJsonFetch } from "@alexandria/lib/fetchJson";
 import { useEnterAnimation } from "@alexandria/hooks/useEnterAnimation";
 import ProjectDetailsSection from "./settings/ProjectDetailsSection";
 import AiHelpersSection from "./settings/AiHelpersSection";
@@ -250,43 +249,26 @@ function AnimatedContent({
 
 /* ── Project Media Section ── */
 
+type ProjectMediaItem = {
+    id: number;
+    collection: string;
+    original_url: string;
+    conversions: Record<string, string>;
+    alt_text: string | null;
+    caption: string | null;
+};
+
 function ProjectMediaSection({ project }: { project: ProjectDetail }) {
     const t = useT();
     const projectId = project.id;
-    const [media, setMedia] = useState<
-        Array<{
-            id: number;
-            collection: string;
-            original_url: string;
-            conversions: Record<string, string>;
-            alt_text: string | null;
-            caption: string | null;
-        }>
-    >([]);
-    const [loading, setLoading] = useState(true);
     const [showUploader, setShowUploader] = useState<
         "page_image" | "banner" | null
     >(null);
 
-    const fetchMedia = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(`/api/v1/projects/${projectId}/media`, {
-                headers: {
-                    Accept: "application/json",
-                    "X-Requested-With": "XMLHttpRequest",
-                },
-                credentials: "same-origin",
-            });
-            if (res.ok) setMedia(await res.json());
-        } finally {
-            setLoading(false);
-        }
-    }, [projectId]);
-
-    useEffect(() => {
-        void fetchMedia();
-    }, [fetchMedia]);
+    const { data, loading, refetch: fetchMedia } = useJsonFetch<ProjectMediaItem[]>(
+        `/api/v1/projects/${projectId}/media`,
+    );
+    const media = data ?? [];
 
     const pageImage = media.find((m) => m.collection === "page_image");
     const banner = media.find((m) => m.collection === "banner");
@@ -323,7 +305,7 @@ function ProjectMediaSection({ project }: { project: ProjectDetail }) {
             },
             credentials: "same-origin",
         });
-        void fetchMedia();
+        fetchMedia();
     }
 
     return (
@@ -480,7 +462,7 @@ function ProjectMediaSection({ project }: { project: ProjectDetail }) {
                     collection={showUploader}
                     onUploaded={() => {
                         setShowUploader(null);
-                        void fetchMedia();
+                        fetchMedia();
                     }}
                     onClose={() => setShowUploader(null)}
                     t={t}

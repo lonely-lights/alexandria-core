@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, type CSSProperties, type ReactNode } from 'react';
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import UserLink from '@alexandria/components/ui/UserHoverCard';
 import Pagination from '@alexandria/components/ui/Pagination';
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 
 interface ActivityItem {
@@ -160,19 +161,8 @@ function eventLabel(t: Translator, event: string): string {
     return event.charAt(0).toUpperCase() + event.slice(1);
 }
 
-function csrfHeaders(): Record<string, string> {
-    return {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-    };
-}
-
 export default function ActivityTab({ projectId }: ActivityTabProps) {
     const t = useT();
-    const [items, setItems] = useState<ActivityItem[]>([]);
-    const [meta, setMeta] = useState<PaginationMeta | null>(null);
-    const [filters, setFilters] = useState<Filters | null>(null);
-    const [loading, setLoading] = useState(true);
 
     // Filter state
     const [blueprintId, setBlueprintId] = useState('');
@@ -185,19 +175,12 @@ export default function ActivityTab({ projectId }: ActivityTabProps) {
     const [page, setPage] = useState(1);
 
     // Fetch filters once
-    useEffect(() => {
-        fetch(`/api/v1/projects/${projectId}/activity/filters`, {
-            headers: csrfHeaders(),
-            credentials: 'same-origin',
-        })
-            .then((r) => r.json())
-            .then(setFilters)
-            .catch(() => {});
-    }, [projectId]);
+    const { data: filters } = useJsonFetch<Filters>(
+        `/api/v1/projects/${projectId}/activity/filters`,
+    );
 
-    // Fetch activity
-    const fetchActivity = useCallback(() => {
-        setLoading(true);
+    // Fetch activity — URL recomputes when any filter changes.
+    const activityUrl = useMemo(() => {
         const params = new URLSearchParams();
         params.set('page', String(page));
         params.set('per_page', String(perPage));
@@ -207,28 +190,28 @@ export default function ActivityTab({ projectId }: ActivityTabProps) {
         if (subjectType) params.set('subject_type', subjectType);
         if (dateFrom) params.set('date_from', dateFrom);
         if (dateTo) params.set('date_to', dateTo);
-
-        fetch(`/api/v1/projects/${projectId}/activity?${params}`, {
-            headers: csrfHeaders(),
-            credentials: 'same-origin',
-        })
-            .then((r) => r.json())
-            .then((data) => {
-                setItems(data.data ?? []);
-                setMeta({
-                    current_page: data.current_page,
-                    last_page: data.last_page,
-                    per_page: data.per_page,
-                    total: data.total,
-                    from: data.from,
-                    to: data.to,
-                });
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
+        return `/api/v1/projects/${projectId}/activity?${params}`;
     }, [projectId, page, perPage, blueprintId, userId, event, subjectType, dateFrom, dateTo]);
 
-    useEffect(() => { fetchActivity(); }, [fetchActivity]);
+    const { data: activityData, loading } = useJsonFetch<{
+        data: ActivityItem[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number | null;
+        to: number | null;
+    }>(activityUrl);
+
+    const items = activityData?.data ?? [];
+    const meta: PaginationMeta | null = activityData ? {
+        current_page: activityData.current_page,
+        last_page: activityData.last_page,
+        per_page: activityData.per_page,
+        total: activityData.total,
+        from: activityData.from,
+        to: activityData.to,
+    } : null;
 
     function applyFilter(setter: (v: string) => void, value: string) {
         setter(value);
