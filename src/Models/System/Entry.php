@@ -46,6 +46,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property bool $is_stub
  * @property array<string, mixed>|null $metadata
  * @property array<string, mixed>|null $ai_notes
+ * @property string|null $theme_preset_slug
+ * @property array<string, mixed>|null $theme_override
  * @property Carbon|null $archived_at
  * @property int|null $cascade_archived_by
  * @property Carbon|null $created_at
@@ -142,6 +144,7 @@ class Entry extends Model implements HasMedia
         return [
             'metadata' => 'array',
             'ai_notes' => 'array',
+            'theme_override' => 'array',
             'is_stub' => 'boolean',
             'archived_at' => 'datetime',
         ];

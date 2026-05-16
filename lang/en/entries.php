@@ -71,6 +71,20 @@ return [
 
     // ── Show + OverviewTab (Subsection A) ──
     'show.edit_entry' => 'Edit Entry',
+    'show.entry_settings' => 'Entry Settings',
+
+    // ── Entry Settings modal (Stage 8b M3) ──
+    'entry_settings.title' => 'Entry Settings —',
+    'entry_settings.nav.appearance' => 'Appearance',
+    'entry_settings.nav.theme' => 'Theme',
+    'entry_settings.theme.title' => 'Theme',
+    'entry_settings.theme.description' => 'Per-entry theme overrides for the content area. Page chrome (navbar, sidebar) keeps the project\'s theme.',
+    'entry_settings.theme.subtitle' => 'Choose a preset to override the blueprint\'s theme for this entry only, or leave inherited to follow the cascade.',
+    'entry_settings.theme.inherit_blueprint' => 'Inherit blueprint theme',
+    'entry_settings.theme.inherit_hint' => 'Reset this entry to follow the blueprint\'s theme.',
+    'entry_settings.theme.fine_tune.title' => 'Fine-tune tokens',
+    'entry_settings.theme.fine_tune.subtitle' => 'Override individual design tokens (colors, radius, spacing) on top of the preset.',
+
     'show.tab.overview' => 'Overview',
     'show.tab.structure' => 'Structure',
     'show.tab.timeline' => 'Timeline',

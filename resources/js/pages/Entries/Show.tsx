@@ -21,6 +21,7 @@ import TimelineTab from './Sections/TimelineTab';
 import TreeView from '@alexandria/pages/Blueprints/Sections/TreeView';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import MediaSection from '@alexandria/components/media/MediaSection';
+import EntrySettingsModal from './Sections/modals/EntrySettingsModal';
 
 /* ── Types ── */
 
@@ -52,6 +53,10 @@ export interface EntryShowEntry {
     is_stub: boolean;
     parent_id: number | null;
     metadata: Record<string, unknown> | null;
+    /** Stage 8b M3 — per-entry theme preset (deepest cascade scope, content only). */
+    theme_preset_slug: string | null;
+    /** Stage 8b M3 — sparse DeepPartial<ThemeTokens> overlay. */
+    theme_override: Record<string, unknown> | null;
     has_children: boolean;
     children_count: number;
     thumbnail_url: string | null;
@@ -351,6 +356,8 @@ export default function EntryShow() {
         return validTabs.includes(hash) ? hash : 'overview';
     });
     const [searchOpen, setSearchOpen] = useState(false);
+    // Stage 8b M3 — Entry settings modal (theme override panel).
+    const [settingsOpen, setSettingsOpen] = useState(false);
 
     const iconClass = blueprint.icon.includes(' ') ? blueprint.icon : `fa-solid ${blueprint.icon}`;
 
@@ -403,12 +410,23 @@ export default function EntryShow() {
                     { label: entry.name },
                 ]}
                 actions={
-                    <ActionButton
-                        icon="fa-solid fa-pencil"
-                        label={t('entries.show.edit_entry')}
-                        href={`/p/${project.slug}/${blueprint.slug}/${entry.slug}/edit`}
-                        size="md"
-                    />
+                    <div className="flex items-center gap-2">
+                        {entry.can.update && (
+                            <ActionButton
+                                icon="fa-solid fa-palette"
+                                label={t('entries.show.entry_settings')}
+                                onClick={() => setSettingsOpen(true)}
+                                variant="ghost"
+                                size="md"
+                            />
+                        )}
+                        <ActionButton
+                            icon="fa-solid fa-pencil"
+                            label={t('entries.show.edit_entry')}
+                            href={`/p/${project.slug}/${blueprint.slug}/${entry.slug}/edit`}
+                            size="md"
+                        />
+                    </div>
                 }
                 tabs={
                     <>
@@ -629,6 +647,15 @@ export default function EntryShow() {
                 open={searchOpen}
                 onClose={() => setSearchOpen(false)}
                 onSearch={projectSearch(project.slug)}
+            />
+
+            {/* Entry settings (Stage 8b M3 — theme override; future panels plug into same shell). */}
+            <EntrySettingsModal
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+                project={{ slug: project.slug }}
+                blueprint={{ slug: blueprint.slug }}
+                entry={entry}
             />
         </AppLayout>
     );

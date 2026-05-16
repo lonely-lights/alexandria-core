@@ -52,6 +52,14 @@ return new class extends Migration
             $table->json('metadata')->nullable()->comment('Additional unstructured data');
             $table->json('ai_notes')->nullable()->comment('AI processing metadata for deferred relationships and context');
 
+            // Theme cascade — Stage 8b M3 (per-entry override; deepest scope)
+            $table->string('theme_preset_slug')
+                ->nullable()
+                ->comment('Named preset slug (e.g. default, cyberpunk). NULL inherits blueprint/project/user.');
+            $table->json('theme_override')
+                ->nullable()
+                ->comment('Sparse DeepPartial<ThemeTokens> JSON overlaid on the preset by the resolver');
+
             // Self-referencing foreign key for hierarchy
             $table->foreign('parent_id')->references('id')->on('entries')->onDelete('set null');
 
