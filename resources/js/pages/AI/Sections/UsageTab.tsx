@@ -1,5 +1,6 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import Pagination from '@alexandria/components/ui/Pagination';
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
 import useT from '@alexandria/hooks/useT';
 import type { PaginatedResponse, UsageStats, UsageTransaction } from '@alexandria/types/ai-dashboard';
 
@@ -131,28 +132,20 @@ function StatCard({ icon, label, value, tintKey }: {
 
 export default function UsageTab({ projectId }: UsageTabProps) {
     const t = useT();
-    const [data, setData] = useState<UsageDashboardResponse | null>(null);
-    const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [context, setContext] = useState<string | null>(null);
     const [sortKey, setSortKey] = useState<SortKey>('created_at');
     const [sortDir, setSortDir] = useState<SortDir>('desc');
 
-    useEffect(() => {
-        setLoading(true);
+    const url = useMemo(() => {
         const params = new URLSearchParams({ page: String(page), per_page: '25', sort: sortKey, direction: sortDir });
         if (context) {
             params.set('context', context);
         }
-
-        fetch(`/api/v1/projects/${projectId}/ai/dashboard-usage?${params.toString()}`, {
-            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'same-origin',
-        })
-            .then((res) => res.json())
-            .then((json: UsageDashboardResponse) => setData(json))
-            .finally(() => setLoading(false));
+        return `/api/v1/projects/${projectId}/ai/dashboard-usage?${params.toString()}`;
     }, [projectId, page, context, sortKey, sortDir]);
+
+    const { data, loading } = useJsonFetch<UsageDashboardResponse>(url);
 
     const handleContextChange = (ctx: string | null) => {
         setContext(ctx);

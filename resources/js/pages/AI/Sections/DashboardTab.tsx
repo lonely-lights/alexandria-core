@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, type CSSProperties } from 'react';
+import { type CSSProperties } from 'react';
 
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
 import { relativeDate } from '@alexandria/lib/formatDate';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import type { AiDashboardStats, QueuedNote, BatchSummary, NoteRouting } from '@alexandria/types/ai-dashboard';
@@ -275,26 +276,12 @@ interface NoteQueueProps {
 }
 
 function NoteQueue({ projectId, t }: NoteQueueProps) {
-    const [notes, setNotes] = useState<QueuedNote[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    const fetchQueue = useCallback(() => {
-        setLoading(true);
-        fetch(`/api/v1/projects/${projectId}/ai/dashboard-queue`, {
-            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'same-origin',
-        })
-            .then((r) => r.json())
-            .then((data) => {
-                setNotes(Array.isArray(data) ? data : (data.data ?? []));
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, [projectId]);
-
-    useEffect(() => {
-        fetchQueue();
-    }, [fetchQueue]);
+    // Endpoint may return either a bare array or an envelope `{ data: [...] }` —
+    // normalize both shapes after the fetch resolves.
+    const { data, loading } = useJsonFetch<QueuedNote[] | { data: QueuedNote[] }>(
+        `/api/v1/projects/${projectId}/ai/dashboard-queue`,
+    );
+    const notes = Array.isArray(data) ? data : (data?.data ?? []);
 
     return (
         // Outer paper-board: holds the ::before yellow bevel
@@ -397,21 +384,10 @@ interface RecentBatchesProps {
 }
 
 function RecentBatches({ projectId, t }: RecentBatchesProps) {
-    const [batches, setBatches] = useState<BatchSummary[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetch(`/api/v1/projects/${projectId}/ai/dashboard-batches?per_page=5&status=all`, {
-            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'same-origin',
-        })
-            .then((r) => r.json())
-            .then((data) => {
-                setBatches(data.data ?? []);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, [projectId]);
+    const { data, loading } = useJsonFetch<{ data: BatchSummary[] }>(
+        `/api/v1/projects/${projectId}/ai/dashboard-batches?per_page=5&status=all`,
+    );
+    const batches = data?.data ?? [];
 
     // Priority sort: failed → pending → executed. Surfaces batches that
     // need attention first, then in-flight, then done.

@@ -1,5 +1,6 @@
-import { type CSSProperties, useState, useEffect } from "react";
+import { type CSSProperties } from "react";
 import Modal from "@alexandria/components/ui/Modal";
+import { useJsonFetch } from "@alexandria/lib/fetchJson";
 import useT from "@alexandria/hooks/useT";
 import { useDateFormatters } from "@alexandria/lib/formatDate";
 
@@ -74,28 +75,11 @@ export function CalcDetailModal({
     onClose: () => void;
 }) {
     const t = useT();
-    const [items, setItems] = useState<CalcDetailItem[]>([]);
-    const [loading, setLoading] = useState(true);
     const { fmtDate } = useDateFormatters();
-
-    useEffect(() => {
-        fetch(
-            `/api/v1/entries/${entryId}/calculated/${encodeURIComponent(calcKey)}`,
-            {
-                headers: {
-                    Accept: "application/json",
-                    "X-Requested-With": "XMLHttpRequest",
-                },
-                credentials: "same-origin",
-            },
-        )
-            .then((r) => r.json())
-            .then((data) => {
-                setItems(data.items ?? []);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, [entryId, calcKey]);
+    const { data, loading } = useJsonFetch<{ items: CalcDetailItem[] }>(
+        `/api/v1/entries/${entryId}/calculated/${encodeURIComponent(calcKey)}`,
+    );
+    const items = data?.items ?? [];
 
     return (
         <Modal open onClose={onClose} maxWidth="max-w-md">

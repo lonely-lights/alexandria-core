@@ -1,6 +1,7 @@
 import type { ReactNode, CSSProperties } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Pagination from '@alexandria/components/ui/Pagination';
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
 import { createColumnPersistence } from '@alexandria/lib/persistedColumns';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import type { AiModelEntry, AiProvider, PaginatedResponse } from '@alexandria/types/ai-dashboard';
@@ -222,8 +223,6 @@ function FeatureIcons({ model, t }: { model: AiModelEntry; t: Translator }) {
 
 export default function ModelsTab({ projectId, providers }: ModelsTabProps) {
     const t = useT();
-    const [data, setData] = useState<ModelsDashboardResponse | null>(null);
-    const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -255,9 +254,9 @@ export default function ModelsTab({ projectId, providers }: ModelsTabProps) {
         return () => document.removeEventListener('mousedown', handleClick);
     }, []);
 
-    // Fetch models
-    useEffect(() => {
-        setLoading(true);
+    // Build the fetch URL from the current filter state — recomputes
+    // whenever any filter changes, which drives useJsonFetch to refetch.
+    const url = useMemo(() => {
         const params = new URLSearchParams({ page: String(page), per_page: '25' });
         if (debouncedSearch) {
             params.set('search', debouncedSearch);
@@ -271,15 +270,10 @@ export default function ModelsTab({ projectId, providers }: ModelsTabProps) {
         if (selectedCategories.length > 0) {
             params.set('category', selectedCategories.join(','));
         }
+        return `/api/v1/projects/${projectId}/ai/dashboard-models?${params.toString()}`;
+    }, [projectId, page, debouncedSearch, showFilter, selectedProvider, selectedCategories]);
 
-        fetch(`/api/v1/projects/${projectId}/ai/dashboard-models?${params.toString()}`, {
-            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'same-origin',
-        })
-            .then((res) => res.json())
-            .then((json: ModelsDashboardResponse) => setData(json))
-            .finally(() => setLoading(false));
-    }, [page, debouncedSearch, showFilter, selectedProvider, selectedCategories]);
+    const { data, loading } = useJsonFetch<ModelsDashboardResponse>(url);
 
     const countsByProvider = data?.counts_by_provider ?? {};
     const countsByCategory = data?.counts_by_category ?? {};

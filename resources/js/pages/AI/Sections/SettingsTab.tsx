@@ -1,5 +1,6 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
 import useT from '@alexandria/hooks/useT';
 import type { AiDashboardStats, AiProvider, AiProjectSettings, AiUserSettings } from '@alexandria/types/ai-dashboard';
 import UsageSidebar from './Settings/UsageSidebar';
@@ -138,27 +139,15 @@ function ToggleRow({
 export default function SettingsTab({ projectId, stats, settings, providers, userSettings }: SettingsTabProps) {
     const t = useT();
     const [form, setForm] = useState<FormState>(() => initForm(settings));
-    const [providerModels, setProviderModels] = useState<ProviderModels | null>(null);
-    const [modelsLoading, setModelsLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
-    /* Fetch models when provider changes */
-    useEffect(() => {
-        if (form.ai_provider_id === null) {
-            setProviderModels(null);
-            return;
-        }
-        setModelsLoading(true);
-        fetch(`/api/v1/ai/providers/${form.ai_provider_id}/models`, {
-            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'same-origin',
-        })
-            .then((r) => r.json())
-            .then((data: ProviderModels) => setProviderModels(data))
-            .catch(() => setProviderModels(null))
-            .finally(() => setModelsLoading(false));
-    }, [form.ai_provider_id]);
+    /* Fetch models when provider changes; null URL skips the fetch + resets data. */
+    const { data: providerModels, loading: modelsLoading } = useJsonFetch<ProviderModels>(
+        form.ai_provider_id === null
+            ? null
+            : `/api/v1/ai/providers/${form.ai_provider_id}/models`,
+    );
 
     function set<K extends keyof FormState>(key: K, value: FormState[K]) {
         setForm((prev) => ({ ...prev, [key]: value }));
@@ -174,13 +163,14 @@ export default function SettingsTab({ projectId, stats, settings, providers, use
     }
 
     function clearOverrides() {
+        // Resetting ai_provider_id to null also makes useJsonFetch above
+        // see a null URL → it resets providerModels to null automatically.
         setForm((prev) => ({
             ...prev,
             ai_provider_id: null,
             analyst_model_name: null,
             creative_model_name: null,
         }));
-        setProviderModels(null);
     }
 
     async function handleSave() {

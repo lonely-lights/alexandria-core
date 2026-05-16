@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import CommandReviewModal from '@alexandria/components/notes/CommandReviewModal';
 import Pagination from '@alexandria/components/ui/Pagination';
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
 import { relativeDate } from '@alexandria/lib/formatDate';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import type { BatchSummary, PaginatedResponse } from '@alexandria/types/ai-dashboard';
@@ -256,35 +257,20 @@ export default function CommandsTab({ projectId }: CommandsTabProps) {
     const t = useT();
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [page, setPage] = useState(1);
-    const [loading, setLoading] = useState(true);
-    const [response, setResponse] = useState<PaginatedResponse<BatchSummary> | null>(null);
 
     const [reviewBatchId, setReviewBatchId] = useState<string>('');
     const [showReview, setShowReview] = useState(false);
 
-    const fetchBatches = useCallback(() => {
-        setLoading(true);
+    const url = useMemo(() => {
         const params = new URLSearchParams({
             page: String(page),
             per_page: '15',
             ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
         });
-
-        fetch(`/api/v1/projects/${projectId}/ai/dashboard-batches?${params}`, {
-            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'same-origin',
-        })
-            .then((r) => r.json())
-            .then((data: PaginatedResponse<BatchSummary>) => {
-                setResponse(data);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
+        return `/api/v1/projects/${projectId}/ai/dashboard-batches?${params}`;
     }, [projectId, page, statusFilter]);
 
-    useEffect(() => {
-        fetchBatches();
-    }, [fetchBatches]);
+    const { data: response, loading, refetch: fetchBatches } = useJsonFetch<PaginatedResponse<BatchSummary>>(url);
 
     function handleFilterChange(filter: StatusFilter) {
         setStatusFilter(filter);
