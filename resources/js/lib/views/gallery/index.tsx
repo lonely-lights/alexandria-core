@@ -22,7 +22,7 @@ export const GalleryViewDef: BlueprintViewDefinition = {
     type: 'gallery',
     label: 'Gallery',
     icon: 'fa-solid fa-images',
-    access: { type: 'tier', minTier: 'starter' },
+    access: { type: 'free' },
     supportedClassifications: ['standard', 'list'],
     render: GalleryRender,
     settingsPanel: GalleryPanel,

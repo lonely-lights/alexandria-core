@@ -150,7 +150,7 @@ npm install --save \
     @inertiajs/react \
     react react-dom \
     laravel-echo pusher-js \
-    daisyui@5 tailwindcss@4
+    tailwindcss@4
 ```
 
 Wire the path alias so your bundle pulls React components straight from the package's `vendor/` directory:

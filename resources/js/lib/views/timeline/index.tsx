@@ -21,7 +21,7 @@ export const TimelineViewDef: BlueprintViewDefinition = {
     type: 'timeline',
     label: 'Timeline',
     icon: 'fa-solid fa-timeline',
-    access: { type: 'tier', minTier: 'pro' },
+    access: { type: 'free' },
     supportedClassifications: ['standard', 'list'],
     render: TimelineRender,
     settingsPanel: TimelineSettingsPanel,

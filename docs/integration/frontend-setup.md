@@ -35,9 +35,10 @@ truth.
 
 - **Vite 8+** (Laravel 13's default scaffold)
 - **Tailwind CSS 4** with `@tailwindcss/vite`
-- **DaisyUI 5.5.19+** (v5 is Tailwind-4 native; v4 will not work)
 - **TypeScript** with `moduleResolution: bundler` or `node16`+
 - **`@vitejs/plugin-react`** plus React 19+
+
+> **Stage 7.1 note:** DaisyUI was removed in Stage 7.1 (closed 2026-05-15). Theme tokens (`--theme-*`) ship from core's `resources/css/app.css` via the `@source` directive below. No DaisyUI install or plugin registration is needed.
 
 `alexandria-core` itself does not ship a `package.json` — versions are
 the consumer app's responsibility. The combinations above are what the
@@ -181,9 +182,9 @@ live in the consuming application.
 
 Notes on what core deliberately does **not** depend on:
 
-- **No `tailwind-merge`.** `cn()` is just `clsx`. DaisyUI's component
-  classes generally don't conflict with Tailwind utilities, so the
-  added merge step isn't worth the bundle cost. Consumers that want
+- **No `tailwind-merge`.** `cn()` is just `clsx`. Core's `alex-*`
+  component classes are scoped utilities, not Tailwind shortcuts —
+  conflicts with raw Tailwind utilities are rare. Consumers that want
   Tailwind class-conflict resolution can wrap or replace `cn` in their
   own app code.
 - **No `dayjs`.** `formatDate()` uses native `Intl.DateTimeFormat` —
@@ -255,83 +256,61 @@ alongside the standard ones:
 The path is relative to the `app.css` location — adjust if your CSS
 entrypoint is elsewhere.
 
-## 4. DaisyUI 5
+## 4. Theme tokens
 
-Install:
+Core ships its theme system as plain CSS custom properties on
+`<html>`, keyed by a `data-theme` attribute. The token catalog lives
+in core's `resources/css/app.css` and is reachable by the consumer
+through the `@source` directive registered in Section 3.
 
-```bash
-npm install -D daisyui@^5.5.19
-```
+Token families consumers can rely on:
 
-Register it in `app.css` via Tailwind 4's `@plugin` directive (DaisyUI 5
-no longer touches `tailwind.config.js`):
+- `--theme-base-*` — page/surface backgrounds, text colors, neutral
+  ramps
+- `--theme-brand-primary-*`, `--theme-brand-secondary-*`,
+  `--theme-brand-accent-*` — per-theme brand palette
+- `--theme-status-{success,info,warning,error}-{fill,stroke,subtle,content}` —
+  status colors
+- `--theme-radius-{input,button,card,badge}` — corner radii
+- `--theme-motion-{duration,easing}-*` — animation primitives
+- `--theme-typography-{heading,body}-family` — font stacks
+
+Default themes ship with core (`tf-dark`, `tf-light`). The
+`ThemeProvider` (`@alexandria/hooks/useTheme`) writes `data-theme` on
+`<html>` and persists user choice to localStorage + the server.
+
+Consumers add their own theme by emitting a `:root[data-theme='your-name']`
+block in their own CSS that overrides the same `--theme-*` token names —
+no plugin registration, no build-step config:
 
 ```css
-@plugin "daisyui/index.js" {
-    themes: light --default, dark --prefersdark, tf-light, tf-dark;
+/* resources/css/app.css */
+@import 'tailwindcss';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/lonely-lights/alexandria-core/resources/js/**/*.{ts,tsx}';
+
+:root[data-theme='your-brand'] {
+    --theme-base-page: #f5f0e8;
+    --theme-base-content: #2b1d0f;
+    --theme-brand-primary-500: #c54f3e;
+    /* …override only the tokens you care about; rest fall through to defaults shipped in core's app.css */
 }
 ```
 
-> **Vite-8 / rolldown workaround.** The bare `@plugin "daisyui"` form
-> the DaisyUI docs show currently crashes under Vite 8 + rolldown's
-> Node ESM resolver, with `ERR_UNKNOWN_FILE_EXTENSION` on
-> `daisyui.css`. DaisyUI 5's `package.json` declares
-> `"browser": "./daisyui.css"`, and rolldown picks up that condition
-> when loading the plugin. Pointing at the JS entry directly
-> (`daisyui/index.js`) sidesteps the resolution. Same applies to
-> `daisyui/theme/index.js` below.
->
-> Tracked upstream: [vitejs/vite#22323](https://github.com/vitejs/vite/issues/22323)
-> (Closed — maintainers consider it a DaisyUI package-exports issue.)
-> Drop the `/index.js` suffix once either Vite reverts the resolver
-> behavior or DaisyUI ships a fix to its `browser`/`main`/`exports`
-> fields.
+> **Why no DaisyUI?** Through Stage 7.0 alexandria-core shipped with
+> DaisyUI 5 layered on Tailwind 4. Stage 7.1 (closed 2026-05-15)
+> removed DaisyUI entirely in favor of native Tailwind + the
+> `--theme-*` token system shown above. The motivation was that
+> DaisyUI's component classes pinned us to its semantic-token names
+> (`primary`, `base-100`, etc.), making per-blueprint / per-entry
+> theming work for Stage 8b harder than it needed to be. See the
+> Stage 7.1 closeout notes in `alexandria-app/docs/frontend/UI-REFACTOR-PLAN.md`.
 
-The `--default` and `--prefersdark` modifiers replace DaisyUI 4's
-`darkTheme:` and the boolean-flagged theme objects. Built-in `light`
-and `dark` are included by name; custom themes are declared separately
-via `@plugin "daisyui/theme/index.js"`:
-
-```css
-@plugin "daisyui/theme/index.js" {
-    name: "tf-dark";
-    default: false;
-    prefersdark: false;
-    color-scheme: dark;
-
-    --color-base-100: #1c1416;
-    --color-primary: #ffd166;
-    /* … etc */
-
-    --radius-selector: 0.5rem;
-    --radius-field: 0.625rem;
-    --radius-box: 1rem;
-    --border: 1px;
-    --depth: 1;
-    --noise: 0;
-}
-```
-
-Notes on the DaisyUI 4 → 5 token rename, in case you are porting an
-existing DaisyUI 4 config:
-
-| DaisyUI 4 | DaisyUI 5 |
-|---|---|
-| `'primary': '#hex'` | `--color-primary: #hex;` |
-| `'base-content': '#hex'` | `--color-base-content: #hex;` |
-| `'--rounded-box': '1rem'` | `--radius-box: 1rem;` |
-| `'--rounded-btn': '0.5rem'` | `--radius-field: 0.5rem;` |
-| `'--rounded-badge': '1.9rem'` | `--radius-selector: 1.9rem;` |
-| `'--border-btn': '1px'` | `--border: 1px;` |
-| `'--btn-text-case'`, `'--btn-focus-scale'`, `'--animation-btn'`, `'--tab-*'`, `'--navbar-padding'` | dropped — DaisyUI 5 controls these via component classes |
-
-Custom non-DaisyUI variables (e.g. `--tf-pencil`, `--tf-paper-cream`)
-can stay as-is; they are passed through unchanged.
-
-`alexandria-core` does not require any specific theme set — consumers
-override or extend the example above as needed. Components shipped by
-core only depend on standard DaisyUI semantic tokens (`primary`,
-`base-100`, `base-content`, etc.) so any v5-conformant theme works.
+Per-blueprint and per-entry theme cascades land in Stage 8b
+(`#55` on the alexandria-app task list); the contract above is the
+foundation that work composes on top of.
 
 ---
 
@@ -421,6 +400,8 @@ If it does not:
 3. **Build succeeds but classes missing** → check the fourth
    `@source` directive. Tailwind silently skips paths that do not
    exist or yield no files.
-4. **DaisyUI components unstyled** → confirm `daisyui@^5.5.19` is in
-   `package.json` and the `@plugin "daisyui"` directive is at the top
-   of `app.css`, after `@import 'tailwindcss';`.
+4. **Theme tokens missing / `--theme-*` values resolve to nothing**
+   → confirm the `@source` directive in Section 3 points at core's
+   `resources/js/**/*.{ts,tsx}` AND that core's `resources/css/app.css`
+   has been imported (it ships the default `:root[data-theme='tf-*']`
+   blocks). Section 4 above covers theme-token override patterns.

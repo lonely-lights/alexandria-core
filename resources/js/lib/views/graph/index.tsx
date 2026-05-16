@@ -44,7 +44,7 @@ export const GraphViewDef: BlueprintViewDefinition = {
     type: 'graph',
     label: 'Graph',
     icon: 'fa-solid fa-diagram-project',
-    access: { type: 'tier', minTier: 'pro' },
+    access: { type: 'free' },
     supportedClassifications: ['standard', 'list'],
     render: GraphRender,
     settingsPanel: GraphRegistryPanelPlaceholder,

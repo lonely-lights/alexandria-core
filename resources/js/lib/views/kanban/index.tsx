@@ -65,7 +65,7 @@ export const KanbanViewDef: BlueprintViewDefinition = {
     type: 'kanban',
     label: 'Board',
     icon: 'fa-solid fa-table-columns',
-    access: { type: 'tier', minTier: 'starter' },
+    access: { type: 'free' },
     supportedClassifications: ['standard', 'list'],
     render: KanbanRender,
     settingsPanel: KanbanRegistryPanelPlaceholder,
