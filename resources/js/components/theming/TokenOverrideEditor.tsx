@@ -13,6 +13,8 @@ import { useThemePreview } from '@alexandria/lib/themePreview';
 
 import ColorAnchorEditor from './ColorAnchorEditor';
 import EnumSelect from './EnumSelect';
+import FontStackEditor from './FontStackEditor';
+import NullableColorAnchorEditor from './NullableColorAnchorEditor';
 import NumberInput from './NumberInput';
 import TextInput from './TextInput';
 import TokenCategoryRow from './TokenCategoryRow';
@@ -104,16 +106,29 @@ export default function TokenOverrideEditor({
     );
 
     function commitLeaf(leaf: TokenLeaf, raw: string) {
-        // Number-typed leaves must land in the override as actual numbers;
-        // editors emit strings for keyboard-handling simplicity. Other
-        // types pass through verbatim.
-        let value: string | number = raw;
+        // Editors emit strings for keyboard-handling simplicity; some
+        // token types want their override JSON to hold a richer value
+        // (numbers for `number`, parsed objects for `font-stack`, null
+        // for cleared nullable colors). Translate per type.
+        let value: unknown = raw;
         if (leaf.type === 'number') {
             const parsed = parseFloat(raw);
             if (Number.isNaN(parsed)) {
                 return;
             }
             value = parsed;
+        } else if (leaf.type === 'font-stack') {
+            // FontStackEditor emits JSON; decode so the override stores
+            // a real object the resolver can merge into a FontStack.
+            try {
+                value = raw ? JSON.parse(raw) : null;
+            } catch {
+                return;
+            }
+        } else if (leaf.type === 'nullable-color-anchor' && raw === '') {
+            // Empty string = the user toggled the color OFF. Persist
+            // null so the resolver renders the "no tint" branch.
+            value = null;
         }
         setWip((prev) => setPath(prev, leaf.path, value));
     }
@@ -189,6 +204,24 @@ export default function TokenOverrideEditor({
                     <span style={placeholderStyle}>
                         {t('theming.token_editor.leaf.editor_pending')}
                     </span>
+                );
+                break;
+            case 'nullable-color-anchor':
+                editor = (
+                    <NullableColorAnchorEditor
+                        value={value}
+                        overridden={overridden}
+                        onCommit={(next) => commitLeaf(leaf, next)}
+                    />
+                );
+                break;
+            case 'font-stack':
+                editor = (
+                    <FontStackEditor
+                        value={value}
+                        overridden={overridden}
+                        onCommit={(next) => commitLeaf(leaf, next)}
+                    />
                 );
                 break;
             default:

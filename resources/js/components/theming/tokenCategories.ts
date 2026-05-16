@@ -45,10 +45,12 @@ export interface LeafEditorContext {
 export type LeafRenderer = (ctx: LeafEditorContext) => ReactNode;
 
 export type LeafType =
-    | 'color-anchor'  // M1.C.1 — hex / oklch picker + text input
-    | 'text'          // M1.C.2 — any CSS-string value (radius lengths, easing functions, ShapeChoice)
-    | 'number'        // M1.C.2 — numeric with optional unit (ms, count)
-    | 'enum';         // M1.C.2 — select dropdown from fixed options
+    | 'color-anchor'           // M1.C.1 — hex / oklch picker + text input
+    | 'nullable-color-anchor'  // M1.C.3 — toggle + color anchor (Shadow.tint pattern)
+    | 'text'                   // M1.C.2 — any CSS-string value
+    | 'number'                 // M1.C.2 — numeric with optional unit
+    | 'enum'                   // M1.C.2 — select dropdown
+    | 'font-stack';            // M1.C.3 — Typography heading/body/mono picker
 
 // ----------------------------------------------------------------------------
 // Leaf + category shape
@@ -108,9 +110,9 @@ export interface TokenCategory {
 
 /**
  * Walks the resolved theme's `tokens` tree by dot-path. Returns the
- * leaf's value as a string (color anchors + radius sizes + easing
- * strings are all naturally string-typed; numbers come back stringified
- * for uniform editor input).
+ * leaf's value as a string ready for editor consumption: scalars get
+ * `String()`-cast, objects/arrays get JSON-stringified (FontStack
+ * leaves use this; FontStackEditor JSON-parses on the receiving end).
  */
 export function readResolvedLeaf(
     resolved: ResolvedThemeView,
@@ -132,6 +134,10 @@ export function readResolvedLeaf(
 
     if (cursor === null || cursor === undefined) {
         return '';
+    }
+
+    if (typeof cursor === 'object') {
+        return JSON.stringify(cursor);
     }
 
     return String(cursor);
@@ -423,7 +429,12 @@ export const TOKEN_CATEGORIES: TokenCategory[] = [
                 numberMin: 0,
                 numberMax: 10,
             },
-            // shadow.tint is nullable ColorAnchor — deferred to M1.C.3
+            {
+                path: 'shadow.tint',
+                labelKey: 'theming.token_editor.leaf.shadow.tint.label',
+                descriptionKey: 'theming.token_editor.leaf.shadow.tint.description',
+                type: 'nullable-color-anchor',
+            },
         ],
     },
 
@@ -450,6 +461,63 @@ export const TOKEN_CATEGORIES: TokenCategory[] = [
             {
                 path: 'surface.raisedDelta',
                 labelKey: 'theming.token_editor.leaf.surface.raised_delta.label',
+                type: 'number',
+                numberMin: -10,
+                numberMax: 10,
+            },
+            // Surface elevation — per-element deltas (Stage 8b M1.C.3).
+            {
+                path: 'surface.elevation.card',
+                labelKey: 'theming.token_editor.leaf.surface.elevation.card.label',
+                type: 'number',
+                numberMin: -10,
+                numberMax: 10,
+            },
+            {
+                path: 'surface.elevation.cardRaised',
+                labelKey: 'theming.token_editor.leaf.surface.elevation.card_raised.label',
+                type: 'number',
+                numberMin: -10,
+                numberMax: 10,
+            },
+            {
+                path: 'surface.elevation.modal',
+                labelKey: 'theming.token_editor.leaf.surface.elevation.modal.label',
+                type: 'number',
+                numberMin: -10,
+                numberMax: 10,
+            },
+            {
+                path: 'surface.elevation.popover',
+                labelKey: 'theming.token_editor.leaf.surface.elevation.popover.label',
+                type: 'number',
+                numberMin: -10,
+                numberMax: 10,
+            },
+            {
+                path: 'surface.elevation.tooltip',
+                labelKey: 'theming.token_editor.leaf.surface.elevation.tooltip.label',
+                type: 'number',
+                numberMin: -10,
+                numberMax: 10,
+            },
+            {
+                path: 'surface.elevation.sidebar',
+                labelKey: 'theming.token_editor.leaf.surface.elevation.sidebar.label',
+                type: 'number',
+                numberMin: -10,
+                numberMax: 10,
+            },
+            {
+                path: 'surface.elevation.header',
+                labelKey: 'theming.token_editor.leaf.surface.elevation.header.label',
+                type: 'number',
+                numberMin: -10,
+                numberMax: 10,
+            },
+            {
+                path: 'surface.elevation.footer',
+                labelKey: 'theming.token_editor.leaf.surface.elevation.footer.label',
                 type: 'number',
                 numberMin: -10,
                 numberMax: 10,
@@ -516,26 +584,239 @@ export const TOKEN_CATEGORIES: TokenCategory[] = [
             },
         ],
     },
-    // M1.C.3 placeholders
+    // ── Typography — Stage 8b M1.C.3 ───────────────────────────────
     {
         id: 'typography',
         labelKey: 'theming.token_editor.category.typography.label',
+        descriptionKey: 'theming.token_editor.category.typography.description',
         icon: 'fa-solid fa-font',
-        leaves: [],
-        placeholder: true,
+        leaves: [
+            {
+                path: 'typography.heading',
+                labelKey: 'theming.token_editor.leaf.typography.heading.label',
+                type: 'font-stack',
+            },
+            {
+                path: 'typography.body',
+                labelKey: 'theming.token_editor.leaf.typography.body.label',
+                type: 'font-stack',
+            },
+            {
+                path: 'typography.mono',
+                labelKey: 'theming.token_editor.leaf.typography.mono.label',
+                type: 'font-stack',
+            },
+            {
+                path: 'typography.baseSize',
+                labelKey: 'theming.token_editor.leaf.typography.base_size.label',
+                descriptionKey: 'theming.token_editor.leaf.typography.base_size.description',
+                type: 'number',
+                numberUnit: 'px',
+                numberMin: 12,
+                numberMax: 24,
+            },
+            {
+                path: 'typography.scale',
+                labelKey: 'theming.token_editor.leaf.typography.scale.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'compact', labelKey: 'theming.token_editor.leaf.typography.scale.option.compact' },
+                    { value: 'default', labelKey: 'theming.token_editor.leaf.typography.scale.option.default' },
+                    { value: 'comfortable', labelKey: 'theming.token_editor.leaf.typography.scale.option.comfortable' },
+                    { value: 'spacious', labelKey: 'theming.token_editor.leaf.typography.scale.option.spacious' },
+                ],
+            },
+            {
+                path: 'typography.headingScale',
+                labelKey: 'theming.token_editor.leaf.typography.heading_scale.label',
+                descriptionKey: 'theming.token_editor.leaf.typography.heading_scale.description',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'modular-1.125', labelKey: 'theming.token_editor.leaf.typography.heading_scale.option.minor_second' },
+                    { value: 'modular-1.250', labelKey: 'theming.token_editor.leaf.typography.heading_scale.option.major_third' },
+                    { value: 'modular-1.333', labelKey: 'theming.token_editor.leaf.typography.heading_scale.option.perfect_fourth' },
+                    { value: 'modular-1.500', labelKey: 'theming.token_editor.leaf.typography.heading_scale.option.perfect_fifth' },
+                ],
+            },
+            {
+                path: 'typography.weight.regular',
+                labelKey: 'theming.token_editor.leaf.typography.weight.regular.label',
+                type: 'number',
+                numberMin: 100,
+                numberMax: 900,
+            },
+            {
+                path: 'typography.weight.medium',
+                labelKey: 'theming.token_editor.leaf.typography.weight.medium.label',
+                type: 'number',
+                numberMin: 100,
+                numberMax: 900,
+            },
+            {
+                path: 'typography.weight.semibold',
+                labelKey: 'theming.token_editor.leaf.typography.weight.semibold.label',
+                type: 'number',
+                numberMin: 100,
+                numberMax: 900,
+            },
+            {
+                path: 'typography.weight.bold',
+                labelKey: 'theming.token_editor.leaf.typography.weight.bold.label',
+                type: 'number',
+                numberMin: 100,
+                numberMax: 900,
+            },
+            {
+                path: 'typography.lineHeight.tight',
+                labelKey: 'theming.token_editor.leaf.typography.line_height.tight.label',
+                type: 'number',
+                numberMin: 0.8,
+                numberMax: 2.5,
+            },
+            {
+                path: 'typography.lineHeight.normal',
+                labelKey: 'theming.token_editor.leaf.typography.line_height.normal.label',
+                type: 'number',
+                numberMin: 0.8,
+                numberMax: 2.5,
+            },
+            {
+                path: 'typography.lineHeight.relaxed',
+                labelKey: 'theming.token_editor.leaf.typography.line_height.relaxed.label',
+                type: 'number',
+                numberMin: 0.8,
+                numberMax: 2.5,
+            },
+            {
+                path: 'typography.letterSpacing.tight',
+                labelKey: 'theming.token_editor.leaf.typography.letter_spacing.tight.label',
+                type: 'text',
+                textPlaceholder: '-0.025em',
+            },
+            {
+                path: 'typography.letterSpacing.normal',
+                labelKey: 'theming.token_editor.leaf.typography.letter_spacing.normal.label',
+                type: 'text',
+                textPlaceholder: '0',
+            },
+            {
+                path: 'typography.letterSpacing.wide',
+                labelKey: 'theming.token_editor.leaf.typography.letter_spacing.wide.label',
+                type: 'text',
+                textPlaceholder: '0.05em',
+            },
+        ],
     },
+
+    // ── Effects — Stage 8b M1.C.3 ──────────────────────────────────
     {
         id: 'effects',
         labelKey: 'theming.token_editor.category.effects.label',
+        descriptionKey: 'theming.token_editor.category.effects.description',
         icon: 'fa-solid fa-wand-magic-sparkles',
-        leaves: [],
-        placeholder: true,
+        leaves: [
+            {
+                path: 'effects.backgroundTexture',
+                labelKey: 'theming.token_editor.leaf.effects.background_texture.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'none', labelKey: 'theming.token_editor.leaf.effects.background_texture.option.none' },
+                    { value: 'paper', labelKey: 'theming.token_editor.leaf.effects.background_texture.option.paper' },
+                    { value: 'noise', labelKey: 'theming.token_editor.leaf.effects.background_texture.option.noise' },
+                    { value: 'grid', labelKey: 'theming.token_editor.leaf.effects.background_texture.option.grid' },
+                    { value: 'scanlines', labelKey: 'theming.token_editor.leaf.effects.background_texture.option.scanlines' },
+                    { value: 'starfield', labelKey: 'theming.token_editor.leaf.effects.background_texture.option.starfield' },
+                ],
+            },
+            {
+                path: 'effects.backgroundIntensity',
+                labelKey: 'theming.token_editor.leaf.effects.background_intensity.label',
+                type: 'number',
+                numberMin: 0,
+                numberMax: 10,
+            },
+            {
+                path: 'effects.overlay',
+                labelKey: 'theming.token_editor.leaf.effects.overlay.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'none', labelKey: 'theming.token_editor.leaf.effects.overlay.option.none' },
+                    { value: 'glitch', labelKey: 'theming.token_editor.leaf.effects.overlay.option.glitch' },
+                    { value: 'vignette', labelKey: 'theming.token_editor.leaf.effects.overlay.option.vignette' },
+                    { value: 'paper-grain', labelKey: 'theming.token_editor.leaf.effects.overlay.option.paper_grain' },
+                    { value: 'crt', labelKey: 'theming.token_editor.leaf.effects.overlay.option.crt' },
+                ],
+            },
+            {
+                path: 'effects.overlayIntensity',
+                labelKey: 'theming.token_editor.leaf.effects.overlay_intensity.label',
+                type: 'number',
+                numberMin: 0,
+                numberMax: 10,
+            },
+            {
+                path: 'effects.cursor',
+                labelKey: 'theming.token_editor.leaf.effects.cursor.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'default', labelKey: 'theming.token_editor.leaf.effects.cursor.option.default' },
+                    { value: 'pixel', labelKey: 'theming.token_editor.leaf.effects.cursor.option.pixel' },
+                    { value: 'crosshair', labelKey: 'theming.token_editor.leaf.effects.cursor.option.crosshair' },
+                    { value: 'precision', labelKey: 'theming.token_editor.leaf.effects.cursor.option.precision' },
+                ],
+            },
+            {
+                path: 'effects.selectionStyle',
+                labelKey: 'theming.token_editor.leaf.effects.selection_style.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'default', labelKey: 'theming.token_editor.leaf.effects.selection_style.option.default' },
+                    { value: 'highlighted', labelKey: 'theming.token_editor.leaf.effects.selection_style.option.highlighted' },
+                    { value: 'inverted', labelKey: 'theming.token_editor.leaf.effects.selection_style.option.inverted' },
+                ],
+            },
+        ],
     },
+
+    // ── Layout — Stage 8b M1.C.3 ───────────────────────────────────
     {
         id: 'layout',
         labelKey: 'theming.token_editor.category.layout.label',
+        descriptionKey: 'theming.token_editor.category.layout.description',
         icon: 'fa-solid fa-grip',
-        leaves: [],
-        placeholder: true,
+        leaves: [
+            {
+                path: 'layout.density',
+                labelKey: 'theming.token_editor.leaf.layout.density.label',
+                descriptionKey: 'theming.token_editor.leaf.layout.density.description',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'compact', labelKey: 'theming.token_editor.leaf.layout.density.option.compact' },
+                    { value: 'comfortable', labelKey: 'theming.token_editor.leaf.layout.density.option.comfortable' },
+                    { value: 'spacious', labelKey: 'theming.token_editor.leaf.layout.density.option.spacious' },
+                ],
+            },
+            {
+                path: 'layout.contentMaxWidth',
+                labelKey: 'theming.token_editor.leaf.layout.content_max_width.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'narrow', labelKey: 'theming.token_editor.leaf.layout.content_max_width.option.narrow' },
+                    { value: 'standard', labelKey: 'theming.token_editor.leaf.layout.content_max_width.option.standard' },
+                    { value: 'wide', labelKey: 'theming.token_editor.leaf.layout.content_max_width.option.wide' },
+                    { value: 'full', labelKey: 'theming.token_editor.leaf.layout.content_max_width.option.full' },
+                ],
+            },
+            {
+                path: 'layout.containerPadding',
+                labelKey: 'theming.token_editor.leaf.layout.container_padding.label',
+                type: 'enum',
+                enumOptions: [
+                    { value: 'tight', labelKey: 'theming.token_editor.leaf.layout.container_padding.option.tight' },
+                    { value: 'standard', labelKey: 'theming.token_editor.leaf.layout.container_padding.option.standard' },
+                    { value: 'generous', labelKey: 'theming.token_editor.leaf.layout.container_padding.option.generous' },
+                ],
+            },
+        ],
     },
 ];
