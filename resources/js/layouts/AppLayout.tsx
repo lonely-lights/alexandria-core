@@ -597,6 +597,7 @@ export default function AppLayout({
             )}
 
             <main
+                data-theme-target="content"
                 className={[
                     immersive ? '' : 'pt-20',
                     // pb-[calc(5rem+env(safe-area-inset-bottom))] gives the

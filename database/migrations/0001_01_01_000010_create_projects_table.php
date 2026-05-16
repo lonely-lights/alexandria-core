@@ -63,6 +63,19 @@ return new class extends Migration
                 ->nullable()
                 ->comment('Additional unstructured data');
 
+            // Theming cascade (Stage 8b M1) — chrome + content read these
+            // when the project is current; the React-side ThemingBridge
+            // feeds them into resolveChromeTheme/resolveContentTheme.
+            // Chrome stops at this scope per the
+            // project_chrome_themed_at_project_scope guarantee; blueprint
+            // and entry overrides only affect the content area.
+            $table->string('theme_preset_slug')
+                ->nullable()
+                ->comment('Named preset slug (e.g. default, cyberpunk). NULL inherits user-level.');
+            $table->json('theme_override')
+                ->nullable()
+                ->comment('Sparse DeepPartial<ThemeTokens> JSON overlaid on the preset by the resolver');
+
             $table->timestamps();
             $table->softDeletes();
 

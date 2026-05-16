@@ -40,6 +40,8 @@ use Spatie\Tags\HasTags;
  * @property string|null $summary
  * @property string|null $contents
  * @property array<string, mixed>|null $metadata
+ * @property string|null $theme_preset_slug
+ * @property array<string, mixed>|null $theme_override
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -93,6 +95,7 @@ class Project extends Model implements HasMedia
     {
         return [
             'metadata' => 'array',
+            'theme_override' => 'array',
             'use_subdomain' => 'boolean',
         ];
     }
