@@ -77,6 +77,7 @@ interface DashboardProps {
     recentNotes: RecentNote[];
     stats: DashboardStats;
     greeting: DashboardGreeting;
+    [key: string]: unknown;
 }
 
 /**
@@ -103,7 +104,7 @@ const surfaceTinted: CSSProperties = {
 };
 
 export default function Dashboard() {
-    const { projects, recentEntries, recentNotes, stats, greeting } = usePage<{ props: DashboardProps }>().props as unknown as DashboardProps;
+    const { projects, recentEntries, recentNotes, stats, greeting } = usePage<DashboardProps>().props;
     const t = useT();
 
     // Default to 'rows' — grid view is temporarily hidden (see ViewToggle

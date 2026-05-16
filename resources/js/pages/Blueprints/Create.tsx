@@ -15,6 +15,7 @@ interface CreateProps {
         name: string;
         slug: string;
     };
+    [key: string]: unknown;
 }
 
 /* ── Style recipes ───────────────────────────────────────────────── */
@@ -275,7 +276,7 @@ function fieldTypeOptions(t: Translator) {
 
 export default function BlueprintCreate() {
     const t = useT();
-    const { project } = usePage().props as unknown as CreateProps;
+    const { project } = usePage<CreateProps>().props;
 
     const form = useForm({
         name: "",

@@ -8,11 +8,11 @@ import LegalPage, {
 
 interface PrivacyProps {
     copy: Record<string, string>;
+    [key: string]: unknown;
 }
 
 export default function Privacy() {
-    const { copy } = usePage<{ props: PrivacyProps }>()
-        .props as unknown as PrivacyProps;
+    const { copy } = usePage<PrivacyProps>().props;
 
     return (
         <LegalPage

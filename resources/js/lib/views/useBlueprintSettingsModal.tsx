@@ -13,7 +13,7 @@ import type { BlueprintShowProps } from '@alexandria/types/blueprints';
  * the page-level Settings button keeps working while a registry view is active.
  */
 export function useBlueprintSettingsModal(defaultMenu: string) {
-    const page = usePage().props as unknown as BlueprintShowProps;
+    const page = usePage<BlueprintShowProps>().props;
     const fullBlueprint = page.blueprint;
     const fullProject = page.project;
     const availableColumns = page.availableColumns ?? [];

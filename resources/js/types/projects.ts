@@ -120,6 +120,7 @@ export interface ProjectShowProps {
     dashboardBlueprints: DashboardBlueprintCard[];
     recentEntries: RecentEntryItem[];
     settings: ProjectSettings | null;
+    [key: string]: unknown;
 }
 
 export interface EntryPreview {

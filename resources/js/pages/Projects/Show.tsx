@@ -135,7 +135,7 @@ export default function ProjectShow() {
     // class — that keeps the DOM clean and avoids any chance of CSS
     // specificity collisions hiding the wrong element.
     const isMobile = useMediaQuery('(max-width: 1023px)');
-    const props = usePage().props as unknown as ProjectShowProps;
+    const props = usePage<ProjectShowProps>().props;
     const { project, stats, dashboardBlueprints, settings } = props;
     const blueprints: BlueprintCard[] = (props as unknown as { blueprints: BlueprintCard[] }).blueprints ?? [];
 

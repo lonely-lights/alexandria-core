@@ -123,6 +123,7 @@ export interface BlueprintShowProps {
     referencingRelationshipBlueprints: SiblingBlueprint[];
     projectBlueprints: SiblingBlueprint[];
     timelineBlueprints: TimelineBlueprintRef[];
+    [key: string]: unknown;
 }
 
 export interface EntryListItem {

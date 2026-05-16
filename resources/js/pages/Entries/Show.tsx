@@ -166,6 +166,7 @@ interface EntryShowProps {
         date: string;
         label: string;
     } | null;
+    [key: string]: unknown;
 }
 
 /* ── Tabs ── */
@@ -312,7 +313,7 @@ const saveBtnStyle: CSSProperties = {
 
 export default function EntryShow() {
     const t = useT();
-    const props = usePage().props as unknown as EntryShowProps;
+    const props = usePage<EntryShowProps>().props;
     const { project, blueprint, entry, contentHtml, summaryHtml, dynamicProperties, relationships, relationshipBlueprints, connections, mentions, mentionedIn, history, infoboxBlocks, timelineEvents, timelineEpoch } = props;
 
     const [showStructureConfig, setShowStructureConfig] = useState(false);

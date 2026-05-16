@@ -26,7 +26,7 @@ function viewFromHash(): View {
 }
 
 export default function NotesDashboard() {
-    const props = usePage().props as unknown as NotesDashboardProps;
+    const props = usePage<NotesDashboardProps>().props;
     const { project, stats, recentNotes } = props;
     const t = useT();
 

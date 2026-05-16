@@ -34,7 +34,7 @@ import { type ViewPreferences } from './Sections/PreferencesSection';
 type AccountInertiaProps = Omit<
     SettingsBodyProps,
     'accountManagementSlot' | 'applyViewPreferences'
->;
+> & { [key: string]: unknown };
 
 interface AccountSlotProps {
     /** App-supplied AccountManagementSection (email/password/danger zone). */
@@ -48,8 +48,7 @@ export default function Account({
     applyViewPreferences,
 }: AccountSlotProps = {}) {
     const t = useT();
-    const inertiaProps = usePage<{ props: AccountInertiaProps }>()
-        .props as unknown as AccountInertiaProps;
+    const inertiaProps = usePage<AccountInertiaProps>().props;
     const isMobile = useMediaQuery('(max-width: 1023px)');
 
     // Mobile-only: seed the drawer cache from this page's Inertia

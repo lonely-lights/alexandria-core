@@ -9,6 +9,7 @@ export interface NotesDashboardProps {
     };
     stats: NotesDashboardStats;
     recentNotes: Note[];
+    [key: string]: unknown;
 }
 
 export interface NotesDashboardStats {

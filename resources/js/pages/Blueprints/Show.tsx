@@ -70,7 +70,7 @@ export default function BlueprintShow() {
         referencingRelationshipBlueprints,
         projectBlueprints,
         timelineBlueprints,
-    } = usePage().props as unknown as BlueprintShowProps;
+    } = usePage<BlueprintShowProps>().props;
 
     const resolvedViews = useBlueprintViews({
         classification: blueprint.classification,

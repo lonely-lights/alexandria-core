@@ -11,6 +11,7 @@ export interface AiDashboardProps {
     providers: AiProvider[];
     settings: AiProjectSettings | null;
     userSettings: AiUserSettings | null;
+    [key: string]: unknown;
 }
 
 

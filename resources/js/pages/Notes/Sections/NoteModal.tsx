@@ -58,7 +58,7 @@ const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-c
 
 export default function NoteModal({ open, onClose, note, projectId, mode, onSaved, onRefresh, contextType = 'project', contextId }: NoteModalProps) {
     const t = useT();
-    const auth = (usePage().props as unknown as { auth?: { preferences?: { auto_save?: boolean } } }).auth;
+    const auth = usePage<{ auth?: { preferences?: { auto_save?: boolean } }; [key: string]: unknown }>().props.auth;
     const autoSave = auth?.preferences?.auto_save ?? true;
     const noteActions = useNoteActions(projectId);
     // Mobile pass: tighter padding, smaller header icon, smaller heading,

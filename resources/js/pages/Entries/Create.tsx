@@ -25,6 +25,7 @@ interface CreateProps {
         }>;
     };
     parentEntries: Array<{ id: number; name: string; slug: string }>;
+    [key: string]: unknown;
 }
 
 const subtitleStyle = {
@@ -33,7 +34,7 @@ const subtitleStyle = {
 
 export default function EntryCreate() {
     const t = useT();
-    const { project, blueprint, parentEntries } = usePage().props as unknown as CreateProps;
+    const { project, blueprint, parentEntries } = usePage<CreateProps>().props;
     const iconClass = blueprint.icon.includes(' ') ? blueprint.icon : `fa-solid ${blueprint.icon}`;
     const createTitle = t('entries.form.create.title').replace(':blueprint', blueprint.name);
 

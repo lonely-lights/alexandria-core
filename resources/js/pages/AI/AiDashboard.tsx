@@ -49,7 +49,7 @@ function tabFromHash(): Tab {
 
 export default function AiDashboard() {
     const t = useT();
-    const props = usePage().props as unknown as AiDashboardProps;
+    const props = usePage<AiDashboardProps>().props;
     const { project, stats, providers, settings, userSettings } = props;
 
     const [activeTab, setActiveTab] = useState<Tab>(tabFromHash);

@@ -36,6 +36,7 @@ interface EditProps {
     };
     fieldValues: Record<string, unknown>;
     parentEntries: Array<{ id: number; name: string; slug: string }>;
+    [key: string]: unknown;
 }
 
 const subtitleStyle: CSSProperties = {
@@ -56,7 +57,7 @@ const stubBadgeStyle: CSSProperties = {
 
 export default function EntryEdit() {
     const t = useT();
-    const { project, blueprint, entry, fieldValues, parentEntries } = usePage().props as unknown as EditProps;
+    const { project, blueprint, entry, fieldValues, parentEntries } = usePage<EditProps>().props;
     const iconClass = blueprint.icon.includes(' ') ? blueprint.icon : `fa-solid ${blueprint.icon}`;
     const editTitle = t('entries.form.edit.title').replace(':entry', entry.name);
 

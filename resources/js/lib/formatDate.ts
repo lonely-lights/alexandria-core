@@ -10,6 +10,7 @@ interface AuthProps {
             time_format?: TimeFormat;
         };
     } | null;
+    [key: string]: unknown;
 }
 
 /** Check if a value is a date-only string (YYYY-MM-DD with no time component) */
@@ -28,7 +29,7 @@ function parseDateParts(value: string): [number, number, number] | null {
  * Get the user's date/time format preferences from Inertia shared props.
  */
 export function useDatePreferences(): { dateFormat: DateFormat; timeFormat: TimeFormat } {
-    const { auth } = usePage().props as unknown as AuthProps;
+    const { auth } = usePage<AuthProps>().props;
     return {
         dateFormat: auth?.preferences?.date_format ?? 'MDY',
         timeFormat: auth?.preferences?.time_format ?? '12h',

@@ -6,11 +6,11 @@ import LegalPage, {
 
 interface TermsProps {
     copy: Record<string, string>;
+    [key: string]: unknown;
 }
 
 export default function Terms() {
-    const { copy } = usePage<{ props: TermsProps }>()
-        .props as unknown as TermsProps;
+    const { copy } = usePage<TermsProps>().props;
 
     return (
         <LegalPage
