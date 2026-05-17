@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * Theme-system UI strings — Stage 8b.
  *
