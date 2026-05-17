@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-import useT from '@alexandria/hooks/useT';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 
 /**
  * Preset cards + inherit-cascade button. Stage 8b M2 extraction —
@@ -49,6 +49,25 @@ const PRESETS: PresetMeta[] = [
     },
 ];
 
+/**
+ * Lookup a preset's translated display name by slug. Returns the
+ * slug as a capitalized fallback if the registry doesn't have it
+ * (e.g. an unrecognized slug surfaced from page props).
+ *
+ * Exported so the Theme panels can build their own inheritance
+ * hint strings without re-importing the PRESETS list.
+ */
+export function getPresetName(
+    t: Translator,
+    slug: string | null | undefined,
+): string {
+    const meta = slug ? PRESETS.find((p) => p.slug === slug) : null;
+
+    return meta
+        ? t(meta.nameKey)
+        : (slug ?? 'default').replace(/^./, (c) => c.toUpperCase());
+}
+
 interface ThemePresetPickerProps {
     /** Currently-set preset slug at this scope, or null if inheriting. */
     activeSlug: string | null | undefined;
@@ -58,6 +77,13 @@ interface ThemePresetPickerProps {
     inheritLabelKey: string;
     /** Translation key for the helper text next to the Reset button. */
     inheritHintKey: string;
+    /**
+     * Stage 8b M4.4 — when activeSlug is null, shows this line below
+     * the grid to clarify what's being inherited (e.g. "Inheriting
+     * the blueprint's Cyberpunk theme"). Caller computes the full
+     * string so the picker stays generic; pass undefined to skip.
+     */
+    inheritedFromText?: string;
 }
 
 const subtleText: CSSProperties = {
@@ -117,6 +143,7 @@ export default function ThemePresetPicker({
     onPick,
     inheritLabelKey,
     inheritHintKey,
+    inheritedFromText,
 }: ThemePresetPickerProps) {
     const t = useT();
     // `null`/`undefined` slug means inheriting — default appears active visually.
@@ -197,6 +224,16 @@ export default function ThemePresetPicker({
                         {t(inheritHintKey)}
                     </p>
                 </div>
+            )}
+
+            {!hasOverride && inheritedFromText && (
+                <p className="flex items-center gap-1.5 text-xs italic" style={microText}>
+                    <i
+                        className="fa-solid fa-arrow-up text-[10px]"
+                        aria-hidden="true"
+                    />
+                    {inheritedFromText}
+                </p>
             )}
         </div>
     );

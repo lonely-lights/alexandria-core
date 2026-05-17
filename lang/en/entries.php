@@ -82,6 +82,9 @@ return [
     'entry_settings.theme.subtitle' => 'Choose a preset to override the blueprint\'s theme for this entry only, or leave inherited to follow the cascade.',
     'entry_settings.theme.inherit_blueprint' => 'Inherit blueprint theme',
     'entry_settings.theme.inherit_hint' => 'Reset this entry to follow the blueprint\'s theme.',
+    'entry_settings.theme.inheriting_from_blueprint' => 'Inheriting the blueprint\'s :preset theme',
+    'entry_settings.theme.inheriting_from_project' => 'Inheriting the project\'s :preset theme',
+    'entry_settings.theme.inheriting_from_default' => 'Inheriting the default :preset theme',
     'entry_settings.theme.fine_tune.title' => 'Fine-tune tokens',
     'entry_settings.theme.fine_tune.subtitle' => 'Override individual tokens on top of the preset. Changes preview live as you edit and only persist when you save.',
 

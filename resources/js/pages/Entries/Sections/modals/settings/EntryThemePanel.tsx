@@ -1,12 +1,25 @@
 import { useState, type CSSProperties } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import type { FormDataConvertible } from '@inertiajs/core';
 
-import ThemePresetPicker from '@alexandria/components/theming/ThemePresetPicker';
+import ThemePresetPicker, {
+    getPresetName,
+} from '@alexandria/components/theming/ThemePresetPicker';
 import TokenOverrideEditor from '@alexandria/components/theming/TokenOverrideEditor';
 import useT from '@alexandria/hooks/useT';
 import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
 import type { EntryShowEntry } from '@alexandria/pages/Entries/Show';
+
+/**
+ * Page-level theme shape (read from currentProject + blueprint shared
+ * props) — used for the M4.4 inheritance hint that walks up the
+ * cascade to find which parent scope the entry is inheriting from.
+ */
+interface SharedCascadeThemeProps {
+    currentProject?: { theme_preset_slug?: string | null } | null;
+    blueprint?: { theme_preset_slug?: string | null } | null;
+    [key: string]: unknown;
+}
 
 /**
  * Entry Settings Modal → Theme panel — Stage 8b M3.
@@ -43,7 +56,24 @@ export default function EntryThemePanel({
     entry,
 }: EntryThemePanelProps) {
     const t = useT();
+    const page = usePage<SharedCascadeThemeProps>();
     const [editorOpen, setEditorOpen] = useState(false);
+
+    // M4.4 — walk up the cascade to find the active parent preset.
+    // Blueprint preset takes precedence over project; if both are
+    // null we fall back to "Default" (account-level user preference,
+    // which isn't yet surfaced server-side).
+    const blueprintPresetSlug = page.props.blueprint?.theme_preset_slug ?? null;
+    const projectPresetSlug = page.props.currentProject?.theme_preset_slug ?? null;
+    const parentSlug = blueprintPresetSlug ?? projectPresetSlug;
+    const parentScope = blueprintPresetSlug
+        ? 'blueprint'
+        : projectPresetSlug
+          ? 'project'
+          : 'default';
+    const inheritedFromText = t(
+        `entries.entry_settings.theme.inheriting_from_${parentScope}`,
+    ).replace(':preset', getPresetName(t, parentSlug));
 
     function applyPreset(slug: string | null) {
         router.patch(
@@ -78,6 +108,7 @@ export default function EntryThemePanel({
                 onPick={applyPreset}
                 inheritLabelKey="entries.entry_settings.theme.inherit_blueprint"
                 inheritHintKey="entries.entry_settings.theme.inherit_hint"
+                inheritedFromText={inheritedFromText}
             />
 
             {/* Fine-tune disclosure */}

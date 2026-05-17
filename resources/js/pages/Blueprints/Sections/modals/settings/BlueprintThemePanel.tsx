@@ -1,12 +1,24 @@
 import { useState, type CSSProperties } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import type { FormDataConvertible } from '@inertiajs/core';
 
-import ThemePresetPicker from '@alexandria/components/theming/ThemePresetPicker';
+import ThemePresetPicker, {
+    getPresetName,
+} from '@alexandria/components/theming/ThemePresetPicker';
 import TokenOverrideEditor from '@alexandria/components/theming/TokenOverrideEditor';
 import useT from '@alexandria/hooks/useT';
 import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
 import type { BlueprintDetail } from '@alexandria/types/blueprints';
+
+/**
+ * Page-level project shape (read from currentProject shared prop) —
+ * used for the M4.4 inheritance hint that surfaces what preset the
+ * blueprint is inheriting when no override is set.
+ */
+interface SharedProjectThemeProps {
+    currentProject?: { theme_preset_slug?: string | null } | null;
+    [key: string]: unknown;
+}
 
 /**
  * Blueprint Settings Modal → Theme panel — Stage 8b M2.
@@ -39,7 +51,16 @@ export default function BlueprintThemePanel({
     blueprint,
 }: BlueprintThemePanelProps) {
     const t = useT();
+    const page = usePage<SharedProjectThemeProps>();
     const [editorOpen, setEditorOpen] = useState(false);
+
+    // M4.4 — when the blueprint inherits, surface which preset the
+    // project is currently set to (or "Default" if the project also
+    // inherits all the way up).
+    const projectPresetSlug = page.props.currentProject?.theme_preset_slug ?? null;
+    const inheritedFromText = t(
+        'blueprints.bp_settings.theme.inheriting_from',
+    ).replace(':preset', getPresetName(t, projectPresetSlug));
 
     function applyPreset(slug: string | null) {
         router.patch(
@@ -74,6 +95,7 @@ export default function BlueprintThemePanel({
                 onPick={applyPreset}
                 inheritLabelKey="blueprints.bp_settings.theme.inherit_project"
                 inheritHintKey="blueprints.bp_settings.theme.inherit_hint"
+                inheritedFromText={inheritedFromText}
             />
 
             {/* Fine-tune disclosure */}

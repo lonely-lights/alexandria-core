@@ -323,6 +323,7 @@ return [
     'bp_settings.theme.subtitle' => 'Pick a base preset and (optionally) fine-tune any token. These overrides only paint the content area below the chrome.',
     'bp_settings.theme.inherit_project' => 'Inherit project theme',
     'bp_settings.theme.inherit_hint' => 'Clears the blueprint theme so this blueprint follows the project cascade.',
+    'bp_settings.theme.inheriting_from' => 'Inheriting the project\'s :preset theme',
     'bp_settings.theme.fine_tune.title' => 'Fine-tune tokens',
     'bp_settings.theme.fine_tune.subtitle' => 'Override individual tokens on top of the preset. Changes preview live as you edit and only persist when you save.',
 
