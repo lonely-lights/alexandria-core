@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
+
+import type { SharedProps } from "@alexandria/types";
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import Button from "@alexandria/components/ui/Button";
 import ConfirmModal from "@alexandria/components/ui/ConfirmModal";
@@ -133,6 +135,9 @@ export default function MembersSection({
     settings,
 }: MembersSectionProps) {
     const t = useT();
+    const page = usePage<SharedProps>();
+    const isAdmin = page.props.auth?.is_admin === true;
+
     const [showInvite, setShowInvite] = useState(false);
     const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(
         null,
@@ -142,22 +147,58 @@ export default function MembersSection({
     const [editRole, setEditRole] = useState("");
     const [pendingRemoveId, setPendingRemoveId] = useState<number | null>(null);
 
+    // Admin-only: invite-to-list multi-select. Loaded lazily when
+    // the modal opens so non-admins (and admins who never open
+    // the invite flow) don't pay the fetch cost.
+    const [instanceLists, setInstanceLists] = useState<
+        { id: number; name: string; slug: string }[]
+    >([]);
+    const [selectedListIds, setSelectedListIds] = useState<number[]>([]);
+
+    useEffect(() => {
+        if (!showInvite || !isAdmin || instanceLists.length > 0) return;
+        let cancelled = false;
+        fetch("/admin/lists-instance-options", {
+            headers: { Accept: "application/json" },
+        })
+            .then((r) => (r.ok ? r.json() : { lists: [] }))
+            .then((data) => {
+                if (!cancelled) setInstanceLists(data.lists ?? []);
+            })
+            .catch(() => {
+                /* silently degrade — admin sees an empty picker */
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [showInvite, isAdmin, instanceLists.length]);
+
     function resetInviteForm() {
         setSelectedUser(null);
         setRole("Viewer");
+        setSelectedListIds([]);
     }
 
     function handleInvite() {
         if (!selectedUser) return;
-        router.post(
-            `/p/${project.slug}/members`,
-            { user_id: selectedUser.id, role },
-            {
-                onSuccess: () => {
-                    setShowInvite(false);
-                    resetInviteForm();
-                },
+        const payload: Record<string, string | number | number[]> = {
+            user_id: selectedUser.id,
+            role,
+        };
+        if (isAdmin && selectedListIds.length > 0) {
+            payload.list_ids = selectedListIds;
+        }
+        router.post(`/p/${project.slug}/members`, payload, {
+            onSuccess: () => {
+                setShowInvite(false);
+                resetInviteForm();
             },
+        });
+    }
+
+    function toggleListId(id: number) {
+        setSelectedListIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
         );
     }
 
@@ -352,6 +393,36 @@ export default function MembersSection({
                             )}
                         />
                     </div>
+
+                    {isAdmin && instanceLists.length > 0 && (
+                        <div className="flex flex-col">
+                            <label className="mb-1 text-sm font-semibold">
+                                {t("projects.members.invite_modal.lists_label")}
+                            </label>
+                            <p className="mb-2 text-xs" style={microText}>
+                                {t("projects.members.invite_modal.lists_hint")}
+                            </p>
+                            <div
+                                className="max-h-48 overflow-y-auto"
+                                style={dropdownStyle}
+                            >
+                                {instanceLists.map((list) => (
+                                    <label
+                                        key={list.id}
+                                        className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm"
+                                        style={dropdownItemStyle}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedListIds.includes(list.id)}
+                                            onChange={() => toggleListId(list.id)}
+                                        />
+                                        <span>{list.name}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <ModalFooter>
                     <Button

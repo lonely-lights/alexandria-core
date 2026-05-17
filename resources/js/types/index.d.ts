@@ -9,6 +9,8 @@ export interface FlashMessage {
 export interface SharedProps {
     auth: {
         user: User;
+        // Coarse UI-gating flag; server-side gates remain authoritative.
+        is_admin: boolean;
     } | null;
     flash: FlashMessage;
     projects: ProjectSummary[];

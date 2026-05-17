@@ -125,6 +125,8 @@ return [
     'members.invite_modal.user_searching' => 'Searching…',
     'members.invite_modal.change_user' => 'Change',
     'members.invite_modal.role_label' => 'Role',
+    'members.invite_modal.lists_label' => 'Add to lists (admin)',
+    'members.invite_modal.lists_hint' => 'Instance-scope lists. Selected lists will receive this member after invite.',
     'members.invite_modal.cancel' => 'Cancel',
     'members.invite_modal.submit' => 'Invite',
     'members.edit_role_aria' => 'Edit role',

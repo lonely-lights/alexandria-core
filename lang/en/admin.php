@@ -21,6 +21,7 @@ return [
     'nav.projects' => 'Projects',
     'nav.permissions' => 'Permissions',
     'nav.registration' => 'Registration',
+    'nav.lists' => 'Lists',
     'nav.back_to_app' => 'Back to app',
 
     // ── Dashboard ───────────────────────────────────────────────────
@@ -241,4 +242,72 @@ return [
     // exhausts. ValidationException wraps these into a 422 flash.
     'users.quota.exhausted' => 'You have no invites remaining.',
     'users.quota.exhausted_with_replenish' => 'You have no invites remaining. Next replenishment :when.',
+
+    // ── Lists surface (Stage 8c.E.3 Phase 2) ─────────────────────────
+    'lists.title' => 'Invite lists',
+    'lists.subtitle' => 'Admin-defined cohorts that can grant roles, permissions, and feature flags to members.',
+    'lists.empty' => 'No lists yet. Create one to get started.',
+    'lists.search_placeholder' => 'Search by name or slug',
+    'lists.create' => 'Create list',
+
+    'lists.col.name' => 'Name',
+    'lists.col.scope' => 'Scope',
+    'lists.col.members' => 'Members',
+    'lists.col.auto_role' => 'Auto-role',
+    'lists.col.created' => 'Created',
+
+    'lists.scope.instance' => 'Instance',
+    'lists.scope.project' => 'Project',
+    'lists.filter.all_scopes' => 'All scopes',
+
+    'lists.field.name' => 'Name',
+    'lists.field.slug' => 'Slug',
+    'lists.field.description' => 'Description',
+    'lists.field.scope' => 'Scope',
+    'lists.field.project' => 'Project',
+    'lists.field.auto_role' => 'Auto-role on join',
+    'lists.field.no_auto_role' => '— none —',
+
+    'lists.detail.section.members' => 'Members',
+    'lists.detail.section.permissions' => 'Permissions',
+    'lists.detail.section.feature_flags' => 'Feature flags',
+    'lists.detail.section.audit' => 'Audit',
+    'lists.detail.section.settings' => 'Settings',
+
+    'lists.members.empty' => 'No members yet.',
+    'lists.members.add' => 'Add member',
+    'lists.members.search_placeholder' => 'Search users by name or email…',
+    'lists.members.remove_confirm' => 'Remove this user from the list?',
+    'lists.members.added_by' => 'Added by',
+    'lists.members.added_at' => 'Added at',
+
+    'lists.permissions.empty' => 'No permissions defined.',
+    'lists.permissions.save' => 'Save permissions',
+
+    'lists.feature_flags.empty' => 'No feature flags yet.',
+    'lists.feature_flags.add_placeholder' => 'feature.key.name',
+    'lists.feature_flags.add' => 'Add flag',
+    'lists.feature_flags.save' => 'Save flags',
+
+    'lists.audit.empty' => 'No audit entries yet.',
+    'lists.audit.action.added' => 'Added :user',
+    'lists.audit.action.removed' => 'Removed :user',
+    'lists.audit.action.list_created' => 'List created',
+    'lists.audit.action.list_updated' => 'List updated',
+    'lists.audit.action.list_deleted' => 'List deleted',
+    'lists.audit.action.permissions_synced' => 'Permissions synced (:count)',
+    'lists.audit.action.feature_flags_synced' => 'Feature flags synced (:count)',
+    'lists.audit.by_actor' => 'by :actor',
+    'lists.audit.by_system' => 'by system',
+
+    'lists.action.delete' => 'Delete list',
+    'lists.action.delete_confirm' => 'Delete this list? All membership + permission grants will be revoked immediately.',
+
+    'lists.flash.created' => 'List created.',
+    'lists.flash.updated' => 'List updated.',
+    'lists.flash.deleted' => 'List deleted.',
+    'lists.flash.member_added' => 'Member added to list.',
+    'lists.flash.member_removed' => 'Member removed from list.',
+    'lists.flash.permissions_synced' => 'Permissions saved.',
+    'lists.flash.feature_flags_synced' => 'Feature flags saved.',
 ];
