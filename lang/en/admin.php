@@ -236,4 +236,9 @@ return [
 
     'registration.flash.settings_updated' => 'Registration settings updated.',
     'registration.flash.policy_updated' => 'Quota policy updated.',
+
+    // Quota gate (Stage 8c.E.2) — surfaces in Members tab when invite
+    // exhausts. ValidationException wraps these into a 422 flash.
+    'users.quota.exhausted' => 'You have no invites remaining.',
+    'users.quota.exhausted_with_replenish' => 'You have no invites remaining. Next replenishment :when.',
 ];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -43,7 +44,7 @@ class InstanceSettings extends Model
      * The canonical singleton row. Always id=1 (seeded by the
      * create migration so this never has to firstOrCreate).
      */
-    public static function instance(): self
+    public static function instance(): Collection|Model
     {
         return self::query()->findOrFail(1);
     }
