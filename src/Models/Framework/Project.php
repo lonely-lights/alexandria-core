@@ -42,6 +42,8 @@ use Spatie\Tags\HasTags;
  * @property array<string, mixed>|null $metadata
  * @property string|null $theme_preset_slug
  * @property array<string, mixed>|null $theme_override
+ * @property Carbon|null $locked_at
+ * @property Carbon|null $archived_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -71,6 +73,8 @@ use Spatie\Tags\HasTags;
  * @method static Builder<static> query()
  * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
  * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
+ * @method bool isLocked()
+ * @method bool isArchived()
  */
 class Project extends Model implements HasMedia
 {
@@ -97,7 +101,28 @@ class Project extends Model implements HasMedia
             'metadata' => 'array',
             'theme_override' => 'array',
             'use_subdomain' => 'boolean',
+            'locked_at' => 'datetime',
+            'archived_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Stage 8c.C — admin-issued lock prevents writes from anyone
+     * except admins (who can unlock). Checked by ProjectPolicy.
+     */
+    public function isLocked(): bool
+    {
+        return $this->locked_at !== null;
+    }
+
+    /**
+     * Stage 8c.C — archive hides the project from default lists
+     * but it remains browsable by the owner. Distinct from
+     * soft-delete (deleted_at) which is the trash bin.
+     */
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
     }
 
     /**

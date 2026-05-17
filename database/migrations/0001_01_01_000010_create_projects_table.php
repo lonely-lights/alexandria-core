@@ -76,6 +76,15 @@ return new class extends Migration
                 ->nullable()
                 ->comment('Sparse DeepPartial<ThemeTokens> JSON overlaid on the preset by the resolver');
 
+            // Stage 8c.C — admin-issued lock + archive lifecycle.
+            // - locked_at: NULL = writable; timestamp = read-only-for-everyone
+            //   (ProjectPolicy::update denies; only admin can unlock).
+            // - archived_at: NULL = visible in default lists; timestamp = hidden
+            //   from default queries, still browsable by owner. Distinct from
+            //   soft-delete (deleted_at) which is the trash bin.
+            $table->timestamp('locked_at')->nullable();
+            $table->timestamp('archived_at')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
 

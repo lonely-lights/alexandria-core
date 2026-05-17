@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
+import { useDropdownClose } from '@alexandria/hooks/useDropdownClose';
 import useT from '@alexandria/hooks/useT';
 
 /**
@@ -28,17 +29,7 @@ export default function UserActionDropdown({
     const t = useT();
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!open) return;
-        function handler(e: MouseEvent) {
-            if (ref.current && !ref.current.contains(e.target as Node)) {
-                setOpen(false);
-            }
-        }
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [open]);
+    useDropdownClose(open, setOpen, ref);
 
     function suspend() {
         if (!window.confirm(t('admin.users.action.suspend.confirm'))) return;
