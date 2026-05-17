@@ -250,4 +250,21 @@ return [
     'token_editor.leaf.layout.container_padding.option.tight' => 'Tight',
     'token_editor.leaf.layout.container_padding.option.standard' => 'Standard',
     'token_editor.leaf.layout.container_padding.option.generous' => 'Generous',
+
+    // ── Brand.extras + Themed dynamic-keys editor (M4.5) ─────────────
+    'token_editor.leaf.brand.extras.label' => 'Brand extras',
+    'token_editor.leaf.brand.extras.description' => 'Extra brand-color anchors beyond primary / secondary / accent. Add or rename freely; preset-defined entries are replaced wholesale when overridden.',
+    'token_editor.category.themed.label' => 'Theme-specific extras',
+    'token_editor.category.themed.description' => 'Anchors that don\'t fit the standard buckets — cyberpunk\'s neon hues, sepia\'s accent gilt. Add your own named colors here.',
+    'token_editor.leaf.themed.label' => 'Themed colors',
+    'token_editor.leaf.themed.description' => 'Free-form named color anchors. Overrides replace the entire map (cascade is non-merging at this path), so the editor reads the merged state and writes the full intended map back.',
+    'token_editor.color_map.remove_aria' => 'Remove this entry',
+    'token_editor.color_map.key_aria' => 'Key name',
+    'token_editor.color_map.value_aria' => 'Color value',
+    'token_editor.color_map.new_key_aria' => 'New key name',
+    'token_editor.color_map.new_value_aria' => 'New color value',
+    'token_editor.color_map.new_key_placeholder' => 'newKey',
+    'token_editor.color_map.error.empty_key' => 'Key cannot be empty.',
+    'token_editor.color_map.error.duplicate_key' => 'A key with this name already exists.',
+    'token_editor.color_map.error.invalid_key' => 'Keys must start with a letter and contain only letters, digits, and underscores.',
 ];

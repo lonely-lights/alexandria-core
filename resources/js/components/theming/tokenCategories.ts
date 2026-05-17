@@ -50,7 +50,8 @@ export type LeafType =
     | 'text'                   // M1.C.2 — any CSS-string value
     | 'number'                 // M1.C.2 — numeric with optional unit
     | 'enum'                   // M1.C.2 — select dropdown
-    | 'font-stack';            // M1.C.3 — Typography heading/body/mono picker
+    | 'font-stack'             // M1.C.3 — Typography heading/body/mono picker
+    | 'color-anchor-map';      // M4.5 — dynamic-keys Record<string, ColorAnchor>
 
 // ----------------------------------------------------------------------------
 // Leaf + category shape
@@ -182,6 +183,13 @@ export const TOKEN_CATEGORIES: TokenCategory[] = [
                 descriptionKey:
                     'theming.token_editor.leaf.brand.accent.description',
                 type: 'color-anchor',
+            },
+            {
+                path: 'brand.extras',
+                labelKey: 'theming.token_editor.leaf.brand.extras.label',
+                descriptionKey:
+                    'theming.token_editor.leaf.brand.extras.description',
+                type: 'color-anchor-map',
             },
         ],
     },
@@ -816,6 +824,24 @@ export const TOKEN_CATEGORIES: TokenCategory[] = [
                     { value: 'standard', labelKey: 'theming.token_editor.leaf.layout.container_padding.option.standard' },
                     { value: 'generous', labelKey: 'theming.token_editor.leaf.layout.container_padding.option.generous' },
                 ],
+            },
+        ],
+    },
+
+    // ── Themed — Stage 8b M4.5 ─────────────────────────────────────
+    // Dynamic-keys map for theme-specific extra anchors that don't
+    // fit the standard buckets (cyberpunk's neon hues, sepia's gilt).
+    {
+        id: 'themed',
+        labelKey: 'theming.token_editor.category.themed.label',
+        descriptionKey: 'theming.token_editor.category.themed.description',
+        icon: 'fa-solid fa-flask',
+        leaves: [
+            {
+                path: 'themed',
+                labelKey: 'theming.token_editor.leaf.themed.label',
+                descriptionKey: 'theming.token_editor.leaf.themed.description',
+                type: 'color-anchor-map',
             },
         ],
     },

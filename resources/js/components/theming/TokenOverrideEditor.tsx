@@ -12,6 +12,7 @@ import {
 import { useThemePreview } from '@alexandria/lib/themePreview';
 
 import ColorAnchorEditor from './ColorAnchorEditor';
+import ColorAnchorMapEditor from './ColorAnchorMapEditor';
 import EnumSelect from './EnumSelect';
 import FontStackEditor from './FontStackEditor';
 import NullableColorAnchorEditor from './NullableColorAnchorEditor';
@@ -129,6 +130,25 @@ export default function TokenOverrideEditor({
             // Empty string = the user toggled the color OFF. Persist
             // null so the resolver renders the "no tint" branch.
             value = null;
+        } else if (leaf.type === 'color-anchor-map') {
+            // ColorAnchorMapEditor commits the full intended map as
+            // JSON. Decode so the override stores a real Record the
+            // resolver can replace wholesale (NON_MERGING_PATHS).
+            try {
+                value = raw ? JSON.parse(raw) : {};
+            } catch {
+                return;
+            }
+            // Empty map = "cleared back to inherited" — prune the
+            // override path so the cascade falls through.
+            if (
+                value &&
+                typeof value === 'object' &&
+                Object.keys(value as Record<string, unknown>).length === 0
+            ) {
+                setWip((prev) => unsetPath(prev, leaf.path));
+                return;
+            }
         }
         setWip((prev) => setPath(prev, leaf.path, value));
     }
@@ -218,6 +238,15 @@ export default function TokenOverrideEditor({
             case 'font-stack':
                 editor = (
                     <FontStackEditor
+                        value={value}
+                        overridden={overridden}
+                        onCommit={(next) => commitLeaf(leaf, next)}
+                    />
+                );
+                break;
+            case 'color-anchor-map':
+                editor = (
+                    <ColorAnchorMapEditor
                         value={value}
                         overridden={overridden}
                         onCommit={(next) => commitLeaf(leaf, next)}
