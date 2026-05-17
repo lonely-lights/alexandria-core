@@ -208,4 +208,32 @@ return [
     'permissions.flash.category_created' => 'Category created.',
     'permissions.flash.category_updated' => 'Category updated.',
     'permissions.flash.category_deleted' => 'Category deleted.',
+
+    // ── Registration + invite quotas (Stage 8c.E.1) ──────────────────
+    'registration.title' => 'Registration & Invites',
+    'registration.subtitle' => 'Instance-wide registration policy + per-role invite quotas.',
+    'registration.section.policy' => 'Registration policy',
+    'registration.section.quotas' => 'Invite quota policies',
+    'registration.quota_section_help' => 'Per-role quota rules. \'Unlimited\' bypasses the gate entirely; \'one-time\' grants invites once at account creation; \'scheduled\' replenishes per cycle up to the cap. The gate itself wires in 8c.E.2.',
+
+    'registration.field.open_registration' => 'Open registration',
+    'registration.field.open_registration_desc' => 'When off, /register requires a valid invite token. New accounts can only be created via invitation.',
+    'registration.field.users_can_invite' => 'Users can invite',
+    'registration.field.users_can_invite_desc' => 'When off, only operators (Owner / SysOp) can issue invites. Quota policies still apply when on.',
+
+    'registration.col.role' => 'Role',
+    'registration.col.mode' => 'Mode',
+    'registration.col.initial' => 'Initial',
+    'registration.col.per_cycle' => 'Per cycle',
+    'registration.col.cycle' => 'Cycle',
+    'registration.col.cap' => 'Cap',
+    'registration.col.actions' => 'Actions',
+    'registration.no_policy' => 'No policy yet — click Edit to create one.',
+
+    'registration.mode.unlimited' => 'Unlimited',
+    'registration.mode.one_time' => 'One-time',
+    'registration.mode.scheduled' => 'Scheduled',
+
+    'registration.flash.settings_updated' => 'Registration settings updated.',
+    'registration.flash.policy_updated' => 'Quota policy updated.',
 ];
