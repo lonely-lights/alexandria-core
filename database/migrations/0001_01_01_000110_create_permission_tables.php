@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -56,7 +57,22 @@ return new class extends Migration
             $table->foreign('category_id')->references('id')->on('role_permission_categories')->onDelete('set null');
         });
 
+        // Note on the surrogate `id` PK + UNIQUE NULLS NOT DISTINCT
+        // pattern below — when teams=true, the team_foreign_key
+        // (`project_id`) must allow NULL for app-level role assignments
+        // (Spatie's "global" scope). PostgreSQL enforces NOT NULL on
+        // every PK column regardless of `->nullable()`, so the original
+        // Spatie composite PK (team_foreign_key first) is incompatible.
+        // We use a synthetic `id` PK + a composite UNIQUE constraint
+        // with NULLS NOT DISTINCT (PG 15+) so two rows with the same
+        // (NULL, role, user, model_type) tuple are still rejected.
+        // SQLite fallback uses a regular composite unique — less strict
+        // but tests don't exercise the duplicate-NULL detection.
+
         Schema::create($tableNames['model_has_permissions'], static function (Blueprint $table) use ($tableNames, $columnNames, $pivotPermission, $teams) {
+            if ($teams) {
+                $table->bigIncrements('id');
+            }
             $table->unsignedBigInteger($pivotPermission);
 
             $table->string('model_type');
@@ -70,11 +86,6 @@ return new class extends Migration
             if ($teams) {
                 $table->unsignedBigInteger($columnNames['team_foreign_key'])->nullable(); // Nullable for global permissions
                 $table->index($columnNames['team_foreign_key'], 'model_has_permissions_team_foreign_key_index');
-
-                $table->primary(
-                    [$columnNames['team_foreign_key'], $pivotPermission, $columnNames['model_morph_key'], 'model_type'],
-                    'model_has_permissions_permission_model_type_primary'
-                );
             } else {
                 $table->primary(
                     [$pivotPermission, $columnNames['model_morph_key'], 'model_type'],
@@ -84,6 +95,9 @@ return new class extends Migration
         });
 
         Schema::create($tableNames['model_has_roles'], static function (Blueprint $table) use ($tableNames, $columnNames, $pivotRole, $teams) {
+            if ($teams) {
+                $table->bigIncrements('id');
+            }
             $table->unsignedBigInteger($pivotRole);
 
             $table->string('model_type');
@@ -97,11 +111,6 @@ return new class extends Migration
             if ($teams) {
                 $table->unsignedBigInteger($columnNames['team_foreign_key'])->nullable(); // Nullable for global roles
                 $table->index($columnNames['team_foreign_key'], 'model_has_roles_team_foreign_key_index');
-
-                $table->primary(
-                    [$columnNames['team_foreign_key'], $pivotRole, $columnNames['model_morph_key'], 'model_type'],
-                    'model_has_roles_role_model_type_primary'
-                );
             } else {
                 $table->primary(
                     [$pivotRole, $columnNames['model_morph_key'], 'model_type'],
@@ -109,6 +118,34 @@ return new class extends Migration
                 );
             }
         });
+
+        // Driver-specific composite uniqueness for the teams=true case.
+        if ($teams) {
+            $driver = DB::connection()->getDriverName();
+            $teamCol = $columnNames['team_foreign_key'];
+            $morphCol = $columnNames['model_morph_key'];
+
+            if ($driver === 'pgsql') {
+                // NULLS NOT DISTINCT (PG 15+) treats two NULL team_ids
+                // as equal so duplicate app-level role assignments still
+                // collide. Required because PostgreSQL would otherwise
+                // allow infinitely many (NULL, role, user) rows.
+                DB::statement("ALTER TABLE {$tableNames['model_has_permissions']} ADD CONSTRAINT model_has_permissions_team_unique UNIQUE NULLS NOT DISTINCT ({$teamCol}, {$pivotPermission}, {$morphCol}, model_type)");
+                DB::statement("ALTER TABLE {$tableNames['model_has_roles']} ADD CONSTRAINT model_has_roles_team_unique UNIQUE NULLS NOT DISTINCT ({$teamCol}, {$pivotRole}, {$morphCol}, model_type)");
+            } else {
+                // SQLite / MySQL fallback. SQLite treats NULL as
+                // distinct in unique constraints so duplicate global
+                // assignments slip through at the DB layer — accept
+                // the test-only divergence since trait-level checks
+                // catch the same case in app code.
+                Schema::table($tableNames['model_has_permissions'], function (Blueprint $table) use ($teamCol, $pivotPermission, $morphCol) {
+                    $table->unique([$teamCol, $pivotPermission, $morphCol, 'model_type'], 'model_has_permissions_team_unique');
+                });
+                Schema::table($tableNames['model_has_roles'], function (Blueprint $table) use ($teamCol, $pivotRole, $morphCol) {
+                    $table->unique([$teamCol, $pivotRole, $morphCol, 'model_type'], 'model_has_roles_team_unique');
+                });
+            }
+        }
 
         Schema::create($tableNames['role_has_permissions'], static function (Blueprint $table) use ($tableNames, $pivotRole, $pivotPermission) {
             $table->unsignedBigInteger($pivotPermission);
