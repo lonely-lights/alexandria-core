@@ -69,11 +69,9 @@ export default function EntryThemePanel({
 
     return (
         <div className="space-y-6 p-5">
-            <div>
-                <p className="text-sm" style={subtleText}>
-                    {t('entries.entry_settings.theme.subtitle')}
-                </p>
-            </div>
+            <p className="text-sm" style={subtleText}>
+                {t('entries.entry_settings.theme.subtitle')}
+            </p>
 
             <ThemePresetPicker
                 activeSlug={entry.theme_preset_slug}

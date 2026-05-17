@@ -65,11 +65,9 @@ export default function BlueprintThemePanel({
 
     return (
         <div className="space-y-6 p-5">
-            <div>
-                <p className="text-sm" style={subtleText}>
-                    {t('blueprints.bp_settings.theme.subtitle')}
-                </p>
-            </div>
+            <p className="text-sm" style={subtleText}>
+                {t('blueprints.bp_settings.theme.subtitle')}
+            </p>
 
             <ThemePresetPicker
                 activeSlug={blueprint.theme_preset_slug}

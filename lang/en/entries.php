@@ -83,7 +83,7 @@ return [
     'entry_settings.theme.inherit_blueprint' => 'Inherit blueprint theme',
     'entry_settings.theme.inherit_hint' => 'Reset this entry to follow the blueprint\'s theme.',
     'entry_settings.theme.fine_tune.title' => 'Fine-tune tokens',
-    'entry_settings.theme.fine_tune.subtitle' => 'Override individual design tokens (colors, radius, spacing) on top of the preset.',
+    'entry_settings.theme.fine_tune.subtitle' => 'Override individual tokens on top of the preset. Changes preview live as you edit and only persist when you save.',
 
     'show.tab.overview' => 'Overview',
     'show.tab.structure' => 'Structure',
