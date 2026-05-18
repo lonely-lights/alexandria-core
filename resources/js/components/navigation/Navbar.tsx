@@ -7,6 +7,7 @@ import {
     type ReactNode,
 } from "react";
 import type { SharedProps } from "../../types/index";
+import LogoLockup from "../brand/LogoLockup";
 import AvatarWithRing from "../ui/AvatarWithRing";
 import Tooltip from "../ui/Tooltip";
 import ThemePicker from "../theme/ThemePicker";
@@ -282,21 +283,20 @@ export default function Navbar({
                     </button>
 
                     {/* Brand — sits beside the hamburger at every
-                        breakpoint. Previously hidden on mobile, but
-                        the wordmark anchors the navbar's identity
-                        regardless of viewport. */}
-                    <a href="/" className="flex items-center">
-                        {brandSlot ??
-                            (brand ? (
-                                <span
-                                    className="ml-4 font-serif text-xl font-semibold"
-                                    style={{
-                                        color: "var(--theme-base-content)",
-                                    }}
-                                >
-                                    {brand}
-                                </span>
-                            ) : null)}
+                        breakpoint. Defaults to the LogoLockup; consumers
+                        passing brandSlot can override entirely, and a
+                        custom brand string flows through as the wordmark
+                        text inside the default lockup. */}
+                    <a
+                        href="/"
+                        className="ml-4 flex items-center"
+                        style={{ color: "var(--theme-base-content)" }}
+                    >
+                        {brandSlot ?? (
+                            brand ? (
+                                <LogoLockup size="md" wordmarkText={brand} />
+                            ) : null
+                        )}
                     </a>
                 </div>
 

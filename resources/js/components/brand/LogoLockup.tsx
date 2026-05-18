@@ -34,9 +34,9 @@ interface LogoLockupProps {
 }
 
 const SIZE_TOKENS: Record<'sm' | 'md' | 'lg', { mark: number; fontSize: string; gap: string }> = {
-    sm: { mark: 18, fontSize: '0.875rem', gap: '0.4375rem' },
-    md: { mark: 24, fontSize: '1.0625rem', gap: '0.5rem' },
-    lg: { mark: 40, fontSize: '1.5rem', gap: '0.625rem' },
+    sm: { mark: 22, fontSize: '1rem', gap: '0.5rem' },
+    md: { mark: 32, fontSize: '1.25rem', gap: '0.625rem' },
+    lg: { mark: 52, fontSize: '1.875rem', gap: '0.75rem' },
 };
 
 export default function LogoLockup({

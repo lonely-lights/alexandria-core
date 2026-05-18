@@ -47,7 +47,7 @@ const LEG_HEIGHT: Record<'rest' | 'extended', number> = {
 };
 
 export default function LogoMark({
-    size = 24,
+    size = 32,
     className,
     style,
     ariaLabel = 'Alexandria',

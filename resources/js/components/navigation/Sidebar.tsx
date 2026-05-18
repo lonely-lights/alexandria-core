@@ -7,6 +7,7 @@ import ProjectNavigation, {
     NoProjectState,
     type SidebarBlueprint,
 } from "./ProjectNavigation";
+import LogoLockup from "../brand/LogoLockup";
 import type { ProjectSummary } from "../../types/models";
 
 interface SidebarProps {
@@ -111,19 +112,21 @@ export default function Sidebar({
                         borderRight: "1px solid var(--theme-base-400)",
                     }}
                 >
-                    {/* Header */}
+                    {/* Header. When a consumer provides their own logoSlot
+                        we honor it verbatim and skip the brand wordmark
+                        (since their slot presumably already contains it).
+                        Otherwise we render the default LogoLockup, threading
+                        the brand string through as the wordmark text. */}
                     <div className="mb-3 flex items-center justify-between">
-                        <a href="/" className="flex items-center">
-                            {logoSlot}
-                            {brand && (
-                                <span
-                                    className={`text-lg font-semibold ${logoSlot ? "ml-3" : ""}`}
-                                    style={{
-                                        color: "var(--theme-base-content)",
-                                    }}
-                                >
-                                    {brand}
-                                </span>
+                        <a
+                            href="/"
+                            className="flex items-center"
+                            style={{ color: "var(--theme-base-content)" }}
+                        >
+                            {logoSlot ?? (
+                                brand ? (
+                                    <LogoLockup size="md" wordmarkText={brand} />
+                                ) : null
                             )}
                         </a>
                         <button
