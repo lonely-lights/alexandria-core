@@ -8,6 +8,7 @@ use Alexandria\Core\Actions\Fortify\CreateNewUser;
 use Alexandria\Core\Actions\Fortify\ResetUserPassword;
 use Alexandria\Core\Actions\Fortify\UpdateUserPassword;
 use Alexandria\Core\Actions\Fortify\UpdateUserProfileInformation;
+use Alexandria\Core\Models\InstanceSettings;
 use Alexandria\Core\Support\ConfigDeepMerge;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
+use Throwable;
 
 class AlexandriaServiceProvider extends ServiceProvider
 {
@@ -142,10 +144,18 @@ class AlexandriaServiceProvider extends ServiceProvider
             'status' => session('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('Auth/Register', [
+        Fortify::registerView(fn (Request $request) => Inertia::render('Auth/Register', [
             'copy' => $copy,
             'loginUrl' => route('login'),
             ...$legalUrls,
+            // Stage 8c.E.4 — when registration is closed, the form
+            // requires an invite_token. Page renders an extra field
+            // and accepts a `?token=…` query param for pre-fill so
+            // a generated invite URL can land directly on a primed
+            // register form. Lookup is wrapped in try/catch so a
+            // fresh install (pre-migration) defaults to open.
+            'registrationOpen' => $this->resolveRegistrationOpen(),
+            'prefilledToken' => $request->query('token'),
         ]));
 
         Fortify::requestPasswordResetLinkView(fn () => Inertia::render('Auth/ForgotPassword', [
@@ -254,5 +264,22 @@ class AlexandriaServiceProvider extends ServiceProvider
         }
 
         return $flat;
+    }
+
+    /**
+     * Stage 8c.E.4 — read the open_registration toggle for the
+     * Register page render. Defaults to true on any failure
+     * (missing table on fresh install, transient DB error) so the
+     * register flow never wedges itself shut due to infrastructure
+     * issues. The server-side CreateNewUser action does the same
+     * fallback at submit-time.
+     */
+    protected function resolveRegistrationOpen(): bool
+    {
+        try {
+            return (bool) InstanceSettings::instance()->open_registration;
+        } catch (Throwable) {
+            return true;
+        }
     }
 }

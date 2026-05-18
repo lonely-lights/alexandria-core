@@ -36,6 +36,7 @@ type AdminNavKey =
     | 'projects'
     | 'permissions'
     | 'registration'
+    | 'invite-tokens'
     | 'lists';
 
 interface NavLink {
@@ -75,6 +76,12 @@ const NAV_LINKS: NavLink[] = [
         href: '/admin/registration',
         labelKey: 'admin.nav.registration',
         icon: 'fa-solid fa-user-plus',
+    },
+    {
+        key: 'invite-tokens',
+        href: '/admin/invite-tokens',
+        labelKey: 'admin.nav.invite_tokens',
+        icon: 'fa-solid fa-key',
     },
     {
         key: 'lists',

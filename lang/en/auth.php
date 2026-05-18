@@ -44,6 +44,16 @@ return [
         'password' => 'Password',
         'name' => 'Username',
         'remember_me' => 'Remember me',
+        // Stage 8c.E.4 — shown on /register when open_registration is off.
+        'invite_token' => 'Invite code',
+    ],
+
+    // Stage 8c.E.4 — error messages thrown by InviteTokenService::consume()
+    // and wrapped into ValidationException by CreateNewUser.
+    'invite_token' => [
+        'unknown' => 'That invite code isn\'t recognized. Double-check the code with whoever gave it to you.',
+        'expired' => 'That invite code has expired.',
+        'exhausted' => 'That invite code has already been used up.',
     ],
 
     'actions' => [

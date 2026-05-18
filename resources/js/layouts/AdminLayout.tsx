@@ -23,7 +23,7 @@ import { ToastProvider } from '@alexandria/components/ui/ToastProvider';
 
 interface AdminLayoutProps {
     title?: string;
-    activeKey?: 'dashboard' | 'users' | 'projects' | 'permissions' | 'registration' | 'lists';
+    activeKey?: 'dashboard' | 'users' | 'projects' | 'permissions' | 'registration' | 'invite-tokens' | 'lists';
     children: ReactNode;
 }
 

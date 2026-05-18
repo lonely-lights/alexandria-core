@@ -30,6 +30,12 @@ interface RegisterProps {
     loginUrl: string;
     termsUrl: string;
     privacyUrl: string;
+    // Stage 8c.E.4 — when false, an invite_token field is required.
+    // Server (AlexandriaServiceProvider::resolveRegistrationOpen)
+    // reads instance_settings.open_registration; React just renders
+    // accordingly. The server re-validates on POST regardless.
+    registrationOpen: boolean;
+    prefilledToken: string | null;
 }
 
 export default function Register(props: RegisterProps) {
@@ -42,7 +48,14 @@ export default function Register(props: RegisterProps) {
     );
 }
 
-function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
+function RegisterForm({
+    copy,
+    loginUrl,
+    termsUrl,
+    privacyUrl,
+    registrationOpen,
+    prefilledToken,
+}: RegisterProps) {
     const { show: showToast } = useToastContext();
     const form = useForm({
         name: "",
@@ -50,6 +63,7 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
         password: "",
         password_confirmation: "",
         terms: false as boolean,
+        invite_token: (prefilledToken ?? "").toUpperCase(),
     });
 
     const handleSubmit = (e: SyntheticEvent) => {
@@ -246,6 +260,38 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
+                {!registrationOpen && (
+                    <FormGroup
+                        label={copy["fields.invite_token"] ?? "Invite code"}
+                        labelHint="(12 characters)"
+                        htmlFor="invite_token"
+                    >
+                        <TextField
+                            id="invite_token"
+                            name="invite_token"
+                            type="text"
+                            value={form.data.invite_token}
+                            onChange={(e) =>
+                                form.setData(
+                                    "invite_token",
+                                    e.target.value.toUpperCase(),
+                                )
+                            }
+                            required
+                            autoFocus
+                            autoComplete="off"
+                            placeholder="ABCD1234EFGH"
+                            maxLength={12}
+                            icon={
+                                <i
+                                    className="fa-solid fa-key"
+                                    aria-hidden="true"
+                                />
+                            }
+                        />
+                    </FormGroup>
+                )}
+
                 <FormGroup
                     label={copy["fields.name"]}
                     labelHint="(3–30 characters)"
@@ -258,7 +304,7 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                         value={form.data.name}
                         onChange={(e) => form.setData("name", e.target.value)}
                         required
-                        autoFocus
+                        autoFocus={registrationOpen}
                         autoComplete="username"
                         placeholder="letters, numbers, dashes, underscores"
                         state={fieldStateFor(usernameStatus.status)}
@@ -416,7 +462,9 @@ function RegisterForm({ copy, loginUrl, termsUrl, privacyUrl }: RegisterProps) {
                         usernameStatus.status !== "available" ||
                         emailStatus.status !== "available" ||
                         !passwordsValid ||
-                        !form.data.terms
+                        !form.data.terms ||
+                        (!registrationOpen &&
+                            form.data.invite_token.length !== 12)
                     }
                 >
                     {copy["actions.enlist"]}

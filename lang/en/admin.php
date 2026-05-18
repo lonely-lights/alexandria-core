@@ -21,6 +21,7 @@ return [
     'nav.projects' => 'Projects',
     'nav.permissions' => 'Permissions',
     'nav.registration' => 'Registration',
+    'nav.invite_tokens' => 'Invite codes',
     'nav.lists' => 'Lists',
     'nav.back_to_app' => 'Back to app',
 
@@ -237,6 +238,39 @@ return [
 
     'registration.flash.settings_updated' => 'Registration settings updated.',
     'registration.flash.policy_updated' => 'Quota policy updated.',
+
+    // ── Invite tokens (Stage 8c.E.4) ─────────────────────────────────
+    'invite_tokens.title' => 'Invite codes',
+    'invite_tokens.subtitle' => 'When open registration is off, new accounts require one of these codes. Single-use by default; raise the limit for class-wide codes.',
+    'invite_tokens.empty' => 'No codes yet. Generate one to share.',
+    'invite_tokens.create' => 'Generate code',
+
+    'invite_tokens.col.code' => 'Code',
+    'invite_tokens.col.uses' => 'Uses',
+    'invite_tokens.col.expires' => 'Expires',
+    'invite_tokens.col.status' => 'Status',
+    'invite_tokens.col.notes' => 'Notes',
+    'invite_tokens.col.created' => 'Created',
+
+    'invite_tokens.status.usable' => 'Usable',
+    'invite_tokens.status.exhausted' => 'Used up',
+    'invite_tokens.status.expired' => 'Expired',
+
+    'invite_tokens.field.max_uses' => 'Max uses',
+    'invite_tokens.field.max_uses_hint' => 'Single-use = 1. Class codes use higher values (e.g. 30 for a class of 30).',
+    'invite_tokens.field.expires_in_days' => 'Expires in (days)',
+    'invite_tokens.field.expires_in_days_hint' => 'Leave blank for no expiry.',
+    'invite_tokens.field.never_expires' => 'Never expires',
+    'invite_tokens.field.notes' => 'Notes',
+    'invite_tokens.field.notes_placeholder' => 'e.g. Spring 2026 workshop — Prof. Smith',
+
+    'invite_tokens.action.revoke' => 'Revoke',
+    'invite_tokens.action.revoke_confirm' => 'Revoke this code? The row stays for audit but the code can no longer be used.',
+    'invite_tokens.action.delete_confirm' => 'Permanently delete this code? This removes all record of it.',
+
+    'invite_tokens.flash.created' => 'Invite code generated.',
+    'invite_tokens.flash.revoked' => 'Invite code revoked.',
+    'invite_tokens.flash.deleted' => 'Invite code deleted.',
 
     // Quota gate (Stage 8c.E.2) — surfaces in Members tab when invite
     // exhausts. ValidationException wraps these into a 422 flash.

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Models;
 
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -43,9 +42,19 @@ class InstanceSettings extends Model
     /**
      * The canonical singleton row. Always id=1 (seeded by the
      * create migration so this never has to firstOrCreate).
+     *
+     * Narrowed to `self` despite `findOrFail`'s wider
+     * `Model|Collection` signature — we always pass a single int,
+     * which always returns a single Model. Without the narrowing,
+     * every `InstanceSettings::instance()->foo` access at the call
+     * site trips PhpStorm's "polymorphic call" warning because
+     * Collection has no `$foo` property.
      */
-    public static function instance(): Collection|Model
+    public static function instance(): self
     {
-        return self::query()->findOrFail(1);
+        /** @var self $instance */
+        $instance = self::query()->findOrFail(1);
+
+        return $instance;
     }
 }
