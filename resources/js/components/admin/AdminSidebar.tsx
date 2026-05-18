@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { type ReactNode } from 'react';
 
+import LogoLockup from '@alexandria/components/brand/LogoLockup';
 import useT from '@alexandria/hooks/useT';
 import type { SharedProps } from '@alexandria/types';
 
@@ -99,11 +100,9 @@ export default function AdminSidebar({ activeKey }: AdminSidebarProps) {
 
     return (
         <aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-            {/* Brand + admin badge */}
+            {/* Brand lockup + admin badge */}
             <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-                <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    Alexandria
-                </span>
+                <LogoLockup size="sm" className="text-zinc-900 dark:text-zinc-100" />
                 <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-rose-700 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300">
                     <i className="fa-solid fa-shield-halved text-[8px]" aria-hidden="true" />
                     {t('admin.nav.badge')}
