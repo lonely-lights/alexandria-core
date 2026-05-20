@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Alexandria\Core\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Container\EntryNotFoundException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Container\CircularDependencyException;
 use Illuminate\Contracts\Mail\Mailable as MailableContract;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -16,6 +18,8 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Branded email-verification mail. Queued so a misconfigured mail
@@ -49,10 +53,16 @@ class VerifyEmailMail extends Mailable implements MailableContract, ShouldQueue
         );
     }
 
+    /**
+     * @throws CircularDependencyException
+     * @throws NotFoundExceptionInterface
+     * @throws EntryNotFoundException
+     * @throws ContainerExceptionInterface
+     */
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: __('alexandria::emails.verify.subject'),
+            subject: app(BrandedTextResolver::class)->get('verify', 'subject'),
         );
     }
 

@@ -10,12 +10,14 @@ use Alexandria\Core\Actions\Fortify\UpdateUserPassword;
 use Alexandria\Core\Actions\Fortify\UpdateUserProfileInformation;
 use Alexandria\Core\Mail\BrandedMailDefinition;
 use Alexandria\Core\Mail\BrandedMailRegistry;
+use Alexandria\Core\Mail\BrandedTextResolver;
 use Alexandria\Core\Mail\ResetPasswordMail;
 use Alexandria\Core\Mail\VerifyEmailMail;
 use Alexandria\Core\Models\InstanceSettings;
 use Alexandria\Core\Support\ConfigDeepMerge;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +37,7 @@ class AlexandriaServiceProvider extends ServiceProvider
         $this->forceFortifyDefaults();
 
         $this->app->singleton(BrandedMailRegistry::class);
+        $this->app->singleton(BrandedTextResolver::class);
     }
 
     /**
@@ -77,6 +80,7 @@ class AlexandriaServiceProvider extends ServiceProvider
         $this->bindFortifyActions();
         $this->bindFortifyViews();
         $this->registerBrandedMails();
+        $this->registerBrandedStringDirective();
 
         $this->loadRoutesFrom(__DIR__.'/../routes/auth.php');
     }
@@ -150,6 +154,22 @@ class AlexandriaServiceProvider extends ServiceProvider
             editableLangKeys: ['subject', 'greeting', 'intro', 'action', 'fallback', 'expiry_note'],
             icon: 'key',
         ));
+    }
+
+    /**
+     * @brandedString('verify.subject') — Blade directive that resolves
+     * branded-mail lang strings via BrandedTextResolver (DB overrides
+     * first, then file lang).
+     *
+     * Usage in email Blade views:
+     *   @brandedString('verify.greeting')
+     *   @brandedString('reset.greeting', ['name' => $displayName])
+     */
+    private function registerBrandedStringDirective(): void
+    {
+        Blade::directive('brandedString', function (string $expression): string {
+            return "<?php echo e(app(\Alexandria\Core\Mail\BrandedTextResolver::class)->getFromCompound($expression)); ?>";
+        });
     }
 
     private function bindFortifyActions(): void

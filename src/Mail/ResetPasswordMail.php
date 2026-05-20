@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Alexandria\Core\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Container\EntryNotFoundException;
 use Illuminate\Contracts\Auth\CanResetPassword;
+use Illuminate\Contracts\Container\CircularDependencyException;
 use Illuminate\Contracts\Mail\Mailable as MailableContract;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -13,6 +15,8 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Config;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Branded password-reset mail. Queued for the same reason as
@@ -47,10 +51,16 @@ class ResetPasswordMail extends Mailable implements MailableContract, ShouldQueu
         ], false));
     }
 
+    /**
+     * @throws CircularDependencyException
+     * @throws NotFoundExceptionInterface
+     * @throws EntryNotFoundException
+     * @throws ContainerExceptionInterface
+     */
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: __('alexandria::emails.reset.subject'),
+            subject: app(BrandedTextResolver::class)->get('reset', 'subject'),
         );
     }
 
