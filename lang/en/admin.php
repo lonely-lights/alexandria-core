@@ -26,6 +26,14 @@ return [
     'nav.emails' => 'Emails',
     'nav.back_to_app' => 'Back to app',
 
+    // Sidebar section labels — small uppercase dividers above groups.
+    // Dashboard floats unsectioned above these. Add a new entry when
+    // introducing a new domain (Operations, Billing).
+    'nav.section.people' => 'People',
+    'nav.section.access' => 'Access',
+    'nav.section.content' => 'Content',
+    'nav.section.communications' => 'Communications',
+
     // ── Dashboard ───────────────────────────────────────────────────
     'dashboard.title' => 'Admin dashboard',
     'dashboard.subtitle' => 'At-a-glance operator view of users, projects, and instance activity.',
@@ -367,8 +375,6 @@ return [
     'emails.preview.width.mobile' => 'Mobile (360)',
     'emails.preview.width.tablet' => 'Tablet (560)',
     'emails.preview.width.desktop' => 'Desktop',
-    'emails.preview.scheme.light' => 'Light',
-    'emails.preview.scheme.dark' => 'Dark',
 
     'emails.flash.saved' => 'Email overrides saved.',
     'emails.flash.reverted' => 'Reverted to default.',

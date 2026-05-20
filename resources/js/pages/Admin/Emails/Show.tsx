@@ -41,7 +41,6 @@ interface ShowProps {
 }
 
 type Width = 'mobile' | 'tablet' | 'desktop';
-type Scheme = 'light' | 'dark';
 
 const WIDTHS: Record<Width, string> = {
     mobile: '360px',
@@ -79,7 +78,6 @@ export default function AdminEmailsShow() {
     }, [form.data.overrides, props.previewUrl]);
 
     const [width, setWidth] = useState<Width>('desktop');
-    const [scheme, setScheme] = useState<Scheme>('light');
     const [issues, setIssues] = useState<CompatIssue[]>([]);
     const [testSendInFlight, setTestSendInFlight] = useState(false);
 
@@ -242,17 +240,14 @@ export default function AdminEmailsShow() {
                         <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                             {t('admin.emails.preview.title')}
                         </h2>
-                        <div className="flex items-center gap-2">
-                            <WidthPicker width={width} onChange={setWidth} t={t} />
-                            <SchemePicker scheme={scheme} onChange={setScheme} t={t} />
-                        </div>
+                        <WidthPicker width={width} onChange={setWidth} t={t} />
                     </header>
                     <div
                         className="flex justify-center overflow-auto p-4"
-                        style={{ background: scheme === 'dark' ? '#0c0a09' : '#fafaf9', minHeight: '480px' }}
+                        style={{ background: '#fafaf9', minHeight: '480px' }}
                     >
                         <iframe
-                            key={`${iframeUrl}|${scheme}`}
+                            key={iframeUrl}
                             src={iframeUrl}
                             title={t('admin.emails.preview.title')}
                             style={{
@@ -261,9 +256,13 @@ export default function AdminEmailsShow() {
                                 height: '720px',
                                 border: 0,
                                 background: '#ffffff',
-                                colorScheme: scheme,
                             }}
-                            sandbox=""
+                            // No sandbox. Email always renders light by design
+                            // (the layout sets meta color-scheme: light only),
+                            // so the preview here always shows what'd appear
+                            // in the recipient's inbox. XSS surface mitigated
+                            // upstream by Blade's e() escaping via @brandedString
+                            // + the layout wraps yieldContent in {{ }}.
                         />
                     </div>
                 </section>
@@ -337,37 +336,6 @@ function WidthPicker({ width, onChange, t }: { width: Width; onChange: (w: Width
                     <i className={`fa-solid ${o.icon}`} aria-hidden="true" />
                 </button>
             ))}
-        </div>
-    );
-}
-
-function SchemePicker({ scheme, onChange, t }: { scheme: Scheme; onChange: (s: Scheme) => void; t: ReturnType<typeof useT> }) {
-    return (
-        <div className="inline-flex rounded-md border border-zinc-200 bg-zinc-50 p-0.5 dark:border-zinc-700 dark:bg-zinc-800">
-            <button
-                type="button"
-                onClick={() => onChange('light')}
-                title={t('admin.emails.preview.scheme.light')}
-                className={`px-2 py-1 text-[11px] ${
-                    scheme === 'light'
-                        ? 'rounded bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100'
-                        : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-                }`}
-            >
-                <i className="fa-solid fa-sun" aria-hidden="true" />
-            </button>
-            <button
-                type="button"
-                onClick={() => onChange('dark')}
-                title={t('admin.emails.preview.scheme.dark')}
-                className={`px-2 py-1 text-[11px] ${
-                    scheme === 'dark'
-                        ? 'rounded bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100'
-                        : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-                }`}
-            >
-                <i className="fa-solid fa-moon" aria-hidden="true" />
-            </button>
         </div>
     );
 }
