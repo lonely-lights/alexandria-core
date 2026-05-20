@@ -23,6 +23,7 @@ return [
     'nav.registration' => 'Registration',
     'nav.invite_tokens' => 'Invite codes',
     'nav.lists' => 'Lists',
+    'nav.emails' => 'Emails',
     'nav.back_to_app' => 'Back to app',
 
     // ── Dashboard ───────────────────────────────────────────────────
@@ -344,4 +345,13 @@ return [
     'lists.flash.member_removed' => 'Member removed from list.',
     'lists.flash.permissions_synced' => 'Permissions saved.',
     'lists.flash.feature_flags_synced' => 'Feature flags saved.',
+
+    // ── Emails (Stage 8e.4) ─────────────────────────────────────────
+    'emails.title' => 'Branded emails',
+    'emails.subtitle' => 'Transactional emails sent from Alexandria. Edit subject lines + body copy without touching the codebase; preview the result before saving.',
+    'emails.empty' => 'No branded emails registered yet.',
+    'emails.has_overrides' => ':count overrides',
+    'emails.no_overrides' => 'Defaults',
+    'emails.editable_keys' => ':count editable strings',
+    'emails.open' => 'Open',
 ];
