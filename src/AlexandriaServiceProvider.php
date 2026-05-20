@@ -11,6 +11,7 @@ use Alexandria\Core\Actions\Fortify\UpdateUserProfileInformation;
 use Alexandria\Core\Mail\BrandedMailDefinition;
 use Alexandria\Core\Mail\BrandedMailRegistry;
 use Alexandria\Core\Mail\BrandedTextResolver;
+use Alexandria\Core\Mail\EmailCompatibilityAnalyzer;
 use Alexandria\Core\Mail\ResetPasswordMail;
 use Alexandria\Core\Mail\VerifyEmailMail;
 use Alexandria\Core\Models\InstanceSettings;
@@ -38,6 +39,7 @@ class AlexandriaServiceProvider extends ServiceProvider
 
         $this->app->singleton(BrandedMailRegistry::class);
         $this->app->singleton(BrandedTextResolver::class);
+        $this->app->singleton(EmailCompatibilityAnalyzer::class);
     }
 
     /**

@@ -372,4 +372,15 @@ return [
 
     'emails.flash.saved' => 'Email overrides saved.',
     'emails.flash.reverted' => 'Reverted to default.',
+    'emails.flash.test_sent' => 'Test email queued to :email.',
+
+    'emails.test_send.button' => 'Send sample to my inbox',
+    'emails.test_send.sending' => 'Sending…',
+
+    'emails.compat.title' => 'Email-client compatibility',
+    'emails.compat.empty' => 'No known compatibility issues for this template. Cross-client renders should be solid.',
+    'emails.compat.severity.critical' => 'Critical',
+    'emails.compat.severity.warning' => 'Warning',
+    'emails.compat.severity.info' => 'Info',
+    'emails.compat.affects' => 'Affects: :clients',
 ];

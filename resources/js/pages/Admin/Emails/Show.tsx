@@ -23,6 +23,13 @@ interface Field {
     updated_at: string | null;
 }
 
+interface CompatIssue {
+    feature: string;
+    severity: 'critical' | 'warning' | 'info';
+    description: string;
+    clients: string[];
+}
+
 interface ShowProps {
     slug: string;
     title: string;
@@ -73,6 +80,36 @@ export default function AdminEmailsShow() {
 
     const [width, setWidth] = useState<Width>('desktop');
     const [scheme, setScheme] = useState<Scheme>('light');
+    const [issues, setIssues] = useState<CompatIssue[]>([]);
+    const [testSendInFlight, setTestSendInFlight] = useState(false);
+
+    // Fetch compatibility report on the same debounce as the iframe
+    // refresh so the warnings track the working state, not the saved
+    // state.
+    useEffect(() => {
+        const controller = new AbortController();
+        const params = new URLSearchParams();
+        for (const [key, value] of Object.entries(form.data.overrides)) {
+            if (value === '' || value === null || value === undefined) continue;
+            params.set(`d[${key}]`, value);
+        }
+        const qs = params.toString();
+        const url = `/admin/emails/${props.slug}/compatibility${qs ? `?${qs}` : ''}`;
+
+        const timer = window.setTimeout(() => {
+            fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal })
+                .then((r) => (r.ok ? r.json() : { issues: [] }))
+                .then((data: { issues: CompatIssue[] }) => setIssues(data.issues ?? []))
+                .catch(() => {
+                    // swallowed — abort or network blip; previous issues stay onscreen
+                });
+        }, 300);
+
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
+    }, [form.data.overrides, props.slug]);
 
     const handleSave = (e: SyntheticEvent) => {
         e.preventDefault();
@@ -85,6 +122,18 @@ export default function AdminEmailsShow() {
         router.delete(`/admin/emails/${props.slug}/overrides/${key}`, {
             preserveScroll: true,
         });
+    };
+
+    const handleTestSend = () => {
+        setTestSendInFlight(true);
+        router.post(
+            `/admin/emails/${props.slug}/test-send`,
+            { d: form.data.overrides },
+            {
+                preserveScroll: true,
+                onFinish: () => setTestSendInFlight(false),
+            },
+        );
     };
 
     return (
@@ -167,7 +216,16 @@ export default function AdminEmailsShow() {
                         })}
                     </div>
 
-                    <div className="mt-5 flex items-center justify-end gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                    <div className="mt-5 flex items-center justify-between gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                        <button
+                            type="button"
+                            onClick={handleTestSend}
+                            disabled={testSendInFlight}
+                            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                        >
+                            <i className="fa-solid fa-paper-plane text-[10px]" aria-hidden="true" />
+                            {testSendInFlight ? t('admin.emails.test_send.sending') : t('admin.emails.test_send.button')}
+                        </button>
                         <button
                             type="submit"
                             disabled={form.processing}
@@ -210,7 +268,49 @@ export default function AdminEmailsShow() {
                     </div>
                 </section>
             </div>
+
+            {/* Compatibility section — full-width under the columns */}
+            <section className="mt-4 rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+                <header className="mb-3">
+                    <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        {t('admin.emails.compat.title')}
+                    </h2>
+                </header>
+                {issues.length === 0 ? (
+                    <p className="text-xs italic text-zinc-500 dark:text-zinc-400">
+                        {t('admin.emails.compat.empty')}
+                    </p>
+                ) : (
+                    <ul className="space-y-2">
+                        {issues.map((issue) => (
+                            <CompatRow key={issue.feature} issue={issue} t={t} />
+                        ))}
+                    </ul>
+                )}
+            </section>
         </AdminLayout>
+    );
+}
+
+function CompatRow({ issue, t }: { issue: CompatIssue; t: ReturnType<typeof useT> }) {
+    const severityClasses: Record<CompatIssue['severity'], string> = {
+        critical: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
+        warning: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+        info: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400',
+    };
+    return (
+        <li className="flex items-start gap-3 rounded-md border border-zinc-100 px-3 py-2 dark:border-zinc-800">
+            <span className={`mt-0.5 inline-flex flex-none rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${severityClasses[issue.severity]}`}>
+                {t(`admin.emails.compat.severity.${issue.severity}`)}
+            </span>
+            <div className="min-w-0 flex-1">
+                <p className="text-xs font-mono font-semibold text-zinc-900 dark:text-zinc-100">{issue.feature}</p>
+                <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">{issue.description}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                    {t('admin.emails.compat.affects').replace(':clients', issue.clients.join(', '))}
+                </p>
+            </div>
+        </li>
     );
 }
 
