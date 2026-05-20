@@ -12,16 +12,50 @@ use Illuminate\Support\Facades\App;
  * precedence over file lang.
  *
  * Lookup order:
- *   1. email_overrides table — matching (mail_slug, lang_key, locale)
- *   2. file lang — __('alexandria::emails.{mail_slug}.{lang_key}', $args, $locale)
+ *   1. Per-request DRAFT overlay (admin preview endpoint sets this
+ *      via setDrafts() so unsaved edits render in the iframe)
+ *   2. email_overrides table — matching (mail_slug, lang_key, locale)
+ *   3. file lang — __('alexandria::emails.{mail_slug}.{lang_key}', $args, $locale)
  *
  * Used by:
  *   - Mailable envelope() methods to resolve subject lines
  *   - @brandedString Blade directive inside the email views
  *   - The admin email panel preview endpoint (to show resolved content)
+ *
+ * Bound as a per-request singleton so setDrafts() state lives for
+ * exactly one request — clean for the preview-render flow + isolated
+ * between tests (each test boots a fresh app instance).
  */
 class BrandedTextResolver
 {
+    /**
+     * Working-draft overlay scoped to a single mail slug. Set by the
+     * admin preview endpoint before render; resolves before the DB
+     * override and file lang. Null = no overlay active.
+     */
+    private ?string $draftSlug = null;
+
+    /** @var array<string, string>|null */
+    private ?array $drafts = null;
+
+    /**
+     * Apply an unsaved-draft overlay for the given mail slug. Pass
+     * null/empty to clear. Called by AdminEmailController::preview().
+     *
+     * @param  array<string, string>  $drafts  Map of lang_key → content
+     */
+    public function setDrafts(string $slug, array $drafts): void
+    {
+        $this->draftSlug = $slug;
+        $this->drafts = $drafts;
+    }
+
+    public function clearDrafts(): void
+    {
+        $this->draftSlug = null;
+        $this->drafts = null;
+    }
+
     /**
      * Resolve from a compound "slug.key" — the form used by the
      *
@@ -43,6 +77,10 @@ class BrandedTextResolver
     public function get(string $slug, string $key, array $replace = [], ?string $locale = null): string
     {
         $locale ??= App::getLocale();
+
+        if ($this->draftSlug === $slug && $this->drafts !== null && isset($this->drafts[$key])) {
+            return $this->interpolate($this->drafts[$key], $replace);
+        }
 
         $override = EmailOverride::query()
             ->where('mail_slug', $slug)

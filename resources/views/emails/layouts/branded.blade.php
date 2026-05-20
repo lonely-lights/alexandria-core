@@ -7,7 +7,7 @@
     <meta name="x-apple-disable-message-reformatting">
     <meta name="color-scheme" content="light only">
     <meta name="supported-color-schemes" content="light only">
-    <title>@yield('subject', config('app.name'))</title>
+    <title>{{ trim((string) $__env->yieldContent('subject', config('app.name'))) }}</title>
 </head>
 <body style="margin:0; padding:0; background:#fafaf9; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#1c1917; line-height:1.6;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#fafaf9;">

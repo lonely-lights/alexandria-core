@@ -354,4 +354,22 @@ return [
     'emails.no_overrides' => 'Defaults',
     'emails.editable_keys' => ':count editable strings',
     'emails.open' => 'Open',
+
+    'emails.editing.title' => 'Content',
+    'emails.editing.subtitle' => 'Edit subject + body copy. Leave a field empty to revert that key to the bundled default.',
+    'emails.editing.field.default_hint' => 'Default: :value',
+    'emails.editing.field.revert' => 'Revert',
+    'emails.editing.save' => 'Save changes',
+    'emails.editing.saving' => 'Saving…',
+    'emails.editing.discard' => 'Discard unsaved changes',
+
+    'emails.preview.title' => 'Preview',
+    'emails.preview.width.mobile' => 'Mobile (360)',
+    'emails.preview.width.tablet' => 'Tablet (560)',
+    'emails.preview.width.desktop' => 'Desktop',
+    'emails.preview.scheme.light' => 'Light',
+    'emails.preview.scheme.dark' => 'Dark',
+
+    'emails.flash.saved' => 'Email overrides saved.',
+    'emails.flash.reverted' => 'Reverted to default.',
 ];
