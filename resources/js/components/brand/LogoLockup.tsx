@@ -1,6 +1,7 @@
 import { type CSSProperties } from 'react';
 
 import LogoMark from './LogoMark';
+import { brandWordmark } from './brandStyles';
 
 /**
  * Mark + wordmark composite — Stage 8f.
@@ -61,8 +62,8 @@ export default function LogoLockup({
             />
             {showWordmark && (
                 <span
-                    className="alex-logo-wordmark font-semibold tracking-tight"
-                    style={{ fontSize: tokens.fontSize, letterSpacing: '-0.01em' }}
+                    className="alex-logo-wordmark"
+                    style={{ ...brandWordmark, fontSize: tokens.fontSize }}
                 >
                     {wordmarkText}
                 </span>

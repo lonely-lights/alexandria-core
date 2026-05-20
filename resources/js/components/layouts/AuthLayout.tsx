@@ -20,6 +20,7 @@
 import { Head } from '@inertiajs/react';
 import type { CSSProperties, ReactNode } from 'react';
 
+import { brandWordmark } from '../brand/brandStyles';
 import ModeToggle from '../theme/ModeToggle';
 import Logo from '../ui/Logo';
 import QuoteRotator from '../ui/QuoteRotator';
@@ -109,8 +110,8 @@ export default function AuthLayout({
                             <Logo size="4em" />
                             <div>
                                 <h1
-                                    className="text-3xl font-bold tracking-tight"
-                                    style={headingFont}
+                                    className="text-3xl"
+                                    style={brandWordmark}
                                 >
                                     Alexandria
                                 </h1>
@@ -169,7 +170,7 @@ export default function AuthLayout({
                         {/* Mobile brand collapse */}
                         <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
                             <Logo size="2.5em" />
-                            <span className="text-2xl font-bold" style={headingFont}>
+                            <span className="text-2xl" style={brandWordmark}>
                                 Alexandria
                             </span>
                         </div>
