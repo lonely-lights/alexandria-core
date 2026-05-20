@@ -60,4 +60,29 @@ class ResetPasswordMail extends Mailable implements MailableContract, ShouldQueu
             view: 'alexandria::emails.reset',
         );
     }
+
+    /**
+     * Build a preview-safe instance for the admin email panel.
+     *
+     * CanResetPassword is a much smaller contract than the verify
+     * intersection — only two methods, so the stub stays terse.
+     */
+    public static function preview(): self
+    {
+        // PHPDoc cast for consistency with VerifyEmailMail::preview() —
+        // narrows the anonymous-class type so static analysis doesn't
+        // flag the constructor call.
+        /** @var CanResetPassword $stub */
+        $stub = new class implements CanResetPassword
+        {
+            public function getEmailForPasswordReset(): string
+            {
+                return 'preview@alexandria.test';
+            }
+
+            public function sendPasswordResetNotification($token): void {}
+        };
+
+        return new self($stub, 'sample-token-abc123xyz', 'Preview User');
+    }
 }

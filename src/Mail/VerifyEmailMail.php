@@ -62,4 +62,80 @@ class VerifyEmailMail extends Mailable implements MailableContract, ShouldQueue
             view: 'alexandria::emails.verify',
         );
     }
+
+    /**
+     * Build a preview-safe instance for the admin email panel.
+     *
+     * Uses an anonymous class satisfying the Authenticatable +
+     * MustVerifyEmail intersection so we can render the email without
+     * touching the DB or signing a real verification URL. The URL the
+     * preview generates is still a valid signed temp-route (it just
+     * points at fake id=1 / fake hash), so the iframe renders the same
+     * shape an admin would see in production.
+     */
+    public static function preview(): self
+    {
+        // PHPDoc cast — PhpStorm infers anonymous-class multi-interface
+        // implementations as a union, not the intersection the constructor
+        // requires. The cast tells static analysis the actual shape.
+        /** @var Authenticatable&MustVerifyEmail $stub */
+        $stub = new class implements Authenticatable, MustVerifyEmail
+        {
+            public function getAuthIdentifier(): int
+            {
+                return 1;
+            }
+
+            public function getAuthIdentifierName(): string
+            {
+                return 'id';
+            }
+
+            public function getAuthPassword(): string
+            {
+                return '';
+            }
+
+            public function getAuthPasswordName(): string
+            {
+                return 'password';
+            }
+
+            public function getRememberToken(): string
+            {
+                return '';
+            }
+
+            public function setRememberToken($value): void {}
+
+            public function getRememberTokenName(): string
+            {
+                return 'remember_token';
+            }
+
+            public function hasVerifiedEmail(): bool
+            {
+                return false;
+            }
+
+            public function markEmailAsVerified(): bool
+            {
+                return true;
+            }
+
+            public function markEmailAsUnverified(): bool
+            {
+                return true;
+            }
+
+            public function sendEmailVerificationNotification(): void {}
+
+            public function getEmailForVerification(): string
+            {
+                return 'preview@alexandria.test';
+            }
+        };
+
+        return new self($stub);
+    }
 }

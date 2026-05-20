@@ -8,6 +8,10 @@ use Alexandria\Core\Actions\Fortify\CreateNewUser;
 use Alexandria\Core\Actions\Fortify\ResetUserPassword;
 use Alexandria\Core\Actions\Fortify\UpdateUserPassword;
 use Alexandria\Core\Actions\Fortify\UpdateUserProfileInformation;
+use Alexandria\Core\Mail\BrandedMailDefinition;
+use Alexandria\Core\Mail\BrandedMailRegistry;
+use Alexandria\Core\Mail\ResetPasswordMail;
+use Alexandria\Core\Mail\VerifyEmailMail;
 use Alexandria\Core\Models\InstanceSettings;
 use Alexandria\Core\Support\ConfigDeepMerge;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -29,6 +33,8 @@ class AlexandriaServiceProvider extends ServiceProvider
         $this->mergeConfigDeepFrom(__DIR__.'/../config/alexandria.php');
 
         $this->forceFortifyDefaults();
+
+        $this->app->singleton(BrandedMailRegistry::class);
     }
 
     /**
@@ -70,6 +76,7 @@ class AlexandriaServiceProvider extends ServiceProvider
 
         $this->bindFortifyActions();
         $this->bindFortifyViews();
+        $this->registerBrandedMails();
 
         $this->loadRoutesFrom(__DIR__.'/../routes/auth.php');
     }
@@ -110,6 +117,41 @@ class AlexandriaServiceProvider extends ServiceProvider
     /**
      * Wire Fortify's action callbacks + the login rate limiter.
      */
+    /**
+     * Register core's branded Mailables with the registry so they
+     * appear in the admin email panel. Consumer apps + sibling packages
+     * call BrandedMailRegistry::register() from their own service
+     * provider boot() to add more (store receipts, saas invites, etc.).
+     */
+    private function registerBrandedMails(): void
+    {
+        // BindingResolutionException is theoretically thrown by make()
+        // but unreachable here — BrandedMailRegistry has no dependencies
+        // and we just bound it as a singleton in register().
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $registry = $this->app->make(BrandedMailRegistry::class);
+
+        $registry->register('verify', new BrandedMailDefinition(
+            class: VerifyEmailMail::class,
+            title: __('alexandria::emails.verify.subject'),
+            description: 'Sent when a new user registers, asking them to confirm their email address.',
+            previewFactory: fn () => VerifyEmailMail::preview(),
+            langGroup: 'alexandria::emails.verify',
+            editableLangKeys: ['subject', 'greeting', 'intro', 'action', 'fallback', 'expiry_note'],
+            icon: 'envelope-circle-check',
+        ));
+
+        $registry->register('reset', new BrandedMailDefinition(
+            class: ResetPasswordMail::class,
+            title: __('alexandria::emails.reset.subject'),
+            description: 'Sent when a user requests a password reset from the forgot-password flow.',
+            previewFactory: fn () => ResetPasswordMail::preview(),
+            langGroup: 'alexandria::emails.reset',
+            editableLangKeys: ['subject', 'greeting', 'intro', 'action', 'fallback', 'expiry_note'],
+            icon: 'key',
+        ));
+    }
+
     private function bindFortifyActions(): void
     {
         Fortify::createUsersUsing(CreateNewUser::class);
