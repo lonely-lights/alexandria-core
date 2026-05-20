@@ -1,6 +1,7 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState, type ReactNode } from 'react';
 import useT from '@alexandria/hooks/useT';
+import type { SharedProps } from '../../types/index';
 import type { ProjectSummary } from '../../types/models';
 
 /**
@@ -51,6 +52,7 @@ export default function ProjectNavigation({
     isRouteProject: boolean;
 }) {
     const t = useT();
+    const { auth } = usePage<SharedProps>().props;
     const [switcherOpen, setSwitcherOpen] = useState(false);
     const [aiOpen, setAiOpen] = useState(false);
 
@@ -61,6 +63,14 @@ export default function ProjectNavigation({
                 icon="fa-solid fa-house"
                 label={t('nav.dashboard')}
             />
+
+            {auth?.is_admin && (
+                <SidebarRow
+                    href="/admin"
+                    icon="fa-solid fa-shield-halved"
+                    label={t('nav.admin')}
+                />
+            )}
 
             {!isRouteProject && (
                 <GoToProjectCta
@@ -191,6 +201,7 @@ export default function ProjectNavigation({
  */
 export function NoProjectState() {
     const t = useT();
+    const { auth } = usePage<SharedProps>().props;
     return (
         <div className="flex flex-col gap-1 p-1">
             <SidebarRow
@@ -198,6 +209,14 @@ export function NoProjectState() {
                 icon="fa-solid fa-house"
                 label={t('nav.dashboard')}
             />
+
+            {auth?.is_admin && (
+                <SidebarRow
+                    href="/admin"
+                    icon="fa-solid fa-shield-halved"
+                    label={t('nav.admin')}
+                />
+            )}
 
             <SectionDivider>{t('nav.section.projects')}</SectionDivider>
 

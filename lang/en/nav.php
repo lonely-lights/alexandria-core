@@ -13,6 +13,7 @@ declare(strict_types=1);
 return [
     // ── Top-level sidebar rows ──────────────────────────────────────
     'dashboard' => 'Dashboard',
+    'admin' => 'Admin Panel',
     'notes' => 'Notes',
     'notebooks' => 'Notebooks',
     'ai_hub' => 'AI Hub',

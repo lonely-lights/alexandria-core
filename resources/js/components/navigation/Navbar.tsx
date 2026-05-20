@@ -182,6 +182,21 @@ export default function Navbar({
     const useCustomMenu = userMenuItems !== undefined;
     const { auth } = usePage<SharedProps>().props;
     const user = auth?.user ?? null;
+
+    // Admins get an "Admin Panel" entry at the top of the default
+    // dropdown, separated from the personal-account items by a divider.
+    // Server gates remain authoritative; this is purely UI affordance.
+    const defaultHeadItems: UserMenuItem[] = auth?.is_admin
+        ? [
+              {
+                  label: "Admin Panel",
+                  href: "/admin",
+                  icon: "fa-solid fa-shield-halved",
+              },
+              { divider: true },
+              ...DEFAULT_USER_MENU_ITEMS,
+          ]
+        : DEFAULT_USER_MENU_ITEMS;
     const [scrolled, setScrolled] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -601,7 +616,7 @@ export default function Navbar({
                                                 )
                                             ) : (
                                                 <>
-                                                    {DEFAULT_USER_MENU_ITEMS.map(
+                                                    {defaultHeadItems.map(
                                                         renderMenuItem,
                                                     )}
                                                     {DEFAULT_USER_MENU_FOOTER_ITEMS.map(
