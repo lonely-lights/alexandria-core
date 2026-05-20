@@ -29,6 +29,7 @@ use Spatie\Permission\Models\Role as SpatieRole;
  * @property int|null $rank
  * @property int|null $category_id
  * @property int|null $team_id
+ * @property bool $is_project_template
  * @property-read RolePermissionCategory|null $category
  *
  * @method static Role create(array $attributes = [])
@@ -50,11 +51,13 @@ class Role extends SpatieRole
         'style',
         'icon',
         'rank',
+        'is_project_template',
     ];
 
     protected $casts = [
         'style' => 'array',
         'rank' => 'integer',
+        'is_project_template' => 'boolean',
     ];
 
     public function getRouteKeyName(): string
