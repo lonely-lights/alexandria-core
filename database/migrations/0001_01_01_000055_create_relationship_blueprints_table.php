@@ -79,6 +79,15 @@ return new class extends Migration
             // Ensure unique relationship definitions
             $table->unique(['from_blueprint_id', 'to_blueprint_id', 'relationship_name'], 'unique_relationship_blueprint');
         });
+
+        // Backfill FK constraint on the column added in the entry_relationships migration.
+        // Done here because the referenced table only exists after this migration.
+        Schema::table('entry_relationships', function (SchemaBlueprint $table) {
+            $table->foreign('relationship_blueprint_id')
+                ->references('id')
+                ->on('relationship_blueprints')
+                ->nullOnDelete();
+        });
     }
 
     /**

@@ -233,12 +233,25 @@ class AiCommandExecutor
             }
         }
 
+        // Resolve the pairing FK: prefer an explicit relationship_blueprint_id in the
+        // payload, fall back to looking it up from a relationship_name string.
+        $relationshipBlueprintId = $payload['relationship_blueprint_id'] ?? null;
+        if ($relationshipBlueprintId === null && ! empty($payload['relationship_name'])) {
+            $relationshipBlueprintClass = config('alexandria.models.relationship_blueprint');
+            if ($relationshipBlueprintClass !== null) {
+                $relationshipBlueprintId = $relationshipBlueprintClass::query()
+                    ->where('relationship_name', $payload['relationship_name'])
+                    ->value('id');
+            }
+        }
+
         $entryRelationshipClass = config('alexandria.models.entry_relationship');
 
         $entryRelationshipClass::create([
             'parent_entry_id' => $payload['parent_entry_id'],
             'child_entry_id' => $payload['child_entry_id'],
             'relationship_type' => $payload['relationship_type'],
+            'relationship_blueprint_id' => $relationshipBlueprintId,
             'parent_label' => $payload['parent_label'] ?? null,
             'child_label' => $payload['child_label'] ?? null,
             'metadata' => $payload['metadata'] ?? null,

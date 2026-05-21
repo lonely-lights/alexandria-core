@@ -16,7 +16,7 @@ use InvalidArgumentException;
 readonly class RelationshipWriter
 {
     /**
-     * @param  array  $metadata  May include 'parent_label' / 'child_label' (promoted to columns); legacy keys are rejected.
+     * @param  array  $metadata  May include 'parent_label' / 'child_label' / 'relationship_blueprint_id' (promoted to columns); legacy keys are rejected.
      */
     public function add(Entry $parent, Entry $child, string $relationshipType, array $metadata = []): EntryRelationship
     {
@@ -29,17 +29,19 @@ readonly class RelationshipWriter
             }
         }
 
-        // Optional, explicit labels.
+        // Optional, explicit labels + pairing FK.
         $parentLabel = $metadata['parent_label'] ?? null;
         $childLabel = $metadata['child_label'] ?? null;
+        $relationshipBlueprintId = $metadata['relationship_blueprint_id'] ?? null;
 
-        // Keep JSON metadata clean (no label / role_* leakage into the JSON column).
-        $cleanMeta = Arr::except($metadata, ['parent_label', 'child_label', 'role_label', 'role_override']);
+        // Keep JSON metadata clean (no column-promoted keys leak into the JSON column).
+        $cleanMeta = Arr::except($metadata, ['parent_label', 'child_label', 'role_label', 'role_override', 'relationship_blueprint_id']);
 
         return EntryRelationship::query()->create([
             'parent_entry_id' => $parent->id,
             'child_entry_id' => $child->id,
             'relationship_type' => Str::snake($relationshipType),
+            'relationship_blueprint_id' => $relationshipBlueprintId,
             'parent_label' => $parentLabel,
             'child_label' => $childLabel,
             'metadata' => $cleanMeta,

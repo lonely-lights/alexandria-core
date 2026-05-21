@@ -38,10 +38,19 @@ return new class extends Migration
                 ->constrained('entries')
                 ->cascadeOnDelete();
 
-            // Relationship type
+            // Relationship type — category-level slug (matches a Blueprint with classification='relationship').
+            // Powers UI index/count surfaces.
             $table->string('relationship_type')
                 ->index()
-                ->comment('Relationship identifier (e.g., "character-relationship", "contains_scene")');
+                ->comment('Category slug (e.g., "character-relationship", "innovation-creator")');
+
+            // Optional pairing FK — points at the specific relationship_blueprints row (e.g., "spouse", "creator").
+            // Powers AI prompt context (gives the model a precise pairing name instead of a category).
+            // FK constraint is added in the relationship_blueprints migration once that table exists.
+            $table->unsignedBigInteger('relationship_blueprint_id')
+                ->nullable()
+                ->index()
+                ->comment('FK to relationship_blueprints — the specific pairing (sub-type of relationship_type category)');
 
             // Bidirectional labels stored in one row
             $table->string('parent_label')

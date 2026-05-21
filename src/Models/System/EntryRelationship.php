@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property int $parent_entry_id
  * @property int $child_entry_id
  * @property string $relationship_type
+ * @property int|null $relationship_blueprint_id
  * @property string|null $parent_label
  * @property string|null $child_label
  * @property array<string, mixed>|null $metadata
@@ -38,6 +39,7 @@ use Illuminate\Support\Carbon;
  * @property-read Entry $parent
  * @property-read Entry $child
  * @property-read Blueprint $blueprint
+ * @property-read RelationshipBlueprint|null $relationshipBlueprint
  *
  * @method static Builder<static> ofType(string $typeSlug)
  * @method static Builder<static> active()
@@ -87,6 +89,15 @@ class EntryRelationship extends Model
     public function blueprint(): BelongsTo
     {
         return $this->belongsTo(Blueprint::class, 'relationship_type', 'slug');
+    }
+
+    /**
+     * The specific pairing that defines this relationship's AI semantics.
+     * Optional: legacy rows may not have this set.
+     */
+    public function relationshipBlueprint(): BelongsTo
+    {
+        return $this->belongsTo(RelationshipBlueprint::class, 'relationship_blueprint_id');
     }
 
     public function scopeOfType(Builder $query, string $typeSlug): Builder
