@@ -336,8 +336,6 @@ return [
     'bp_settings.behavior.wiki_links.description' => 'Enable [[wiki link]] references to entries of this type',
     'bp_settings.behavior.nav_hub.title' => 'Navigation Hub',
     'bp_settings.behavior.nav_hub.description' => 'Use as a navigation hub in the sidebar',
-    'bp_settings.behavior.allow_ai_sorting.title' => 'Include in AI Sorting',
-    'bp_settings.behavior.allow_ai_sorting.description' => 'Let the AI route incoming notes to this blueprint. Standard blueprints default on; turn off to keep this blueprint out of the AI\'s routing candidate list.',
 
     // Media panel
     'bp_settings.media.title' => 'Media',
