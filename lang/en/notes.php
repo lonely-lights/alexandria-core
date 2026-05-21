@@ -537,6 +537,8 @@ return [
     'drawer.categorize.sort.desc' => 'Generate commands to create entries and relationships for this blueprint.',
     'drawer.categorize.auto.label' => 'Auto-process',
     'drawer.categorize.auto.desc' => 'Skip the approval step and process automatically.',
+    'drawer.categorize.with_relationships.label' => 'Include relationship analysis',
+    'drawer.categorize.with_relationships.desc' => 'Let the AI propose relationships between entries (e.g., founder of, lives in). Off by default — turn on for notes describing connections between people, places, or organizations. Adds ~26K tokens per note.',
     'drawer.categorize.preview' => 'Preview prompt & token estimate',
     'drawer.integration.title' => 'Integrate into Entry',
     'drawer.integration.subtitle' => 'AI will analyze this note and suggest field updates for the entry',

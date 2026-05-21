@@ -422,6 +422,7 @@ export default function NotesDrawer() {
     /* ── AI state ── */
     const [showCategorizeModal, setShowCategorizeModal] = useState(false);
     const [categorizeAutoProcess, setCategorizeAutoProcess] = useState(false);
+    const [categorizeWithRelationships, setCategorizeWithRelationships] = useState(false);
     const [showEntryIntegration, setShowEntryIntegration] = useState(false);
     const [integrationInstructions, setIntegrationInstructions] = useState('');
     const [aiProcessing, setAiProcessing] = useState(false);
@@ -811,7 +812,7 @@ export default function NotesDrawer() {
         setPromptLoading(true);
         setShowPromptPreview(true);
         try {
-            const res = await fetch(`/api/v1/projects/${context.projectId}/notes/${selectedNote.id}/prompt-preview?context_type=${context.contextType}&context_id=${context.contextId}`, {
+            const res = await fetch(`/api/v1/projects/${context.projectId}/notes/${selectedNote.id}/prompt-preview?context_type=${context.contextType}&context_id=${context.contextId}&with_relationships=${categorizeWithRelationships ? '1' : '0'}`, {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin',
             });
@@ -851,6 +852,7 @@ export default function NotesDrawer() {
                         context_type: contextType,
                         context_id: contextId,
                         auto_process: categorizeAutoProcess,
+                        with_relationships: categorizeWithRelationships,
                     }),
                 });
             } else {
@@ -862,6 +864,7 @@ export default function NotesDrawer() {
                         context_type: contextType,
                         context_id: contextId,
                         auto_process: categorizeAutoProcess,
+                        with_relationships: categorizeWithRelationships,
                     }),
                 });
             }
@@ -1798,6 +1801,19 @@ export default function NotesDrawer() {
                         <div>
                             <p className="text-xs font-medium">{t('notes.drawer.categorize.auto.label')}</p>
                             <p className="text-xs" style={fadedText}>{t('notes.drawer.categorize.auto.desc')}</p>
+                        </div>
+                    </label>
+
+                    <label className="flex cursor-pointer items-start gap-3 px-2 py-2">
+                        <input
+                            type="checkbox"
+                            className="alex-checkbox mt-0.5"
+                            checked={categorizeWithRelationships}
+                            onChange={(e) => setCategorizeWithRelationships(e.target.checked)}
+                        />
+                        <div>
+                            <p className="text-xs font-medium">{t('notes.drawer.categorize.with_relationships.label')}</p>
+                            <p className="text-xs" style={fadedText}>{t('notes.drawer.categorize.with_relationships.desc')}</p>
                         </div>
                     </label>
 
