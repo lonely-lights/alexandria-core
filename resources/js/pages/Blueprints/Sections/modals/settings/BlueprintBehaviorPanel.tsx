@@ -33,7 +33,6 @@ export default function BlueprintBehaviorPanel({
         is_hub: blueprint.is_hub,
         show_tree_view: blueprint.show_tree_view,
         enable_timeline: blueprint.enable_timeline,
-        allow_ai_sorting: blueprint.allow_ai_sorting,
         classification: blueprint.classification,
         list_selection_mode: blueprint.list_selection_mode,
     });
@@ -74,16 +73,6 @@ export default function BlueprintBehaviorPanel({
                     )}
                     enabled={form.data.is_hub}
                     onChange={(v) => form.setData("is_hub", v)}
-                />
-                <SettingsActivationToggle
-                    title={t(
-                        "blueprints.bp_settings.behavior.allow_ai_sorting.title",
-                    )}
-                    description={t(
-                        "blueprints.bp_settings.behavior.allow_ai_sorting.description",
-                    )}
-                    enabled={form.data.allow_ai_sorting}
-                    onChange={(v) => form.setData("allow_ai_sorting", v)}
                 />
             </div>
 
