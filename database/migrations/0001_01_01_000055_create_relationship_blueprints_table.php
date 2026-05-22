@@ -95,6 +95,15 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Drop the FK constraint added in up() before dropping the referenced table,
+        // otherwise Postgres refuses with: "cannot drop table relationship_blueprints
+        // because other objects depend on it" (2BP01).
+        if (Schema::hasTable('entry_relationships')) {
+            Schema::table('entry_relationships', function (SchemaBlueprint $table) {
+                $table->dropForeign(['relationship_blueprint_id']);
+            });
+        }
+
         Schema::dropIfExists('relationship_blueprints');
     }
 };
