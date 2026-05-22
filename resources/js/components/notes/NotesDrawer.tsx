@@ -145,10 +145,14 @@ const circleBtn = (kind: 'import' | 'add' | 'select-on' | 'select-off'): CSSProp
                 color: 'var(--theme-brand-primary-content)',
             };
         case 'select-on':
+            // Active select-mode state — solid warning fill so the exit
+            // affordance reads as engaged. Subtle ring keeps it secondary
+            // in visual weight (not as loud as the primary `add` action).
             return {
                 ...base,
-                background: 'color-mix(in srgb, var(--theme-status-warning-stroke) 60%, transparent)',
+                background: 'var(--theme-status-warning-stroke)',
                 color: 'var(--theme-status-warning-content)',
+                boxShadow: '0 0 0 2px color-mix(in srgb, var(--theme-status-warning-stroke) 30%, transparent)',
             };
         case 'select-off':
             return {
