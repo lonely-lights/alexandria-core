@@ -19,8 +19,11 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property int $ai_provider_id
  * @property int|null $active_api_key_id
- * @property string|null $analyst_model_name
- * @property string|null $creative_model_name
+ * @property string|null $sorting_model_name
+ * @property string|null $reasoning_model_name
+ * @property string|null $writing_model_name
+ * @property string|null $analyst_model_name (legacy alias for sorting)
+ * @property string|null $creative_model_name (legacy alias for writing)
  * @property string|null $image_model_name
  * @property string|null $video_model_name
  * @property string|null $api_key (encrypted, legacy)
@@ -91,6 +94,24 @@ class UserAiSetting extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Resolve the model name for a given tier, with legacy fallbacks.
+     *
+     * Resolution order: tier-named field → legacy alias → null (provider default).
+     *
+     * @param 'sorting'|'reasoning'|'writing' $tier
+     * @return string|null
+     */
+    public function modelForTier(string $tier): ?string
+    {
+        return match ($tier) {
+            'sorting' => $this->sorting_model_name ?? $this->analyst_model_name,
+            'reasoning' => $this->reasoning_model_name ?? $this->analyst_model_name,
+            'writing' => $this->writing_model_name ?? $this->creative_model_name,
+            default => null,
+        };
     }
 
     public function isLegacyKeyExpired(): bool

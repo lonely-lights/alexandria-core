@@ -46,6 +46,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property array<int, array<string, mixed>>|null $views
  * @property string|null $ai_prompt_instructions
  * @property bool $allow_ai_sorting
+ * @property array<int, string>|null $tag_aliases
  * @property string|null $theme_preset_slug
  * @property array<string, mixed>|null $theme_override
  * @property Carbon|null $created_at
@@ -125,6 +126,7 @@ class Blueprint extends Model implements HasMedia
             'show_tree_view' => 'boolean',
             'enable_timeline' => 'boolean',
             'allow_ai_sorting' => 'boolean',
+            'tag_aliases' => 'array',
         ];
     }
 

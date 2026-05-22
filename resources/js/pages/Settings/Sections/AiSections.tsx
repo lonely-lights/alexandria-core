@@ -402,7 +402,7 @@ function AddKeyForm({ t, provider, onAdd, onCancel }: {
    ══════════════════════════════════════════════════════════ */
 
 interface ModelCategoryConfig {
-    key: 'analyst_model_id' | 'creative_model_id' | 'image_model_id' | 'video_model_id';
+    key: 'sorting_model_id' | 'reasoning_model_id' | 'writing_model_id' | 'image_model_id' | 'video_model_id';
     labelKey: string;
     descriptionKey: string;
     icon: string;
@@ -437,8 +437,9 @@ function ModelsSection({ models, selectedModels: initial, providersWithKeys, onD
     }
 
     const categories: ModelCategoryConfig[] = [
-        { key: 'analyst_model_id', labelKey: 'ai.models.analyst_label', descriptionKey: 'ai.models.analyst_description', icon: 'fa-chart-line', iconColor: 'var(--theme-brand-accent-500)', cats: ['analyst', 'general', 'fast'] },
-        { key: 'creative_model_id', labelKey: 'ai.models.creative_label', descriptionKey: 'ai.models.creative_description', icon: 'fa-wand-magic-sparkles', iconColor: 'var(--theme-status-info-fill)', cats: ['creative', 'general', 'fast'] },
+        { key: 'sorting_model_id', labelKey: 'ai.models.sorting_label', descriptionKey: 'ai.models.sorting_description', icon: 'fa-bolt', iconColor: 'var(--theme-brand-accent-500)', cats: ['analyst', 'general', 'fast'] },
+        { key: 'reasoning_model_id', labelKey: 'ai.models.reasoning_label', descriptionKey: 'ai.models.reasoning_description', icon: 'fa-brain', iconColor: 'var(--theme-status-info-fill)', cats: ['analyst', 'creative', 'general'] },
+        { key: 'writing_model_id', labelKey: 'ai.models.writing_label', descriptionKey: 'ai.models.writing_description', icon: 'fa-wand-magic-sparkles', iconColor: 'var(--theme-brand-primary-500)', cats: ['creative', 'general'] },
         { key: 'image_model_id', labelKey: 'ai.models.image_label', descriptionKey: 'ai.models.image_description', icon: 'fa-image', iconColor: 'var(--theme-brand-secondary-500)', cats: ['image'] },
         { key: 'video_model_id', labelKey: 'ai.models.video_label', descriptionKey: 'ai.models.video_description', icon: 'fa-video', iconColor: 'var(--theme-status-error-stroke)', cats: ['video'] },
     ];

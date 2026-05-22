@@ -92,6 +92,9 @@ return new class extends Migration
             $table->boolean('allow_ai_sorting')
                 ->default(false)
                 ->comment('Whether this blueprint should be considered for top-level AI note sorting');
+            $table->json('tag_aliases')
+                ->nullable()
+                ->comment('Tags that always route notes to this blueprint (deterministic, bypasses LLM). Case-insensitive match.');
 
             // Theming cascade (Stage 8b M2) — content-area only per the
             // project_chrome_themed_at_project_scope guarantee. When the

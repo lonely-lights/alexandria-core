@@ -45,6 +45,13 @@ return [
     'models.no_keys_heading' => 'No valid API keys',
     'models.no_keys_description' => 'Add an API key in the Connection tab to select models.',
 
+    'models.sorting_label' => 'Sorting Model',
+    'models.sorting_description' => 'Quick classifier — used by Stage 1 note sorting. Optimise for speed and cost.',
+    'models.reasoning_label' => 'Reasoning Model',
+    'models.reasoning_description' => 'Deep thinking — used by Stage 2 command generation, dedup, and integration. Optimise for capability.',
+    'models.writing_label' => 'Writing Model',
+    'models.writing_description' => 'Creative output — used by writing-craft tools and drafting. Optimise for prose quality.',
+    // Legacy keys (kept while consumers migrate)
     'models.analyst_label' => 'Analyst Model',
     'models.analyst_description' => 'For categorization & analysis',
     'models.creative_label' => 'Creative Model',
