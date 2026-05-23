@@ -338,6 +338,11 @@ return [
     'bp_settings.behavior.nav_hub.description' => 'Use as a navigation hub in the sidebar',
     'bp_settings.behavior.allow_ai_sorting.title' => 'Include in AI Sorting',
     'bp_settings.behavior.allow_ai_sorting.description' => 'Let the AI route incoming notes to this blueprint. Standard blueprints default on; turn off to keep this blueprint out of the AI\'s routing candidate list.',
+    'bp_settings.behavior.tag_aliases.title' => 'Tag Aliases',
+    'bp_settings.behavior.tag_aliases.description' => 'Notes carrying any of these tags route straight here — no AI call required. Case-insensitive. Use this for tags you author consistently for one blueprint (e.g., "Short Story" → Work).',
+    'bp_settings.behavior.tag_aliases.placeholder' => 'Type a tag and press Enter',
+    'bp_settings.behavior.tag_aliases.empty' => 'No tag aliases yet — add one above.',
+    'bp_settings.behavior.tag_aliases.remove' => 'Remove alias',
 
     // Media panel
     'bp_settings.media.title' => 'Media',

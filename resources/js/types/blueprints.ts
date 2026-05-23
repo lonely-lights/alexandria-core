@@ -37,6 +37,7 @@ export interface BlueprintDetail {
     show_tree_view: boolean;
     enable_timeline: boolean;
     allow_ai_sorting: boolean;
+    tag_aliases: string[];
     metadata: Record<string, unknown> | null;
     infobox_schema: InfoboxBlock[];
     entries_count: number;
