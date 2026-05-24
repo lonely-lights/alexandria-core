@@ -84,6 +84,44 @@ it('routes Blueprint::ai_prompt_instructions writes through the polymorphic stor
         ->toBe('Set via accessor');
 });
 
+it('renders structured metadata via the assembler when the ai_prompt_instructions accessor is read', function () {
+    $blueprint = Blueprint::factory()->create(['name' => 'Innovation', 'slug' => 'innovation']);
+
+    $blueprint->setAiConfiguration(
+        AiConfiguration::TYPE_BLUEPRINT_INSTRUCTIONS,
+        instructions: 'legacy free-form should be ignored when metadata is present',
+        metadata: [
+            'recognition' => [
+                'lead' => 'Route to `innovation` for engineered things.',
+                'examples' => ['Devices', 'Engineering'],
+            ],
+            'creation' => [
+                'naming' => 'Use proper name.',
+                'summary' => 'What and why.',
+                'note_attachment' => ['primary_role' => 'the innovation itself'],
+            ],
+        ],
+    );
+
+    $output = $blueprint->fresh()->ai_prompt_instructions;
+
+    expect($output)->toContain('**WHEN A NOTE BELONGS TO THE INNOVATION BLUEPRINT:**')
+        ->toContain('Route to `innovation` for engineered things.')
+        ->toContain('**Entry creation guidance:**')
+        ->not->toContain('legacy free-form should be ignored');
+});
+
+it('falls back to the legacy instructions column when metadata is absent', function () {
+    $blueprint = Blueprint::factory()->create();
+    $blueprint->setAiConfiguration(
+        AiConfiguration::TYPE_BLUEPRINT_INSTRUCTIONS,
+        instructions: 'Plain legacy prose without structured slots.',
+    );
+
+    expect($blueprint->fresh()->ai_prompt_instructions)
+        ->toBe('Plain legacy prose without structured slots.');
+});
+
 it('BlueprintField uses ai_instruction accessor for metadata storage', function () {
     $field = BlueprintField::factory()->create();
     $metadata = ['priority' => 'high', 'context_triggers' => ['birth', 'death']];

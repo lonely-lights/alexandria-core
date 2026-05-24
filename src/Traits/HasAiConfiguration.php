@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Alexandria\Core\Traits;
 
 use Alexandria\Core\Models\AiConfiguration;
+use Alexandria\Core\Models\System\Blueprint;
+use Alexandria\Core\Services\AI\BlueprintInstructionAssembler;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -97,11 +99,26 @@ trait HasAiConfiguration
     }
 
     /**
-     * Backward compatibility: Get AI prompt instructions (Blueprint legacy method).
+     * Get AI prompt instructions (Blueprint accessor).
+     *
+     * Reads the TYPE_BLUEPRINT_INSTRUCTIONS configuration. When structured
+     * `metadata` slots are present (post Stage 8g.0), renders via the
+     * BlueprintInstructionAssembler. Otherwise returns the legacy free-form
+     * `instructions` column as-is.
      */
     public function getAiPromptInstructionsAttribute(): ?string
     {
-        return $this->getAiInstructions(AiConfiguration::TYPE_BLUEPRINT_INSTRUCTIONS);
+        $config = $this->getAiConfiguration(AiConfiguration::TYPE_BLUEPRINT_INSTRUCTIONS);
+
+        if ($config === null) {
+            return null;
+        }
+
+        if (! empty($config->metadata) && $this instanceof Blueprint) {
+            return app(BlueprintInstructionAssembler::class)->assemble($this, $config->metadata);
+        }
+
+        return $config->instructions;
     }
 
     /**
