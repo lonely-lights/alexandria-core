@@ -38,6 +38,14 @@ export interface BlueprintDetail {
     enable_timeline: boolean;
     allow_ai_sorting: boolean;
     tag_aliases: string[];
+    /**
+     * Stage 8g.0 — structured slot metadata for AI sorting instructions.
+     * Schema: docs/ai/structured-schema-spec.md (v2). Slots: recognition,
+     * boundaries, reference_role, creation, structural_rules. The
+     * BlueprintInstructionAssembler renders these to prose at accessor
+     * read time. null = use legacy free-form `instructions` column.
+     */
+    ai_metadata: Record<string, unknown> | null;
     metadata: Record<string, unknown> | null;
     infobox_schema: InfoboxBlock[];
     entries_count: number;
