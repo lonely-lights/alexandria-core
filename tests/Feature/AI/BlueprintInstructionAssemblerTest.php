@@ -99,8 +99,23 @@ it('renders the creation section with naming/summary/note_attachment', function 
     expect($output)->toContain('**Entry creation guidance:**')
         ->toContain('- **Naming:** Use the proper name.')
         ->toContain('- **Summary:** What it does, who made it. 1-2 sentences.')
-        ->toContain('- **Note attachment:** `transfer_note` the original to the innovation itself (PRIMARY subject).')
-        ->toContain('If the note mentions a Character creator, `copy_note` to `character` entries.');
+        ->toContain('- **Note attachment:** `transfer_note` the original to the innovation itself (PRIMARY subject). Also `copy_note` to:')
+        ->toContain('  - `character` — when the note mentions a Character creator');
+});
+
+it('renders creation.relationships.guidance as a Relationships sub-bullet', function () {
+    $output = $this->assembler->assemble($this->blueprint, [
+        'creation' => [
+            'naming' => 'Use proper name.',
+            'summary' => 'Brief identity.',
+            'note_attachment' => ['primary_role' => 'the character itself'],
+            'relationships' => [
+                'guidance' => 'Consult the project\'s `relationship_blueprints` table for matching pairing names and emit `create_relationship` commands.',
+            ],
+        ],
+    ]);
+
+    expect($output)->toContain('- **Relationships:** Consult the project\'s `relationship_blueprints` table');
 });
 
 it('renders structural_rules.parent with required + chain anchor + search_existing_first', function () {

@@ -33,8 +33,11 @@ final class BlueprintInstructionAssembler
     public function assemble(Blueprint $blueprint, array $metadata): string
     {
         $sections = array_filter([
-            $this->renderRecognition($blueprint, $metadata['recognition'] ?? null),
-            $this->renderReferenceRole($metadata['reference_role'] ?? null),
+            $this->renderRecognition(
+                $blueprint,
+                $metadata['recognition'] ?? null,
+                $metadata['reference_role'] ?? null,
+            ),
             $this->renderBoundaries($metadata['boundaries'] ?? []),
             $this->renderCreation($metadata['creation'] ?? null),
             $this->renderStructuralRules($metadata['structural_rules'] ?? null),
@@ -47,16 +50,33 @@ final class BlueprintInstructionAssembler
     /**
      * §3.1 — "WHEN A NOTE BELONGS" header + lead paragraph + examples.
      *
+     * For list-type blueprints (those with a `reference_role` slot), the
+     * reference-role framing paragraph renders as the FIRST paragraph after
+     * the header — matches the legacy "Occupation is a list-type blueprint
+     * — its entries exist to be referenced by..." flow where the framing
+     * contextualizes WHY the routing rules are so narrow.
+     *
      * @param  array<string, mixed>|null  $recognition
+     * @param  array<string, mixed>|null  $referenceRole
      */
-    private function renderRecognition(Blueprint $blueprint, ?array $recognition): string
+    private function renderRecognition(Blueprint $blueprint, ?array $recognition, ?array $referenceRole = null): string
     {
-        if ($recognition === null) {
+        if ($recognition === null && $referenceRole === null) {
             return '';
         }
 
         $name = mb_strtoupper($blueprint->name);
         $lines = ["**WHEN A NOTE BELONGS TO THE $name BLUEPRINT:**"];
+
+        $referenceParagraph = $this->renderReferenceRole($referenceRole);
+        if ($referenceParagraph !== '') {
+            $lines[] = '';
+            $lines[] = $referenceParagraph;
+        }
+
+        if ($recognition === null) {
+            return implode("\n", $lines);
+        }
 
         $lead = trim((string) ($recognition['lead'] ?? ''));
         if ($lead !== '') {
@@ -170,22 +190,34 @@ final class BlueprintInstructionAssembler
         if (is_array($attachment)) {
             $primary = trim((string) ($attachment['primary_role'] ?? ''));
             $copyTargets = $attachment['copy_targets'] ?? [];
+            $validCopyTargets = is_array($copyTargets)
+                ? array_filter(
+                    $copyTargets,
+                    fn ($t): bool => is_array($t)
+                        && trim((string) ($t['blueprint_slug'] ?? '')) !== ''
+                        && trim((string) ($t['trigger'] ?? '')) !== '',
+                )
+                : [];
 
             if ($primary !== '') {
-                $sentence = "`transfer_note` the original to $primary.";
-
-                if (is_array($copyTargets) && $copyTargets !== []) {
-                    foreach ($copyTargets as $target) {
-                        $slug = trim((string) ($target['blueprint_slug'] ?? ''));
-                        $trigger = trim((string) ($target['trigger'] ?? ''));
-                        if ($slug === '' || $trigger === '') {
-                            continue;
-                        }
-                        $sentence .= sprintf(' If %s, `copy_note` to `%s` entries.', $trigger, $slug);
+                if ($validCopyTargets === []) {
+                    $lines[] = "- **Note attachment:** `transfer_note` the original to $primary.";
+                } else {
+                    $lines[] = "- **Note attachment:** `transfer_note` the original to $primary. Also `copy_note` to:";
+                    foreach ($validCopyTargets as $target) {
+                        $slug = trim((string) $target['blueprint_slug']);
+                        $trigger = trim((string) $target['trigger']);
+                        $lines[] = sprintf('  - `%s` — when %s', $slug, $trigger);
                     }
                 }
+            }
+        }
 
-                $lines[] = '- **Note attachment:** '.$sentence;
+        $relationships = $creation['relationships'] ?? null;
+        if (is_array($relationships)) {
+            $guidance = trim((string) ($relationships['guidance'] ?? ''));
+            if ($guidance !== '') {
+                $lines[] = '- **Relationships:** '.$guidance;
             }
         }
 
@@ -236,25 +268,28 @@ final class BlueprintInstructionAssembler
             ? sprintf('`%s`', $targets[0])
             : implode(' or ', array_map(fn ($t): string => sprintf('`%s`', $t), $targets));
 
-        $sentences = [
+        $lines = [
             sprintf('**Structural requirement (parent):** Every entry %s have a parent of blueprint %s.', $verb, $targetList),
         ];
 
         $hint = trim((string) ($parent['selection_hint'] ?? ''));
         if ($hint !== '' && count($targets) > 1) {
-            $sentences[] = $hint;
+            $lines[] = '';
+            $lines[] = $hint;
         }
 
         $anchor = trim((string) ($parent['chain_anchor_hint'] ?? ''));
         if ($anchor !== '') {
-            $sentences[] = $anchor;
+            $lines[] = '';
+            $lines[] = $anchor;
         }
 
         if (($parent['search_existing_first'] ?? false) === true) {
-            $sentences[] = 'Search existing entries before creating new parents — do not create duplicates.';
+            $lines[] = '';
+            $lines[] = 'Search existing entries before creating new parents — do not create duplicates.';
         }
 
-        return implode(' ', $sentences);
+        return implode("\n", $lines);
     }
 
     /**
@@ -268,7 +303,7 @@ final class BlueprintInstructionAssembler
             return '';
         }
 
-        $lines = ['**Cascading relationships:** When creating this entry, also create the following relationships via `entry_relationships` when the trigger condition is met:', ''];
+        $lines = ['**Cascading relationships:** When creating this entry, also emit `create_relationship` commands for the following pairings when the trigger condition is met:', ''];
 
         foreach ($cascading as $rule) {
             $pairing = trim((string) ($rule['pairing'] ?? ''));
