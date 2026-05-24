@@ -19,6 +19,7 @@ import { TreeActivationPanel } from "./settings/TreePanels";
 import KanbanPanel from "./settings/KanbanPanel";
 import GraphPanel from "./settings/GraphPanel";
 import RevealCollapse from "@alexandria/components/ui/RevealCollapse";
+import BlueprintAiPanel from "./settings/BlueprintAiPanel";
 import BlueprintBehaviorPanel from "./settings/BlueprintBehaviorPanel";
 import BlueprintThemePanel from "./settings/BlueprintThemePanel";
 import BlueprintFieldsPanel from "./settings/BlueprintFieldsPanel";
@@ -99,6 +100,7 @@ export function ColumnConfigModal({
         | "columns"
         | "main"
         | "settings"
+        | "ai"
         | "theme"
         | "media"
         | "fields"
@@ -169,6 +171,13 @@ export function ColumnConfigModal({
                                         icon="fa-solid fa-gear"
                                         label={t(
                                             "blueprints.bp_settings.nav.settings",
+                                        )}
+                                    />
+                                    <NavItem
+                                        {...navProps("ai")}
+                                        icon="fa-solid fa-wand-magic-sparkles"
+                                        label={t(
+                                            "blueprints.bp_settings.nav.ai",
                                         )}
                                     />
                                     <NavItem
@@ -359,6 +368,27 @@ export function ColumnConfigModal({
                                 />
                                 <div className="flex flex-1 flex-col overflow-hidden">
                                     <BlueprintBehaviorPanel
+                                        blueprint={blueprint}
+                                        project={project}
+                                        onClose={onClose}
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* AI Sorting panel (Stage 8g.0 P4) */}
+                        {activeMenu === "ai" && blueprint && project && (
+                            <>
+                                <PanelHeader
+                                    title={t(
+                                        "blueprints.bp_settings.ai.title",
+                                    )}
+                                    description={t(
+                                        "blueprints.bp_settings.ai.description",
+                                    )}
+                                />
+                                <div className="flex flex-1 flex-col overflow-hidden">
+                                    <BlueprintAiPanel
                                         blueprint={blueprint}
                                         project={project}
                                         onClose={onClose}
