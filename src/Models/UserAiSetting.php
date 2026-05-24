@@ -101,8 +101,7 @@ class UserAiSetting extends Model
      *
      * Resolution order: tier-named field → legacy alias → null (provider default).
      *
-     * @param 'sorting'|'reasoning'|'writing' $tier
-     * @return string|null
+     * @param  'sorting'|'reasoning'|'writing'  $tier
      */
     public function modelForTier(string $tier): ?string
     {
