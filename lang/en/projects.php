@@ -200,6 +200,12 @@ return [
     'settings_tab.tab.members' => 'Members',
     'settings_tab.tab.danger' => 'Danger Zone',
 
+    // ── AI Helpers section (Projects → Settings → AI Helpers) ──────
+    'ai_helpers.optimized_sort.title' => 'Optimized AI Sort',
+    'ai_helpers.optimized_sort.description' => 'Route the AI sort pipeline through a leaner classifier that ships only blueprint slug + name + description. Cuts per-sort cost by roughly 70% on confident routings. Off by default — flip on to validate the new path against your project before relying on it.',
+    'ai_helpers.optimized_sort.toggle_label' => 'Use optimized AI sorting',
+    'ai_helpers.optimized_sort.toggle_description' => 'When on, sort triggers route through the Stage 8g.5 minimal-tier classifier. When off, sort uses the proven heavier classifier (today\'s behavior).',
+
     // ── Theme section (Stage 8b M1.B) ───────────────────────────────
     'settings_tab.theme.title' => 'Theme',
     'settings_tab.theme.subtitle' => 'Pick how this project looks. The chrome (navbar + sidebar) and content area both follow this theme. Per-blueprint and per-entry overrides only adjust the content area.',

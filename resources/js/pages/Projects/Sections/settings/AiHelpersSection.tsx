@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import Toggle from "@alexandria/components/form/Toggle";
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import Tooltip from "@alexandria/components/ui/Tooltip";
 import { csrfHeaders } from "@alexandria/lib/csrfHeaders";
@@ -169,11 +170,101 @@ export default function AiHelpersSection({
 }: AiHelpersSectionProps) {
     return (
         <div className="space-y-8">
+            <OptimizedSortCard projectId={projectId} />
             <SortingPromptsCard projectId={projectId} />
             <WritingStyleCard
                 projectId={projectId}
                 instructions={instructions}
                 onChange={onInstructionsChange}
+            />
+        </div>
+    );
+}
+
+/* ── Optimized Sort toggle (Stage 8g.5) ── */
+
+/**
+ * Per-project opt-in for the Stage 8g.5 minimal-tier classifier.
+ * When OFF (default), AI sort routes through the proven heavy path
+ * (BlueprintClassifierAgent). When ON, sort flows through the
+ * MinimalClassifierAgent — ships only blueprint slug + name +
+ * description (~500 tokens vs. ~1,680 in the legacy path).
+ *
+ * Reads + writes go through the existing aiSettings endpoints.
+ * `sometimes` validation on the backend lets us PUT just this one
+ * field without re-submitting the entire ai-settings form.
+ */
+function OptimizedSortCard({ projectId }: { projectId: number }) {
+    const t = useT();
+    const [enabled, setEnabled] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        fetch(`/api/v1/projects/${projectId}/ai-settings`, {
+            headers: {
+                Accept: "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            credentials: "same-origin",
+        })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                setEnabled(Boolean(data?.use_optimized_ai_sort));
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
+    }, [projectId]);
+
+    async function toggle(next: boolean) {
+        if (saving) return;
+        const previous = enabled;
+        setEnabled(next);
+        setSaving(true);
+
+        const res = await fetch(
+            `/api/v1/projects/${projectId}/ai/dashboard-settings`,
+            {
+                method: "PUT",
+                headers: {
+                    ...csrfHeaders(),
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                credentials: "same-origin",
+                body: JSON.stringify({ use_optimized_ai_sort: next }),
+            },
+        );
+
+        if (!res.ok) {
+            // Revert on failure so the UI matches the backend.
+            setEnabled(previous);
+        }
+        setSaving(false);
+    }
+
+    return (
+        <div style={cardStyle}>
+            <div className="mb-3">
+                <h3
+                    className="text-base font-semibold"
+                    style={{ color: "var(--theme-base-content)" }}
+                >
+                    {t("projects.ai_helpers.optimized_sort.title")}
+                </h3>
+                <p className="mt-1 text-sm" style={bodyText}>
+                    {t("projects.ai_helpers.optimized_sort.description")}
+                </p>
+            </div>
+            <Toggle
+                label={t("projects.ai_helpers.optimized_sort.toggle_label")}
+                description={t(
+                    "projects.ai_helpers.optimized_sort.toggle_description",
+                )}
+                checked={enabled}
+                onChange={toggle}
+                disabled={loading || saving}
             />
         </div>
     );
