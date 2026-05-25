@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Toggle from "@alexandria/components/form/Toggle";
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import Tooltip from "@alexandria/components/ui/Tooltip";
@@ -194,11 +194,27 @@ export default function AiHelpersSection({
  * `sometimes` validation on the backend lets us PUT just this one
  * field without re-submitting the entire ai-settings form.
  */
+const DEFAULT_ESCALATION_THRESHOLD = 0.75;
+const THRESHOLD_MIN = 0.5;
+const THRESHOLD_MAX = 0.95;
+const THRESHOLD_STEP = 0.05;
+// 400ms debounce balances responsive drag UX against per-frame save spam.
+// Revisit during P6 measurement if telemetry shows users drag-snipe and
+// expect immediate persistence.
+const THRESHOLD_SAVE_DEBOUNCE_MS = 400;
+
 function OptimizedSortCard({ projectId }: { projectId: number }) {
     const t = useT();
     const [enabled, setEnabled] = useState(false);
+    const [threshold, setThreshold] = useState(DEFAULT_ESCALATION_THRESHOLD);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [thresholdSaving, setThresholdSaving] = useState(false);
+    const [thresholdJustSaved, setThresholdJustSaved] = useState(false);
+    // Ref instead of state so the threshold-save effect doesn't re-run when
+    // the load flag flips. The initial fetch sets this to true, and only
+    // user-driven threshold changes after that trigger the debounced save.
+    const hasLoadedRef = useRef(false);
 
     useEffect(() => {
         fetch(`/api/v1/projects/${projectId}/ai-settings`, {
@@ -211,10 +227,30 @@ function OptimizedSortCard({ projectId }: { projectId: number }) {
             .then((r) => (r.ok ? r.json() : null))
             .then((data) => {
                 setEnabled(Boolean(data?.use_optimized_ai_sort));
+                const loaded = Number(
+                    data?.optimized_ai_sort_confidence_threshold,
+                );
+                if (Number.isFinite(loaded)) {
+                    setThreshold(loaded);
+                }
                 setLoading(false);
+                hasLoadedRef.current = true;
             })
             .catch(() => setLoading(false));
     }, [projectId]);
+
+    // Debounced threshold save. Skips until the initial fetch lands so the
+    // server's stored value doesn't immediately echo back as a "save."
+    useEffect(() => {
+        if (!hasLoadedRef.current) return;
+
+        const timer = setTimeout(() => {
+            void saveThreshold(threshold);
+        }, THRESHOLD_SAVE_DEBOUNCE_MS);
+
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [threshold]);
 
     async function toggle(next: boolean) {
         if (saving) return;
@@ -244,6 +280,37 @@ function OptimizedSortCard({ projectId }: { projectId: number }) {
         setSaving(false);
     }
 
+    async function saveThreshold(value: number) {
+        setThresholdSaving(true);
+        setThresholdJustSaved(false);
+
+        const res = await fetch(
+            `/api/v1/projects/${projectId}/ai/dashboard-settings`,
+            {
+                method: "PUT",
+                headers: {
+                    ...csrfHeaders(),
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                credentials: "same-origin",
+                body: JSON.stringify({
+                    optimized_ai_sort_confidence_threshold: value,
+                }),
+            },
+        );
+
+        setThresholdSaving(false);
+        if (res.ok) {
+            setThresholdJustSaved(true);
+            // Auto-clear the "Saved" pill after a beat so it doesn't linger.
+            setTimeout(() => setThresholdJustSaved(false), 1800);
+        }
+    }
+
+    const sliderDisabled = loading || !enabled;
+
     return (
         <div style={cardStyle}>
             <div className="mb-3">
@@ -266,6 +333,96 @@ function OptimizedSortCard({ projectId }: { projectId: number }) {
                 onChange={toggle}
                 disabled={loading || saving}
             />
+
+            <div
+                className="mt-5 border-t pt-4"
+                style={{
+                    borderColor:
+                        "color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+                    opacity: sliderDisabled ? 0.55 : 1,
+                    transition:
+                        "opacity var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
+                }}
+            >
+                <div className="flex items-baseline justify-between">
+                    <label
+                        htmlFor="optimized-sort-threshold"
+                        className="text-sm font-semibold"
+                        style={{ color: "var(--theme-base-content)" }}
+                    >
+                        {t(
+                            "projects.ai_helpers.optimized_sort.threshold_label",
+                        )}
+                    </label>
+                    <div className="flex items-center gap-2">
+                        {thresholdSaving && (
+                            <span className="text-xs" style={microText}>
+                                {t(
+                                    "projects.ai_helpers.optimized_sort.threshold_saving",
+                                )}
+                            </span>
+                        )}
+                        {thresholdJustSaved && !thresholdSaving && (
+                            <span className="text-xs" style={microText}>
+                                <i
+                                    className="fa-solid fa-check mr-1 text-[0.625rem]"
+                                    aria-hidden="true"
+                                />
+                                {t(
+                                    "projects.ai_helpers.optimized_sort.threshold_saved",
+                                )}
+                            </span>
+                        )}
+                        <span
+                            className="font-mono text-sm font-semibold tabular-nums"
+                            style={{ color: "var(--theme-base-content)" }}
+                        >
+                            {threshold.toFixed(2)}
+                        </span>
+                    </div>
+                </div>
+                <p className="mt-1 text-xs" style={bodyText}>
+                    {t(
+                        "projects.ai_helpers.optimized_sort.threshold_description",
+                    )}
+                </p>
+                <input
+                    id="optimized-sort-threshold"
+                    type="range"
+                    min={THRESHOLD_MIN}
+                    max={THRESHOLD_MAX}
+                    step={THRESHOLD_STEP}
+                    value={threshold}
+                    onChange={(e) => setThreshold(Number(e.target.value))}
+                    disabled={sliderDisabled}
+                    className="mt-3 w-full accent-current"
+                    style={{
+                        accentColor: "var(--theme-brand-primary-500)",
+                        cursor: sliderDisabled ? "not-allowed" : "pointer",
+                    }}
+                />
+                <div className="mt-1 flex justify-between text-[0.6875rem]" style={microText}>
+                    <span>
+                        {THRESHOLD_MIN.toFixed(2)} ·{" "}
+                        {t(
+                            "projects.ai_helpers.optimized_sort.threshold_lower_hint",
+                        )}
+                    </span>
+                    <span>
+                        {t(
+                            "projects.ai_helpers.optimized_sort.threshold_higher_hint",
+                        )}{" "}
+                        · {THRESHOLD_MAX.toFixed(2)}
+                    </span>
+                </div>
+                {!enabled && !loading && (
+                    <p className="mt-2 text-xs italic" style={microText}>
+                        {t(
+                            "projects.ai_helpers.optimized_sort.threshold_disabled_hint",
+                        )}
+                    </p>
+                )}
+            </div>
         </div>
     );
 }

@@ -205,6 +205,13 @@ return [
     'ai_helpers.optimized_sort.description' => 'Route the AI sort pipeline through a leaner classifier that ships only blueprint slug + name + description. Cuts per-sort cost by roughly 70% on confident routings. Off by default — flip on to validate the new path against your project before relying on it.',
     'ai_helpers.optimized_sort.toggle_label' => 'Use optimized AI sorting',
     'ai_helpers.optimized_sort.toggle_description' => 'When on, sort triggers route through the Stage 8g.5 minimal-tier classifier. When off, sort uses the proven heavier classifier (today\'s behavior).',
+    'ai_helpers.optimized_sort.threshold_label' => 'Escalation confidence threshold',
+    'ai_helpers.optimized_sort.threshold_description' => 'When the minimal classifier\'s top pick falls below this confidence, the sort escalates to a richer follow-up pass that loads disambiguation context. Lower threshold = fewer escalations but more chance the wrong blueprint wins. Higher threshold = more escalations, sharper picks, slightly more tokens spent.',
+    'ai_helpers.optimized_sort.threshold_lower_hint' => 'Fewer escalations',
+    'ai_helpers.optimized_sort.threshold_higher_hint' => 'Sharper picks',
+    'ai_helpers.optimized_sort.threshold_saving' => 'Saving…',
+    'ai_helpers.optimized_sort.threshold_saved' => 'Saved',
+    'ai_helpers.optimized_sort.threshold_disabled_hint' => 'Turn on optimized AI sorting above to adjust the escalation threshold.',
 
     // ── Theme section (Stage 8b M1.B) ───────────────────────────────
     'settings_tab.theme.title' => 'Theme',
