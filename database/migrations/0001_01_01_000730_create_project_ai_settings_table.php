@@ -22,6 +22,7 @@ return new class extends Migration
             $table->boolean('auto_categorize')->default(false)->comment('Automatically categorize new notes');
             $table->boolean('require_approval')->default(true)->comment('Require manual approval for AI-suggested routings');
             $table->boolean('use_optimized_ai_sort')->default(false)->comment('Stage 8g.5 — route AI sort through the new minimal-tier classifier instead of the legacy heavy path.');
+            $table->decimal('optimized_ai_sort_confidence_threshold', 3, 2)->default(0.75)->comment('Stage 8g.5 P3 — confidence threshold below which Tier 1 (minimal classifier) escalates to Tier 1.5 (expanded). Default 0.75; revisit during P6 measurement.');
 
             // Model Overrides (null = use user default)
             $table->foreignId('ai_provider_id')->nullable()->constrained('ai_providers')->nullOnDelete();

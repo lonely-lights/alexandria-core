@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property bool $auto_categorize
  * @property bool $require_approval
  * @property bool $use_optimized_ai_sort
+ * @property float $optimized_ai_sort_confidence_threshold
  * @property int|null $ai_provider_id
  * @property string|null $analyst_model_name
  * @property string|null $creative_model_name
@@ -47,6 +48,7 @@ class ProjectAiSetting extends Model
         'auto_categorize' => false,
         'require_approval' => true,
         'use_optimized_ai_sort' => false,
+        'optimized_ai_sort_confidence_threshold' => 0.75,
         'default_routing_action' => 'suggest',
     ];
 
@@ -62,6 +64,7 @@ class ProjectAiSetting extends Model
             'auto_categorize' => 'boolean',
             'require_approval' => 'boolean',
             'use_optimized_ai_sort' => 'boolean',
+            'optimized_ai_sort_confidence_threshold' => 'decimal:2',
             'monthly_budget' => 'decimal:2',
             'per_request_limit' => 'decimal:4',
             'enabled_features' => 'array',
