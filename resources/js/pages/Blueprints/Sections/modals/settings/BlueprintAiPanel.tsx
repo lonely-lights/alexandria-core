@@ -6,6 +6,7 @@ import useT from "@alexandria/hooks/useT";
 import type { BlueprintDetail } from "@alexandria/types/blueprints";
 
 import SettingsActivationToggle from "./SettingsActivationToggle";
+import SettingsObjectList from "./SettingsObjectList";
 import SettingsStringList from "./SettingsStringList";
 import { footerDividerStyle } from "./settingsPanelStyles";
 
@@ -17,36 +18,73 @@ const aliasInputStyle: CSSProperties = {
 };
 
 const aliasChipStyle: CSSProperties = {
-    background: "color-mix(in srgb, var(--theme-base-content) 8%, transparent)",
-    border: "1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
+    background: "color-mix(in srgb, var(--theme-primary, var(--theme-base-content)) 10%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--theme-primary, var(--theme-base-content)) 28%, transparent)",
     borderRadius: "var(--theme-radius-pill)",
     color: "var(--theme-base-content)",
 };
 
 const aliasEmptyStyle: CSSProperties = {
     color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+    fontStyle: "italic",
 };
 
-const placeholderCardStyle: CSSProperties = {
-    background: "color-mix(in srgb, var(--theme-base-content) 3%, transparent)",
-    border: "1px dashed color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
-    borderRadius: "var(--theme-radius-box)",
-    color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
-};
-
+// Slot card chrome — left-edge accent stripe in primary color
+// differentiates each slot visually from the next.
 const slotCardStyle: CSSProperties = {
     background: "color-mix(in srgb, var(--theme-base-content) 3%, transparent)",
     border: "1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)",
+    borderLeft: "3px solid var(--theme-primary, color-mix(in srgb, var(--theme-base-content) 35%, transparent))",
     borderRadius: "var(--theme-radius-box)",
     color: "var(--theme-base-content)",
 };
 
-const slotLabelStyle: CSSProperties = {
-    color: "var(--theme-base-content)",
+const placeholderCardStyle: CSSProperties = {
+    background: "color-mix(in srgb, var(--theme-base-content) 2%, transparent)",
+    border: "1px dashed color-mix(in srgb, var(--theme-base-content) 12%, transparent)",
+    borderLeft: "3px dashed color-mix(in srgb, var(--theme-primary, var(--theme-base-content)) 35%, transparent)",
+    borderRadius: "var(--theme-radius-box)",
+    color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
 };
 
+// Tier 1 — slot title. Uses theme-primary so the header is the strongest
+// color anchor on the card, pairing with the icon + left stripe.
+const slotTitleStyle: CSSProperties = {
+    color: "var(--theme-primary, var(--theme-base-content))",
+};
+
+const slotIconStyle: CSSProperties = {
+    color: "var(--theme-primary, color-mix(in srgb, var(--theme-base-content) 65%, transparent))",
+};
+
+// Tier 2 — slot description (one-line subhead under the title)
 const slotDescStyle: CSSProperties = {
     color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
+};
+
+// Tier 3 — sub-section divider header (e.g. "Note attachment" within Creation).
+// Primary-tinted divider so the section break catches the eye.
+const subSectionHeaderStyle: CSSProperties = {
+    color: "var(--theme-base-content)",
+    borderTop: "1px solid color-mix(in srgb, var(--theme-primary, var(--theme-base-content)) 20%, transparent)",
+};
+
+// Sub-section heading text (e.g. "Note attachment") — primary-tinted but
+// slightly muted so the slot title stays the dominant header.
+const subSectionTitleStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-primary, var(--theme-base-content)) 85%, var(--theme-base-content))",
+};
+
+// Tier 4 — field label (small caps so it never collides with hint text)
+const fieldLabelStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 85%, transparent)",
+    letterSpacing: "0.06em",
+};
+
+// Tier 5 — field hint (italic + faded so it reads as helper text, not label)
+const fieldHintStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 55%, transparent)",
+    fontStyle: "italic",
 };
 
 const leadTextareaStyle: CSSProperties = {
@@ -57,7 +95,17 @@ const leadTextareaStyle: CSSProperties = {
 };
 
 const disclosureButtonStyle: CSSProperties = {
-    color: "color-mix(in srgb, var(--theme-base-content) 70%, transparent)",
+    color: "color-mix(in srgb, var(--theme-base-content) 80%, transparent)",
+};
+
+// Icon mapping per card — gives each section a scannable visual anchor.
+const slotIcons: Record<string, string> = {
+    tag_aliases: "fa-solid fa-tag",
+    recognition: "fa-solid fa-eye",
+    creation: "fa-solid fa-pen-nib",
+    boundaries: "fa-solid fa-arrows-left-right",
+    reference_role: "fa-solid fa-link",
+    structural_rules: "fa-solid fa-sitemap",
 };
 
 /**
@@ -73,11 +121,29 @@ interface RecognitionSlot {
     negative_examples?: string[];
 }
 
+interface CopyTarget {
+    blueprint_slug: string;
+    trigger: string;
+}
+
+interface NoteAttachmentSlot {
+    primary_role?: string;
+    copy_targets?: CopyTarget[];
+}
+
+interface CreationSlot {
+    naming?: string;
+    summary?: string;
+    note_attachment?: NoteAttachmentSlot;
+    relationships?: { guidance: string };
+}
+
 interface AiMetadata {
     schema_version?: number;
     recognition?: RecognitionSlot;
-    // boundaries / reference_role / creation / structural_rules land in
-    // P4c–P4e; preserved as opaque pass-through until then.
+    creation?: CreationSlot;
+    // boundaries / reference_role / structural_rules land in P4d–P4e;
+    // preserved as opaque pass-through until then.
     [key: string]: unknown;
 }
 
@@ -111,6 +177,10 @@ export default function BlueprintAiPanel({
     );
     const initialRecognition: RecognitionSlot =
         (initialMetadata.recognition as RecognitionSlot | undefined) ?? {};
+    const initialCreation: CreationSlot =
+        (initialMetadata.creation as CreationSlot | undefined) ?? {};
+    const initialNoteAttachment: NoteAttachmentSlot =
+        initialCreation.note_attachment ?? {};
 
     const form = useForm({
         // Identity values are preserved on update — same pattern as BehaviorPanel.
@@ -147,6 +217,25 @@ export default function BlueprintAiPanel({
         useState<string[]>(initialRecognition.negative_examples ?? []);
     const [showNegativeExamples, setShowNegativeExamples] = useState(
         (initialRecognition.negative_examples?.length ?? 0) > 0,
+    );
+
+    // Creation slot local state.
+    const [creationNaming, setCreationNaming] = useState<string>(
+        initialCreation.naming ?? "",
+    );
+    const [creationSummary, setCreationSummary] = useState<string>(
+        initialCreation.summary ?? "",
+    );
+    const [creationPrimaryRole, setCreationPrimaryRole] = useState<string>(
+        initialNoteAttachment.primary_role ?? "",
+    );
+    const [creationCopyTargets, setCreationCopyTargets] = useState<CopyTarget[]>(
+        initialNoteAttachment.copy_targets ?? [],
+    );
+    const [creationRelationshipsGuidance, setCreationRelationshipsGuidance] =
+        useState<string>(initialCreation.relationships?.guidance ?? "");
+    const [showCreationRelationships, setShowCreationRelationships] = useState(
+        (initialCreation.relationships?.guidance ?? "").trim().length > 0,
     );
 
     function commitAlias() {
@@ -209,6 +298,43 @@ export default function BlueprintAiPanel({
             next.recognition = recognition;
         }
 
+        // Creation slot composition. Each sub-field is independently
+        // optional; the slot itself is omitted only when every field
+        // and the nested note_attachment + relationships are blank.
+        const trimmedNaming = creationNaming.trim();
+        const trimmedSummary = creationSummary.trim();
+        const trimmedPrimaryRole = creationPrimaryRole.trim();
+        const cleanedCopyTargets = creationCopyTargets
+            .map((t) => ({
+                blueprint_slug: t.blueprint_slug.trim(),
+                trigger: t.trigger.trim(),
+            }))
+            .filter(
+                (t) => t.blueprint_slug.length > 0 || t.trigger.length > 0,
+            );
+        const trimmedRelationshipsGuidance =
+            creationRelationshipsGuidance.trim();
+
+        const creation: CreationSlot = {};
+        if (trimmedNaming) creation.naming = trimmedNaming;
+        if (trimmedSummary) creation.summary = trimmedSummary;
+        if (trimmedPrimaryRole || cleanedCopyTargets.length > 0) {
+            const noteAttachment: NoteAttachmentSlot = {};
+            if (trimmedPrimaryRole) noteAttachment.primary_role = trimmedPrimaryRole;
+            if (cleanedCopyTargets.length > 0) {
+                noteAttachment.copy_targets = cleanedCopyTargets;
+            }
+            creation.note_attachment = noteAttachment;
+        }
+        if (trimmedRelationshipsGuidance) {
+            creation.relationships = { guidance: trimmedRelationshipsGuidance };
+        }
+        if (Object.keys(creation).length > 0) {
+            next.creation = creation;
+        } else {
+            delete next.creation;
+        }
+
         const populated = Object.keys(next).some(
             (key) => key !== "schema_version" && next[key] !== undefined,
         );
@@ -233,8 +359,8 @@ export default function BlueprintAiPanel({
         });
     }
 
-    // The 4 metadata slots that remain placeholders until their P4 sub-phases.
-    // Recognition is no longer in this list — it ships as a real form below.
+    // The 3 metadata slots that remain placeholders until P4d–P4e.
+    // Recognition + Creation are real forms below.
     const upcomingSlots: Array<{ key: string; titleKey: string; descKey: string }> = [
         {
             key: "boundaries",
@@ -245,11 +371,6 @@ export default function BlueprintAiPanel({
             key: "reference_role",
             titleKey: "blueprints.bp_settings.ai.slots.reference_role.title",
             descKey: "blueprints.bp_settings.ai.slots.reference_role.description",
-        },
-        {
-            key: "creation",
-            titleKey: "blueprints.bp_settings.ai.slots.creation.title",
-            descKey: "blueprints.bp_settings.ai.slots.creation.description",
         },
         {
             key: "structural_rules",
@@ -273,107 +394,124 @@ export default function BlueprintAiPanel({
 
                 {/* Configuration surface — only meaningful when sorting is on. */}
                 {form.data.allow_ai_sorting && (
-                    <div className="space-y-4 pt-2">
-                        {/* Tag aliases — already a guided field, relocated from Behavior. */}
-                        <div className="space-y-2">
-                            <div>
-                                <div
-                                    className="text-sm font-medium"
-                                    style={slotLabelStyle}
-                                >
-                                    {t(
-                                        "blueprints.bp_settings.ai.tag_aliases.title",
-                                    )}
-                                </div>
-                                <div
-                                    className="text-xs"
-                                    style={slotDescStyle}
-                                >
-                                    {t(
-                                        "blueprints.bp_settings.ai.tag_aliases.description",
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-1.5">
-                                {form.data.tag_aliases.map((alias, i) => (
-                                    <span
-                                        key={`${alias}-${i}`}
-                                        className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs"
-                                        style={aliasChipStyle}
-                                    >
-                                        {alias}
-                                        <button
-                                            type="button"
-                                            aria-label={t(
-                                                "blueprints.bp_settings.ai.tag_aliases.remove",
-                                            )}
-                                            onClick={() => removeAlias(i)}
-                                            className="opacity-60 hover:opacity-100"
-                                        >
-                                            <i className="fa-solid fa-xmark" />
-                                        </button>
-                                    </span>
-                                ))}
-                                {form.data.tag_aliases.length === 0 && (
-                                    <span
-                                        className="text-xs italic"
-                                        style={aliasEmptyStyle}
+                    <div className="space-y-6 pt-2">
+                        {/* Tag aliases — wears the same card chrome as the slots
+                            since it's a sibling AI-sorting configuration the
+                            author tweaks per blueprint. */}
+                        <div className="space-y-4 p-5" style={slotCardStyle}>
+                            <div className="flex items-start gap-2.5">
+                                <i
+                                    className={`${slotIcons.tag_aliases} mt-0.5 text-base`}
+                                    style={slotIconStyle}
+                                    aria-hidden
+                                />
+                                <div className="flex-1">
+                                    <div
+                                        className="text-base font-semibold leading-tight"
+                                        style={slotTitleStyle}
                                     >
                                         {t(
-                                            "blueprints.bp_settings.ai.tag_aliases.empty",
+                                            "blueprints.bp_settings.ai.tag_aliases.title",
                                         )}
-                                    </span>
-                                )}
+                                    </div>
+                                    <div className="mt-1 text-xs" style={slotDescStyle}>
+                                        {t(
+                                            "blueprints.bp_settings.ai.tag_aliases.description",
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            <input
-                                type="text"
-                                value={aliasDraft}
-                                onChange={(e) => setAliasDraft(e.target.value)}
-                                onKeyDown={onAliasKeyDown}
-                                onBlur={commitAlias}
-                                placeholder={t(
-                                    "blueprints.bp_settings.ai.tag_aliases.placeholder",
-                                )}
-                                className="w-full px-3 py-1.5 text-sm focus:outline-none"
-                                style={aliasInputStyle}
-                            />
+                            <div className="space-y-2">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    {form.data.tag_aliases.map((alias, i) => (
+                                        <span
+                                            key={`${alias}-${i}`}
+                                            className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs"
+                                            style={aliasChipStyle}
+                                        >
+                                            {alias}
+                                            <button
+                                                type="button"
+                                                aria-label={t(
+                                                    "blueprints.bp_settings.ai.tag_aliases.remove",
+                                                )}
+                                                onClick={() => removeAlias(i)}
+                                                className="opacity-60 hover:opacity-100"
+                                            >
+                                                <i className="fa-solid fa-xmark" />
+                                            </button>
+                                        </span>
+                                    ))}
+                                    {form.data.tag_aliases.length === 0 && (
+                                        <span
+                                            className="text-xs"
+                                            style={aliasEmptyStyle}
+                                        >
+                                            {t(
+                                                "blueprints.bp_settings.ai.tag_aliases.empty",
+                                            )}
+                                        </span>
+                                    )}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={aliasDraft}
+                                    onChange={(e) => setAliasDraft(e.target.value)}
+                                    onKeyDown={onAliasKeyDown}
+                                    onBlur={commitAlias}
+                                    placeholder={t(
+                                        "blueprints.bp_settings.ai.tag_aliases.placeholder",
+                                    )}
+                                    className="w-full px-3 py-2 text-sm focus:outline-none"
+                                    style={aliasInputStyle}
+                                />
+                            </div>
                         </div>
 
                         {/* Recognition slot — the first guided slot form. */}
                         <div
-                            className="space-y-3 px-3 py-3"
+                            className="space-y-5 p-5"
                             style={slotCardStyle}
                         >
-                            <div>
-                                <div
-                                    className="text-sm font-medium"
-                                    style={slotLabelStyle}
-                                >
-                                    {t(
-                                        "blueprints.bp_settings.ai.slots.recognition.title",
-                                    )}
-                                </div>
-                                <div className="text-xs" style={slotDescStyle}>
-                                    {t(
-                                        "blueprints.bp_settings.ai.slots.recognition.description",
-                                    )}
+                            <div className="flex items-start gap-2.5">
+                                <i
+                                    className={`${slotIcons.recognition} mt-0.5 text-base`}
+                                    style={slotIconStyle}
+                                    aria-hidden
+                                />
+                                <div className="flex-1">
+                                    <div
+                                        className="text-base font-semibold leading-tight"
+                                        style={slotTitleStyle}
+                                    >
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.recognition.title",
+                                        )}
+                                    </div>
+                                    <div className="mt-1 text-xs" style={slotDescStyle}>
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.recognition.description",
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Lead — the required prose framing for this slot. */}
-                            <div className="space-y-1">
-                                <label
-                                    className="text-xs font-medium"
-                                    style={slotLabelStyle}
-                                >
-                                    {t(
-                                        "blueprints.bp_settings.ai.slots.recognition.lead.label",
-                                    )}
-                                </label>
-                                <div className="text-xs" style={slotDescStyle}>
-                                    {t(
-                                        "blueprints.bp_settings.ai.slots.recognition.lead.hint",
-                                    )}
+                            <div className="space-y-2">
+                                <div>
+                                    <label
+                                        className="text-[10px] font-semibold uppercase"
+                                        style={fieldLabelStyle}
+                                    >
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.recognition.lead.label",
+                                        )}
+                                    </label>
+                                    <div className="mt-0.5 text-xs" style={fieldHintStyle}>
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.recognition.lead.hint",
+                                        )}
+                                    </div>
                                 </div>
                                 <textarea
                                     value={recognitionLead}
@@ -384,25 +522,27 @@ export default function BlueprintAiPanel({
                                         "blueprints.bp_settings.ai.slots.recognition.lead.placeholder",
                                     )}
                                     rows={3}
-                                    className="w-full resize-y px-3 py-1.5 text-sm focus:outline-none"
+                                    className="w-full resize-y px-3 py-2 text-sm focus:outline-none"
                                     style={leadTextareaStyle}
                                 />
                             </div>
 
                             {/* Examples — positive routing hints. */}
-                            <div className="space-y-1">
-                                <label
-                                    className="text-xs font-medium"
-                                    style={slotLabelStyle}
-                                >
-                                    {t(
-                                        "blueprints.bp_settings.ai.slots.recognition.examples.label",
-                                    )}
-                                </label>
-                                <div className="text-xs" style={slotDescStyle}>
-                                    {t(
-                                        "blueprints.bp_settings.ai.slots.recognition.examples.hint",
-                                    )}
+                            <div className="space-y-2">
+                                <div>
+                                    <label
+                                        className="text-[10px] font-semibold uppercase"
+                                        style={fieldLabelStyle}
+                                    >
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.recognition.examples.label",
+                                        )}
+                                    </label>
+                                    <div className="mt-0.5 text-xs" style={fieldHintStyle}>
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.recognition.examples.hint",
+                                        )}
+                                    </div>
                                 </div>
                                 <SettingsStringList
                                     values={recognitionExamples}
@@ -423,13 +563,13 @@ export default function BlueprintAiPanel({
                             </div>
 
                             {/* Counter-examples — optional, hidden by default. */}
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                                 <button
                                     type="button"
                                     onClick={() =>
                                         setShowNegativeExamples((v) => !v)
                                     }
-                                    className="inline-flex items-center gap-1.5 text-xs font-medium"
+                                    className="inline-flex items-center gap-1.5 rounded px-1 py-0.5 text-xs font-semibold transition-colors hover:bg-[color:color-mix(in_srgb,var(--theme-base-content)_5%,transparent)]"
                                     style={disclosureButtonStyle}
                                 >
                                     <i
@@ -446,10 +586,10 @@ export default function BlueprintAiPanel({
                                           )}
                                 </button>
                                 {showNegativeExamples && (
-                                    <div className="space-y-1 pt-1">
+                                    <div className="space-y-2 pt-1">
                                         <div
                                             className="text-xs"
-                                            style={slotDescStyle}
+                                            style={fieldHintStyle}
                                         >
                                             {t(
                                                 "blueprints.bp_settings.ai.slots.recognition.negative_examples.hint",
@@ -478,27 +618,308 @@ export default function BlueprintAiPanel({
                             </div>
                         </div>
 
-                        {/* Remaining slot placeholders — real forms land in P4c–P4e. */}
+                        {/* Creation slot — naming, summary, note attachment, optional relationships guidance. */}
+                        <div
+                            className="space-y-5 p-5"
+                            style={slotCardStyle}
+                        >
+                            <div className="flex items-start gap-2.5">
+                                <i
+                                    className={`${slotIcons.creation} mt-0.5 text-base`}
+                                    style={slotIconStyle}
+                                    aria-hidden
+                                />
+                                <div className="flex-1">
+                                    <div
+                                        className="text-base font-semibold leading-tight"
+                                        style={slotTitleStyle}
+                                    >
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.creation.title",
+                                        )}
+                                    </div>
+                                    <div className="mt-1 text-xs" style={slotDescStyle}>
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.creation.description",
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Naming — prose guidance for the AI's entry-title choice. */}
+                            <div className="space-y-2">
+                                <div>
+                                    <label
+                                        className="text-[10px] font-semibold uppercase"
+                                        style={fieldLabelStyle}
+                                    >
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.creation.naming.label",
+                                        )}
+                                    </label>
+                                    <div className="mt-0.5 text-xs" style={fieldHintStyle}>
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.creation.naming.hint",
+                                        )}
+                                    </div>
+                                </div>
+                                <textarea
+                                    value={creationNaming}
+                                    onChange={(e) =>
+                                        setCreationNaming(e.target.value)
+                                    }
+                                    placeholder={t(
+                                        "blueprints.bp_settings.ai.slots.creation.naming.placeholder",
+                                    )}
+                                    rows={2}
+                                    className="w-full resize-y px-3 py-2 text-sm focus:outline-none"
+                                    style={leadTextareaStyle}
+                                />
+                            </div>
+
+                            {/* Summary — what fills the entry's summary field. */}
+                            <div className="space-y-2">
+                                <div>
+                                    <label
+                                        className="text-[10px] font-semibold uppercase"
+                                        style={fieldLabelStyle}
+                                    >
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.creation.summary.label",
+                                        )}
+                                    </label>
+                                    <div className="mt-0.5 text-xs" style={fieldHintStyle}>
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.creation.summary.hint",
+                                        )}
+                                    </div>
+                                </div>
+                                <textarea
+                                    value={creationSummary}
+                                    onChange={(e) =>
+                                        setCreationSummary(e.target.value)
+                                    }
+                                    placeholder={t(
+                                        "blueprints.bp_settings.ai.slots.creation.summary.placeholder",
+                                    )}
+                                    rows={2}
+                                    className="w-full resize-y px-3 py-2 text-sm focus:outline-none"
+                                    style={leadTextareaStyle}
+                                />
+                            </div>
+
+                            {/* Note attachment — sub-section with divider so it reads as a group, not just another field. */}
+                            <div className="space-y-4 pt-4" style={subSectionHeaderStyle}>
+                                <div>
+                                    <div
+                                        className="text-sm font-semibold"
+                                        style={subSectionTitleStyle}
+                                    >
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.creation.note_attachment.heading",
+                                        )}
+                                    </div>
+                                    <div
+                                        className="mt-0.5 text-xs"
+                                        style={fieldHintStyle}
+                                    >
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.creation.note_attachment.description",
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Primary role — the phrase that completes "transfer the note to ___". */}
+                                <div className="space-y-2">
+                                    <div>
+                                        <label
+                                            className="text-[10px] font-semibold uppercase"
+                                            style={fieldLabelStyle}
+                                        >
+                                            {t(
+                                                "blueprints.bp_settings.ai.slots.creation.note_attachment.primary_role.label",
+                                            )}
+                                        </label>
+                                        <div
+                                            className="mt-0.5 text-xs"
+                                            style={fieldHintStyle}
+                                        >
+                                            {t(
+                                                "blueprints.bp_settings.ai.slots.creation.note_attachment.primary_role.hint",
+                                            )}
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={creationPrimaryRole}
+                                        onChange={(e) =>
+                                            setCreationPrimaryRole(e.target.value)
+                                        }
+                                        placeholder={t(
+                                            "blueprints.bp_settings.ai.slots.creation.note_attachment.primary_role.placeholder",
+                                        )}
+                                        className="w-full px-3 py-2 text-sm focus:outline-none"
+                                        style={leadTextareaStyle}
+                                    />
+                                </div>
+
+                                {/* Copy targets — list of {blueprint_slug, trigger} pairs. */}
+                                <div className="space-y-2">
+                                    <div>
+                                        <label
+                                            className="text-[10px] font-semibold uppercase"
+                                            style={fieldLabelStyle}
+                                        >
+                                            {t(
+                                                "blueprints.bp_settings.ai.slots.creation.note_attachment.copy_targets.label",
+                                            )}
+                                        </label>
+                                        <div
+                                            className="mt-0.5 text-xs"
+                                            style={fieldHintStyle}
+                                        >
+                                            {t(
+                                                "blueprints.bp_settings.ai.slots.creation.note_attachment.copy_targets.hint",
+                                            )}
+                                        </div>
+                                    </div>
+                                    <SettingsObjectList<CopyTarget>
+                                        values={creationCopyTargets}
+                                        onChange={setCreationCopyTargets}
+                                        createEmpty={() => ({
+                                            blueprint_slug: "",
+                                            trigger: "",
+                                        })}
+                                        addLabel={t(
+                                            "blueprints.bp_settings.ai.slots.creation.note_attachment.copy_targets.add",
+                                        )}
+                                        removeLabel={t(
+                                            "blueprints.bp_settings.ai.slots.creation.note_attachment.copy_targets.remove",
+                                        )}
+                                        emptyHint={t(
+                                            "blueprints.bp_settings.ai.slots.creation.note_attachment.copy_targets.empty",
+                                        )}
+                                        renderItem={(item, update) => (
+                                            <>
+                                                <input
+                                                    type="text"
+                                                    value={item.blueprint_slug}
+                                                    onChange={(e) =>
+                                                        update({
+                                                            ...item,
+                                                            blueprint_slug:
+                                                                e.target.value,
+                                                        })
+                                                    }
+                                                    placeholder={t(
+                                                        "blueprints.bp_settings.ai.slots.creation.note_attachment.copy_targets.blueprint_slug.placeholder",
+                                                    )}
+                                                    className="w-full bg-transparent px-0 py-0.5 font-mono text-sm font-medium focus:outline-none"
+                                                    style={slotTitleStyle}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={item.trigger}
+                                                    onChange={(e) =>
+                                                        update({
+                                                            ...item,
+                                                            trigger: e.target.value,
+                                                        })
+                                                    }
+                                                    placeholder={t(
+                                                        "blueprints.bp_settings.ai.slots.creation.note_attachment.copy_targets.trigger.placeholder",
+                                                    )}
+                                                    className="w-full bg-transparent px-0 py-0.5 text-xs focus:outline-none"
+                                                    style={fieldHintStyle}
+                                                />
+                                            </>
+                                        )}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Relationships guidance — optional, hidden by default. */}
+                            <div className="space-y-2">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowCreationRelationships((v) => !v)
+                                    }
+                                    className="inline-flex items-center gap-1.5 rounded px-1 py-0.5 text-xs font-semibold transition-colors hover:bg-[color:color-mix(in_srgb,var(--theme-base-content)_5%,transparent)]"
+                                    style={disclosureButtonStyle}
+                                >
+                                    <i
+                                        className={`fa-solid fa-chevron-${
+                                            showCreationRelationships ? "down" : "right"
+                                        }`}
+                                    />
+                                    {showCreationRelationships
+                                        ? t(
+                                              "blueprints.bp_settings.ai.slots.creation.relationships.hide",
+                                          )
+                                        : t(
+                                              "blueprints.bp_settings.ai.slots.creation.relationships.show",
+                                          )}
+                                </button>
+                                {showCreationRelationships && (
+                                    <div className="space-y-2 pt-1">
+                                        <div
+                                            className="text-xs"
+                                            style={fieldHintStyle}
+                                        >
+                                            {t(
+                                                "blueprints.bp_settings.ai.slots.creation.relationships.hint",
+                                            )}
+                                        </div>
+                                        <textarea
+                                            value={creationRelationshipsGuidance}
+                                            onChange={(e) =>
+                                                setCreationRelationshipsGuidance(
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder={t(
+                                                "blueprints.bp_settings.ai.slots.creation.relationships.placeholder",
+                                            )}
+                                            rows={3}
+                                            className="w-full resize-y px-3 py-2 text-sm focus:outline-none"
+                                            style={leadTextareaStyle}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Remaining slot placeholders — real forms land in P4d–P4e. */}
                         {upcomingSlots.map((slot) => (
                             <div
                                 key={slot.key}
-                                className="space-y-1 px-3 py-3"
+                                className="p-5"
                                 style={placeholderCardStyle}
                             >
-                                <div
-                                    className="text-sm font-medium"
-                                    style={slotLabelStyle}
-                                >
-                                    {t(slot.titleKey)}
-                                </div>
-                                <div className="text-xs" style={slotDescStyle}>
-                                    {t(slot.descKey)}
-                                </div>
-                                <div
-                                    className="pt-1 text-xs italic"
-                                    style={aliasEmptyStyle}
-                                >
-                                    {t("blueprints.bp_settings.ai.coming_soon")}
+                                <div className="flex items-start gap-2.5">
+                                    <i
+                                        className={`${slotIcons[slot.key] ?? "fa-solid fa-circle"} mt-0.5 text-base opacity-60`}
+                                        style={slotIconStyle}
+                                        aria-hidden
+                                    />
+                                    <div className="flex-1">
+                                        <div
+                                            className="text-base font-semibold leading-tight"
+                                            style={slotTitleStyle}
+                                        >
+                                            {t(slot.titleKey)}
+                                        </div>
+                                        <div className="mt-1 text-xs" style={slotDescStyle}>
+                                            {t(slot.descKey)}
+                                        </div>
+                                        <div
+                                            className="mt-3 text-xs"
+                                            style={aliasEmptyStyle}
+                                        >
+                                            {t("blueprints.bp_settings.ai.coming_soon")}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         ))}
