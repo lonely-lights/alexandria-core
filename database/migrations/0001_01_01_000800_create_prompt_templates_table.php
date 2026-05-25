@@ -23,9 +23,12 @@ return new class extends Migration
             // This contains ONLY instructions, no data. Data is injected via [DATA_CONTEXT] placeholder.
             $table->longText('template')->comment('Prompt instructions. Must contain [DATA_CONTEXT] placeholder.');
 
-            // Context requirements - links to prompt_context_schemas
-            $table->string('required_context_type', 100)->comment('e.g., ProjectCategorizationContext');
-            $table->string('context_schema_version', 20)->default('1.0');
+            // Context requirements - links to prompt_context_schemas.
+            // Nullable for agents that don't go through AbstractContext
+            // (e.g., the Stage 8g.5 MinimalClassifierAgent does its own
+            // substitution without a context-resolver round-trip).
+            $table->string('required_context_type', 100)->nullable()->comment('e.g., ProjectCategorizationContext');
+            $table->string('context_schema_version', 20)->nullable()->default('1.0');
 
             // Metadata
             $table->boolean('is_system')->default(true)->comment('System prompts cannot be deleted');

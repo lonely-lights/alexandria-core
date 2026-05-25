@@ -21,6 +21,7 @@ return new class extends Migration
             $table->boolean('ai_enabled')->default(true)->comment('Master switch for AI features in this project');
             $table->boolean('auto_categorize')->default(false)->comment('Automatically categorize new notes');
             $table->boolean('require_approval')->default(true)->comment('Require manual approval for AI-suggested routings');
+            $table->boolean('use_optimized_ai_sort')->default(false)->comment('Stage 8g.5 — route AI sort through the new minimal-tier classifier instead of the legacy heavy path.');
 
             // Model Overrides (null = use user default)
             $table->foreignId('ai_provider_id')->nullable()->constrained('ai_providers')->nullOnDelete();
