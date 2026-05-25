@@ -2,6 +2,9 @@ import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react
 import { useForm } from "@inertiajs/react";
 
 import ActionButton from "@alexandria/components/ui/ActionButton";
+import Select from "@alexandria/components/ui/Select";
+import Input from "@alexandria/components/form/Input";
+import Textarea from "@alexandria/components/form/Textarea";
 import useT from "@alexandria/hooks/useT";
 import type { BlueprintDetail } from "@alexandria/types/blueprints";
 
@@ -9,13 +12,6 @@ import SettingsActivationToggle from "./SettingsActivationToggle";
 import SettingsObjectList from "./SettingsObjectList";
 import SettingsStringList from "./SettingsStringList";
 import { footerDividerStyle } from "./settingsPanelStyles";
-
-const aliasInputStyle: CSSProperties = {
-    background: "var(--theme-base-surface)",
-    border: "1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
-    borderRadius: "var(--theme-radius-input)",
-    color: "var(--theme-base-content)",
-};
 
 const aliasChipStyle: CSSProperties = {
     background: "color-mix(in srgb, var(--theme-primary, var(--theme-base-content)) 10%, transparent)",
@@ -37,14 +33,6 @@ const slotCardStyle: CSSProperties = {
     borderLeft: "3px solid var(--theme-primary, color-mix(in srgb, var(--theme-base-content) 35%, transparent))",
     borderRadius: "var(--theme-radius-box)",
     color: "var(--theme-base-content)",
-};
-
-const placeholderCardStyle: CSSProperties = {
-    background: "color-mix(in srgb, var(--theme-base-content) 2%, transparent)",
-    border: "1px dashed color-mix(in srgb, var(--theme-base-content) 12%, transparent)",
-    borderLeft: "3px dashed color-mix(in srgb, var(--theme-primary, var(--theme-base-content)) 35%, transparent)",
-    borderRadius: "var(--theme-radius-box)",
-    color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
 };
 
 // Tier 1 — slot title. Uses theme-primary so the header is the strongest
@@ -87,15 +75,29 @@ const fieldHintStyle: CSSProperties = {
     fontStyle: "italic",
 };
 
-const leadTextareaStyle: CSSProperties = {
-    background: "var(--theme-base-surface)",
-    border: "1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
-    borderRadius: "var(--theme-radius-input)",
-    color: "var(--theme-base-content)",
-};
-
 const disclosureButtonStyle: CSSProperties = {
     color: "color-mix(in srgb, var(--theme-base-content) 80%, transparent)",
+};
+
+// Count badge for collapsible slot headers — shows "3 rules" / "none yet"
+// so authors can read the slot's state without expanding.
+const countBadgeStyle: CSSProperties = {
+    background: "color-mix(in srgb, var(--theme-primary, var(--theme-base-content)) 12%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--theme-primary, var(--theme-base-content)) 25%, transparent)",
+    borderRadius: "var(--theme-radius-pill)",
+    color: "color-mix(in srgb, var(--theme-primary, var(--theme-base-content)) 90%, var(--theme-base-content))",
+};
+
+const emptyBadgeStyle: CSSProperties = {
+    background: "transparent",
+    border: "1px dashed color-mix(in srgb, var(--theme-base-content) 25%, transparent)",
+    borderRadius: "var(--theme-radius-pill)",
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+    fontStyle: "italic",
+};
+
+const chevronStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
 };
 
 // Icon mapping per card — gives each section a scannable visual anchor.
@@ -138,14 +140,64 @@ interface CreationSlot {
     relationships?: { guidance: string };
 }
 
+type BoundaryKind = "overlap" | "exclusion" | "precedence";
+
+interface BoundaryRule {
+    target: string;
+    kind: BoundaryKind;
+    rule: string;
+}
+
+interface ReferenceRoleSlot {
+    referenced_by_blueprint: string;
+    referenced_by_field: string;
+}
+
+interface ParentSubSlot {
+    required?: boolean;
+    target_blueprints?: string[];
+    selection_hint?: string | null;
+    chain_anchor_hint?: string | null;
+    search_existing_first?: boolean;
+}
+
+interface CascadingRelationship {
+    via: "entry_relationships";
+    pairing: string;
+    target_blueprint: string;
+    trigger: string;
+}
+
+type CreationPolicy = "create_if_missing" | "must_exist" | "leave_unfilled";
+
+interface Dependency {
+    target_blueprint: string;
+    via_field: string;
+    creation_policy: CreationPolicy;
+}
+
+interface StructuralRulesSlot {
+    parent?: ParentSubSlot;
+    cascading_relationships?: CascadingRelationship[];
+    dependencies?: Dependency[];
+}
+
 interface AiMetadata {
     schema_version?: number;
     recognition?: RecognitionSlot;
     creation?: CreationSlot;
-    // boundaries / reference_role / structural_rules land in P4d–P4e;
-    // preserved as opaque pass-through until then.
+    boundaries?: BoundaryRule[];
+    reference_role?: ReferenceRoleSlot;
+    structural_rules?: StructuralRulesSlot;
     [key: string]: unknown;
 }
+
+const BOUNDARY_KINDS: BoundaryKind[] = ["overlap", "exclusion", "precedence"];
+const CREATION_POLICIES: CreationPolicy[] = [
+    "create_if_missing",
+    "must_exist",
+    "leave_unfilled",
+];
 
 /**
  * AI Sorting panel — houses the activation toggle plus all metadata-slot
@@ -181,6 +233,20 @@ export default function BlueprintAiPanel({
         (initialMetadata.creation as CreationSlot | undefined) ?? {};
     const initialNoteAttachment: NoteAttachmentSlot =
         initialCreation.note_attachment ?? {};
+    const initialBoundaries: BoundaryRule[] =
+        (initialMetadata.boundaries as BoundaryRule[] | undefined) ?? [];
+    const initialReferenceRole: ReferenceRoleSlot =
+        (initialMetadata.reference_role as ReferenceRoleSlot | undefined) ?? {
+            referenced_by_blueprint: "",
+            referenced_by_field: "",
+        };
+    const initialStructuralRules: StructuralRulesSlot =
+        (initialMetadata.structural_rules as StructuralRulesSlot | undefined) ?? {};
+    const initialParent: ParentSubSlot = initialStructuralRules.parent ?? {};
+    const initialCascading: CascadingRelationship[] =
+        initialStructuralRules.cascading_relationships ?? [];
+    const initialDependencies: Dependency[] =
+        initialStructuralRules.dependencies ?? [];
 
     const form = useForm({
         // Identity values are preserved on update — same pattern as BehaviorPanel.
@@ -236,6 +302,49 @@ export default function BlueprintAiPanel({
         useState<string>(initialCreation.relationships?.guidance ?? "");
     const [showCreationRelationships, setShowCreationRelationships] = useState(
         (initialCreation.relationships?.guidance ?? "").trim().length > 0,
+    );
+
+    // Boundaries slot local state — collapsed by default unless populated;
+    // it's a troubleshooting tool, not a setup field.
+    const [boundaries, setBoundaries] =
+        useState<BoundaryRule[]>(initialBoundaries);
+    const [showBoundaries, setShowBoundaries] = useState(
+        initialBoundaries.length > 0,
+    );
+
+    // Reference Role slot — list-type framing, applies to ~3 blueprints.
+    const [referencedByBlueprint, setReferencedByBlueprint] = useState<string>(
+        initialReferenceRole.referenced_by_blueprint ?? "",
+    );
+    const [referencedByField, setReferencedByField] = useState<string>(
+        initialReferenceRole.referenced_by_field ?? "",
+    );
+    const [showReferenceRole, setShowReferenceRole] = useState(
+        (initialReferenceRole.referenced_by_blueprint ?? "").trim().length > 0,
+    );
+
+    // Structural Rules slot — three sub-slots (parent, cascading_relationships,
+    // dependencies), each independently optional.
+    const [parentRequired, setParentRequired] = useState<boolean>(
+        initialParent.required ?? false,
+    );
+    const [parentTargetBlueprints, setParentTargetBlueprints] = useState<string[]>(
+        initialParent.target_blueprints ?? [],
+    );
+    const [parentSelectionHint, setParentSelectionHint] = useState<string>(
+        initialParent.selection_hint ?? "",
+    );
+    const [parentChainAnchorHint, setParentChainAnchorHint] = useState<string>(
+        initialParent.chain_anchor_hint ?? "",
+    );
+    const [parentSearchExistingFirst, setParentSearchExistingFirst] =
+        useState<boolean>(initialParent.search_existing_first ?? false);
+    const [cascadingRelationships, setCascadingRelationships] =
+        useState<CascadingRelationship[]>(initialCascading);
+    const [dependencies, setDependencies] =
+        useState<Dependency[]>(initialDependencies);
+    const [showStructuralRules, setShowStructuralRules] = useState(
+        Object.keys(initialStructuralRules).length > 0,
     );
 
     function commitAlias() {
@@ -335,6 +444,96 @@ export default function BlueprintAiPanel({
             delete next.creation;
         }
 
+        // Boundaries — array of {target, kind, rule}. Rows with no
+        // target AND no rule are dropped (kind alone isn't meaningful).
+        const cleanedBoundaries = boundaries
+            .map((b) => ({
+                target: b.target.trim(),
+                kind: b.kind,
+                rule: b.rule.trim(),
+            }))
+            .filter((b) => b.target.length > 0 || b.rule.length > 0);
+        if (cleanedBoundaries.length > 0) {
+            next.boundaries = cleanedBoundaries;
+        } else {
+            delete next.boundaries;
+        }
+
+        // Reference Role — both fields required if slot is present.
+        const trimmedRefBp = referencedByBlueprint.trim();
+        const trimmedRefField = referencedByField.trim();
+        if (trimmedRefBp.length > 0 && trimmedRefField.length > 0) {
+            next.reference_role = {
+                referenced_by_blueprint: trimmedRefBp,
+                referenced_by_field: trimmedRefField,
+            };
+        } else {
+            delete next.reference_role;
+        }
+
+        // Structural Rules — three independently optional sub-slots.
+        const structuralRules: StructuralRulesSlot = {};
+
+        const cleanedParentTargets = parentTargetBlueprints
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+        const trimmedSelectionHint = parentSelectionHint.trim();
+        const trimmedChainAnchorHint = parentChainAnchorHint.trim();
+        const parentHasContent =
+            cleanedParentTargets.length > 0 ||
+            trimmedSelectionHint.length > 0 ||
+            trimmedChainAnchorHint.length > 0 ||
+            parentRequired ||
+            parentSearchExistingFirst;
+        if (parentHasContent) {
+            const parent: ParentSubSlot = {};
+            if (parentRequired) parent.required = true;
+            if (cleanedParentTargets.length > 0)
+                parent.target_blueprints = cleanedParentTargets;
+            if (trimmedSelectionHint.length > 0)
+                parent.selection_hint = trimmedSelectionHint;
+            if (trimmedChainAnchorHint.length > 0)
+                parent.chain_anchor_hint = trimmedChainAnchorHint;
+            if (parentSearchExistingFirst) parent.search_existing_first = true;
+            structuralRules.parent = parent;
+        }
+
+        const cleanedCascading = cascadingRelationships
+            .map((c) => ({
+                via: c.via,
+                pairing: c.pairing.trim(),
+                target_blueprint: c.target_blueprint.trim(),
+                trigger: c.trigger.trim(),
+            }))
+            .filter(
+                (c) =>
+                    c.pairing.length > 0 ||
+                    c.target_blueprint.length > 0 ||
+                    c.trigger.length > 0,
+            );
+        if (cleanedCascading.length > 0) {
+            structuralRules.cascading_relationships = cleanedCascading;
+        }
+
+        const cleanedDependencies = dependencies
+            .map((d) => ({
+                target_blueprint: d.target_blueprint.trim(),
+                via_field: d.via_field.trim(),
+                creation_policy: d.creation_policy,
+            }))
+            .filter(
+                (d) => d.target_blueprint.length > 0 || d.via_field.length > 0,
+            );
+        if (cleanedDependencies.length > 0) {
+            structuralRules.dependencies = cleanedDependencies;
+        }
+
+        if (Object.keys(structuralRules).length > 0) {
+            next.structural_rules = structuralRules;
+        } else {
+            delete next.structural_rules;
+        }
+
         const populated = Object.keys(next).some(
             (key) => key !== "schema_version" && next[key] !== undefined,
         );
@@ -359,25 +558,10 @@ export default function BlueprintAiPanel({
         });
     }
 
-    // The 3 metadata slots that remain placeholders until P4d–P4e.
-    // Recognition + Creation are real forms below.
-    const upcomingSlots: Array<{ key: string; titleKey: string; descKey: string }> = [
-        {
-            key: "boundaries",
-            titleKey: "blueprints.bp_settings.ai.slots.boundaries.title",
-            descKey: "blueprints.bp_settings.ai.slots.boundaries.description",
-        },
-        {
-            key: "reference_role",
-            titleKey: "blueprints.bp_settings.ai.slots.reference_role.title",
-            descKey: "blueprints.bp_settings.ai.slots.reference_role.description",
-        },
-        {
-            key: "structural_rules",
-            titleKey: "blueprints.bp_settings.ai.slots.structural_rules.title",
-            descKey: "blueprints.bp_settings.ai.slots.structural_rules.description",
-        },
-    ];
+    // All 5 metadata slots are now real forms. The placeholder mechanism
+    // is retired; if a future schema version adds a new slot, the
+    // upcomingSlots pattern is preserved in git history (commit history
+    // for #191) for reference.
 
     return (
         <>
@@ -453,8 +637,7 @@ export default function BlueprintAiPanel({
                                         </span>
                                     )}
                                 </div>
-                                <input
-                                    type="text"
+                                <Input
                                     value={aliasDraft}
                                     onChange={(e) => setAliasDraft(e.target.value)}
                                     onKeyDown={onAliasKeyDown}
@@ -462,8 +645,6 @@ export default function BlueprintAiPanel({
                                     placeholder={t(
                                         "blueprints.bp_settings.ai.tag_aliases.placeholder",
                                     )}
-                                    className="w-full px-3 py-2 text-sm focus:outline-none"
-                                    style={aliasInputStyle}
                                 />
                             </div>
                         </div>
@@ -513,7 +694,7 @@ export default function BlueprintAiPanel({
                                         )}
                                     </div>
                                 </div>
-                                <textarea
+                                <Textarea
                                     value={recognitionLead}
                                     onChange={(e) =>
                                         setRecognitionLead(e.target.value)
@@ -522,8 +703,6 @@ export default function BlueprintAiPanel({
                                         "blueprints.bp_settings.ai.slots.recognition.lead.placeholder",
                                     )}
                                     rows={3}
-                                    className="w-full resize-y px-3 py-2 text-sm focus:outline-none"
-                                    style={leadTextareaStyle}
                                 />
                             </div>
 
@@ -663,7 +842,7 @@ export default function BlueprintAiPanel({
                                         )}
                                     </div>
                                 </div>
-                                <textarea
+                                <Textarea
                                     value={creationNaming}
                                     onChange={(e) =>
                                         setCreationNaming(e.target.value)
@@ -672,8 +851,6 @@ export default function BlueprintAiPanel({
                                         "blueprints.bp_settings.ai.slots.creation.naming.placeholder",
                                     )}
                                     rows={2}
-                                    className="w-full resize-y px-3 py-2 text-sm focus:outline-none"
-                                    style={leadTextareaStyle}
                                 />
                             </div>
 
@@ -694,7 +871,7 @@ export default function BlueprintAiPanel({
                                         )}
                                     </div>
                                 </div>
-                                <textarea
+                                <Textarea
                                     value={creationSummary}
                                     onChange={(e) =>
                                         setCreationSummary(e.target.value)
@@ -703,8 +880,6 @@ export default function BlueprintAiPanel({
                                         "blueprints.bp_settings.ai.slots.creation.summary.placeholder",
                                     )}
                                     rows={2}
-                                    className="w-full resize-y px-3 py-2 text-sm focus:outline-none"
-                                    style={leadTextareaStyle}
                                 />
                             </div>
 
@@ -749,8 +924,7 @@ export default function BlueprintAiPanel({
                                             )}
                                         </div>
                                     </div>
-                                    <input
-                                        type="text"
+                                    <Input
                                         value={creationPrimaryRole}
                                         onChange={(e) =>
                                             setCreationPrimaryRole(e.target.value)
@@ -758,8 +932,6 @@ export default function BlueprintAiPanel({
                                         placeholder={t(
                                             "blueprints.bp_settings.ai.slots.creation.note_attachment.primary_role.placeholder",
                                         )}
-                                        className="w-full px-3 py-2 text-sm focus:outline-none"
-                                        style={leadTextareaStyle}
                                     />
                                 </div>
 
@@ -871,7 +1043,7 @@ export default function BlueprintAiPanel({
                                                 "blueprints.bp_settings.ai.slots.creation.relationships.hint",
                                             )}
                                         </div>
-                                        <textarea
+                                        <Textarea
                                             value={creationRelationshipsGuidance}
                                             onChange={(e) =>
                                                 setCreationRelationshipsGuidance(
@@ -882,47 +1054,680 @@ export default function BlueprintAiPanel({
                                                 "blueprints.bp_settings.ai.slots.creation.relationships.placeholder",
                                             )}
                                             rows={3}
-                                            className="w-full resize-y px-3 py-2 text-sm focus:outline-none"
-                                            style={leadTextareaStyle}
                                         />
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Remaining slot placeholders — real forms land in P4d–P4e. */}
-                        {upcomingSlots.map((slot) => (
-                            <div
-                                key={slot.key}
-                                className="p-5"
-                                style={placeholderCardStyle}
+                        {/* Boundaries — collapsed by default; troubleshooting tool. */}
+                        <div className="p-5" style={slotCardStyle}>
+                            <button
+                                type="button"
+                                onClick={() => setShowBoundaries((v) => !v)}
+                                className="flex w-full items-start gap-2.5 text-left"
+                                aria-expanded={showBoundaries}
                             >
-                                <div className="flex items-start gap-2.5">
-                                    <i
-                                        className={`${slotIcons[slot.key] ?? "fa-solid fa-circle"} mt-0.5 text-base opacity-60`}
-                                        style={slotIconStyle}
-                                        aria-hidden
-                                    />
-                                    <div className="flex-1">
+                                <i
+                                    className={`${slotIcons.boundaries} mt-0.5 text-base`}
+                                    style={slotIconStyle}
+                                    aria-hidden
+                                />
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
                                         <div
                                             className="text-base font-semibold leading-tight"
                                             style={slotTitleStyle}
                                         >
-                                            {t(slot.titleKey)}
+                                            {t(
+                                                "blueprints.bp_settings.ai.slots.boundaries.title",
+                                            )}
                                         </div>
-                                        <div className="mt-1 text-xs" style={slotDescStyle}>
-                                            {t(slot.descKey)}
-                                        </div>
-                                        <div
-                                            className="mt-3 text-xs"
-                                            style={aliasEmptyStyle}
+                                        <span
+                                            className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium"
+                                            style={
+                                                boundaries.length > 0
+                                                    ? countBadgeStyle
+                                                    : emptyBadgeStyle
+                                            }
                                         >
-                                            {t("blueprints.bp_settings.ai.coming_soon")}
-                                        </div>
+                                            {boundaries.length === 0
+                                                ? t(
+                                                      "blueprints.bp_settings.ai.slots.boundaries.count.empty",
+                                                  )
+                                                : boundaries.length === 1
+                                                  ? t(
+                                                        "blueprints.bp_settings.ai.slots.boundaries.count.singular",
+                                                    )
+                                                  : t(
+                                                        "blueprints.bp_settings.ai.slots.boundaries.count.plural",
+                                                    ).replace(
+                                                        ":count",
+                                                        String(boundaries.length),
+                                                    )}
+                                        </span>
+                                    </div>
+                                    <div className="mt-1 text-xs" style={slotDescStyle}>
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.boundaries.description",
+                                        )}
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                                <i
+                                    className={`fa-solid fa-chevron-${showBoundaries ? "down" : "right"} mt-2 text-xs`}
+                                    style={chevronStyle}
+                                    aria-hidden
+                                />
+                            </button>
+
+                            {showBoundaries && (
+                                <div className="mt-4">
+                                    <SettingsObjectList<BoundaryRule>
+                                values={boundaries}
+                                onChange={setBoundaries}
+                                createEmpty={() => ({
+                                    target: "",
+                                    kind: "exclusion",
+                                    rule: "",
+                                })}
+                                addLabel={t(
+                                    "blueprints.bp_settings.ai.slots.boundaries.add",
+                                )}
+                                removeLabel={t(
+                                    "blueprints.bp_settings.ai.slots.boundaries.remove",
+                                )}
+                                emptyHint={t(
+                                    "blueprints.bp_settings.ai.slots.boundaries.empty",
+                                )}
+                                renderItem={(item, update) => (
+                                    <>
+                                        {/* Row 1: target slug + kind select */}
+                                        <div className="flex items-start gap-2">
+                                            <div className="flex-1">
+                                                <Input
+                                                    value={item.target}
+                                                    onChange={(e) =>
+                                                        update({
+                                                            ...item,
+                                                            target: e.target.value,
+                                                        })
+                                                    }
+                                                    placeholder={t(
+                                                        "blueprints.bp_settings.ai.slots.boundaries.target.placeholder",
+                                                    )}
+                                                    className="font-mono"
+                                                />
+                                            </div>
+                                            <Select<BoundaryKind>
+                                                value={item.kind}
+                                                options={BOUNDARY_KINDS.map(
+                                                    (kind) => ({
+                                                        value: kind,
+                                                        label: t(
+                                                            `blueprints.bp_settings.ai.slots.boundaries.kind.${kind}`,
+                                                        ),
+                                                    }),
+                                                )}
+                                                onChange={(kind) =>
+                                                    update({ ...item, kind })
+                                                }
+                                                ariaLabel={t(
+                                                    "blueprints.bp_settings.ai.slots.boundaries.kind.aria_label",
+                                                )}
+                                            />
+                                        </div>
+                                        {/* Row 2: rule prose */}
+                                        <Textarea
+                                            value={item.rule}
+                                            onChange={(e) =>
+                                                update({
+                                                    ...item,
+                                                    rule: e.target.value,
+                                                })
+                                            }
+                                            placeholder={t(
+                                                "blueprints.bp_settings.ai.slots.boundaries.rule.placeholder",
+                                            )}
+                                            rows={2}
+                                        />
+                                    </>
+                                )}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Reference Role — collapsed by default; applies to ~3 list-type blueprints. */}
+                        <div className="p-5" style={slotCardStyle}>
+                            <button
+                                type="button"
+                                onClick={() => setShowReferenceRole((v) => !v)}
+                                className="flex w-full items-start gap-2.5 text-left"
+                                aria-expanded={showReferenceRole}
+                            >
+                                <i
+                                    className={`${slotIcons.reference_role} mt-0.5 text-base`}
+                                    style={slotIconStyle}
+                                    aria-hidden
+                                />
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <div
+                                            className="text-base font-semibold leading-tight"
+                                            style={slotTitleStyle}
+                                        >
+                                            {t(
+                                                "blueprints.bp_settings.ai.slots.reference_role.title",
+                                            )}
+                                        </div>
+                                        <span
+                                            className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium"
+                                            style={
+                                                referencedByBlueprint.trim().length > 0 &&
+                                                referencedByField.trim().length > 0
+                                                    ? countBadgeStyle
+                                                    : emptyBadgeStyle
+                                            }
+                                        >
+                                            {referencedByBlueprint.trim().length > 0 &&
+                                            referencedByField.trim().length > 0
+                                                ? t(
+                                                      "blueprints.bp_settings.ai.slots.reference_role.count.set",
+                                                  )
+                                                : t(
+                                                      "blueprints.bp_settings.ai.slots.reference_role.count.empty",
+                                                  )}
+                                        </span>
+                                    </div>
+                                    <div className="mt-1 text-xs" style={slotDescStyle}>
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.reference_role.description",
+                                        )}
+                                    </div>
+                                </div>
+                                <i
+                                    className={`fa-solid fa-chevron-${showReferenceRole ? "down" : "right"} mt-2 text-xs`}
+                                    style={chevronStyle}
+                                    aria-hidden
+                                />
+                            </button>
+
+                            {showReferenceRole && (
+                                <div className="mt-4 space-y-4">
+                                    <div className="space-y-2">
+                                        <div>
+                                            <label
+                                                className="text-[10px] font-semibold uppercase"
+                                                style={fieldLabelStyle}
+                                            >
+                                                {t(
+                                                    "blueprints.bp_settings.ai.slots.reference_role.referenced_by_blueprint.label",
+                                                )}
+                                            </label>
+                                            <div
+                                                className="mt-0.5 text-xs"
+                                                style={fieldHintStyle}
+                                            >
+                                                {t(
+                                                    "blueprints.bp_settings.ai.slots.reference_role.referenced_by_blueprint.hint",
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Input
+                                            value={referencedByBlueprint}
+                                            onChange={(e) =>
+                                                setReferencedByBlueprint(e.target.value)
+                                            }
+                                            placeholder={t(
+                                                "blueprints.bp_settings.ai.slots.reference_role.referenced_by_blueprint.placeholder",
+                                            )}
+                                            className="font-mono"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div>
+                                            <label
+                                                className="text-[10px] font-semibold uppercase"
+                                                style={fieldLabelStyle}
+                                            >
+                                                {t(
+                                                    "blueprints.bp_settings.ai.slots.reference_role.referenced_by_field.label",
+                                                )}
+                                            </label>
+                                            <div
+                                                className="mt-0.5 text-xs"
+                                                style={fieldHintStyle}
+                                            >
+                                                {t(
+                                                    "blueprints.bp_settings.ai.slots.reference_role.referenced_by_field.hint",
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Input
+                                            value={referencedByField}
+                                            onChange={(e) =>
+                                                setReferencedByField(e.target.value)
+                                            }
+                                            placeholder={t(
+                                                "blueprints.bp_settings.ai.slots.reference_role.referenced_by_field.placeholder",
+                                            )}
+                                            className="font-mono"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Structural Rules — collapsed by default. Three sub-sections
+                            (parent, cascading_relationships, dependencies) when expanded. */}
+                        <div className="p-5" style={slotCardStyle}>
+                            <button
+                                type="button"
+                                onClick={() => setShowStructuralRules((v) => !v)}
+                                className="flex w-full items-start gap-2.5 text-left"
+                                aria-expanded={showStructuralRules}
+                            >
+                                <i
+                                    className={`${slotIcons.structural_rules} mt-0.5 text-base`}
+                                    style={slotIconStyle}
+                                    aria-hidden
+                                />
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <div
+                                            className="text-base font-semibold leading-tight"
+                                            style={slotTitleStyle}
+                                        >
+                                            {t(
+                                                "blueprints.bp_settings.ai.slots.structural_rules.title",
+                                            )}
+                                        </div>
+                                        {(() => {
+                                            const parentCount =
+                                                (parentTargetBlueprints.filter((s) => s.trim().length > 0).length > 0 ||
+                                                    parentSelectionHint.trim().length > 0 ||
+                                                    parentChainAnchorHint.trim().length > 0 ||
+                                                    parentRequired ||
+                                                    parentSearchExistingFirst)
+                                                    ? 1
+                                                    : 0;
+                                            const cascadingCount = cascadingRelationships.filter(
+                                                (c) =>
+                                                    c.pairing.trim().length > 0 ||
+                                                    c.target_blueprint.trim().length > 0 ||
+                                                    c.trigger.trim().length > 0,
+                                            ).length;
+                                            const dependencyCount = dependencies.filter(
+                                                (d) =>
+                                                    d.target_blueprint.trim().length > 0 ||
+                                                    d.via_field.trim().length > 0,
+                                            ).length;
+                                            const totalCount =
+                                                parentCount + cascadingCount + dependencyCount;
+                                            return (
+                                                <span
+                                                    className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium"
+                                                    style={
+                                                        totalCount > 0
+                                                            ? countBadgeStyle
+                                                            : emptyBadgeStyle
+                                                    }
+                                                >
+                                                    {totalCount > 0
+                                                        ? t(
+                                                              "blueprints.bp_settings.ai.slots.structural_rules.count.summary",
+                                                          ).replace(":count", String(totalCount))
+                                                        : t(
+                                                              "blueprints.bp_settings.ai.slots.structural_rules.count.empty",
+                                                          )}
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
+                                    <div className="mt-1 text-xs" style={slotDescStyle}>
+                                        {t(
+                                            "blueprints.bp_settings.ai.slots.structural_rules.description",
+                                        )}
+                                    </div>
+                                </div>
+                                <i
+                                    className={`fa-solid fa-chevron-${showStructuralRules ? "down" : "right"} mt-2 text-xs`}
+                                    style={chevronStyle}
+                                    aria-hidden
+                                />
+                            </button>
+
+                            {showStructuralRules && (
+                                <div className="mt-4 space-y-5">
+                                    {/* Parent sub-section */}
+                                    <div className="space-y-4 pt-4" style={subSectionHeaderStyle}>
+                                        <div>
+                                            <div
+                                                className="text-sm font-semibold"
+                                                style={subSectionTitleStyle}
+                                            >
+                                                {t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.parent.heading",
+                                                )}
+                                            </div>
+                                            <div
+                                                className="mt-0.5 text-xs"
+                                                style={fieldHintStyle}
+                                            >
+                                                {t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.parent.description",
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <SettingsActivationToggle
+                                            title={t(
+                                                "blueprints.bp_settings.ai.slots.structural_rules.parent.required.title",
+                                            )}
+                                            description={t(
+                                                "blueprints.bp_settings.ai.slots.structural_rules.parent.required.description",
+                                            )}
+                                            enabled={parentRequired}
+                                            onChange={setParentRequired}
+                                        />
+
+                                        <div className="space-y-2">
+                                            <div>
+                                                <label
+                                                    className="text-[10px] font-semibold uppercase"
+                                                    style={fieldLabelStyle}
+                                                >
+                                                    {t(
+                                                        "blueprints.bp_settings.ai.slots.structural_rules.parent.target_blueprints.label",
+                                                    )}
+                                                </label>
+                                                <div
+                                                    className="mt-0.5 text-xs"
+                                                    style={fieldHintStyle}
+                                                >
+                                                    {t(
+                                                        "blueprints.bp_settings.ai.slots.structural_rules.parent.target_blueprints.hint",
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <SettingsStringList
+                                                values={parentTargetBlueprints}
+                                                onChange={setParentTargetBlueprints}
+                                                placeholder={t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.parent.target_blueprints.placeholder",
+                                                )}
+                                                addLabel={t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.parent.target_blueprints.add",
+                                                )}
+                                                removeLabel={t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.parent.target_blueprints.remove",
+                                                )}
+                                                emptyHint={t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.parent.target_blueprints.empty",
+                                                )}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div>
+                                                <label
+                                                    className="text-[10px] font-semibold uppercase"
+                                                    style={fieldLabelStyle}
+                                                >
+                                                    {t(
+                                                        "blueprints.bp_settings.ai.slots.structural_rules.parent.selection_hint.label",
+                                                    )}
+                                                </label>
+                                                <div
+                                                    className="mt-0.5 text-xs"
+                                                    style={fieldHintStyle}
+                                                >
+                                                    {t(
+                                                        "blueprints.bp_settings.ai.slots.structural_rules.parent.selection_hint.hint",
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Textarea
+                                                value={parentSelectionHint}
+                                                onChange={(e) =>
+                                                    setParentSelectionHint(e.target.value)
+                                                }
+                                                placeholder={t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.parent.selection_hint.placeholder",
+                                                )}
+                                                rows={2}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div>
+                                                <label
+                                                    className="text-[10px] font-semibold uppercase"
+                                                    style={fieldLabelStyle}
+                                                >
+                                                    {t(
+                                                        "blueprints.bp_settings.ai.slots.structural_rules.parent.chain_anchor_hint.label",
+                                                    )}
+                                                </label>
+                                                <div
+                                                    className="mt-0.5 text-xs"
+                                                    style={fieldHintStyle}
+                                                >
+                                                    {t(
+                                                        "blueprints.bp_settings.ai.slots.structural_rules.parent.chain_anchor_hint.hint",
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Textarea
+                                                value={parentChainAnchorHint}
+                                                onChange={(e) =>
+                                                    setParentChainAnchorHint(e.target.value)
+                                                }
+                                                placeholder={t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.parent.chain_anchor_hint.placeholder",
+                                                )}
+                                                rows={2}
+                                            />
+                                        </div>
+
+                                        <SettingsActivationToggle
+                                            title={t(
+                                                "blueprints.bp_settings.ai.slots.structural_rules.parent.search_existing_first.title",
+                                            )}
+                                            description={t(
+                                                "blueprints.bp_settings.ai.slots.structural_rules.parent.search_existing_first.description",
+                                            )}
+                                            enabled={parentSearchExistingFirst}
+                                            onChange={setParentSearchExistingFirst}
+                                        />
+                                    </div>
+
+                                    {/* Cascading Relationships sub-section */}
+                                    <div className="space-y-3 pt-4" style={subSectionHeaderStyle}>
+                                        <div>
+                                            <div
+                                                className="text-sm font-semibold"
+                                                style={subSectionTitleStyle}
+                                            >
+                                                {t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.cascading_relationships.heading",
+                                                )}
+                                            </div>
+                                            <div
+                                                className="mt-0.5 text-xs"
+                                                style={fieldHintStyle}
+                                            >
+                                                {t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.cascading_relationships.description",
+                                                )}
+                                            </div>
+                                        </div>
+                                        <SettingsObjectList<CascadingRelationship>
+                                            values={cascadingRelationships}
+                                            onChange={setCascadingRelationships}
+                                            createEmpty={() => ({
+                                                via: "entry_relationships",
+                                                pairing: "",
+                                                target_blueprint: "",
+                                                trigger: "",
+                                            })}
+                                            addLabel={t(
+                                                "blueprints.bp_settings.ai.slots.structural_rules.cascading_relationships.add",
+                                            )}
+                                            removeLabel={t(
+                                                "blueprints.bp_settings.ai.slots.structural_rules.cascading_relationships.remove",
+                                            )}
+                                            emptyHint={t(
+                                                "blueprints.bp_settings.ai.slots.structural_rules.cascading_relationships.empty",
+                                            )}
+                                            renderItem={(item, update) => (
+                                                <>
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="flex-1">
+                                                            <Input
+                                                                value={item.pairing}
+                                                                onChange={(e) =>
+                                                                    update({
+                                                                        ...item,
+                                                                        pairing: e.target.value,
+                                                                    })
+                                                                }
+                                                                placeholder={t(
+                                                                    "blueprints.bp_settings.ai.slots.structural_rules.cascading_relationships.pairing.placeholder",
+                                                                )}
+                                                                className="font-mono"
+                                                            />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <Input
+                                                                value={item.target_blueprint}
+                                                                onChange={(e) =>
+                                                                    update({
+                                                                        ...item,
+                                                                        target_blueprint:
+                                                                            e.target.value,
+                                                                    })
+                                                                }
+                                                                placeholder={t(
+                                                                    "blueprints.bp_settings.ai.slots.structural_rules.cascading_relationships.target_blueprint.placeholder",
+                                                                )}
+                                                                className="font-mono"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <Textarea
+                                                        value={item.trigger}
+                                                        onChange={(e) =>
+                                                            update({
+                                                                ...item,
+                                                                trigger: e.target.value,
+                                                            })
+                                                        }
+                                                        placeholder={t(
+                                                            "blueprints.bp_settings.ai.slots.structural_rules.cascading_relationships.trigger.placeholder",
+                                                        )}
+                                                        rows={2}
+                                                    />
+                                                </>
+                                            )}
+                                        />
+                                    </div>
+
+                                    {/* Dependencies sub-section */}
+                                    <div className="space-y-3 pt-4" style={subSectionHeaderStyle}>
+                                        <div>
+                                            <div
+                                                className="text-sm font-semibold"
+                                                style={subSectionTitleStyle}
+                                            >
+                                                {t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.dependencies.heading",
+                                                )}
+                                            </div>
+                                            <div
+                                                className="mt-0.5 text-xs"
+                                                style={fieldHintStyle}
+                                            >
+                                                {t(
+                                                    "blueprints.bp_settings.ai.slots.structural_rules.dependencies.description",
+                                                )}
+                                            </div>
+                                        </div>
+                                        <SettingsObjectList<Dependency>
+                                            values={dependencies}
+                                            onChange={setDependencies}
+                                            createEmpty={() => ({
+                                                target_blueprint: "",
+                                                via_field: "",
+                                                creation_policy: "create_if_missing",
+                                            })}
+                                            addLabel={t(
+                                                "blueprints.bp_settings.ai.slots.structural_rules.dependencies.add",
+                                            )}
+                                            removeLabel={t(
+                                                "blueprints.bp_settings.ai.slots.structural_rules.dependencies.remove",
+                                            )}
+                                            emptyHint={t(
+                                                "blueprints.bp_settings.ai.slots.structural_rules.dependencies.empty",
+                                            )}
+                                            renderItem={(item, update) => (
+                                                <>
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="flex-1">
+                                                            <Input
+                                                                value={item.target_blueprint}
+                                                                onChange={(e) =>
+                                                                    update({
+                                                                        ...item,
+                                                                        target_blueprint:
+                                                                            e.target.value,
+                                                                    })
+                                                                }
+                                                                placeholder={t(
+                                                                    "blueprints.bp_settings.ai.slots.structural_rules.dependencies.target_blueprint.placeholder",
+                                                                )}
+                                                                className="font-mono"
+                                                            />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <Input
+                                                                value={item.via_field}
+                                                                onChange={(e) =>
+                                                                    update({
+                                                                        ...item,
+                                                                        via_field: e.target.value,
+                                                                    })
+                                                                }
+                                                                placeholder={t(
+                                                                    "blueprints.bp_settings.ai.slots.structural_rules.dependencies.via_field.placeholder",
+                                                                )}
+                                                                className="font-mono"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <Select<CreationPolicy>
+                                                        value={item.creation_policy}
+                                                        options={CREATION_POLICIES.map((p) => ({
+                                                            value: p,
+                                                            label: t(
+                                                                `blueprints.bp_settings.ai.slots.structural_rules.dependencies.creation_policy.${p}`,
+                                                            ),
+                                                        }))}
+                                                        onChange={(creation_policy) =>
+                                                            update({ ...item, creation_policy })
+                                                        }
+                                                        ariaLabel={t(
+                                                            "blueprints.bp_settings.ai.slots.structural_rules.dependencies.creation_policy.aria_label",
+                                                        )}
+                                                        fullWidth
+                                                    />
+                                                </>
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
