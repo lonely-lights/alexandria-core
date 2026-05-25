@@ -8,6 +8,7 @@ use Alexandria\Core\Actions\Fortify\CreateNewUser;
 use Alexandria\Core\Actions\Fortify\ResetUserPassword;
 use Alexandria\Core\Actions\Fortify\UpdateUserPassword;
 use Alexandria\Core\Actions\Fortify\UpdateUserProfileInformation;
+use Alexandria\Core\AI\Registry\AgentRegistry;
 use Alexandria\Core\Mail\BrandedMailDefinition;
 use Alexandria\Core\Mail\BrandedMailRegistry;
 use Alexandria\Core\Mail\BrandedTextResolver;
@@ -40,6 +41,7 @@ class AlexandriaServiceProvider extends ServiceProvider
         $this->app->singleton(BrandedMailRegistry::class);
         $this->app->singleton(BrandedTextResolver::class);
         $this->app->singleton(EmailCompatibilityAnalyzer::class);
+        $this->app->singleton(AgentRegistry::class);
     }
 
     /**
