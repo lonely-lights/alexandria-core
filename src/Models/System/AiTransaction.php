@@ -36,6 +36,7 @@ use Illuminate\Support\Carbon;
  * @property int $total_tokens
  * @property string $cost
  * @property int|null $latency_ms
+ * @property string|null $tier_used
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User|null $user

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('model_name');
             $table->enum('source', ['user', 'env'])->default('env')->comment('Credential source for BYOK attribution: env (operator) or user (BYOK).');
             $table->string('context')->nullable()->comment('What triggered this transaction (e.g., project_categorization, note_sorting)');
+            $table->string('tier_used', 32)->nullable()->index()->comment('Stage 8g.5 — agent tier that produced this call (legacy / minimal / expanded). NULL for non-tiered agents (NoteTitle, EntryDedup, EntryIntegration).');
             $table->unsignedInteger('input_tokens')->default(0);
             $table->unsignedInteger('output_tokens')->default(0);
             $table->unsignedInteger('thinking_tokens')->default(0)->comment('Reasoning tokens for models like Gemini 2.5');
