@@ -136,7 +136,8 @@ return [
 
     // ── Dashboard tab (project AI dashboard primary tab) ────────────
     'dashboard_tab.stat.queued_notes' => 'Queued Notes',
-    'dashboard_tab.stat.pending_commands' => 'Pending Commands',
+    'dashboard_tab.stat.ready_for_commands' => 'Awaiting Command Generation',
+    'dashboard_tab.stat.pending_commands' => 'Commands Awaiting Review',
     'dashboard_tab.stat.this_month' => 'This Month',
     'dashboard_tab.stat.this_month_sub' => 'requests',
     'dashboard_tab.stat.token_usage' => 'Token Usage',

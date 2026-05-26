@@ -513,7 +513,7 @@ export default function DashboardTab({ projectId, stats }: DashboardTabProps) {
     return (
         <div className="space-y-6">
             {/* Stats row */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 <StatCard
                     icon="fa-solid fa-inbox"
                     label={t('ai.dashboard_tab.stat.queued_notes')}
@@ -521,9 +521,15 @@ export default function DashboardTab({ projectId, stats }: DashboardTabProps) {
                     colorKey="warning"
                 />
                 <StatCard
-                    icon="fa-solid fa-clipboard-list"
-                    label={t('ai.dashboard_tab.stat.pending_commands')}
+                    icon="fa-solid fa-list-check"
+                    label={t('ai.dashboard_tab.stat.ready_for_commands')}
                     value={stats.queue_total - stats.queue_pending}
+                    colorKey="secondary"
+                />
+                <StatCard
+                    icon="fa-solid fa-clipboard-check"
+                    label={t('ai.dashboard_tab.stat.pending_commands')}
+                    value={stats.pending_review_commands}
                     colorKey="secondary"
                 />
                 <StatCard

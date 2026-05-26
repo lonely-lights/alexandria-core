@@ -24,6 +24,7 @@ export interface AiDashboardStats {
     this_month_tokens: number;
     queue_pending: number;
     queue_total: number;
+    pending_review_commands: number;
     recent_batch_count: number;
 }
 
