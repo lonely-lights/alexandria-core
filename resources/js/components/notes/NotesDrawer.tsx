@@ -489,6 +489,14 @@ export default function NotesDrawer() {
     const drawerRef = useRef<HTMLDivElement>(null);
     const backdropRef = useRef<HTMLDivElement>(null);
 
+    // Only auto-pick a default selection on the first fetch after the
+    // drawer opens. Subsequent refetches (Echo updates, polling, etc.)
+    // must not change the user's focus — if the selected note drops out
+    // of the list (e.g., gets transferred to an entry mid-session), the
+    // UI shows the empty-selection state instead of silently jumping to
+    // a different note.
+    const hasInitialFetchedRef = useRef(false);
+
     const selectedNote = notes.find((n) => n.id === selectedId) ?? null;
 
     /* ══════════════════════════════════════════════
@@ -509,6 +517,10 @@ export default function NotesDrawer() {
             setSelectedId(ctx.preSelectNoteId ?? null);
             setModalMode(null);
             setModalNote(null);
+            // Re-arm the initial-fetch auto-pick so re-opening the drawer
+            // (or jumping to a different context) gets a sensible default
+            // selection on the next fetch.
+            hasInitialFetchedRef.current = false;
         }
         window.addEventListener(OPEN_EVENT, handleOpen);
         return () => window.removeEventListener(OPEN_EVENT, handleOpen);
@@ -622,7 +634,16 @@ export default function NotesDrawer() {
             }
 
             setNotes(data);
-            if (!selectedId && data.length > 0) setSelectedId(data[0].id);
+
+            // Auto-pick the first note ONLY on the initial fetch after a
+            // drawer open. Subsequent refetches (Echo notifications,
+            // polling, status updates) must not jump the user's focus —
+            // even if the selected note temporarily disappears from the
+            // filtered view (e.g., transfer_note moved it under an entry).
+            if (!hasInitialFetchedRef.current) {
+                hasInitialFetchedRef.current = true;
+                if (!selectedId && data.length > 0) setSelectedId(data[0].id);
+            }
         } finally {
             setLoading(false);
         }
