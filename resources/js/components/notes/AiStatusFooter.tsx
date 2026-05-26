@@ -206,16 +206,21 @@ export default function AiStatusFooter({
             )}
 
             {state === 'commands_ready' && (
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
                         <span style={{ ...dotBase, background: 'var(--theme-status-warning-stroke)' }} />
-                        <span className="text-xs font-medium">
-                            {t('notes.ai_footer.commands_ready.label').replace(':count', String(commandCount))}
-                        </span>
+                        <div className="min-w-0">
+                            <div className="text-xs font-medium">
+                                {t('notes.ai_footer.commands_ready.label').replace(':count', String(commandCount))}
+                            </div>
+                            <div className="text-[11px]" style={fadedText}>
+                                {t('notes.ai_footer.commands_ready.hint')}
+                            </div>
+                        </div>
                     </div>
                     <button
                         type="button"
-                        className="alex-btn alex-btn--primary"
+                        className="alex-btn alex-btn--primary flex-shrink-0"
                         style={primaryBtnStyle}
                         onClick={onReviewCommands}
                     >
