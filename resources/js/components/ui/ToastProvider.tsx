@@ -160,6 +160,44 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         };
     }, []);
 
+    // Background-tab handler. Chrome throttles setTimeout in inactive
+    // tabs and can suspend timers entirely under intensive throttling
+    // (after ~5 minutes hidden) — without this, a toast queued just
+    // before the tab loses focus is still on screen when the user
+    // returns. On tab-becomes-visible, dismiss any toast whose duration
+    // has elapsed during the hidden period; reschedule the rest so the
+    // remaining time runs against a non-throttled clock.
+    useEffect(() => {
+        function onVisibilityChange() {
+            if (document.visibilityState !== 'visible') return;
+
+            const map = timersRef.current;
+            const now = Date.now();
+            for (const [id, entry] of map) {
+                if (entry.startedAt === null) continue; // paused (hovered) — leave alone
+                const elapsed = now - entry.startedAt;
+                if (elapsed >= entry.remainingMs) {
+                    if (entry.handle !== null) clearTimeout(entry.handle);
+                    map.delete(id);
+                    dismissRef.current(id);
+                    continue;
+                }
+                // Timer survived the hidden period but with stale remaining
+                // time — reschedule against the current clock so the rest
+                // of the countdown runs without further throttling skew.
+                entry.remainingMs -= elapsed;
+                entry.startedAt = now;
+                if (entry.handle !== null) clearTimeout(entry.handle);
+                entry.handle = window.setTimeout(() => {
+                    dismissRef.current(id);
+                }, entry.remainingMs);
+            }
+        }
+
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    }, []);
+
     const byPosition = useMemo(() => {
         const grouped = new Map<ToastPosition, Toast[]>();
         for (const t of toast.toasts) {
@@ -341,7 +379,7 @@ function ToastItem({
             >
                 <div className="flex items-start gap-3 p-4">
                     <i
-                        className={`${config.icon} mt-[1px] flex-shrink-0 text-base leading-5`}
+                        className={`${config.icon} mt-px shrink-0 text-base leading-5`}
                         style={{ color: config.iconColor }}
                         aria-hidden="true"
                     />
@@ -364,7 +402,7 @@ function ToastItem({
                     <button
                         type="button"
                         onClick={() => onDismiss(toast.id)}
-                        className="alex-toast-close mt-[1px] flex h-5 w-5 flex-shrink-0 items-center justify-center transition-colors"
+                        className="alex-toast-close mt-px flex h-5 w-5 shrink-0 items-center justify-center transition-colors"
                         style={{
                             background: 'transparent',
                             color: 'color-mix(in srgb, var(--theme-base-content) 35%, transparent)',
