@@ -64,7 +64,10 @@ function processHeadings(text: string): string {
     // H6 to H2 (process longer markers first)
     for (let level = 6; level >= 2; level--) {
         const marker = '='.repeat(level);
-        const regex = new RegExp(`^${marker}\\s*(.+?)\\s*${marker}\\s*$`, 'gm');
+        // Trailing whitespace must be [ \t]*, not \s* — \s matches \n,
+        // which ate one of the two newlines after a heading and glued
+        // the following paragraph into the heading's block (findings #7).
+        const regex = new RegExp(`^${marker}[ \\t]*(.+?)[ \\t]*${marker}[ \\t]*$`, 'gm');
         text = text.replace(regex, `<h${level}>$1</h${level}>`);
     }
     return text;
@@ -183,6 +186,19 @@ function processExternalLinks(text: string): string {
     text = text.replace(/\[(\S+)\s+([^]+?)\]/g, (_match, url: string, linkText: string) => {
         return `<a href="${escapeHtml(url)}" rel="noopener noreferrer nofollow">${escapeHtml(linkText)}</a>`;
     });
+
+    // Autolink bare URLs (findings #8) — the serializer collapses a link
+    // whose text equals its href to a bare URL, so the parser must link
+    // them back or the mark is lost on reload. The lookbehind restricts
+    // matches to text context (start / whitespace / tag-close), which
+    // keeps URLs inside href="…" attributes untouched; trailing
+    // punctuation that commonly ends a sentence is left out of the link.
+    text = text.replace(
+        /(^|[\s>])(https?:\/\/[^\s<>"']+?)([.,;:!?)]*)(?=[\s<]|$)/g,
+        (_match, prefix: string, url: string, trailing: string) => {
+            return `${prefix}<a href="${escapeHtml(url)}" rel="noopener noreferrer nofollow">${escapeHtml(url)}</a>${trailing}`;
+        },
+    );
 
     return text;
 }
