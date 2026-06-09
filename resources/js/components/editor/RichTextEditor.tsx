@@ -621,7 +621,7 @@ export default function RichTextEditor({
                             onChange={(e) => { setCodeValue(e.target.value); onChange(e.target.value); }}
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setIsFocused(false)}
-                            className="min-h-[120px] w-full resize-none p-4 font-mono text-sm outline-none"
+                            className="min-h-30 w-full resize-none p-4 font-mono text-sm outline-none"
                             style={{
                                 background: 'var(--theme-base-page)',
                                 color: 'var(--theme-base-content)',
@@ -665,7 +665,11 @@ export default function RichTextEditor({
                         />
                     </div>
                     <div className="flex justify-end gap-2">
-                        {editor.isActive('link') && (
+                        {/* Read through the reactive useEditorState dictionary —
+                            a direct editor.isActive('link') call here is stale
+                            under Tiptap >=3.21's deferred re-renders, hiding
+                            Unlink even with the cursor inside a link. */}
+                        {buttonActiveStates.link && (
                             <Button
                                 variant="ghost"
                                 onMouseDown={(e: MouseEvent) => { e.preventDefault(); removeLink(); }}
@@ -698,7 +702,7 @@ export default function RichTextEditor({
                     {getLegendItems().map((item) => (
                         <div key={item.title} className="alex-legend-row flex items-center gap-3 p-2">
                             <div
-                                className="flex h-8 w-8 flex-shrink-0 items-center justify-center"
+                                className="flex h-8 w-8 shrink-0 items-center justify-center"
                                 style={{
                                     background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
                                     borderRadius: 'var(--theme-radius-input)',
@@ -714,7 +718,7 @@ export default function RichTextEditor({
                             </div>
                             {item.shortcut && (
                                 <kbd
-                                    className="flex-shrink-0 px-1.5 py-0.5 text-xs font-mono"
+                                    className="shrink-0 px-1.5 py-0.5 text-xs font-mono"
                                     style={{
                                         background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
                                         border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',

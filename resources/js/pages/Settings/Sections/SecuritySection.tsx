@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import Button from '@alexandria/components/ui/Button';
+import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import TwoFactorEnableModal from '../security/TwoFactorEnableModal';
 import TwoFactorRegenerateModal from '../security/TwoFactorRegenerateModal';
 import TwoFactorDisableModal from '../security/TwoFactorDisableModal';
+import PasswordConfirmStep from '../security/PasswordConfirmStep';
 import { disableTwoFactor } from '../security/twoFactorApi';
 
 /**
@@ -39,6 +41,7 @@ export default function SecuritySection({ twoFactor }: SecuritySectionProps) {
     const [enableOpen, setEnableOpen] = useState(false);
     const [regenerateOpen, setRegenerateOpen] = useState(false);
     const [disableOpen, setDisableOpen] = useState(false);
+    const [cancelSetupOpen, setCancelSetupOpen] = useState(false);
 
     // State machine: derive once per render.
     const phase: 'disabled' | 'setup-pending' | 'enabled' =
@@ -61,8 +64,8 @@ export default function SecuritySection({ twoFactor }: SecuritySectionProps) {
             {phase === 'setup-pending' && (
                 <SetupPendingPanel
                     t={t}
-                    toast={toast}
                     onResume={() => setEnableOpen(true)}
+                    onCancel={() => setCancelSetupOpen(true)}
                 />
             )}
 
@@ -88,7 +91,55 @@ export default function SecuritySection({ twoFactor }: SecuritySectionProps) {
                 open={disableOpen}
                 onClose={() => setDisableOpen(false)}
             />
+            <CancelSetupModal
+                open={cancelSetupOpen}
+                onClose={() => setCancelSetupOpen(false)}
+                t={t}
+                toast={toast}
+            />
         </div>
+    );
+}
+
+/**
+ * Password-gated cancel for an abandoned enrollment. The DELETE route
+ * sits behind password.confirm, so a direct call from the steady state
+ * always 423s on a fresh session — the cancel must confirm the password
+ * first, like every other 2FA wizard.
+ */
+function CancelSetupModal({
+    open,
+    onClose,
+    t,
+    toast,
+}: {
+    open: boolean;
+    onClose: () => void;
+    t: Translator;
+    toast: ReturnType<typeof useToastContext>;
+}) {
+    async function handleConfirmed() {
+        const verdict = await disableTwoFactor();
+        if (verdict !== 'ok') {
+            toast.show(t('security.error.generic'), { type: 'danger' });
+            return;
+        }
+        toast.show(t('security.toast.setup_cancelled'), { type: 'success' });
+        router.reload({ only: ['twoFactor'] });
+        onClose();
+    }
+
+    return (
+        <Modal open={open} onClose={onClose} maxWidth="max-w-md">
+            <ModalHeader title={t('security.setup_pending.cancel_modal_title')} onClose={onClose} />
+            <PasswordConfirmStep
+                t={t}
+                intro={t('security.setup_pending.cancel_password_intro')}
+                submitLabel={t('security.setup_pending.cancel_confirm_button')}
+                onSuccess={handleConfirmed}
+                onCancel={onClose}
+            />
+        </Modal>
     );
 }
 
@@ -121,26 +172,13 @@ function DisabledPanel({ t, onEnable }: { t: Translator; onEnable: () => void })
 /* ── Phase: Setup-pending (user closed mid-enrollment) ── */
 function SetupPendingPanel({
     t,
-    toast,
     onResume,
+    onCancel,
 }: {
     t: Translator;
-    toast: ReturnType<typeof useToastContext>;
     onResume: () => void;
+    onCancel: () => void;
 }) {
-    const [cancelling, setCancelling] = useState(false);
-
-    async function handleCancel() {
-        setCancelling(true);
-        const verdict = await disableTwoFactor();
-        setCancelling(false);
-        if (verdict !== 'ok') {
-            toast.show(t('security.error.generic'), { type: 'danger' });
-            return;
-        }
-        router.reload({ only: ['twoFactor'] });
-    }
-
     const warningBannerStyle = {
         background: 'var(--theme-base-surface)',
         color: 'var(--theme-base-content)',
@@ -154,7 +192,7 @@ function SetupPendingPanel({
         <div className="space-y-4">
             <div className="flex items-start gap-3 p-4 text-sm" style={warningBannerStyle}>
                 <i
-                    className="fa-solid fa-triangle-exclamation mt-0.5 flex-shrink-0"
+                    className="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"
                     style={{ color: 'var(--theme-status-warning-fill)' }}
                     aria-hidden="true"
                 />
@@ -175,11 +213,7 @@ function SetupPendingPanel({
                 >
                     {t('security.setup_pending.resume_button')}
                 </Button>
-                <Button
-                    variant="ghost"
-                    onClick={handleCancel}
-                    loading={cancelling}
-                >
+                <Button variant="ghost" onClick={onCancel}>
                     {t('security.setup_pending.cancel_button')}
                 </Button>
             </div>
@@ -213,7 +247,7 @@ function EnabledPanel({
         <div className="space-y-5">
             <div className="flex items-start gap-3 p-4 text-sm" style={successBannerStyle}>
                 <i
-                    className="fa-solid fa-shield-halved mt-0.5 flex-shrink-0"
+                    className="fa-solid fa-shield-halved mt-0.5 shrink-0"
                     style={{ color: 'var(--theme-status-success-fill)' }}
                     aria-hidden="true"
                 />

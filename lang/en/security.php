@@ -39,6 +39,9 @@ return [
     'setup_pending.explanation' => 'You started enabling two-factor authentication but didn\'t confirm a code from your authenticator. Resume to finish, or cancel to start fresh later.',
     'setup_pending.resume_button' => 'Resume setup',
     'setup_pending.cancel_button' => 'Cancel setup',
+    'setup_pending.cancel_modal_title' => 'Cancel two-factor setup',
+    'setup_pending.cancel_password_intro' => 'Confirm your password to cancel the pending two-factor setup. The unconfirmed secret will be discarded.',
+    'setup_pending.cancel_confirm_button' => 'Discard setup',
 
     // ── Enable wizard ───────────────────────────────────────────────
     'enable.modal_title' => 'Enable two-factor authentication',
@@ -80,6 +83,7 @@ return [
     'toast.enabled' => 'Two-factor authentication enabled',
     'toast.confirmed' => 'Two-factor authentication confirmed',
     'toast.disabled' => 'Two-factor authentication disabled',
+    'toast.setup_cancelled' => 'Two-factor setup cancelled',
     'toast.codes_regenerated' => 'Recovery codes regenerated',
 
     // ── Errors ──────────────────────────────────────────────────────
