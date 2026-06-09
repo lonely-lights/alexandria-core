@@ -7,6 +7,7 @@ import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
 import Button from '@alexandria/components/ui/Button';
 import SectionHeader from '../components/SectionHeader';
+import { formatBirthdayPreview } from './lib/formatters';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 
@@ -893,34 +894,6 @@ const MONTHS: Record<string, string> = {
     '5': 'May', '6': 'June', '7': 'July', '8': 'August',
     '9': 'September', '10': 'October', '11': 'November', '12': 'December',
 };
-
-const MONTH_NAMES = [
-    '', 'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-function formatBirthdayPreview(visibility: string, month: string, day: string, year: string, ageSuffix: string): string {
-    const monthName = month ? MONTH_NAMES[parseInt(month)] : '';
-    const y = parseInt(year);
-
-    switch (visibility) {
-        case 'full': return monthName && day && year ? `${monthName} ${day}, ${year}` : '';
-        case 'month_day': return monthName && day ? `${monthName} ${day}` : '';
-        case 'year': return year || '';
-        case 'age': {
-            if (!y) return '';
-            const today = new Date();
-            const m = month ? parseInt(month) : 0;
-            const d = day ? parseInt(day) : 0;
-            let age = today.getFullYear() - y;
-            if (m && (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && d && today.getDate() < d))) {
-                age--;
-            }
-            return `${age} ${ageSuffix}`;
-        }
-        default: return '';
-    }
-}
 
 function BirthdayVisibilityPicker({ t, month, day, year, value, onChange }: {
     t: Translator;

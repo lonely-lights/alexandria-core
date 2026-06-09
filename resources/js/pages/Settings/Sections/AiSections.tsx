@@ -5,6 +5,7 @@ import Button from '@alexandria/components/ui/Button';
 import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import { formatTokenCount } from './lib/formatters';
 import { useEnterAnimation } from '@alexandria/hooks/useEnterAnimation';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useToastContext } from '@alexandria/components/ui/ToastProvider';
@@ -563,7 +564,7 @@ function ModelsSection({ models, selectedModels: initial, providersWithKeys, onD
 function UsageSection({ usage }: { usage: { requests: number; tokens: number; cost: number } }) {
     const t = useT();
     const stats = [
-        { labelKey: 'ai.usage.tokens_label', value: usage.tokens >= 1000 ? `${(usage.tokens / 1000).toFixed(1)}k` : usage.tokens.toString(), icon: 'fa-coins', color: 'var(--theme-brand-primary-500)' },
+        { labelKey: 'ai.usage.tokens_label', value: formatTokenCount(usage.tokens), icon: 'fa-coins', color: 'var(--theme-brand-primary-500)' },
         { labelKey: 'ai.usage.cost_label', value: `$${usage.cost.toFixed(2)}`, icon: 'fa-dollar-sign', color: 'var(--theme-status-success-fill)' },
         { labelKey: 'ai.usage.requests_label', value: usage.requests.toString(), icon: 'fa-arrow-right-arrow-left', color: 'var(--theme-brand-secondary-500)' },
     ];
