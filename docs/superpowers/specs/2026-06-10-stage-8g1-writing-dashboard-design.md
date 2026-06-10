@@ -62,7 +62,7 @@ Three tables + one pivot, in core (`src/Models/Writing/`, standard publishable m
 
 - `work_id`, `parent_id` (nullable self-reference), `position` (sibling order)
 - `title`, `slug` (unique per work), `label` (user-facing level name: "Chapter", "Scene", "Act" — free text, seeded by the work-type starter template)
-- `content` (nullable JSONB TipTap document; null = pure container node)
+- `content` (nullable longText; null = pure container node). **Storage is plain text, not JSON** (see Plan-stage amendments): prose sections store wiki markup exactly like `entries.content` (the editor round-trips wiki via `parseWikiToHtml`/`serializeToWiki`); screenplay sections store Fountain-style text. The `format` column decides the parser.
 - `format` (`prose` | `screenplay`) — inherited from the work, overridable per section; mixed-format works are natural
 - Curated craft fields (from the Scene/Chapter blueprints): `synopsis`, `status`, `beat_type`, `goal`, `conflict`, `stakes`, `mood`, `tone`, `timeline_position`, `int_ext`
 - Entry references: `pov_entry_id`, `setting_entry_id` — FKs to `entries`, `nullOnDelete`, validated same-project
@@ -154,6 +154,8 @@ One server-side walker over the TipTap JSON on save produces: word count (prose)
 
 ## Routes, navigation, permissions
 
+> **Amended:** routes, controllers, and policies live in `alexandria-app`, not core — see Plan-stage amendments.
+
 ### URL scheme
 
 - `GET /writing` — global dashboard: the user's works across all their projects, grouped by project, status/progress at a glance
@@ -175,6 +177,15 @@ Writing item in the main navbar (global dashboard) + a Writing tab in project na
 - **Core Testbench feature tests:** tree CRUD + reorder/move (incl. cycle prevention — no section becomes its own descendant), same-project validation on entry refs, slug uniqueness scopes (work per project, section per work), `SectionContentAnalyzer` (prose counts, screenplay page estimates, mention extraction), idempotent mention rebuilds, rollup bubbling, reports queries, policy delegation, starter templates per type
 - **Vitest:** screenplay transition maps (Enter/Tab from every element), format-spec resolution, length-plan math
 - **App browser smokes** (in `alexandria-app`): create novel → type → word count updates; create screenplay → Tab/Enter cycling yields correct elements; pin + peek an entry; drag-reorder sections
+
+## Plan-stage amendments (2026-06-10, after pattern reconnaissance)
+
+Discovered while grounding the implementation plan in the actual codebase; these override the corresponding lines above.
+
+1. **Content storage is text, not TipTap JSON.** Core's editor round-trips **wiki markup text** (`RichTextEditor` → `parseWikiToHtml` in, `serializeToWiki` out), and `entries.content` is longText wiki. Sections follow suit: prose = wiki markup (mentions stay `[[Name|Display]]`), screenplay = **Fountain-style plain text**. `SectionContentAnalyzer` parses text per format. Bonus: deferred Fountain export becomes nearly free, and 8g.2 analyzers consume text rather than walking JSON.
+2. **HTTP layer lives in `alexandria-app`** (Stage 4 wiring pattern): core ships models/migrations/factories/services/pages/components; the app ships routes (`routes/web.php`), controllers (`App\Http\Controllers\Writing\*`, like `EntryController`), `WorkPolicy` (Spatie project-scoped `work.view/create/edit/delete` permissions, seeded in `database/seeders/Security/` — no per-entry ACL layer needed), and HTTP feature tests. Core has **no domain routes** (only `routes/auth.php`).
+3. **JS unit tests run in `alexandria-app`'s Vitest setup** — core has no JS test runner. Screenplay transition-map tests import core modules through the app's alias.
+4. **Rollup simplification:** cached counts = per-section *own* words + the work total (`works.word_count` = SUM of sections). Ancestor aggregates derive client-side in the Navigator (it already holds the whole tree) — no bubble-chain writes.
 
 ## Build order (for the implementation plan)
 
