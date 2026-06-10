@@ -34,6 +34,13 @@ return [
     'appearance.compact_mode_label' => 'Compact Mode',
     'appearance.compact_mode_description' => 'Use a denser layout with less spacing',
     'appearance.save_button' => 'Save Appearance',
+    // User-level theme cascade root (Stage 8b)
+    'appearance.theme_label' => 'Theme',
+    'appearance.theme_help' => 'Your base theme. Projects, blueprints, and entries can override it for their own surfaces.',
+    'appearance.theme_inherit' => 'Use the system default',
+    'appearance.theme_inherit_hint' => 'No preset pinned — Alexandria uses the default theme.',
+    'appearance.theme_fine_tune_title' => 'Fine-tune tokens',
+    'appearance.theme_fine_tune_subtitle' => 'Adjust individual colors and styles on top of your chosen preset.',
 
     // ── Language / Regional Formats ─────────────────────────────────
     'language.date_format_label' => 'Date Format',

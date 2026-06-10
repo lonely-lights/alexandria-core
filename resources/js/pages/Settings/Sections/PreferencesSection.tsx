@@ -1,10 +1,13 @@
-import { useForm } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import Select from '@alexandria/components/form/Select';
 import Toggle from '@alexandria/components/form/Toggle';
 import Button from '@alexandria/components/ui/Button';
+import ThemePresetPicker from '@alexandria/components/theming/ThemePresetPicker';
+import TokenOverrideEditor from '@alexandria/components/theming/TokenOverrideEditor';
 import { useTheme } from '@alexandria/hooks/useTheme';
 import useT, { type Translator } from '@alexandria/hooks/useT';
-import type { SyntheticEvent, ReactNode } from 'react';
+import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
+import { useState, type SyntheticEvent, type ReactNode } from 'react';
 
 /**
  * Subset of view preferences the consumer app may want to mirror onto
@@ -49,7 +52,7 @@ export default function PreferencesSection({
 
     switch (section) {
         case 'appearance':
-            return <AppearanceSection preferences={preferences} options={options} applyViewPreferences={apply} />;
+            return <AppearanceSectionWithTheme preferences={preferences} options={options} applyViewPreferences={apply} />;
         case 'language':
             return <LanguageSection preferences={preferences} options={options} />;
         case 'notifications':
@@ -150,6 +153,102 @@ function GroupDivider() {
                 borderColor: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
             }}
         />
+    );
+}
+
+/**
+ * User-level theme preset + fine-tune editor — Stage 8b, the root of
+ * the theme cascade. Reads the persisted values off the shared
+ * auth.preferences prop and saves through PATCH /account/theme (same
+ * contract as the project / blueprint / entry theme endpoints). Sits
+ * outside the preferences <form> because it persists independently.
+ */
+function UserThemeSection() {
+    const t = useT();
+    const [editorOpen, setEditorOpen] = useState(false);
+
+    const { props } = usePage<{
+        auth?: {
+            preferences?: {
+                theme_preset_slug?: string | null;
+                theme_override?: Record<string, unknown> | null;
+            } | null;
+        } | null;
+        [key: string]: unknown;
+    }>();
+    const themePrefs = props.auth?.preferences ?? null;
+
+    function applyPreset(slug: string | null) {
+        router.patch(
+            '/account/theme',
+            {
+                theme_preset_slug: slug,
+                theme_override: themePrefs?.theme_override ?? null,
+            },
+            { preserveScroll: true },
+        );
+    }
+
+    function saveOverride(next: ThemeOverridePatch | null) {
+        router.patch(
+            '/account/theme',
+            {
+                theme_preset_slug: themePrefs?.theme_preset_slug ?? null,
+                theme_override: next as Record<string, unknown> | null,
+            },
+            { preserveScroll: true },
+        );
+    }
+
+    const subtleText = {
+        color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    };
+
+    return (
+        <div
+            className="space-y-6 border-t pt-8"
+            style={{ borderColor: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)' }}
+        >
+            <div>
+                <span className="block text-sm font-semibold">{t('settings.appearance.theme_label')}</span>
+                <p className="text-xs" style={subtleText}>
+                    {t('settings.appearance.theme_help')}
+                </p>
+            </div>
+
+            <ThemePresetPicker
+                activeSlug={themePrefs?.theme_preset_slug}
+                onPick={applyPreset}
+                inheritLabelKey="settings.appearance.theme_inherit"
+                inheritHintKey="settings.appearance.theme_inherit_hint"
+            />
+
+            <div>
+                <button
+                    type="button"
+                    onClick={() => setEditorOpen((open) => !open)}
+                    aria-expanded={editorOpen}
+                    className="flex items-center gap-2 text-sm font-semibold"
+                >
+                    <i
+                        className={`fa-solid fa-chevron-right text-xs ${editorOpen ? 'rotate-90' : ''} transition-transform`}
+                        aria-hidden="true"
+                    />
+                    {t('settings.appearance.theme_fine_tune_title')}
+                </button>
+                <p className="ml-5 mt-1 text-xs" style={subtleText}>
+                    {t('settings.appearance.theme_fine_tune_subtitle')}
+                </p>
+                {editorOpen && (
+                    <div className="mt-4">
+                        <TokenOverrideEditor
+                            initialOverride={(themePrefs?.theme_override as ThemeOverridePatch | null) ?? null}
+                            onSave={saveOverride}
+                        />
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }
 
@@ -288,6 +387,24 @@ function AppearanceSection({
 
             <SaveRow processing={form.processing} labelKey="settings.appearance.save_button" t={t} />
         </form>
+    );
+}
+
+/**
+ * Appearance card = the mode/font/motion form + the user-level theme
+ * block (Stage 8b cascade root), which persists independently through
+ * PATCH /account/theme and therefore sits outside the form.
+ */
+function AppearanceSectionWithTheme(props: {
+    preferences: Record<string, unknown>;
+    options: Record<string, Record<string, string>>;
+    applyViewPreferences: ApplyViewPreferences;
+}) {
+    return (
+        <div className="space-y-8">
+            <AppearanceSection {...props} />
+            <UserThemeSection />
+        </div>
     );
 }
 
