@@ -6,6 +6,7 @@ namespace Alexandria\Core\Mail;
 
 use Alexandria\Core\Models\EmailOverride;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Lang;
 
 /**
  * Resolves a branded-mail lang string with DB overrides taking
@@ -15,7 +16,13 @@ use Illuminate\Support\Facades\App;
  *   1. Per-request DRAFT overlay (admin preview endpoint sets this
  *      via setDrafts() so unsaved edits render in the iframe)
  *   2. email_overrides table — matching (mail_slug, lang_key, locale)
- *   3. file lang — __('alexandria::emails.{mail_slug}.{lang_key}', $args, $locale)
+ *   3. host-app file lang — __('emails.{mail_slug}.{lang_key}') when
+ *      the app ships the key. Lets consumer apps register their own
+ *      branded mails (store receipts, saas invites) with strings in
+ *      their own lang/<locale>/emails.php — no publish into
+ *      lang/vendor/alexandria required. App keys win over core's,
+ *      mirroring the loadGroup merge in the Inertia middleware.
+ *   4. core file lang — __('alexandria::emails.{mail_slug}.{lang_key}', $args, $locale)
  *
  * Used by:
  *   - Mailable envelope() methods to resolve subject lines
@@ -90,6 +97,12 @@ class BrandedTextResolver
 
         if ($override !== null) {
             return $this->interpolate($override, $replace);
+        }
+
+        $appLangKey = "emails.$slug.$key";
+
+        if (Lang::has($appLangKey, $locale)) {
+            return __($appLangKey, $replace, $locale);
         }
 
         $fileLangKey = "alexandria::emails.$slug.$key";

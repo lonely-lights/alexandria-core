@@ -6,6 +6,7 @@ use Alexandria\Core\Mail\BrandedTextResolver;
 use Alexandria\Core\Mail\VerifyEmailMail;
 use Alexandria\Core\Models\EmailOverride;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Route;
 
 uses(RefreshDatabase::class);
@@ -19,6 +20,36 @@ it('falls back to file lang when no DB override exists', function () {
     $value = app(BrandedTextResolver::class)->get('verify', 'subject');
 
     expect($value)->toBe(__('alexandria::emails.verify.subject'));
+});
+
+it('resolves app-supplied lang for slugs core does not ship', function () {
+    // Consumer apps register their own branded mails (store receipts,
+    // saas invites) with strings in their own lang/<locale>/emails.php.
+    Lang::addLines(['emails.app-receipt.subject' => 'Your receipt'], 'en');
+
+    $value = app(BrandedTextResolver::class)->get('app-receipt', 'subject');
+
+    expect($value)->toBe('Your receipt');
+});
+
+it('lets app lang keys win over core file lang (loadGroup precedence)', function () {
+    Lang::addLines(['emails.verify.subject' => 'App-flavored verify subject'], 'en');
+
+    $value = app(BrandedTextResolver::class)->get('verify', 'subject');
+
+    expect($value)->toBe('App-flavored verify subject');
+});
+
+it('still prefers DB overrides over app-supplied lang', function () {
+    Lang::addLines(['emails.verify.subject' => 'App-flavored verify subject'], 'en');
+    EmailOverride::factory()->forVerify('subject')->create([
+        'content' => 'DB override wins',
+        'locale' => 'en',
+    ]);
+
+    $value = app(BrandedTextResolver::class)->get('verify', 'subject');
+
+    expect($value)->toBe('DB override wins');
 });
 
 it('returns the DB override when one exists for that mail+key+locale', function () {
