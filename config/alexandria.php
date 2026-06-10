@@ -24,6 +24,8 @@ use Alexandria\Core\Models\System\RelationshipBlueprint;
 use Alexandria\Core\Models\UserAiPrompt;
 use Alexandria\Core\Models\UserAiSetting;
 use Alexandria\Core\Models\UserApiKey;
+use Alexandria\Core\Models\Writing\Work;
+use Alexandria\Core\Models\Writing\WorkSection;
 use Illuminate\Foundation\Auth\User;
 
 return [
@@ -90,6 +92,95 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Writing Dashboard
+    |--------------------------------------------------------------------------
+    |
+    | Work types, format specs, length-plan presets, and starter structures
+    | for the writing dashboard (works + sections). Override per-app by
+    | publishing config/alexandria.php and editing.
+    |
+    */
+    'writing' => [
+
+        // Work types (selectable at creation; keys feed lang lookups + templates)
+        'types' => ['novel', 'screenplay', 'stage_play', 'short_story', 'essay', 'other'],
+
+        // Format specs. Server side carries the page metrics; element lists and
+        // keyboard transition maps are frontend modules (Plan 3).
+        'formats' => [
+            'prose' => [
+                'words_per_page' => 250,
+            ],
+            'screenplay' => [
+                'lines_per_page' => 55,
+            ],
+        ],
+
+        // Length-plan presets. Seeded onto works.length_plan; every number is
+        // user-editable afterwards. per_section_words feeds new-section targets.
+        'length_plans' => [
+            'short_story' => ['target_words' => 7500, 'per_section_words' => 2500],
+            'novella' => ['target_words' => 30000, 'per_section_words' => 3000],
+            'novel' => ['target_words' => 90000, 'per_section_words' => 3000],
+            'epic' => ['target_words' => 150000, 'per_section_words' => 3500],
+            'screenplay' => ['target_pages' => 110],
+        ],
+
+        // Starter structures per work type. label is the user-facing level name;
+        // children nest one level here but the tree itself supports any depth.
+        'templates' => [
+            'novel' => [
+                'format' => 'prose',
+                'length_plan' => 'novel',
+                'sections' => [
+                    ['label' => 'Chapter', 'title' => 'Chapter 1'],
+                    ['label' => 'Chapter', 'title' => 'Chapter 2'],
+                    ['label' => 'Chapter', 'title' => 'Chapter 3'],
+                ],
+            ],
+            'screenplay' => [
+                'format' => 'screenplay',
+                'length_plan' => 'screenplay',
+                'sections' => [
+                    ['label' => 'Act', 'title' => 'Act 1', 'children' => [['label' => 'Scene', 'title' => 'Scene 1']]],
+                    ['label' => 'Act', 'title' => 'Act 2', 'children' => [['label' => 'Scene', 'title' => 'Scene 1']]],
+                    ['label' => 'Act', 'title' => 'Act 3', 'children' => [['label' => 'Scene', 'title' => 'Scene 1']]],
+                ],
+            ],
+            'stage_play' => [
+                'format' => 'screenplay',
+                'length_plan' => 'screenplay',
+                'sections' => [
+                    ['label' => 'Act', 'title' => 'Act 1', 'children' => [['label' => 'Scene', 'title' => 'Scene 1']]],
+                    ['label' => 'Act', 'title' => 'Act 2', 'children' => [['label' => 'Scene', 'title' => 'Scene 1']]],
+                ],
+            ],
+            'short_story' => [
+                'format' => 'prose',
+                'length_plan' => 'short_story',
+                'sections' => [
+                    ['label' => 'Section', 'title' => 'Opening'],
+                ],
+            ],
+            'essay' => [
+                'format' => 'prose',
+                'length_plan' => 'short_story',
+                'sections' => [
+                    ['label' => 'Section', 'title' => 'Draft'],
+                ],
+            ],
+            'other' => [
+                'format' => 'prose',
+                'length_plan' => 'novella',
+                'sections' => [
+                    ['label' => 'Section', 'title' => 'Section 1'],
+                ],
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Model Bindings
     |--------------------------------------------------------------------------
     |
@@ -124,5 +215,7 @@ return [
         'user_ai_prompt' => UserAiPrompt::class,
         'user_ai_setting' => UserAiSetting::class,
         'user_api_key' => UserApiKey::class,
+        'work' => Work::class,
+        'work_section' => WorkSection::class,
     ],
 ];
