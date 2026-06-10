@@ -1,4 +1,5 @@
 import { router, useForm, usePage } from '@inertiajs/react';
+import type { FormDataConvertible } from '@inertiajs/core';
 import Select from '@alexandria/components/form/Select';
 import Toggle from '@alexandria/components/form/Toggle';
 import Button from '@alexandria/components/ui/Button';
@@ -184,7 +185,7 @@ function UserThemeSection() {
             {
                 theme_preset_slug: slug,
                 theme_override: themePrefs?.theme_override ?? null,
-            },
+            } as Record<string, FormDataConvertible>,
             { preserveScroll: true },
         );
     }
@@ -195,7 +196,7 @@ function UserThemeSection() {
             {
                 theme_preset_slug: themePrefs?.theme_preset_slug ?? null,
                 theme_override: next as Record<string, unknown> | null,
-            },
+            } as Record<string, FormDataConvertible>,
             { preserveScroll: true },
         );
     }

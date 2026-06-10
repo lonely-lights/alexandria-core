@@ -105,9 +105,11 @@ export default function AuthLayout({
                     />
 
                     <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
-                        {/* Brand block */}
+                        {/* Brand block — breathing idle (early-draft
+                            animation) gives the auth surface a calm sign
+                            of life. */}
                         <div className="flex items-center gap-4">
-                            <Logo size="4em" />
+                            <Logo size="4em" animation="breathing" />
                             <div>
                                 <h1
                                     className="text-3xl"
@@ -169,7 +171,7 @@ export default function AuthLayout({
                     <div className="w-full max-w-md space-y-8">
                         {/* Mobile brand collapse */}
                         <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-                            <Logo size="2.5em" />
+                            <Logo size="2.5em" animation="breathing" />
                             <span className="text-2xl" style={brandWordmark}>
                                 Alexandria
                             </span>

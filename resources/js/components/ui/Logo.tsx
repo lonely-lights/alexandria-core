@@ -3,6 +3,8 @@ import LogoMark from '../brand/LogoMark';
 interface LogoProps {
     size?: string;
     className?: string;
+    /** Looping character animation forwarded to LogoMark (early drafts). */
+    animation?: 'breathing' | 'walking' | 'waving' | 'jumping';
 }
 
 /**
@@ -19,12 +21,13 @@ interface LogoProps {
  * this wrapper exists for API compatibility with the pre-8f
  * placeholder. It will be removed once all callers migrate.
  */
-export default function Logo({ size = '3em', className }: LogoProps) {
+export default function Logo({ size = '3em', className, animation }: LogoProps) {
     return (
         <LogoMark
             className={className}
             style={{ width: size, height: size }}
             ariaLabel=""
+            animation={animation}
         />
     );
 }

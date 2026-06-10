@@ -1,4 +1,4 @@
-import { type CSSProperties } from 'react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
 
 import LogoMark from './LogoMark';
 import { brandWordmark } from './brandStyles';
@@ -32,6 +32,26 @@ interface LogoLockupProps {
      * stretched-foundation variant (legs height = crossbar × φ).
      */
     pose?: 'rest' | 'extended';
+    /**
+     * Looping character animation forwarded to the inner LogoMark
+     * (early drafts — see logo-mark.css). E.g. `breathing` for the
+     * calm auth-page idle.
+     */
+    animation?: 'breathing' | 'walking' | 'waving' | 'jumping';
+    /**
+     * Character-interaction triggers (early-draft animations): hover
+     * plays the kit-of-blocks wave once per hover (pure CSS via
+     * `.alex-logo-lockup--interactive`), click plays one
+     * squash-and-stretch jump cycle.
+     */
+    interactive?: boolean;
+    /**
+     * Fires on every click while `interactive`. Hook for the host
+     * app's planned logo easter egg — each click rolls 1-in-1,000,000
+     * odds for a prize-credits drop once the store ships (Stage 8d);
+     * see takeout/"The Logo Itself" for the concept note.
+     */
+    onMarkClick?: () => void;
 }
 
 const SIZE_TOKENS: Record<'sm' | 'md' | 'lg', { mark: number; fontSize: string; gap: string }> = {
@@ -40,6 +60,9 @@ const SIZE_TOKENS: Record<'sm' | 'md' | 'lg', { mark: number; fontSize: string; 
     lg: { mark: 52, fontSize: '1.875rem', gap: '0.75rem' },
 };
 
+/** One full cycle of the alex-jump-legs/-body keyframes (2s) plus margin. */
+const JUMP_ONCE_MS = 2100;
+
 export default function LogoLockup({
     size = 'md',
     showWordmark = true,
@@ -47,18 +70,46 @@ export default function LogoLockup({
     className,
     style,
     pose = 'rest',
+    animation,
+    interactive = false,
+    onMarkClick,
 }: LogoLockupProps) {
     const tokens = SIZE_TOKENS[size];
+    const [jumping, setJumping] = useState(false);
+    const jumpTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+    useEffect(() => () => clearTimeout(jumpTimer.current), []);
+
+    const handleClick = interactive
+        ? () => {
+              onMarkClick?.();
+              // Restart cleanly if mid-jump: drop the class for a frame so
+              // the one-shot animation re-triggers.
+              setJumping(false);
+              clearTimeout(jumpTimer.current);
+              requestAnimationFrame(() => {
+                  setJumping(true);
+                  jumpTimer.current = setTimeout(() => setJumping(false), JUMP_ONCE_MS);
+              });
+          }
+        : undefined;
+
+    const classes = [
+        'alex-logo-lockup inline-flex items-center',
+        interactive ? 'alex-logo-lockup--interactive' : '',
+        jumping ? 'alex-mark-anim-jump-once' : '',
+        className ?? '',
+    ]
+        .filter(Boolean)
+        .join(' ');
 
     return (
-        <span
-            className={`alex-logo-lockup inline-flex items-center ${className ?? ''}`}
-            style={{ gap: tokens.gap, ...style }}
-        >
+        <span className={classes} style={{ gap: tokens.gap, ...style }} onClick={handleClick}>
             <LogoMark
                 size={tokens.mark}
                 ariaLabel={showWordmark ? '' : wordmarkText}
                 pose={pose}
+                animation={animation}
             />
             {showWordmark && (
                 <span

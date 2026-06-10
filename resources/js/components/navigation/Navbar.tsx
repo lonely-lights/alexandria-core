@@ -1,4 +1,4 @@
-import { usePage } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 import {
     useState,
     useEffect,
@@ -301,18 +301,21 @@ export default function Navbar({
                         breakpoint. Defaults to the LogoLockup; consumers
                         passing brandSlot can override entirely, and a
                         custom brand string flows through as the wordmark
-                        text inside the default lockup. */}
-                    <a
+                        text inside the default lockup. An Inertia Link
+                        (not a plain anchor) so the SPA visit keeps the
+                        navbar mounted — the lockup's click-jump animation
+                        plays through instead of dying to a full reload. */}
+                    <Link
                         href="/"
                         className="ml-4 flex items-center"
                         style={{ color: "var(--theme-base-content)" }}
                     >
                         {brandSlot ?? (
                             brand ? (
-                                <LogoLockup size="md" wordmarkText={brand} />
+                                <LogoLockup size="md" wordmarkText={brand} interactive />
                             ) : null
                         )}
-                    </a>
+                    </Link>
                 </div>
 
                 {/* Spacer — keeps left/right groups at 33% each so the

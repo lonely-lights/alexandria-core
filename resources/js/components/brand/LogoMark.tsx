@@ -18,6 +18,11 @@ import { type CSSProperties } from 'react';
  * The kit can be rearranged via CSS transforms or motion libs into
  * other poses (the design intent reads as "A letter, building, person,
  * shark, etc." per the original brand spec).
+ *
+ * ⚠ The looping animations behind the `animation` prop are EARLY
+ * DRAFTS lifted from the brand workshop — keyframes live in
+ * `resources/css/components/logo-mark.css` and are expected to be
+ * refined. The prop names are stable API; the motion itself is not.
  */
 interface LogoMarkProps {
     size?: number;
@@ -39,6 +44,16 @@ interface LogoMarkProps {
      * swaps don't.
      */
     pose?: 'rest' | 'extended';
+    /**
+     * Looping character animation (early drafts). Applies the
+     * `alex-mark-anim-<name>` class; keyframes ship in
+     * `resources/css/components/logo-mark.css` (consumers import it
+     * from their app stylesheet). `breathing` is the calm idle for
+     * auth surfaces; `walking` is reserved for future loaders;
+     * `waving` and `jumping` are usually triggered via LogoLockup's
+     * `interactive` prop rather than set directly.
+     */
+    animation?: 'breathing' | 'walking' | 'waving' | 'jumping';
 }
 
 const LEG_HEIGHT: Record<'rest' | 'extended', number> = {
@@ -52,9 +67,11 @@ export default function LogoMark({
     style,
     ariaLabel = 'Alexandria',
     pose = 'rest',
+    animation,
 }: LogoMarkProps) {
     const decorative = ariaLabel === '';
     const legHeight = LEG_HEIGHT[pose];
+    const animClass = animation ? `alex-mark-anim-${animation}` : '';
 
     return (
         <svg
@@ -66,7 +83,7 @@ export default function LogoMark({
             role={decorative ? 'presentation' : 'img'}
             aria-label={decorative ? undefined : ariaLabel}
             aria-hidden={decorative ? true : undefined}
-            className={className}
+            className={[animClass, className].filter(Boolean).join(' ') || undefined}
             style={style}
         >
             {!decorative && <title>{ariaLabel}</title>}
