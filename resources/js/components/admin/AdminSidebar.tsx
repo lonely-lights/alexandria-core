@@ -28,7 +28,9 @@ import type { SharedProps } from '@alexandria/types';
  */
 
 interface AdminSidebarProps {
-    activeKey?: AdminNavKey;
+    // `string & {}` keeps AdminNavKey autocomplete while admitting
+    // consumer-app keys registered via registerAdminNavGroups.
+    activeKey?: AdminNavKey | (string & {});
 }
 
 type AdminNavKey =
@@ -42,7 +44,7 @@ type AdminNavKey =
     | 'emails';
 
 interface NavLink {
-    key: AdminNavKey;
+    key: AdminNavKey | (string & {});
     href: string;
     labelKey: string;
     icon: string;
@@ -52,6 +54,31 @@ interface NavGroup {
     key: string;
     labelKey: string;
     links: NavLink[];
+}
+
+/** Public shape for consumer-app admin nav groups. */
+export interface AdminNavGroup {
+    labelKey: string;
+    items: Array<{ key: string; href: string; labelKey: string; icon: string }>;
+}
+
+/**
+ * Consumer-app extension point — extra nav groups rendered after the
+ * built-ins. Registered once at app boot (same pattern as the
+ * Settings slot registry); core ships no consumer concerns here, the
+ * host app decides what an "extra" group is (store admin, saas ops…).
+ */
+let extraNavGroups: NavGroup[] = [];
+
+export function registerAdminNavGroups(groups: AdminNavGroup[]): void {
+    extraNavGroups = [
+        ...extraNavGroups,
+        ...groups.map((group, index) => ({
+            key: `extra-${index}-${group.labelKey}`,
+            labelKey: group.labelKey,
+            links: group.items,
+        })),
+    ];
 }
 
 // Dashboard sits above the section headers (no group label) — the
@@ -144,7 +171,7 @@ export default function AdminSidebar({ activeKey }: AdminSidebarProps) {
                     </SidebarLink>
                 </ul>
 
-                {NAV_GROUPS.map((group) => (
+                {[...NAV_GROUPS, ...extraNavGroups].map((group) => (
                     <div key={group.key} className="mb-3 last:mb-0">
                         <h3 className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-400 dark:text-zinc-500">
                             {t(group.labelKey)}

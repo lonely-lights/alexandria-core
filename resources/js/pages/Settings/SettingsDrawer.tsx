@@ -5,7 +5,7 @@ import useT from '@alexandria/hooks/useT';
 import SectionContent from './components/SectionContent';
 import { ALL_NAV, type NavItem } from './nav-config';
 import { type SettingsBodyProps } from './SettingsBody';
-import { useSettingsData } from './settingsCache';
+import { getSettingsSlots, useSettingsData } from './settingsCache';
 
 /**
  * Mobile-only iOS-style settings drawer.
@@ -383,10 +383,16 @@ function PaneSkeleton() {
     );
 }
 
+function mergedNav(): NavItem[] {
+    // Built-ins + consumer-app extras (slot registry) — same merge the
+    // desktop rail applies, so app-registered groups appear here too.
+    return [...ALL_NAV, ...(getSettingsSlots().extraNav ?? [])];
+}
+
 function RootList({ onSelect }: { onSelect: (key: string) => void }) {
     return (
         <div className="h-full overflow-y-auto pb-4">
-            {ALL_NAV.map((group) => (
+            {mergedNav().map((group) => (
                 <section key={group.key} className="mt-3">
                     <h3
                         className="flex items-center gap-2 px-4 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider"
@@ -426,7 +432,7 @@ function RootList({ onSelect }: { onSelect: (key: string) => void }) {
 }
 
 function findNavItem(key: string): NavItem | null {
-    for (const group of ALL_NAV) {
+    for (const group of mergedNav()) {
         if (group.key === key) return group;
         for (const child of group.children ?? []) {
             if (child.key === key) return child;

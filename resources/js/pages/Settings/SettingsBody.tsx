@@ -5,6 +5,10 @@ import { useEnterAnimation } from '@alexandria/hooks/useEnterAnimation';
 import useT from '@alexandria/hooks/useT';
 import { type ViewPreferences } from './Sections/PreferencesSection';
 import { ALL_NAV, type NavItem } from './nav-config';
+// Safe import despite settingsCache importing SettingsBodyProps from
+// here — that one is type-only and erased at compile, so there's no
+// runtime cycle.
+import { getSettingsSlots } from './settingsCache';
 import AnimatedPronouns from './components/AnimatedPronouns';
 import RingModal from './components/RingModal';
 import SectionContent from './components/SectionContent';
@@ -168,12 +172,15 @@ export default function SettingsBody({
     initialActiveSection = 'identity',
 }: SettingsBodyProps) {
     const t = useT();
+    // Built-in groups + consumer-app extras (slot registry, registered
+    // once at app boot — stable across renders).
+    const nav = [...ALL_NAV, ...(getSettingsSlots().extraNav ?? [])];
     const [activeSection, setActiveSection] = useState(initialActiveSection);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
         // Expand the group that owns the landing section (findings #13) —
         // hardcoding profile left /settings landing on Appearance with the
         // Preferences group collapsed-but-highlighted.
-        const owner = ALL_NAV.find((item) => item.children?.some((child) => child.key === initialActiveSection));
+        const owner = nav.find((item) => item.children?.some((child) => child.key === initialActiveSection));
 
         return { [owner?.key ?? 'profile']: true };
     });
@@ -225,7 +232,7 @@ export default function SettingsBody({
     function isActive(key: string): boolean {
         return activeSection === key
             || activeSection.startsWith(key + '-')
-            || ALL_NAV.find((item) => item.key === key)?.children?.some((child) => child.key === activeSection) === true;
+            || nav.find((item) => item.key === key)?.children?.some((child) => child.key === activeSection) === true;
     }
 
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -500,7 +507,7 @@ export default function SettingsBody({
                                     }}
                                 >
                                     <nav className="space-y-1 p-2">
-                                        {ALL_NAV.map((item) => (
+                                        {nav.map((item) => (
                                             <div key={item.key}>
                                                 <button
                                                     onClick={() => handleNavClick(item)}

@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import useT from '@alexandria/hooks/useT';
+import { getSettingsSlots } from '../settingsCache';
 import ProfileSection from '../Sections/ProfileSection';
 import PreferencesSection from '../Sections/PreferencesSection';
 import LinksSection from '../Sections/LinksSection';
@@ -54,6 +55,14 @@ export default function SectionContent({
 }) {
     const t = useT();
     const fadedTextStyle = { color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' };
+
+    // Consumer-app sections (slot registry) — checked before the
+    // built-in dispatcher so app-registered nav keys render here on
+    // desktop AND inside the mobile drawer's detail pane.
+    const extraSection = getSettingsSlots().extraSections?.[activeSection];
+    if (extraSection) {
+        return <>{extraSection()}</>;
+    }
 
     // Profile sections
     if (['identity', 'about', 'details'].includes(activeSection)) {

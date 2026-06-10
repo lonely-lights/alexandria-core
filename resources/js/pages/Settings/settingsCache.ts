@@ -32,7 +32,8 @@
  * matches `SettingsBodyProps` (see SettingsBody.tsx).
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { type NavItem } from './nav-config';
 import { type SettingsBodyProps } from './SettingsBody';
 
 type CacheState = SettingsBodyProps | null;
@@ -50,6 +51,19 @@ const SETTINGS_ENDPOINT = '/api/v1/account/settings';
 export interface SettingsSlotRegistry {
     accountManagementSlot?: SettingsBodyProps['accountManagementSlot'];
     applyViewPreferences?: SettingsBodyProps['applyViewPreferences'];
+    /**
+     * Consumer-app nav groups appended after the built-in ALL_NAV
+     * groups — rendered by both the desktop rail and the mobile
+     * drawer's root list. Keys must not collide with built-ins.
+     */
+    extraNav?: NavItem[];
+    /**
+     * Section renderers for extraNav keys. SectionContent checks this
+     * map before its built-in dispatcher, so registered sections render
+     * on the /settings page AND in the mobile drawer. Renderers are
+     * self-contained (fetch their own data).
+     */
+    extraSections?: Record<string, () => ReactNode>;
 }
 
 let registeredSlots: SettingsSlotRegistry = {};
