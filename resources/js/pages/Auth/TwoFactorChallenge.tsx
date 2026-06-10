@@ -3,6 +3,7 @@ import {
     useRef,
     useState,
     type ChangeEvent,
+    type ClipboardEvent,
     type SyntheticEvent,
 } from 'react';
 
@@ -189,7 +190,10 @@ function RecoveryCodeField({
     function handleFirstChange(e: ChangeEvent<HTMLInputElement>): void {
         const incoming = e.target.value;
 
-        // Pasted full code "xxxxxxxxxx-yyyyyyyyyy" → distribute across both.
+        // Distribute a hyphenated value across both segments. (Real full-
+        // code pastes are intercepted by handleFirstPaste below — by the
+        // time onChange fires, maxLength would already have truncated the
+        // hyphen away. This branch covers programmatic value sets.)
         if (incoming.includes('-')) {
             const [a = '', b = ''] = incoming.split('-');
             rebuild(a, b);
@@ -204,6 +208,23 @@ function RecoveryCodeField({
         if (incoming.length === 10) {
             secondRef.current?.focus();
         }
+    }
+
+    function handleFirstPaste(e: ClipboardEvent<HTMLInputElement>): void {
+        const raw = e.clipboardData.getData('text').trim();
+
+        // Findings #23: smart paste must run on the paste event itself —
+        // maxLength=10 truncates the inserted text before onChange ever
+        // sees the hyphen, so the onChange branch alone is unreachable
+        // for real pastes. Short pastes fall through to default insert.
+        if (!raw.includes('-')) {
+            return;
+        }
+
+        e.preventDefault();
+        const [a = '', b = ''] = raw.split('-');
+        rebuild(a, b);
+        secondRef.current?.focus();
     }
 
     function handleSecondChange(e: ChangeEvent<HTMLInputElement>): void {
@@ -223,6 +244,7 @@ function RecoveryCodeField({
                 name="recovery_code"
                 value={rawFirst}
                 onChange={handleFirstChange}
+                onPaste={handleFirstPaste}
                 maxLength={10}
                 autoFocus={autoFocus}
                 autoComplete="one-time-code"

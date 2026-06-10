@@ -98,6 +98,10 @@ return [
 
     // ── Profile-card chrome (banner / avatar controls / preview) ────
     'aria.banner_alt' => 'Profile banner',
+    'banner.upload_button' => 'Upload Banner',
+    'banner.change_button' => 'Change Banner',
+    'banner.remove_button' => 'Remove',
+    'media.too_large' => 'File is too large (:sizeMB). Maximum is 10MB.',
     'aria.change_avatar' => 'Change avatar',
     'aria.remove_avatar' => 'Remove avatar',
     'aria.change_avatar_ring' => 'Change avatar ring',

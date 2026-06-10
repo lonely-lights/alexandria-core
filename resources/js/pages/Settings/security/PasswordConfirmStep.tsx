@@ -62,6 +62,8 @@ export default function PasswordConfirmStep({
             <Input
                 size="md"
                 type="password"
+                id="confirm-password"
+                name="confirm-password"
                 label={t('security.password_confirm.password_label')}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(null); }}

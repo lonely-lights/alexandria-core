@@ -189,10 +189,66 @@ function serializeListItem(node: WikiNode, context: SerializeContext): string {
 
 /**
  * Serialize inline content (text with marks).
+ *
+ * Format marks (bold / italic / underline) are emitted as TRANSITIONS
+ * across adjacent text nodes rather than wrapping each node
+ * independently — per-node wrapping produced adjacent quote runs
+ * ('''a''''''b''') that re-parse incorrectly when marks partially
+ * overlap (findings #9). Links, mentions, entry links, and hard breaks
+ * act as flush points: all open format marks close before them and
+ * reopen on the next text node (wiki inline markers cannot span them).
  */
+const FORMAT_MARKERS = { bold: "'''", italic: "''", underline: '__' } as const;
+const FORMAT_ORDER = ['bold', 'italic', 'underline'] as const;
+
+type FormatMark = (typeof FORMAT_ORDER)[number];
+
 function serializeInlineContent(content: WikiNode[] | undefined, context: SerializeContext): string {
     if (!content || !Array.isArray(content)) return '';
-    return content.map((node) => serializeNode(node, context)).join('');
+
+    const out: string[] = [];
+    const open: FormatMark[] = [];
+
+    function transitionTo(target: Set<FormatMark>): void {
+        // Close from the top of the stack until nothing outside the
+        // target set remains open (marks above a closing one must close
+        // too and are reopened below — wiki markers can't interleave).
+        while (open.some((mark) => !target.has(mark))) {
+            out.push(FORMAT_MARKERS[open.pop()!]);
+        }
+
+        for (const mark of FORMAT_ORDER) {
+            if (target.has(mark) && !open.includes(mark)) {
+                open.push(mark);
+                out.push(FORMAT_MARKERS[mark]);
+            }
+        }
+    }
+
+    for (const node of content) {
+        const isPlainText = node.type === 'text'
+            && !(node.marks ?? []).some((m) => m.type === 'link');
+
+        if (isPlainText) {
+            const target = new Set<FormatMark>(
+                (node.marks ?? [])
+                    .map((m) => m.type)
+                    .filter((type): type is FormatMark => (FORMAT_ORDER as readonly string[]).includes(type)),
+            );
+            transitionTo(target);
+            out.push(node.text ?? '');
+            continue;
+        }
+
+        // Links / mentions / entry links / hard breaks: flush all open
+        // format marks, then serialize the node on its own.
+        transitionTo(new Set());
+        out.push(serializeNode(node, context));
+    }
+
+    transitionTo(new Set());
+
+    return out.join('');
 }
 
 /**

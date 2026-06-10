@@ -9,7 +9,6 @@ import Button from '@alexandria/components/ui/Button';
 import SectionHeader from '../components/SectionHeader';
 import { formatBirthdayPreview } from './lib/formatters';
 import useT, { type Translator } from '@alexandria/hooks/useT';
-import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 
 interface ProfileData {
     display_name: string | null;
@@ -58,7 +57,6 @@ const SECTION_META: Record<string, { icon: string; titleKey: string; subtitleKey
 
 export default function ProfileSection({ profile, usernameStatus, options, activeSection = 'identity', onPreviewChange }: ProfileSectionProps) {
     const t = useT();
-    const toast = useToastContext();
     const [showUsernameModal, setShowUsernameModal] = useState(false);
     const locationPlaceholder = useRotatingPlaceholder(LOCATION_HINTS, 2200);
     const form = useForm({
@@ -89,9 +87,10 @@ export default function ProfileSection({ profile, usernameStatus, options, activ
 
     function handleSubmit(e: SyntheticEvent) {
         e.preventDefault();
-        form.put('/account/profile', {
-            onSuccess: () => toast.show(t('settings.toast.profile_saved'), { type: 'success' }),
-        });
+        // Success feedback comes from the controller's flash via the
+        // ToastProvider bridge — a client-side onSuccess toast here
+        // doubled it (findings #10).
+        form.put('/account/profile');
     }
 
     function togglePronoun(pronoun: string) {

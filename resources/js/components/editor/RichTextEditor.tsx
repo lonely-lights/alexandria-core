@@ -12,6 +12,7 @@ import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import Input from '@alexandria/components/form/Input';
 import Button from '@alexandria/components/ui/Button';
+import useT from '@alexandria/hooks/useT';
 
 /**
  * RichTextEditor — Tiptap 3 wiki-markup editor surface.
@@ -70,8 +71,9 @@ interface RichTextEditorProps {
 
 interface ToolbarButtonDef {
     icon: string;
-    title: string;
-    description: string;
+    /** `editor.toolbar.*` lang keys (findings #17) — resolve via t() at render. */
+    titleKey: string;
+    descriptionKey: string;
     shortcut: string | null;
     shortcutMac: string | null;
     action: (editor: Editor, actions: EditorActions) => void;
@@ -85,61 +87,61 @@ interface EditorActions {
 
 const BUTTONS: Record<string, ToolbarButtonDef> = {
     bold: {
-        icon: 'fa-bold', title: 'Bold', description: 'Make text bold',
+        icon: 'fa-bold', titleKey: 'editor.toolbar.bold.title', descriptionKey: 'editor.toolbar.bold.description',
         shortcut: 'Ctrl+B', shortcutMac: '⌘+B',
         action: (e) => e.chain().focus().toggleBold().run(),
         isActive: (e) => e.isActive('bold'),
     },
     italic: {
-        icon: 'fa-italic', title: 'Italic', description: 'Make text italic',
+        icon: 'fa-italic', titleKey: 'editor.toolbar.italic.title', descriptionKey: 'editor.toolbar.italic.description',
         shortcut: 'Ctrl+I', shortcutMac: '⌘+I',
         action: (e) => e.chain().focus().toggleItalic().run(),
         isActive: (e) => e.isActive('italic'),
     },
     underline: {
-        icon: 'fa-underline', title: 'Underline', description: 'Underline text',
+        icon: 'fa-underline', titleKey: 'editor.toolbar.underline.title', descriptionKey: 'editor.toolbar.underline.description',
         shortcut: 'Ctrl+U', shortcutMac: '⌘+U',
         action: (e) => e.chain().focus().toggleUnderline().run(),
         isActive: (e) => e.isActive('underline'),
     },
     link: {
-        icon: 'fa-link', title: 'Link', description: 'Insert or edit a hyperlink',
+        icon: 'fa-link', titleKey: 'editor.toolbar.link.title', descriptionKey: 'editor.toolbar.link.description',
         shortcut: 'Ctrl+K', shortcutMac: '⌘+K',
         action: (_e, a) => a.openLinkModal(),
         isActive: (e) => e.isActive('link'),
     },
     bulletList: {
-        icon: 'fa-list-ul', title: 'Bullet List', description: 'Create a bulleted list',
+        icon: 'fa-list-ul', titleKey: 'editor.toolbar.bullet_list.title', descriptionKey: 'editor.toolbar.bullet_list.description',
         shortcut: null, shortcutMac: null,
         action: (e) => e.chain().focus().toggleBulletList().run(),
         isActive: (e) => e.isActive('bulletList'),
     },
     orderedList: {
-        icon: 'fa-list-ol', title: 'Numbered List', description: 'Create a numbered list',
+        icon: 'fa-list-ol', titleKey: 'editor.toolbar.ordered_list.title', descriptionKey: 'editor.toolbar.ordered_list.description',
         shortcut: null, shortcutMac: null,
         action: (e) => e.chain().focus().toggleOrderedList().run(),
         isActive: (e) => e.isActive('orderedList'),
     },
     heading2: {
-        icon: 'fa-h2', title: 'Heading 2', description: 'Large heading',
+        icon: 'fa-h2', titleKey: 'editor.toolbar.heading2.title', descriptionKey: 'editor.toolbar.heading2.description',
         shortcut: '==', shortcutMac: '==',
         action: (e) => e.chain().focus().toggleHeading({ level: 2 }).run(),
         isActive: (e) => e.isActive('heading', { level: 2 }),
     },
     heading3: {
-        icon: 'fa-h3', title: 'Heading 3', description: 'Medium heading',
+        icon: 'fa-h3', titleKey: 'editor.toolbar.heading3.title', descriptionKey: 'editor.toolbar.heading3.description',
         shortcut: '===', shortcutMac: '===',
         action: (e) => e.chain().focus().toggleHeading({ level: 3 }).run(),
         isActive: (e) => e.isActive('heading', { level: 3 }),
     },
     mention: {
-        icon: 'fa-at', title: 'Mention User', description: 'Mention a user with @username',
+        icon: 'fa-at', titleKey: 'editor.toolbar.mention.title', descriptionKey: 'editor.toolbar.mention.description',
         shortcut: '@', shortcutMac: '@',
         action: (_e, a) => a.insertMention(),
         isActive: () => false,
     },
     entryLink: {
-        icon: 'fa-file-lines', title: 'Entry Link', description: 'Link to an entry with [[Page Name]]',
+        icon: 'fa-file-lines', titleKey: 'editor.toolbar.entry_link.title', descriptionKey: 'editor.toolbar.entry_link.description',
         shortcut: '[[', shortcutMac: '[[',
         action: (e) => e.chain().focus().insertContent('[[').run(),
         isActive: () => false,
@@ -213,6 +215,7 @@ export default function RichTextEditor({
     projectId,
     aiInstructions = [],
 }: RichTextEditorProps) {
+    const t = useT();
     const [showLinkModal, setShowLinkModal] = useState(false);
     const [showLegend, setShowLegend] = useState(false);
     const [showAiModal, setShowAiModal] = useState(false);
@@ -422,18 +425,18 @@ export default function RichTextEditor({
             .filter(Boolean)
             .map((btn) => ({
                 icon: btn.icon,
-                title: btn.title,
-                description: btn.description,
+                title: t(btn.titleKey),
+                description: t(btn.descriptionKey),
                 shortcut: isMac ? btn.shortcutMac : btn.shortcut,
             }));
 
         if (enableMentions) {
             const m = BUTTONS.mention;
-            items.push({ icon: m.icon, title: m.title, description: m.description, shortcut: '@' });
+            items.push({ icon: m.icon, title: t(m.titleKey), description: t(m.descriptionKey), shortcut: '@' });
         }
         if (enableEntryLinks) {
             const e = BUTTONS.entryLink;
-            items.push({ icon: e.icon, title: e.title, description: e.description, shortcut: '[[' });
+            items.push({ icon: e.icon, title: t(e.titleKey), description: t(e.descriptionKey), shortcut: '[[' });
         }
 
         return items;
@@ -523,7 +526,7 @@ export default function RichTextEditor({
                             const active = !codeView && (buttonActiveStates[item] ?? btn.isActive(editor));
 
                             return (
-                                <Tooltip key={item} content={btn.title}>
+                                <Tooltip key={item} content={t(btn.titleKey)}>
                                     <ToolbarIconButton
                                         onMouseDown={(e) => { e.preventDefault(); btn.action(editor, actions); }}
                                         active={active}
@@ -542,7 +545,7 @@ export default function RichTextEditor({
 
                         {/* @Mention (always if enabled) */}
                         {enableMentions && (
-                            <Tooltip content="Mention User">
+                            <Tooltip content={t('editor.toolbar.mention.title')}>
                                 <ToolbarIconButton
                                     onMouseDown={(e) => { e.preventDefault(); actions.insertMention(); }}
                                 >
@@ -553,7 +556,7 @@ export default function RichTextEditor({
 
                         {/* [[Entry Link]] (only when enabled) */}
                         {enableEntryLinks && (
-                            <Tooltip content="Entry Link">
+                            <Tooltip content={t('editor.toolbar.entry_link.title')}>
                                 <ToolbarIconButton
                                     onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().insertContent('[[').run(); }}
                                 >
@@ -565,7 +568,7 @@ export default function RichTextEditor({
                         {enableAi && (
                             <>
                                 <span className="mx-1 inline-block h-5 w-px" style={dividerStyle} />
-                                <Tooltip content="AI Writing Assistant">
+                                <Tooltip content={t('editor.toolbar.ai.title')}>
                                     <button
                                         type="button"
                                         onMouseDown={(e) => { e.preventDefault(); setShowAiModal(true); }}
@@ -593,7 +596,7 @@ export default function RichTextEditor({
                     {/* Right-side buttons */}
                     <div className="flex items-center gap-1">
                         {/* Code View Toggle */}
-                        <Tooltip content={codeView ? 'Switch to WYSIWYG' : 'Switch to Code View'}>
+                        <Tooltip content={codeView ? t('editor.toolbar.wysiwyg_view') : t('editor.toolbar.code_view')}>
                             <ToolbarIconButton
                                 onMouseDown={(e) => { e.preventDefault(); toggleCodeView(); }}
                                 active={codeView}
@@ -603,7 +606,7 @@ export default function RichTextEditor({
                         </Tooltip>
 
                         {/* Help/Legend button */}
-                        <Tooltip content="Formatting Help">
+                        <Tooltip content={t('editor.toolbar.help')}>
                             <ToolbarIconButton
                                 onMouseDown={(e) => { e.preventDefault(); setShowLegend(true); }}
                             >
@@ -642,26 +645,26 @@ export default function RichTextEditor({
             {/* Link Modal */}
             <Modal open={showLinkModal} onClose={() => setShowLinkModal(false)} maxWidth="max-w-sm">
                 <div className="p-6">
-                    <h3 className="mb-4 text-lg font-bold">Insert Link</h3>
+                    <h3 className="mb-4 text-lg font-bold">{t('editor.link_modal.title')}</h3>
                     <div className="mb-4 space-y-3">
                         <Input
                             size="md"
                             type="url"
-                            label="URL *"
+                            label={t('editor.link_modal.url_label')}
                             value={linkUrl}
                             onChange={(e) => setLinkUrl(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && applyLink()}
-                            placeholder="https://example.com"
+                            placeholder={t('editor.link_modal.url_placeholder')}
                             autoFocus
                         />
                         <Input
                             size="md"
-                            label="Display Text"
-                            hint="Optional"
+                            label={t('editor.link_modal.text_label')}
+                            hint={t('editor.link_modal.text_hint')}
                             value={linkText}
                             onChange={(e) => setLinkText(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && applyLink()}
-                            placeholder="Leave empty to show URL"
+                            placeholder={t('editor.link_modal.text_placeholder')}
                         />
                     </div>
                     <div className="flex justify-end gap-2">
@@ -675,21 +678,21 @@ export default function RichTextEditor({
                                 onMouseDown={(e: MouseEvent) => { e.preventDefault(); removeLink(); }}
                                 style={{ color: 'var(--theme-status-error-stroke)' }}
                             >
-                                Unlink
+                                {t('editor.link_modal.unlink_button')}
                             </Button>
                         )}
                         <Button
                             variant="ghost"
                             onMouseDown={(e: MouseEvent) => { e.preventDefault(); setShowLinkModal(false); }}
                         >
-                            Cancel
+                            {t('common.cancel')}
                         </Button>
                         <Button
                             variant="secondary"
                             onMouseDown={(e: MouseEvent) => { e.preventDefault(); applyLink(); }}
                             disabled={!linkUrl}
                         >
-                            Apply
+                            {t('editor.link_modal.apply_button')}
                         </Button>
                     </div>
                 </div>
@@ -697,7 +700,7 @@ export default function RichTextEditor({
 
             {/* Legend/Help Modal */}
             <Modal open={showLegend} onClose={() => setShowLegend(false)} maxWidth="max-w-md">
-                <ModalHeader title="Formatting Help" onClose={() => setShowLegend(false)} />
+                <ModalHeader title={t('editor.legend.title')} onClose={() => setShowLegend(false)} />
                 <div className="max-h-[60vh] space-y-1 overflow-y-auto p-6">
                     {getLegendItems().map((item) => (
                         <div key={item.title} className="alex-legend-row flex items-center gap-3 p-2">

@@ -4,7 +4,6 @@ import Toggle from '@alexandria/components/form/Toggle';
 import Button from '@alexandria/components/ui/Button';
 import { useTheme } from '@alexandria/hooks/useTheme';
 import useT, { type Translator } from '@alexandria/hooks/useT';
-import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 import type { SyntheticEvent, ReactNode } from 'react';
 
 /**
@@ -164,7 +163,6 @@ function AppearanceSection({
     applyViewPreferences: ApplyViewPreferences;
 }) {
     const t = useT();
-    const toast = useToastContext();
     const theme = useTheme();
     const form = useForm({
         font_size: preferences.font_size as string,
@@ -183,9 +181,10 @@ function AppearanceSection({
 
     function handleSubmit(e: SyntheticEvent) {
         e.preventDefault();
-        form.put('/account/preferences', {
-            onSuccess: () => toast.show(t('settings.toast.preferences_saved'), { type: 'success' }),
-        });
+        // Success feedback comes from the controller's flash via the
+        // ToastProvider bridge — a client-side onSuccess toast here
+        // doubled it (findings #10).
+        form.put('/account/preferences');
     }
 
     const labelStyle = { color: 'var(--theme-base-content)' };
@@ -300,7 +299,6 @@ function LanguageSection({
     options: Record<string, Record<string, string>>;
 }) {
     const t = useT();
-    const toast = useToastContext();
     const form = useForm({
         date_format: preferences.date_format as string,
         time_format: preferences.time_format as string,
@@ -310,9 +308,10 @@ function LanguageSection({
 
     function handleSubmit(e: SyntheticEvent) {
         e.preventDefault();
-        form.put('/account/preferences', {
-            onSuccess: () => toast.show(t('settings.toast.preferences_saved'), { type: 'success' }),
-        });
+        // Success feedback comes from the controller's flash via the
+        // ToastProvider bridge — a client-side onSuccess toast here
+        // doubled it (findings #10).
+        form.put('/account/preferences');
     }
 
     return (
@@ -364,7 +363,6 @@ function NotificationsSection({
     options: Record<string, Record<string, string>>;
 }) {
     const t = useT();
-    const toast = useToastContext();
     const form = useForm({
         email_notifications: preferences.email_notifications as boolean,
         email_frequency: preferences.email_frequency as string,
@@ -382,9 +380,10 @@ function NotificationsSection({
 
     function handleSubmit(e: SyntheticEvent) {
         e.preventDefault();
-        form.put('/account/preferences', {
-            onSuccess: () => toast.show(t('settings.toast.preferences_saved'), { type: 'success' }),
-        });
+        // Success feedback comes from the controller's flash via the
+        // ToastProvider bridge — a client-side onSuccess toast here
+        // doubled it (findings #10).
+        form.put('/account/preferences');
     }
 
     return (
@@ -488,7 +487,6 @@ function EditorSection({
     options: Record<string, Record<string, string>>;
 }) {
     const t = useT();
-    const toast = useToastContext();
     const form = useForm({
         default_editor_mode: preferences.default_editor_mode as string,
         auto_save: preferences.auto_save as boolean,
@@ -501,9 +499,10 @@ function EditorSection({
 
     function handleSubmit(e: SyntheticEvent) {
         e.preventDefault();
-        form.put('/account/preferences', {
-            onSuccess: () => toast.show(t('settings.toast.preferences_saved'), { type: 'success' }),
-        });
+        // Success feedback comes from the controller's flash via the
+        // ToastProvider bridge — a client-side onSuccess toast here
+        // doubled it (findings #10).
+        form.put('/account/preferences');
     }
 
     return (
@@ -574,7 +573,6 @@ function AccessibilitySection({
     applyViewPreferences: ApplyViewPreferences;
 }) {
     const t = useT();
-    const toast = useToastContext();
     const form = useForm({
         screen_reader_mode: preferences.screen_reader_mode as boolean,
         high_contrast: preferences.high_contrast as boolean,
@@ -586,9 +584,10 @@ function AccessibilitySection({
 
     function handleSubmit(e: SyntheticEvent) {
         e.preventDefault();
-        form.put('/account/preferences', {
-            onSuccess: () => toast.show(t('settings.toast.preferences_saved'), { type: 'success' }),
-        });
+        // Success feedback comes from the controller's flash via the
+        // ToastProvider bridge — a client-side onSuccess toast here
+        // doubled it (findings #10).
+        form.put('/account/preferences');
     }
 
     if (subsection === 'visual') {

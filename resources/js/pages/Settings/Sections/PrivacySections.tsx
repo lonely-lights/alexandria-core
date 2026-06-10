@@ -277,6 +277,19 @@ function FieldVisibilityModal({ t, open, fieldKey, fieldConfig, currentVisibilit
                     );
                 })}
 
+                {visibility === 'custom' && lists.length === 0 && (
+                    <p
+                        className="mt-2 p-3 text-xs"
+                        style={{
+                            background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+                            borderRadius: 'var(--theme-radius-card)',
+                            color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+                        }}
+                    >
+                        {t('privacy.visibility.no_lists_hint')}
+                    </p>
+                )}
+
                 {visibility === 'custom' && lists.length > 0 && (
                     <div
                         className="mt-2 p-3"
@@ -475,12 +488,23 @@ function PrivacyListsSection({ privacyLists: initialLists, privacyOptions, onDat
                             headers: csrfHeaders(),
                             body: JSON.stringify(data),
                         })
-                            .then((r) => r.json())
+                            .then((r) => {
+                                // Findings #14: a non-2xx body must not be
+                                // appended to the list as if it were a row.
+                                if (!r.ok) {
+                                    throw new Error(`HTTP ${r.status}`);
+                                }
+
+                                return r.json();
+                            })
                             .then((newList) => {
                                 setLists((prev) => [...prev, newList]);
                                 setShowCreate(false);
                                 onDataChanged();
                                 toast.show(t('settings.toast.list_created'), { type: 'success' });
+                            })
+                            .catch(() => {
+                                toast.show(t('common.error.unexpected_retry'), { type: 'danger' });
                             });
                     }}
                     onCancel={() => setShowCreate(false)}

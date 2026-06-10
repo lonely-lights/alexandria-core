@@ -169,7 +169,14 @@ export default function SettingsBody({
 }: SettingsBodyProps) {
     const t = useT();
     const [activeSection, setActiveSection] = useState(initialActiveSection);
-    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ profile: true });
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+        // Expand the group that owns the landing section (findings #13) —
+        // hardcoding profile left /settings landing on Appearance with the
+        // Preferences group collapsed-but-highlighted.
+        const owner = ALL_NAV.find((item) => item.children?.some((child) => child.key === initialActiveSection));
+
+        return { [owner?.key ?? 'profile']: true };
+    });
     const [showRingModal, setShowRingModal] = useState(false);
     const [savedRingId, setSavedRingId] = useState<number | null>(profile.avatar_ring_id);
     const [previewRingId, setPreviewRingId] = useState<number | null>(profile.avatar_ring_id);
@@ -228,7 +235,7 @@ export default function SettingsBody({
         if (!file) return;
         setMediaError(null);
         if (file.size > MAX_FILE_SIZE) {
-            setMediaError(`File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is 10MB.`);
+            setMediaError(t('settings.media.too_large').replace(':size', (file.size / 1024 / 1024).toFixed(1)));
             return;
         }
         router.post('/account/avatar', { avatar: file }, {
@@ -242,7 +249,7 @@ export default function SettingsBody({
         if (!file) return;
         setMediaError(null);
         if (file.size > MAX_FILE_SIZE) {
-            setMediaError(`File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is 10MB.`);
+            setMediaError(t('settings.media.too_large').replace(':size', (file.size / 1024 / 1024).toFixed(1)));
             return;
         }
         router.post('/account/banner', { banner: file }, {
@@ -304,7 +311,7 @@ export default function SettingsBody({
                         }}
                     >
                         <i className="fa-solid fa-camera" />
-                        {profile.has_banner ? 'Change Banner' : 'Upload Banner'}
+                        {profile.has_banner ? t('settings.banner.change_button') : t('settings.banner.upload_button')}
                     </button>
                     {profile.has_banner && (
                         <button
@@ -316,7 +323,7 @@ export default function SettingsBody({
                                 paddingBlock: '0.375rem',
                             }}
                         >
-                            <i className="fa-solid fa-trash" /> Remove
+                            <i className="fa-solid fa-trash" /> {t('settings.banner.remove_button')}
                         </button>
                     )}
                     <input ref={bannerInput} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />

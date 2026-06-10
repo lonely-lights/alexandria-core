@@ -21,6 +21,7 @@ return [
     'visibility.public_fallback' => 'Public',
     'visibility.modal_title_fallback' => 'Field Visibility',
     'visibility.include_lists_header' => 'Include these lists',
+    'visibility.no_lists_hint' => 'You have no lists yet — create one under Privacy › Lists to choose who this includes. Until then, custom visibility means only you.',
     'visibility.save_button' => 'Save',
 
     // ── General Privacy Settings tab ────────────────────────────────
