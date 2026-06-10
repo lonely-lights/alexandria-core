@@ -312,7 +312,19 @@ export default function Navbar({
                     >
                         {brandSlot ?? (
                             brand ? (
-                                <LogoLockup size="md" wordmarkText={brand} interactive />
+                                <LogoLockup
+                                    size="md"
+                                    wordmarkText={brand}
+                                    interactive
+                                    // Generic hook — consumers listen for prize
+                                    // rolls, analytics, whatever. Core attaches
+                                    // no behavior beyond the 8f jump animation.
+                                    onMarkClick={() =>
+                                        window.dispatchEvent(
+                                            new CustomEvent("alexandria-core:logo-mark-click"),
+                                        )
+                                    }
+                                />
                             ) : null
                         )}
                     </Link>
