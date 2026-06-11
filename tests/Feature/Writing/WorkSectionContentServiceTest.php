@@ -85,6 +85,11 @@ it('maintains pov and setting source rows from the reference fields', function (
 
     expect($sources[$mira->id])->toBe(WorkSectionEntryMention::SOURCE_POV)
         ->and($sources[$spire->id])->toBe(WorkSectionEntryMention::SOURCE_SETTING);
+
+    // A second sync is a no-op — no duplicate rows.
+    app(WorkSectionContentService::class)->syncReferenceMentions($section->fresh());
+
+    expect($section->fresh()->entryMentions)->toHaveCount(2);
 });
 
 it('updates the work rollup across multiple sections', function () {

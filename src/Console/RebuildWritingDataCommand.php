@@ -28,7 +28,7 @@ class RebuildWritingDataCommand extends Command
 
         foreach ($sections as $section) {
             $contentService->persist($section, $section->content);
-            $contentService->syncReferenceMentions($section->fresh());
+            $contentService->syncReferenceMentions($section);
         }
 
         $this->info("Rebuilt derived data for {$sections->count()} sections.");

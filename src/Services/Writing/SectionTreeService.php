@@ -70,7 +70,13 @@ class SectionTreeService
                 return true;
             }
 
+            // A soft-deleted ancestor breaks the visible chain — the
+            // candidate cannot be a (live) descendant past that point.
             $current = $current->parent;
+
+            if ($current === null) {
+                return false;
+            }
         }
 
         return false;

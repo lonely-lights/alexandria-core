@@ -94,3 +94,17 @@ it('reorders a sibling group to the given id sequence', function () {
 
     expect($work->fresh()->rootSections->pluck('title')->all())->toBe(['C', 'A', 'B']);
 });
+
+it('treats a section with a soft-deleted ancestor as safe to move', function () {
+    $work = Work::factory()->create();
+    $grandparent = WorkSection::factory()->create(['work_id' => $work->id]);
+    $parent = WorkSection::factory()->create(['work_id' => $work->id, 'parent_id' => $grandparent->id]);
+    $child = WorkSection::factory()->create(['work_id' => $work->id, 'parent_id' => $parent->id]);
+    $target = WorkSection::factory()->create(['work_id' => $work->id]);
+
+    $parent->delete(); // soft-delete mid-chain
+
+    app(SectionTreeService::class)->move($target, $child->id, 0);
+
+    expect($target->fresh()->parent_id)->toBe($child->id);
+});
