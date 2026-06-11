@@ -209,6 +209,19 @@ export default function Workspace() {
                             </span>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
+                            <Tooltip content={t('writing.reports.title')}>
+                                <Link
+                                    href={`/works/${project.slug}/${work.slug}/reports`}
+                                    aria-label={t('writing.reports.title')}
+                                    className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs transition-colors"
+                                    style={{
+                                        color: 'var(--theme-base-content)',
+                                        borderRadius: 'var(--theme-radius-button)',
+                                    }}
+                                >
+                                    <i className="fa-solid fa-chart-simple" aria-hidden="true" />
+                                </Link>
+                            </Tooltip>
                             {can.update && (
                                 <Tooltip content={t('writing.settings.title')}>
                                     <button
