@@ -9,6 +9,7 @@ use Alexandria\Core\Models\Writing\Work;
 use Alexandria\Core\Models\Writing\WorkSection;
 use Alexandria\Core\Models\Writing\WorkSectionEntryMention;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Persists section content and keeps every derived value true —
@@ -21,6 +22,9 @@ readonly class WorkSectionContentService
 {
     public function __construct(private SectionContentAnalyzer $analyzer) {}
 
+    /**
+     * @throws Throwable transaction failures bubble to the caller
+     */
     public function persist(WorkSection $section, ?string $content): WorkSection
     {
         $analysis = $this->analyzer->analyze($content, $section->effectiveFormat());
@@ -41,6 +45,8 @@ readonly class WorkSectionContentService
     /**
      * Re-derives the pov/setting mention rows from the section's
      * reference fields. Called after craft-field saves (Plan 2).
+     *
+     * @throws Throwable transaction failures bubble to the caller
      */
     public function syncReferenceMentions(WorkSection $section): void
     {
@@ -80,6 +86,7 @@ readonly class WorkSectionContentService
                 ->get(['id', 'name']);
 
             foreach ($mentionNames as $name => $count) {
+                /** @var Entry|null $entry */
                 $entry = $entries->first(fn (Entry $candidate): bool => mb_strtolower($candidate->name) === mb_strtolower($name));
 
                 if ($entry !== null) {

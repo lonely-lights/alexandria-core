@@ -8,6 +8,7 @@ use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Writing\Work;
 use Alexandria\Core\Models\Writing\WorkSection;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Creates a work with its type's starter structure and length-plan
@@ -18,15 +19,17 @@ class WorkScaffolder
 {
     /**
      * @param  array{title: string, type: string, logline?: string|null, genre?: string|null}  $attributes
+     *
+     * @throws Throwable
      */
     public function create(Project $project, int $userId, array $attributes): Work
     {
         $type = $attributes['type'];
-        $template = config("alexandria.writing.templates.{$type}")
+        $template = config("alexandria.writing.templates.$type")
             ?? config('alexandria.writing.templates.other');
 
         $planKey = $template['length_plan'] ?? null;
-        $plan = $planKey !== null ? config("alexandria.writing.length_plans.{$planKey}") : null;
+        $plan = $planKey !== null ? config("alexandria.writing.length_plans.$planKey") : null;
 
         return DB::transaction(function () use ($project, $userId, $attributes, $template, $plan): Work {
             /** @var Work $work */

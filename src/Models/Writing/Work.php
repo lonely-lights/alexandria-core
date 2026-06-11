@@ -149,7 +149,7 @@ class Work extends Model
             ->where('slug', $slug)
             ->when($ignoreId !== null, fn ($query) => $query->whereKeyNot($ignoreId))
             ->exists()) {
-            $slug = "{$base}-{$suffix}";
+            $slug = "$base-$suffix";
             $suffix++;
         }
 

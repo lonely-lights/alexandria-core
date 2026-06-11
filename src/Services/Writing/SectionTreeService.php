@@ -8,6 +8,7 @@ use Alexandria\Core\Models\Writing\Work;
 use Alexandria\Core\Models\Writing\WorkSection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * Tree mutations for a work's sections — Stage 8g.1. Moves validate
@@ -18,6 +19,9 @@ use InvalidArgumentException;
  */
 class SectionTreeService
 {
+    /**
+     * @throws Throwable
+     */
     public function move(WorkSection $section, ?int $newParentId, int $position): void
     {
         if ($newParentId !== null) {
@@ -47,6 +51,8 @@ class SectionTreeService
 
     /**
      * @param  array<int, int>  $orderedIds
+     *
+     * @throws Throwable
      */
     public function reorder(Work $work, ?int $parentId, array $orderedIds): void
     {
