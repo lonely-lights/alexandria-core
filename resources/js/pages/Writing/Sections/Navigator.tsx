@@ -27,6 +27,8 @@ interface NavigatorProps {
     currentSlug: string | null;
     canUpdate: boolean;
     onSelect: (slug: string) => void;
+    /** Autosave-confirmed word counts (by section id) overlaying the prop tree. */
+    liveCounts?: Record<number, number>;
 }
 
 /* ── Theme styles ── */
@@ -83,6 +85,7 @@ export default function Navigator({
     currentSlug,
     canUpdate,
     onSelect,
+    liveCounts,
 }: NavigatorProps) {
     const t = useT();
     const [expanded, setExpanded] = useState<Set<number>>(
@@ -140,6 +143,7 @@ export default function Navigator({
                     onToggle={toggle}
                     onAddChild={openAddChild}
                     onDelete={setDeleteTarget}
+                    liveCounts={liveCounts}
                     t={t}
                 />
             ))}
@@ -191,6 +195,7 @@ function NavigatorRow({
     onToggle,
     onAddChild,
     onDelete,
+    liveCounts,
     t,
 }: {
     node: SectionNode;
@@ -202,11 +207,13 @@ function NavigatorRow({
     onToggle: (id: number) => void;
     onAddChild: (node: SectionNode) => void;
     onDelete: (node: SectionNode) => void;
+    liveCounts?: Record<number, number>;
     t: Translator;
 }) {
     const isSelected = node.slug === currentSlug;
     const hasChildren = node.children.length > 0;
     const isExpanded = expanded.has(node.id);
+    const wordCount = liveCounts?.[node.id] ?? node.word_count;
 
     return (
         <>
@@ -284,12 +291,12 @@ function NavigatorRow({
                     </span>
                 )}
 
-                {node.word_count > 0 && (
+                {wordCount > 0 && (
                     <span
                         className="flex-shrink-0 text-[11px] tabular-nums"
                         style={wordCountStyle}
                     >
-                        {node.word_count.toLocaleString()}
+                        {wordCount.toLocaleString()}
                     </span>
                 )}
             </div>
@@ -306,6 +313,7 @@ function NavigatorRow({
                     onToggle={onToggle}
                     onAddChild={onAddChild}
                     onDelete={onDelete}
+                    liveCounts={liveCounts}
                     t={t}
                 />
             ))}

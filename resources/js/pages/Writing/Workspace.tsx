@@ -1,9 +1,10 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { type CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 
-import useT, { type Translator } from '@alexandria/hooks/useT';
+import useT from '@alexandria/hooks/useT';
 import AppLayout from '@alexandria/layouts/AppLayout';
 
+import ManuscriptEditor from './Sections/ManuscriptEditor';
 import Navigator from './Sections/Navigator';
 
 /**
@@ -102,6 +103,11 @@ export default function Workspace() {
     const t = useT();
     const { project, work, sections, currentSection, can } = usePage<WorkspaceProps>().props;
 
+    // Server-confirmed counts from autosave responses overlay the
+    // Inertia props until the next full prop refresh catches up.
+    const [liveCounts, setLiveCounts] = useState<Record<number, number>>({});
+    const [liveWorkWords, setLiveWorkWords] = useState<number | null>(null);
+
     function selectSection(slug: string) {
         router.visit(`/works/${project.slug}/${work.slug}/${slug}`, {
             only: ['currentSection'],
@@ -110,9 +116,15 @@ export default function Workspace() {
         });
     }
 
+    function handleCounts(sectionId: number, words: number, workWords: number, _pages: number | null) {
+        setLiveCounts((prev) => ({ ...prev, [sectionId]: words }));
+        setLiveWorkWords(workWords);
+    }
+
+    const workWords = liveWorkWords ?? work.word_count;
     const wordCountLabel = work.target_words !== null
-        ? `${t('writing.workspace.words').replace(':count', work.word_count.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', work.target_words.toLocaleString())}`
-        : t('writing.workspace.words').replace(':count', work.word_count.toLocaleString());
+        ? `${t('writing.workspace.words').replace(':count', workWords.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', work.target_words.toLocaleString())}`
+        : t('writing.workspace.words').replace(':count', workWords.toLocaleString());
 
     return (
         <AppLayout title={`${work.title} - ${project.name}`} immersive>
@@ -156,12 +168,29 @@ export default function Workspace() {
                             currentSlug={currentSection?.slug ?? null}
                             canUpdate={can.update}
                             onSelect={selectSection}
+                            liveCounts={liveCounts}
                         />
                     </nav>
 
                     {/* Editor pane */}
                     <section className="min-w-0 flex-1 overflow-y-auto">
-                        <EditorPanePlaceholder section={currentSection} t={t} />
+                        {currentSection !== null ? (
+                            <ManuscriptEditor
+                                projectId={project.id}
+                                projectSlug={project.slug}
+                                workSlug={work.slug}
+                                section={currentSection}
+                                canUpdate={can.update}
+                                onCounts={handleCounts}
+                            />
+                        ) : (
+                            <div
+                                className="flex h-full items-center justify-center px-6 text-center text-sm italic"
+                                style={mutedText}
+                            >
+                                {t('writing.workspace.no_section')}
+                            </div>
+                        )}
                     </section>
 
                     {/* Right rail */}
@@ -174,40 +203,5 @@ export default function Workspace() {
                 </div>
             </div>
         </AppLayout>
-    );
-}
-
-/**
- * Placeholder editor pane — Task 7 replaces this with the
- * ManuscriptEditor. Renders the current section's title + raw content,
- * or an empty-state prompt when no section is selected.
- */
-function EditorPanePlaceholder({
-    section,
-    t,
-}: {
-    section: CurrentSection | null;
-    t: Translator;
-}) {
-    if (section === null) {
-        return (
-            <div
-                className="flex h-full items-center justify-center px-6 text-center text-sm italic"
-                style={mutedText}
-            >
-                {t('writing.workspace.no_section')}
-            </div>
-        );
-    }
-
-    return (
-        <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">
-            <h1 className="text-2xl font-bold">{section.title}</h1>
-            {section.content && (
-                <pre className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {section.content}
-                </pre>
-            )}
-        </div>
     );
 }

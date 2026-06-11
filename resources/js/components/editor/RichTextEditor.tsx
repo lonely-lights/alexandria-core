@@ -324,7 +324,9 @@ export default function RichTextEditor({
     }
 
     const charCount = value.length;
-    const overLimit = charCount > maxLength;
+    // maxLength <= 0 means "no limit" — long-form surfaces (the
+    // manuscript editor) pass 0 to drop the counter + limit styling.
+    const overLimit = maxLength > 0 && charCount > maxLength;
     const toolbarItems = TIER_TOOLBARS[tier];
 
     const actions: EditorActions = {
@@ -491,9 +493,11 @@ export default function RichTextEditor({
                             {label}
                         </span>
                     )}
-                    <span className="text-xs" style={{ color: counterColor }}>
-                        {charCount}/{maxLength}
-                    </span>
+                    {maxLength > 0 && (
+                        <span className="text-xs" style={{ color: counterColor }}>
+                            {charCount}/{maxLength}
+                        </span>
+                    )}
                 </div>
             )}
 
