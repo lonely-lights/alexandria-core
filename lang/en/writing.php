@@ -9,7 +9,7 @@ declare(strict_types=1);
  */
 return [
     'index.title' => 'Writing',
-    'index.intro' => 'The manuscripts of this project: novels, screenplays, essays, and everything between.',
+    'index.intro' => 'The manuscripts of :project — novels, screenplays, essays, and everything between.',
     'index.create' => 'New work',
     'index.empty' => 'Nothing here yet. Start your first work.',
     'index.words' => ':count words',

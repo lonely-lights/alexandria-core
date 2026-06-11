@@ -2,9 +2,11 @@ import { Link, useForm, usePage } from '@inertiajs/react';
 import { useState, type CSSProperties, type FormEvent } from 'react';
 
 import useT, { type Translator } from '@alexandria/hooks/useT';
+import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import Button from '@alexandria/components/ui/Button';
+import IconTile from '@alexandria/components/ui/IconTile';
 import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
 import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
@@ -96,6 +98,10 @@ export default function WritingIndex() {
     const { project, works, types, can } = usePage<WritingIndexProps>().props;
     const [createOpen, setCreateOpen] = useState(false);
 
+    // Smaller hero tile on mobile so it doesn't claim a quarter of the
+    // hero row alongside the heading — same breakpoint AI Hub uses.
+    const isMobileWriting = useMediaQuery('(max-width: 1023px)');
+
     return (
         <AppLayout title={`${t('writing.index.title')} - ${project.name}`}>
             <PageHeader
@@ -115,10 +121,30 @@ export default function WritingIndex() {
                     ) : undefined
                 }
             >
-                <h1 className="text-2xl font-bold">{t('writing.index.title')}</h1>
-                <p className="mt-1 text-sm" style={subtitleStyle}>
-                    {t('writing.index.intro')}
-                </p>
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <IconTile
+                        icon="fa-solid fa-feather-pointed"
+                        color="accent"
+                        variant="solid"
+                        animation="beat-fade"
+                        size={isMobileWriting ? 'sm' : 'lg'}
+                        animationStyle={{
+                            // Slow ambient pulse, matching the Notes/AI
+                            // dashboard heroes — presence, not alarm.
+                            '--fa-animation-duration': '2.5s',
+                            '--fa-beat-fade-opacity': '0.8',
+                            '--fa-beat-fade-scale': '1.075',
+                        } as CSSProperties}
+                    />
+                    <div className="min-w-0 flex-1">
+                        <h1 className="font-serif text-2xl font-bold leading-tight tracking-tight sm:text-3xl md:text-4xl">
+                            {t('writing.index.title')}
+                        </h1>
+                        <p className="mt-1 text-xs sm:text-sm" style={subtitleStyle}>
+                            {t('writing.index.intro').replace(':project', project.name)}
+                        </p>
+                    </div>
+                </div>
             </PageHeader>
 
             <div className="container mx-auto max-w-7xl px-4 py-8">
