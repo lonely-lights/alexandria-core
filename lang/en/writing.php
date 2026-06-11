@@ -43,6 +43,7 @@ return [
     'workspace.delete_confirm_body' => 'This removes the section and everything nested inside it.',
     'workspace.delete_confirm_action' => 'Delete',
     'workspace.section_title_placeholder' => 'Section title',
+    'workspace.section_label' => 'Label (optional)',
     'workspace.new_section_title' => 'New section',
     'workspace.no_section' => 'Select a section to start writing, or add your first one.',
     'workspace.container_hint' => 'This section holds others. Select a child to write, or start writing here.',
