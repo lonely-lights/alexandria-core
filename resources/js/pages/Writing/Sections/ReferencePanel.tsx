@@ -492,6 +492,19 @@ function SectionTab({
                 ))
             )}
 
+            <p className="px-3 pt-3 pb-1" style={groupHeadingStyle}>
+                {t('writing.panel.target_words')}
+            </p>
+            <div className="px-3 pb-2">
+                <SectionTargetInput
+                    key={currentSection.id}
+                    project={project}
+                    work={work}
+                    currentSection={currentSection}
+                    canUpdate={canUpdate}
+                />
+            </div>
+
             <EntryPickerModal
                 open={pickTarget !== null}
                 onClose={() => setPickTarget(null)}
@@ -505,6 +518,57 @@ function SectionTab({
                 }}
             />
         </div>
+    );
+}
+
+/**
+ * Per-section word target — commits on blur. Keyed by section id from
+ * the parent so the local draft reseeds on section switch.
+ */
+function SectionTargetInput({
+    project,
+    work,
+    currentSection,
+    canUpdate,
+}: {
+    project: { slug: string };
+    work: { slug: string };
+    currentSection: CurrentSection;
+    canUpdate: boolean;
+}) {
+    const [value, setValue] = useState(currentSection.target_words?.toString() ?? '');
+
+    function commit() {
+        const parsed = Number.parseInt(value.trim(), 10);
+        const next = Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+
+        if (next === (currentSection.target_words ?? null)) {
+            return;
+        }
+
+        // WorkSectionController::update validates `title` as required
+        // and only touches keys present in the request.
+        router.put(
+            `/works/${project.slug}/${work.slug}/sections/${currentSection.id}`,
+            { title: currentSection.title, target_words: next },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['currentSection', 'sections'],
+            },
+        );
+    }
+
+    return (
+        <Input
+            type="number"
+            min={0}
+            size="sm"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onBlur={commit}
+            disabled={!canUpdate}
+        />
     );
 }
 

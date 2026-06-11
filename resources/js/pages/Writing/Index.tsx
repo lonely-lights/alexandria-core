@@ -14,6 +14,7 @@ import Select from '@alexandria/components/form/Select';
 import Textarea from '@alexandria/components/form/Textarea';
 
 import WorkCard, { type WorkRow } from './Sections/WorkCard';
+import WorkSettingsModal, { type LengthPlanOption } from './Sections/WorkSettingsModal';
 
 /**
  * Writing dashboard → index — Stage 8g.1 (Plan 2 Task 5).
@@ -28,6 +29,7 @@ interface WritingIndexProps {
     project: { id: number; name: string; slug: string };
     works: WorkRow[];
     types: string[];
+    lengthPlans: LengthPlanOption[];
     can: { create: boolean };
     [key: string]: unknown;
 }
@@ -47,8 +49,9 @@ const emptyStateStyle: CSSProperties = {
 
 export default function WritingIndex() {
     const t = useT();
-    const { project, works, types, can } = usePage<WritingIndexProps>().props;
+    const { project, works, types, lengthPlans, can } = usePage<WritingIndexProps>().props;
     const [createOpen, setCreateOpen] = useState(false);
+    const [settingsWork, setSettingsWork] = useState<WorkRow | null>(null);
 
     // Smaller hero tile on mobile so it doesn't claim a quarter of the
     // hero row alongside the heading — same breakpoint AI Hub uses.
@@ -107,7 +110,15 @@ export default function WritingIndex() {
                 ) : (
                     <div className="flex flex-col gap-3">
                         {works.map((work) => (
-                            <WorkCard key={work.id} work={work} projectSlug={project.slug} t={t} />
+                            <WorkCard
+                                key={work.id}
+                                work={work}
+                                projectSlug={project.slug}
+                                t={t}
+                                // can.create as the per-work gate proxy (v1) —
+                                // index carries no per-work abilities yet.
+                                onSettings={can.create ? () => setSettingsWork(work) : undefined}
+                            />
                         ))}
                     </div>
                 )}
@@ -118,6 +129,16 @@ export default function WritingIndex() {
                     projectSlug={project.slug}
                     types={types}
                     onClose={() => setCreateOpen(false)}
+                />
+            )}
+
+            {settingsWork !== null && (
+                <WorkSettingsModal
+                    project={project}
+                    work={{ ...settingsWork, length_plan: settingsWork.length_plan ?? null }}
+                    types={types}
+                    lengthPlans={lengthPlans}
+                    onClose={() => setSettingsWork(null)}
                 />
             )}
         </AppLayout>

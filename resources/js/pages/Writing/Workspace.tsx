@@ -3,11 +3,16 @@ import { useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 import AppLayout from '@alexandria/layouts/AppLayout';
+import Tooltip from '@alexandria/components/ui/Tooltip';
 
 import ManuscriptEditor from './Sections/ManuscriptEditor';
 import Navigator from './Sections/Navigator';
 import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
 import ScreenplayEditor from './Sections/ScreenplayEditor';
+import WorkSettingsModal, {
+    type LengthPlanOption,
+    type WorkLengthPlan,
+} from './Sections/WorkSettingsModal';
 
 /**
  * Writing dashboard → workspace — Stage 8g.1 (Plan 2 Task 6).
@@ -56,12 +61,17 @@ interface WorkspaceProps {
         type: string;
         format: string;
         status: string;
+        logline: string | null;
         word_count: number;
+        line_count: number;
         target_words: number | null;
+        length_plan: WorkLengthPlan | null;
     };
     sections: SectionNode[];
     currentSection: CurrentSection | null;
     pins: EntryCard[];
+    types: string[];
+    lengthPlans: LengthPlanOption[];
     can: { update: boolean };
     [key: string]: unknown;
 }
@@ -115,7 +125,8 @@ const paneBorderColor = 'color-mix(in srgb, var(--theme-base-content) 10%, trans
 
 export default function Workspace() {
     const t = useT();
-    const { project, work, sections, currentSection, pins, can } = usePage<WorkspaceProps>().props;
+    const { project, work, sections, currentSection, pins, types, lengthPlans, can } =
+        usePage<WorkspaceProps>().props;
 
     // Server-confirmed counts from autosave responses overlay the
     // Inertia props until the next full prop refresh catches up.
@@ -127,6 +138,7 @@ export default function Workspace() {
     const [saveSignal, setSaveSignal] = useState(0);
 
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
+    const [settingsOpen, setSettingsOpen] = useState(false);
 
     function togglePanel() {
         setPanelOpen((prev) => {
@@ -155,9 +167,23 @@ export default function Workspace() {
     }
 
     const workWords = liveWorkWords ?? work.word_count;
-    const wordCountLabel = work.target_words !== null
-        ? `${t('writing.workspace.words').replace(':count', workWords.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', work.target_words.toLocaleString())}`
-        : t('writing.workspace.words').replace(':count', workWords.toLocaleString());
+    const targetLines = work.length_plan?.target_lines ?? null;
+
+    // Word target wins when both exist. Line counts only refresh with
+    // full prop reloads (the autosave response carries word/page counts
+    // only) — accepted props-only freshness for lines in v1.
+    let countLabel: string;
+    let progressRatio: number | null = null;
+
+    if (work.target_words !== null) {
+        countLabel = `${t('writing.workspace.words').replace(':count', workWords.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', work.target_words.toLocaleString())}`;
+        progressRatio = work.target_words > 0 ? workWords / work.target_words : null;
+    } else if (targetLines !== null) {
+        countLabel = `${t('writing.workspace.lines').replace(':count', work.line_count.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', targetLines.toLocaleString())}`;
+        progressRatio = targetLines > 0 ? work.line_count / targetLines : null;
+    } else {
+        countLabel = t('writing.workspace.words').replace(':count', workWords.toLocaleString());
+    }
 
     return (
         <AppLayout title={`${work.title} - ${project.name}`} immersive>
@@ -183,6 +209,22 @@ export default function Workspace() {
                             </span>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
+                            {can.update && (
+                                <Tooltip content={t('writing.settings.title')}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSettingsOpen(true)}
+                                        aria-label={t('writing.settings.title')}
+                                        className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs transition-colors"
+                                        style={{
+                                            color: 'var(--theme-base-content)',
+                                            borderRadius: 'var(--theme-radius-button)',
+                                        }}
+                                    >
+                                        <i className="fa-solid fa-gear" aria-hidden="true" />
+                                    </button>
+                                </Tooltip>
+                            )}
                             <button
                                 type="button"
                                 onClick={togglePanel}
@@ -205,8 +247,25 @@ export default function Workspace() {
                                     aria-hidden="true"
                                 />
                             </button>
+                            {progressRatio !== null && (
+                                <div
+                                    aria-hidden="true"
+                                    className="h-1 w-32 overflow-hidden rounded-full"
+                                    style={{
+                                        background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                                    }}
+                                >
+                                    <div
+                                        className="h-full rounded-full"
+                                        style={{
+                                            width: `${Math.min(100, progressRatio * 100)}%`,
+                                            background: 'var(--theme-brand-primary-500)',
+                                        }}
+                                    />
+                                </div>
+                            )}
                             <div className="text-xs tabular-nums" style={metaText}>
-                                {wordCountLabel}
+                                {countLabel}
                             </div>
                         </div>
                     </div>
@@ -282,6 +341,16 @@ export default function Workspace() {
                     )}
                 </div>
             </div>
+
+            {settingsOpen && (
+                <WorkSettingsModal
+                    project={project}
+                    work={work}
+                    types={types}
+                    lengthPlans={lengthPlans}
+                    onClose={() => setSettingsOpen(false)}
+                />
+            )}
         </AppLayout>
     );
 }

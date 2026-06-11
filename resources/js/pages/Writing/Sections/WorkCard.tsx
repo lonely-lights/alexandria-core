@@ -3,6 +3,8 @@ import type { CSSProperties } from 'react';
 
 import { type Translator } from '@alexandria/hooks/useT';
 
+import type { WorkLengthPlan } from './WorkSettingsModal';
+
 /**
  * WorkCard — a single work row shared by the project works index
  * (Writing/Index) and the global writing dashboard (Writing/Dashboard).
@@ -22,6 +24,9 @@ export interface WorkRow {
     status: string;
     logline: string | null;
     word_count: number;
+    /** Optional — the global Dashboard payload doesn't carry these. */
+    line_count?: number;
+    length_plan?: WorkLengthPlan | null;
     target_words: number | null;
     sections_count: number;
     updated_at: string | null;
@@ -67,10 +72,13 @@ export default function WorkCard({
     work,
     projectSlug,
     t,
+    onSettings,
 }: {
     work: WorkRow;
     projectSlug: string;
     t: Translator;
+    /** When set, a hover gear opens the work-settings modal (Index only). */
+    onSettings?: () => void;
 }) {
     const wordCount = work.target_words !== null
         ? `${t('writing.index.words').replace(':count', work.word_count.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', work.target_words.toLocaleString())}`
@@ -79,9 +87,30 @@ export default function WorkCard({
     return (
         <Link
             href={`/works/${projectSlug}/${work.slug}`}
-            className="alex-dash-row"
+            className="alex-dash-row group relative"
             style={workCardStyle}
         >
+            {onSettings && (
+                <button
+                    type="button"
+                    className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                    style={{
+                        color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)',
+                        borderRadius: 'var(--theme-radius-button)',
+                    }}
+                    title={t('writing.settings.title')}
+                    aria-label={t('writing.settings.title')}
+                    onClick={(e) => {
+                        // The whole card is a Link — keep the gear from
+                        // navigating into the workspace.
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onSettings();
+                    }}
+                >
+                    <i className="fa-solid fa-gear text-xs" aria-hidden="true" />
+                </button>
+            )}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span style={typeLabelStyle}>{t(`writing.types.${work.type}`, work.type)}</span>
                 <span style={statusChipStyle}>{t(`writing.statuses.${work.status}`, work.status)}</span>

@@ -1,0 +1,334 @@
+import { useForm } from '@inertiajs/react';
+import { useState } from 'react';
+
+import useT from '@alexandria/hooks/useT';
+import Button from '@alexandria/components/ui/Button';
+import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
+import Tooltip from '@alexandria/components/ui/Tooltip';
+import CheckboxField from '@alexandria/components/form/CheckboxField';
+import Input from '@alexandria/components/form/Input';
+import Select from '@alexandria/components/form/Select';
+import Textarea from '@alexandria/components/form/Textarea';
+
+/**
+ * WorkSettingsModal — Stage 8g.1 (Plan 4 Task 2).
+ *
+ * Edit a work's metadata (title / type / status / logline) plus its
+ * length plan. Shared by the workspace header gear and the works-index
+ * card gear. Submits the FULL contract every time (title + status are
+ * required by works.update); length_plan collapses to null when no
+ * preset is chosen and every number field is empty.
+ */
+
+/** Stored length-plan JSON on a work (preset key + resolved numbers). */
+export interface WorkLengthPlan {
+    preset?: string;
+    target_words?: number;
+    per_section_words?: number;
+    target_lines?: number;
+    target_pages?: number;
+}
+
+/** One config preset row from the server's lengthPlans prop. */
+export interface LengthPlanOption {
+    key: string;
+    target_words?: number;
+    per_section_words?: number;
+    target_lines?: number;
+    target_pages?: number;
+}
+
+export interface WorkSettingsWork {
+    id: number;
+    title: string;
+    slug: string;
+    type: string;
+    status: string;
+    logline: string | null;
+    length_plan: WorkLengthPlan | null;
+    target_words: number | null;
+    word_count: number;
+    line_count?: number;
+}
+
+const WORK_STATUSES = ['concept', 'drafting', 'revising', 'complete'] as const;
+
+const NUMBER_FIELDS = ['target_words', 'per_section_words', 'target_lines'] as const;
+
+type NumberField = (typeof NUMBER_FIELDS)[number];
+
+function parseCount(value: string): number | null {
+    const trimmed = value.trim();
+
+    if (trimmed === '') {
+        return null;
+    }
+
+    const parsed = Number.parseInt(trimmed, 10);
+
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+export default function WorkSettingsModal({
+    project,
+    work,
+    types,
+    lengthPlans,
+    onClose,
+}: {
+    project: { slug: string };
+    work: WorkSettingsWork;
+    types: string[];
+    lengthPlans: LengthPlanOption[];
+    onClose: () => void;
+}) {
+    const t = useT();
+
+    const form = useForm({
+        title: work.title,
+        type: work.type,
+        status: work.status,
+        logline: work.logline ?? '',
+        preset: work.length_plan?.preset ?? '',
+        target_words: work.length_plan?.target_words?.toString() ?? '',
+        per_section_words: work.length_plan?.per_section_words?.toString() ?? '',
+        target_lines: work.length_plan?.target_lines?.toString() ?? '',
+        apply_section_targets: false,
+    });
+
+    // Slug-autofill pattern: picking a preset prefills the number
+    // fields, but once the user edits a number by hand the preset
+    // never overwrites that field again (this session).
+    const [touched, setTouched] = useState<Record<NumberField, boolean>>({
+        target_words: false,
+        per_section_words: false,
+        target_lines: false,
+    });
+
+    // Nested length_plan.* errors come back keyed by dot path, which
+    // the typed errors bag doesn't know about.
+    const allErrors = form.errors as Record<string, string | undefined>;
+
+    function handlePresetChange(key: string) {
+        const plan = key === '' ? undefined : lengthPlans.find((option) => option.key === key);
+
+        form.setData((data) => {
+            const next = { ...data, preset: key };
+
+            for (const field of NUMBER_FIELDS) {
+                if (!touched[field]) {
+                    next[field] = plan?.[field]?.toString() ?? '';
+                }
+            }
+
+            return next;
+        });
+    }
+
+    function handleNumberChange(field: NumberField, value: string) {
+        form.setData(field, value);
+        setTouched((prev) => ({ ...prev, [field]: true }));
+
+        if (allErrors[`length_plan.${field}`]) {
+            form.clearErrors(`length_plan.${field}` as never);
+        }
+    }
+
+    function submit() {
+        form.transform((data) => {
+            const numbers = {
+                target_words: parseCount(data.target_words),
+                per_section_words: parseCount(data.per_section_words),
+                target_lines: parseCount(data.target_lines),
+            };
+            const hasPreset = data.preset !== '';
+            const hasNumbers = Object.values(numbers).some((value) => value !== null);
+
+            return {
+                title: data.title,
+                type: data.type,
+                status: data.status,
+                logline: data.logline,
+                // Explicit nulls ride along so a cleared field beats the
+                // preset's config seed server-side; all-empty + no preset
+                // clears the plan entirely.
+                length_plan: !hasPreset && !hasNumbers
+                    ? null
+                    : { ...(hasPreset ? { preset: data.preset } : {}), ...numbers },
+                apply_section_targets: data.apply_section_targets,
+            };
+        });
+
+        form.put(`/works/${project.slug}/${work.slug}`, {
+            preserveScroll: true,
+            onSuccess: onClose,
+        });
+    }
+
+    return (
+        <Modal open onClose={onClose} maxWidth="max-w-lg">
+            <ModalHeader title={t('writing.settings.title')} onClose={onClose} />
+            {/* noValidate: the server validates `required`; without it
+                Chrome's native constraint bubble fires before submit and
+                the error poppers never get a chance. */}
+            <form
+                noValidate
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    submit();
+                }}
+            >
+                <div className="flex flex-col gap-4 px-6 py-5">
+                    <Tooltip
+                        content={form.errors.title}
+                        open={!!form.errors.title}
+                        tone="error"
+                        placement="top-end"
+                    >
+                        <Input
+                            label={t('writing.form.title')}
+                            name="title"
+                            value={form.data.title}
+                            onChange={(e) => {
+                                form.setData('title', e.target.value);
+                                if (form.errors.title) {
+                                    form.clearErrors('title');
+                                }
+                            }}
+                            error={form.errors.title}
+                            hideErrorText
+                            autoFocus
+                            required
+                            size="md"
+                        />
+                    </Tooltip>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Select
+                            label={t('writing.form.type')}
+                            name="type"
+                            value={form.data.type}
+                            onChange={(e) => {
+                                form.setData('type', e.target.value);
+                                if (form.errors.type) {
+                                    form.clearErrors('type');
+                                }
+                            }}
+                            error={form.errors.type}
+                            options={types.map((type) => ({
+                                value: type,
+                                label: t(`writing.types.${type}`, type),
+                            }))}
+                            size="md"
+                        />
+                        <Select
+                            label={t('writing.form.status')}
+                            name="status"
+                            value={form.data.status}
+                            onChange={(e) => {
+                                form.setData('status', e.target.value);
+                                if (form.errors.status) {
+                                    form.clearErrors('status');
+                                }
+                            }}
+                            error={form.errors.status}
+                            options={WORK_STATUSES.map((status) => ({
+                                value: status,
+                                label: t(`writing.statuses.${status}`, status),
+                            }))}
+                            size="md"
+                        />
+                    </div>
+                    <Textarea
+                        label={t('writing.form.logline')}
+                        name="logline"
+                        value={form.data.logline}
+                        onChange={(e) => form.setData('logline', e.target.value)}
+                        error={form.errors.logline}
+                        rows={2}
+                        size="md"
+                    />
+
+                    {/* ── Length plan ── */}
+                    <div
+                        className="text-xs font-semibold uppercase tracking-wide"
+                        style={{ color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)' }}
+                    >
+                        {t('writing.settings.length_heading')}
+                    </div>
+                    <Select
+                        label={t('writing.settings.preset')}
+                        name="preset"
+                        value={form.data.preset}
+                        onChange={(e) => handlePresetChange(e.target.value)}
+                        error={allErrors['length_plan.preset']}
+                        options={[
+                            { value: '', label: t('writing.settings.preset_none') },
+                            ...lengthPlans.map((plan) => ({
+                                value: plan.key,
+                                // Key fallback keeps future presets usable
+                                // before their label lands.
+                                label: t(`writing.settings.preset_${plan.key}`, plan.key),
+                            })),
+                        ]}
+                        size="md"
+                    />
+                    <div className="grid grid-cols-3 gap-3">
+                        <Input
+                            label={t('writing.settings.target_words')}
+                            name="target_words"
+                            type="number"
+                            min={0}
+                            value={form.data.target_words}
+                            onChange={(e) => handleNumberChange('target_words', e.target.value)}
+                            error={allErrors['length_plan.target_words']}
+                            size="md"
+                        />
+                        <Input
+                            label={t('writing.settings.per_section_words')}
+                            name="per_section_words"
+                            type="number"
+                            min={0}
+                            value={form.data.per_section_words}
+                            onChange={(e) => handleNumberChange('per_section_words', e.target.value)}
+                            error={allErrors['length_plan.per_section_words']}
+                            size="md"
+                        />
+                        <Input
+                            label={t('writing.settings.target_lines')}
+                            name="target_lines"
+                            type="number"
+                            min={0}
+                            value={form.data.target_lines}
+                            onChange={(e) => handleNumberChange('target_lines', e.target.value)}
+                            error={allErrors['length_plan.target_lines']}
+                            size="md"
+                        />
+                    </div>
+                    <div>
+                        <CheckboxField
+                            label={t('writing.settings.apply_targets')}
+                            name="apply_section_targets"
+                            align="start"
+                            checked={form.data.apply_section_targets}
+                            onChange={(e) => form.setData('apply_section_targets', e.target.checked)}
+                        />
+                        <p
+                            className="mt-1 pl-7 text-xs"
+                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}
+                        >
+                            {t('writing.settings.apply_targets_help')}
+                        </p>
+                    </div>
+                </div>
+                <ModalFooter>
+                    <Button variant="ghost" onClick={onClose}>
+                        {t('writing.form.cancel')}
+                    </Button>
+                    <Button type="submit" loading={form.processing}>
+                        {t('writing.settings.save')}
+                    </Button>
+                </ModalFooter>
+            </form>
+        </Modal>
+    );
+}
