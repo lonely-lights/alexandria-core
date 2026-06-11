@@ -27,6 +27,11 @@
    clearly reads as paper lying on it. */
 .rte-manuscript .tiptap-editor {
     background: color-mix(in srgb, var(--theme-base-content) 8%, var(--theme-base-page));
+    /* Reserve the scrollbar gutter even before content overflows so
+       the centered sheet (and, in print layout, the pinned ruler
+       above it — which reserves the same gutter) never shifts when
+       the scrollbar appears. */
+    scrollbar-gutter: stable;
 }
 
 /* The page. min-height = wrapper height minus the vertical margins,
@@ -52,4 +57,20 @@
         margin: 0.75rem auto;
         padding: 2rem 1.25rem 6rem;
     }
+}
+
+/* Print layout (`printLayout` prop → `.rte-manuscript--print`) — the
+   Word-style toggle: a true US Letter page (8.5in wide, 1in side
+   margins) under the pinned ruler rendered by ManuscriptRuler.tsx.
+   Width/margins representation only — no pagination or page-break
+   preview (that arrives with export). Declared LAST so it out-orders
+   the adaptive base rule and the small-screen override above at equal
+   specificity. */
+.rte-manuscript--print .tiptap-editor .ProseMirror {
+    width: 8.5in;
+    max-width: none;
+    min-height: 11in;
+    margin: 1.5rem auto;
+    padding: 1in 1in 1.5in;
+    border-radius: 0; /* crisp page corners in print layout */
 }

@@ -51,6 +51,7 @@ return [
     'workspace.words' => ':count words',
     'workspace.of_target' => 'of :target',
     'workspace.pages' => '~:count pages',
+    'workspace.print_layout' => 'Print layout (Letter, 1in margins)',
     'workspace.saving' => 'Saving…',
     'workspace.saved' => 'Saved',
     'workspace.save_error' => 'Couldn\'t save. Your text is still here; retrying on the next change.',

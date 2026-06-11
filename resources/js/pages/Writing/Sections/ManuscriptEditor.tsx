@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 import RichTextEditor from '@alexandria/components/editor/RichTextEditor';
+import Tooltip from '@alexandria/components/ui/Tooltip';
 
 import type { CurrentSection } from '../Workspace';
 
@@ -29,6 +30,17 @@ interface ManuscriptEditorProps {
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 const AUTOSAVE_DELAY_MS = 1200;
+
+const PRINT_LAYOUT_STORAGE_KEY = 'alexandria.writing.print_layout';
+
+/** Read the persisted print-layout preference once on mount. */
+function readPrintLayoutPreference(): boolean {
+    try {
+        return localStorage.getItem(PRINT_LAYOUT_STORAGE_KEY) === 'true';
+    } catch {
+        return false;
+    }
+}
 
 /* ── Theme styles ── */
 
@@ -91,6 +103,7 @@ export default function ManuscriptEditor({
     const [status, setStatus] = useState<SaveStatus>('idle');
     const [wordCount, setWordCount] = useState(section.word_count);
     const [pageEstimate, setPageEstimate] = useState<number | null>(null);
+    const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
 
     // Refs let the section-switch cleanup flush the OUTGOING section's
     // pending save with its latest content, even though state has
@@ -205,6 +218,17 @@ export default function ManuscriptEditor({
         });
     }
 
+    function togglePrintLayout() {
+        const next = !printLayout;
+        setPrintLayout(next);
+        try {
+            localStorage.setItem(PRINT_LAYOUT_STORAGE_KEY, String(next));
+        } catch {
+            // Storage unavailable (private mode / quota) — the toggle
+            // still works for this session.
+        }
+    }
+
     const statusText =
         status === 'saving'
             ? t('writing.workspace.saving')
@@ -243,6 +267,27 @@ export default function ManuscriptEditor({
                         {section.label}
                     </span>
                 )}
+                {canUpdate && (
+                    <Tooltip content={t('writing.workspace.print_layout')}>
+                        <button
+                            type="button"
+                            onClick={togglePrintLayout}
+                            aria-pressed={printLayout}
+                            className={`alex-toolbar-btn inline-flex h-8 w-8 shrink-0 items-center justify-center text-sm transition-colors ${printLayout ? 'alex-toolbar-btn--active' : ''}`}
+                            style={{
+                                background: printLayout
+                                    ? 'color-mix(in srgb, var(--theme-brand-secondary-500) 18%, transparent)'
+                                    : 'transparent',
+                                color: printLayout
+                                    ? 'var(--theme-brand-secondary-500)'
+                                    : 'var(--theme-base-content)',
+                                borderRadius: 'var(--theme-radius-button)',
+                            }}
+                        >
+                            <i className="fa-solid fa-ruler-horizontal" />
+                        </button>
+                    </Tooltip>
+                )}
                 {statusText && (
                     <span
                         className="shrink-0 text-xs"
@@ -266,6 +311,7 @@ export default function ManuscriptEditor({
                     enableMentions={false}
                     projectId={projectId}
                     maxLength={0}
+                    printLayout={printLayout}
                 />
             ) : (
                 <div className="min-h-0 flex-1 overflow-y-auto">

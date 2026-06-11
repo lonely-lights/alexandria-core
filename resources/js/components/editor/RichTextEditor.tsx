@@ -5,6 +5,7 @@ import LinkExtension from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useState, useEffect, useRef, useCallback, type MouseEvent, type ReactNode } from 'react';
 import AiWritingModal from './AiWritingModal';
+import ManuscriptRuler from './ManuscriptRuler';
 import { parseWikiToHtml } from '../tiptap-bio-editor/utils/wiki-parser';
 import { serializeToWiki } from '../tiptap-bio-editor/utils/wiki-serializer';
 import createMentionExtension from '../tiptap-bio-editor/extensions/mention';
@@ -74,6 +75,15 @@ interface RichTextEditorProps {
      * workspace, which owns its own footer/counters.
      */
     variant?: 'card' | 'manuscript';
+    /**
+     * Word-style print layout (manuscript variant only; ignored in
+     * card mode). When true the page renders at US Letter geometry
+     * (8.5in wide, 1in margins — see `.rte-manuscript--print` in
+     * components/manuscript.css) and a static ruler bar is pinned
+     * between the toolbar and the scrolling page. Width/margins
+     * representation only — no pagination preview.
+     */
+    printLayout?: boolean;
 }
 
 /* ── Toolbar button definitions ── */
@@ -222,6 +232,7 @@ export default function RichTextEditor({
     label,
     className,
     variant = 'card',
+    printLayout = false,
     projectId,
     aiInstructions = [],
 }: RichTextEditorProps) {
@@ -516,7 +527,7 @@ export default function RichTextEditor({
         <div
             className={
                 isManuscript
-                    ? `rte-manuscript flex h-full min-h-0 flex-col ${className ?? ''}`
+                    ? `rte-manuscript ${printLayout ? 'rte-manuscript--print ' : ''}flex h-full min-h-0 flex-col ${className ?? ''}`
                     : `space-y-2 ${className ?? ''}`
             }
         >
@@ -666,6 +677,12 @@ export default function RichTextEditor({
                         </Tooltip>
                     </div>
                 </div>
+
+                {/* Print-layout ruler — a pinned sibling between the
+                    toolbar and the scroll container (Word pins its
+                    ruler; the page scrolls beneath it). Hidden in code
+                    view, where there is no page to measure. */}
+                {isManuscript && printLayout && !codeView && <ManuscriptRuler />}
 
                 {/* Editor Area / Code View */}
                 {codeView ? (
