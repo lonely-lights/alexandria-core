@@ -162,10 +162,31 @@ const ScreenplayKeymap = Extension.create({
     priority: 1000,
 
     addKeyboardShortcuts() {
+        // Final Draft's element numbers (Scene Heading 0 … Transition 5),
+        // Alt-shifted because browsers reserve plain Mod+1-8 for tab
+        // switching: Ctrl+Alt+N on Windows, ⌘⌥N on Mac (the latter is
+        // Final Draft's own Mac binding).
+        const elementShortcuts = Object.fromEntries(
+            (
+                [
+                    ["0", "slugline"],
+                    ["1", "action"],
+                    ["2", "character"],
+                    ["3", "parenthetical"],
+                    ["4", "dialogue"],
+                    ["5", "transition"],
+                ] as const
+            ).map(([digit, element]) => [
+                `Mod-Alt-${digit}`,
+                ({ editor }: { editor: Editor }) => editor.commands.setNode(element),
+            ]),
+        );
+
         return {
             Enter: ({ editor }) => handleEnter(editor),
             Tab: ({ editor }) => handleTab(editor, 1),
             "Shift-Tab": ({ editor }) => handleTab(editor, -1),
+            ...elementShortcuts,
         };
     },
 

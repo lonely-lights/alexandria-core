@@ -24,6 +24,9 @@ import {
 } from './ManuscriptEditor';
 import useSectionAutosave from './useSectionAutosave';
 
+// Same platform sniff RichTextEditor uses for shortcut labels.
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
+
 /**
  * Workspace screenplay editor — Stage 8g.1 (Plan 3 Task 2).
  *
@@ -253,7 +256,7 @@ function ScreenplaySurface({
             <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-md">
                 <ModalHeader title={t('writing.workspace.keys_title')} onClose={() => setShowKeys(false)} />
                 <div className="space-y-3 p-6 text-sm">
-                    {(['keys_enter', 'keys_tab', 'keys_paren'] as const).map((key) => (
+                    {(['keys_enter', 'keys_tab', 'keys_paren', 'keys_elements'] as const).map((key) => (
                         <div key={key} className="flex items-start gap-3">
                             <kbd
                                 className="mt-0.5 shrink-0 px-1.5 py-0.5 font-mono text-xs"
@@ -264,7 +267,15 @@ function ScreenplaySurface({
                                     color: 'var(--theme-base-content)',
                                 }}
                             >
-                                {key === 'keys_enter' ? 'Enter' : key === 'keys_tab' ? 'Tab' : '('}
+                                {key === 'keys_enter'
+                                    ? 'Enter'
+                                    : key === 'keys_tab'
+                                        ? 'Tab'
+                                        : key === 'keys_paren'
+                                            ? '('
+                                            : isMac
+                                                ? '⌘⌥ 0–5'
+                                                : 'Ctrl+Alt+0–5'}
                             </kbd>
                             <p className="min-w-0">{t(`writing.workspace.${key}`)}</p>
                         </div>

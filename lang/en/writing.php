@@ -65,6 +65,7 @@ return [
     'workspace.keys_enter' => 'Enter moves to the natural next element (scene heading → action, character → dialogue, dialogue → character).',
     'workspace.keys_tab' => 'Tab on an empty line cycles action → character → transition → scene heading. In a character or dialogue line it starts a parenthetical.',
     'workspace.keys_paren' => 'Typing ( at the start of a dialogue line starts a parenthetical.',
+    'workspace.keys_elements' => 'Jump straight to an element, Final Draft numbering: 0 scene heading, 1 action, 2 character, 3 parenthetical, 4 dialogue, 5 transition.',
 
     'elements.slugline' => 'Scene heading',
     'elements.action' => 'Action',
