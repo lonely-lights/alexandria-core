@@ -14,6 +14,7 @@ return [
     // ── Top-level sidebar rows ──────────────────────────────────────
     'dashboard' => 'Dashboard',
     'admin' => 'Admin Panel',
+    'writing' => 'Writing',
     'notes' => 'Notes',
     'notebooks' => 'Notebooks',
     'ai_hub' => 'AI Hub',

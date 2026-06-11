@@ -29,8 +29,8 @@ export interface SidebarBlueprint {
  *   - Project switcher: collapses to a static label when the user has
  *     a single project; pops a dropdown when there are multiple
  *   - One row per blueprint
- *   - "AI & Notes" group: Notes / Notebooks / collapsible AI Hub with
- *     Note Queue / Commands / Models sub-rows
+ *   - "AI & Notes" group: Writing / Notes / Notebooks / collapsible
+ *     AI Hub with Note Queue / Commands / Models sub-rows
  *   - "Tools" group: Archive (with a live count badge) + the future
  *     List / Structural / Relationship managers
  *
@@ -109,6 +109,11 @@ export default function ProjectNavigation({
 
             <SectionDivider>{t('nav.section.ai_notes')}</SectionDivider>
 
+            <SidebarRow
+                href={`/works/${project.slug}`}
+                icon="fa-solid fa-feather-pointed"
+                label={t('nav.writing')}
+            />
             <SidebarRow
                 href={`/notes/${project.slug}`}
                 icon="fa-solid fa-note-sticky"

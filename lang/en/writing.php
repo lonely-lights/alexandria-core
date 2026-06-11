@@ -8,6 +8,11 @@ declare(strict_types=1);
  * lookup inside the group bag.
  */
 return [
+    'dashboard.title' => 'Writing',
+    'dashboard.intro' => 'Every manuscript across your projects.',
+    'dashboard.empty' => 'No works yet. Open a project and start one.',
+    'dashboard.work_count' => ':count works',
+
     'index.title' => 'Writing',
     'index.intro' => 'The manuscripts of :project — novels, screenplays, essays, and everything between.',
     'index.create' => 'New work',
