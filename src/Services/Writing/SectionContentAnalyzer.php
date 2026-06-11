@@ -37,14 +37,16 @@ class SectionContentAnalyzer
         $words = preg_split('/[\s\x{00A0}]+/u', trim($visibleText), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $wordCount = count(array_filter($words, fn (string $word): bool => preg_match('/[\p{L}\p{N}]/u', $word) === 1));
 
+        $lines = array_filter(array_map('trim', explode("\n", $visibleText)), fn (string $line): bool => $line !== '');
+        $lineCount = count($lines);
+
         $pageEstimate = null;
 
         if ($format === 'screenplay') {
             $linesPerPage = max(1, (int) config('alexandria.writing.formats.screenplay.lines_per_page', 55));
-            $lines = array_filter(array_map('trim', explode("\n", $visibleText)), fn (string $line): bool => $line !== '');
-            $pageEstimate = (int) ceil(count($lines) / $linesPerPage);
+            $pageEstimate = (int) ceil($lineCount / $linesPerPage);
         }
 
-        return new AnalyzedSectionContent($wordCount, $pageEstimate, $mentionNames);
+        return new AnalyzedSectionContent($wordCount, $pageEstimate, $lineCount, $mentionNames);
     }
 }

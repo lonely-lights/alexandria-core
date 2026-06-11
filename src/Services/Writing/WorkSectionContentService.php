@@ -13,10 +13,10 @@ use Throwable;
 
 /**
  * Persists section content and keeps every derived value true —
- * Stage 8g.1. Word counts and mention rows are rebuilt from the
- * text on each save (never incremental), and the work's cached
- * word_count rollup follows. Recomputable from documents alone via
- * the alexandria:writing:rebuild command.
+ * Stage 8g.1. Word/line counts and mention rows are rebuilt from
+ * the text on each save (never incremental), and the work's cached
+ * word_count/line_count rollups follow. Recomputable from documents
+ * alone via the alexandria:writing:rebuild command.
  */
 readonly class WorkSectionContentService
 {
@@ -33,6 +33,7 @@ readonly class WorkSectionContentService
             $section->forceFill([
                 'content' => $content,
                 'word_count' => $analysis->wordCount,
+                'line_count' => $analysis->lineCount,
             ])->save();
 
             $this->syncMentionRows($section, $analysis->mentionNames);
@@ -110,8 +111,14 @@ readonly class WorkSectionContentService
 
     public function refreshWorkRollup(int $workId): void
     {
+        $sums = WorkSection::query()
+            ->where('work_id', $workId)
+            ->selectRaw('coalesce(sum(word_count), 0) as word_count, coalesce(sum(line_count), 0) as line_count')
+            ->first();
+
         Work::query()->whereKey($workId)->update([
-            'word_count' => WorkSection::query()->where('work_id', $workId)->sum('word_count'),
+            'word_count' => (int) $sums->word_count,
+            'line_count' => (int) $sums->line_count,
         ]);
     }
 }

@@ -103,7 +103,7 @@ return [
     'writing' => [
 
         // Work types (selectable at creation; keys feed lang lookups + templates)
-        'types' => ['novel', 'screenplay', 'stage_play', 'short_story', 'essay', 'other'],
+        'types' => ['novel', 'screenplay', 'stage_play', 'short_story', 'essay', 'poem', 'other'],
 
         // Format specs. Server side carries the page metrics; element lists and
         // keyboard transition maps are frontend modules (Plan 3).
@@ -124,6 +124,10 @@ return [
             'novel' => ['target_words' => 90000, 'per_section_words' => 3000],
             'epic' => ['target_words' => 150000, 'per_section_words' => 3500],
             'screenplay' => ['target_pages' => 110],
+            'sonnet' => ['target_lines' => 14],
+            'haiku' => ['target_lines' => 3],
+            'villanelle' => ['target_lines' => 19],
+            'limerick' => ['target_lines' => 5],
         ],
 
         // Starter structures per work type. label is the user-facing level name;
@@ -164,14 +168,18 @@ return [
             ],
             'essay' => [
                 'format' => 'prose',
-                'length_plan' => 'short_story',
                 'sections' => [
                     ['label' => 'Section', 'title' => 'Draft'],
                 ],
             ],
+            'poem' => [
+                'format' => 'prose',
+                'sections' => [
+                    ['label' => 'Poem', 'title' => 'Untitled'],
+                ],
+            ],
             'other' => [
                 'format' => 'prose',
-                'length_plan' => 'novella',
                 'sections' => [
                     ['label' => 'Section', 'title' => 'Section 1'],
                 ],

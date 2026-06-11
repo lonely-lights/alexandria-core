@@ -27,6 +27,7 @@ return new class extends Migration
             $table->json('length_plan')->nullable();
             $table->unsignedInteger('target_words')->nullable();
             $table->unsignedInteger('word_count')->default(0);
+            $table->unsignedInteger('line_count')->default(0);
             $table->timestamps();
             $table->softDeletes();
             $table->unique(['project_id', 'slug']);

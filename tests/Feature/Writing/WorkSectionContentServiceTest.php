@@ -102,3 +102,16 @@ it('updates the work rollup across multiple sections', function () {
 
     expect($work->fresh()->word_count)->toBe(5);
 });
+
+it('caches the section line count and rolls it up across sections', function () {
+    [, , , $work, $section] = writingFixtures();
+    $second = WorkSection::factory()->create(['work_id' => $work->id]);
+    $service = app(WorkSectionContentService::class);
+
+    $service->persist($section, "Line one\nLine two\n\nLine three");
+    $service->persist($second, "Lonely line\n\n");
+
+    expect($section->fresh()->line_count)->toBe(3)
+        ->and($second->fresh()->line_count)->toBe(1)
+        ->and($work->fresh()->line_count)->toBe(4);
+});

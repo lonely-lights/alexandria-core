@@ -41,7 +41,7 @@ it('scaffolds a screenplay with nested act/scene structure', function () {
         ->and($acts->first()->children->first()->label)->toBe('Scene');
 });
 
-it('falls back to the other template for unknown types', function () {
+it('falls back to the other template for unknown types with no length plan', function () {
     $project = Project::factory()->create();
 
     $work = app(WorkScaffolder::class)->create($project, 7, [
@@ -50,5 +50,40 @@ it('falls back to the other template for unknown types', function () {
     ]);
 
     expect($work->type)->toBe('zine')
-        ->and($work->rootSections)->toHaveCount(1);
+        ->and($work->length_plan)->toBeNull()
+        ->and($work->target_words)->toBeNull()
+        ->and($work->rootSections)->toHaveCount(1)
+        ->and($work->rootSections->first()->target_words)->toBeNull();
+});
+
+it('scaffolds an essay without a length plan (user-defined-first)', function () {
+    $project = Project::factory()->create();
+
+    $work = app(WorkScaffolder::class)->create($project, 7, [
+        'title' => 'On Quiet Rooms',
+        'type' => 'essay',
+    ]);
+
+    expect($work->format)->toBe('prose')
+        ->and($work->length_plan)->toBeNull()
+        ->and($work->target_words)->toBeNull()
+        ->and($work->rootSections)->toHaveCount(1)
+        ->and($work->rootSections->first()->target_words)->toBeNull();
+});
+
+it('scaffolds a poem with a single Poem section and no length plan', function () {
+    $project = Project::factory()->create();
+
+    $work = app(WorkScaffolder::class)->create($project, 7, [
+        'title' => 'Cinders',
+        'type' => 'poem',
+    ]);
+
+    expect($work->format)->toBe('prose')
+        ->and($work->length_plan)->toBeNull()
+        ->and($work->target_words)->toBeNull()
+        ->and($work->rootSections)->toHaveCount(1)
+        ->and($work->rootSections->first()->label)->toBe('Poem')
+        ->and($work->rootSections->first()->title)->toBe('Untitled')
+        ->and($work->rootSections->first()->target_words)->toBeNull();
 });

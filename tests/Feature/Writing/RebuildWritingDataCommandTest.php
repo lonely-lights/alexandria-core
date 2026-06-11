@@ -22,13 +22,16 @@ it('rebuilds counts and mentions from raw content', function () {
         'work_id' => $work->id,
         'content' => '[[Mira Vance]] waits alone.',
         'word_count' => 999,
+        'line_count' => 999,
     ]);
 
     $this->artisan('alexandria:writing:rebuild')->assertExitCode(0);
 
     expect($section->fresh()->word_count)->toBe(4)
+        ->and($section->fresh()->line_count)->toBe(1)
         ->and($section->fresh()->entryMentions)->toHaveCount(1)
-        ->and($work->fresh()->word_count)->toBe(4);
+        ->and($work->fresh()->word_count)->toBe(4)
+        ->and($work->fresh()->line_count)->toBe(1);
 });
 
 it('scopes the rebuild to one work when --work is given', function () {

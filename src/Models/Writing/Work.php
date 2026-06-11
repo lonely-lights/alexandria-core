@@ -39,6 +39,7 @@ use Illuminate\Support\Str;
  * @property array<string, mixed>|null $length_plan
  * @property int|null $target_words
  * @property int $word_count
+ * @property int $line_count
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -81,6 +82,7 @@ class Work extends Model
         'format' => self::FORMAT_PROSE,
         'status' => self::STATUS_CONCEPT,
         'word_count' => 0,
+        'line_count' => 0,
     ];
 
     protected function casts(): array

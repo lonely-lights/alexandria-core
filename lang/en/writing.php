@@ -34,6 +34,7 @@ return [
     'types.stage_play' => 'Stage play',
     'types.short_story' => 'Short story',
     'types.essay' => 'Essay',
+    'types.poem' => 'Poem',
     'types.other' => 'Other',
 
     'statuses.concept' => 'Concept',

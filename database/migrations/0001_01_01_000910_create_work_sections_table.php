@@ -33,6 +33,7 @@ return new class extends Migration
             $table->foreignId('pov_entry_id')->nullable()->constrained('entries')->nullOnDelete();
             $table->foreignId('setting_entry_id')->nullable()->constrained('entries')->nullOnDelete();
             $table->unsignedInteger('word_count')->default(0);
+            $table->unsignedInteger('line_count')->default(0);
             $table->unsignedInteger('target_words')->nullable();
             $table->timestamps();
             $table->softDeletes();

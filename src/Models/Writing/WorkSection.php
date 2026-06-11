@@ -45,6 +45,7 @@ use Illuminate\Support\Str;
  * @property int|null $pov_entry_id
  * @property int|null $setting_entry_id
  * @property int $word_count
+ * @property int $line_count
  * @property int|null $target_words
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
