@@ -67,6 +67,33 @@ class SectionTreeService
         });
     }
 
+    /**
+     * Soft-delete a section and every descendant, then refresh the
+     * work's cached word count. Descendants are collected breadth-first
+     * over the live tree.
+     *
+     * @throws Throwable transaction failures bubble to the caller
+     */
+    public function deleteSubtree(WorkSection $section): void
+    {
+        DB::transaction(function () use ($section): void {
+            $ids = [$section->id];
+            $frontier = [$section->id];
+
+            while ($frontier !== []) {
+                $frontier = WorkSection::query()
+                    ->whereIn('parent_id', $frontier)
+                    ->pluck('id')
+                    ->all();
+                $ids = [...$ids, ...$frontier];
+            }
+
+            WorkSection::query()->whereIn('id', $ids)->get()->each->delete();
+
+            app(WorkSectionContentService::class)->refreshWorkRollup($section->work_id);
+        });
+    }
+
     private function isDescendantOf(WorkSection $candidate, WorkSection $ancestor): bool
     {
         $current = $candidate;

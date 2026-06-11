@@ -108,7 +108,7 @@ readonly class WorkSectionContentService
         }
     }
 
-    private function refreshWorkRollup(int $workId): void
+    public function refreshWorkRollup(int $workId): void
     {
         Work::query()->whereKey($workId)->update([
             'word_count' => WorkSection::query()->where('work_id', $workId)->sum('word_count'),

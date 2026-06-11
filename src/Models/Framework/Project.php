@@ -11,6 +11,7 @@ use Alexandria\Core\Models\ProjectAiSetting;
 use Alexandria\Core\Models\System\AiTransaction;
 use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Models\System\Entry;
+use Alexandria\Core\Models\Writing\Work;
 use Alexandria\Core\Traits\AI\HasEavAiIntegration;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
 use Alexandria\Core\Traits\Notable\HasNotes;
@@ -55,6 +56,7 @@ use Spatie\Tags\HasTags;
  * @property-read ProjectAiSetting|null $aiSettings
  * @property-read Collection<int, ProjectAiInstruction> $aiInstructions
  * @property-read Collection<int, AiTransaction> $aiTransactions
+ * @property-read Collection<int, Work> $works
  * @property-read Collection<int, Model> $users
  * @property-read string|null $page_image_url
  * @property-read string|null $page_image_thumb_url
@@ -171,6 +173,11 @@ class Project extends Model implements HasMedia
     public function entries(): HasMany
     {
         return $this->hasMany(Entry::class);
+    }
+
+    public function works(): HasMany
+    {
+        return $this->hasMany(Work::class);
     }
 
     public function aiSettings(): HasOne

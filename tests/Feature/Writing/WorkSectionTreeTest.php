@@ -108,3 +108,25 @@ it('treats a section with a soft-deleted ancestor as safe to move', function () 
 
     expect($target->fresh()->parent_id)->toBe($child->id);
 });
+
+it('soft-deletes a section together with its descendants and refreshes the rollup', function () {
+    $work = Work::factory()->create();
+    $parent = WorkSection::factory()->create(['work_id' => $work->id, 'word_count' => 5]);
+    $child = WorkSection::factory()->create(['work_id' => $work->id, 'parent_id' => $parent->id, 'word_count' => 7]);
+    $sibling = WorkSection::factory()->create(['work_id' => $work->id, 'word_count' => 3]);
+    $work->update(['word_count' => 15]);
+
+    app(SectionTreeService::class)->deleteSubtree($parent);
+
+    expect(WorkSection::query()->find($parent->id))->toBeNull()
+        ->and(WorkSection::query()->find($child->id))->toBeNull()
+        ->and(WorkSection::withTrashed()->find($child->id))->not->toBeNull()
+        ->and($sibling->fresh())->not->toBeNull()
+        ->and($work->fresh()->word_count)->toBe(3);
+});
+
+it('exposes works on the project for scoped route binding', function () {
+    $work = Work::factory()->create();
+
+    expect($work->project->works->pluck('id')->all())->toBe([$work->id]);
+});
