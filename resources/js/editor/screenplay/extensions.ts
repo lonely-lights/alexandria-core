@@ -102,12 +102,12 @@ function handleEnter(editor: Editor): boolean {
     }
 
     if ($from.parentOffset === parent.content.size) {
-        const chain = editor.chain().splitBlock();
-
-        if (next !== element) {
-            chain.setNode(next);
-        }
-        chain.run();
+        // ALWAYS setNode after an at-end split: ProseMirror fills the
+        // fresh block with the schema's default type (the first
+        // registered node — slugline), so even a same-type transition
+        // (action → action) needs the explicit conversion. Caught by
+        // the Plan 4 browser smokes.
+        editor.chain().splitBlock().setNode(next).run();
 
         return true;
     }
