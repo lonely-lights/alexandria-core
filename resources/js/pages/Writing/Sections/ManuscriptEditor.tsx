@@ -52,6 +52,10 @@ const titleInputStyle: CSSProperties = {
     color: 'var(--theme-base-content)',
 };
 
+const menuBarStyle: CSSProperties = {
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+};
+
 const footerStyle: CSSProperties = {
     background: 'var(--theme-base-page)',
     borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
@@ -215,58 +219,65 @@ export default function ManuscriptEditor({
         : t('writing.workspace.words').replace(':count', wordCount.toLocaleString());
 
     return (
-        <div className="flex min-h-full flex-col">
-            <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-                {/* Title row */}
-                <div className="mb-6 flex items-center gap-3">
-                    {canUpdate ? (
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            onBlur={commitTitle}
-                            className="min-w-0 flex-1 text-2xl font-bold"
-                            style={titleInputStyle}
-                            aria-label={t('writing.workspace.section_title_placeholder')}
-                            placeholder={t('writing.workspace.section_title_placeholder')}
-                        />
-                    ) : (
-                        <h2 className="min-w-0 flex-1 truncate text-2xl font-bold">
-                            {section.title}
-                        </h2>
-                    )}
-                    {section.label && (
-                        <span className="shrink-0" style={labelChipStyle}>
-                            {section.label}
-                        </span>
-                    )}
-                </div>
-
-                {/* Manuscript */}
+        <div className="flex h-full min-h-0 flex-col">
+            {/* Menu bar — title + label on the left, save status on the right */}
+            <div className="flex h-12 shrink-0 items-center gap-3 px-4" style={menuBarStyle}>
                 {canUpdate ? (
-                    <RichTextEditor
-                        key={section.id}
-                        value={content}
-                        onChange={handleChange}
-                        tier="pro"
-                        enableEntryLinks
-                        enableMentions={false}
-                        projectId={projectId}
-                        maxLength={0}
+                    <input
+                        type="text"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        onBlur={commitTitle}
+                        className="min-w-0 flex-1 text-lg font-semibold"
+                        style={titleInputStyle}
+                        aria-label={t('writing.workspace.section_title_placeholder')}
+                        placeholder={t('writing.workspace.section_title_placeholder')}
                     />
                 ) : (
-                    <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                        {content}
-                    </pre>
+                    <h2 className="min-w-0 flex-1 truncate text-lg font-semibold">
+                        {section.title}
+                    </h2>
+                )}
+                {section.label && (
+                    <span className="shrink-0" style={labelChipStyle}>
+                        {section.label}
+                    </span>
+                )}
+                {statusText && (
+                    <span
+                        className="shrink-0 text-xs"
+                        style={status === 'error' ? errorTextStyle : footerMetaStyle}
+                    >
+                        {statusText}
+                    </span>
                 )}
             </div>
 
-            {/* Footer bar */}
-            <footer className="sticky bottom-0" style={footerStyle}>
-                <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-6 py-2 text-xs">
-                    <span style={status === 'error' ? errorTextStyle : footerMetaStyle}>
-                        {statusText}
-                    </span>
+            {/* Manuscript — the editor's content wrapper scrolls */}
+            {canUpdate ? (
+                <RichTextEditor
+                    key={section.id}
+                    variant="manuscript"
+                    className="min-h-0 flex-1"
+                    value={content}
+                    onChange={handleChange}
+                    tier="pro"
+                    enableEntryLinks
+                    enableMentions={false}
+                    projectId={projectId}
+                    maxLength={0}
+                />
+            ) : (
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <pre className="mx-auto w-full max-w-3xl px-6 pt-10 pb-[40vh] font-sans text-sm leading-relaxed whitespace-pre-wrap">
+                        {content}
+                    </pre>
+                </div>
+            )}
+
+            {/* Footer bar — counts only */}
+            <footer className="shrink-0" style={footerStyle}>
+                <div className="flex items-center justify-end px-4 py-2 text-xs">
                     <span className="shrink-0 tabular-nums" style={footerMetaStyle}>
                         {wordsLabel}
                         {section.format === 'screenplay' && pageEstimate !== null && (

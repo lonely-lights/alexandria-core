@@ -172,8 +172,9 @@ export default function Workspace() {
                         />
                     </nav>
 
-                    {/* Editor pane */}
-                    <section className="min-w-0 flex-1 overflow-y-auto">
+                    {/* Editor pane — the frame itself never scrolls; the
+                        editor's content wrapper inside ManuscriptEditor does */}
+                    <section className="flex min-w-0 flex-1 flex-col overflow-hidden">
                         {currentSection !== null ? (
                             <ManuscriptEditor
                                 projectId={project.id}
@@ -185,7 +186,7 @@ export default function Workspace() {
                             />
                         ) : (
                             <div
-                                className="flex h-full items-center justify-center px-6 text-center text-sm italic"
+                                className="flex flex-1 items-center justify-center px-6 text-center text-sm italic"
                                 style={mutedText}
                             >
                                 {t('writing.workspace.no_section')}

@@ -65,6 +65,15 @@ interface RichTextEditorProps {
     /** Label shown above the editor */
     label?: string;
     className?: string;
+    /**
+     * Surface variant. `card` (default) is the bordered, self-contained
+     * form-field look. `manuscript` fills its parent (flex column),
+     * drops the card chrome, and turns the content area into a
+     * scrollable full-bleed writing surface with a centered prose
+     * measure (see components/manuscript.css) — used by the writing
+     * workspace, which owns its own footer/counters.
+     */
+    variant?: 'card' | 'manuscript';
 }
 
 /* ── Toolbar button definitions ── */
@@ -212,6 +221,7 @@ export default function RichTextEditor({
     enableAi = false,
     label,
     className,
+    variant = 'card',
     projectId,
     aiInstructions = [],
 }: RichTextEditorProps) {
@@ -321,6 +331,20 @@ export default function RichTextEditor({
             setCodeValue(serializeToWiki(editor));
             setCodeView(true);
         }
+    }
+
+    const isManuscript = variant === 'manuscript';
+
+    // Manuscript mode: the prose measure (48rem, via manuscript.css) is
+    // narrower than the pane, so clicks in the horizontal gutters land
+    // on the scroll wrapper instead of the ProseMirror element (which
+    // owns the full vertical surface thanks to its min-height + bottom
+    // padding). Forward gutter clicks into the editor; clicks on the
+    // paper itself are TipTap's to handle natively.
+    function handleGutterMouseDown(e: MouseEvent<HTMLDivElement>) {
+        if (e.target !== e.currentTarget) return;
+        e.preventDefault();
+        editor?.commands.focus('end');
     }
 
     const charCount = value.length;
@@ -465,12 +489,20 @@ export default function RichTextEditor({
     const dividerStyle = {
         background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
     };
-    const toolbarStyle = {
-        background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
-        borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-        borderTopLeftRadius: 'var(--theme-radius-input)',
-        borderTopRightRadius: 'var(--theme-radius-input)',
-    };
+    // Manuscript mode drops the card chrome — the toolbar is a flush
+    // full-width band (same subtle tint as the card toolbar, no radii)
+    // so it reads as a word-processor toolbar over the desk below.
+    const toolbarStyle = isManuscript
+        ? {
+              background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+              borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+          }
+        : {
+              background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+              borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+              borderTopLeftRadius: 'var(--theme-radius-input)',
+              borderTopRightRadius: 'var(--theme-radius-input)',
+          };
     const editorAreaStyle = {
         background: 'var(--theme-base-page)',
         borderBottomLeftRadius: 'var(--theme-radius-input)',
@@ -481,9 +513,16 @@ export default function RichTextEditor({
     };
 
     return (
-        <div className={`space-y-2 ${className ?? ''}`}>
-            {/* Label + Character Count Row */}
-            {(label || maxLength > 0) && (
+        <div
+            className={
+                isManuscript
+                    ? `rte-manuscript flex h-full min-h-0 flex-col ${className ?? ''}`
+                    : `space-y-2 ${className ?? ''}`
+            }
+        >
+            {/* Label + Character Count Row (card variant only — the
+                manuscript workspace owns its own counters/footer) */}
+            {!isManuscript && (label || maxLength > 0) && (
                 <div className="flex items-center justify-between">
                     {label && (
                         <span
@@ -501,17 +540,25 @@ export default function RichTextEditor({
                 </div>
             )}
 
-            {/* Editor Container */}
+            {/* Editor Container — card chrome, or a chrome-less flex
+                column that fills the remaining height in manuscript mode */}
             <div
-                className="relative transition-all"
-                style={{
-                    border: `1px solid ${containerBorder}`,
-                    borderRadius: 'var(--theme-radius-input)',
-                    boxShadow: containerRing,
-                }}
+                className={isManuscript ? 'flex min-h-0 flex-1 flex-col' : 'relative transition-all'}
+                style={
+                    isManuscript
+                        ? undefined
+                        : {
+                              border: `1px solid ${containerBorder}`,
+                              borderRadius: 'var(--theme-radius-input)',
+                              boxShadow: containerRing,
+                          }
+                }
             >
                 {/* Toolbar */}
-                <div className="flex items-center justify-between p-2" style={toolbarStyle}>
+                <div
+                    className={`flex items-center justify-between p-2 ${isManuscript ? 'shrink-0' : ''}`}
+                    style={toolbarStyle}
+                >
                     <div className={`flex items-center gap-1 ${codeView ? 'pointer-events-none opacity-30' : ''}`}>
                         {/* Tier-based buttons */}
                         {toolbarItems.map((item, i) => {
@@ -622,13 +669,16 @@ export default function RichTextEditor({
 
                 {/* Editor Area / Code View */}
                 {codeView ? (
-                    <div className="overflow-hidden" style={editorAreaStyle}>
+                    <div
+                        className={isManuscript ? 'flex min-h-0 flex-1 flex-col' : 'overflow-hidden'}
+                        style={isManuscript ? undefined : editorAreaStyle}
+                    >
                         <textarea
                             value={codeValue}
                             onChange={(e) => { setCodeValue(e.target.value); onChange(e.target.value); }}
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setIsFocused(false)}
-                            className="min-h-30 w-full resize-none p-4 font-mono text-sm outline-none"
+                            className={`w-full resize-none p-4 font-mono text-sm outline-none ${isManuscript ? 'min-h-0 flex-1' : 'min-h-30'}`}
                             style={{
                                 background: 'var(--theme-base-page)',
                                 color: 'var(--theme-base-content)',
@@ -636,6 +686,16 @@ export default function RichTextEditor({
                             spellCheck={false}
                         />
                     </div>
+                ) : isManuscript ? (
+                    /* The content wrapper is the scroll container; the
+                       prose measure + paddings live on .ProseMirror
+                       itself (components/manuscript.css) so native
+                       click-to-focus covers the whole surface. */
+                    <EditorContent
+                        editor={editor}
+                        className="tiptap-editor min-h-0 flex-1 overflow-y-auto"
+                        onMouseDown={handleGutterMouseDown}
+                    />
                 ) : (
                     <div
                         className="tiptap-editor overflow-hidden [&_.ProseMirror>*:last-child]:mb-0"

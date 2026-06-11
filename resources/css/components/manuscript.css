@@ -1,0 +1,48 @@
+/*
+ * Manuscript-mode RichTextEditor (`variant="manuscript"`) — the writing
+ * workspace's full-bleed surface, styled like a familiar word
+ * processor: a subtly darker "desk" (the scroll area) with the prose
+ * measure rendered as a raised paper sheet.
+ *
+ * The sheet IS `.ProseMirror`, so TipTap's native click-to-focus
+ * covers the whole page including its inner padding; clicks on the
+ * desk (gutters + the gap below the sheet) land on the EditorContent
+ * scroll wrapper, whose onMouseDown fallback in RichTextEditor.tsx
+ * focuses the end of the document.
+ *
+ * The 3-class selector deliberately out-specifies ui-polish.css's
+ * `.tiptap-editor .ProseMirror` base rule (padding: 1rem;
+ * min-height: 8rem) regardless of import order.
+ *
+ * Colors route through `--theme-*` tokens; the sheet shadow uses the
+ * same plain black-alpha idiom as ui-polish.css's elevation shadows.
+ */
+
+/* The desk — one step removed from the page background so the sheet
+   reads as paper lying on it. */
+.rte-manuscript .tiptap-editor {
+    background: color-mix(in srgb, var(--theme-base-content) 5%, var(--theme-base-page));
+}
+
+/* The page. min-height keeps an empty section looking like a sheet
+   of paper; the bottom margin leaves clickable desk below the last
+   line so the caret never sits against the footer. */
+.rte-manuscript .tiptap-editor .ProseMirror {
+    min-height: 70vh;
+    max-width: 48rem;
+    margin: 2.5rem auto 35vh;
+    padding: 4rem 3.5rem 6rem;
+    background: var(--theme-surface-card);
+    border: 1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent);
+    border-radius: var(--theme-radius-card);
+    box-shadow: 0 2px 12px rgb(0 0 0 / 0.12);
+}
+
+/* Tighter page margins on small screens — the 48rem measure already
+   collapses to the viewport; keep the sheet edge-to-edge-ish. */
+@media (max-width: 640px) {
+    .rte-manuscript .tiptap-editor .ProseMirror {
+        margin: 1rem auto 30vh;
+        padding: 2rem 1.25rem 4rem;
+    }
+}
