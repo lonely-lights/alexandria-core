@@ -178,6 +178,14 @@ export default function ManuscriptEditor({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [section.id]);
 
+    // Re-sync the local title when the server-confirmed one changes
+    // (after commitTitle's partial reload trims/normalizes it). Same
+    // section id, so the reset effect above doesn't cover this.
+    useEffect(() => {
+        setTitle(section.title);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [section.title]);
+
     function commitTitle() {
         const trimmed = title.trim();
 
