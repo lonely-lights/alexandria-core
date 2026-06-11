@@ -6,6 +6,7 @@ import AppLayout from '@alexandria/layouts/AppLayout';
 
 import ManuscriptEditor from './Sections/ManuscriptEditor';
 import Navigator from './Sections/Navigator';
+import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
 import ScreenplayEditor from './Sections/ScreenplayEditor';
 
 /**
@@ -60,8 +61,20 @@ interface WorkspaceProps {
     };
     sections: SectionNode[];
     currentSection: CurrentSection | null;
+    pins: EntryCard[];
     can: { update: boolean };
     [key: string]: unknown;
+}
+
+/** Persisted reference-panel visibility (desktop only — the xl: gate still applies). */
+export const PANEL_OPEN_STORAGE_KEY = 'alexandria.writing.panel_open';
+
+function readPanelOpenPreference(): boolean {
+    try {
+        return localStorage.getItem(PANEL_OPEN_STORAGE_KEY) !== 'false';
+    } catch {
+        return true;
+    }
 }
 
 /* ── Theme styles ── */
@@ -102,12 +115,30 @@ const paneBorderColor = 'color-mix(in srgb, var(--theme-base-content) 10%, trans
 
 export default function Workspace() {
     const t = useT();
-    const { project, work, sections, currentSection, can } = usePage<WorkspaceProps>().props;
+    const { project, work, sections, currentSection, pins, can } = usePage<WorkspaceProps>().props;
 
     // Server-confirmed counts from autosave responses overlay the
     // Inertia props until the next full prop refresh catches up.
     const [liveCounts, setLiveCounts] = useState<Record<number, number>>({});
     const [liveWorkWords, setLiveWorkWords] = useState<number | null>(null);
+
+    // Bumped after each confirmed autosave so the reference panel
+    // re-fetches the section's server-synced mentions.
+    const [saveSignal, setSaveSignal] = useState(0);
+
+    const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
+
+    function togglePanel() {
+        setPanelOpen((prev) => {
+            const next = !prev;
+            try {
+                localStorage.setItem(PANEL_OPEN_STORAGE_KEY, String(next));
+            } catch {
+                // Persistence is best-effort; private-mode failures are fine.
+            }
+            return next;
+        });
+    }
 
     function selectSection(slug: string) {
         router.visit(`/works/${project.slug}/${work.slug}/${slug}`, {
@@ -120,6 +151,7 @@ export default function Workspace() {
     function handleCounts(sectionId: number, words: number, workWords: number, _pages: number | null) {
         setLiveCounts((prev) => ({ ...prev, [sectionId]: words }));
         setLiveWorkWords(workWords);
+        setSaveSignal((prev) => prev + 1);
     }
 
     const workWords = liveWorkWords ?? work.word_count;
@@ -150,8 +182,32 @@ export default function Workspace() {
                                 {t(`writing.statuses.${work.status}`, work.status)}
                             </span>
                         </div>
-                        <div className="shrink-0 text-xs tabular-nums" style={metaText}>
-                            {wordCountLabel}
+                        <div className="flex shrink-0 items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={togglePanel}
+                                aria-expanded={panelOpen}
+                                aria-label={panelOpen ? t('writing.panel.collapse') : t('writing.panel.expand')}
+                                title={panelOpen ? t('writing.panel.collapse') : t('writing.panel.expand')}
+                                className={`alex-toolbar-btn hidden h-7 w-7 items-center justify-center text-xs transition-colors xl:inline-flex ${panelOpen ? 'alex-toolbar-btn--active' : ''}`}
+                                style={{
+                                    color: panelOpen
+                                        ? 'var(--theme-brand-secondary-500)'
+                                        : 'var(--theme-base-content)',
+                                    background: panelOpen
+                                        ? 'color-mix(in srgb, var(--theme-brand-secondary-500) 18%, transparent)'
+                                        : 'transparent',
+                                    borderRadius: 'var(--theme-radius-button)',
+                                }}
+                            >
+                                <i
+                                    className={`fa-solid ${panelOpen ? 'fa-chevron-right' : 'fa-chevron-left'}`}
+                                    aria-hidden="true"
+                                />
+                            </button>
+                            <div className="text-xs tabular-nums" style={metaText}>
+                                {wordCountLabel}
+                            </div>
                         </div>
                     </div>
                 </header>
@@ -207,13 +263,23 @@ export default function Workspace() {
                         )}
                     </section>
 
-                    {/* Right rail */}
-                    <aside
-                        className="hidden w-72 shrink-0 border-l xl:block"
-                        style={{ borderColor: paneBorderColor }}
-                    >
-                        {/* Reference panel mounts here (Plan 3) */}
-                    </aside>
+                    {/* Right rail — reference panel (Plan 3). The xl: responsive
+                        gate stays on top of the user toggle. */}
+                    {panelOpen && (
+                        <aside
+                            className="hidden w-80 shrink-0 border-l xl:block"
+                            style={{ borderColor: paneBorderColor }}
+                        >
+                            <ReferencePanel
+                                project={project}
+                                work={work}
+                                currentSection={currentSection}
+                                pins={pins}
+                                canUpdate={can.update}
+                                saveSignal={saveSignal}
+                            />
+                        </aside>
+                    )}
                 </div>
             </div>
         </AppLayout>

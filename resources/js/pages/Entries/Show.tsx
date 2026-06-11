@@ -11,6 +11,7 @@ import ActionButton from '@alexandria/components/ui/ActionButton';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import IconTile from '@alexandria/components/ui/IconTile';
 import type { InfoboxBlock } from '@alexandria/components/entries/Infobox';
+import AppearancesCard, { type WorkAppearance } from './Sections/AppearancesCard';
 import OverviewTab from './Sections/OverviewTab';
 import AttributesTab from './Sections/AttributesTab';
 import RelationshipsTab from './Sections/RelationshipsTab';
@@ -152,6 +153,8 @@ interface EntryShowProps {
     connections: ConnectionSection[];
     mentions: MentionEntry[];
     mentionedIn: MentionEntry[];
+    /** Writing-dashboard sections where this entry appears (8g.1 Plan 3) — host apps may omit. */
+    appearances?: WorkAppearance[];
     history: HistoryRecord[];
     infoboxBlocks: InfoboxBlock[];
     timelineEvents: Array<{
@@ -319,7 +322,7 @@ const saveBtnStyle: CSSProperties = {
 export default function EntryShow() {
     const t = useT();
     const props = usePage<EntryShowProps>().props;
-    const { project, blueprint, entry, contentHtml, summaryHtml, dynamicProperties, relationships, relationshipBlueprints, connections, mentions, mentionedIn, history, infoboxBlocks, timelineEvents, timelineEpoch } = props;
+    const { project, blueprint, entry, contentHtml, summaryHtml, dynamicProperties, relationships, relationshipBlueprints, connections, mentions, mentionedIn, appearances, history, infoboxBlocks, timelineEvents, timelineEpoch } = props;
 
     const [showStructureConfig, setShowStructureConfig] = useState(false);
     const [localStructureSettings, setLocalStructureSettings] = useState<{ children_label?: string; max_depth?: number; show_as?: 'tree' | 'list' }>(
@@ -503,11 +506,16 @@ export default function EntryShow() {
             {/* Tab content */}
             <div className="container mx-auto max-w-7xl px-4 py-8">
                 {activeTab === 'overview' && (
-                    <OverviewTab
-                        contentHtml={contentHtml}
-                        entry={entry}
-                        infoboxBlocks={infoboxBlocks}
-                    />
+                    <div className="space-y-6">
+                        <OverviewTab
+                            contentHtml={contentHtml}
+                            entry={entry}
+                            infoboxBlocks={infoboxBlocks}
+                        />
+                        {appearances !== undefined && appearances.length > 0 && (
+                            <AppearancesCard appearances={appearances} projectSlug={project.slug} />
+                        )}
+                    </div>
                 )}
 
                 {activeTab === 'attributes' && (
