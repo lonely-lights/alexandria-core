@@ -27,9 +27,24 @@ interface ManuscriptEditorProps {
     onCounts: (sectionId: number, sectionWords: number, workWords: number, pages: number | null) => void;
 }
 
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+/**
+ * `dirty` = unsaved changes exist but no request is in flight yet —
+ * renders NOTHING in the status slot so typing doesn't flicker a
+ * "Saving…" indicator on every keystroke. `saving` is set only when
+ * the fetch actually starts.
+ */
+type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
 
-const AUTOSAVE_DELAY_MS = 1200;
+/** Idle debounce — save fires this long after the user stops typing. */
+const AUTOSAVE_DELAY_MS = 3000;
+
+/**
+ * Max-pending backstop — started on the FIRST unsaved change; if the
+ * user types continuously past this window (so the idle debounce never
+ * fires), flush immediately. Guarantees long unbroken typing still
+ * persists every ~20s.
+ */
+const MAX_PENDING_MS = 20000;
 
 const PRINT_LAYOUT_STORAGE_KEY = 'alexandria.writing.print_layout';
 
@@ -109,12 +124,25 @@ export default function ManuscriptEditor({
     // pending save with its latest content, even though state has
     // already moved on by the time the cleanup runs.
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingRef = useRef(false);
     const latestContentRef = useRef(section.content ?? '');
     const sectionIdRef = useRef(section.id);
 
     function fireSave(sectionId: number, wiki: string) {
         pendingRef.current = false;
+
+        // A save (idle-debounce, max-pending flush, or section-switch
+        // flush) resets the max-pending window — it restarts on the
+        // next unsaved change.
+        if (maxTimerRef.current !== null) {
+            clearTimeout(maxTimerRef.current);
+            maxTimerRef.current = null;
+        }
+
+        if (sectionIdRef.current === sectionId) {
+            setStatus('saving');
+        }
 
         fetch(`/works/${projectSlug}/${workSlug}/sections/${sectionId}/content`, {
             method: 'PUT',
@@ -158,7 +186,7 @@ export default function ManuscriptEditor({
         setContent(wiki);
         latestContentRef.current = wiki;
         pendingRef.current = true;
-        setStatus('saving');
+        setStatus('dirty');
 
         if (timerRef.current !== null) {
             clearTimeout(timerRef.current);
@@ -167,6 +195,23 @@ export default function ManuscriptEditor({
             timerRef.current = null;
             fireSave(section.id, latestContentRef.current);
         }, AUTOSAVE_DELAY_MS);
+
+        // Max-pending backstop: starts on the first unsaved change and
+        // is NOT reset by further keystrokes, so continuous typing that
+        // keeps deferring the idle debounce still flushes within
+        // MAX_PENDING_MS. fireSave clears it on every save path.
+        if (maxTimerRef.current === null) {
+            maxTimerRef.current = setTimeout(() => {
+                maxTimerRef.current = null;
+                if (pendingRef.current) {
+                    if (timerRef.current !== null) {
+                        clearTimeout(timerRef.current);
+                        timerRef.current = null;
+                    }
+                    fireSave(section.id, latestContentRef.current);
+                }
+            }, MAX_PENDING_MS);
+        }
     }
 
     // Reset on section switch; the cleanup flushes the previous
@@ -187,6 +232,13 @@ export default function ManuscriptEditor({
             if (timerRef.current !== null) {
                 clearTimeout(timerRef.current);
                 timerRef.current = null;
+            }
+            // fireSave clears the max-pending timer on the flush path;
+            // clear it here too for the no-pending case so a stale
+            // backstop never survives a section switch or unmount.
+            if (maxTimerRef.current !== null) {
+                clearTimeout(maxTimerRef.current);
+                maxTimerRef.current = null;
             }
             if (pendingRef.current) {
                 fireSave(section.id, latestContentRef.current);

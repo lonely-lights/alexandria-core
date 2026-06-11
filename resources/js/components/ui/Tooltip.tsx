@@ -18,6 +18,8 @@ import { cn } from '../../lib/utils';
 
 type TooltipVariant = 'default' | 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error';
 
+type TooltipTone = 'default' | 'error';
+
 interface TooltipProps {
     /** The content shown inside the tooltip */
     content: ReactNode;
@@ -27,6 +29,21 @@ interface TooltipProps {
     placement?: Placement;
     /** Color variant — maps to brand or status theme tokens */
     variant?: TooltipVariant;
+    /**
+     * Controlled visibility. When provided, hover behavior is bypassed
+     * entirely and the bubble shows iff `open` is true — used for
+     * anchored field-error poppers where the CALLER owns the lifecycle
+     * (e.g. show while a validation error exists). Omit for the
+     * classic hover tooltip.
+     */
+    open?: boolean;
+    /**
+     * Visual tone. `error` swaps the solid variant fill for a soft
+     * status-error bubble (tinted card surface + error stroke border
+     * and text) so validation messages read as field feedback, not a
+     * hover hint. `default` keeps the variant-token painting.
+     */
+    tone?: TooltipTone;
     /** Delay before showing (ms) */
     delay?: number;
     /** Add a bounce animation to draw attention */
@@ -84,6 +101,8 @@ export default function Tooltip({
     children,
     placement = 'top',
     variant = 'default',
+    open,
+    tone = 'default',
     delay = 200,
     bounce = false,
     disabled = false,
@@ -91,8 +110,15 @@ export default function Tooltip({
     const [isOpen, setIsOpen] = useState(false);
     const arrowRef = useRef<SVGSVGElement>(null);
 
+    // Controlled mode: when `open` is provided the caller drives
+    // visibility — internal hover state is ignored and the hover /
+    // dismiss interactions are disabled so nothing can close the
+    // bubble out from under the caller.
+    const isControlled = open !== undefined;
+    const visible = isControlled ? open : isOpen;
+
     const { refs, floatingStyles, context } = useFloating({
-        open: isOpen,
+        open: visible,
         onOpenChange: setIsOpen,
         placement,
         middleware: [
@@ -105,9 +131,9 @@ export default function Tooltip({
 
     const hover = useHover(context, {
         delay: { open: delay, close: 50 },
-        enabled: !disabled,
+        enabled: !disabled && !isControlled,
     });
-    const dismiss = useDismiss(context);
+    const dismiss = useDismiss(context, { enabled: !isControlled });
     const role = useRole(context, { role: 'tooltip' });
 
     const { getReferenceProps, getFloatingProps } = useInteractions([hover, dismiss, role]);
@@ -133,13 +159,30 @@ export default function Tooltip({
 
     const tokens = VARIANT_TOKENS[variant];
 
-    const panelStyle: CSSProperties = {
-        background: tokens.bg,
-        color: tokens.text,
-        borderRadius: 'var(--theme-radius-button)',
-        boxShadow: '0 0 16px rgba(0, 0, 0, 0.25)',
-        ...transitionStyles,
-    };
+    // Error tone: a soft tinted card bubble (12% error stroke mixed
+    // into the card surface) with the stroke for border + text, so the
+    // popper reads as field-validation feedback instead of the solid
+    // hover-hint fill. The arrow shares the same fill + stroke so it
+    // tracks the bubble exactly.
+    const errorBg = 'color-mix(in srgb, var(--theme-status-error-stroke) 12%, var(--theme-surface-card))';
+    const isErrorTone = tone === 'error';
+
+    const panelStyle: CSSProperties = isErrorTone
+        ? {
+              background: errorBg,
+              color: 'var(--theme-status-error-stroke)',
+              border: '1px solid var(--theme-status-error-stroke)',
+              borderRadius: 'var(--theme-radius-button)',
+              boxShadow: '0 0 16px rgba(0, 0, 0, 0.25)',
+              ...transitionStyles,
+          }
+        : {
+              background: tokens.bg,
+              color: tokens.text,
+              borderRadius: 'var(--theme-radius-button)',
+              boxShadow: '0 0 16px rgba(0, 0, 0, 0.25)',
+              ...transitionStyles,
+          };
 
     return (
         <>
@@ -174,7 +217,9 @@ export default function Tooltip({
                                 context={context}
                                 width={12}
                                 height={6}
-                                style={{ fill: tokens.bg }}
+                                stroke={isErrorTone ? 'var(--theme-status-error-stroke)' : undefined}
+                                strokeWidth={isErrorTone ? 1 : 0}
+                                style={{ fill: isErrorTone ? errorBg : tokens.bg }}
                             />
                         </div>
                     </div>

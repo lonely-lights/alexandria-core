@@ -6,6 +6,12 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>
     label?: string;
     error?: string;
     hint?: string | ReactNode;
+    /**
+     * Suppress the inline error message while keeping the error border
+     * tint — for callers that surface the message elsewhere (e.g. an
+     * anchored error popper).
+     */
+    hideErrorText?: boolean;
     icon?: string;
     iconElement?: ReactNode;
     size?: FormSize;
@@ -22,6 +28,7 @@ export default function Input({
     label,
     error,
     hint,
+    hideErrorText = false,
     icon,
     iconElement,
     size = 'sm',
@@ -77,7 +84,7 @@ export default function Input({
                     {...props}
                 />
             </div>
-            {error && (
+            {error && !hideErrorText && (
                 <p
                     className="mt-1 text-xs"
                     style={{ color: 'var(--theme-status-error-stroke)' }}

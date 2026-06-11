@@ -8,6 +8,7 @@ import PageHeader from '@alexandria/components/layout/PageHeader';
 import Button from '@alexandria/components/ui/Button';
 import IconTile from '@alexandria/components/ui/IconTile';
 import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
+import Tooltip from '@alexandria/components/ui/Tooltip';
 import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
 import Textarea from '@alexandria/components/form/Textarea';
@@ -249,28 +250,58 @@ function CreateWorkModal({
             <ModalHeader title={t('writing.form.create_title')} onClose={onClose} />
             <form onSubmit={submit}>
                 <div className="flex flex-col gap-4 px-6 py-5">
-                    <Input
-                        label={t('writing.form.title')}
-                        name="title"
-                        value={form.data.title}
-                        onChange={(e) => form.setData('title', e.target.value)}
-                        error={form.errors.title}
-                        autoFocus
-                        required
-                        size="md"
-                    />
-                    <Select
-                        label={t('writing.form.type')}
-                        name="type"
-                        value={form.data.type}
-                        onChange={(e) => form.setData('type', e.target.value)}
-                        error={form.errors.type}
-                        options={types.map((type) => ({
-                            value: type,
-                            label: t(`writing.types.${type}`, type),
-                        }))}
-                        size="md"
-                    />
+                    {/* Validation errors surface as poppers anchored to
+                        the field (error border stays on the control, the
+                        inline message is suppressed); editing the field
+                        clears its error, which dismisses the popper. */}
+                    <Tooltip
+                        content={form.errors.title}
+                        open={!!form.errors.title}
+                        tone="error"
+                        placement="top-end"
+                    >
+                        <Input
+                            label={t('writing.form.title')}
+                            name="title"
+                            value={form.data.title}
+                            onChange={(e) => {
+                                form.setData('title', e.target.value);
+                                if (form.errors.title) {
+                                    form.clearErrors('title');
+                                }
+                            }}
+                            error={form.errors.title}
+                            hideErrorText
+                            autoFocus
+                            required
+                            size="md"
+                        />
+                    </Tooltip>
+                    <Tooltip
+                        content={form.errors.type}
+                        open={!!form.errors.type}
+                        tone="error"
+                        placement="right"
+                    >
+                        <Select
+                            label={t('writing.form.type')}
+                            name="type"
+                            value={form.data.type}
+                            onChange={(e) => {
+                                form.setData('type', e.target.value);
+                                if (form.errors.type) {
+                                    form.clearErrors('type');
+                                }
+                            }}
+                            error={form.errors.type}
+                            hideErrorText
+                            options={types.map((type) => ({
+                                value: type,
+                                label: t(`writing.types.${type}`, type),
+                            }))}
+                            size="md"
+                        />
+                    </Tooltip>
                     <Textarea
                         label={t('writing.form.logline')}
                         name="logline"

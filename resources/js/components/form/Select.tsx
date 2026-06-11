@@ -11,6 +11,12 @@ interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'siz
     label?: string;
     error?: string;
     hint?: string | ReactNode;
+    /**
+     * Suppress the inline error message while keeping the error border
+     * tint — for callers that surface the message elsewhere (e.g. an
+     * anchored error popper).
+     */
+    hideErrorText?: boolean;
     options: SelectOption[] | Record<string, string>;
     placeholder?: string;
     size?: FormSize;
@@ -26,6 +32,7 @@ export default function Select({
     label,
     error,
     hint,
+    hideErrorText = false,
     options,
     placeholder,
     size = 'sm',
@@ -70,7 +77,7 @@ export default function Select({
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
             </select>
-            {error && (
+            {error && !hideErrorText && (
                 <p
                     className="mt-1 text-xs"
                     style={{ color: 'var(--theme-status-error-stroke)' }}
