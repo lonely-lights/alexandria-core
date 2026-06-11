@@ -1,55 +1,38 @@
 import { router } from '@inertiajs/react';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 import RichTextEditor from '@alexandria/components/editor/RichTextEditor';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 
 import type { CurrentSection } from '../Workspace';
+import useSectionAutosave, { type SectionCountsCallback } from './useSectionAutosave';
 
 /**
  * Workspace manuscript editor — Stage 8g.1 (Plan 2 Task 7).
  *
  * The center pane: an inline-editable section title over a RichTextEditor
- * wired to debounced JSON autosave (PUT .../sections/{id}/content).
- * Server-confirmed word counts flow back up through `onCounts` so the
- * Workspace header strip + Navigator rows stay live without an Inertia
- * round-trip. Switching sections (or unmounting) flushes any pending
- * save for the outgoing section before state resets.
+ * wired to debounced JSON autosave (PUT .../sections/{id}/content) via
+ * the shared useSectionAutosave hook. Server-confirmed word counts flow
+ * back up through `onCounts` so the Workspace header strip + Navigator
+ * rows stay live without an Inertia round-trip. Switching sections (or
+ * unmounting) flushes any pending save for the outgoing section before
+ * state resets.
  */
 
-interface ManuscriptEditorProps {
+export interface ManuscriptEditorProps {
     projectId: number;
     projectSlug: string;
     workSlug: string;
     section: CurrentSection;
     canUpdate: boolean;
-    onCounts: (sectionId: number, sectionWords: number, workWords: number, pages: number | null) => void;
+    onCounts: SectionCountsCallback;
 }
 
-/**
- * `dirty` = unsaved changes exist but no request is in flight yet —
- * renders NOTHING in the status slot so typing doesn't flicker a
- * "Saving…" indicator on every keystroke. `saving` is set only when
- * the fetch actually starts.
- */
-type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
-
-/** Idle debounce — save fires this long after the user stops typing. */
-const AUTOSAVE_DELAY_MS = 3000;
-
-/**
- * Max-pending backstop — started on the FIRST unsaved change; if the
- * user types continuously past this window (so the idle debounce never
- * fires), flush immediately. Guarantees long unbroken typing still
- * persists every ~20s.
- */
-const MAX_PENDING_MS = 20000;
-
-const PRINT_LAYOUT_STORAGE_KEY = 'alexandria.writing.print_layout';
+export const PRINT_LAYOUT_STORAGE_KEY = 'alexandria.writing.print_layout';
 
 /** Read the persisted print-layout preference once on mount. */
-function readPrintLayoutPreference(): boolean {
+export function readPrintLayoutPreference(): boolean {
     try {
         return localStorage.getItem(PRINT_LAYOUT_STORAGE_KEY) === 'true';
     } catch {
@@ -96,14 +79,6 @@ const errorTextStyle: CSSProperties = {
     color: 'var(--theme-status-error-stroke)',
 };
 
-function getCsrfToken(): string {
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
-}
-
 export default function ManuscriptEditor({
     projectId,
     projectSlug,
@@ -113,137 +88,23 @@ export default function ManuscriptEditor({
     onCounts,
 }: ManuscriptEditorProps) {
     const t = useT();
-    const [content, setContent] = useState(section.content ?? '');
+    const { status, wordCount, pageEstimate, noteChange, initialContent } =
+        useSectionAutosave({ projectSlug, workSlug, section, onCounts });
+    const [content, setContent] = useState(initialContent);
     const [title, setTitle] = useState(section.title);
-    const [status, setStatus] = useState<SaveStatus>('idle');
-    const [wordCount, setWordCount] = useState(section.word_count);
-    const [pageEstimate, setPageEstimate] = useState<number | null>(null);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
-
-    // Refs let the section-switch cleanup flush the OUTGOING section's
-    // pending save with its latest content, even though state has
-    // already moved on by the time the cleanup runs.
-    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const pendingRef = useRef(false);
-    const latestContentRef = useRef(section.content ?? '');
-    const sectionIdRef = useRef(section.id);
-
-    function fireSave(sectionId: number, wiki: string) {
-        pendingRef.current = false;
-
-        // A save (idle-debounce, max-pending flush, or section-switch
-        // flush) resets the max-pending window — it restarts on the
-        // next unsaved change.
-        if (maxTimerRef.current !== null) {
-            clearTimeout(maxTimerRef.current);
-            maxTimerRef.current = null;
-        }
-
-        if (sectionIdRef.current === sectionId) {
-            setStatus('saving');
-        }
-
-        fetch(`/works/${projectSlug}/${workSlug}/sections/${sectionId}/content`, {
-            method: 'PUT',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': getCsrfToken(),
-            },
-            body: JSON.stringify({ content: wiki }),
-        })
-            .then((response) =>
-                response.ok
-                    ? (response.json() as Promise<{
-                          word_count: number;
-                          page_estimate: number | null;
-                          work_word_count: number;
-                      }>)
-                    : Promise.reject(new Error(`HTTP ${response.status}`)),
-            )
-            .then((payload) => {
-                onCounts(sectionId, payload.word_count, payload.work_word_count, payload.page_estimate);
-
-                if (sectionIdRef.current === sectionId) {
-                    setWordCount(payload.word_count);
-                    setPageEstimate(payload.page_estimate);
-                    setStatus('saved');
-                }
-            })
-            .catch(() => {
-                // Content state is untouched — the next keystroke
-                // reschedules the save, retrying naturally.
-                if (sectionIdRef.current === sectionId) {
-                    setStatus('error');
-                }
-            });
-    }
 
     function handleChange(wiki: string) {
         setContent(wiki);
-        latestContentRef.current = wiki;
-        pendingRef.current = true;
-        setStatus('dirty');
-
-        if (timerRef.current !== null) {
-            clearTimeout(timerRef.current);
-        }
-        timerRef.current = setTimeout(() => {
-            timerRef.current = null;
-            fireSave(section.id, latestContentRef.current);
-        }, AUTOSAVE_DELAY_MS);
-
-        // Max-pending backstop: starts on the first unsaved change and
-        // is NOT reset by further keystrokes, so continuous typing that
-        // keeps deferring the idle debounce still flushes within
-        // MAX_PENDING_MS. fireSave clears it on every save path.
-        if (maxTimerRef.current === null) {
-            maxTimerRef.current = setTimeout(() => {
-                maxTimerRef.current = null;
-                if (pendingRef.current) {
-                    if (timerRef.current !== null) {
-                        clearTimeout(timerRef.current);
-                        timerRef.current = null;
-                    }
-                    fireSave(section.id, latestContentRef.current);
-                }
-            }, MAX_PENDING_MS);
-        }
+        noteChange(wiki);
     }
 
-    // Reset on section switch; the cleanup flushes the previous
-    // section's pending save (it closes over the previous render's
-    // section.id + the refs holding its latest content). Also covers
-    // unmount — a fire-and-forget fetch is fine there.
+    // Reset local editor state on section switch (the autosave hook
+    // resets its own state — and flushes the outgoing section's
+    // pending save — on the same id change).
     useEffect(() => {
-        sectionIdRef.current = section.id;
-        latestContentRef.current = section.content ?? '';
-        pendingRef.current = false;
         setContent(section.content ?? '');
         setTitle(section.title);
-        setWordCount(section.word_count);
-        setPageEstimate(null);
-        setStatus('idle');
-
-        return () => {
-            if (timerRef.current !== null) {
-                clearTimeout(timerRef.current);
-                timerRef.current = null;
-            }
-            // fireSave clears the max-pending timer on the flush path;
-            // clear it here too for the no-pending case so a stale
-            // backstop never survives a section switch or unmount.
-            if (maxTimerRef.current !== null) {
-                clearTimeout(maxTimerRef.current);
-                maxTimerRef.current = null;
-            }
-            if (pendingRef.current) {
-                fireSave(section.id, latestContentRef.current);
-            }
-        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [section.id]);
 

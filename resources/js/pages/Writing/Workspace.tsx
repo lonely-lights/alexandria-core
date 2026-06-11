@@ -6,6 +6,7 @@ import AppLayout from '@alexandria/layouts/AppLayout';
 
 import ManuscriptEditor from './Sections/ManuscriptEditor';
 import Navigator from './Sections/Navigator';
+import ScreenplayEditor from './Sections/ScreenplayEditor';
 
 /**
  * Writing dashboard → workspace — Stage 8g.1 (Plan 2 Task 6).
@@ -176,14 +177,26 @@ export default function Workspace() {
                         editor's content wrapper inside ManuscriptEditor does */}
                     <section className="flex min-w-0 flex-1 flex-col overflow-hidden">
                         {currentSection !== null ? (
-                            <ManuscriptEditor
-                                projectId={project.id}
-                                projectSlug={project.slug}
-                                workSlug={work.slug}
-                                section={currentSection}
-                                canUpdate={can.update}
-                                onCounts={handleCounts}
-                            />
+                            currentSection.format === 'screenplay' ? (
+                                <ScreenplayEditor
+                                    key={currentSection.id}
+                                    projectId={project.id}
+                                    projectSlug={project.slug}
+                                    workSlug={work.slug}
+                                    section={currentSection}
+                                    canUpdate={can.update}
+                                    onCounts={handleCounts}
+                                />
+                            ) : (
+                                <ManuscriptEditor
+                                    projectId={project.id}
+                                    projectSlug={project.slug}
+                                    workSlug={work.slug}
+                                    section={currentSection}
+                                    canUpdate={can.update}
+                                    onCounts={handleCounts}
+                                />
+                            )
                         ) : (
                             <div
                                 className="flex flex-1 items-center justify-center px-6 text-center text-sm italic"

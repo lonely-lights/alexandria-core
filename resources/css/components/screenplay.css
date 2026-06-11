@@ -1,0 +1,79 @@
+/*
+ * Screenplay-mode editor (Stage 8g.1 Plan 3 Task 2) — element layout
+ * for the six screenplay block nodes (editor/screenplay/extensions.ts).
+ *
+ * The screenplay editor root carries BOTH `rte-manuscript` and
+ * `rte-screenplay`, so the desk/sheet/print geometry all comes from
+ * manuscript.css; this file only adds the Courier voice and the
+ * per-element indents. The inch literals are intentional print
+ * geometry (industry-standard screenplay margins relative to a 1in
+ * page margin), not theme tokens — in non-print mode they read
+ * proportionally on the 60rem sheet.
+ *
+ * Colors inherit from the sheet (theme tokens applied by
+ * manuscript.css / ui-polish.css).
+ */
+
+.rte-screenplay .ProseMirror {
+    font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+    font-size: 12pt;
+    line-height: 1.1;
+}
+
+/* Block spacing rides ui-polish.css's `.tiptap-editor .ProseMirror p
+   { margin-bottom: 0.5rem }` baseline; the margin-tops below add the
+   screenplay-specific air above sluglines/characters/transitions. */
+
+.sp-slugline {
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 1.2em;
+}
+
+.sp-character {
+    margin-left: 2.2in;
+    text-transform: uppercase;
+    margin-top: 1em;
+}
+
+.sp-parenthetical {
+    margin-left: 1.6in;
+    max-width: 2.5in;
+}
+
+/* The stored parenthetical text is unwrapped (codec canonical form);
+   the parens are presentation. */
+.sp-parenthetical::before {
+    content: '(';
+}
+
+.sp-parenthetical::after {
+    content: ')';
+}
+
+.sp-dialogue {
+    margin-left: 1in;
+    max-width: 3.5in;
+}
+
+.sp-transition {
+    text-transform: uppercase;
+    text-align: right;
+    margin-top: 1em;
+}
+
+/* Narrow panes — halve the indents so dialogue columns survive
+   ~640px-wide sheets. */
+@media (max-width: 640px) {
+    .sp-character {
+        margin-left: 1.1in;
+    }
+
+    .sp-parenthetical {
+        margin-left: 0.8in;
+    }
+
+    .sp-dialogue {
+        margin-left: 0.5in;
+    }
+}
