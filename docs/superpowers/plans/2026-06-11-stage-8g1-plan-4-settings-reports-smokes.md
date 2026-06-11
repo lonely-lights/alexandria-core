@@ -16,10 +16,15 @@
 
 ---
 
-## Open decisions (resolve at check-in before execution)
+## Resolved decisions (check-in, 2026-06-11)
 
-1. **Essay default plan:** (a) no plan at all — no targets render until the user sets one in Work Settings (recommended: essays vary wildly); (b) a humbler `essay` preset (~2,000 words, no per-section); (c) keep borrowing short_story.
-2. **Where Work Settings opens from:** (a) gear icon in the workspace header strip (recommended — you're usually in the workspace); (b) also a kebab/gear on each works-index card. Plan assumes (a) only; (b) is a cheap add if wanted.
+1. **User-defined-first targets + poetry groundwork.** Essay and `other` templates stop borrowing a plan — they scaffold with `length_plan: null` (no targets render until the user picks/sets one in Work Settings). The presets stay available in the settings modal as the "smart defaults." NEW SCOPE folded in: a `poem` work type (single prose section, no auto plan) and **line-based presets** — plans gain a `target_lines` dimension; config gains `sonnet` (14 lines), `haiku` (3), `villanelle` (19), `limerick` (5). Supporting plumbing: `line_count` derived columns on `work_sections` + `works` (alpha rule: edit the ORIGINAL create migrations), `SectionContentAnalyzer` returns `lineCount` (non-empty lines — it already counts them for screenplay pages), persist/rollup/rebuild carry it, and the workspace header + settings progress show `lines of :target` when the plan is line-based. Rhythm/stressed-syllable analysis is OUT of 8g.1 — board task, earmarked as an 8g.2 craft-suite tool.
+2. **Work Settings opens from BOTH** the workspace header gear and a gear on each works-index card — user evaluates after seeing them and may drop one later.
+
+## Task 0 (core): Poetry groundwork — line counts + scaffold changes
+
+**Files:** modify migrations `0001_01_03? no — 0001_01_01_000900/000910` (add `line_count` unsignedInteger default 0 after word_count in BOTH works + work_sections — alpha edit-in-place), `config/alexandria.php` (writing.types += 'poem'; templates: essay/other lose `length_plan`, + poem template `{format: prose, sections: [{label: 'Poem', title: 'Untitled'}]}`; length_plans += sonnet/haiku/villanelle/limerick as `['target_lines' => N]`), `src/DTO/Writing/AnalyzedSectionContent.php` (+ `public int $lineCount`), `src/Services/Writing/SectionContentAnalyzer.php` (compute non-empty trimmed lines for ALL formats), `WorkSectionContentService` (persist line_count + rollup), `WorkScaffolder` (no change beyond config — verify null plan path), Writing tests updated + extended (analyzer lineCount prose+screenplay, persist/rollup line_count, essay/other/poem scaffold has null plan + no targets, poem type template).
+**Migration note:** the user must `php artisan migrate:refresh` + `local:seed` after this lands — call it out in the final report.
 
 ---
 
