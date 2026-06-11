@@ -1,6 +1,5 @@
-import { router } from '@inertiajs/react';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
+import { useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 
 import Select from '@alexandria/components/form/Select';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
@@ -22,6 +21,7 @@ import {
     readPrintLayoutPreference,
     type ManuscriptEditorProps,
 } from './ManuscriptEditor';
+import SectionChrome from './SectionChrome';
 import useSectionAutosave from './useSectionAutosave';
 
 // Same platform sniff RichTextEditor uses for shortcut labels.
@@ -31,60 +31,23 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
  * Workspace screenplay editor — Stage 8g.1 (Plan 3 Task 2).
  *
  * The center pane for `format: 'screenplay'` sections: same shell
- * contract as ManuscriptEditor (menu bar / autosave via the shared
- * useSectionAutosave hook / counts footer), but the writing surface is
- * a schema-constrained TipTap instance whose document only admits the
- * six screenplay block nodes (editor/screenplay/extensions.ts).
- * Storage format is the Fountain-flavored codec text
- * (editor/screenplay/codec.ts).
+ * contract as ManuscriptEditor (the shared SectionChrome menu bar +
+ * counts footer, autosave via the shared useSectionAutosave hook), but
+ * the writing surface is a schema-constrained TipTap instance whose
+ * document only admits the six screenplay block nodes
+ * (editor/screenplay/extensions.ts). Storage format is the
+ * Fountain-flavored codec text (editor/screenplay/codec.ts).
  *
- * The root carries BOTH `rte-manuscript` and `rte-screenplay`, so the
- * desk/sheet/print geometry comes from manuscript.css and the Courier
- * voice + element indents from screenplay.css.
+ * The chrome root carries BOTH `rte-manuscript` and `rte-screenplay`,
+ * so the desk/sheet/print geometry comes from manuscript.css and the
+ * Courier voice + element indents from screenplay.css.
  */
 
-/* ── Theme styles (mirrors ManuscriptEditor's menu bar / footer) ── */
-
-const labelChipStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
-    borderRadius: 'var(--theme-radius-badge)',
-    padding: '0.125rem 0.5rem',
-    fontSize: '0.6875rem',
-    fontWeight: 600,
-    lineHeight: 1.5,
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-    whiteSpace: 'nowrap',
-};
-
-const titleInputStyle: CSSProperties = {
-    background: 'transparent',
-    border: 'none',
-    outline: 'none',
-    color: 'var(--theme-base-content)',
-};
-
-const menuBarStyle: CSSProperties = {
-    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-};
+/* ── Theme styles ── */
 
 const toolbarStyle: CSSProperties = {
     background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
     borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-};
-
-const footerStyle: CSSProperties = {
-    background: 'var(--theme-base-page)',
-    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-};
-
-const footerMetaStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
-};
-
-const errorTextStyle: CSSProperties = {
-    color: 'var(--theme-status-error-stroke)',
 };
 
 /** Compact icon button — same idiom as RichTextEditor's toolbar buttons. */
@@ -296,33 +259,9 @@ export default function ScreenplayEditor({
     canUpdate,
     onCounts,
 }: ManuscriptEditorProps) {
-    const t = useT();
     const { status, wordCount, pageEstimate, noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
-    const [title, setTitle] = useState(section.title);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
-
-    // Re-sync the local title when the server-confirmed one changes
-    // (after commitTitle's partial reload trims/normalizes it).
-    useEffect(() => {
-        setTitle(section.title);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [section.title]);
-
-    function commitTitle() {
-        const trimmed = title.trim();
-
-        if (!canUpdate || trimmed === '' || trimmed === section.title) {
-            setTitle(section.title);
-            return;
-        }
-
-        router.put(`/works/${projectSlug}/${workSlug}/sections/${section.id}`, { title: trimmed }, {
-            preserveScroll: true,
-            preserveState: true,
-            only: ['sections', 'currentSection'],
-        });
-    }
 
     function togglePrintLayout() {
         const next = !printLayout;
@@ -335,56 +274,17 @@ export default function ScreenplayEditor({
         }
     }
 
-    const statusText =
-        status === 'saving'
-            ? t('writing.workspace.saving')
-            : status === 'saved'
-                ? t('writing.workspace.saved')
-                : status === 'error'
-                    ? t('writing.workspace.save_error')
-                    : null;
-
-    const wordsLabel = section.target_words !== null
-        ? `${t('writing.workspace.words').replace(':count', wordCount.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', section.target_words.toLocaleString())}`
-        : t('writing.workspace.words').replace(':count', wordCount.toLocaleString());
-
     return (
-        <div
-            className={`rte-manuscript rte-screenplay ${printLayout && canUpdate ? 'rte-manuscript--print ' : ''}flex h-full min-h-0 flex-col`}
+        <SectionChrome
+            projectSlug={projectSlug}
+            workSlug={workSlug}
+            section={section}
+            canUpdate={canUpdate}
+            status={status}
+            wordCount={wordCount}
+            pageEstimate={pageEstimate}
+            className={`rte-manuscript rte-screenplay${printLayout && canUpdate ? ' rte-manuscript--print' : ''}`}
         >
-            {/* Menu bar — title + label on the left, save status on the right */}
-            <div className="flex h-12 shrink-0 items-center gap-3 px-4" style={menuBarStyle}>
-                {canUpdate ? (
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        onBlur={commitTitle}
-                        className="min-w-0 flex-1 text-lg font-semibold"
-                        style={titleInputStyle}
-                        aria-label={t('writing.workspace.section_title_placeholder')}
-                        placeholder={t('writing.workspace.section_title_placeholder')}
-                    />
-                ) : (
-                    <h2 className="min-w-0 flex-1 truncate text-lg font-semibold">
-                        {section.title}
-                    </h2>
-                )}
-                {section.label && (
-                    <span className="shrink-0" style={labelChipStyle}>
-                        {section.label}
-                    </span>
-                )}
-                {statusText && (
-                    <span
-                        className="shrink-0 text-xs"
-                        style={status === 'error' ? errorTextStyle : footerMetaStyle}
-                    >
-                        {statusText}
-                    </span>
-                )}
-            </div>
-
             {canUpdate ? (
                 <ScreenplaySurface
                     projectId={projectId}
@@ -411,18 +311,6 @@ export default function ScreenplayEditor({
                     </div>
                 </div>
             )}
-
-            {/* Footer bar — counts only */}
-            <footer className="shrink-0" style={footerStyle}>
-                <div className="flex items-center justify-end px-4 py-2 text-xs">
-                    <span className="shrink-0 tabular-nums" style={footerMetaStyle}>
-                        {wordsLabel}
-                        {section.format === 'screenplay' && pageEstimate !== null && (
-                            <> · {t('writing.workspace.pages').replace(':count', pageEstimate.toLocaleString())}</>
-                        )}
-                    </span>
-                </div>
-            </footer>
-        </div>
+        </SectionChrome>
     );
 }
