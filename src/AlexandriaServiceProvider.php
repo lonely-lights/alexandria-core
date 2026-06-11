@@ -9,6 +9,7 @@ use Alexandria\Core\Actions\Fortify\ResetUserPassword;
 use Alexandria\Core\Actions\Fortify\UpdateUserPassword;
 use Alexandria\Core\Actions\Fortify\UpdateUserProfileInformation;
 use Alexandria\Core\AI\Registry\AgentRegistry;
+use Alexandria\Core\Console\RebuildWritingDataCommand;
 use Alexandria\Core\Mail\BrandedMailDefinition;
 use Alexandria\Core\Mail\BrandedMailRegistry;
 use Alexandria\Core\Mail\BrandedTextResolver;
@@ -79,6 +80,10 @@ class AlexandriaServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../lang' => $this->app->langPath('vendor/alexandria'),
             ], 'alexandria-translations');
+
+            $this->commands([
+                RebuildWritingDataCommand::class,
+            ]);
         }
 
         $this->bindFortifyActions();
