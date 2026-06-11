@@ -75,8 +75,6 @@ use Spatie\Tags\HasTags;
  * @method static Builder<static> query()
  * @method static Builder<static> where($column, $operator = null, $value = null, $boolean = 'and')
  * @method static Builder<static> whereIn(string $column, mixed $values, string $boolean = 'and', bool $not = false)
- * @method bool isLocked()
- * @method bool isArchived()
  */
 class Project extends Model implements HasMedia
 {

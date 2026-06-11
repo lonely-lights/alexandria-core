@@ -1,5 +1,5 @@
 import { router, useForm } from '@inertiajs/react';
-import { useState, type CSSProperties, type FormEvent } from 'react';
+import { useState, type CSSProperties } from 'react';
 
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import Button from '@alexandria/components/ui/Button';
@@ -339,8 +339,7 @@ function AddSectionModal({
         parent_id: parentId,
     });
 
-    function submit(e: FormEvent<HTMLFormElement>) {
-        e.preventDefault();
+    function submit() {
         form.post(`/works/${projectSlug}/${workSlug}/sections`, {
             preserveScroll: true,
             onSuccess: () => {
@@ -360,7 +359,14 @@ function AddSectionModal({
                 }
                 onClose={onClose}
             />
-            <form onSubmit={submit}>
+            {/* noValidate: server-side validation owns the error UI. */}
+            <form
+                noValidate
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    submit();
+                }}
+            >
                 <div className="flex flex-col gap-4 px-6 py-5">
                     <Input
                         label={t('writing.workspace.section_title_placeholder')}

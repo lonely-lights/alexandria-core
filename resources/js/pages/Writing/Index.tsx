@@ -1,5 +1,5 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { useState, type CSSProperties, type FormEvent } from 'react';
+import { useState, type CSSProperties } from 'react';
 
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import useMediaQuery from '@alexandria/hooks/useMediaQuery';
@@ -238,8 +238,7 @@ function CreateWorkModal({
         logline: '',
     });
 
-    function submit(e: FormEvent<HTMLFormElement>) {
-        e.preventDefault();
+    function submit() {
         // No onSuccess close — the server redirects straight into the
         // new workspace, so the modal unmounts with the page.
         form.post(`/works/${projectSlug}`);
@@ -248,7 +247,16 @@ function CreateWorkModal({
     return (
         <Modal open onClose={onClose} maxWidth="max-w-lg">
             <ModalHeader title={t('writing.form.create_title')} onClose={onClose} />
-            <form onSubmit={submit}>
+            {/* noValidate: the server validates `required`; without it
+                Chrome's native constraint bubble fires before submit and
+                the error poppers never get a chance. */}
+            <form
+                noValidate
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    submit();
+                }}
+            >
                 <div className="flex flex-col gap-4 px-6 py-5">
                     {/* Validation errors surface as poppers anchored to
                         the field (error border stays on the control, the

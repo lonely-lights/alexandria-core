@@ -61,43 +61,34 @@ const labelStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
 
+/* Quarter-inch steps strictly inside the content zone (1in–7.5in);
+   the zone boundaries themselves read as the margin-shade edges. */
+const QUARTERS = Array.from({ length: CONTENT_QUARTERS - 1 }, (_, i) => i + 1);
+
 export default function ManuscriptRuler() {
-    const marks = [];
-
-    // Ticks strictly inside the content zone (1in–7.5in); the zone
-    // boundaries themselves read as the margin-shade edges.
-    for (let n = 1; n < CONTENT_QUARTERS; n++) {
-        const isInch = n % 4 === 0;
-
-        marks.push(
-            <span
-                key={`tick-${n}`}
-                style={{
-                    ...tickStyle,
-                    left: `calc(1in + ${n} * 0.25in)`,
-                    height: isInch ? '6px' : '3px',
-                }}
-            />,
-        );
-
-        if (isInch) {
-            marks.push(
-                <span
-                    key={`label-${n}`}
-                    style={{ ...labelStyle, left: `calc(1in + ${n} * 0.25in)` }}
-                >
-                    {n / 4}
-                </span>,
-            );
-        }
-    }
-
     return (
         <div aria-hidden="true" className="w-full shrink-0" style={barStyle}>
             <div style={stripStyle}>
                 <div style={{ ...marginZoneStyle, left: 0 }} />
                 <div style={{ ...marginZoneStyle, left: '7.5in' }} />
-                {marks}
+                {QUARTERS.map((n) => (
+                    <span
+                        key={`tick-${n}`}
+                        style={{
+                            ...tickStyle,
+                            left: `calc(1in + ${n} * 0.25in)`,
+                            height: n % 4 === 0 ? '6px' : '3px',
+                        }}
+                    />
+                ))}
+                {QUARTERS.filter((n) => n % 4 === 0).map((n) => (
+                    <span
+                        key={`label-${n}`}
+                        style={{ ...labelStyle, left: `calc(1in + ${n} * 0.25in)` }}
+                    >
+                        {n / 4}
+                    </span>
+                ))}
             </div>
         </div>
     );
