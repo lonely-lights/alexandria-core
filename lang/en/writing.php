@@ -66,6 +66,7 @@ return [
     'workspace.add_section' => 'Add section',
     'workspace.add_child' => 'Add inside',
     'workspace.delete_section' => 'Delete section',
+    'workspace.drag_to_reorder' => 'Drag to reorder',
     'workspace.delete_confirm_title' => 'Delete this section?',
     'workspace.delete_confirm_body' => 'This removes the section and everything nested inside it.',
     'workspace.delete_confirm_action' => 'Delete',
