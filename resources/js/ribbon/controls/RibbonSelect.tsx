@@ -24,21 +24,31 @@ export default function RibbonSelect<Ctx>({ control, ctx }: Props<Ctx>) {
     const label = t(control.labelKey);
     const tip = control.shortcut ? `${label} · ${formatShortcutLabel(control.shortcut, isMac)}` : label;
 
+    const trigger = (
+        <select
+            className="ribbon-select"
+            aria-label={label}
+            value={control.value?.(ctx) ?? ''}
+            disabled={disabled}
+            onChange={(e) => control.onAction(ctx, e.target.value)}
+        >
+            {options.map((option) => (
+                <option key={option.value} value={option.value}>
+                    {t(option.labelKey)}
+                </option>
+            ))}
+        </select>
+    );
+
+    // Firefox doesn't fire mouse events on disabled form elements, so
+    // the tooltip's hover listeners attach to a wrapper span instead.
     return (
         <Tooltip content={tip}>
-            <select
-                className="ribbon-select"
-                aria-label={label}
-                value={control.value?.(ctx) ?? ''}
-                disabled={disabled}
-                onChange={(e) => control.onAction(ctx, e.target.value)}
-            >
-                {options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                        {t(option.labelKey)}
-                    </option>
-                ))}
-            </select>
+            {disabled ? (
+                <span style={{ display: 'contents' }}>{trigger}</span>
+            ) : (
+                trigger
+            )}
         </Tooltip>
     );
 }

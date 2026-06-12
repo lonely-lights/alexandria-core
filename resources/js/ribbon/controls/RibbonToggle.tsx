@@ -23,18 +23,28 @@ export default function RibbonToggle<Ctx>({ control, ctx, showLabel }: Props<Ctx
     const label = t(control.labelKey);
     const tip = control.shortcut ? `${label} · ${formatShortcutLabel(control.shortcut, isMac)}` : label;
 
+    const trigger = (
+        <button
+            type="button"
+            className={`ribbon-ctl alex-toolbar-btn ${active ? 'alex-toolbar-btn--active' : ''}`}
+            aria-pressed={active}
+            disabled={disabled}
+            onClick={() => control.onAction(ctx)}
+        >
+            <i className={control.icon} aria-hidden="true" />
+            {showLabel && <span className="ribbon-ctl-label">{label}</span>}
+        </button>
+    );
+
+    // Firefox doesn't fire mouse events on disabled form elements, so
+    // the tooltip's hover listeners attach to a wrapper span instead.
     return (
         <Tooltip content={tip}>
-            <button
-                type="button"
-                className={`ribbon-ctl alex-toolbar-btn ${active ? 'alex-toolbar-btn--active' : ''}`}
-                aria-pressed={active}
-                disabled={disabled}
-                onClick={() => control.onAction(ctx)}
-            >
-                <i className={control.icon} aria-hidden="true" />
-                {showLabel && <span className="ribbon-ctl-label">{label}</span>}
-            </button>
+            {disabled ? (
+                <span style={{ display: 'contents' }}>{trigger}</span>
+            ) : (
+                trigger
+            )}
         </Tooltip>
     );
 }

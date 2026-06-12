@@ -23,23 +23,29 @@ export default function RibbonMenu<Ctx>({ control, ctx }: Props<Ctx>) {
     const label = t(control.labelKey);
     const tip = control.shortcut ? `${label} · ${formatShortcutLabel(control.shortcut, isMac)}` : label;
 
-    const triggerButton = (
-        <Tooltip content={tip}>
-            <button
-                type="button"
-                className="ribbon-ctl alex-toolbar-btn"
-                aria-label={label}
-                aria-haspopup="menu"
-                disabled={disabled}
-            >
-                <i className={control.icon} aria-hidden="true" />
-            </button>
-        </Tooltip>
+    const trigger = (
+        <button
+            type="button"
+            className="ribbon-ctl alex-toolbar-btn"
+            aria-label={label}
+            aria-haspopup="menu"
+            disabled={disabled}
+        >
+            <i className={control.icon} aria-hidden="true" />
+        </button>
     );
 
     if (disabled) {
-        return triggerButton;
+        // Firefox doesn't fire mouse events on disabled form elements,
+        // so the tooltip's hover listeners attach to a wrapper span.
+        return (
+            <Tooltip content={tip}>
+                <span style={{ display: 'contents' }}>{trigger}</span>
+            </Tooltip>
+        );
     }
+
+    const triggerButton = <Tooltip content={tip}>{trigger}</Tooltip>;
 
     const items = (control.options?.(ctx) ?? []).map((option) => ({
         label: t(option.labelKey),

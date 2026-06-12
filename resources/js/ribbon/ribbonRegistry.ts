@@ -57,6 +57,13 @@ export function getRibbonTabs(setKey: string): RibbonTab[] {
 
         if ('groupId' in item && item.groupId !== undefined) {
             const group = tab?.groups.find((g) => g.id === item.groupId);
+
+            if (import.meta.env.DEV && group === undefined) {
+                console.warn(
+                    `[ribbon] contribution targeting unknown tab/group "${item.tabId}/${item.groupId}" — controls dropped`,
+                );
+            }
+
             group?.controls.push(...item.controls);
             continue;
         }
