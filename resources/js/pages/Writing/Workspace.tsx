@@ -320,7 +320,10 @@ export default function Workspace() {
 
     return (
         <AppLayout title={`${work.title} - ${project.name}`} immersive fabActions={null}>
-            <div className="flex h-screen flex-col">
+            {/* h-dvh + overflow-hidden: the workspace IS the viewport —
+                only the editor desk (and the side rails internally)
+                scroll, so the window never grows a second scrollbar. */}
+            <div className="flex h-dvh flex-col overflow-hidden">
                 {/* Writing ribbon — full width, under the navbar; tabs only
                     (breadcrumb + status/progress live in the status bar) */}
                 <div className="shrink-0" style={ribbonShellStyle}>
@@ -392,7 +395,7 @@ export default function Workspace() {
                         gate stays on top of the user toggle. */}
                     {panelOpen && (
                         <aside
-                            className="hidden w-80 shrink-0 border-l xl:block"
+                            className="hidden min-h-0 w-80 shrink-0 overflow-y-auto border-l xl:block"
                             style={{ borderColor: paneBorderColor }}
                         >
                             <ReferencePanel
