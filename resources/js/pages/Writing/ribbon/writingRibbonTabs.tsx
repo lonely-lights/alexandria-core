@@ -13,8 +13,8 @@ import type { WritingRibbonContext } from './writingRibbonContext';
  * Shortcut policy: the ribbon declares NO shortcut where the editor
  * already binds one internally (TipTap owns Mod-B/I/U etc.) — only
  * workspace-level chords live here, chosen off the browser-reserved
- * list (Mod-Shift-O panel, Mod-Shift-L print layout, Mod-Shift-R
- * reports).
+ * list (Mod-Shift-O panel, Mod-Shift-L print layout, Mod-Alt-R
+ * reports — Mod-Shift-R is the browser's own hard-reload chord).
  */
 
 type Ctx = WritingRibbonContext;
@@ -263,7 +263,7 @@ const reviewTab: RibbonTab<Ctx> = {
                     type: 'button',
                     icon: 'fa-solid fa-chart-simple',
                     labelKey: 'writing.ribbon.reports',
-                    shortcut: 'Mod-Shift-R',
+                    shortcut: 'Mod-Alt-R',
                     onAction: (ctx) => ctx.actions.openReports(),
                 },
             ],

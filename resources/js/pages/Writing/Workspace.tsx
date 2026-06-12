@@ -329,10 +329,17 @@ export default function Workspace() {
             fabActions={null}
             bottomNavTabs={null}
         >
-            {/* h-dvh + overflow-hidden: the workspace IS the viewport —
-                only the editor desk (and the side rails internally)
-                scroll, so the window never grows a second scrollbar. */}
-            <div className="flex h-dvh flex-col overflow-hidden">
+            {/* The workspace IS the viewport — only the editor desk
+                (and the side rails internally) scroll, so the window
+                never grows a second scrollbar. Height/overflow are
+                INLINE on purpose: `h-dvh` was a first-use utility in
+                the vendor path and Tailwind's source scan missed it in
+                some dev pipelines (vendor/ is .gitignored) — inline
+                styles can't be skipped by a CSS generator. */}
+            <div
+                className="flex flex-col"
+                style={{ height: '100dvh', overflow: 'hidden' }}
+            >
                 {/* Writing ribbon — full width, under the navbar; tabs only
                     (breadcrumb + status/progress live in the status bar) */}
                 <div className="shrink-0" style={ribbonShellStyle}>
