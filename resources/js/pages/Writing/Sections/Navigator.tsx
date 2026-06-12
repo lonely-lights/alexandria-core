@@ -1,25 +1,24 @@
-import { router, useForm } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { useRef, useState, type CSSProperties } from 'react';
 
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
 import Button from '@alexandria/components/ui/Button';
-import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
-import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
-import Input from '@alexandria/components/form/Input';
 
 import type { SectionNode } from '../Workspace';
 
 /**
  * Workspace section Navigator — Stage 8g.1 (Plan 2 Task 6; drag-reorder
- * added in Plan 4 Task 5).
+ * added in Plan 4 Task 5; modal state lifted in Ribbon Plan 2 Task 3).
  *
  * Recursive section tree with expand/collapse, selection, and (when
  * the viewer can update the work) add-child / delete hover actions
- * plus a root-level add button. Mutations POST/DELETE through Inertia;
- * the server sends fresh `sections` props back, so no manual tree
- * state sync is needed — the expanded set keys off ids and tolerates
- * stale entries.
+ * plus a root-level add button. The add/delete modals live in the
+ * Workspace (shared with the ribbon's Structure tab) — the hover
+ * affordances request them via `onRequestAdd`/`onRequestDelete`.
+ * Mutations POST/DELETE through Inertia; the server sends fresh
+ * `sections` props back, so no manual tree state sync is needed — the
+ * expanded set keys off ids and tolerates stale entries.
  *
  * Reordering: every sibling group (the root list + each expanded
  * `children` container) is its own SortableJS container via
@@ -36,6 +35,10 @@ interface NavigatorProps {
     currentSlug: string | null;
     canUpdate: boolean;
     onSelect: (slug: string) => void;
+    /** Open the Workspace-owned AddSectionModal (null = root section). */
+    onRequestAdd: (parentId: number | null) => void;
+    /** Open the Workspace-owned delete ConfirmModal for this node. */
+    onRequestDelete: (node: SectionNode) => void;
     /** Autosave-confirmed word counts (by section id) overlaying the prop tree. */
     liveCounts?: Record<number, number>;
 }
@@ -94,15 +97,14 @@ export default function Navigator({
     currentSlug,
     canUpdate,
     onSelect,
+    onRequestAdd,
+    onRequestDelete,
     liveCounts,
 }: NavigatorProps) {
     const t = useT();
     const [expanded, setExpanded] = useState<Set<number>>(
         () => collectParentIds(sections, new Set()),
     );
-    const [addTarget, setAddTarget] = useState<{ parentId: number | null } | null>(null);
-    const [deleteTarget, setDeleteTarget] = useState<SectionNode | null>(null);
-    const [deleting, setDeleting] = useState(false);
 
     function toggle(id: number) {
         setExpanded((prev) => {
@@ -120,22 +122,7 @@ export default function Navigator({
         // Pre-expand the parent so the new child is visible when the
         // fresh tree comes back.
         setExpanded((prev) => new Set(prev).add(node.id));
-        setAddTarget({ parentId: node.id });
-    }
-
-    function confirmDelete() {
-        if (deleteTarget === null) {
-            return;
-        }
-
-        router.delete(`/works/${projectSlug}/${workSlug}/sections/${deleteTarget.id}`, {
-            preserveScroll: true,
-            onStart: () => setDeleting(true),
-            onFinish: () => {
-                setDeleting(false);
-                setDeleteTarget(null);
-            },
-        });
+        onRequestAdd(node.id);
     }
 
     const shared: TreeShared = {
@@ -147,7 +134,7 @@ export default function Navigator({
         onSelect,
         onToggle: toggle,
         onAddChild: openAddChild,
-        onDelete: setDeleteTarget,
+        onDelete: onRequestDelete,
         liveCounts,
         t,
     };
@@ -164,31 +151,11 @@ export default function Navigator({
                     icon="fa-solid fa-plus"
                     iconPosition="before"
                     className="mt-2"
-                    onClick={() => setAddTarget({ parentId: null })}
+                    onClick={() => onRequestAdd(null)}
                 >
                     {t('writing.workspace.add_section')}
                 </Button>
             )}
-
-            {addTarget !== null && (
-                <AddSectionModal
-                    projectSlug={projectSlug}
-                    workSlug={workSlug}
-                    parentId={addTarget.parentId}
-                    onClose={() => setAddTarget(null)}
-                />
-            )}
-
-            <ConfirmModal
-                open={deleteTarget !== null}
-                onClose={() => setDeleteTarget(null)}
-                onConfirm={confirmDelete}
-                title={t('writing.workspace.delete_confirm_title')}
-                message={t('writing.workspace.delete_confirm_body')}
-                confirmLabel={t('writing.workspace.delete_confirm_action')}
-                variant="danger"
-                loading={deleting}
-            />
         </div>
     );
 }
@@ -387,84 +354,5 @@ function NavigatorRow({
                 />
             )}
         </div>
-    );
-}
-
-function AddSectionModal({
-    projectSlug,
-    workSlug,
-    parentId,
-    onClose,
-}: {
-    projectSlug: string;
-    workSlug: string;
-    parentId: number | null;
-    onClose: () => void;
-}) {
-    const t = useT();
-    const form = useForm<{ title: string; label: string; parent_id: number | null }>({
-        title: '',
-        label: '',
-        parent_id: parentId,
-    });
-
-    function submit() {
-        form.post(`/works/${projectSlug}/${workSlug}/sections`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                form.reset();
-                onClose();
-            },
-        });
-    }
-
-    return (
-        <Modal open onClose={onClose} maxWidth="max-w-md">
-            <ModalHeader
-                title={
-                    parentId === null
-                        ? t('writing.workspace.add_section')
-                        : t('writing.workspace.add_child')
-                }
-                onClose={onClose}
-            />
-            {/* noValidate: server-side validation owns the error UI. */}
-            <form
-                noValidate
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    submit();
-                }}
-            >
-                <div className="flex flex-col gap-4 px-6 py-5">
-                    <Input
-                        label={t('writing.workspace.section_title_placeholder')}
-                        name="title"
-                        value={form.data.title}
-                        onChange={(e) => form.setData('title', e.target.value)}
-                        error={form.errors.title}
-                        autoFocus
-                        required
-                        size="md"
-                    />
-                    <Input
-                        label={t('writing.workspace.section_label')}
-                        name="label"
-                        value={form.data.label}
-                        onChange={(e) => form.setData('label', e.target.value)}
-                        error={form.errors.label}
-                        size="md"
-                    />
-                </div>
-                <ModalFooter>
-                    <Button variant="ghost" onClick={onClose}>
-                        {t('writing.form.cancel')}
-                    </Button>
-                    <Button type="submit" loading={form.processing}>
-                        {t('writing.form.create')}
-                    </Button>
-                </ModalFooter>
-            </form>
-        </Modal>
     );
 }

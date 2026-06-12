@@ -9,12 +9,14 @@ import type { SaveStatus } from './useSectionAutosave';
 /**
  * Shared workspace-editor chrome — Stage 8g.1.
  *
- * The menu bar (inline section title + label chip + extras slot + save
- * status), the editor surface as children, and the counts footer.
- * Owns the title's local state, server commit (PUT section update with
- * a partial reload), and re-sync after the server normalizes it.
+ * Since Ribbon Plan 2 this is an identity strip — inline section title
+ * + label chip + save status (controls live in the workspace ribbon).
+ * Renders the editor surface as children plus the counts footer. Owns
+ * the title's local state, server commit (PUT section update with a
+ * partial reload), and re-sync after the server normalizes it.
  * ManuscriptEditor and ScreenplayEditor both wrap their surfaces in
- * this so the chrome can't drift between formats.
+ * this so the chrome can't drift between formats. `menuExtras` stays
+ * as a future extension slot; the workspace passes nothing today.
  */
 
 interface SectionChromeProps {

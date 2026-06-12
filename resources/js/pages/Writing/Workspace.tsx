@@ -1,11 +1,16 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { useState, type CSSProperties } from 'react';
+import { useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 import AppLayout from '@alexandria/layouts/AppLayout';
-import Tooltip from '@alexandria/components/ui/Tooltip';
+import Ribbon from '@alexandria/ribbon/Ribbon';
+import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
 
-import ManuscriptEditor from './Sections/ManuscriptEditor';
+import AddSectionModal from './Sections/AddSectionModal';
+import ManuscriptEditor, {
+    PRINT_LAYOUT_STORAGE_KEY,
+    readPrintLayoutPreference,
+} from './Sections/ManuscriptEditor';
 import Navigator from './Sections/Navigator';
 import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
 import ScreenplayEditor from './Sections/ScreenplayEditor';
@@ -13,16 +18,29 @@ import WorkSettingsModal, {
     type LengthPlanOption,
     type WorkLengthPlan,
 } from './Sections/WorkSettingsModal';
+import type { WritingEditorBridge, WritingRibbonContext } from './ribbon/writingRibbonContext';
+import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
 
 /**
- * Writing dashboard → workspace — Stage 8g.1 (Plan 2 Task 6).
+ * Writing dashboard → workspace — Stage 8g.1 (ribbon-driven since
+ * Ribbon Plan 2 Task 3).
  *
- * The manuscript surface: a slim work-header strip over a full-height
- * three-pane row — section Navigator (left), editor pane (center),
- * reference rail (right, Plan 3). The server hydrates the full section
- * tree (titles/slugs only) plus ONE section's content (currentSection);
- * switching sections partial-reloads just that prop.
+ * The manuscript surface: the writing ribbon (full width, under the
+ * navbar — breadcrumb leading, status/progress/counts trailing) over a
+ * full-height three-pane row — section Navigator (left), editor pane
+ * (center), reference rail (right). The Workspace owns the ribbon
+ * context: workspace state (panel, print layout, work status) plus an
+ * editor bridge both editors implement; `editorTick` bumps on editor
+ * selection/content changes so control states re-render. The section
+ * add/delete modals live here too, shared between the ribbon's
+ * Structure tab and the Navigator's hover affordances.
+ *
+ * The server hydrates the full section tree (titles/slugs only) plus
+ * ONE section's content (currentSection); switching sections
+ * partial-reloads just that prop.
  */
+
+registerWritingRibbon();
 
 export interface SectionNode {
     id: number;
@@ -89,15 +107,32 @@ function readPanelOpenPreference(): boolean {
     }
 }
 
+/** Depth-first lookup in the section tree (ribbon delete targets the current section). */
+function findSectionNode(nodes: SectionNode[], id: number): SectionNode | null {
+    for (const node of nodes) {
+        if (node.id === id) {
+            return node;
+        }
+
+        const found = findSectionNode(node.children, id);
+
+        if (found !== null) {
+            return found;
+        }
+    }
+
+    return null;
+}
+
 /* ── Theme styles ── */
 
-// The fixed navbar overlays immersive pages; padding the strip by
-// --navbar-height keeps its background extending behind the navbar
-// while the content starts cleanly below it (same trick as PageHeader).
-const headerStripStyle: CSSProperties = {
+// The fixed navbar overlays immersive pages; padding the ribbon shell
+// by --navbar-height keeps its background extending behind the navbar
+// while the tab row starts cleanly below it (same trick as PageHeader).
+// The background matches .ribbon's bar tint so the two read as one.
+const ribbonShellStyle: CSSProperties = {
     paddingTop: 'var(--navbar-height, 3.5rem)',
-    background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
-    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 4%, var(--theme-base-page))',
 };
 
 const crumbSeparatorStyle: CSSProperties = {
@@ -141,8 +176,25 @@ export default function Workspace() {
 
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
 
-    function togglePanel() {
+    // Section add/delete modal triggers — shared between the ribbon's
+    // Structure tab and the Navigator's hover affordances.
+    const [addTarget, setAddTarget] = useState<{ parentId: number | null } | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<SectionNode | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    // Ribbon editor bridge — populated by whichever editor is mounted
+    // (via useImperativeHandle); editorTick bumps on its state changes
+    // so ribbon control predicates re-read it.
+    const bridgeRef = useRef<WritingEditorBridge | null>(null);
+    const [editorTick, setEditorTick] = useState(0);
+
+    const handleEditorStateChange = useCallback(() => {
+        setEditorTick((tick) => tick + 1);
+    }, []);
+
+    const togglePanel = useCallback(() => {
         setPanelOpen((prev) => {
             const next = !prev;
             try {
@@ -152,7 +204,19 @@ export default function Workspace() {
             }
             return next;
         });
-    }
+    }, []);
+
+    const togglePrintLayout = useCallback(() => {
+        setPrintLayout((prev) => {
+            const next = !prev;
+            try {
+                localStorage.setItem(PRINT_LAYOUT_STORAGE_KEY, String(next));
+            } catch {
+                // Persistence is best-effort; private-mode failures are fine.
+            }
+            return next;
+        });
+    }, []);
 
     function selectSection(slug: string) {
         router.visit(`/works/${project.slug}/${work.slug}/${slug}`, {
@@ -167,6 +231,90 @@ export default function Workspace() {
         setLiveWorkWords(workWords);
         setSaveSignal((prev) => prev + 1);
     }
+
+    function confirmDelete() {
+        if (deleteTarget === null) {
+            return;
+        }
+
+        router.delete(`/works/${project.slug}/${work.slug}/sections/${deleteTarget.id}`, {
+            preserveScroll: true,
+            onStart: () => setDeleting(true),
+            onFinish: () => {
+                setDeleting(false);
+                setDeleteTarget(null);
+            },
+        });
+    }
+
+    const ribbonCtx = useMemo<WritingRibbonContext>(() => {
+        const projectSlug = project.slug;
+        const workSlug = work.slug;
+
+        return {
+            format: (currentSection?.format ?? work.format) === 'screenplay' ? 'screenplay' : 'prose',
+            canUpdate: can.update,
+            panelOpen,
+            printLayout,
+            hasSection: currentSection !== null,
+            editorTick,
+            // Lazy getter: the bridge lands via useImperativeHandle AFTER
+            // this memo runs on mount, so actions/predicates must read the
+            // live ref — editorTick re-runs the memo for state freshness,
+            // the getter guarantees commands never see a stale null.
+            get editor() {
+                return bridgeRef.current;
+            },
+            actions: {
+                togglePanel,
+                togglePrintLayout,
+                openSettings: () => setSettingsOpen(true),
+                openReports: () => router.visit(`/works/${projectSlug}/${workSlug}/reports`),
+                addSection: () => setAddTarget({ parentId: null }),
+                addInside: () => {
+                    if (currentSection !== null) {
+                        setAddTarget({ parentId: currentSection.id });
+                    }
+                },
+                deleteSection: () => {
+                    if (currentSection === null) {
+                        return;
+                    }
+
+                    const node = findSectionNode(sections, currentSection.id);
+
+                    if (node !== null) {
+                        setDeleteTarget(node);
+                    }
+                },
+                // works.update requires title + status (logline nullable,
+                // type/length_plan `sometimes`) — the minimum valid payload.
+                setStatus: (value: string) =>
+                    router.put(
+                        `/works/${projectSlug}/${workSlug}`,
+                        { title: work.title, status: value },
+                        { preserveScroll: true },
+                    ),
+                goToIndex: () => router.visit(`/works/${projectSlug}`),
+                goToDashboard: () => router.visit('/writing'),
+            },
+            workStatus: work.status,
+        };
+    }, [
+        project.slug,
+        work.slug,
+        work.format,
+        work.title,
+        work.status,
+        can.update,
+        panelOpen,
+        printLayout,
+        currentSection,
+        sections,
+        editorTick,
+        togglePanel,
+        togglePrintLayout,
+    ]);
 
     const workWords = liveWorkWords ?? work.word_count;
     const targetLines = work.length_plan?.target_lines ?? null;
@@ -193,104 +341,66 @@ export default function Workspace() {
         countLabel = t('writing.workspace.words').replace(':count', workWords.toLocaleString());
     }
 
+    // Ribbon tab-row slots: the back-link breadcrumb leads, the status
+    // chip + progress + counts cluster trails (the old header strip's
+    // two sides — the strip itself is gone, the ribbon owns the row).
+    const breadcrumb = (
+        <div className="flex min-w-0 items-center gap-2 self-center pr-3 text-sm">
+            <Link
+                href={`/works/${project.slug}`}
+                className="alex-page-header-crumb-link shrink-0"
+            >
+                {project.name}
+            </Link>
+            <i
+                className="fa-solid fa-chevron-right text-[8px]"
+                style={crumbSeparatorStyle}
+                aria-hidden="true"
+            />
+            <span className="truncate font-semibold">{work.title}</span>
+        </div>
+    );
+
+    const trailingCluster = (
+        <>
+            <span style={statusChipStyle}>
+                {t(`writing.statuses.${work.status}`, work.status)}
+            </span>
+            {progressRatio !== null && (
+                <div
+                    aria-hidden="true"
+                    className="h-1 w-32 overflow-hidden rounded-full"
+                    style={{
+                        background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                    }}
+                >
+                    <div
+                        className="h-full rounded-full"
+                        style={{
+                            width: `${Math.min(100, progressRatio * 100)}%`,
+                            background: 'var(--theme-brand-primary-500)',
+                        }}
+                    />
+                </div>
+            )}
+            <div className="text-xs tabular-nums" style={metaText}>
+                {countLabel}
+            </div>
+        </>
+    );
+
     return (
         <AppLayout title={`${work.title} - ${project.name}`} immersive>
             <div className="flex h-screen flex-col">
-                {/* Work-header strip */}
-                <header style={headerStripStyle}>
-                    <div className="flex items-center justify-between gap-3 px-4 py-2">
-                        <div className="flex min-w-0 items-center gap-2 text-sm">
-                            <Link
-                                href={`/works/${project.slug}`}
-                                className="alex-page-header-crumb-link shrink-0"
-                            >
-                                {project.name}
-                            </Link>
-                            <i
-                                className="fa-solid fa-chevron-right text-[8px]"
-                                style={crumbSeparatorStyle}
-                                aria-hidden="true"
-                            />
-                            <span className="truncate font-semibold">{work.title}</span>
-                            <span style={statusChipStyle}>
-                                {t(`writing.statuses.${work.status}`, work.status)}
-                            </span>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                            <Tooltip content={t('writing.reports.title')}>
-                                <Link
-                                    href={`/works/${project.slug}/${work.slug}/reports`}
-                                    aria-label={t('writing.reports.title')}
-                                    className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs transition-colors"
-                                    style={{
-                                        color: 'var(--theme-base-content)',
-                                        borderRadius: 'var(--theme-radius-button)',
-                                    }}
-                                >
-                                    <i className="fa-solid fa-chart-simple" aria-hidden="true" />
-                                </Link>
-                            </Tooltip>
-                            {can.update && (
-                                <Tooltip content={t('writing.settings.title')}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSettingsOpen(true)}
-                                        aria-label={t('writing.settings.title')}
-                                        className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs transition-colors"
-                                        style={{
-                                            color: 'var(--theme-base-content)',
-                                            borderRadius: 'var(--theme-radius-button)',
-                                        }}
-                                    >
-                                        <i className="fa-solid fa-gear" aria-hidden="true" />
-                                    </button>
-                                </Tooltip>
-                            )}
-                            <button
-                                type="button"
-                                onClick={togglePanel}
-                                aria-expanded={panelOpen}
-                                aria-label={panelOpen ? t('writing.panel.collapse') : t('writing.panel.expand')}
-                                title={panelOpen ? t('writing.panel.collapse') : t('writing.panel.expand')}
-                                className={`alex-toolbar-btn hidden h-7 w-7 items-center justify-center text-xs transition-colors xl:inline-flex ${panelOpen ? 'alex-toolbar-btn--active' : ''}`}
-                                style={{
-                                    color: panelOpen
-                                        ? 'var(--theme-brand-secondary-500)'
-                                        : 'var(--theme-base-content)',
-                                    background: panelOpen
-                                        ? 'color-mix(in srgb, var(--theme-brand-secondary-500) 18%, transparent)'
-                                        : 'transparent',
-                                    borderRadius: 'var(--theme-radius-button)',
-                                }}
-                            >
-                                <i
-                                    className={`fa-solid ${panelOpen ? 'fa-chevron-right' : 'fa-chevron-left'}`}
-                                    aria-hidden="true"
-                                />
-                            </button>
-                            {progressRatio !== null && (
-                                <div
-                                    aria-hidden="true"
-                                    className="h-1 w-32 overflow-hidden rounded-full"
-                                    style={{
-                                        background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
-                                    }}
-                                >
-                                    <div
-                                        className="h-full rounded-full"
-                                        style={{
-                                            width: `${Math.min(100, progressRatio * 100)}%`,
-                                            background: 'var(--theme-brand-primary-500)',
-                                        }}
-                                    />
-                                </div>
-                            )}
-                            <div className="text-xs tabular-nums" style={metaText}>
-                                {countLabel}
-                            </div>
-                        </div>
-                    </div>
-                </header>
+                {/* Writing ribbon — full width, under the navbar */}
+                <div className="shrink-0" style={ribbonShellStyle}>
+                    <Ribbon
+                        setKey="writing"
+                        context={ribbonCtx}
+                        leading={breadcrumb}
+                        trailing={trailingCluster}
+                    />
+                </div>
 
                 <div className="flex min-h-0 flex-1">
                     {/* Navigator */}
@@ -305,6 +415,8 @@ export default function Workspace() {
                             currentSlug={currentSection?.slug ?? null}
                             canUpdate={can.update}
                             onSelect={selectSection}
+                            onRequestAdd={(parentId) => setAddTarget({ parentId })}
+                            onRequestDelete={setDeleteTarget}
                             liveCounts={liveCounts}
                         />
                     </nav>
@@ -322,6 +434,10 @@ export default function Workspace() {
                                     section={currentSection}
                                     canUpdate={can.update}
                                     onCounts={handleCounts}
+                                    chrome="none"
+                                    printLayout={printLayout}
+                                    bridgeRef={bridgeRef}
+                                    onStateChange={handleEditorStateChange}
                                 />
                             ) : (
                                 <ManuscriptEditor
@@ -331,6 +447,10 @@ export default function Workspace() {
                                     section={currentSection}
                                     canUpdate={can.update}
                                     onCounts={handleCounts}
+                                    chrome="none"
+                                    printLayout={printLayout}
+                                    bridgeRef={bridgeRef}
+                                    onStateChange={handleEditorStateChange}
                                 />
                             )
                         ) : (
@@ -372,6 +492,26 @@ export default function Workspace() {
                     onClose={() => setSettingsOpen(false)}
                 />
             )}
+
+            {addTarget !== null && (
+                <AddSectionModal
+                    projectSlug={project.slug}
+                    workSlug={work.slug}
+                    parentId={addTarget.parentId}
+                    onClose={() => setAddTarget(null)}
+                />
+            )}
+
+            <ConfirmModal
+                open={deleteTarget !== null}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={confirmDelete}
+                title={t('writing.workspace.delete_confirm_title')}
+                message={t('writing.workspace.delete_confirm_body')}
+                confirmLabel={t('writing.workspace.delete_confirm_action')}
+                variant="danger"
+                loading={deleting}
+            />
         </AppLayout>
     );
 }
