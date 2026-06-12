@@ -1,0 +1,37 @@
+/* Ribbon chrome — spec §1. Bar/band/tab colors all route through
+   --theme-* tokens; sizing literals are chrome geometry. */
+.ribbon { background: color-mix(in srgb, var(--theme-base-content) 4%, var(--theme-base-page)); }
+.ribbon-tabs { display: flex; gap: 2px; padding: 0.25rem 0.5rem 0; }
+.ribbon-tab { padding: 0.2rem 0.75rem; border-radius: var(--theme-radius-button) var(--theme-radius-button) 0 0;
+    color: color-mix(in srgb, var(--theme-base-content) 60%, transparent); background: transparent; }
+.ribbon-tab--active { background: color-mix(in srgb, var(--theme-base-content) 8%, var(--theme-base-page));
+    color: var(--theme-base-content); font-weight: 600; }
+.ribbon-band { display: flex; align-items: stretch; gap: 0; padding: 0.375rem 0.625rem;
+    background: color-mix(in srgb, var(--theme-base-content) 8%, var(--theme-base-page));
+    border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent); }
+.ribbon-group { display: flex; flex-direction: column; gap: 0.25rem; padding: 0 0.75rem;
+    border-right: 1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent); }
+.ribbon-group:first-child { padding-left: 0.125rem; }
+.ribbon-group:last-of-type { border-right: none; }
+.ribbon-group-controls { display: flex; gap: 0.25rem; align-items: center; flex: 1; }
+.ribbon-group-label { font-size: 0.5625rem; text-transform: uppercase; letter-spacing: 0.05em; text-align: center;
+    color: color-mix(in srgb, var(--theme-base-content) 50%, transparent); }
+.ribbon--slim .ribbon-group { flex-direction: row; align-items: center; }
+.ribbon--slim .ribbon-group-label, .ribbon--slim .ribbon-ctl-label { display: none; }
+.ribbon-ctl { display: inline-flex; flex-direction: column; align-items: center; gap: 0.125rem;
+    min-width: 2rem; height: auto; padding: 0.25rem 0.375rem; }
+.ribbon--slim .ribbon-ctl { flex-direction: row; }
+.ribbon-ctl-label { font-size: 0.625rem; line-height: 1.1; max-width: 5.5rem; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
+.ribbon-right { margin-left: auto; display: flex; align-items: center; gap: 0.25rem; }
+.ribbon-band--overlay { position: absolute; left: 0; right: 0; z-index: 30;
+    box-shadow: 0 4px 10px rgb(0 0 0 / 0.15); }
+
+/* Compact native select for select-type controls — the shared form
+   <Select> carries full-width field chrome that can't sit inline in
+   the band. */
+.ribbon-select { height: 1.5rem; padding: 0 0.375rem; font-size: 0.75rem; align-self: center;
+    background: color-mix(in srgb, var(--theme-base-content) 5%, transparent);
+    color: var(--theme-base-content); border-radius: var(--theme-radius-button);
+    border: 1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent); }
+.ribbon-select:disabled { opacity: 0.5; }
