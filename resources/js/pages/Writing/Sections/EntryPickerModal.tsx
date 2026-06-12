@@ -83,6 +83,16 @@ export default function EntryPickerModal({
     const [searched, setSearched] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Clear a pending search on unmount so the stale timer never
+    // fires into the dead instance.
+    useEffect(() => {
+        return () => {
+            if (timerRef.current !== null) {
+                clearTimeout(timerRef.current);
+            }
+        };
+    }, []);
+
     useEffect(() => {
         if (open) {
             setQuery('');

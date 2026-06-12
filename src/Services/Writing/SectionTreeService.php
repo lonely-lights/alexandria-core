@@ -88,6 +88,8 @@ class SectionTreeService
                 $ids = [...$ids, ...$frontier];
             }
 
+            // Per-model deletes are deliberate (model-event fidelity
+            // for future observers) — don't bulk-optimize.
             WorkSection::query()->whereIn('id', $ids)->get()->each->delete();
 
             app(WorkSectionContentService::class)->refreshWorkRollup($section->work_id);

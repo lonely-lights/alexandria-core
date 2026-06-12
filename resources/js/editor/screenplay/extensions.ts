@@ -178,7 +178,11 @@ const ScreenplayKeymap = Extension.create({
                 ] as const
             ).map(([digit, element]) => [
                 `Mod-Alt-${digit}`,
-                ({ editor }: { editor: Editor }) => editor.commands.setNode(element),
+                ({ editor }: { editor: Editor }) => {
+                    convertCurrentBlock(editor, element);
+
+                    return true;
+                },
             ]),
         );
 
@@ -308,6 +312,49 @@ export function blocksToDoc(blocks: ScreenplayBlock[]): JSONContent {
     }
 
     return { type: "doc", content };
+}
+
+/**
+ * Convert the current block to another element, first flattening any
+ * entryLink atoms back to their [[wiki]] text — every element except
+ * action only admits plain text, and a bare setNode would silently
+ * drop the atoms (data loss).
+ */
+export function convertCurrentBlock(editor: Editor, element: ScreenplayElement): void {
+    const { $from } = editor.state.selection;
+    const parent = $from.parent;
+
+    let hasEntryLinks = false;
+    parent.forEach((child) => {
+        if (child.type.name === "entryLink") {
+            hasEntryLinks = true;
+        }
+    });
+
+    if (!hasEntryLinks) {
+        editor.commands.setNode(element);
+
+        return;
+    }
+
+    // Same emission docToBlocks uses, so [[Name|Display]] round-trips
+    // through the codec exactly.
+    const text = ((parent.toJSON() as JSONContent).content ?? [])
+        .map(inlineNodeToText)
+        .join("");
+
+    // One transaction (a chain is a single tr): replace the whole
+    // block with a plain-text node of the target element.
+    editor
+        .chain()
+        .insertContentAt(
+            { from: $from.before(), to: $from.after() },
+            {
+                type: element,
+                ...(text !== "" ? { content: [{ type: "text", text }] } : {}),
+            },
+        )
+        .run();
 }
 
 /** TipTap doc JSON → blocks (inverse of blocksToDoc). */

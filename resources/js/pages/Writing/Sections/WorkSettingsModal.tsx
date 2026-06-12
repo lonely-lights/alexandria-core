@@ -53,7 +53,7 @@ export interface WorkSettingsWork {
 
 const WORK_STATUSES = ['concept', 'drafting', 'revising', 'complete'] as const;
 
-const NUMBER_FIELDS = ['target_words', 'per_section_words', 'target_lines'] as const;
+const NUMBER_FIELDS = ['target_words', 'per_section_words', 'target_lines', 'target_pages'] as const;
 
 type NumberField = (typeof NUMBER_FIELDS)[number];
 
@@ -93,7 +93,37 @@ export default function WorkSettingsModal({
         target_words: work.length_plan?.target_words?.toString() ?? '',
         per_section_words: work.length_plan?.per_section_words?.toString() ?? '',
         target_lines: work.length_plan?.target_lines?.toString() ?? '',
+        target_pages: work.length_plan?.target_pages?.toString() ?? '',
         apply_section_targets: false,
+    });
+
+    // Registered once at body level (Inertia v3 convention — transform
+    // is a persistent callback, not a per-submit step). It reads ONLY
+    // its `data` argument, so there are no stale closures to worry
+    // about.
+    form.transform((data) => {
+        const numbers = {
+            target_words: parseCount(data.target_words),
+            per_section_words: parseCount(data.per_section_words),
+            target_lines: parseCount(data.target_lines),
+            target_pages: parseCount(data.target_pages),
+        };
+        const hasPreset = data.preset !== '';
+        const hasNumbers = Object.values(numbers).some((value) => value !== null);
+
+        return {
+            title: data.title,
+            type: data.type,
+            status: data.status,
+            logline: data.logline,
+            // Explicit nulls ride along so a cleared field beats the
+            // preset's config seed server-side; all-empty + no preset
+            // clears the plan entirely.
+            length_plan: !hasPreset && !hasNumbers
+                ? null
+                : { ...(hasPreset ? { preset: data.preset } : {}), ...numbers },
+            apply_section_targets: data.apply_section_targets,
+        };
     });
 
     // Slug-autofill pattern: picking a preset prefills the number
@@ -103,6 +133,7 @@ export default function WorkSettingsModal({
         target_words: false,
         per_section_words: false,
         target_lines: false,
+        target_pages: false,
     });
 
     // Nested length_plan.* errors come back keyed by dot path, which
@@ -135,30 +166,6 @@ export default function WorkSettingsModal({
     }
 
     function submit() {
-        form.transform((data) => {
-            const numbers = {
-                target_words: parseCount(data.target_words),
-                per_section_words: parseCount(data.per_section_words),
-                target_lines: parseCount(data.target_lines),
-            };
-            const hasPreset = data.preset !== '';
-            const hasNumbers = Object.values(numbers).some((value) => value !== null);
-
-            return {
-                title: data.title,
-                type: data.type,
-                status: data.status,
-                logline: data.logline,
-                // Explicit nulls ride along so a cleared field beats the
-                // preset's config seed server-side; all-empty + no preset
-                // clears the plan entirely.
-                length_plan: !hasPreset && !hasNumbers
-                    ? null
-                    : { ...(hasPreset ? { preset: data.preset } : {}), ...numbers },
-                apply_section_targets: data.apply_section_targets,
-            };
-        });
-
         form.put(`/works/${project.slug}/${work.slug}`, {
             preserveScroll: true,
             onSuccess: onClose,
@@ -272,7 +279,7 @@ export default function WorkSettingsModal({
                         ]}
                         size="md"
                     />
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                         <Input
                             label={t('writing.settings.target_words')}
                             name="target_words"
@@ -301,6 +308,16 @@ export default function WorkSettingsModal({
                             value={form.data.target_lines}
                             onChange={(e) => handleNumberChange('target_lines', e.target.value)}
                             error={allErrors['length_plan.target_lines']}
+                            size="md"
+                        />
+                        <Input
+                            label={t('writing.settings.target_pages')}
+                            name="target_pages"
+                            type="number"
+                            min={0}
+                            value={form.data.target_pages}
+                            onChange={(e) => handleNumberChange('target_pages', e.target.value)}
+                            error={allErrors['length_plan.target_pages']}
                             size="md"
                         />
                     </div>

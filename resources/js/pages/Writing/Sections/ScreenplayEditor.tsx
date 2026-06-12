@@ -1,5 +1,5 @@
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
-import { useRef, useState, type CSSProperties, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 
 import Select from '@alexandria/components/form/Select';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
@@ -8,6 +8,7 @@ import { parseScreenplay, serializeScreenplay } from '@alexandria/editor/screenp
 import {
     blocksToDoc,
     buildScreenplayExtensions,
+    convertCurrentBlock,
     docToBlocks,
 } from '@alexandria/editor/screenplay/extensions';
 import { ELEMENTS } from '@alexandria/editor/screenplay/formatSpec';
@@ -125,6 +126,17 @@ function ScreenplaySurface({
         },
     });
 
+    // Section switches remount this component (Workspace keys the
+    // editor by section id) — clear the debounce on unmount so a stale
+    // timer never fires onSerialized into the dead instance.
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current !== null) {
+                clearTimeout(debounceRef.current);
+            }
+        };
+    }, []);
+
     // The current selection's block element drives the indicator
     // Select; useEditorState subscribes to transactions, so it tracks
     // selectionUpdate without shouldRerenderOnTransaction.
@@ -165,7 +177,8 @@ function ScreenplaySurface({
                             }))}
                             value={currentElement}
                             onChange={(e) => {
-                                editor.chain().focus().setNode(e.target.value).run();
+                                editor.commands.focus();
+                                convertCurrentBlock(editor, e.target.value as ScreenplayElement);
                             }}
                         />
                     </div>
@@ -301,7 +314,7 @@ export default function ScreenplayEditor({
                     <div className="ProseMirror">
                         {parseScreenplay(initialContent).map((block, index) => (
                             <p
-                                key={index}
+                                key={`${index}-${block.element}`}
                                 data-element={block.element}
                                 className={`sp-${block.element} whitespace-pre-wrap`}
                             >

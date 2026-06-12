@@ -46,6 +46,8 @@ export interface ProgressReportData {
     work_line_count: number;
     target_words: number | null;
     target_lines: number | null;
+    target_pages: number | null;
+    page_estimate: number;
     per_level: { label: string | null; sections: number; words: number; average: number }[];
     recent: { date: string; words: number }[];
 }

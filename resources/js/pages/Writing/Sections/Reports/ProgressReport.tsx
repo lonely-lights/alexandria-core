@@ -57,8 +57,9 @@ export default function ProgressReport({
     progress: ProgressReportData;
     t: Translator;
 }) {
-    // Word target wins when both exist — same logic as the workspace
-    // header; line targets (poetry plans) only step in without one.
+    // Word target wins when several exist — same precedence as the
+    // workspace header (words > lines > pages); line targets (poetry
+    // plans) and page targets (screenplay plans) step in without one.
     let countLabel: string;
     let progressRatio: number | null = null;
 
@@ -71,6 +72,13 @@ export default function ProgressReport({
         countLabel = `${t('writing.workspace.lines').replace(':count', progress.work_line_count.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', progress.target_lines.toLocaleString())}`;
         progressRatio = progress.target_lines > 0
             ? progress.work_line_count / progress.target_lines
+            : null;
+    } else if (progress.target_pages !== null) {
+        countLabel = t('writing.workspace.pages_of_target')
+            .replace(':count', progress.page_estimate.toLocaleString())
+            .replace(':target', progress.target_pages.toLocaleString());
+        progressRatio = progress.target_pages > 0
+            ? progress.page_estimate / progress.target_pages
             : null;
     } else {
         countLabel = t('writing.workspace.words').replace(':count', progress.work_word_count.toLocaleString());

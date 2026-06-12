@@ -200,6 +200,16 @@ function BrowseTab({
     const [searched, setSearched] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Clear a pending search on unmount (tab switch) so the stale
+    // timer never fires into the dead instance.
+    useEffect(() => {
+        return () => {
+            if (timerRef.current !== null) {
+                clearTimeout(timerRef.current);
+            }
+        };
+    }, []);
+
     function handleQueryChange(value: string) {
         setQuery(value);
 
@@ -373,6 +383,13 @@ function SectionTab({
 
     const sectionId = currentSection?.id ?? null;
 
+    // Same ref pattern as useSectionAutosave: saveReference can run
+    // from callbacks created under an older render (the picker modal's
+    // onPick), so it reads the CURRENT section through this ref rather
+    // than its creation-time closure.
+    const currentSectionRef = useRef(currentSection);
+    currentSectionRef.current = currentSection;
+
     useEffect(() => {
         if (sectionId === null) {
             setData(null);
@@ -412,7 +429,9 @@ function SectionTab({
     }, [project.slug, work.slug, sectionId, saveSignal, refreshTick]);
 
     function saveReference(field: PickTarget, value: number | null) {
-        if (currentSection === null) {
+        const section = currentSectionRef.current;
+
+        if (section === null) {
             return;
         }
 
@@ -421,8 +440,8 @@ function SectionTab({
         // current title plus the one reference field leaves every other
         // section attribute untouched.
         router.put(
-            `/works/${project.slug}/${work.slug}/sections/${currentSection.id}`,
-            { title: currentSection.title, [field]: value },
+            `/works/${project.slug}/${work.slug}/sections/${section.id}`,
+            { title: section.title, [field]: value },
             {
                 preserveScroll: true,
                 preserveState: true,

@@ -65,6 +65,8 @@ interface WorkspaceProps {
         word_count: number;
         line_count: number;
         target_words: number | null;
+        target_pages: number | null;
+        page_estimate: number;
         length_plan: WorkLengthPlan | null;
     };
     sections: SectionNode[];
@@ -169,9 +171,10 @@ export default function Workspace() {
     const workWords = liveWorkWords ?? work.word_count;
     const targetLines = work.length_plan?.target_lines ?? null;
 
-    // Word target wins when both exist. Line counts only refresh with
-    // full prop reloads (the autosave response carries word/page counts
-    // only) — accepted props-only freshness for lines in v1.
+    // Word target wins when several exist (words > lines > pages).
+    // Line counts — and the page estimate derived from them — only
+    // refresh with full prop reloads (the autosave response carries
+    // word/page counts only) — accepted props-only freshness in v1.
     let countLabel: string;
     let progressRatio: number | null = null;
 
@@ -181,6 +184,11 @@ export default function Workspace() {
     } else if (targetLines !== null) {
         countLabel = `${t('writing.workspace.lines').replace(':count', work.line_count.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', targetLines.toLocaleString())}`;
         progressRatio = targetLines > 0 ? work.line_count / targetLines : null;
+    } else if (work.target_pages !== null) {
+        countLabel = t('writing.workspace.pages_of_target')
+            .replace(':count', work.page_estimate.toLocaleString())
+            .replace(':target', work.target_pages.toLocaleString());
+        progressRatio = work.target_pages > 0 ? work.page_estimate / work.target_pages : null;
     } else {
         countLabel = t('writing.workspace.words').replace(':count', workWords.toLocaleString());
     }
