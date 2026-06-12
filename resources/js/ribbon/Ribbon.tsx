@@ -30,6 +30,8 @@ interface RibbonProps<Ctx> {
     context: Ctx;
     /** Optional host content rendered in the tab row, before the tabs (e.g. a breadcrumb). */
     leading?: ReactNode;
+    /** Optional host content rendered at the END of the tab row (e.g. status chip + progress cluster). */
+    trailing?: ReactNode;
 }
 
 /**
@@ -38,7 +40,7 @@ interface RibbonProps<Ctx> {
  * (single icon row), collapsed (tabs only; clicking a tab overlays the
  * band until pointer leaves). Mode persists globally in localStorage.
  */
-export default function Ribbon<Ctx>({ setKey, context, leading }: RibbonProps<Ctx>) {
+export default function Ribbon<Ctx>({ setKey, context, leading, trailing }: RibbonProps<Ctx>) {
     const t = useT();
     const tabs = useSyncExternalStore(subscribeRibbon, () => getRibbonTabs(setKey)) as RibbonTab<Ctx>[];
     const [activeTabId, setActiveTabId] = useState<string | null>(null);
@@ -88,6 +90,7 @@ export default function Ribbon<Ctx>({ setKey, context, leading }: RibbonProps<Ct
                         {t(tab.labelKey)}
                     </button>
                 ))}
+                {trailing && <div className="ribbon-tabs-trailing">{trailing}</div>}
             </div>
 
             {bandVisible && (
