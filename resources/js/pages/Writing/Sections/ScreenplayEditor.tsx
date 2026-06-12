@@ -1,9 +1,7 @@
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type MouseEvent, type Ref } from 'react';
 
-import Select from '@alexandria/components/form/Select';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
-import Tooltip from '@alexandria/components/ui/Tooltip';
 import { parseScreenplay, serializeScreenplay } from '@alexandria/editor/screenplay/codec';
 import {
     blocksToDoc,
@@ -18,10 +16,10 @@ import useT from '@alexandria/hooks/useT';
 import ManuscriptRuler from '@alexandria/components/editor/ManuscriptRuler';
 
 import {
-    PRINT_LAYOUT_STORAGE_KEY,
     readPrintLayoutPreference,
     type ManuscriptEditorProps,
 } from './ManuscriptEditor';
+import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
 import SectionChrome from './SectionChrome';
 import useSectionAutosave from './useSectionAutosave';
 
@@ -39,55 +37,16 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
  * (editor/screenplay/extensions.ts). Storage format is the
  * Fountain-flavored codec text (editor/screenplay/codec.ts).
  *
+ * Ribbon Plan 2: the surface is headless — the old toolbar (element
+ * select, entry-link, ruler toggle, help) is gone; the workspace
+ * ribbon drives everything through `bridgeRef`. `printLayout` is owned
+ * by the Workspace; the keys modal stays mounted here, opened via
+ * `bridge.openHelp()`.
+ *
  * The chrome root carries BOTH `rte-manuscript` and `rte-screenplay`,
  * so the desk/sheet/print geometry comes from manuscript.css and the
  * Courier voice + element indents from screenplay.css.
  */
-
-/* ── Theme styles ── */
-
-const toolbarStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
-    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-};
-
-/** Compact icon button — same idiom as RichTextEditor's toolbar buttons. */
-function ToolbarIconButton({
-    onMouseDown,
-    active = false,
-    disabled = false,
-    icon,
-    pressed,
-}: {
-    onMouseDown: (e: MouseEvent) => void;
-    active?: boolean;
-    disabled?: boolean;
-    icon: string;
-    pressed?: boolean;
-}) {
-    return (
-        <button
-            type="button"
-            onMouseDown={onMouseDown}
-            disabled={disabled}
-            aria-pressed={pressed}
-            className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${active ? 'alex-toolbar-btn--active' : ''}`}
-            style={{
-                background: active
-                    ? 'color-mix(in srgb, var(--theme-brand-secondary-500) 18%, transparent)'
-                    : 'transparent',
-                color: active
-                    ? 'var(--theme-brand-secondary-500)'
-                    : 'var(--theme-base-content)',
-                borderRadius: 'var(--theme-radius-button)',
-                opacity: disabled ? 0.4 : 1,
-                cursor: disabled ? 'not-allowed' : 'pointer',
-            }}
-        >
-            <i className={`fa-solid ${icon}`} />
-        </button>
-    );
-}
 
 /* ── Editable surface ── */
 
@@ -95,7 +54,10 @@ interface ScreenplaySurfaceProps {
     projectId: number;
     initialContent: string;
     printLayout: boolean;
-    onTogglePrintLayout: () => void;
+    /** Ribbon editor bridge (Ribbon Plan 2) — element commands + queries. */
+    bridgeRef?: Ref<WritingEditorBridge>;
+    /** Fires when the selection's element changes — the Workspace bumps `editorTick`. */
+    onStateChange?: () => void;
     /** Receives the codec-serialized doc, 300ms-debounced. */
     onSerialized: (serialized: string) => void;
 }
@@ -108,12 +70,15 @@ function ScreenplaySurface({
     projectId,
     initialContent,
     printLayout,
-    onTogglePrintLayout,
+    bridgeRef,
+    onStateChange,
     onSerialized,
 }: ScreenplaySurfaceProps) {
     const t = useT();
     const [showKeys, setShowKeys] = useState(false);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const onStateChangeRef = useRef(onStateChange);
+    onStateChangeRef.current = onStateChange;
 
     const editor = useEditor({
         extensions: buildScreenplayExtensions({ projectId }),
@@ -137,9 +102,12 @@ function ScreenplaySurface({
         };
     }, []);
 
-    // The current selection's block element drives the indicator
-    // Select; useEditorState subscribes to transactions, so it tracks
-    // selectionUpdate without shouldRerenderOnTransaction.
+    // The current selection's block element. The toolbar indicator it
+    // used to feed is gone (Ribbon Plan 2), but useEditorState's
+    // transaction subscription remains the change signal the ribbon
+    // needs: when the element under the cursor changes, tick the host
+    // so bridge-driven states (element select value, entry-link
+    // disabling) re-read.
     const currentElement = useEditorState({
         editor,
         selector: ({ editor: e }): ScreenplayElement => {
@@ -150,6 +118,45 @@ function ScreenplaySurface({
                 : 'action';
         },
     }) ?? 'action';
+
+    useEffect(() => {
+        onStateChangeRef.current?.();
+    }, [currentElement]);
+
+    // Ribbon editor bridge (Ribbon Plan 2 Task 2) — recreated per
+    // render so it always closes over the current editor. Prose-only
+    // methods are safe no-ops: the schema makes marks/headings/lists
+    // impossible by construction.
+    useImperativeHandle(bridgeRef, (): WritingEditorBridge => ({
+        toggleMark() {},
+        toggleList() {},
+        toggleHeading() {},
+        isMarkActive: () => false,
+        setElement(element) {
+            if (!editor || !(ELEMENTS as string[]).includes(element)) return;
+            editor.commands.focus();
+            convertCurrentBlock(editor, element as ScreenplayElement);
+        },
+        currentElement() {
+            const name = editor?.state.selection.$from.parent.type.name ?? '';
+
+            return (ELEMENTS as string[]).includes(name) ? name : null;
+        },
+        insertEntryLink() {
+            // Entry links only live in action blocks — no-op elsewhere
+            // (the ribbon control disables itself off currentElement()).
+            if (!editor || editor.state.selection.$from.parent.type.name !== 'action') return;
+            editor.chain().focus().insertContent('[[').run();
+        },
+        openHelp() {
+            setShowKeys(true);
+        },
+        toggleCodeView() {},
+        isCodeView: () => false,
+        focus() {
+            editor?.commands.focus();
+        },
+    }));
 
     // Forward desk-gutter clicks into the editor (the sheet is
     // narrower than the pane) — same affordance as RichTextEditor's
@@ -164,60 +171,7 @@ function ScreenplaySurface({
 
     return (
         <>
-            {/* Toolbar — element indicator + entry link left, ruler + help right */}
-            <div className="flex shrink-0 items-center justify-between p-2" style={toolbarStyle}>
-                <div className="flex items-center gap-2">
-                    <div className="w-44">
-                        <Select
-                            size="sm"
-                            aria-label={t('writing.workspace.element')}
-                            options={ELEMENTS.map((element) => ({
-                                value: element,
-                                label: t(`writing.elements.${element}`),
-                            }))}
-                            value={currentElement}
-                            onChange={(e) => {
-                                editor.commands.focus();
-                                convertCurrentBlock(editor, e.target.value as ScreenplayElement);
-                            }}
-                        />
-                    </div>
-                    <Tooltip content={t('editor.toolbar.entry_link.title')}>
-                        <ToolbarIconButton
-                            icon="fa-file-lines"
-                            disabled={currentElement !== 'action'}
-                            onMouseDown={(e) => {
-                                e.preventDefault();
-                                editor.chain().focus().insertContent('[[').run();
-                            }}
-                        />
-                    </Tooltip>
-                </div>
-                <div className="flex items-center gap-1">
-                    <Tooltip content={t('writing.workspace.print_layout')}>
-                        <ToolbarIconButton
-                            icon="fa-ruler-horizontal"
-                            active={printLayout}
-                            pressed={printLayout}
-                            onMouseDown={(e) => {
-                                e.preventDefault();
-                                onTogglePrintLayout();
-                            }}
-                        />
-                    </Tooltip>
-                    <Tooltip content={t('writing.workspace.keys_title')}>
-                        <ToolbarIconButton
-                            icon="fa-circle-question"
-                            onMouseDown={(e) => {
-                                e.preventDefault();
-                                setShowKeys(true);
-                            }}
-                        />
-                    </Tooltip>
-                </div>
-            </div>
-
-            {/* Print-layout ruler — pinned between toolbar and the scrolling page */}
+            {/* Print-layout ruler — pinned above the scrolling page */}
             {printLayout && <ManuscriptRuler />}
 
             {/* The sheet — the content wrapper scrolls; geometry from
@@ -228,7 +182,7 @@ function ScreenplaySurface({
                 onMouseDown={handleGutterMouseDown}
             />
 
-            {/* Keyboard-flow help */}
+            {/* Keyboard-flow help — opened via bridge.openHelp() */}
             <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-md">
                 <ModalHeader title={t('writing.workspace.keys_title')} onClose={() => setShowKeys(false)} />
                 <div className="space-y-3 p-6 text-sm">
@@ -271,21 +225,19 @@ export default function ScreenplayEditor({
     section,
     canUpdate,
     onCounts,
+    printLayout,
+    bridgeRef,
+    onStateChange,
 }: ManuscriptEditorProps) {
     const { status, wordCount, pageEstimate, noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
-    const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
 
-    function togglePrintLayout() {
-        const next = !printLayout;
-        setPrintLayout(next);
-        try {
-            localStorage.setItem(PRINT_LAYOUT_STORAGE_KEY, String(next));
-        } catch {
-            // Storage unavailable (private mode / quota) — the toggle
-            // still works for this session.
-        }
-    }
+    // Read the stored preference ONCE (a function-call prop default
+    // would re-read localStorage every render). The `??` fallback keeps
+    // the editor self-sufficient until the Workspace passes the prop
+    // (Ribbon Plan 2 Task 3 always does).
+    const storedPrintLayout = useMemo(readPrintLayoutPreference, []);
+    const effectivePrintLayout = printLayout ?? storedPrintLayout;
 
     return (
         <SectionChrome
@@ -296,14 +248,15 @@ export default function ScreenplayEditor({
             status={status}
             wordCount={wordCount}
             pageEstimate={pageEstimate}
-            className={`rte-manuscript rte-screenplay${printLayout && canUpdate ? ' rte-manuscript--print' : ''}`}
+            className={`rte-manuscript rte-screenplay${effectivePrintLayout && canUpdate ? ' rte-manuscript--print' : ''}`}
         >
             {canUpdate ? (
                 <ScreenplaySurface
                     projectId={projectId}
                     initialContent={initialContent}
-                    printLayout={printLayout}
-                    onTogglePrintLayout={togglePrintLayout}
+                    printLayout={effectivePrintLayout}
+                    bridgeRef={bridgeRef}
+                    onStateChange={onStateChange}
                     onSerialized={noteChange}
                 />
             ) : (

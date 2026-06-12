@@ -3,7 +3,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import LinkExtension from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import { useState, useEffect, useRef, useCallback, type MouseEvent, type ReactNode } from 'react';
+import { useState, useEffect, useImperativeHandle, useRef, useCallback, type MouseEvent, type ReactNode, type Ref } from 'react';
 import AiWritingModal from './AiWritingModal';
 import ManuscriptRuler from './ManuscriptRuler';
 import { parseWikiToHtml } from '../tiptap-bio-editor/utils/wiki-parser';
@@ -14,6 +14,7 @@ import Tooltip from '@alexandria/components/ui/Tooltip';
 import Input from '@alexandria/components/form/Input';
 import Button from '@alexandria/components/ui/Button';
 import useT from '@alexandria/hooks/useT';
+import type { WritingEditorBridge } from '@alexandria/pages/Writing/ribbon/writingRibbonContext';
 
 /**
  * RichTextEditor — Tiptap 3 wiki-markup editor surface.
@@ -84,6 +85,27 @@ interface RichTextEditorProps {
      * representation only — no pagination preview.
      */
     printLayout?: boolean;
+    /**
+     * Toolbar chrome (meaningful for the manuscript variant only; card
+     * mode always renders its toolbar). `'none'` drops the toolbar row
+     * — and with it the band border — entirely: the writing workspace
+     * ribbon owns the controls (Ribbon Plan 2) and drives the editor
+     * through `bridgeRef`. The content surface, modals, and change
+     * events are untouched.
+     */
+    chrome?: 'full' | 'none';
+    /**
+     * Imperative ribbon bridge (Ribbon Plan 2) — formatting commands +
+     * capability queries. Screenplay-only methods (`setElement`,
+     * `currentElement`) are safe no-ops here.
+     */
+    bridgeRef?: Ref<WritingEditorBridge>;
+    /**
+     * Fires (debounced ~100ms) on editor transactions, and immediately
+     * on code-view toggles, so the host can re-read active states
+     * through the bridge (the Workspace bumps its `editorTick`).
+     */
+    onStateChange?: () => void;
 }
 
 /* ── Toolbar button definitions ── */
@@ -233,6 +255,9 @@ export default function RichTextEditor({
     className,
     variant = 'card',
     printLayout = false,
+    chrome = 'full',
+    bridgeRef,
+    onStateChange,
     projectId,
     aiInstructions = [],
 }: RichTextEditorProps) {
@@ -249,6 +274,27 @@ export default function RichTextEditor({
     const [, setEditorState] = useState(0);
     const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
     const isExternalUpdate = useRef(false);
+
+    // Ribbon state tick (Ribbon Plan 2). The latest callback lives in a
+    // ref so the debounced notifier — and the useEditor event handlers
+    // that close over it — never go stale when the prop identity
+    // changes between renders.
+    const onStateChangeRef = useRef(onStateChange);
+    onStateChangeRef.current = onStateChange;
+    const stateChangeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    /** Debounced (~100ms) onStateChange — transactions fire per keystroke. */
+    const notifyStateChange = useCallback(() => {
+        if (!onStateChangeRef.current) return;
+        if (stateChangeTimerRef.current) clearTimeout(stateChangeTimerRef.current);
+        stateChangeTimerRef.current = setTimeout(() => onStateChangeRef.current?.(), 100);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (stateChangeTimerRef.current) clearTimeout(stateChangeTimerRef.current);
+        };
+    }, []);
 
     const extensions = [
         StarterKit.configure({
@@ -283,7 +329,10 @@ export default function RichTextEditor({
         },
         onFocus: () => setIsFocused(true),
         onBlur: () => setIsFocused(false),
-        onTransaction: () => setEditorState((n) => n + 1),
+        onTransaction: () => {
+            setEditorState((n) => n + 1);
+            notifyStateChange();
+        },
     });
 
     // Subscribe to per-button active states via useEditorState. Tiptap
@@ -342,9 +391,64 @@ export default function RichTextEditor({
             setCodeValue(serializeToWiki(editor));
             setCodeView(true);
         }
+        // Discrete toggle — tick the ribbon immediately (no debounce)
+        // so the code-view control's active state flips in step.
+        onStateChangeRef.current?.();
     }
 
+    // Ribbon editor bridge (Ribbon Plan 2 Task 2) — recreated per
+    // render so it always closes over the current editor + codeView.
+    useImperativeHandle(bridgeRef, (): WritingEditorBridge => ({
+        toggleMark(name) {
+            if (!editor) return;
+            if (name === 'bold') {
+                editor.chain().focus().toggleBold().run();
+            } else if (name === 'italic') {
+                editor.chain().focus().toggleItalic().run();
+            } else {
+                editor.chain().focus().toggleUnderline().run();
+            }
+        },
+        toggleList(name) {
+            if (!editor) return;
+            if (name === 'bulletList') {
+                editor.chain().focus().toggleBulletList().run();
+            } else {
+                editor.chain().focus().toggleOrderedList().run();
+            }
+        },
+        toggleHeading(level) {
+            editor?.chain().focus().toggleHeading({ level }).run();
+        },
+        isMarkActive(name) {
+            if (!editor) return false;
+            // Task 1 convention: 'heading2'/'heading3' map onto TipTap's
+            // ('heading', { level }) — every other name is 1:1.
+            if (name === 'heading2') return editor.isActive('heading', { level: 2 });
+            if (name === 'heading3') return editor.isActive('heading', { level: 3 });
+
+            return editor.isActive(name);
+        },
+        // Screenplay-only — safe no-ops on the prose surface.
+        setElement() {},
+        currentElement: () => null,
+        insertEntryLink() {
+            editor?.chain().focus().insertContent('[[').run();
+        },
+        openHelp() {
+            setShowLegend(true);
+        },
+        toggleCodeView,
+        isCodeView: () => codeView,
+        focus() {
+            editor?.commands.focus();
+        },
+    }));
+
     const isManuscript = variant === 'manuscript';
+    // chrome='none' is only meaningful for the manuscript surface — the
+    // ribbon-driven workspace; card callers always keep their toolbar.
+    const showToolbar = !isManuscript || chrome !== 'none';
 
     // Manuscript mode: the prose measure (48rem, via manuscript.css) is
     // narrower than the pane, so clicks in the horizontal gutters land
@@ -565,7 +669,9 @@ export default function RichTextEditor({
                           }
                 }
             >
-                {/* Toolbar */}
+                {/* Toolbar — absent entirely under chrome='none' (the
+                    workspace ribbon owns the controls; no band border) */}
+                {showToolbar && (
                 <div
                     className={`flex items-center justify-between p-2 ${isManuscript ? 'shrink-0' : ''}`}
                     style={toolbarStyle}
@@ -677,6 +783,7 @@ export default function RichTextEditor({
                         </Tooltip>
                     </div>
                 </div>
+                )}
 
                 {/* Print-layout ruler — a pinned sibling between the
                     toolbar and the scroll container (Word pins its
