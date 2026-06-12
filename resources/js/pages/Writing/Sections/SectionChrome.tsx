@@ -10,10 +10,11 @@ import type { SaveStatus } from './useSectionAutosave';
  * Shared workspace-editor chrome — Stage 8g.1.
  *
  * Since Ribbon Plan 2 this is an identity strip — inline section title
- * + label chip + save status (controls live in the workspace ribbon).
- * Renders the editor surface as children plus the counts footer. Owns
- * the title's local state, server commit (PUT section update with a
- * partial reload), and re-sync after the server normalizes it.
+ * + label chip + save status (controls live in the workspace ribbon;
+ * counts moved to the workspace-wide WorkspaceStatusBar). Renders the
+ * editor surface as children. Owns the title's local state, server
+ * commit (PUT section update with a partial reload), and re-sync after
+ * the server normalizes it.
  * ManuscriptEditor and ScreenplayEditor both wrap their surfaces in
  * this so the chrome can't drift between formats. `menuExtras` stays
  * as a future extension slot; the workspace passes nothing today.
@@ -25,8 +26,6 @@ interface SectionChromeProps {
     section: CurrentSection;
     canUpdate: boolean;
     status: SaveStatus;
-    wordCount: number;
-    pageEstimate: number | null;
     /** Extra menu-bar controls, rendered between the label chip and the save status. */
     menuExtras?: ReactNode;
     /** Extra classes for the root flex column (e.g. the screenplay rte-* scope classes). */
@@ -60,12 +59,7 @@ const menuBarStyle: CSSProperties = {
     borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
 };
 
-const footerStyle: CSSProperties = {
-    background: 'var(--theme-base-page)',
-    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-};
-
-const footerMetaStyle: CSSProperties = {
+const metaTextStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
 
@@ -79,8 +73,6 @@ export default function SectionChrome({
     section,
     canUpdate,
     status,
-    wordCount,
-    pageEstimate,
     menuExtras,
     className,
     children,
@@ -119,10 +111,6 @@ export default function SectionChrome({
                     ? t('writing.workspace.save_error')
                     : null;
 
-    const wordsLabel = section.target_words !== null
-        ? `${t('writing.workspace.words').replace(':count', wordCount.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', section.target_words.toLocaleString())}`
-        : t('writing.workspace.words').replace(':count', wordCount.toLocaleString());
-
     return (
         <div className={`flex h-full min-h-0 flex-col ${className ?? ''}`}>
             {/* Menu bar — title + label on the left, extras + save status on the right */}
@@ -152,7 +140,7 @@ export default function SectionChrome({
                 {statusText && (
                     <span
                         className="shrink-0 text-xs"
-                        style={status === 'error' ? errorTextStyle : footerMetaStyle}
+                        style={status === 'error' ? errorTextStyle : metaTextStyle}
                     >
                         {statusText}
                     </span>
@@ -161,18 +149,6 @@ export default function SectionChrome({
 
             {/* The editor surface — its own content wrapper scrolls */}
             {children}
-
-            {/* Footer bar — counts only */}
-            <footer className="shrink-0" style={footerStyle}>
-                <div className="flex items-center justify-end px-4 py-2 text-xs">
-                    <span className="shrink-0 tabular-nums" style={footerMetaStyle}>
-                        {wordsLabel}
-                        {section.format === 'screenplay' && pageEstimate !== null && (
-                            <> · {t('writing.workspace.pages').replace(':count', pageEstimate.toLocaleString())}</>
-                        )}
-                    </span>
-                </div>
-            </footer>
         </div>
     );
 }

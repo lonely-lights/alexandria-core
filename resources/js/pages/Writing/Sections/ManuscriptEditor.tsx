@@ -12,10 +12,10 @@ import useSectionAutosave, { type SectionCountsCallback } from './useSectionAuto
  *
  * The center pane: a RichTextEditor wired to debounced JSON autosave
  * (PUT .../sections/{id}/content) via the shared useSectionAutosave
- * hook, wrapped in the shared SectionChrome (menu bar with inline
- * title / counts footer). Server-confirmed word counts flow back up
- * through `onCounts` so the Workspace header strip + Navigator rows
- * stay live without an Inertia round-trip. Switching sections (or
+ * hook, wrapped in the shared SectionChrome (identity strip with
+ * inline title + save status). Server-confirmed word/page counts flow
+ * back up through `onCounts` so the workspace status bar + Navigator
+ * rows stay live without an Inertia round-trip. Switching sections (or
  * unmounting) flushes any pending save for the outgoing section before
  * state resets.
  *
@@ -75,7 +75,7 @@ export default function ManuscriptEditor({
     bridgeRef,
     onStateChange,
 }: ManuscriptEditorProps) {
-    const { status, wordCount, pageEstimate, noteChange, initialContent } =
+    const { status, noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
     const [content, setContent] = useState(initialContent);
 
@@ -105,8 +105,6 @@ export default function ManuscriptEditor({
             section={section}
             canUpdate={canUpdate}
             status={status}
-            wordCount={wordCount}
-            pageEstimate={pageEstimate}
         >
             {/* Manuscript — the editor's content wrapper scrolls */}
             {canUpdate ? (

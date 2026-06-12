@@ -1,4 +1,4 @@
-import { Link, router, usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
@@ -18,6 +18,7 @@ import WorkSettingsModal, {
     type LengthPlanOption,
     type WorkLengthPlan,
 } from './Sections/WorkSettingsModal';
+import WorkspaceStatusBar from './Sections/WorkspaceStatusBar';
 import type { WritingEditorBridge, WritingRibbonContext } from './ribbon/writingRibbonContext';
 import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
 
@@ -25,10 +26,12 @@ import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
  * Writing dashboard → workspace — Stage 8g.1 (ribbon-driven since
  * Ribbon Plan 2 Task 3).
  *
- * The manuscript surface: the writing ribbon (full width, under the
- * navbar — breadcrumb leading, status/progress/counts trailing) over a
- * full-height three-pane row — section Navigator (left), editor pane
- * (center), reference rail (right). The Workspace owns the ribbon
+ * The manuscript surface — Word-style anatomy: the writing ribbon
+ * (full width, under the navbar, tabs only) over a full-height
+ * three-pane row — section Navigator (left), editor pane (center),
+ * reference rail (right) — over a bottom-attached status bar
+ * (breadcrumb, status chip, section counts, work progress; see
+ * WorkspaceStatusBar). The Workspace owns the ribbon
  * context: workspace state (panel, print layout, work status) plus an
  * editor bridge both editors implement; `editorTick` bumps on editor
  * selection/content changes so control states re-render. The section
@@ -135,25 +138,6 @@ const ribbonShellStyle: CSSProperties = {
     background: 'color-mix(in srgb, var(--theme-base-content) 4%, var(--theme-base-page))',
 };
 
-const crumbSeparatorStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
-};
-
-const statusChipStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
-    borderRadius: 'var(--theme-radius-badge)',
-    padding: '0.125rem 0.5rem',
-    fontSize: '0.6875rem',
-    fontWeight: 600,
-    lineHeight: 1.5,
-    whiteSpace: 'nowrap',
-};
-
-const metaText: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
-};
-
 const mutedText: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
@@ -169,6 +153,11 @@ export default function Workspace() {
     // Inertia props until the next full prop refresh catches up.
     const [liveCounts, setLiveCounts] = useState<Record<number, number>>({});
     const [liveWorkWords, setLiveWorkWords] = useState<number | null>(null);
+
+    // Server-confirmed page estimates per section (null until the
+    // section's first confirmed save — same freshness the old
+    // SectionChrome footer had reading the autosave hook directly).
+    const [livePages, setLivePages] = useState<Record<number, number | null>>({});
 
     // Bumped after each confirmed autosave so the reference panel
     // re-fetches the section's server-synced mentions.
@@ -226,8 +215,9 @@ export default function Workspace() {
         });
     }
 
-    function handleCounts(sectionId: number, words: number, workWords: number, _pages: number | null) {
+    function handleCounts(sectionId: number, words: number, workWords: number, pages: number | null) {
         setLiveCounts((prev) => ({ ...prev, [sectionId]: words }));
+        setLivePages((prev) => ({ ...prev, [sectionId]: pages }));
         setLiveWorkWords(workWords);
         setSaveSignal((prev) => prev + 1);
     }
@@ -317,89 +307,24 @@ export default function Workspace() {
     ]);
 
     const workWords = liveWorkWords ?? work.word_count;
-    const targetLines = work.length_plan?.target_lines ?? null;
 
-    // Word target wins when several exist (words > lines > pages).
-    // Line counts — and the page estimate derived from them — only
-    // refresh with full prop reloads (the autosave response carries
-    // word/page counts only) — accepted props-only freshness in v1.
-    let countLabel: string;
-    let progressRatio: number | null = null;
-
-    if (work.target_words !== null) {
-        countLabel = `${t('writing.workspace.words').replace(':count', workWords.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', work.target_words.toLocaleString())}`;
-        progressRatio = work.target_words > 0 ? workWords / work.target_words : null;
-    } else if (targetLines !== null) {
-        countLabel = `${t('writing.workspace.lines').replace(':count', work.line_count.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', targetLines.toLocaleString())}`;
-        progressRatio = targetLines > 0 ? work.line_count / targetLines : null;
-    } else if (work.target_pages !== null) {
-        countLabel = t('writing.workspace.pages_of_target')
-            .replace(':count', work.page_estimate.toLocaleString())
-            .replace(':target', work.target_pages.toLocaleString());
-        progressRatio = work.target_pages > 0 ? work.page_estimate / work.target_pages : null;
-    } else {
-        countLabel = t('writing.workspace.words').replace(':count', workWords.toLocaleString());
-    }
-
-    // Ribbon tab-row slots: the back-link breadcrumb leads, the status
-    // chip + progress + counts cluster trails (the old header strip's
-    // two sides — the strip itself is gone, the ribbon owns the row).
-    const breadcrumb = (
-        <div className="flex min-w-0 items-center gap-2 self-center pr-3 text-sm">
-            <Link
-                href={`/works/${project.slug}`}
-                className="alex-page-header-crumb-link shrink-0"
-            >
-                {project.name}
-            </Link>
-            <i
-                className="fa-solid fa-chevron-right text-[8px]"
-                style={crumbSeparatorStyle}
-                aria-hidden="true"
-            />
-            <span className="truncate font-semibold">{work.title}</span>
-        </div>
-    );
-
-    const trailingCluster = (
-        <>
-            <span style={statusChipStyle}>
-                {t(`writing.statuses.${work.status}`, work.status)}
-            </span>
-            {progressRatio !== null && (
-                <div
-                    aria-hidden="true"
-                    className="h-1 w-32 overflow-hidden rounded-full"
-                    style={{
-                        background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
-                    }}
-                >
-                    <div
-                        className="h-full rounded-full"
-                        style={{
-                            width: `${Math.min(100, progressRatio * 100)}%`,
-                            background: 'var(--theme-brand-primary-500)',
-                        }}
-                    />
-                </div>
-            )}
-            <div className="text-xs tabular-nums" style={metaText}>
-                {countLabel}
-            </div>
-        </>
-    );
+    // Current-section live counts for the status bar — server-confirmed
+    // autosave values overlay the Inertia props (same freshness as the
+    // Navigator rows; the old SectionChrome footer read the autosave
+    // hook directly, the bar assembles from the existing onCounts flow).
+    const sectionWords =
+        currentSection !== null
+            ? (liveCounts[currentSection.id] ?? currentSection.word_count)
+            : 0;
+    const sectionPages = currentSection !== null ? (livePages[currentSection.id] ?? null) : null;
 
     return (
         <AppLayout title={`${work.title} - ${project.name}`} immersive>
             <div className="flex h-screen flex-col">
-                {/* Writing ribbon — full width, under the navbar */}
+                {/* Writing ribbon — full width, under the navbar; tabs only
+                    (breadcrumb + status/progress live in the status bar) */}
                 <div className="shrink-0" style={ribbonShellStyle}>
-                    <Ribbon
-                        setKey="writing"
-                        context={ribbonCtx}
-                        leading={breadcrumb}
-                        trailing={trailingCluster}
-                    />
+                    <Ribbon setKey="writing" context={ribbonCtx} />
                 </div>
 
                 <div className="flex min-h-0 flex-1">
@@ -481,6 +406,18 @@ export default function Workspace() {
                         </aside>
                     )}
                 </div>
+
+                {/* Bottom-attached status bar — full workspace width */}
+                <WorkspaceStatusBar
+                    project={project}
+                    work={work}
+                    workWords={workWords}
+                    hasSection={currentSection !== null}
+                    sectionWords={sectionWords}
+                    sectionTarget={currentSection?.target_words ?? null}
+                    sectionPages={sectionPages}
+                    sectionFormat={currentSection?.format ?? null}
+                />
             </div>
 
             {settingsOpen && (

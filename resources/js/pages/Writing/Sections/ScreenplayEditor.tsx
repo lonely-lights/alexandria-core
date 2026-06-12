@@ -30,8 +30,8 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
  * Workspace screenplay editor — Stage 8g.1 (Plan 3 Task 2).
  *
  * The center pane for `format: 'screenplay'` sections: same shell
- * contract as ManuscriptEditor (the shared SectionChrome menu bar +
- * counts footer, autosave via the shared useSectionAutosave hook), but
+ * contract as ManuscriptEditor (the shared SectionChrome identity
+ * strip, autosave via the shared useSectionAutosave hook), but
  * the writing surface is a schema-constrained TipTap instance whose
  * document only admits the six screenplay block nodes
  * (editor/screenplay/extensions.ts). Storage format is the
@@ -229,7 +229,7 @@ export default function ScreenplayEditor({
     bridgeRef,
     onStateChange,
 }: ManuscriptEditorProps) {
-    const { status, wordCount, pageEstimate, noteChange, initialContent } =
+    const { status, noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
 
     // Read the stored preference ONCE (a function-call prop default
@@ -246,8 +246,6 @@ export default function ScreenplayEditor({
             section={section}
             canUpdate={canUpdate}
             status={status}
-            wordCount={wordCount}
-            pageEstimate={pageEstimate}
             className={`rte-manuscript rte-screenplay${effectivePrintLayout && canUpdate ? ' rte-manuscript--print' : ''}`}
         >
             {canUpdate ? (
