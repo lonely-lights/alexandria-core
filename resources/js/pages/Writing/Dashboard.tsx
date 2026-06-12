@@ -59,7 +59,7 @@ export default function WritingDashboard() {
     const isMobileWriting = useMediaQuery('(max-width: 1023px)');
 
     return (
-        <AppLayout title={t('writing.dashboard.title')} immersive>
+        <AppLayout title={t('writing.dashboard.title')} immersive fabActions={null}>
             <PageHeader
                 breadcrumbs={[{ label: t('writing.dashboard.title') }]}
             >

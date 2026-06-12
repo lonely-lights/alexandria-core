@@ -319,7 +319,7 @@ export default function Workspace() {
     const sectionPages = currentSection !== null ? (livePages[currentSection.id] ?? null) : null;
 
     return (
-        <AppLayout title={`${work.title} - ${project.name}`} immersive>
+        <AppLayout title={`${work.title} - ${project.name}`} immersive fabActions={null}>
             <div className="flex h-screen flex-col">
                 {/* Writing ribbon — full width, under the navbar; tabs only
                     (breadcrumb + status/progress live in the status bar) */}

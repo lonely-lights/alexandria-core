@@ -58,7 +58,7 @@ export default function WritingIndex() {
     const isMobileWriting = useMediaQuery('(max-width: 1023px)');
 
     return (
-        <AppLayout title={`${t('writing.index.title')} - ${project.name}`} immersive>
+        <AppLayout title={`${t('writing.index.title')} - ${project.name}`} immersive fabActions={null}>
             <PageHeader
                 breadcrumbs={[
                     { label: project.name, href: `/p/${project.slug}` },
