@@ -319,7 +319,16 @@ export default function Workspace() {
     const sectionPages = currentSection !== null ? (livePages[currentSection.id] ?? null) : null;
 
     return (
-        <AppLayout title={`${work.title} - ${project.name}`} immersive fabActions={null}>
+        // bottomNavTabs={null}: the workspace is a viewport-exact app
+        // surface — the mobile BottomNav would overlay the status bar
+        // and its main-padding would re-grow the document. The status
+        // bar's back chevron is the mobile way out.
+        <AppLayout
+            title={`${work.title} - ${project.name}`}
+            immersive
+            fabActions={null}
+            bottomNavTabs={null}
+        >
             {/* h-dvh + overflow-hidden: the workspace IS the viewport —
                 only the editor desk (and the side rails internally)
                 scroll, so the window never grows a second scrollbar. */}
