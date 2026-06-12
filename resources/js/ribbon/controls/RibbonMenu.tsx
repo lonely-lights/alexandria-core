@@ -26,6 +26,7 @@ export default function RibbonMenu<Ctx>({ control, ctx }: Props<Ctx>) {
     const trigger = (
         <button
             type="button"
+            data-ribbon-control={control.id}
             className="ribbon-ctl alex-toolbar-btn"
             aria-label={label}
             aria-haspopup="menu"

@@ -121,6 +121,7 @@ export default function Ribbon<Ctx>({ setKey, context, leading, trailing }: Ribb
                         <Tooltip content={t(mode === 'slim' ? 'ribbon.mode.comfortable' : 'ribbon.mode.slim')}>
                             <button
                                 type="button"
+                                data-ribbon-mode-toggle="density"
                                 className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
                                 onClick={() => persistMode(mode === 'slim' ? 'comfortable' : 'slim')}
                             >
@@ -130,6 +131,7 @@ export default function Ribbon<Ctx>({ setKey, context, leading, trailing }: Ribb
                         <Tooltip content={t(mode === 'collapsed' ? 'ribbon.mode.expand' : 'ribbon.mode.collapse')}>
                             <button
                                 type="button"
+                                data-ribbon-mode-toggle="collapse"
                                 className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
                                 onClick={() => persistMode(mode === 'collapsed' ? 'comfortable' : 'collapsed')}
                             >

@@ -22,6 +22,7 @@ export default function RibbonButton<Ctx>({ control, ctx, showLabel }: Props<Ctx
     const trigger = (
         <button
             type="button"
+            data-ribbon-control={control.id}
             className={`ribbon-ctl alex-toolbar-btn ${active ? 'alex-toolbar-btn--active' : ''}`}
             aria-pressed={control.type === 'toggle' ? active : undefined}
             disabled={disabled}

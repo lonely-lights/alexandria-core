@@ -26,6 +26,7 @@ export default function RibbonSelect<Ctx>({ control, ctx }: Props<Ctx>) {
 
     const trigger = (
         <select
+            data-ribbon-control={control.id}
             className="ribbon-select"
             aria-label={label}
             value={control.value?.(ctx) ?? ''}
