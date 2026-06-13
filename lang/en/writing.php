@@ -123,6 +123,13 @@ return [
     'panel.collapse' => 'Hide panel',
     'panel.expand' => 'Show panel',
 
+    'rail.label' => 'Project sections',
+    'rail.project_home' => 'Project home',
+    'rail.writing' => 'Writing',
+    'rail.notes' => 'Notes',
+    'rail.ai' => 'AI',
+    'rail.reports' => 'Reports',
+
     'reports.title' => 'Reports',
     'reports.characters_heading' => 'Characters & references',
     'reports.structure_heading' => 'Structure',

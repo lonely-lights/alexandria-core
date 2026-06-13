@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 import { useTheme } from '@alexandria/hooks/useTheme';
@@ -17,6 +17,7 @@ import ManuscriptEditor, {
 import Navigator from './Sections/Navigator';
 import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
 import ScreenplayEditor from './Sections/ScreenplayEditor';
+import WorkspaceAppRail from './Sections/WorkspaceAppRail';
 import WorkSettingsModal, {
     type LengthPlanOption,
     type WorkLengthPlan,
@@ -210,6 +211,77 @@ export default function Workspace() {
         setEditorTick((tick) => tick + 1);
     }, []);
 
+    useEffect(() => {
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+        const previousHtmlHeight = document.documentElement.style.height;
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousBodyHeight = document.body.style.height;
+        const previousBodyMaxHeight = document.body.style.maxHeight;
+        const previousBodyOverscroll = document.body.style.overscrollBehavior;
+        const previousBodyPosition = document.body.style.position;
+        const previousBodyInset = document.body.style.inset;
+        const previousBodyWidth = document.body.style.width;
+        const previousBodyScrollbarGutter = document.body.style.scrollbarGutter;
+        const previousHtmlMaxHeight = document.documentElement.style.maxHeight;
+        const previousHtmlScrollbarGutter = document.documentElement.style.scrollbarGutter;
+        const htmlHadLock = document.documentElement.classList.contains('alex-writing-workspace-lock');
+        const bodyHadLock = document.body.classList.contains('alex-writing-workspace-lock');
+        const main = document.querySelector<HTMLElement>('main[data-theme-target="content"]');
+        const previousMainOverflow = main?.style.overflow ?? '';
+        const previousMainHeight = main?.style.height ?? '';
+        const previousMainMinHeight = main?.style.minHeight ?? '';
+
+        document.documentElement.classList.add('alex-writing-workspace-lock');
+        document.body.classList.add('alex-writing-workspace-lock');
+        document.documentElement.style.overflow = 'hidden';
+        document.documentElement.style.height = '100dvh';
+        document.documentElement.style.maxHeight = '100dvh';
+        document.documentElement.style.scrollbarGutter = 'auto';
+        document.body.style.overflow = 'hidden';
+        document.body.style.height = '100dvh';
+        document.body.style.maxHeight = '100dvh';
+        document.body.style.overscrollBehavior = 'none';
+        document.body.style.position = 'fixed';
+        document.body.style.inset = '0';
+        document.body.style.width = '100%';
+        document.body.style.scrollbarGutter = 'auto';
+
+        if (main) {
+            main.style.overflow = 'hidden';
+            main.style.height = '100dvh';
+            main.style.minHeight = '0';
+        }
+
+        return () => {
+            document.documentElement.style.overflow = previousHtmlOverflow;
+            document.documentElement.style.height = previousHtmlHeight;
+            document.documentElement.style.maxHeight = previousHtmlMaxHeight;
+            document.documentElement.style.scrollbarGutter = previousHtmlScrollbarGutter;
+            document.body.style.overflow = previousBodyOverflow;
+            document.body.style.height = previousBodyHeight;
+            document.body.style.maxHeight = previousBodyMaxHeight;
+            document.body.style.overscrollBehavior = previousBodyOverscroll;
+            document.body.style.position = previousBodyPosition;
+            document.body.style.inset = previousBodyInset;
+            document.body.style.width = previousBodyWidth;
+            document.body.style.scrollbarGutter = previousBodyScrollbarGutter;
+
+            if (!htmlHadLock) {
+                document.documentElement.classList.remove('alex-writing-workspace-lock');
+            }
+
+            if (!bodyHadLock) {
+                document.body.classList.remove('alex-writing-workspace-lock');
+            }
+
+            if (main) {
+                main.style.overflow = previousMainOverflow;
+                main.style.height = previousMainHeight;
+                main.style.minHeight = previousMainMinHeight;
+            }
+        };
+    }, []);
+
     const togglePanel = useCallback(() => {
         setPanelOpen((prev) => {
             const next = !prev;
@@ -388,7 +460,7 @@ export default function Workspace() {
                 some dev pipelines (vendor/ is .gitignored) — inline
                 styles can't be skipped by a CSS generator. */}
             <div
-                className={`flex flex-col ${neutralChrome ? 'writing-neutral-chrome' : ''}`}
+                className={`writing-workspace-shell flex flex-col ${neutralChrome ? 'writing-neutral-chrome' : ''}`}
                 data-writing-mode={theme?.mode ?? 'light'}
                 style={{ height: '100dvh', overflow: 'hidden' }}
             >
@@ -533,6 +605,8 @@ export default function Workspace() {
                             />
                         </aside>
                     )}
+
+                    <WorkspaceAppRail projectSlug={project.slug} workSlug={work.slug} />
                 </div>
 
                 {/* Bottom-attached status bar — full workspace width */}
