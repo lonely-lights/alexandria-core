@@ -76,20 +76,27 @@ export default function Ribbon<Ctx>({ setKey, context, leading, trailing }: Ribb
 
     return (
         <div className={`ribbon relative ${mode === 'slim' ? 'ribbon--slim' : ''}`}>
-            <div className="ribbon-tabs" role="tablist">
+            <div className="ribbon-tabs">
                 {leading}
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={tab.id === activeTab.id}
-                        className={`ribbon-tab ${tab.id === activeTab.id ? 'ribbon-tab--active' : ''}`}
-                        onClick={() => onTabClick(tab.id)}
-                    >
-                        {t(tab.labelKey)}
-                    </button>
-                ))}
+                {/* The strip is its own scroll container so a cramped
+                    viewport (merged-header mode on mobile) scrolls the
+                    tabs horizontally instead of wrapping or crushing the
+                    leading/trailing clusters. role="tablist" lives here —
+                    host leading/trailing content stays outside it. */}
+                <div className="ribbon-tabstrip" role="tablist">
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={tab.id === activeTab.id}
+                            className={`ribbon-tab ${tab.id === activeTab.id ? 'ribbon-tab--active' : ''}`}
+                            onClick={() => onTabClick(tab.id)}
+                        >
+                            {t(tab.labelKey)}
+                        </button>
+                    ))}
+                </div>
                 {trailing && <div className="ribbon-tabs-trailing">{trailing}</div>}
             </div>
 

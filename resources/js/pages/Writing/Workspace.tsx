@@ -1,9 +1,11 @@
-import { router, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import Ribbon from '@alexandria/ribbon/Ribbon';
+import LogoMark from '@alexandria/components/brand/LogoMark';
+import CompactUserMenu from '@alexandria/components/navigation/CompactUserMenu';
 import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
 
 import AddSectionModal from './Sections/AddSectionModal';
@@ -26,12 +28,14 @@ import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
  * Writing dashboard → workspace — Stage 8g.1 (ribbon-driven since
  * Ribbon Plan 2 Task 3).
  *
- * The manuscript surface — Word-style anatomy: the writing ribbon
- * (full width, under the navbar, tabs only) over a full-height
- * three-pane row — section Navigator (left), editor pane (center),
- * reference rail (right) — over a bottom-attached status bar
- * (breadcrumb, status chip, section counts, work progress; see
- * WorkspaceStatusBar). The Workspace owns the ribbon
+ * The manuscript surface — Word-style anatomy with a fully merged
+ * header (Google Docs as the reference): the app navbar is OFF here
+ * and the ribbon's tab row IS the app header — logo mark (→
+ * /dashboard) · work title · status chip · the four tabs · spacer ·
+ * search · user avatar — over a full-height three-pane row — section
+ * Navigator (left), editor pane (center), reference rail (right) —
+ * over a bottom-attached status bar (breadcrumb, section counts, work
+ * progress; see WorkspaceStatusBar). The Workspace owns the ribbon
  * context: workspace state (panel, print layout, work status) plus an
  * editor bridge both editors implement; `editorTick` bumps on editor
  * selection/content changes so control states re-render. The section
@@ -129,17 +133,28 @@ function findSectionNode(nodes: SectionNode[], id: number): SectionNode | null {
 
 /* ── Theme styles ── */
 
-// The fixed navbar overlays immersive pages; padding the ribbon shell
-// by --navbar-height keeps its background extending behind the navbar
-// while the tab row starts cleanly below it (same trick as PageHeader).
-// The background matches .ribbon's bar tint so the two read as one.
+// The workspace runs navbar-less (merged header) — the ribbon's tab
+// row starts at the viewport top. The background matches .ribbon's
+// bar tint so shell and ribbon read as one surface.
 const ribbonShellStyle: CSSProperties = {
-    paddingTop: 'var(--navbar-height, 3.5rem)',
     background: 'color-mix(in srgb, var(--theme-base-content) 4%, var(--theme-base-page))',
 };
 
 const mutedText: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
+// The work-status chip — lived in WorkspaceStatusBar until the merged
+// header landed; now part of the tab row's leading cluster.
+const statusChipStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
+    borderRadius: 'var(--theme-radius-badge)',
+    padding: '0.125rem 0.5rem',
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+    lineHeight: 1.5,
+    whiteSpace: 'nowrap',
 };
 
 const paneBorderColor = 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)';
@@ -319,12 +334,20 @@ export default function Workspace() {
     const sectionPages = currentSection !== null ? (livePages[currentSection.id] ?? null) : null;
 
     return (
+        // navbar={false}: the merged header — the ribbon's tab row IS
+        // the app header here (logo → /dashboard, title, status chip,
+        // tabs, search, avatar). The CommandPalette still mounts in
+        // AppLayout (it's gated on currentProject, not on the navbar),
+        // so the header's search button just dispatches the global
+        // `alexandria-core:command-palette-toggle` event; Cmd+K keeps
+        // working too.
         // bottomNavTabs={null}: the workspace is a viewport-exact app
         // surface — the mobile BottomNav would overlay the status bar
         // and its main-padding would re-grow the document. The status
         // bar's back chevron is the mobile way out.
         <AppLayout
             title={`${work.title} - ${project.name}`}
+            navbar={false}
             immersive
             fabActions={null}
             bottomNavTabs={null}
@@ -340,10 +363,54 @@ export default function Workspace() {
                 className="flex flex-col"
                 style={{ height: '100dvh', overflow: 'hidden' }}
             >
-                {/* Writing ribbon — full width, under the navbar; tabs only
-                    (breadcrumb + status/progress live in the status bar) */}
+                {/* Writing ribbon — the merged header. One row: logo mark ·
+                    work title · status chip · tabs · spacer · search · avatar
+                    (breadcrumb + counts/progress live in the status bar). */}
                 <div className="shrink-0" style={ribbonShellStyle}>
-                    <Ribbon setKey="writing" context={ribbonCtx} />
+                    <Ribbon
+                        setKey="writing"
+                        context={ribbonCtx}
+                        leading={
+                            <div className="flex min-w-0 items-center gap-2 pr-2">
+                                <Link
+                                    href="/dashboard"
+                                    aria-label={t('ribbon.home')}
+                                    className="inline-flex shrink-0 items-center"
+                                    style={{ color: 'var(--theme-base-content)' }}
+                                >
+                                    <LogoMark size={20} ariaLabel="" />
+                                </Link>
+                                <span className="max-w-[8rem] truncate text-sm font-semibold md:max-w-[18rem]">
+                                    {work.title}
+                                </span>
+                                {/* Chip hides below md — the mobile header keeps
+                                    to logo · title · tabs · search · avatar. */}
+                                <span
+                                    className="hidden shrink-0 md:inline-block"
+                                    style={statusChipStyle}
+                                >
+                                    {t(`writing.statuses.${work.status}`, work.status)}
+                                </span>
+                            </div>
+                        }
+                        trailing={
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        window.dispatchEvent(
+                                            new CustomEvent('alexandria-core:command-palette-toggle'),
+                                        )
+                                    }
+                                    aria-label={t('ribbon.search')}
+                                    className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                                >
+                                    <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+                                </button>
+                                <CompactUserMenu ariaLabel={t('ribbon.account')} />
+                            </>
+                        }
+                    />
                 </div>
 
                 <div className="flex min-h-0 flex-1">

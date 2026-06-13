@@ -1,9 +1,21 @@
 /* Ribbon chrome — spec §1. Bar/band/tab colors all route through
    --theme-* tokens; sizing literals are chrome geometry. */
 .ribbon { background: color-mix(in srgb, var(--theme-base-content) 4%, var(--theme-base-page)); }
-.ribbon-tabs { display: flex; gap: 2px; padding: 0.25rem 0.5rem 0; }
-.ribbon-tab { padding: 0.2rem 0.75rem; border-radius: var(--theme-radius-button) var(--theme-radius-button) 0 0;
+.ribbon-tabs { display: flex; align-items: stretch; gap: 2px; padding: 0.25rem 0.5rem 0; min-width: 0; }
+/* The strip owns the tab buttons; it shrinks (min-width: 0) and scrolls
+   horizontally when the merged header can't fit everything — leading
+   (logo/title) and trailing (search/avatar) clusters never scroll away. */
+.ribbon-tabstrip { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.ribbon-tabstrip::-webkit-scrollbar { display: none; }
+.ribbon-tab { padding: 0.2rem 0.75rem; flex-shrink: 0; white-space: nowrap;
+    border-radius: var(--theme-radius-button) var(--theme-radius-button) 0 0;
     color: color-mix(in srgb, var(--theme-base-content) 60%, transparent); background: transparent; }
+/* < md (Tailwind 768px): merged-header mode tightens the tabs so the
+   single row stays clean on phones; anything still overflowing scrolls
+   inside the strip. */
+@media (max-width: 767.98px) {
+    .ribbon-tab { padding: 0.2rem 0.5rem; font-size: 0.75rem; }
+}
 .ribbon-tab--active { background: color-mix(in srgb, var(--theme-base-content) 8%, var(--theme-base-page));
     color: var(--theme-base-content); font-weight: 600; }
 .ribbon-band { display: flex; align-items: stretch; gap: 0; padding: 0.375rem 0.625rem;

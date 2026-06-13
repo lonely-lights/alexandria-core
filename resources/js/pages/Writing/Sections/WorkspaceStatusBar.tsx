@@ -10,14 +10,15 @@ import type { WorkLengthPlan } from './WorkSettingsModal';
  *
  * One bottom-attached line spanning the full workspace width, merging
  * what used to be the ribbon tab row's leading breadcrumb + trailing
- * cluster (status chip, progress bar, work counts) with the
- * per-section counts that lived in SectionChrome's footer.
+ * cluster (progress bar, work counts) with the per-section counts
+ * that lived in SectionChrome's footer. The work-status chip moved UP
+ * to the merged ribbon header's leading cluster (Workspace.tsx).
  *
- * Desktop (≥ md), left → right: breadcrumb (project › work) · status
- * chip · spacer · current-section counts · divider · work progress.
+ * Desktop (≥ md), left → right: breadcrumb (project › work) · spacer ·
+ * current-section counts · divider · work progress.
  * Mobile (< md): a deliberate compact line — back chevron, truncated
  * work title, spacer, abbreviated section words (e.g. `1.2k`); the
- * chip, targets, and progress bar hide below md.
+ * targets and progress bar hide below md.
  *
  * Counts are assembled in Workspace from the editors' existing
  * `onCounts` flow (server-confirmed autosave values overlaying the
@@ -31,7 +32,6 @@ interface StatusBarProject {
 
 interface StatusBarWork {
     title: string;
-    status: string;
     line_count: number;
     target_words: number | null;
     target_pages: number | null;
@@ -71,17 +71,6 @@ const barStyle: CSSProperties = {
 
 const crumbSeparatorStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
-};
-
-const statusChipStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
-    borderRadius: 'var(--theme-radius-badge)',
-    padding: '0.125rem 0.5rem',
-    fontSize: '0.6875rem',
-    fontWeight: 600,
-    lineHeight: 1.5,
-    whiteSpace: 'nowrap',
 };
 
 const metaTextStyle: CSSProperties = {
@@ -178,9 +167,6 @@ export default function WorkspaceStatusBar({
                     aria-hidden="true"
                 />
                 <span className="truncate font-semibold">{work.title}</span>
-                <span className="shrink-0" style={statusChipStyle}>
-                    {t(`writing.statuses.${work.status}`, work.status)}
-                </span>
                 <div className="flex-1" />
                 {hasSection && (
                     <>
