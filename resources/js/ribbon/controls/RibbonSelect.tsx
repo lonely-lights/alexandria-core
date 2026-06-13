@@ -1,4 +1,5 @@
 import useT from '@alexandria/hooks/useT';
+import Select from '@alexandria/components/ui/Select';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 
 import { formatShortcutLabel } from '../shortcuts';
@@ -11,45 +12,39 @@ interface Props<Ctx> {
     ctx: Ctx;
 }
 
-/**
- * Compact native select for the ribbon band. The shared form
- * `<Select>` wraps itself in a full-width div (label/error/hint
- * chrome), which can't sit inline inside a 28px band — so this is a
- * bare `<select className="ribbon-select">` styled by ribbon.css.
- */
 export default function RibbonSelect<Ctx>({ control, ctx }: Props<Ctx>) {
     const t = useT();
     const disabled = control.disabled?.(ctx) ?? false;
-    const options = control.options?.(ctx) ?? [];
+    const options = (control.options?.(ctx) ?? []).map((option) => ({
+        value: option.value,
+        label: t(option.labelKey),
+    }));
     const label = t(control.labelKey);
-    const tip = control.shortcut ? `${label} · ${formatShortcutLabel(control.shortcut, isMac)}` : label;
+    const tip = control.shortcut ? `${label} - ${formatShortcutLabel(control.shortcut, isMac)}` : label;
+    const value = control.value?.(ctx) ?? options[0]?.value ?? '';
 
     const trigger = (
-        <select
-            data-ribbon-control={control.id}
+        <Select
+            value={value}
+            options={options}
+            onChange={(next) => control.onAction(ctx, next)}
             className="ribbon-select"
-            aria-label={label}
-            value={control.value?.(ctx) ?? ''}
+            style={{
+                height: '1.5rem',
+                paddingBlock: 0,
+                paddingInline: '0.5rem 1.5rem',
+                borderRadius: 'var(--theme-radius-button)',
+            }}
+            ariaLabel={label}
             disabled={disabled}
-            onChange={(e) => control.onAction(ctx, e.target.value)}
-        >
-            {options.map((option) => (
-                <option key={option.value} value={option.value}>
-                    {t(option.labelKey)}
-                </option>
-            ))}
-        </select>
+            menuWidth={160}
+            dataAttributes={{ 'data-ribbon-control': control.id }}
+        />
     );
 
-    // Firefox doesn't fire mouse events on disabled form elements, so
-    // the tooltip's hover listeners attach to a wrapper span instead.
     return (
         <Tooltip content={tip}>
-            {disabled ? (
-                <span style={{ display: 'contents' }}>{trigger}</span>
-            ) : (
-                trigger
-            )}
+            <span className="inline-flex">{trigger}</span>
         </Tooltip>
     );
 }

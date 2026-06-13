@@ -299,6 +299,8 @@ export default function RichTextEditor({
     const extensions = [
         StarterKit.configure({
             heading: tier !== 'free' ? { levels: [2, 3] } : false,
+            link: false,
+            underline: false,
         }),
         Underline,
         LinkExtension.configure({

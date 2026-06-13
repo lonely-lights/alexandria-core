@@ -44,6 +44,12 @@ interface SelectProps<T extends string | number> {
     ariaLabel?: string;
     /** Sizing/positioning override for the trigger button. */
     className?: string;
+    /** Inline overrides for the trigger button. */
+    style?: CSSProperties;
+    /** Optional data-* attributes for tests/integration hooks. */
+    dataAttributes?: Record<`data-${string}`, string>;
+    /** Disables the trigger and closes any open menu. */
+    disabled?: boolean;
     /** Width override for the menu (px). Defaults to trigger width. */
     menuWidth?: number;
     /** Alignment of the menu relative to the trigger. Defaults to 'left' (menu's left edge aligns with the trigger's left edge). */
@@ -59,6 +65,9 @@ export default function Select<T extends string | number>({
     triggerLabel,
     ariaLabel,
     className,
+    style,
+    dataAttributes,
+    disabled = false,
     menuWidth,
     align = "left",
     fullWidth = false,
@@ -69,6 +78,12 @@ export default function Select<T extends string | number>({
     const menuRef = useRef<HTMLDivElement>(null);
 
     const selectedOption = options.find((o) => o.value === value);
+
+    useEffect(() => {
+        if (disabled) {
+            setOpen(false);
+        }
+    }, [disabled]);
 
     // Position the menu against the trigger's bounding rect. Flips
     // upward when there isn't enough room below — same pattern as
@@ -137,9 +152,11 @@ export default function Select<T extends string | number>({
         color: "var(--theme-base-content)",
         fontSize: "0.75rem",
         fontWeight: 500,
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
         transition:
             "background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
+        ...style,
     };
 
     const menuStyle: CSSProperties = {
@@ -166,6 +183,8 @@ export default function Select<T extends string | number>({
                 aria-label={ariaLabel}
                 aria-haspopup="listbox"
                 aria-expanded={open}
+                disabled={disabled}
+                {...dataAttributes}
             >
                 {triggerLabel != null && (
                     <span
@@ -259,6 +278,7 @@ function SelectRow<T extends string | number>({
             style={rowStyle}
             role="option"
             aria-selected={active}
+            data-select-option={String(option.value)}
         >
             <span className="truncate">{option.label}</span>
             {active && (
