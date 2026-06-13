@@ -53,4 +53,9 @@ export type RibbonTabContribution<Ctx = unknown> =
     | { tabId: string; labelKey?: string; groups: RibbonGroup<Ctx>[]; groupId?: never; controls?: never }
     | { tabId: string; groupId: string; controls: RibbonControl<Ctx>[]; labelKey?: never; groups?: never };
 
-export type RibbonMode = 'comfortable' | 'slim' | 'collapsed';
+/**
+ * `expanded` shows the icon band (tooltips carry control names — no
+ * inline text labels); `collapsed` shows the tab strip alone and
+ * overlays the band on tab click (Word behavior).
+ */
+export type RibbonMode = 'expanded' | 'collapsed';

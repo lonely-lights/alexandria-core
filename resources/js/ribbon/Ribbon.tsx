@@ -15,14 +15,15 @@ const MODE_STORAGE_KEY = 'alexandria.ribbon.mode';
 
 function readMode(): RibbonMode {
     try {
-        const stored = localStorage.getItem(MODE_STORAGE_KEY);
-        if (stored === 'slim' || stored === 'collapsed' || stored === 'comfortable') {
-            return stored;
+        // 'collapsed' persists as-is; any legacy value (the retired
+        // 'slim'/'comfortable' density modes) resolves to 'expanded'.
+        if (localStorage.getItem(MODE_STORAGE_KEY) === 'collapsed') {
+            return 'collapsed';
         }
     } catch {
         // storage unavailable — session default
     }
-    return 'comfortable';
+    return 'expanded';
 }
 
 interface RibbonProps<Ctx> {
@@ -44,9 +45,10 @@ interface RibbonProps<Ctx> {
 
 /**
  * The app-level ribbon (spec §1): renders a registered tab set against
- * a host-provided context. Modes: comfortable (labeled groups), slim
- * (single icon row), collapsed (tabs only; clicking a tab overlays the
- * band until pointer leaves). Mode persists globally in localStorage.
+ * a host-provided context. Modes: expanded (icon band — tooltips name
+ * the controls, no inline text labels) and collapsed (tabs only;
+ * clicking a tab overlays the band until pointer leaves). Mode persists
+ * globally in localStorage.
  */
 export default function Ribbon<Ctx>({ setKey, context, leading, trailing, headerRow }: RibbonProps<Ctx>) {
     const t = useT();
@@ -80,7 +82,6 @@ export default function Ribbon<Ctx>({ setKey, context, leading, trailing, header
     }
 
     const bandVisible = mode !== 'collapsed' || overlayOpen;
-    const showLabels = mode === 'comfortable';
 
     /* The strip is its own scroll container so a cramped viewport
        (merged-header mode on mobile) scrolls the tabs horizontally
@@ -104,7 +105,7 @@ export default function Ribbon<Ctx>({ setKey, context, leading, trailing, header
     );
 
     return (
-        <div className={`ribbon relative ${mode === 'slim' ? 'ribbon--slim' : ''}`}>
+        <div className="ribbon relative">
             {headerRow !== undefined ? (
                 /* Docs-style split header: identity row over the tabs on
                    the left; the trailing cluster spans both rows. */
@@ -141,30 +142,19 @@ export default function Ribbon<Ctx>({ setKey, context, leading, trailing, header
                         return (
                             <div key={group.id} className="ribbon-group">
                                 <div className="ribbon-group-controls">
-                                    {visibleControls.map((control) => renderControl(control, context, showLabels))}
+                                    {visibleControls.map((control) => renderControl(control, context))}
                                 </div>
-                                {showLabels && <span className="ribbon-group-label">{t(group.labelKey)}</span>}
                             </div>
                         );
                     })}
 
                     <div className="ribbon-right">
-                        <Tooltip content={t(mode === 'slim' ? 'ribbon.mode.comfortable' : 'ribbon.mode.slim')}>
-                            <button
-                                type="button"
-                                data-ribbon-mode-toggle="density"
-                                className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                                onClick={() => persistMode(mode === 'slim' ? 'comfortable' : 'slim')}
-                            >
-                                <i className={`fa-solid ${mode === 'slim' ? 'fa-up-right-and-down-left-from-center' : 'fa-down-left-and-up-right-to-center'}`} aria-hidden="true" />
-                            </button>
-                        </Tooltip>
                         <Tooltip content={t(mode === 'collapsed' ? 'ribbon.mode.expand' : 'ribbon.mode.collapse')}>
                             <button
                                 type="button"
                                 data-ribbon-mode-toggle="collapse"
                                 className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                                onClick={() => persistMode(mode === 'collapsed' ? 'comfortable' : 'collapsed')}
+                                onClick={() => persistMode(mode === 'collapsed' ? 'expanded' : 'collapsed')}
                             >
                                 <i className={`fa-solid ${mode === 'collapsed' ? 'fa-thumbtack' : 'fa-chevron-up'}`} aria-hidden="true" />
                             </button>
@@ -176,15 +166,15 @@ export default function Ribbon<Ctx>({ setKey, context, leading, trailing, header
     );
 }
 
-function renderControl<Ctx>(control: RibbonControl<Ctx>, ctx: Ctx, showLabel: boolean) {
+function renderControl<Ctx>(control: RibbonControl<Ctx>, ctx: Ctx) {
     switch (control.type) {
         case 'toggle':
-            return <RibbonToggle key={control.id} control={control} ctx={ctx} showLabel={showLabel} />;
+            return <RibbonToggle key={control.id} control={control} ctx={ctx} />;
         case 'select':
             return <RibbonSelect key={control.id} control={control} ctx={ctx} />;
         case 'menu':
             return <RibbonMenu key={control.id} control={control} ctx={ctx} />;
         default:
-            return <RibbonButton key={control.id} control={control} ctx={ctx} showLabel={showLabel} />;
+            return <RibbonButton key={control.id} control={control} ctx={ctx} />;
     }
 }

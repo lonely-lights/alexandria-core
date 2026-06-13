@@ -35,20 +35,16 @@
 .ribbon-band { display: flex; align-items: stretch; gap: 0; padding: 0.375rem 0.625rem;
     background: color-mix(in srgb, var(--theme-base-content) 8%, var(--theme-base-page));
     border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent); }
-.ribbon-group { display: flex; flex-direction: column; gap: 0.25rem; padding: 0 0.75rem;
+/* Icon-only band: groups are a single tight row of icon controls,
+   divided by the group border. Control names live in tooltips — no
+   inline text labels. */
+.ribbon-group { display: flex; align-items: center; gap: 0.25rem; padding: 0 0.5rem;
     border-right: 1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent); }
 .ribbon-group:first-child { padding-left: 0.125rem; }
 .ribbon-group:last-of-type { border-right: none; }
 .ribbon-group-controls { display: flex; gap: 0.25rem; align-items: center; flex: 1; }
-.ribbon-group-label { font-size: 0.5625rem; text-transform: uppercase; letter-spacing: 0.05em; text-align: center;
-    color: color-mix(in srgb, var(--theme-base-content) 50%, transparent); }
-.ribbon--slim .ribbon-group { flex-direction: row; align-items: center; }
-.ribbon--slim .ribbon-group-label, .ribbon--slim .ribbon-ctl-label { display: none; }
-.ribbon-ctl { display: inline-flex; flex-direction: column; align-items: center; gap: 0.125rem;
+.ribbon-ctl { display: inline-flex; align-items: center; justify-content: center;
     min-width: 2rem; height: auto; padding: 0.25rem 0.375rem; }
-.ribbon--slim .ribbon-ctl { flex-direction: row; }
-.ribbon-ctl-label { font-size: 0.625rem; line-height: 1.1; max-width: 5.5rem; overflow: hidden;
-    text-overflow: ellipsis; white-space: nowrap; }
 .ribbon-right { margin-left: auto; display: flex; align-items: center; gap: 0.25rem; }
 .ribbon-tabs-trailing { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
 .ribbon-band--overlay { position: absolute; left: 0; right: 0; z-index: 30;

@@ -8,8 +8,6 @@ declare(strict_types=1);
  * group bag.
  */
 return [
-    'mode.slim' => 'Slim ribbon',
-    'mode.comfortable' => 'Comfortable ribbon',
     'mode.collapse' => 'Collapse the ribbon',
     'mode.expand' => 'Pin the ribbon open',
 

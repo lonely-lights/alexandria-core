@@ -9,10 +9,9 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
 interface Props<Ctx> {
     control: RibbonControl<Ctx>;
     ctx: Ctx;
-    showLabel: boolean; // comfortable mode
 }
 
-export default function RibbonButton<Ctx>({ control, ctx, showLabel }: Props<Ctx>) {
+export default function RibbonButton<Ctx>({ control, ctx }: Props<Ctx>) {
     const t = useT();
     const disabled = control.disabled?.(ctx) ?? false;
     const active = control.active?.(ctx) ?? false;
@@ -29,7 +28,6 @@ export default function RibbonButton<Ctx>({ control, ctx, showLabel }: Props<Ctx
             onClick={() => control.onAction(ctx)}
         >
             <i className={control.icon} aria-hidden="true" />
-            {showLabel && <span className="ribbon-ctl-label">{label}</span>}
         </button>
     );
 
