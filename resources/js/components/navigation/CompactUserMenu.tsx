@@ -61,7 +61,10 @@ export default function CompactUserMenu({
     }
 
     return (
-        <div className="relative" ref={wrapperRef}>
+        // `flex` (not a plain block) — an inline-flex button inside a
+        // block div rides the text baseline, and the line box's phantom
+        // descender space pushes the avatar off vertical center.
+        <div className="relative flex items-center" ref={wrapperRef}>
             <button
                 type="button"
                 onClick={() => setOpen(!open)}
