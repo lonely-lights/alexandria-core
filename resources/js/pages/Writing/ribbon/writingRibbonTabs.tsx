@@ -155,6 +155,14 @@ const writeTab: RibbonTab<Ctx> = {
                     onAction: (ctx) => ctx.actions.togglePrintLayout(),
                 },
                 {
+                    id: 'neutral-chrome',
+                    type: 'toggle',
+                    icon: 'fa-solid fa-circle-half-stroke',
+                    labelKey: 'writing.ribbon.neutral_chrome',
+                    active: (ctx) => ctx.neutralChrome,
+                    onAction: (ctx) => ctx.actions.toggleNeutralChrome(),
+                },
+                {
                     id: 'panel',
                     type: 'toggle',
                     icon: 'fa-solid fa-table-columns',

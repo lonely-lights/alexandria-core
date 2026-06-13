@@ -2,6 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import { useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import { useTheme } from '@alexandria/hooks/useTheme';
 import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
 import Ribbon from '@alexandria/ribbon/Ribbon';
 import LogoMark from '@alexandria/components/brand/LogoMark';
@@ -105,10 +106,19 @@ interface WorkspaceProps {
 
 /** Persisted reference-panel visibility (desktop only — the xl: gate still applies). */
 export const PANEL_OPEN_STORAGE_KEY = 'alexandria.writing.panel_open';
+export const NEUTRAL_CHROME_STORAGE_KEY = 'alexandria.writing.neutral_chrome';
 
 function readPanelOpenPreference(): boolean {
     try {
         return localStorage.getItem(PANEL_OPEN_STORAGE_KEY) !== 'false';
+    } catch {
+        return true;
+    }
+}
+
+function readNeutralChromePreference(): boolean {
+    try {
+        return localStorage.getItem(NEUTRAL_CHROME_STORAGE_KEY) !== 'false';
     } catch {
         return true;
     }
@@ -161,6 +171,7 @@ const paneBorderColor = 'color-mix(in srgb, var(--theme-base-content) 10%, trans
 
 export default function Workspace() {
     const t = useT();
+    const theme = useTheme();
     const { project, work, sections, currentSection, pins, types, lengthPlans, can } =
         usePage<WorkspaceProps>().props;
 
@@ -181,6 +192,7 @@ export default function Workspace() {
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
+    const [neutralChrome, setNeutralChrome] = useState(readNeutralChromePreference);
 
     // Section add/delete modal triggers — shared between the ribbon's
     // Structure tab and the Navigator's hover affordances.
@@ -215,6 +227,18 @@ export default function Workspace() {
             const next = !prev;
             try {
                 localStorage.setItem(PRINT_LAYOUT_STORAGE_KEY, String(next));
+            } catch {
+                // Persistence is best-effort; private-mode failures are fine.
+            }
+            return next;
+        });
+    }, []);
+
+    const toggleNeutralChrome = useCallback(() => {
+        setNeutralChrome((prev) => {
+            const next = !prev;
+            try {
+                localStorage.setItem(NEUTRAL_CHROME_STORAGE_KEY, String(next));
             } catch {
                 // Persistence is best-effort; private-mode failures are fine.
             }
@@ -261,6 +285,7 @@ export default function Workspace() {
             canUpdate: can.update,
             panelOpen,
             printLayout,
+            neutralChrome,
             hasSection: currentSection !== null,
             editorTick,
             // Lazy getter: the bridge lands via useImperativeHandle AFTER
@@ -273,6 +298,7 @@ export default function Workspace() {
             actions: {
                 togglePanel,
                 togglePrintLayout,
+                toggleNeutralChrome,
                 openSettings: () => setSettingsOpen(true),
                 openReports: () => router.visit(`/works/${projectSlug}/${workSlug}/reports`),
                 addSection: () => setAddTarget({ parentId: null }),
@@ -314,11 +340,13 @@ export default function Workspace() {
         can.update,
         panelOpen,
         printLayout,
+        neutralChrome,
         currentSection,
         sections,
         editorTick,
         togglePanel,
         togglePrintLayout,
+        toggleNeutralChrome,
     ]);
 
     const workWords = liveWorkWords ?? work.word_count;
@@ -360,7 +388,8 @@ export default function Workspace() {
                 some dev pipelines (vendor/ is .gitignored) — inline
                 styles can't be skipped by a CSS generator. */}
             <div
-                className="flex flex-col"
+                className={`flex flex-col ${neutralChrome ? 'writing-neutral-chrome' : ''}`}
+                data-writing-mode={theme?.mode ?? 'light'}
                 style={{ height: '100dvh', overflow: 'hidden' }}
             >
                 {/* Writing ribbon — the Docs-style split header. Left column:

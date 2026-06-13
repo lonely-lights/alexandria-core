@@ -23,6 +23,91 @@
  * same plain black-alpha idiom as ui-polish.css's elevation shadows.
  */
 
+/* Neutral workspace chrome: a local Docs-like palette for the writing
+   surface. Turning the ribbon toggle off removes this class and lets the
+   project/theme tokens pass through again. */
+.writing-neutral-chrome {
+    --theme-surface-page: #f8fafc;
+    --theme-surface-sunken: #eef2f7;
+    --theme-surface-raised: #f1f5f9;
+    --theme-surface-card: #ffffff;
+    --theme-surface-card-raised: #ffffff;
+    --theme-surface-modal: #ffffff;
+    --theme-surface-popover: #ffffff;
+    --theme-surface-tooltip: #111827;
+    --theme-surface-sidebar: #f8fafc;
+    --theme-surface-header: #f8fafc;
+    --theme-surface-footer: #f8fafc;
+    --theme-surface-on-page: #111827;
+    --theme-base-50: #ffffff;
+    --theme-base-100: #ffffff;
+    --theme-base-200: #f8fafc;
+    --theme-base-300: #eef2f7;
+    --theme-base-400: #d8dee8;
+    --theme-base-500: #94a3b8;
+    --theme-base-600: #64748b;
+    --theme-base-700: #475569;
+    --theme-base-800: #1f2937;
+    --theme-base-900: #111827;
+    --theme-base-page: #f8fafc;
+    --theme-base-surface: #ffffff;
+    --theme-base-chrome: #eef2f7;
+    --theme-base-content: #1f2937;
+    --theme-brand-primary-500: #2563eb;
+    --theme-brand-primary-content: #ffffff;
+    --theme-brand-primary-highlight-bg: #dbeafe;
+    --theme-brand-primary-highlight-fg: #1d4ed8;
+    --theme-brand-secondary-500: #2563eb;
+    --theme-brand-secondary-content: #ffffff;
+    --theme-brand-secondary-highlight-bg: #dbeafe;
+    --theme-brand-secondary-highlight-fg: #1d4ed8;
+    --theme-brand-accent-500: #64748b;
+    --theme-brand-accent-content: #ffffff;
+}
+
+.writing-neutral-chrome[data-writing-mode="dark"] {
+    --theme-surface-page: #111827;
+    --theme-surface-sunken: #0f172a;
+    --theme-surface-raised: #1f2937;
+    --theme-surface-card: #f8fafc;
+    --theme-surface-card-raised: #ffffff;
+    --theme-surface-modal: #1f2937;
+    --theme-surface-popover: #1f2937;
+    --theme-surface-tooltip: #f8fafc;
+    --theme-surface-sidebar: #111827;
+    --theme-surface-header: #111827;
+    --theme-surface-footer: #111827;
+    --theme-surface-on-page: #f8fafc;
+    --theme-base-50: #f8fafc;
+    --theme-base-100: #1f2937;
+    --theme-base-200: #111827;
+    --theme-base-300: #273244;
+    --theme-base-400: #3f4b5f;
+    --theme-base-500: #64748b;
+    --theme-base-600: #94a3b8;
+    --theme-base-700: #cbd5e1;
+    --theme-base-800: #e2e8f0;
+    --theme-base-900: #f8fafc;
+    --theme-base-page: #111827;
+    --theme-base-surface: #1f2937;
+    --theme-base-chrome: #111827;
+    --theme-base-content: #e5e7eb;
+    --theme-brand-primary-500: #60a5fa;
+    --theme-brand-primary-content: #0f172a;
+    --theme-brand-primary-highlight-bg: #1e3a8a;
+    --theme-brand-primary-highlight-fg: #bfdbfe;
+    --theme-brand-secondary-500: #93c5fd;
+    --theme-brand-secondary-content: #0f172a;
+    --theme-brand-secondary-highlight-bg: #1e3a8a;
+    --theme-brand-secondary-highlight-fg: #dbeafe;
+    --theme-brand-accent-500: #94a3b8;
+    --theme-brand-accent-content: #0f172a;
+}
+
+.writing-neutral-chrome .rte-manuscript .tiptap-editor .ProseMirror {
+    border-radius: 0.125rem;
+}
+
 /* The desk — two steps removed from the page background so the sheet
    clearly reads as paper lying on it. */
 .rte-manuscript .tiptap-editor {

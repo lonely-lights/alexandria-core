@@ -31,6 +31,7 @@ export interface WritingRibbonContext {
     canUpdate: boolean;
     panelOpen: boolean;
     printLayout: boolean;
+    neutralChrome: boolean;
     hasSection: boolean;
     /** bumped on editor selection/content changes so active/value states re-render */
     editorTick: number;
@@ -38,6 +39,7 @@ export interface WritingRibbonContext {
     actions: {
         togglePanel(): void;
         togglePrintLayout(): void;
+        toggleNeutralChrome(): void;
         openSettings(): void;
         openReports(): void;
         addSection(): void;       // root-level (opens the existing AddSectionModal)

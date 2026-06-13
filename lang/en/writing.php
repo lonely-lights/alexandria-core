@@ -179,6 +179,7 @@ return [
     'ribbon.keys' => 'Screenplay keys',
     'ribbon.entry_link' => 'Insert entry link',
     'ribbon.print_layout' => 'Print layout',
+    'ribbon.neutral_chrome' => 'Neutral chrome',
     'ribbon.panel' => 'Reference panel',
     'ribbon.code_view' => 'Code view',
     'ribbon.editor_help' => 'Formatting help',
