@@ -28,7 +28,9 @@ function readMode(): RibbonMode {
 interface RibbonProps<Ctx> {
     setKey: string;
     context: Ctx;
-    /** Optional host content rendered in the tab row, before the tabs (e.g. a breadcrumb). */
+    /** Optional host content rendered before the tabs (e.g. a breadcrumb).
+     *  With `headerRow` set, this instead becomes a left column spanning
+     *  the full height of BOTH header rows (Docs-style logo block). */
     leading?: ReactNode;
     /** Optional host content rendered at the END of the tab row (e.g. status chip + progress cluster).
      *  With `headerRow` set, this cluster instead spans the full height
@@ -107,12 +109,10 @@ export default function Ribbon<Ctx>({ setKey, context, leading, trailing, header
                 /* Docs-style split header: identity row over the tabs on
                    the left; the trailing cluster spans both rows. */
                 <div className="ribbon-header">
+                    {leading && <div className="ribbon-header-leading">{leading}</div>}
                     <div className="ribbon-header-main">
                         <div className="ribbon-header-identity">{headerRow}</div>
-                        <div className="ribbon-tabs">
-                            {leading}
-                            {tabStrip}
-                        </div>
+                        <div className="ribbon-tabs">{tabStrip}</div>
                     </div>
                     {trailing && <div className="ribbon-header-trailing">{trailing}</div>}
                 </div>

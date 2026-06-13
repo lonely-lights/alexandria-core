@@ -363,23 +363,27 @@ export default function Workspace() {
                 className="flex flex-col"
                 style={{ height: '100dvh', overflow: 'hidden' }}
             >
-                {/* Writing ribbon — the merged header. One row: logo mark ·
-                    work title · status chip · tabs · spacer · search · avatar
-                    (breadcrumb + counts/progress live in the status bar). */}
+                {/* Writing ribbon — the Docs-style split header. Left column:
+                    logo mark spanning both rows; main column: title + status
+                    chip over the tab strip; right column: search + avatar
+                    spanning both rows (breadcrumb + counts/progress live in
+                    the status bar). */}
                 <div className="shrink-0" style={ribbonShellStyle}>
                     <Ribbon
                         setKey="writing"
                         context={ribbonCtx}
+                        leading={
+                            <Link
+                                href="/dashboard"
+                                aria-label={t('ribbon.home')}
+                                className="inline-flex shrink-0 items-center"
+                                style={{ color: 'var(--theme-base-content)' }}
+                            >
+                                <LogoMark size={30} ariaLabel="" />
+                            </Link>
+                        }
                         headerRow={
                             <>
-                                <Link
-                                    href="/dashboard"
-                                    aria-label={t('ribbon.home')}
-                                    className="inline-flex shrink-0 items-center"
-                                    style={{ color: 'var(--theme-base-content)' }}
-                                >
-                                    <LogoMark size={20} ariaLabel="" />
-                                </Link>
                                 <span className="max-w-[12rem] truncate text-sm font-semibold md:max-w-[24rem]">
                                     {work.title}
                                 </span>
