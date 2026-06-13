@@ -370,8 +370,8 @@ export default function Workspace() {
                     <Ribbon
                         setKey="writing"
                         context={ribbonCtx}
-                        leading={
-                            <div className="flex min-w-0 items-center gap-2 pr-2">
+                        headerRow={
+                            <>
                                 <Link
                                     href="/dashboard"
                                     aria-label={t('ribbon.home')}
@@ -380,18 +380,18 @@ export default function Workspace() {
                                 >
                                     <LogoMark size={20} ariaLabel="" />
                                 </Link>
-                                <span className="max-w-[8rem] truncate text-sm font-semibold md:max-w-[18rem]">
+                                <span className="max-w-[12rem] truncate text-sm font-semibold md:max-w-[24rem]">
                                     {work.title}
                                 </span>
                                 {/* Chip hides below md — the mobile header keeps
-                                    to logo · title · tabs · search · avatar. */}
+                                    to logo · title / tabs, search · avatar. */}
                                 <span
                                     className="hidden shrink-0 md:inline-block"
                                     style={statusChipStyle}
                                 >
                                     {t(`writing.statuses.${work.status}`, work.status)}
                                 </span>
-                            </div>
+                            </>
                         }
                         trailing={
                             <>
@@ -407,7 +407,7 @@ export default function Workspace() {
                                 >
                                     <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
                                 </button>
-                                <CompactUserMenu ariaLabel={t('ribbon.account')} />
+                                <CompactUserMenu ariaLabel={t('ribbon.account')} size={36} />
                             </>
                         }
                     />

@@ -18,6 +18,15 @@
 }
 .ribbon-tab--active { background: color-mix(in srgb, var(--theme-base-content) 8%, var(--theme-base-page));
     color: var(--theme-base-content); font-weight: 600; }
+/* Docs-style split header (Ribbon's headerRow prop): identity row
+   stacked over the tab strip on the left; the trailing cluster spans
+   the full height of both rows on the right. */
+.ribbon-header { display: flex; align-items: stretch; min-width: 0; }
+.ribbon-header-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.ribbon-header-identity { display: flex; align-items: center; gap: 0.5rem; min-width: 0;
+    padding: 0.375rem 0.625rem 0.125rem; }
+.ribbon-header-trailing { display: flex; align-items: center; gap: 0.375rem; flex-shrink: 0;
+    padding: 0 0.75rem; }
 .ribbon-band { display: flex; align-items: stretch; gap: 0; padding: 0.375rem 0.625rem;
     background: color-mix(in srgb, var(--theme-base-content) 8%, var(--theme-base-page));
     border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent); }

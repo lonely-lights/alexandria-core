@@ -30,8 +30,14 @@ interface RibbonProps<Ctx> {
     context: Ctx;
     /** Optional host content rendered in the tab row, before the tabs (e.g. a breadcrumb). */
     leading?: ReactNode;
-    /** Optional host content rendered at the END of the tab row (e.g. status chip + progress cluster). */
+    /** Optional host content rendered at the END of the tab row (e.g. status chip + progress cluster).
+     *  With `headerRow` set, this cluster instead spans the full height
+     *  of BOTH header rows on the right (Docs-style tall avatar). */
     trailing?: ReactNode;
+    /** Optional identity row ABOVE the tab strip (merged-header mode):
+     *  stacks over the tabs on the left while `trailing` spans both
+     *  rows on the right. */
+    headerRow?: ReactNode;
 }
 
 /**
@@ -40,7 +46,7 @@ interface RibbonProps<Ctx> {
  * (single icon row), collapsed (tabs only; clicking a tab overlays the
  * band until pointer leaves). Mode persists globally in localStorage.
  */
-export default function Ribbon<Ctx>({ setKey, context, leading, trailing }: RibbonProps<Ctx>) {
+export default function Ribbon<Ctx>({ setKey, context, leading, trailing, headerRow }: RibbonProps<Ctx>) {
     const t = useT();
     const tabs = useSyncExternalStore(subscribeRibbon, () => getRibbonTabs(setKey)) as RibbonTab<Ctx>[];
     const [activeTabId, setActiveTabId] = useState<string | null>(null);
@@ -74,31 +80,49 @@ export default function Ribbon<Ctx>({ setKey, context, leading, trailing }: Ribb
     const bandVisible = mode !== 'collapsed' || overlayOpen;
     const showLabels = mode === 'comfortable';
 
+    /* The strip is its own scroll container so a cramped viewport
+       (merged-header mode on mobile) scrolls the tabs horizontally
+       instead of wrapping or crushing the leading/trailing clusters.
+       role="tablist" lives here — host content stays outside it. */
+    const tabStrip = (
+        <div className="ribbon-tabstrip" role="tablist">
+            {tabs.map((tab) => (
+                <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab.id === activeTab.id}
+                    className={`ribbon-tab ${tab.id === activeTab.id ? 'ribbon-tab--active' : ''}`}
+                    onClick={() => onTabClick(tab.id)}
+                >
+                    {t(tab.labelKey)}
+                </button>
+            ))}
+        </div>
+    );
+
     return (
         <div className={`ribbon relative ${mode === 'slim' ? 'ribbon--slim' : ''}`}>
-            <div className="ribbon-tabs">
-                {leading}
-                {/* The strip is its own scroll container so a cramped
-                    viewport (merged-header mode on mobile) scrolls the
-                    tabs horizontally instead of wrapping or crushing the
-                    leading/trailing clusters. role="tablist" lives here —
-                    host leading/trailing content stays outside it. */}
-                <div className="ribbon-tabstrip" role="tablist">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab.id}
-                            type="button"
-                            role="tab"
-                            aria-selected={tab.id === activeTab.id}
-                            className={`ribbon-tab ${tab.id === activeTab.id ? 'ribbon-tab--active' : ''}`}
-                            onClick={() => onTabClick(tab.id)}
-                        >
-                            {t(tab.labelKey)}
-                        </button>
-                    ))}
+            {headerRow !== undefined ? (
+                /* Docs-style split header: identity row over the tabs on
+                   the left; the trailing cluster spans both rows. */
+                <div className="ribbon-header">
+                    <div className="ribbon-header-main">
+                        <div className="ribbon-header-identity">{headerRow}</div>
+                        <div className="ribbon-tabs">
+                            {leading}
+                            {tabStrip}
+                        </div>
+                    </div>
+                    {trailing && <div className="ribbon-header-trailing">{trailing}</div>}
                 </div>
-                {trailing && <div className="ribbon-tabs-trailing">{trailing}</div>}
-            </div>
+            ) : (
+                <div className="ribbon-tabs">
+                    {leading}
+                    {tabStrip}
+                    {trailing && <div className="ribbon-tabs-trailing">{trailing}</div>}
+                </div>
+            )}
 
             {bandVisible && (
                 <div
