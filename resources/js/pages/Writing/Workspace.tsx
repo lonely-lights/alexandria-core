@@ -393,7 +393,7 @@ export default function Workspace() {
                         }
                         headerRow={
                             <>
-                                <span className="max-w-[12rem] truncate text-sm font-semibold md:max-w-[24rem]">
+                                <span className="max-w-[12rem] truncate text-base font-semibold md:max-w-[24rem]">
                                     {work.title}
                                 </span>
                                 {/* Chip hides below md — the mobile header keeps
