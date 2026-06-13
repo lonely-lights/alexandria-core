@@ -15,4 +15,17 @@ return [
     'menu' => 'Open navigation menu',
     'search' => 'Search',
     'account' => 'Account menu',
+
+    // Quick Action Toolbar.
+    'qat_label' => 'Quick actions',
+    'qat_edit' => 'Edit quick actions',
+    'qat_empty' => 'No quick actions pinned',
+    'qat_add' => 'Add to quick actions',
+    'qat_remove' => 'Remove from quick actions',
+    'qat_move_up' => 'Move up',
+    'qat_move_down' => 'Move down',
+    'qat_bookmark_label' => 'Label',
+    'qat_bookmark_url' => 'URL',
+    'qat_bookmark_icon' => 'Icon',
+    'qat_bookmark_add' => 'Add bookmark',
 ];
