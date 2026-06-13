@@ -71,7 +71,7 @@ it('scaffolds an essay without a length plan (user-defined-first)', function () 
         ->and($work->rootSections->first()->target_words)->toBeNull();
 });
 
-it('scaffolds a poem with a single Poem section and no length plan', function () {
+it('scaffolds a poem with a single Poem section inheriting the work title', function () {
     $project = Project::factory()->create();
 
     $work = app(WorkScaffolder::class)->create($project, 7, [
@@ -79,11 +79,14 @@ it('scaffolds a poem with a single Poem section and no length plan', function ()
         'type' => 'poem',
     ]);
 
+    // The poem template leaves the section title null — the single
+    // section IS the poem, so it inherits the work's title instead of
+    // a generic "Untitled" placeholder.
     expect($work->format)->toBe('prose')
         ->and($work->length_plan)->toBeNull()
         ->and($work->target_words)->toBeNull()
         ->and($work->rootSections)->toHaveCount(1)
         ->and($work->rootSections->first()->label)->toBe('Poem')
-        ->and($work->rootSections->first()->title)->toBe('Untitled')
+        ->and($work->rootSections->first()->title)->toBe('Cinders')
         ->and($work->rootSections->first()->target_words)->toBeNull();
 });

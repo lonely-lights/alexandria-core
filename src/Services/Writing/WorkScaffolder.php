@@ -51,14 +51,18 @@ class WorkScaffolder
     }
 
     /**
-     * @param  array{label: string, title: string, children?: array<int, mixed>}  $node
+     * A null/omitted template title means the section inherits the
+     * work's title — single-section types (poem) where the one section
+     * IS the work read wrong under a generic "Untitled" placeholder.
+     *
+     * @param  array{label: string, title?: string|null, children?: array<int, mixed>}  $node
      */
     private function createSection(Work $work, array $node, ?int $parentId, ?int $perSectionWords): void
     {
         /** @var WorkSection $section */
         $section = $work->sections()->create([
             'parent_id' => $parentId,
-            'title' => $node['title'],
+            'title' => $node['title'] ?? $work->title,
             'label' => $node['label'],
             'target_words' => $perSectionWords,
         ]);
