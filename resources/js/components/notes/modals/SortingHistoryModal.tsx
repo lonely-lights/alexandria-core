@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { router } from '@inertiajs/react';
 import Modal from '@alexandria/components/ui/Modal';
-import { triggerPageTransition } from '@alexandria/components/ui/PageTransition';
 import useT from '@alexandria/hooks/useT';
 
 interface SortedBlueprint {
@@ -183,9 +182,9 @@ export default function SortingHistoryModal({ open, onClose, projectId, projectS
                                             {record.blueprints.map((bp) => (
                                                 <button
                                                     key={bp.id}
-                                                    onClick={async () => {
+                                                    data-transition="slide"
+                                                    onClick={() => {
                                                         sessionStorage.setItem('alexandria:open_note', String(record.note_id));
-                                                        await triggerPageTransition();
                                                         onClose();
                                                         router.visit(`/p/${projectSlug}/${bp.slug}`);
                                                     }}
@@ -204,9 +203,9 @@ export default function SortingHistoryModal({ open, onClose, projectId, projectS
                                                 {(record.entries ?? []).map((entry) => (
                                                     <button
                                                         key={entry.id}
-                                                        onClick={async () => {
+                                                        data-transition="slide"
+                                                        onClick={() => {
                                                             sessionStorage.setItem('alexandria:open_note', String(record.note_id));
-                                                            await triggerPageTransition();
                                                             onClose();
                                                             router.visit(`/p/${projectSlug}/${blueprintSlug}/${entry.slug}`);
                                                         }}

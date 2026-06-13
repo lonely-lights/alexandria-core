@@ -6,7 +6,6 @@ import BottomNav from '../components/navigation/BottomNav';
 import CommandPalette from '../components/search/CommandPalette';
 import NotesDrawer, { openNotesDrawer } from '../components/notes/NotesDrawer';
 import type { NotesContext } from '../components/notes/NotesDrawer';
-import PageTransition from '../components/ui/PageTransition';
 import { projectSearch } from '../lib/projectSearch';
 import { ToastProvider } from '../components/ui/ToastProvider';
 import Fab from '../components/ui/Fab';
@@ -678,13 +677,6 @@ export default function AppLayout({
                     />
                 );
             })()}
-
-            {/* PageTransition listens for `alexandria:transition-close`
-                events and resolves the Promise returned by
-                triggerPageTransition(). Without it mounted, any caller
-                awaiting that helper hangs forever — the SortingHistory
-                modal's blueprint/entry links are the canonical example. */}
-            <PageTransition />
 
             {/* Global add-new FAB. Authenticated only (see `showFab`
                 above). Opens a small modal with the resolved action

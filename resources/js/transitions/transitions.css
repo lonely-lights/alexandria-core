@@ -1,0 +1,105 @@
+.alex-page-progress {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 2147483646;
+    height: 2px;
+    pointer-events: none;
+    opacity: 0;
+    background: transparent;
+    transition: opacity var(--theme-motion-duration-fast) var(--theme-motion-easing-standard);
+}
+
+.alex-page-progress--visible {
+    opacity: 1;
+}
+
+.alex-page-progress__bar {
+    width: 100%;
+    height: 100%;
+    transform: scaleX(0);
+    transform-origin: left center;
+    background: var(--theme-brand-primary-500);
+    transition: transform var(--theme-motion-duration-fast) var(--theme-motion-easing-standard);
+}
+
+[data-page-transition-shell] {
+    will-change: opacity, transform;
+}
+
+.alex-page-transition-exit-fade {
+    animation: alex-page-exit-fade 150ms var(--theme-motion-easing-standard) both;
+}
+
+.alex-page-transition-enter-fade {
+    animation: alex-page-enter-fade 150ms var(--theme-motion-easing-standard) both;
+}
+
+.alex-page-transition-exit-slide {
+    animation: alex-page-exit-slide 250ms var(--theme-motion-easing-standard) both;
+}
+
+.alex-page-transition-enter-slide {
+    animation: alex-page-enter-slide 250ms var(--theme-motion-easing-standard) both;
+}
+
+@keyframes alex-page-exit-fade {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0.92;
+        transform: translateY(2px);
+    }
+}
+
+@keyframes alex-page-enter-fade {
+    from {
+        opacity: 0.92;
+        transform: translateY(2px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes alex-page-exit-slide {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0.9;
+        transform: translateX(-0.75rem);
+    }
+}
+
+@keyframes alex-page-enter-slide {
+    from {
+        opacity: 0.9;
+        transform: translateX(0.75rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .alex-page-transition-exit-fade,
+    .alex-page-transition-enter-fade,
+    .alex-page-transition-exit-slide,
+    .alex-page-transition-enter-slide {
+        animation: none;
+    }
+
+    .alex-page-progress,
+    .alex-page-progress__bar {
+        transition: none;
+    }
+}
