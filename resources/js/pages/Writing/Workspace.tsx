@@ -1,8 +1,8 @@
-import { Link, router, usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
-import AppLayout from '@alexandria/layouts/AppLayout';
+import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
 import Ribbon from '@alexandria/ribbon/Ribbon';
 import LogoMark from '@alexandria/components/brand/LogoMark';
 import CompactUserMenu from '@alexandria/components/navigation/CompactUserMenu';
@@ -30,8 +30,8 @@ import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
  *
  * The manuscript surface — Word-style anatomy with a fully merged
  * header (Google Docs as the reference): the app navbar is OFF here
- * and the ribbon's tab row IS the app header — logo mark (→
- * /dashboard) · work title · status chip · the four tabs · spacer ·
+ * and the ribbon's tab row IS the app header — logo mark (toggles the
+ * app sidebar) · work title · status chip · the four tabs · spacer ·
  * search · user avatar — over a full-height three-pane row — section
  * Navigator (left), editor pane (center), reference rail (right) —
  * over a bottom-attached status bar (breadcrumb, section counts, work
@@ -373,14 +373,23 @@ export default function Workspace() {
                         setKey="writing"
                         context={ribbonCtx}
                         leading={
-                            <Link
-                                href="/dashboard"
-                                aria-label={t('ribbon.home')}
-                                className="inline-flex shrink-0 items-center"
+                            /* The logo doubles as the hamburger here — the
+                               workspace runs navbar-less, so clicking it
+                               slides out the same app sidebar the navbar
+                               menu button opens everywhere else. */
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    window.dispatchEvent(
+                                        new CustomEvent(SIDEBAR_TOGGLE_EVENT),
+                                    )
+                                }
+                                aria-label={t('ribbon.menu')}
+                                className="inline-flex shrink-0 cursor-pointer items-center"
                                 style={{ color: 'var(--theme-base-content)' }}
                             >
                                 <LogoMark size={30} ariaLabel="" />
-                            </Link>
+                            </button>
                         }
                         headerRow={
                             <>

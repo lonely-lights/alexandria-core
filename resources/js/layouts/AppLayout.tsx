@@ -9,7 +9,6 @@ import type { NotesContext } from '../components/notes/NotesDrawer';
 import PageTransition from '../components/ui/PageTransition';
 import { projectSearch } from '../lib/projectSearch';
 import { ToastProvider } from '../components/ui/ToastProvider';
-import Logo from '../components/ui/Logo';
 import Fab from '../components/ui/Fab';
 import Modal from '../components/ui/Modal';
 import SettingsDrawer from '../pages/Settings/SettingsDrawer';
@@ -21,6 +20,12 @@ import type { SharedProps } from '../types/index';
  *  Any caller can `window.dispatchEvent(new CustomEvent(...))` to open
  *  it from outside the React tree. */
 export const SETTINGS_DRAWER_TOGGLE_EVENT = 'alexandria-core:settings-drawer-toggle';
+
+/** Toggles the slide-in Sidebar from outside the React tree — the
+ *  same drawer the navbar hamburger opens. Navbar-less surfaces (the
+ *  writing workspace's merged ribbon header) dispatch this from their
+ *  own trigger (the logo mark) so the sidebar stays reachable. */
+export const SIDEBAR_TOGGLE_EVENT = 'alexandria-core:sidebar-toggle';
 
 /** Fired after the drawer's slide-down animation completes. The
  *  /settings page listens for this to `router.back()` when the user
@@ -445,10 +450,17 @@ export default function AppLayout({
                 setSidebarOpen(false);
             }
         };
+        // Functional update — the listener binds once, so reading
+        // `sidebarOpen` directly would close over the initial value.
+        const toggleSidebar = () => setSidebarOpen((open) => !open);
 
         document.addEventListener('keydown', handleEscape);
+        window.addEventListener(SIDEBAR_TOGGLE_EVENT, toggleSidebar);
 
-        return () => document.removeEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+            window.removeEventListener(SIDEBAR_TOGGLE_EVENT, toggleSidebar);
+        };
     }, []);
 
     // Listen for the global command-palette-toggle event so the navbar
@@ -576,7 +588,10 @@ export default function AppLayout({
                 open={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
                 brand={sidebarBrand}
-                logoSlot={sidebarLogo ?? <Logo size="2em" />}
+                // No `?? <Logo />` fallback here: an undefined slot lets
+                // Sidebar render its own default (LogoLockup mark + brand
+                // wordmark); a bare-mark fallback suppresses the wordmark.
+                logoSlot={sidebarLogo}
                 body={sidebarBody}
                 userMenuLink={sidebarUserLink}
             />

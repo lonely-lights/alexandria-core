@@ -14,7 +14,7 @@ return [
     'mode.expand' => 'Pin the ribbon open',
 
     // Merged-header chrome (workspace surfaces that run navbar-less).
-    'home' => 'Go to dashboard',
+    'menu' => 'Open navigation menu',
     'search' => 'Search',
     'account' => 'Account menu',
 ];
