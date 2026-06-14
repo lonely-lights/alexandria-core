@@ -18,6 +18,8 @@ interface DropdownMenuDivider {
 
 type DropdownMenuEntry = DropdownMenuItem | DropdownMenuDivider;
 
+const MENU_TRANSITION_MS = 150;
+
 interface DropdownMenuProps {
     /** Menu items — use { divider: true } for separators */
     items: DropdownMenuEntry[];
@@ -138,6 +140,8 @@ export default function DropdownMenu({
     inheritCssVariables = [],
 }: DropdownMenuProps) {
     const [open, setOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const [visible, setVisible] = useState(false);
     const [defaultTriggerHovered, setDefaultTriggerHovered] = useState(false);
     const triggerRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -156,9 +160,24 @@ export default function DropdownMenu({
         return { top: rect.bottom + 4, left };
     }
 
+    useEffect(() => {
+        if (open) {
+            setMounted(true);
+            const frame = window.requestAnimationFrame(() => setVisible(true));
+
+            return () => window.cancelAnimationFrame(frame);
+        }
+
+        setVisible(false);
+
+        const timeout = window.setTimeout(() => setMounted(false), MENU_TRANSITION_MS);
+
+        return () => window.clearTimeout(timeout);
+    }, [open]);
+
     // Close on outside click
     useEffect(() => {
-        if (!open) return;
+        if (!mounted) return;
         function handleClick(e: MouseEvent) {
             const target = e.target as Node;
             if (
@@ -170,15 +189,15 @@ export default function DropdownMenu({
         }
         document.addEventListener('mousedown', handleClick);
         return () => document.removeEventListener('mousedown', handleClick);
-    }, [open]);
+    }, [mounted]);
 
     // Close on scroll (menu position would be stale)
     useEffect(() => {
-        if (!open) return;
+        if (!mounted) return;
         const handleScroll = () => setOpen(false);
         window.addEventListener('scroll', handleScroll, true);
         return () => window.removeEventListener('scroll', handleScroll, true);
-    }, [open]);
+    }, [mounted]);
 
     const defaultTriggerStyle: CSSProperties = {
         display: 'inline-flex',
@@ -223,6 +242,12 @@ export default function DropdownMenu({
         borderRadius: 'var(--theme-radius-card)',
         color: 'var(--theme-base-content)',
         boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? 'auto' : 'none',
+        transform: visible ? 'translateY(0) scale(1)' : 'translateY(-0.5rem) scale(0.985)',
+        transformOrigin: 'top left',
+        transition: 'opacity 150ms ease, transform 150ms ease, visibility 150ms ease',
+        visibility: visible ? 'visible' : 'hidden',
         ...menuStyleOverride,
     };
 
@@ -253,10 +278,11 @@ export default function DropdownMenu({
                 Uses --theme-* tokens so the panel tracks the active
                 preset (page surface + content text + theme corner
                 radius). */}
-            {open && createPortal(
+            {mounted && createPortal(
                 <div
                     ref={menuRef}
                     className={`fixed z-[9999] overflow-hidden ${menuClassName || 'w-60'}`}
+                    data-open={visible ? 'true' : 'false'}
                     style={menuStyle}
                 >
                     {items.map((item, i) => {
