@@ -269,7 +269,9 @@ function inlineNodeToText(node: JSONContent): string {
 
     if (node.type === "entryLink") {
         const name = (node.attrs?.name as string | undefined) ?? "";
-        const displayText = (node.attrs?.displayText as string | undefined) ?? "";
+        const displayText = (node.content ?? []).map(inlineNodeToText).join("")
+            || (node.attrs?.displayText as string | undefined)
+            || "";
 
         if (displayText && displayText !== name) {
             return `[[${name}|${displayText}]]`;

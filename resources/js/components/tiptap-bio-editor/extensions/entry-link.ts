@@ -57,13 +57,19 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
     return Node.create({
         name: 'entryLink',
 
+        priority: 2000,
+
         group: 'inline',
 
         inline: true,
 
+        content: 'text*',
+
+        marks: '',
+
         selectable: false,
 
-        atom: true,
+        atom: false,
 
         addAttributes() {
             return {
@@ -105,7 +111,6 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
 
         renderHTML({ node, HTMLAttributes }: { node: PMNode; HTMLAttributes: Record<string, unknown> }) {
             const attrs = node.attrs as EntryLinkAttrs;
-            const display = attrs.displayText || attrs.name || '';
             return [
                 'a',
                 mergeAttributes(HTMLAttributes, {
@@ -119,14 +124,14 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
                         ? `/entries/${attrs.blueprintSlug}/${attrs.slug}`
                         : '#',
                 }),
-                display,
+                0,
             ];
         },
 
         renderText({ node }: { node: PMNode }): string {
             const attrs = node.attrs as EntryLinkAttrs;
             const name = attrs.name ?? '';
-            const displayText = attrs.displayText ?? '';
+            const displayText = node.textContent || attrs.displayText || '';
 
             if (displayText && displayText !== name) {
                 return `[[${name}|${displayText}]]`;
@@ -424,14 +429,15 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
                 const from = startPos;
                 const to = state.selection.from;
 
-                // Create the entry link node
+                // Create the entry link node. The linked entry identity
+                // lives in attrs; the visible text is editable content.
                 const node = extension.type.create({
                     id: entry.id,
                     name: entry.name,
                     displayText: entry.name,
                     slug: entry.slug,
                     blueprintSlug: entry.blueprint_slug,
-                });
+                }, state.schema.text(entry.name));
 
                 // Replace the [[ and query with the node
                 const tr = state.tr.replaceWith(from, to, node);
