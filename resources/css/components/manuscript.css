@@ -198,6 +198,42 @@
     background: var(--alex-writing-section-pane-bg, var(--theme-base-page));
 }
 
+.writing-workspace-body {
+    background: var(--theme-base-page);
+}
+
+.writing-workspace-structure-layer {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    width: 23rem;
+    padding: 1rem 0 1rem 1rem;
+    pointer-events: none;
+}
+
+.writing-workspace-structure-toggle {
+    display: inline-flex;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--theme-radius-button);
+    pointer-events: auto;
+}
+
+.writing-workspace-section-pane--floating {
+    width: 18rem;
+    max-height: 100%;
+    border: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+    border-radius: var(--theme-radius-card);
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--theme-base-content) 12%, transparent);
+    pointer-events: auto;
+}
+
 .writing-workspace-section-pane .alex-row:not([data-selected="true"]):hover,
 .writing-workspace-section-pane .alex-row:not([data-selected="true"]):focus-within {
     background: var(
@@ -293,10 +329,10 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
     }
 }
 
-/* The desk — two steps removed from the page background so the sheet
-   clearly reads as paper lying on it. */
+/* The desk shares the app chrome color so the top bar, side surface,
+   rulers, and canvas read as one workspace around the paper. */
 .rte-manuscript .tiptap-editor {
-    background: color-mix(in srgb, var(--theme-base-content) 8%, var(--theme-base-page));
+    background: var(--theme-base-page);
     /* Reserve the scrollbar gutter even before content overflows so
        the centered sheet (and, in print layout, the pinned ruler
        above it — which reserves the same gutter) never shifts when

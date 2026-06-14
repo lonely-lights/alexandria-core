@@ -39,9 +39,11 @@
     padding: 0.375rem 0.625rem 0.125rem 1.25rem; }
 .ribbon-header-trailing { display: flex; align-items: center; gap: 0.375rem; flex-shrink: 0;
     padding: 0 0.75rem; }
-.ribbon-band { display: flex; align-items: stretch; gap: 0; padding: 0.375rem 0.625rem;
-    background: color-mix(in srgb, var(--theme-base-content) 8%, var(--theme-base-page));
-    border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent); }
+.ribbon-band { display: flex; align-items: stretch; gap: 0; margin: 0.25rem 1.25rem 0.625rem;
+    padding: 0.375rem 0.625rem;
+    background: color-mix(in srgb, var(--theme-base-content) 6%, var(--theme-base-page));
+    border: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+    border-radius: var(--theme-radius-card); }
 /* Icon-only band: groups are a single tight row of icon controls,
    divided by the group border. Control names live in tooltips — no
    inline text labels. */

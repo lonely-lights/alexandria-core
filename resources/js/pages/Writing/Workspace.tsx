@@ -108,6 +108,7 @@ interface WorkspaceProps {
 /** Persisted reference-panel visibility (desktop only — the xl: gate still applies). */
 export const PANEL_OPEN_STORAGE_KEY = 'alexandria.writing.panel_open';
 export const NEUTRAL_CHROME_STORAGE_KEY = 'alexandria.writing.neutral_chrome';
+export const STRUCTURE_OPEN_STORAGE_KEY = 'alexandria.writing.structure_open';
 
 function readPanelOpenPreference(): boolean {
     try {
@@ -120,6 +121,14 @@ function readPanelOpenPreference(): boolean {
 function readNeutralChromePreference(): boolean {
     try {
         return localStorage.getItem(NEUTRAL_CHROME_STORAGE_KEY) !== 'false';
+    } catch {
+        return true;
+    }
+}
+
+function readStructureOpenPreference(): boolean {
+    try {
+        return localStorage.getItem(STRUCTURE_OPEN_STORAGE_KEY) !== 'false';
     } catch {
         return true;
     }
@@ -202,6 +211,7 @@ export default function Workspace() {
     const [saveSignal, setSaveSignal] = useState(0);
 
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
+    const [structureOpen, setStructureOpen] = useState(readStructureOpenPreference);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
     const [neutralChrome, setNeutralChrome] = useState(readNeutralChromePreference);
@@ -298,6 +308,18 @@ export default function Workspace() {
             const next = !prev;
             try {
                 localStorage.setItem(PANEL_OPEN_STORAGE_KEY, String(next));
+            } catch {
+                // Persistence is best-effort; private-mode failures are fine.
+            }
+            return next;
+        });
+    }, []);
+
+    const toggleStructure = useCallback(() => {
+        setStructureOpen((prev) => {
+            const next = !prev;
+            try {
+                localStorage.setItem(STRUCTURE_OPEN_STORAGE_KEY, String(next));
             } catch {
                 // Persistence is best-effort; private-mode failures are fine.
             }
@@ -558,24 +580,50 @@ export default function Workspace() {
                     />
                 </div>
 
-                <div className="flex min-h-0 flex-1">
+                <div className="writing-workspace-body relative flex min-h-0 flex-1">
                     {/* Navigator */}
-                    <nav
-                        className="writing-workspace-section-pane writing-workspace-scroll hidden w-72 shrink-0 overflow-y-auto border-r md:block"
-                        style={{ borderColor: paneBorderColor }}
-                    >
-                        <Navigator
-                            projectSlug={project.slug}
-                            workSlug={work.slug}
-                            sections={sections}
-                            currentSlug={currentSection?.slug ?? null}
-                            canUpdate={can.update}
-                            onSelect={selectSection}
-                            onRequestAdd={(parentId) => setAddTarget({ parentId })}
-                            onRequestDelete={setDeleteTarget}
-                            liveCounts={liveCounts}
-                        />
-                    </nav>
+                    <div className="writing-workspace-structure-layer hidden md:block">
+                        <button
+                            type="button"
+                            className="writing-workspace-structure-toggle alex-toolbar-btn"
+                            data-writing-structure-toggle
+                            aria-label={
+                                structureOpen
+                                    ? t('writing.workspace.hide_sections')
+                                    : t('writing.workspace.show_sections')
+                            }
+                            title={
+                                structureOpen
+                                    ? t('writing.workspace.hide_sections')
+                                    : t('writing.workspace.show_sections')
+                            }
+                            aria-expanded={structureOpen}
+                            onClick={toggleStructure}
+                        >
+                            <i
+                                className={`fa-solid ${structureOpen ? 'fa-chevron-left' : 'fa-list-ul'}`}
+                                aria-hidden="true"
+                            />
+                        </button>
+                        {structureOpen && (
+                            <nav
+                                className="writing-workspace-section-pane writing-workspace-section-pane--floating writing-workspace-scroll overflow-y-auto"
+                                style={{ borderColor: paneBorderColor }}
+                            >
+                                <Navigator
+                                    projectSlug={project.slug}
+                                    workSlug={work.slug}
+                                    sections={sections}
+                                    currentSlug={currentSection?.slug ?? null}
+                                    canUpdate={can.update}
+                                    onSelect={selectSection}
+                                    onRequestAdd={(parentId) => setAddTarget({ parentId })}
+                                    onRequestDelete={setDeleteTarget}
+                                    liveCounts={liveCounts}
+                                />
+                            </nav>
+                        )}
+                    </div>
 
                     {/* Editor pane — the frame itself never scrolls; the
                         editor's content wrapper inside ManuscriptEditor does */}
