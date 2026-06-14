@@ -601,28 +601,28 @@ export default function Workspace() {
                             onClick={toggleStructure}
                         >
                             <i
-                                className={`fa-solid ${structureOpen ? 'fa-chevron-left' : 'fa-list-ul'}`}
+                                className={`fa-solid ${structureOpen ? 'fa-chevron-up' : 'fa-list-ul'}`}
                                 aria-hidden="true"
                             />
                         </button>
-                        {structureOpen && (
-                            <nav
-                                className="writing-workspace-section-pane writing-workspace-section-pane--floating writing-workspace-scroll overflow-y-auto"
-                                style={{ borderColor: paneBorderColor }}
-                            >
-                                <Navigator
-                                    projectSlug={project.slug}
-                                    workSlug={work.slug}
-                                    sections={sections}
-                                    currentSlug={currentSection?.slug ?? null}
-                                    canUpdate={can.update}
-                                    onSelect={selectSection}
-                                    onRequestAdd={(parentId) => setAddTarget({ parentId })}
-                                    onRequestDelete={setDeleteTarget}
-                                    liveCounts={liveCounts}
-                                />
-                            </nav>
-                        )}
+                        <nav
+                            className="writing-workspace-section-pane writing-workspace-section-pane--floating writing-workspace-scroll overflow-y-auto"
+                            data-open={structureOpen ? 'true' : 'false'}
+                            aria-hidden={!structureOpen}
+                            style={{ borderColor: paneBorderColor }}
+                        >
+                            <Navigator
+                                projectSlug={project.slug}
+                                workSlug={work.slug}
+                                sections={sections}
+                                currentSlug={currentSection?.slug ?? null}
+                                canUpdate={can.update}
+                                onSelect={selectSection}
+                                onRequestAdd={(parentId) => setAddTarget({ parentId })}
+                                onRequestDelete={setDeleteTarget}
+                                liveCounts={liveCounts}
+                            />
+                        </nav>
                     </div>
 
                     {/* Editor pane — the frame itself never scrolls; the
