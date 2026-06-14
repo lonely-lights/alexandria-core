@@ -378,6 +378,7 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
     border: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
     border-radius: var(--theme-radius-card);
     box-shadow: 0 2px 12px rgb(0 0 0 / 0.12);
+    zoom: var(--alex-writing-zoom, 1);
 }
 
 /* Tighter page margins on small screens — the sheet goes nearly

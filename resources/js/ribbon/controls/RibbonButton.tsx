@@ -36,7 +36,7 @@ export default function RibbonButton<Ctx>({ control, ctx }: Props<Ctx>) {
     return (
         <Tooltip content={tip}>
             {disabled ? (
-                <span style={{ display: 'contents' }}>{trigger}</span>
+                <span className="inline-flex">{trigger}</span>
             ) : (
                 trigger
             )}

@@ -21,6 +21,8 @@ type Ctx = WritingRibbonContext;
 const proseEditable = (ctx: Ctx): boolean => ctx.format === 'prose' && ctx.canUpdate;
 const screenplayEditable = (ctx: Ctx): boolean => ctx.format === 'screenplay' && ctx.canUpdate;
 const editable = (ctx: Ctx): boolean => ctx.canUpdate;
+const zoomOptions = ['75', '90', '100', '110', '125', '150'];
+
 function markToggle(
     id: 'bold' | 'italic' | 'underline',
     icon: string,
@@ -75,6 +77,47 @@ const editTab: RibbonTab<Ctx> = {
     id: 'edit',
     labelKey: 'writing.ribbon.tab_edit',
     groups: [
+        {
+            id: 'history-view',
+            labelKey: 'writing.ribbon.group_history_view',
+            controls: [
+                {
+                    id: 'undo',
+                    type: 'button',
+                    icon: 'fa-solid fa-rotate-left',
+                    labelKey: 'writing.ribbon.undo',
+                    visible: editable,
+                    disabled: (ctx) => !(ctx.editor?.canUndo() ?? false),
+                    onAction: (ctx) => ctx.editor?.undo(),
+                },
+                {
+                    id: 'redo',
+                    type: 'button',
+                    icon: 'fa-solid fa-rotate-right',
+                    labelKey: 'writing.ribbon.redo',
+                    visible: editable,
+                    disabled: (ctx) => !(ctx.editor?.canRedo() ?? false),
+                    onAction: (ctx) => ctx.editor?.redo(),
+                },
+                {
+                    id: 'zoom',
+                    type: 'select',
+                    icon: 'fa-solid fa-magnifying-glass-plus',
+                    labelKey: 'writing.ribbon.zoom',
+                    options: () =>
+                        zoomOptions.map((value) => ({
+                            value,
+                            labelKey: `writing.ribbon.zoom_${value}`,
+                        })),
+                    value: (ctx) => ctx.zoom,
+                    onAction: (ctx, value) => {
+                        if (value !== undefined) {
+                            ctx.actions.setZoom(value);
+                        }
+                    },
+                },
+            ],
+        },
         {
             id: 'text',
             labelKey: 'writing.ribbon.group_text',

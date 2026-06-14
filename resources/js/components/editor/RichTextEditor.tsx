@@ -15,6 +15,7 @@ import Input from '@alexandria/components/form/Input';
 import Button from '@alexandria/components/ui/Button';
 import useT from '@alexandria/hooks/useT';
 import type { WritingEditorBridge } from '@alexandria/pages/Writing/ribbon/writingRibbonContext';
+import { ProseTabKeymap } from './proseTabKeymap';
 
 /**
  * RichTextEditor — Tiptap 3 wiki-markup editor surface.
@@ -309,6 +310,7 @@ export default function RichTextEditor({
         }),
         Placeholder.configure({ placeholder }),
         ...(enableMentions ? [createMentionExtension({ searchEndpoint: mentionSearchEndpoint })] : []),
+        ProseTabKeymap,
     ];
 
     const editor = useEditor({
@@ -442,6 +444,18 @@ export default function RichTextEditor({
         },
         toggleCodeView,
         isCodeView: () => codeView,
+        undo() {
+            editor?.chain().focus().undo().run();
+        },
+        redo() {
+            editor?.chain().focus().redo().run();
+        },
+        canUndo() {
+            return editor?.can().chain().undo().run() ?? false;
+        },
+        canRedo() {
+            return editor?.can().chain().redo().run() ?? false;
+        },
         focus() {
             editor?.commands.focus();
         },

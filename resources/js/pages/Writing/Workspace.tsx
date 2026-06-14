@@ -109,6 +109,9 @@ interface WorkspaceProps {
 export const PANEL_OPEN_STORAGE_KEY = 'alexandria.writing.panel_open';
 export const NEUTRAL_CHROME_STORAGE_KEY = 'alexandria.writing.neutral_chrome';
 export const STRUCTURE_OPEN_STORAGE_KEY = 'alexandria.writing.structure_open';
+export const ZOOM_STORAGE_KEY = 'alexandria.writing.zoom';
+const DEFAULT_ZOOM = '100';
+const ZOOM_VALUES = new Set(['75', '90', '100', '110', '125', '150']);
 
 function readPanelOpenPreference(): boolean {
     try {
@@ -131,6 +134,16 @@ function readStructureOpenPreference(): boolean {
         return localStorage.getItem(STRUCTURE_OPEN_STORAGE_KEY) !== 'false';
     } catch {
         return true;
+    }
+}
+
+function readZoomPreference(): string {
+    try {
+        const stored = localStorage.getItem(ZOOM_STORAGE_KEY);
+
+        return stored !== null && ZOOM_VALUES.has(stored) ? stored : DEFAULT_ZOOM;
+    } catch {
+        return DEFAULT_ZOOM;
     }
 }
 
@@ -215,6 +228,7 @@ export default function Workspace() {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
     const [neutralChrome, setNeutralChrome] = useState(readNeutralChromePreference);
+    const [zoom, setZoom] = useState(readZoomPreference);
 
     // Section add/delete modal triggers — shared between the ribbon's
     // Structure tab and the Navigator's hover affordances.
@@ -351,6 +365,16 @@ export default function Workspace() {
         });
     }, []);
 
+    const updateZoom = useCallback((value: string) => {
+        const next = ZOOM_VALUES.has(value) ? value : DEFAULT_ZOOM;
+        setZoom(next);
+        try {
+            localStorage.setItem(ZOOM_STORAGE_KEY, next);
+        } catch {
+            // Persistence is best-effort; private-mode failures are fine.
+        }
+    }, []);
+
     function selectSection(slug: string) {
         router.visit(`/works/${project.slug}/${work.slug}/${slug}`, {
             only: ['currentSection'],
@@ -391,6 +415,7 @@ export default function Workspace() {
             panelOpen,
             printLayout,
             neutralChrome,
+            zoom,
             hasSection: currentSection !== null,
             editorTick,
             // Lazy getter: the bridge lands via useImperativeHandle AFTER
@@ -404,6 +429,7 @@ export default function Workspace() {
                 togglePanel,
                 togglePrintLayout,
                 toggleNeutralChrome,
+                setZoom: updateZoom,
                 openSettings: () => setSettingsOpen(true),
                 openReports: () => router.visit(`/works/${projectSlug}/${workSlug}/reports`),
                 addSection: () => setAddTarget({ parentId: null }),
@@ -446,12 +472,14 @@ export default function Workspace() {
         panelOpen,
         printLayout,
         neutralChrome,
+        zoom,
         currentSection,
         sections,
         editorTick,
         togglePanel,
         togglePrintLayout,
         toggleNeutralChrome,
+        updateZoom,
     ]);
 
     const workWords = liveWorkWords ?? work.word_count;
@@ -495,7 +523,11 @@ export default function Workspace() {
             <div
                 className={`writing-workspace-shell flex flex-col ${neutralChrome ? 'writing-neutral-chrome' : ''}`}
                 data-writing-mode={theme?.mode ?? 'light'}
-                style={{ height: '100dvh', overflow: 'hidden' }}
+                style={{
+                    height: '100dvh',
+                    overflow: 'hidden',
+                    '--alex-writing-zoom': `${Number(zoom) / 100}`,
+                } as CSSProperties}
             >
                 {/* Writing ribbon — the Docs-style split header. Left column:
                     logo mark spanning both rows; main column: title + status

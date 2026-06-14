@@ -89,6 +89,9 @@ function ScreenplaySurface({
                 onSerialized(serializeScreenplay(docToBlocks(e.getJSON())));
             }, 300);
         },
+        onTransaction: () => {
+            onStateChangeRef.current?.();
+        },
     });
 
     // Section switches remount this component (Workspace keys the
@@ -153,6 +156,18 @@ function ScreenplaySurface({
         },
         toggleCodeView() {},
         isCodeView: () => false,
+        undo() {
+            editor?.chain().focus().undo().run();
+        },
+        redo() {
+            editor?.chain().focus().redo().run();
+        },
+        canUndo() {
+            return editor?.can().chain().undo().run() ?? false;
+        },
+        canRedo() {
+            return editor?.can().chain().redo().run() ?? false;
+        },
         focus() {
             editor?.commands.focus();
         },

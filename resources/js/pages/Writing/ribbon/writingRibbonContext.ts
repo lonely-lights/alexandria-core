@@ -23,6 +23,10 @@ export interface WritingEditorBridge {
     openHelp(): void;
     toggleCodeView(): void;
     isCodeView(): boolean;
+    undo(): void;
+    redo(): void;
+    canUndo(): boolean;
+    canRedo(): boolean;
     focus(): void;
 }
 
@@ -32,6 +36,7 @@ export interface WritingRibbonContext {
     panelOpen: boolean;
     printLayout: boolean;
     neutralChrome: boolean;
+    zoom: string;
     hasSection: boolean;
     /** bumped on editor selection/content changes so active/value states re-render */
     editorTick: number;
@@ -40,6 +45,7 @@ export interface WritingRibbonContext {
         togglePanel(): void;
         togglePrintLayout(): void;
         toggleNeutralChrome(): void;
+        setZoom(value: string): void;
         openSettings(): void;
         openReports(): void;
         addSection(): void;       // root-level (opens the existing AddSectionModal)

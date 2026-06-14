@@ -97,6 +97,8 @@ button:not(:disabled),
     outline: none;
     min-height: 8rem;
     padding: 1rem;
+    tab-size: 4;
+    white-space: pre-wrap;
 }
 .tiptap-editor .ProseMirror p {
     margin-bottom: 0.5rem;

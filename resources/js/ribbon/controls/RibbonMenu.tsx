@@ -41,7 +41,7 @@ export default function RibbonMenu<Ctx>({ control, ctx }: Props<Ctx>) {
         // so the tooltip's hover listeners attach to a wrapper span.
         return (
             <Tooltip content={tip}>
-                <span style={{ display: 'contents' }}>{trigger}</span>
+                <span className="inline-flex">{trigger}</span>
             </Tooltip>
         );
     }
