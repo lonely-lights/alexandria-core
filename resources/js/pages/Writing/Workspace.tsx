@@ -562,6 +562,17 @@ export default function Workspace() {
                                 >
                                     <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
                                 </button>
+                                <button
+                                    type="button"
+                                    onClick={toggleNeutralChrome}
+                                    aria-label={t('writing.ribbon.neutral_chrome')}
+                                    title={t('writing.ribbon.neutral_chrome')}
+                                    aria-pressed={neutralChrome}
+                                    data-writing-neutral-chrome
+                                    className={`alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs ${neutralChrome ? 'alex-toolbar-btn--active' : ''}`}
+                                >
+                                    <i className="fa-solid fa-circle-half-stroke" aria-hidden="true" />
+                                </button>
                                 {can.update && (
                                     <button
                                         type="button"

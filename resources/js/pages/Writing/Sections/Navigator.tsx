@@ -427,6 +427,25 @@ function NavigatorRow({
                         <span onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu
                                 align="left"
+                                density="compact"
+                                labelAlign="right"
+                                menuClassName="w-48 py-1"
+                                inheritCssVariables={[
+                                    '--alex-writing-section-pane-bg',
+                                    '--alex-writing-section-row-hover-bg',
+                                    '--alex-writing-section-muted',
+                                    '--theme-base-content',
+                                    '--theme-base-surface',
+                                    '--theme-motion-duration-fast',
+                                    '--theme-motion-easing-standard',
+                                    '--theme-radius-button',
+                                    '--theme-radius-card',
+                                ]}
+                                menuStyle={{
+                                    background: 'var(--alex-writing-section-pane-bg, var(--theme-base-surface))',
+                                    borderColor: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                                    color: 'var(--theme-base-content)',
+                                }}
                                 trigger={
                                     <button
                                         type="button"
