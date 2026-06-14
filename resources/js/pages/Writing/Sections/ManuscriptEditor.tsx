@@ -113,6 +113,7 @@ export default function ManuscriptEditor({
                     className="min-h-0 flex-1"
                     value={content}
                     onChange={handleChange}
+                    onImmediateChange={(wiki) => onOutlineChange?.(extractSectionOutline(wiki))}
                     tier="pro"
                     enableEntryLinks
                     enableMentions={false}

@@ -712,6 +712,7 @@ export default function Workspace() {
                                     printLayout={printLayout}
                                     bridgeRef={bridgeRef}
                                     onStateChange={handleEditorStateChange}
+                                    onOutlineChange={setCurrentOutline}
                                 />
                             )
                         ) : (

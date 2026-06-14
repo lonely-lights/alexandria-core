@@ -49,6 +49,8 @@ interface RichTextEditorProps {
     value: string;
     /** Called with wiki markup on change (300ms debounced) */
     onChange: (wiki: string) => void;
+    /** Called immediately with wiki markup on editor updates. */
+    onImmediateChange?: (wiki: string) => void;
     placeholder?: string;
     maxLength?: number;
     /** Controls which toolbar buttons are available */
@@ -245,6 +247,7 @@ function ToolbarIconButton({
 export default function RichTextEditor({
     value,
     onChange,
+    onImmediateChange,
     placeholder = 'Start writing...',
     maxLength = 1000,
     tier = 'free',
@@ -275,6 +278,8 @@ export default function RichTextEditor({
     const [, setEditorState] = useState(0);
     const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
     const isExternalUpdate = useRef(false);
+    const onImmediateChangeRef = useRef(onImmediateChange);
+    onImmediateChangeRef.current = onImmediateChange;
 
     // Ribbon state tick (Ribbon Plan 2). The latest callback lives in a
     // ref so the debounced notifier — and the useEditor event handlers
@@ -326,9 +331,12 @@ export default function RichTextEditor({
         onUpdate: ({ editor: e }) => {
             if (isExternalUpdate.current) return;
 
+            const wiki = serializeToWiki(e);
+            onImmediateChangeRef.current?.(wiki);
+
             if (debounceRef.current) clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(() => {
-                onChange(serializeToWiki(e));
+                onChange(wiki);
             }, 300);
         },
         onFocus: () => setIsFocused(true),
@@ -389,6 +397,7 @@ export default function RichTextEditor({
             isExternalUpdate.current = true;
             editor.commands.setContent(parseWikiToHtml(codeValue), { emitUpdate: false });
             isExternalUpdate.current = false;
+            onImmediateChangeRef.current?.(codeValue);
             onChange(codeValue);
             setCodeView(false);
         } else {
@@ -588,7 +597,9 @@ export default function RichTextEditor({
                 }
                 // Trigger onChange
                 if (debounceRef.current) clearTimeout(debounceRef.current);
-                onChange(serializeToWiki(editor));
+                const wiki = serializeToWiki(editor);
+                onImmediateChangeRef.current?.(wiki);
+                onChange(wiki);
             }
         }
 
@@ -831,7 +842,11 @@ export default function RichTextEditor({
                     >
                         <textarea
                             value={codeValue}
-                            onChange={(e) => { setCodeValue(e.target.value); onChange(e.target.value); }}
+                            onChange={(e) => {
+                                setCodeValue(e.target.value);
+                                onImmediateChangeRef.current?.(e.target.value);
+                                onChange(e.target.value);
+                            }}
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setIsFocused(false)}
                             className={`w-full resize-none p-4 font-mono text-sm outline-none ${isManuscript ? 'min-h-0 flex-1' : 'min-h-30'}`}
