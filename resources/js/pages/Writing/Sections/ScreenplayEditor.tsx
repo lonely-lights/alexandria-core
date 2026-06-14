@@ -1,3 +1,4 @@
+import type { Editor } from '@tiptap/core';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type MouseEvent, type Ref } from 'react';
 
@@ -25,6 +26,32 @@ import useSectionAutosave from './useSectionAutosave';
 
 // Same platform sniff RichTextEditor uses for shortcut labels.
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
+type HistoryCommand = 'undo' | 'redo';
+
+function runHistoryCommand(editor: Editor | null, command: HistoryCommand): void {
+    const chain = editor?.chain().focus() as (Record<HistoryCommand, unknown> & { run?: () => boolean }) | undefined;
+    const fn = chain?.[command];
+
+    if (typeof fn !== 'function') {
+        return;
+    }
+
+    const runnable = fn.call(chain) as { run?: () => boolean };
+    runnable.run?.();
+}
+
+function canRunHistoryCommand(editor: Editor | null, command: HistoryCommand): boolean {
+    const chain = editor?.can().chain() as (Record<HistoryCommand, unknown> & { run?: () => boolean }) | undefined;
+    const fn = chain?.[command];
+
+    if (typeof fn !== 'function') {
+        return false;
+    }
+
+    const runnable = fn.call(chain) as { run?: () => boolean };
+
+    return runnable.run?.() ?? false;
+}
 
 /**
  * Workspace screenplay editor — Stage 8g.1 (Plan 3 Task 2).
@@ -167,16 +194,16 @@ function ScreenplaySurface({
         toggleCodeView() {},
         isCodeView: () => false,
         undo() {
-            editor?.chain().focus().undo().run();
+            runHistoryCommand(editor, 'undo');
         },
         redo() {
-            editor?.chain().focus().redo().run();
+            runHistoryCommand(editor, 'redo');
         },
         canUndo() {
-            return editor?.can().chain().undo().run() ?? false;
+            return canRunHistoryCommand(editor, 'undo');
         },
         canRedo() {
-            return editor?.can().chain().redo().run() ?? false;
+            return canRunHistoryCommand(editor, 'redo');
         },
         focus() {
             editor?.commands.focus();
