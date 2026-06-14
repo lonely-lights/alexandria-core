@@ -204,14 +204,15 @@
 
 .writing-workspace-structure-layer {
     position: absolute;
-    inset: 0 auto 0 0;
+    top: calc(1.5rem + 1.5rem);
+    bottom: 1rem;
+    left: calc(2rem + 1.5rem);
     z-index: 20;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.625rem;
     width: 19rem;
-    padding: 1rem 0 1rem 1rem;
     pointer-events: none;
 }
 
