@@ -154,6 +154,43 @@ function handleTab(editor: Editor, direction: 1 | -1): boolean {
     return true;
 }
 
+function handleArrowRight(editor: Editor): boolean {
+    const { selection } = editor.state;
+    const { $from, empty } = selection;
+    const parent = $from.parent;
+
+    if (
+        !empty ||
+        parent.type.name !== "parenthetical" ||
+        $from.parentOffset !== parent.content.size
+    ) {
+        return false;
+    }
+
+    const after = $from.end() + 1;
+    const $after = editor.state.doc.resolve(after);
+    const moveTo = (position: number) => {
+        queueMicrotask(() => {
+            editor.commands.setTextSelection(position);
+        });
+    };
+
+    if ($after.nodeAfter) {
+        moveTo(after + 1);
+
+        return true;
+    }
+
+    if (!editor.schema.nodes.dialogue) {
+        return false;
+    }
+
+    editor.chain().insertContentAt(after, { type: "dialogue" }).scrollIntoView().run();
+    moveTo(after + 1);
+
+    return true;
+}
+
 const ScreenplayKeymap = Extension.create({
     name: "screenplayKeymap",
 
@@ -190,6 +227,7 @@ const ScreenplayKeymap = Extension.create({
             Enter: ({ editor }) => handleEnter(editor),
             Tab: ({ editor }) => handleTab(editor, 1),
             "Shift-Tab": ({ editor }) => handleTab(editor, -1),
+            ArrowRight: ({ editor }) => handleArrowRight(editor),
             ...elementShortcuts,
         };
     },
@@ -315,6 +353,7 @@ function inlineContentFromText(text: string, allowEntryLinks: boolean): JSONCont
                 slug: null,
                 blueprintSlug: null,
             },
+            content: displayText !== "" ? [{ type: "text", text: displayText }] : [],
         });
         cursor = index + match[0].length;
     }
