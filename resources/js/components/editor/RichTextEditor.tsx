@@ -787,12 +787,6 @@ export default function RichTextEditor({
                 </div>
                 )}
 
-                {/* Print-layout ruler — a pinned sibling between the
-                    toolbar and the scroll container (Word pins its
-                    ruler; the page scrolls beneath it). Hidden in code
-                    view, where there is no page to measure. */}
-                {isManuscript && printLayout && !codeView && <ManuscriptRuler />}
-
                 {/* Editor Area / Code View */}
                 {codeView ? (
                     <div
@@ -817,11 +811,28 @@ export default function RichTextEditor({
                        prose measure + paddings live on .ProseMirror
                        itself (components/manuscript.css) so native
                        click-to-focus covers the whole surface. */
-                    <EditorContent
-                        editor={editor}
-                        className="tiptap-editor min-h-0 flex-1 overflow-y-auto"
-                        onMouseDown={handleGutterMouseDown}
-                    />
+                    <div className="flex min-h-0 flex-1 flex-col">
+                        {printLayout && (
+                            <div className="flex shrink-0">
+                                <div
+                                    className="hidden w-8 shrink-0 md:block"
+                                    style={{
+                                        background: 'var(--alex-manuscript-ruler-bg, color-mix(in srgb, var(--theme-base-content) 3%, transparent))',
+                                        borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
+                                    }}
+                                />
+                                <ManuscriptRuler />
+                            </div>
+                        )}
+                        <div className="flex min-h-0 flex-1">
+                            {printLayout && <ManuscriptRuler orientation="vertical" />}
+                            <EditorContent
+                                editor={editor}
+                                className="tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto"
+                                onMouseDown={handleGutterMouseDown}
+                            />
+                        </div>
+                    </div>
                 ) : (
                     <div
                         className="tiptap-editor overflow-hidden [&_.ProseMirror>*:last-child]:mb-0"

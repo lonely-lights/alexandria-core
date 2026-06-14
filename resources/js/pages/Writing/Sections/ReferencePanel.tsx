@@ -256,7 +256,7 @@ function BrowseTab({
                     size="sm"
                 />
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
+            <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 pb-2">
                 {!query.trim() ? (
                     <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
                         {t('writing.panel.search_hint')}
@@ -319,7 +319,7 @@ function PinsTab({
     }
 
     return (
-        <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+        <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 py-2">
             {pins.length === 0 ? (
                 <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
                     {t('writing.panel.no_pins')}
@@ -460,7 +460,7 @@ function SectionTab({
     }
 
     return (
-        <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+        <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 py-2">
             {failed && (
                 <p className="px-3 py-2 text-xs" style={errorTextStyle}>
                     {t('writing.panel.no_results')}
@@ -739,7 +739,7 @@ export default function ReferencePanel({
                 />
             )}
             {activeExtra !== undefined && (
-                <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
                     <activeExtra.component {...panelContext} />
                 </div>
             )}

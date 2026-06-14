@@ -168,6 +168,17 @@ const statusChipStyle: CSSProperties = {
     whiteSpace: 'nowrap',
 };
 
+const typeChipStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)',
+    color: 'var(--theme-brand-primary-500)',
+    borderRadius: 'var(--theme-radius-badge)',
+    padding: '0.125rem 0.5rem',
+    fontSize: '0.6875rem',
+    fontWeight: 700,
+    lineHeight: 1.5,
+    whiteSpace: 'nowrap',
+};
+
 const paneBorderColor = 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)';
 
 export default function Workspace() {
@@ -497,6 +508,13 @@ export default function Workspace() {
                                 <span className="max-w-[12rem] truncate text-base font-semibold md:max-w-[24rem]">
                                     {work.title}
                                 </span>
+                                <span
+                                    className="hidden shrink-0 sm:inline-block"
+                                    data-writing-work-type
+                                    style={typeChipStyle}
+                                >
+                                    {t(`writing.types.${work.type}`, work.type)}
+                                </span>
                                 {/* Chip hides below md — the mobile header keeps
                                     to logo · title / tabs, search · avatar. */}
                                 <span
@@ -530,7 +548,7 @@ export default function Workspace() {
                 <div className="flex min-h-0 flex-1">
                     {/* Navigator */}
                     <nav
-                        className="hidden w-72 shrink-0 overflow-y-auto border-r md:block"
+                        className="writing-workspace-section-pane writing-workspace-scroll hidden w-72 shrink-0 overflow-y-auto border-r md:block"
                         style={{ borderColor: paneBorderColor }}
                     >
                         <Navigator
@@ -592,7 +610,7 @@ export default function Workspace() {
                         gate stays on top of the user toggle. */}
                     {panelOpen && (
                         <aside
-                            className="hidden min-h-0 w-80 shrink-0 overflow-y-auto border-l xl:block"
+                            className="writing-workspace-scroll hidden min-h-0 w-80 shrink-0 overflow-y-auto border-l xl:block"
                             style={{ borderColor: paneBorderColor }}
                         >
                             <ReferencePanel

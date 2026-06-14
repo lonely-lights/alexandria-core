@@ -1,154 +1,18 @@
-import { router } from '@inertiajs/react';
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-
-import useT from '@alexandria/hooks/useT';
-
-import type { CurrentSection } from '../Workspace';
-import type { SaveStatus } from './useSectionAutosave';
+import type { ReactNode } from 'react';
 
 /**
- * Shared workspace-editor chrome — Stage 8g.1.
+ * Shared workspace-editor frame.
  *
- * Since Ribbon Plan 2 this is an identity strip — inline section title
- * + label chip + save status (controls live in the workspace ribbon;
- * counts moved to the workspace-wide WorkspaceStatusBar). Renders the
- * editor surface as children. Owns the title's local state, server
- * commit (PUT section update with a partial reload), and re-sync after
- * the server normalizes it.
- * ManuscriptEditor and ScreenplayEditor both wrap their surfaces in
- * this so the chrome can't drift between formats. `menuExtras` stays
- * as a future extension slot; the workspace passes nothing today.
+ * The document identity strip moved into the workspace title bar, so
+ * this wrapper only preserves the full-height flex contract shared by
+ * prose and screenplay editors.
  */
 
 interface SectionChromeProps {
-    projectSlug: string;
-    workSlug: string;
-    section: CurrentSection;
-    canUpdate: boolean;
-    status: SaveStatus;
-    /** Extra menu-bar controls, rendered between the label chip and the save status. */
-    menuExtras?: ReactNode;
-    /** Extra classes for the root flex column (e.g. the screenplay rte-* scope classes). */
     className?: string;
     children: ReactNode;
 }
 
-/* ── Theme styles ── */
-
-const labelChipStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
-    borderRadius: 'var(--theme-radius-badge)',
-    padding: '0.125rem 0.5rem',
-    fontSize: '0.6875rem',
-    fontWeight: 600,
-    lineHeight: 1.5,
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-    whiteSpace: 'nowrap',
-};
-
-const titleInputStyle: CSSProperties = {
-    background: 'transparent',
-    border: 'none',
-    outline: 'none',
-    color: 'var(--theme-base-content)',
-};
-
-const menuBarStyle: CSSProperties = {
-    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-};
-
-const metaTextStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
-};
-
-const errorTextStyle: CSSProperties = {
-    color: 'var(--theme-status-error-stroke)',
-};
-
-export default function SectionChrome({
-    projectSlug,
-    workSlug,
-    section,
-    canUpdate,
-    status,
-    menuExtras,
-    className,
-    children,
-}: SectionChromeProps) {
-    const t = useT();
-    const [title, setTitle] = useState(section.title);
-
-    // Covers both the section switch and the server-confirmed rename
-    // (commitTitle's partial reload trims/normalizes the title).
-    useEffect(() => {
-        setTitle(section.title);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [section.id, section.title]);
-
-    function commitTitle() {
-        const trimmed = title.trim();
-
-        if (!canUpdate || trimmed === '' || trimmed === section.title) {
-            setTitle(section.title);
-            return;
-        }
-
-        router.put(`/works/${projectSlug}/${workSlug}/sections/${section.id}`, { title: trimmed }, {
-            preserveScroll: true,
-            preserveState: true,
-            only: ['sections', 'currentSection'],
-        });
-    }
-
-    const statusText =
-        status === 'saving'
-            ? t('writing.workspace.saving')
-            : status === 'saved'
-                ? t('writing.workspace.saved')
-                : status === 'error'
-                    ? t('writing.workspace.save_error')
-                    : null;
-
-    return (
-        <div className={`flex h-full min-h-0 flex-col ${className ?? ''}`}>
-            {/* Menu bar — title + label on the left, extras + save status on the right */}
-            <div className="flex h-12 shrink-0 items-center gap-3 px-4" style={menuBarStyle}>
-                {canUpdate ? (
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        onBlur={commitTitle}
-                        className="min-w-0 flex-1 text-lg font-semibold"
-                        style={titleInputStyle}
-                        aria-label={t('writing.workspace.section_title_placeholder')}
-                        placeholder={t('writing.workspace.section_title_placeholder')}
-                    />
-                ) : (
-                    <h2 className="min-w-0 flex-1 truncate text-lg font-semibold">
-                        {section.title}
-                    </h2>
-                )}
-                {section.label && (
-                    <span className="shrink-0" style={labelChipStyle}>
-                        {section.label}
-                    </span>
-                )}
-                {menuExtras}
-                {statusText && (
-                    <span
-                        className="shrink-0 text-xs"
-                        style={status === 'error' ? errorTextStyle : metaTextStyle}
-                    >
-                        {statusText}
-                    </span>
-                )}
-            </div>
-
-            {/* The editor surface — its own content wrapper scrolls */}
-            {children}
-        </div>
-    );
+export default function SectionChrome({ className, children }: SectionChromeProps) {
+    return <div className={`flex h-full min-h-0 flex-col ${className ?? ''}`}>{children}</div>;
 }

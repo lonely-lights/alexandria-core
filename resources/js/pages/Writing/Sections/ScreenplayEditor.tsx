@@ -170,17 +170,29 @@ function ScreenplaySurface({
     if (!editor) return null;
 
     return (
-        <>
-            {/* Print-layout ruler — pinned above the scrolling page */}
-            {printLayout && <ManuscriptRuler />}
+        <div className="flex min-h-0 flex-1 flex-col">
+            {printLayout && (
+                <div className="flex shrink-0">
+                    <div
+                        className="hidden w-8 shrink-0 md:block"
+                        style={{
+                            background: 'var(--alex-manuscript-ruler-bg, color-mix(in srgb, var(--theme-base-content) 3%, transparent))',
+                            borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
+                        }}
+                    />
+                    <ManuscriptRuler />
+                </div>
+            )}
 
-            {/* The sheet — the content wrapper scrolls; geometry from
-                manuscript.css, element layout from screenplay.css */}
-            <EditorContent
-                editor={editor}
-                className="tiptap-editor min-h-0 flex-1 overflow-y-auto"
-                onMouseDown={handleGutterMouseDown}
-            />
+            {/* The sheet: geometry from manuscript.css, element layout from screenplay.css. */}
+            <div className="flex min-h-0 flex-1">
+                {printLayout && <ManuscriptRuler orientation="vertical" />}
+                <EditorContent
+                    editor={editor}
+                    className="tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto"
+                    onMouseDown={handleGutterMouseDown}
+                />
+            </div>
 
             {/* Keyboard-flow help — opened via bridge.openHelp() */}
             <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-md">
@@ -212,7 +224,7 @@ function ScreenplaySurface({
                     ))}
                 </div>
             </Modal>
-        </>
+        </div>
     );
 }
 
@@ -229,7 +241,7 @@ export default function ScreenplayEditor({
     bridgeRef,
     onStateChange,
 }: ManuscriptEditorProps) {
-    const { status, noteChange, initialContent } =
+    const { noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
 
     // Read the stored preference ONCE (a function-call prop default
@@ -241,11 +253,6 @@ export default function ScreenplayEditor({
 
     return (
         <SectionChrome
-            projectSlug={projectSlug}
-            workSlug={workSlug}
-            section={section}
-            canUpdate={canUpdate}
-            status={status}
             className={`rte-manuscript rte-screenplay${effectivePrintLayout && canUpdate ? ' rte-manuscript--print' : ''}`}
         >
             {canUpdate ? (
@@ -261,7 +268,7 @@ export default function ScreenplayEditor({
                 /* Read-only: the parsed blocks as styled static markup
                    inside the sheet — no editor instance. The class
                    names reuse the desk/sheet/element CSS directly. */
-                <div className="tiptap-editor min-h-0 flex-1 overflow-y-auto">
+                <div className="tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
                     <div className="ProseMirror">
                         {parseScreenplay(initialContent).map((block, index) => (
                             <p

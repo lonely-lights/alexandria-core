@@ -27,6 +27,23 @@
    surface. Turning the ribbon toggle off removes this class and lets the
    project/theme tokens pass through again. */
 .writing-neutral-chrome {
+    --alex-writing-scrollbar-track: #eef2f7;
+    --alex-writing-scrollbar-thumb: #cbd5e1;
+    --alex-writing-scrollbar-thumb-hover: #94a3b8;
+    --alex-writing-section-pane-bg: #f8fafc;
+    --alex-writing-section-row-hover-bg: #eef2f7;
+    --alex-writing-section-row-selected-bg: #dbeafe;
+    --alex-writing-section-row-selected-fg: #1d4ed8;
+    --alex-writing-section-muted: #64748b;
+    --alex-writing-section-chip-bg: #e5e7eb;
+    --alex-writing-section-chip-fg: #475569;
+    --alex-writing-section-dot-bg: #cbd5e1;
+    --alex-manuscript-ruler-bg: #f8fafc;
+    --alex-manuscript-ruler-border: #d8dee8;
+    --alex-manuscript-ruler-label: #64748b;
+    --alex-manuscript-ruler-margin-bg: #e5e7eb;
+    --alex-manuscript-ruler-marker: #2563eb;
+    --alex-manuscript-ruler-tick: #94a3b8;
     --theme-surface-page: #f8fafc;
     --theme-surface-sunken: #eef2f7;
     --theme-surface-raised: #f1f5f9;
@@ -66,6 +83,23 @@
 }
 
 .writing-neutral-chrome[data-writing-mode="dark"] {
+    --alex-writing-scrollbar-track: #111827;
+    --alex-writing-scrollbar-thumb: #3f4b5f;
+    --alex-writing-scrollbar-thumb-hover: #64748b;
+    --alex-writing-section-pane-bg: #111827;
+    --alex-writing-section-row-hover-bg: #1f2937;
+    --alex-writing-section-row-selected-bg: #1e3a8a;
+    --alex-writing-section-row-selected-fg: #bfdbfe;
+    --alex-writing-section-muted: #94a3b8;
+    --alex-writing-section-chip-bg: #1f2937;
+    --alex-writing-section-chip-fg: #cbd5e1;
+    --alex-writing-section-dot-bg: #64748b;
+    --alex-manuscript-ruler-bg: #111827;
+    --alex-manuscript-ruler-border: #3f4b5f;
+    --alex-manuscript-ruler-label: #94a3b8;
+    --alex-manuscript-ruler-margin-bg: #1f2937;
+    --alex-manuscript-ruler-marker: #60a5fa;
+    --alex-manuscript-ruler-tick: #64748b;
     --theme-surface-page: #111827;
     --theme-surface-sunken: #0f172a;
     --theme-surface-raised: #1f2937;
@@ -112,6 +146,64 @@
 
 .writing-neutral-chrome .rte-manuscript .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
     color: #94a3b8;
+}
+
+.writing-workspace-scroll {
+    scrollbar-width: auto;
+    scrollbar-color: var(
+            --alex-writing-scrollbar-thumb,
+            color-mix(in srgb, var(--theme-base-content) 28%, transparent)
+        )
+        var(
+            --alex-writing-scrollbar-track,
+            color-mix(in srgb, var(--theme-base-content) 4%, transparent)
+        );
+}
+
+.writing-workspace-scroll::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.writing-workspace-scroll::-webkit-scrollbar-track {
+    background: var(
+        --alex-writing-scrollbar-track,
+        color-mix(in srgb, var(--theme-base-content) 4%, transparent)
+    );
+}
+
+.writing-workspace-scroll::-webkit-scrollbar-thumb {
+    background: var(
+        --alex-writing-scrollbar-thumb,
+        color-mix(in srgb, var(--theme-base-content) 28%, transparent)
+    );
+    background-clip: content-box;
+    border: 2px solid transparent;
+    border-radius: 999px;
+}
+
+.writing-workspace-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(
+        --alex-writing-scrollbar-thumb-hover,
+        color-mix(in srgb, var(--theme-brand-primary-500) 48%, transparent)
+    );
+    background-clip: content-box;
+}
+
+.writing-workspace-scroll::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+.writing-workspace-section-pane {
+    background: var(--alex-writing-section-pane-bg, var(--theme-base-page));
+}
+
+.writing-workspace-section-pane .alex-row:not([data-selected="true"]):hover,
+.writing-workspace-section-pane .alex-row:not([data-selected="true"]):focus-within {
+    background: var(
+        --alex-writing-section-row-hover-bg,
+        color-mix(in srgb, var(--theme-base-content) 5%, transparent)
+    );
 }
 
 .writing-app-rail {

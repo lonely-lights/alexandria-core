@@ -46,21 +46,24 @@ interface NavigatorProps {
 /* ── Theme styles ── */
 
 const selectedRowStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)',
-    color: 'var(--theme-brand-primary-500)',
+    background:
+        'var(--alex-writing-section-row-selected-bg, color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent))',
+    color: 'var(--alex-writing-section-row-selected-fg, var(--theme-brand-primary-500))',
 };
 
 const chevronStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 40%, transparent))',
 };
 
 const leafDotStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    background:
+        'var(--alex-writing-section-dot-bg, color-mix(in srgb, var(--theme-base-content) 15%, transparent))',
 };
 
 const labelChipStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+    background:
+        'var(--alex-writing-section-chip-bg, color-mix(in srgb, var(--theme-base-content) 8%, transparent))',
+    color: 'var(--alex-writing-section-chip-fg, color-mix(in srgb, var(--theme-base-content) 60%, transparent))',
     borderRadius: 'var(--theme-radius-badge)',
     padding: '0 0.375rem',
     fontSize: '0.625rem',
@@ -72,11 +75,11 @@ const labelChipStyle: CSSProperties = {
 };
 
 const wordCountStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)',
+    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 45%, transparent))',
 };
 
 const hoverActionStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 50%, transparent))',
 };
 
 /** Collect the ids of every node that has children (default-expanded set). */
@@ -255,6 +258,7 @@ function NavigatorRow({
         <div className="flex flex-col gap-0.5">
             <div
                 className="alex-row group flex cursor-pointer items-center gap-1 py-1 pr-2 text-sm"
+                data-selected={isSelected ? 'true' : undefined}
                 style={{
                     paddingLeft: `${depth * 18 + 8}px`,
                     borderRadius: 'var(--theme-radius-button)',

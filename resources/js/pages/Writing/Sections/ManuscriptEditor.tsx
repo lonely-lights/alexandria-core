@@ -75,7 +75,7 @@ export default function ManuscriptEditor({
     bridgeRef,
     onStateChange,
 }: ManuscriptEditorProps) {
-    const { status, noteChange, initialContent } =
+    const { noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
     const [content, setContent] = useState(initialContent);
 
@@ -99,13 +99,7 @@ export default function ManuscriptEditor({
     }, [section.id]);
 
     return (
-        <SectionChrome
-            projectSlug={projectSlug}
-            workSlug={workSlug}
-            section={section}
-            canUpdate={canUpdate}
-            status={status}
-        >
+        <SectionChrome>
             {/* Manuscript — the editor's content wrapper scrolls */}
             {canUpdate ? (
                 <RichTextEditor
@@ -125,7 +119,7 @@ export default function ManuscriptEditor({
                     onStateChange={onStateChange}
                 />
             ) : (
-                <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
                     <pre className="mx-auto w-full max-w-3xl px-6 pt-10 pb-[40vh] font-sans text-sm leading-relaxed whitespace-pre-wrap">
                         {content}
                     </pre>
