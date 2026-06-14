@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type Ref } from 'react';
 
 import RichTextEditor from '@alexandria/components/editor/RichTextEditor';
 
+import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 import type { CurrentSection } from '../Workspace';
 import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
 import SectionChrome from './SectionChrome';
@@ -52,6 +53,8 @@ export interface ManuscriptEditorProps {
     /** Editor selection/content tick — the Workspace bumps `editorTick`. */
     onStateChange?: () => void;
     onOutlineChange?: (outline: SectionOutlineItem[]) => void;
+    onSceneLinksChange?: (links: ScreenplaySceneLink[]) => void;
+    onEntryLinkSelect?: () => void;
 }
 
 export const PRINT_LAYOUT_STORAGE_KEY = 'alexandria.writing.print_layout';

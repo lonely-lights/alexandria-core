@@ -11,6 +11,10 @@ import {
     docToBlocks,
 } from '@alexandria/editor/screenplay/extensions';
 import { ELEMENTS } from '@alexandria/editor/screenplay/formatSpec';
+import {
+    extractScreenplaySceneLinks,
+    type ScreenplaySceneLink,
+} from '@alexandria/editor/screenplay/sceneLinks';
 import type { ScreenplayElement } from '@alexandria/editor/screenplay/types';
 import useT from '@alexandria/hooks/useT';
 
@@ -93,6 +97,8 @@ interface ScreenplaySurfaceProps {
     bridgeRef?: Ref<WritingEditorBridge>;
     /** Fires when the selection's element changes — the Workspace bumps `editorTick`. */
     onStateChange?: () => void;
+    onSceneLinksChange?: (links: ScreenplaySceneLink[]) => void;
+    onEntryLinkSelect?: () => void;
     /** Receives the codec-serialized doc, 300ms-debounced. */
     onSerialized: (serialized: string) => void;
 }
@@ -107,25 +113,60 @@ function ScreenplaySurface({
     printLayout,
     bridgeRef,
     onStateChange,
+    onSceneLinksChange,
+    onEntryLinkSelect,
     onSerialized,
 }: ScreenplaySurfaceProps) {
     const t = useT();
     const [showKeys, setShowKeys] = useState(false);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const onStateChangeRef = useRef(onStateChange);
+    const onSceneLinksChangeRef = useRef(onSceneLinksChange);
+    const onEntryLinkSelectRef = useRef(onEntryLinkSelect);
     onStateChangeRef.current = onStateChange;
+    onSceneLinksChangeRef.current = onSceneLinksChange;
+    onEntryLinkSelectRef.current = onEntryLinkSelect;
+
+    function currentBlockIndex(e: Editor): number {
+        let activeIndex = 0;
+        const selectionPosition = e.state.selection.from;
+
+        e.state.doc.forEach((node, offset, index) => {
+            if (selectionPosition >= offset && selectionPosition <= offset + node.nodeSize) {
+                activeIndex = index;
+            }
+        });
+
+        return activeIndex;
+    }
+
+    function reportSceneLinks(e: Editor) {
+        onSceneLinksChangeRef.current?.(
+            extractScreenplaySceneLinks(e.getJSON(), currentBlockIndex(e)),
+        );
+    }
 
     const editor = useEditor({
-        extensions: buildScreenplayExtensions({ projectId }),
+        extensions: buildScreenplayExtensions({
+            projectId,
+            onEntryLinkSelect: () => {
+                onEntryLinkSelectRef.current?.();
+            },
+        }),
         content: blocksToDoc(parseScreenplay(initialContent)),
+        onCreate: ({ editor: e }) => {
+            reportSceneLinks(e);
+        },
         onUpdate: ({ editor: e }) => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(() => {
                 onSerialized(serializeScreenplay(docToBlocks(e.getJSON())));
             }, 300);
+            reportSceneLinks(e);
         },
-        onTransaction: () => {
+        onTransaction: ({ editor: e }) => {
             onStateChangeRef.current?.();
+            reportSceneLinks(e);
         },
     });
 
@@ -307,6 +348,8 @@ export default function ScreenplayEditor({
     printLayout,
     bridgeRef,
     onStateChange,
+    onSceneLinksChange,
+    onEntryLinkSelect,
 }: ManuscriptEditorProps) {
     const { noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
@@ -329,6 +372,8 @@ export default function ScreenplayEditor({
                     printLayout={effectivePrintLayout}
                     bridgeRef={bridgeRef}
                     onStateChange={onStateChange}
+                    onSceneLinksChange={onSceneLinksChange}
+                    onEntryLinkSelect={onEntryLinkSelect}
                     onSerialized={noteChange}
                 />
             ) : (

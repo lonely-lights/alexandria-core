@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, 
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import Input from '@alexandria/components/form/Input';
 import Tooltip from '@alexandria/components/ui/Tooltip';
+import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 
 import type { CurrentSection } from '../Workspace';
 import { getWritingPanels, subscribeWritingPanels } from '../writingPanelRegistry';
@@ -53,6 +54,8 @@ interface ReferencePanelProps {
     canUpdate: boolean;
     /** Bumped by the Workspace after each confirmed autosave. */
     saveSignal: number;
+    sceneLinks?: ScreenplaySceneLink[];
+    sceneLinksFocusSignal?: number;
 }
 
 /* ── Theme styles ── */
@@ -659,6 +662,83 @@ function ReferenceSlot({
 
 /* ── Panel shell ── */
 
+function SceneLinksTab({
+    project,
+    links,
+    t,
+}: {
+    project: { slug: string };
+    links: ScreenplaySceneLink[];
+    t: Translator;
+}) {
+    if (links.length === 0) {
+        return (
+            <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
+                {t('writing.panel.no_scene_links')}
+            </p>
+        );
+    }
+
+    return (
+        <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 py-2">
+            {links.map((link) => {
+                const url = link.slug && link.blueprintSlug
+                    ? `/p/${project.slug}/${link.blueprintSlug}/${link.slug}`
+                    : null;
+
+                return (
+                    <div key={link.key}>
+                        <div
+                            className="alex-row group flex w-full items-center gap-2.5 px-3 py-2 text-sm"
+                            style={{ borderRadius: 'var(--theme-radius-button)' }}
+                        >
+                            <i
+                                className="fa-solid fa-link w-4 shrink-0 text-center text-xs"
+                                style={rowIconStyle}
+                                aria-hidden="true"
+                            />
+                            <div className="min-w-0 flex-1">
+                                <div className="truncate font-medium">{link.displayText}</div>
+                                {link.displayText !== link.name && (
+                                    <div className="truncate text-[11px]" style={rowSubStyle}>
+                                        {link.name}
+                                    </div>
+                                )}
+                            </div>
+                            {url !== null && (
+                                <a
+                                    href={url}
+                                    className="flex h-6 w-6 shrink-0 items-center justify-center opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                                    style={rowActionStyle}
+                                    title={t('writing.panel.open_entry')}
+                                    aria-label={t('writing.panel.open_entry')}
+                                >
+                                    <i className="fa-solid fa-arrow-up-right-from-square text-[10px]" />
+                                </a>
+                            )}
+                        </div>
+                        <div className="mx-3 mb-1.5 flex flex-wrap gap-1.5 px-3 pb-2">
+                            <span style={countChipStyle}>
+                                {t('writing.panel.scene_mentions').replace(':count', link.mentions.toLocaleString())}
+                            </span>
+                            {link.characterCues > 0 && (
+                                <span style={countChipStyle}>
+                                    {t('writing.panel.scene_cues').replace(':count', link.characterCues.toLocaleString())}
+                                </span>
+                            )}
+                            {link.dialogueWords > 0 && (
+                                <span style={countChipStyle}>
+                                    {t('writing.panel.scene_dialogue_words').replace(':count', link.dialogueWords.toLocaleString())}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
 interface BuiltInTab {
     id: string;
     label: string;
@@ -672,15 +752,38 @@ export default function ReferencePanel({
     pins,
     canUpdate,
     saveSignal,
+    sceneLinks = [],
+    sceneLinksFocusSignal = 0,
 }: ReferencePanelProps) {
     const t = useT();
     const [activeTab, setActiveTab] = useState('browse');
+    const lastSceneLinksFocusSignal = useRef(sceneLinksFocusSignal);
     const extraPanels = useSyncExternalStore(subscribeWritingPanels, getWritingPanels);
+    const showSceneLinks = currentSection?.format === 'screenplay';
+
+    useEffect(() => {
+        if (sceneLinksFocusSignal !== lastSceneLinksFocusSignal.current) {
+            lastSceneLinksFocusSignal.current = sceneLinksFocusSignal;
+
+            if (sceneLinksFocusSignal > 0) {
+                setActiveTab('scene-links');
+            }
+        }
+    }, [sceneLinksFocusSignal]);
+
+    useEffect(() => {
+        if (!showSceneLinks && activeTab === 'scene-links') {
+            setActiveTab('section');
+        }
+    }, [activeTab, showSceneLinks]);
 
     const builtIns: BuiltInTab[] = [
         { id: 'browse', label: t('writing.panel.browse'), icon: 'fa-solid fa-magnifying-glass' },
         { id: 'pins', label: t('writing.panel.pins'), icon: 'fa-solid fa-thumbtack' },
         { id: 'section', label: t('writing.panel.section'), icon: 'fa-solid fa-paragraph' },
+        ...(showSceneLinks
+            ? [{ id: 'scene-links', label: t('writing.panel.scene_links'), icon: 'fa-solid fa-link' }]
+            : []),
     ];
 
     const tabs: BuiltInTab[] = [
@@ -737,6 +840,9 @@ export default function ReferencePanel({
                     saveSignal={saveSignal}
                     t={t}
                 />
+            )}
+            {activeTab === 'scene-links' && (
+                <SceneLinksTab project={project} links={sceneLinks} t={t} />
             )}
             {activeExtra !== undefined && (
                 <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">

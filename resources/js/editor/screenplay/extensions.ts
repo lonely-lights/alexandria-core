@@ -1,7 +1,9 @@
 import { Extension, Node, type Editor, type JSONContent } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 
-import createEntryLinkExtension from "../../components/tiptap-bio-editor/extensions/entry-link";
+import createEntryLinkExtension, {
+    type EntryLinkSearchResult,
+} from "../../components/tiptap-bio-editor/extensions/entry-link";
 import { ELEMENTS, ENTER_NEXT, TAB_CYCLE } from "./formatSpec";
 import type { ScreenplayBlock, ScreenplayElement } from "./types";
 
@@ -279,7 +281,13 @@ const ScreenplayKeymap = Extension.create({
  * empty-node decoration CSS targets paragraph geometry and fights the
  * indented screenplay elements — revisit if onboarding needs it.
  */
-export function buildScreenplayExtensions({ projectId }: { projectId?: number } = {}) {
+export function buildScreenplayExtensions({
+    projectId,
+    onEntryLinkSelect,
+}: {
+    projectId?: number;
+    onEntryLinkSelect?: (item: EntryLinkSearchResult) => void;
+} = {}) {
     return [
         ScreenplayDocument,
         ScreenplayText,
@@ -289,7 +297,11 @@ export function buildScreenplayExtensions({ projectId }: { projectId?: number } 
         Parenthetical,
         Dialogue,
         Transition,
-        createEntryLinkExtension({ projectId: projectId ?? null, triggers: ["[[", "@"] }),
+        createEntryLinkExtension({
+            projectId: projectId ?? null,
+            triggers: ["[[", "@"],
+            onSelect: onEntryLinkSelect,
+        }),
         ScreenplayKeymap,
     ];
 }

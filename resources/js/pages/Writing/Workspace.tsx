@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 
 import useT from '@alexandria/hooks/useT';
 import { useTheme } from '@alexandria/hooks/useTheme';
+import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
 import Ribbon from '@alexandria/ribbon/Ribbon';
 import LogoMark from '@alexandria/components/brand/LogoMark';
@@ -233,6 +234,8 @@ export default function Workspace() {
     const [currentOutline, setCurrentOutline] = useState<SectionOutlineItem[]>(() =>
         currentSection?.format === 'prose' ? extractSectionOutline(currentSection.content) : [],
     );
+    const [screenplaySceneLinks, setScreenplaySceneLinks] = useState<ScreenplaySceneLink[]>([]);
+    const [sceneLinksFocusSignal, setSceneLinksFocusSignal] = useState(0);
 
     // Section add/delete modal triggers — shared between the ribbon's
     // Structure tab and the Navigator's hover affordances.
@@ -250,12 +253,25 @@ export default function Workspace() {
         setEditorTick((tick) => tick + 1);
     }, []);
 
+    const handleEntryLinkSelect = useCallback(() => {
+        setPanelOpen(true);
+        setSceneLinksFocusSignal((signal) => signal + 1);
+        try {
+            localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
+        } catch {
+            // Persistence is best-effort; private-mode failures are fine.
+        }
+    }, []);
+
     useEffect(() => {
         setCurrentOutline(
             currentSection?.format === 'prose'
                 ? extractSectionOutline(currentSection.content)
                 : [],
         );
+        if (currentSection?.format !== 'screenplay') {
+            setScreenplaySceneLinks([]);
+        }
     }, [currentSection?.id, currentSection?.content, currentSection?.format]);
 
     useEffect(() => {
@@ -699,6 +715,8 @@ export default function Workspace() {
                                     bridgeRef={bridgeRef}
                                     onStateChange={handleEditorStateChange}
                                     onOutlineChange={setCurrentOutline}
+                                    onSceneLinksChange={setScreenplaySceneLinks}
+                                    onEntryLinkSelect={handleEntryLinkSelect}
                                 />
                             ) : (
                                 <ManuscriptEditor
@@ -739,6 +757,8 @@ export default function Workspace() {
                                 pins={pins}
                                 canUpdate={can.update}
                                 saveSignal={saveSignal}
+                                sceneLinks={screenplaySceneLinks}
+                                sceneLinksFocusSignal={sceneLinksFocusSignal}
                             />
                         </aside>
                     )}
