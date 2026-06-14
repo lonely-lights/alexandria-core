@@ -59,7 +59,7 @@
 
 /* Quick Access: visually distinct from the File/Edit/View menu row. */
 .ribbon-qat { display: flex; align-items: center; gap: 0.125rem; flex-shrink: 0;
-    margin-left: 0.5rem; padding: 0.125rem 0.25rem 0.125rem 0.5rem;
+    align-self: center; margin: 0 0 0.25rem 0.5rem; padding: 0.125rem 0.25rem 0.125rem 0.5rem;
     border-left: 1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent);
     border-radius: var(--theme-radius-button);
     background: color-mix(in srgb, var(--theme-brand-primary-500) 6%, transparent); }

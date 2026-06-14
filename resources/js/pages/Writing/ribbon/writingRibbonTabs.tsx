@@ -20,6 +20,7 @@ type Ctx = WritingRibbonContext;
 
 const proseEditable = (ctx: Ctx): boolean => ctx.format === 'prose' && ctx.canUpdate;
 const screenplayEditable = (ctx: Ctx): boolean => ctx.format === 'screenplay' && ctx.canUpdate;
+const editable = (ctx: Ctx): boolean => ctx.canUpdate;
 function markToggle(
     id: 'bold' | 'italic' | 'underline',
     icon: string,
@@ -148,6 +149,23 @@ const editTab: RibbonTab<Ctx> = {
                     labelKey: 'writing.ribbon.keys',
                     visible: screenplayEditable,
                     onAction: (ctx) => ctx.editor?.openHelp(),
+                },
+            ],
+        },
+        {
+            id: 'world',
+            labelKey: 'writing.ribbon.group_world',
+            controls: [
+                {
+                    id: 'entry-link',
+                    type: 'button',
+                    icon: 'fa-solid fa-link',
+                    labelKey: 'writing.ribbon.entry_link',
+                    visible: editable,
+                    // Screenplay entry links only live in action blocks.
+                    disabled: (ctx) =>
+                        ctx.format === 'screenplay' && ctx.editor?.currentElement() !== 'action',
+                    onAction: (ctx) => ctx.editor?.insertEntryLink(),
                 },
             ],
         },
