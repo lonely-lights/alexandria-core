@@ -3,7 +3,6 @@ import { useRef, useState, type CSSProperties } from 'react';
 
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
-import Button from '@alexandria/components/ui/Button';
 
 import type { SectionNode } from '../Workspace';
 
@@ -82,6 +81,15 @@ const hoverActionStyle: CSSProperties = {
     color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 50%, transparent))',
 };
 
+const panelHeaderStyle: CSSProperties = {
+    borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
+};
+
+const panelActionStyle: CSSProperties = {
+    borderRadius: 'var(--theme-radius-button)',
+    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 58%, transparent))',
+};
+
 /** Collect the ids of every node that has children (default-expanded set). */
 function collectParentIds(nodes: SectionNode[], into: Set<number>): Set<number> {
     for (const node of nodes) {
@@ -91,6 +99,26 @@ function collectParentIds(nodes: SectionNode[], into: Set<number>): Set<number> 
         }
     }
     return into;
+}
+
+function findNodeBySlug(nodes: SectionNode[], slug: string | null): SectionNode | null {
+    if (slug === null) {
+        return null;
+    }
+
+    for (const node of nodes) {
+        if (node.slug === slug) {
+            return node;
+        }
+
+        const found = findNodeBySlug(node.children, slug);
+
+        if (found !== null) {
+            return found;
+        }
+    }
+
+    return null;
 }
 
 export default function Navigator({
@@ -108,6 +136,7 @@ export default function Navigator({
     const [expanded, setExpanded] = useState<Set<number>>(
         () => collectParentIds(sections, new Set()),
     );
+    const currentNode = findNodeBySlug(sections, currentSlug);
 
     function toggle(id: number) {
         setExpanded((prev) => {
@@ -143,22 +172,65 @@ export default function Navigator({
     };
 
     return (
-        <div className="flex flex-col gap-0.5 p-2">
-            <SiblingGroup nodes={sections} parentId={null} depth={0} shared={shared} />
-
+        <div className="flex min-h-full flex-col">
             {canUpdate && (
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    fullWidth
-                    icon="fa-solid fa-plus"
-                    iconPosition="before"
-                    className="mt-2"
-                    onClick={() => onRequestAdd(null)}
+                <div
+                    className="flex shrink-0 items-center justify-between gap-2 px-2 py-1.5"
+                    style={panelHeaderStyle}
                 >
-                    {t('writing.workspace.add_section')}
-                </Button>
+                    <span className="text-xs font-semibold uppercase tracking-[0.04em]" style={wordCountStyle}>
+                        {t('writing.workspace.sections')}
+                    </span>
+                    <div className="flex items-center gap-0.5">
+                        <button
+                            type="button"
+                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                            data-writing-section-action="add-section"
+                            style={panelActionStyle}
+                            title={t('writing.workspace.add_section')}
+                            aria-label={t('writing.workspace.add_section')}
+                            onClick={() => onRequestAdd(null)}
+                        >
+                            <i className="fa-solid fa-plus" aria-hidden="true" />
+                        </button>
+                        <button
+                            type="button"
+                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                            data-writing-section-action="add-inside"
+                            style={{ ...panelActionStyle, opacity: currentNode === null ? 0.4 : 1 }}
+                            title={t('writing.workspace.add_child')}
+                            aria-label={t('writing.workspace.add_child')}
+                            disabled={currentNode === null}
+                            onClick={() => {
+                                if (currentNode !== null) {
+                                    openAddChild(currentNode);
+                                }
+                            }}
+                        >
+                            <i className="fa-solid fa-indent" aria-hidden="true" />
+                        </button>
+                        <button
+                            type="button"
+                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                            data-writing-section-action="delete-section"
+                            style={{ ...panelActionStyle, opacity: currentNode === null ? 0.4 : 1 }}
+                            title={t('writing.workspace.delete_section')}
+                            aria-label={t('writing.workspace.delete_section')}
+                            disabled={currentNode === null}
+                            onClick={() => {
+                                if (currentNode !== null) {
+                                    onRequestDelete(currentNode);
+                                }
+                            }}
+                        >
+                            <i className="fa-solid fa-trash-can" aria-hidden="true" />
+                        </button>
+                    </div>
+                </div>
             )}
+            <div className="flex min-h-0 flex-1 flex-col gap-0.5 p-2">
+                <SiblingGroup nodes={sections} parentId={null} depth={0} shared={shared} />
+            </div>
         </div>
     );
 }

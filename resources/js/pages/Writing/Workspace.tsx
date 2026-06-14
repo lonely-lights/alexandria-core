@@ -539,6 +539,18 @@ export default function Workspace() {
                                 >
                                     <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
                                 </button>
+                                {can.update && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSettingsOpen(true)}
+                                        aria-label={t('writing.settings.title')}
+                                        title={t('writing.settings.title')}
+                                        data-writing-work-settings
+                                        className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                                    >
+                                        <i className="fa-solid fa-gear" aria-hidden="true" />
+                                    </button>
+                                )}
                                 <CompactUserMenu ariaLabel={t('ribbon.account')} size={36} />
                             </>
                         }
