@@ -154,7 +154,7 @@ function handleTab(editor: Editor, direction: 1 | -1): boolean {
     return true;
 }
 
-function handleArrowRight(editor: Editor): boolean {
+function closeInlineParenthetical(editor: Editor): boolean {
     const { selection } = editor.state;
     const { $from, empty } = selection;
     const parent = $from.parent;
@@ -167,28 +167,26 @@ function handleArrowRight(editor: Editor): boolean {
         return false;
     }
 
-    const after = $from.end() + 1;
-    const $after = editor.state.doc.resolve(after);
-    const moveTo = (position: number) => {
-        queueMicrotask(() => {
-            editor.commands.setTextSelection(position);
-        });
-    };
+    const text = parent.textContent;
+    const wrappedText = `(${text})`;
+    const content = wrappedText !== "" ? [{ type: "text", text: wrappedText }] : [];
+    const cursor = $from.before() + 1 + wrappedText.length;
 
-    if ($after.nodeAfter) {
-        moveTo(after + 1);
-
-        return true;
-    }
-
-    if (!editor.schema.nodes.dialogue) {
-        return false;
-    }
-
-    editor.chain().insertContentAt(after, { type: "dialogue" }).scrollIntoView().run();
-    moveTo(after + 1);
+    editor
+        .chain()
+        .insertContentAt(
+            { from: $from.before(), to: $from.after() },
+            { type: "dialogue", ...(content.length > 0 ? { content } : {}) },
+        )
+        .setTextSelection(cursor)
+        .scrollIntoView()
+        .run();
 
     return true;
+}
+
+function handleArrowRight(editor: Editor): boolean {
+    return closeInlineParenthetical(editor);
 }
 
 const ScreenplayKeymap = Extension.create({
@@ -245,6 +243,10 @@ const ScreenplayKeymap = Extension.create({
                     // ::before/::after, so the stored text stays
                     // unwrapped, matching the codec's canonical form.
                     handleTextInput(view, _from, _to, text): boolean {
+                        if (text === ")") {
+                            return closeInlineParenthetical(extension.editor);
+                        }
+
                         if (text !== "(") {
                             return false;
                         }
