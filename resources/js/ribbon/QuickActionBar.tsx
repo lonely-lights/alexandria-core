@@ -54,6 +54,7 @@ export default function QuickActionBar<Ctx>({
 
     return (
         <div className="ribbon-qat" aria-label={t('ribbon.qat_label')}>
+            <span className="ribbon-qat-label">{t('ribbon.qat_label')}</span>
             {visibleActions.map((item) => {
                 if (item.type === 'bookmark') {
                     return (

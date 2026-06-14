@@ -55,6 +55,8 @@ interface RibbonProps<Ctx> {
     quickActions?: RibbonQuickAction[];
     /** Persistence endpoint for QAT edits. */
     quickActionSaveUrl?: string;
+    /** Optional tab id whose controls always render in the band. */
+    bandTabId?: string;
 }
 
 /**
@@ -72,6 +74,7 @@ export default function Ribbon<Ctx>({
     headerRow,
     quickActions,
     quickActionSaveUrl = '/account/ribbon/quick-actions',
+    bandTabId,
 }: RibbonProps<Ctx>) {
     const t = useT();
     const page = usePage();
@@ -114,7 +117,10 @@ export default function Ribbon<Ctx>({
         return null;
     }
 
-    const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0];
+    const fixedBand = bandTabId !== undefined;
+    const selectedTab = activeTabId === null ? null : (tabs.find((tab) => tab.id === activeTabId) ?? null);
+    const activeTab = selectedTab ?? tabs[0];
+    const bandTab = (bandTabId ? tabs.find((tab) => tab.id === bandTabId) : null) ?? activeTab;
 
     function persistQuickActions(next: RibbonQuickAction[]): void {
         const normalized = normalizeQuickActions(next);
@@ -189,7 +195,9 @@ export default function Ribbon<Ctx>({
     }
 
     function onTabClick(id: string): void {
-        setActiveTabId(id);
+        if (!fixedBand) {
+            setActiveTabId(id);
+        }
         if (mode === 'collapsed') {
             setOverlayOpen(true);
         }
@@ -202,14 +210,14 @@ export default function Ribbon<Ctx>({
        instead of wrapping or crushing the leading/trailing clusters.
        role="tablist" lives here — host content stays outside it. */
     const tabStrip = (
-        <div className="ribbon-tabstrip" role="tablist">
+        <div className={`ribbon-tabstrip ${fixedBand ? 'ribbon-tabstrip--menu' : ''}`} role="tablist">
             {tabs.map((tab) => (
                 <button
                     key={tab.id}
                     type="button"
                     role="tab"
-                    aria-selected={tab.id === activeTab.id}
-                    className={`ribbon-tab ${tab.id === activeTab.id ? 'ribbon-tab--active' : ''}`}
+                    aria-selected={!fixedBand && tab.id === activeTab.id}
+                    className={`ribbon-tab ${!fixedBand && tab.id === activeTab.id ? 'ribbon-tab--active' : ''}`}
                     onClick={() => onTabClick(tab.id)}
                 >
                     {t(tab.labelKey)}
@@ -228,6 +236,7 @@ export default function Ribbon<Ctx>({
                     <div className="ribbon-header-main">
                         <div className="ribbon-header-identity">{headerRow}</div>
                         <div className="ribbon-tabs">
+                            {tabStrip}
                             <QuickActionBar
                                 setKey={setKey}
                                 tabs={tabs}
@@ -235,7 +244,6 @@ export default function Ribbon<Ctx>({
                                 actions={quickActionItems}
                                 onChange={persistQuickActions}
                             />
-                            {tabStrip}
                         </div>
                     </div>
                     {trailing && <div className="ribbon-header-trailing">{trailing}</div>}
@@ -243,6 +251,7 @@ export default function Ribbon<Ctx>({
             ) : (
                 <div className="ribbon-tabs">
                     {leading}
+                    {tabStrip}
                     <QuickActionBar
                         setKey={setKey}
                         tabs={tabs}
@@ -250,7 +259,6 @@ export default function Ribbon<Ctx>({
                         actions={quickActionItems}
                         onChange={persistQuickActions}
                     />
-                    {tabStrip}
                     {trailing && <div className="ribbon-tabs-trailing">{trailing}</div>}
                 </div>
             )}
@@ -261,7 +269,7 @@ export default function Ribbon<Ctx>({
                     onContextMenu={handleControlContextMenu}
                     onMouseLeave={() => mode === 'collapsed' && setOverlayOpen(false)}
                 >
-                    {activeTab.groups.map((group) => {
+                    {bandTab.groups.map((group) => {
                         const visibleControls = group.controls.filter(
                             (control) => control.visible?.(context) ?? true,
                         );

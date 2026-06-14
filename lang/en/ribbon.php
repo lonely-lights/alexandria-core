@@ -17,7 +17,7 @@ return [
     'account' => 'Account menu',
 
     // Quick Action Toolbar.
-    'qat_label' => 'Quick actions',
+    'qat_label' => 'Quick access',
     'qat_edit' => 'Edit quick actions',
     'qat_empty' => 'No quick actions pinned',
     'qat_add' => 'Add to quick actions',

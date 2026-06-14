@@ -484,6 +484,7 @@ export default function Workspace() {
                     <Ribbon
                         setKey="writing"
                         context={ribbonCtx}
+                        bandTabId="edit"
                         leading={
                             /* The logo doubles as the hamburger here — the
                                workspace runs navbar-less, so clicking it
