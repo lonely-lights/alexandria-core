@@ -241,7 +241,7 @@ export default function DropdownMenu({
         border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
         borderRadius: 'var(--theme-radius-card)',
         color: 'var(--theme-base-content)',
-        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
+        boxShadow: '0 12px 32px rgb(0 0 0 / 0.22)',
         opacity: visible ? 1 : 0,
         pointerEvents: visible ? 'auto' : 'none',
         transform: visible ? 'translateY(0) scale(1)' : 'translateY(-0.5rem) scale(0.985)',
