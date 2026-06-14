@@ -66,6 +66,11 @@ return [
 
     'workspace.add_section' => 'Add section',
     'workspace.add_child' => 'Add inside',
+    'workspace.add_subsection' => 'Add subsection',
+    'workspace.duplicate_section' => 'Duplicate',
+    'workspace.rename_section' => 'Rename',
+    'workspace.copy_section_link' => 'Copy link',
+    'workspace.section_options' => 'Section options',
     'workspace.delete_section' => 'Delete section',
     'workspace.sections' => 'Sections',
     'workspace.show_sections' => 'Show sections',
@@ -76,6 +81,7 @@ return [
     'workspace.delete_confirm_action' => 'Delete',
     'workspace.section_title_placeholder' => 'Section title',
     'workspace.section_label' => 'Label (optional)',
+    'workspace.copy_title' => 'Copy of :title',
     'workspace.new_section_title' => 'New section',
     'workspace.no_section' => 'Select a section to start writing, or add your first one.',
     'workspace.container_hint' => 'This section holds others. Select a child to write, or start writing here.',
@@ -211,5 +217,6 @@ return [
     'flash.work_deleted' => 'Work deleted.',
     'flash.section_created' => 'Section added.',
     'flash.section_updated' => 'Section updated.',
+    'flash.section_duplicated' => 'Section duplicated.',
     'flash.section_deleted' => 'Section deleted.',
 ];

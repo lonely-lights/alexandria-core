@@ -1,10 +1,12 @@
 import { router } from '@inertiajs/react';
 import { useRef, useState, type CSSProperties } from 'react';
 
+import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
 
 import type { SectionNode } from '../Workspace';
+import RenameSectionModal from './RenameSectionModal';
 
 /**
  * Workspace section Navigator — Stage 8g.1 (Plan 2 Task 6; drag-reorder
@@ -136,6 +138,7 @@ export default function Navigator({
     const [expanded, setExpanded] = useState<Set<number>>(
         () => collectParentIds(sections, new Set()),
     );
+    const [renameTarget, setRenameTarget] = useState<SectionNode | null>(null);
     const currentNode = findNodeBySlug(sections, currentSlug);
 
     function toggle(id: number) {
@@ -166,7 +169,18 @@ export default function Navigator({
         onSelect,
         onToggle: toggle,
         onAddChild: openAddChild,
-        onDelete: onRequestDelete,
+        onDuplicate: (node) => {
+            router.post(
+                `/works/${projectSlug}/${workSlug}/sections/${node.id}/duplicate`,
+                {},
+                {
+                    preserveScroll: true,
+                    preserveState: true,
+                    only: ['sections', 'currentSection'],
+                },
+            );
+        },
+        onRename: setRenameTarget,
         liveCounts,
         t,
     };
@@ -231,6 +245,14 @@ export default function Navigator({
             <div className="flex min-h-0 flex-1 flex-col gap-0.5 p-2">
                 <SiblingGroup nodes={sections} parentId={null} depth={0} shared={shared} />
             </div>
+            {renameTarget !== null && (
+                <RenameSectionModal
+                    projectSlug={projectSlug}
+                    workSlug={workSlug}
+                    section={renameTarget}
+                    onClose={() => setRenameTarget(null)}
+                />
+            )}
         </div>
     );
 }
@@ -245,7 +267,8 @@ interface TreeShared {
     onSelect: (slug: string) => void;
     onToggle: (id: number) => void;
     onAddChild: (node: SectionNode) => void;
-    onDelete: (node: SectionNode) => void;
+    onDuplicate: (node: SectionNode) => void;
+    onRename: (node: SectionNode) => void;
     liveCounts?: Record<number, number>;
     t: Translator;
 }
@@ -315,13 +338,32 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDelete, liveCounts, t } =
+    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, liveCounts, t } =
         shared;
 
     const isSelected = node.slug === currentSlug;
     const hasChildren = node.children.length > 0;
     const isExpanded = expanded.has(node.id);
     const wordCount = liveCounts?.[node.id] ?? node.word_count;
+    const sectionUrl = `/works/${projectSlug}/${workSlug}/${node.slug}`;
+
+    function copyLink() {
+        const url = new URL(sectionUrl, window.location.origin).toString();
+
+        if (navigator.clipboard?.writeText) {
+            void navigator.clipboard.writeText(url);
+            return;
+        }
+
+        const input = document.createElement('input');
+        input.value = url;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
+    }
 
     // The wrapper div is the SortableJS draggable item — the row plus
     // its (expanded) subtree move together, and collapsed children ride
@@ -373,7 +415,7 @@ function NavigatorRow({
 
                 {/* Hover actions */}
                 {canUpdate && (
-                    <span className="flex flex-shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+                    <span className={`flex flex-shrink-0 items-center gap-0.5 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
                         <span
                             className="drag-handle flex h-5 w-5 cursor-grab items-center justify-center active:cursor-grabbing"
                             style={hoverActionStyle}
@@ -382,32 +424,46 @@ function NavigatorRow({
                         >
                             <i className="fa-solid fa-grip-vertical text-[10px]" aria-hidden="true" />
                         </span>
-                        <button
-                            type="button"
-                            className="flex h-5 w-5 items-center justify-center"
-                            style={hoverActionStyle}
-                            title={t('writing.workspace.add_child')}
-                            aria-label={t('writing.workspace.add_child')}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onAddChild(node);
-                            }}
-                        >
-                            <i className="fa-solid fa-plus text-[10px]" />
-                        </button>
-                        <button
-                            type="button"
-                            className="flex h-5 w-5 items-center justify-center"
-                            style={hoverActionStyle}
-                            title={t('writing.workspace.delete_section')}
-                            aria-label={t('writing.workspace.delete_section')}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(node);
-                            }}
-                        >
-                            <i className="fa-solid fa-trash text-[10px]" />
-                        </button>
+                        <span onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu
+                                align="left"
+                                trigger={
+                                    <button
+                                        type="button"
+                                        className="flex h-5 w-5 items-center justify-center rounded-full"
+                                        data-writing-section-menu={node.id}
+                                        style={hoverActionStyle}
+                                        title={t('writing.workspace.section_options')}
+                                        aria-label={t('writing.workspace.section_options')}
+                                    >
+                                        <i className="fa-solid fa-ellipsis-vertical text-[10px]" aria-hidden="true" />
+                                    </button>
+                                }
+                                items={[
+                                    {
+                                        label: t('writing.workspace.add_subsection'),
+                                        icon: 'fa-plus',
+                                        onClick: () => onAddChild(node),
+                                    },
+                                    {
+                                        label: t('writing.workspace.duplicate_section'),
+                                        icon: 'fa-copy',
+                                        onClick: () => onDuplicate(node),
+                                    },
+                                    {
+                                        label: t('writing.workspace.rename_section'),
+                                        icon: 'fa-pen',
+                                        onClick: () => onRename(node),
+                                    },
+                                    { divider: true },
+                                    {
+                                        label: t('writing.workspace.copy_section_link'),
+                                        icon: 'fa-link',
+                                        onClick: copyLink,
+                                    },
+                                ]}
+                            />
+                        </span>
                     </span>
                 )}
 
