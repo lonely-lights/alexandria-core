@@ -6,8 +6,9 @@ import type { EditorView } from '@tiptap/pm/view';
 /**
  * Entry Link Extension for TipTap
  *
- * Creates wiki-style internal links to entries: [[Entry Name]] or [[Entry Name|Display Text]]
- * Triggered by typing [[ and shows an autocomplete popup for searching entries.
+ * Creates wiki-style internal links to entries: [[Entry Name]] or [[Entry Name|Display Text]].
+ * Triggered by typing [[ by default; callers may also enable @ as a shortcut
+ * for entry-focused surfaces such as screenplay character lines.
  */
 
 const EntryLinkPluginKey = new PluginKey('entryLink');
@@ -24,6 +25,7 @@ export interface EntryLinkSearchResult {
 export interface EntryLinkOptions {
     searchEndpoint?: string;
     projectId?: number | string | null;
+    triggers?: Array<'[[' | '@'>;
     onSelect?: (item: EntryLinkSearchResult) => void;
 }
 
@@ -39,8 +41,10 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
     const {
         searchEndpoint = '/api/v1/entries/search',
         projectId = null,
+        triggers = ['[['],
         onSelect = () => {},
     } = options;
+    const triggerSet = new Set(triggers);
 
     // State for the suggestion popup
     let popup: HTMLDivElement | null = null;
@@ -150,8 +154,8 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
                         handleTextInput(view: EditorView, from: number, _to: number, text: string): boolean {
                             const { state } = view;
 
-                            // Check if we're starting a new [[ sequence
-                            if (text === '[') {
+                            // Check if we're starting a new [[ sequence.
+                            if (triggerSet.has('[[') && text === '[' && canInsertEntryLink(view)) {
                                 const prevChar = state.doc.textBetween(Math.max(0, from - 1), from);
                                 if (prevChar === '[') {
                                     // We have [[ - start the suggestion
@@ -161,6 +165,14 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
                                     showPopup(view);
                                     return false;
                                 }
+                            }
+
+                            if (triggerSet.has('@') && text === '@' && canInsertEntryLink(view)) {
+                                active = true;
+                                startPos = from;
+                                query = '';
+                                showPopup(view);
+                                return false;
                             }
 
                             // If suggestion is active, update the query
@@ -433,6 +445,12 @@ export default function createEntryLinkExtension(options: EntryLinkOptions = {})
 
                 // Focus the editor
                 view.focus();
+            }
+
+            function canInsertEntryLink(view: EditorView): boolean {
+                const parent = view.state.selection.$from.parent;
+
+                return parent.type.contentMatch.matchType(extension.type) !== null;
             }
         },
     });
