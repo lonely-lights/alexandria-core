@@ -48,7 +48,7 @@ interface SectionMentionsPayload {
 
 interface ReferencePanelProps {
     project: { id: number; name: string; slug: string };
-    work: { id: number; title: string; slug: string };
+    work: { id: number; title: string; slug: string; format?: string };
     currentSection: CurrentSection | null;
     pins: EntryCard[];
     canUpdate: boolean;
@@ -759,7 +759,7 @@ export default function ReferencePanel({
     const [activeTab, setActiveTab] = useState('browse');
     const lastSceneLinksFocusSignal = useRef(sceneLinksFocusSignal);
     const extraPanels = useSyncExternalStore(subscribeWritingPanels, getWritingPanels);
-    const showSceneLinks = currentSection?.format === 'screenplay';
+    const showSceneLinks = (currentSection?.format ?? work.format) === 'screenplay';
 
     useEffect(() => {
         if (sceneLinksFocusSignal !== lastSceneLinksFocusSignal.current) {

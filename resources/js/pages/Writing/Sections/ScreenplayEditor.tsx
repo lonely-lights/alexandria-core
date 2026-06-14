@@ -2,6 +2,7 @@ import type { Editor } from '@tiptap/core';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type MouseEvent, type Ref } from 'react';
 
+import EntryHoverCard from '@alexandria/components/entries/EntryHoverCard';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import { parseScreenplay, serializeScreenplay } from '@alexandria/editor/screenplay/codec';
 import {
@@ -119,7 +120,10 @@ function ScreenplaySurface({
 }: ScreenplaySurfaceProps) {
     const t = useT();
     const [showKeys, setShowKeys] = useState(false);
+    const [hoveredEntry, setHoveredEntry] = useState<{ entryId: number; rect: DOMRect } | null>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const entryLookupCacheRef = useRef(new Map<string, number | 'loading' | 'missing'>());
     const onStateChangeRef = useRef(onStateChange);
     const onSceneLinksChangeRef = useRef(onSceneLinksChange);
     const onEntryLinkSelectRef = useRef(onEntryLinkSelect);
@@ -177,6 +181,9 @@ function ScreenplaySurface({
         return () => {
             if (debounceRef.current !== null) {
                 clearTimeout(debounceRef.current);
+            }
+            if (hoverCloseTimerRef.current !== null) {
+                clearTimeout(hoverCloseTimerRef.current);
             }
         };
     }, []);
@@ -268,6 +275,123 @@ function ScreenplaySurface({
         editor?.commands.focus('end');
     }
 
+    function entryLinkFromTarget(target: EventTarget | null): HTMLAnchorElement | null {
+        return target instanceof Element
+            ? target.closest<HTMLAnchorElement>('a[data-type="entry-link"]')
+            : null;
+    }
+
+    function entryIdFromLink(link: HTMLAnchorElement): number | null {
+        const rawId = link.getAttribute('data-id');
+        const entryId = rawId !== null ? Number.parseInt(rawId, 10) : Number.NaN;
+
+        return Number.isFinite(entryId) ? entryId : null;
+    }
+
+    function openEntryHover(entryId: number, rect: DOMRect) {
+        clearHoverTimer();
+        setHoveredEntry((current) => (
+            current?.entryId === entryId
+                ? current
+                : { entryId, rect }
+        ));
+    }
+
+    function resolveEntryHover(link: HTMLAnchorElement) {
+        const directId = entryIdFromLink(link);
+        const rect = link.getBoundingClientRect();
+
+        if (directId !== null) {
+            openEntryHover(directId, rect);
+
+            return;
+        }
+
+        const name = link.getAttribute('data-name')?.trim() ?? '';
+
+        if (name === '') {
+            return;
+        }
+
+        const cached = entryLookupCacheRef.current.get(name);
+
+        if (typeof cached === 'number') {
+            openEntryHover(cached, rect);
+
+            return;
+        }
+
+        if (cached === 'loading' || cached === 'missing') {
+            return;
+        }
+
+        entryLookupCacheRef.current.set(name, 'loading');
+        fetch(`/api/v1/entries/search?q=${encodeURIComponent(name)}&project_id=${projectId}&limit=5`, {
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        })
+            .then((response) => (response.ok ? response.json() : Promise.reject()))
+            .then((payload: { data?: Array<{ id: number | string; name: string }> }) => {
+                const match = (payload.data ?? []).find(
+                    (row) => row.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
+                ) ?? payload.data?.[0];
+                const resolvedId = match ? Number.parseInt(String(match.id), 10) : Number.NaN;
+
+                if (Number.isFinite(resolvedId)) {
+                    entryLookupCacheRef.current.set(name, resolvedId);
+                    openEntryHover(resolvedId, rect);
+                } else {
+                    entryLookupCacheRef.current.set(name, 'missing');
+                }
+            })
+            .catch(() => {
+                entryLookupCacheRef.current.set(name, 'missing');
+            });
+    }
+
+    function clearHoverTimer() {
+        if (hoverCloseTimerRef.current !== null) {
+            clearTimeout(hoverCloseTimerRef.current);
+            hoverCloseTimerRef.current = null;
+        }
+    }
+
+    function closeHoveredEntry() {
+        clearHoverTimer();
+        hoverCloseTimerRef.current = setTimeout(() => {
+            setHoveredEntry(null);
+        }, 120);
+    }
+
+    function handleEntryLinkMouseMove(e: MouseEvent<HTMLDivElement>) {
+        const link = entryLinkFromTarget(e.target);
+
+        if (link === null) {
+            return;
+        }
+
+        clearHoverTimer();
+        resolveEntryHover(link);
+    }
+
+    function handleEntryLinkMouseLeave() {
+        closeHoveredEntry();
+    }
+
+    function handleEntryLinkClick(e: MouseEvent<HTMLDivElement>) {
+        const link = entryLinkFromTarget(e.target);
+
+        if (link === null || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+            return;
+        }
+
+        e.preventDefault();
+        onEntryLinkSelectRef.current?.();
+    }
+
     if (!editor) return null;
 
     return (
@@ -291,9 +415,21 @@ function ScreenplaySurface({
                 <EditorContent
                     editor={editor}
                     className="tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto"
+                    onClick={handleEntryLinkClick}
+                    onMouseMove={handleEntryLinkMouseMove}
+                    onMouseLeave={handleEntryLinkMouseLeave}
                     onMouseDown={handleGutterMouseDown}
                 />
             </div>
+
+            {hoveredEntry !== null && (
+                <EntryHoverCard
+                    entryId={hoveredEntry.entryId}
+                    triggerRect={hoveredEntry.rect}
+                    onEnter={clearHoverTimer}
+                    onClose={closeHoveredEntry}
+                />
+            )}
 
             {/* Keyboard-flow help — opened via bridge.openHelp() */}
             <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-lg">
