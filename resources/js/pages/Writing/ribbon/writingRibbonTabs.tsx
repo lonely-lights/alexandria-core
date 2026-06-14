@@ -22,6 +22,7 @@ const proseEditable = (ctx: Ctx): boolean => ctx.format === 'prose' && ctx.canUp
 const screenplayEditable = (ctx: Ctx): boolean => ctx.format === 'screenplay' && ctx.canUpdate;
 const editable = (ctx: Ctx): boolean => ctx.canUpdate;
 const zoomOptions = ['75', '90', '100', '110', '125', '150'];
+const proseStyleOptions = ['normal', 'title', 'subtitle', 'heading1', 'heading2', 'heading3', 'save-preset'];
 
 function markToggle(
     id: 'bold' | 'italic' | 'underline',
@@ -122,6 +123,41 @@ const editTab: RibbonTab<Ctx> = {
             id: 'text',
             labelKey: 'writing.ribbon.group_text',
             controls: [
+                {
+                    id: 'block-style',
+                    type: 'select',
+                    icon: 'fa-solid fa-paragraph',
+                    labelKey: 'writing.ribbon.style',
+                    visible: editable,
+                    options: (ctx) => {
+                        const values = ctx.format === 'screenplay'
+                            ? [...ELEMENTS, 'save-preset']
+                            : proseStyleOptions;
+
+                        return values.map((value) => ({
+                            value,
+                            labelKey: ctx.format === 'screenplay' && value !== 'save-preset'
+                                ? `writing.elements.${value}`
+                                : `writing.ribbon.style_${value.replace('-', '_')}`,
+                        }));
+                    },
+                    value: (ctx) => {
+                        const current = ctx.editor?.currentBlockStyle();
+
+                        if (ctx.format === 'screenplay') {
+                            return current && (ELEMENTS as string[]).includes(current) ? current : 'action';
+                        }
+
+                        return current ?? 'normal';
+                    },
+                    onAction: (ctx, value) => {
+                        if (value === undefined || value === 'save-preset') {
+                            return;
+                        }
+
+                        ctx.editor?.setBlockStyle(value);
+                    },
+                },
                 markToggle('bold', 'fa-solid fa-bold'),
                 markToggle('italic', 'fa-solid fa-italic'),
                 markToggle('underline', 'fa-solid fa-underline'),

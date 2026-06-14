@@ -135,6 +135,16 @@ function ScreenplaySurface({
         toggleList() {},
         toggleHeading() {},
         isMarkActive: () => false,
+        setBlockStyle(style) {
+            if (!editor || !(ELEMENTS as string[]).includes(style)) return;
+            editor.commands.focus();
+            convertCurrentBlock(editor, style as ScreenplayElement);
+        },
+        currentBlockStyle() {
+            const name = editor?.state.selection.$from.parent.type.name ?? '';
+
+            return (ELEMENTS as string[]).includes(name) ? name : 'action';
+        },
         setElement(element) {
             if (!editor || !(ELEMENTS as string[]).includes(element)) return;
             editor.commands.focus();

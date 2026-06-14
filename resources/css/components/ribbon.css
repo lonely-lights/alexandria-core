@@ -78,4 +78,5 @@
     background: color-mix(in srgb, var(--theme-base-content) 5%, transparent);
     color: var(--theme-base-content); border-radius: var(--theme-radius-button);
     border: 1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent); }
+.ribbon-select[data-ribbon-control="block-style"] { min-width: 8.5rem; justify-content: flex-start; }
 .ribbon-select:disabled { opacity: 0.5; }

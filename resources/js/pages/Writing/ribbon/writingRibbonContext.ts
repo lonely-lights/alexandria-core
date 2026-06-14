@@ -13,8 +13,10 @@ export interface WritingEditorBridge {
     /** prose marks: bold | italic | underline; lists: bulletList | orderedList; headings via setHeading */
     toggleMark(name: 'bold' | 'italic' | 'underline'): void;
     toggleList(name: 'bulletList' | 'orderedList'): void;
-    toggleHeading(level: 2 | 3): void;
+    toggleHeading(level: 1 | 2 | 3): void;
     isMarkActive(name: string): boolean;
+    setBlockStyle(style: string): void;
+    currentBlockStyle(): string | null;
     /** screenplay elements */
     setElement(element: string): void;
     currentElement(): string | null;

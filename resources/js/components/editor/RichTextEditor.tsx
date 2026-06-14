@@ -299,7 +299,7 @@ export default function RichTextEditor({
 
     const extensions = [
         StarterKit.configure({
-            heading: tier !== 'free' ? { levels: [2, 3] } : false,
+            heading: tier !== 'free' ? { levels: [1, 2, 3] } : false,
             link: false,
             underline: false,
         }),
@@ -360,6 +360,7 @@ export default function RichTextEditor({
                 link: e.isActive('link'),
                 bulletList: e.isActive('bulletList'),
                 orderedList: e.isActive('orderedList'),
+                heading1: e.isActive('heading', { level: 1 }),
                 heading2: e.isActive('heading', { level: 2 }),
                 heading3: e.isActive('heading', { level: 3 }),
                 mention: false,
@@ -428,12 +429,33 @@ export default function RichTextEditor({
             if (!editor) return false;
             // Task 1 convention: 'heading2'/'heading3' map onto TipTap's
             // ('heading', { level }) — every other name is 1:1.
+            if (name === 'heading1') return editor.isActive('heading', { level: 1 });
             if (name === 'heading2') return editor.isActive('heading', { level: 2 });
             if (name === 'heading3') return editor.isActive('heading', { level: 3 });
 
             return editor.isActive(name);
         },
         // Screenplay-only — safe no-ops on the prose surface.
+        setBlockStyle(style) {
+            if (!editor) return;
+            if (style === 'normal') {
+                editor.chain().focus().setParagraph().run();
+            } else if (style === 'title' || style === 'heading1') {
+                editor.chain().focus().toggleHeading({ level: 1 }).run();
+            } else if (style === 'subtitle' || style === 'heading2') {
+                editor.chain().focus().toggleHeading({ level: 2 }).run();
+            } else if (style === 'heading3') {
+                editor.chain().focus().toggleHeading({ level: 3 }).run();
+            }
+        },
+        currentBlockStyle() {
+            if (!editor) return 'normal';
+            if (editor.isActive('heading', { level: 1 })) return 'heading1';
+            if (editor.isActive('heading', { level: 2 })) return 'heading2';
+            if (editor.isActive('heading', { level: 3 })) return 'heading3';
+
+            return 'normal';
+        },
         setElement() {},
         currentElement: () => null,
         insertEntryLink() {
