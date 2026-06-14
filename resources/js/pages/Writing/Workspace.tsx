@@ -17,6 +17,7 @@ import ManuscriptEditor, {
 import Navigator from './Sections/Navigator';
 import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
 import ScreenplayEditor from './Sections/ScreenplayEditor';
+import { extractSectionOutline, type SectionOutlineItem } from './Sections/sectionOutline';
 import WorkspaceAppRail from './Sections/WorkspaceAppRail';
 import WorkSettingsModal, {
     type LengthPlanOption,
@@ -229,6 +230,9 @@ export default function Workspace() {
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
     const [neutralChrome, setNeutralChrome] = useState(readNeutralChromePreference);
     const [zoom, setZoom] = useState(readZoomPreference);
+    const [currentOutline, setCurrentOutline] = useState<SectionOutlineItem[]>(() =>
+        currentSection?.format === 'prose' ? extractSectionOutline(currentSection.content) : [],
+    );
 
     // Section add/delete modal triggers — shared between the ribbon's
     // Structure tab and the Navigator's hover affordances.
@@ -245,6 +249,14 @@ export default function Workspace() {
     const handleEditorStateChange = useCallback(() => {
         setEditorTick((tick) => tick + 1);
     }, []);
+
+    useEffect(() => {
+        setCurrentOutline(
+            currentSection?.format === 'prose'
+                ? extractSectionOutline(currentSection.content)
+                : [],
+        );
+    }, [currentSection?.id, currentSection?.content, currentSection?.format]);
 
     useEffect(() => {
         const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -664,6 +676,7 @@ export default function Workspace() {
                                 onRequestAdd={(parentId) => setAddTarget({ parentId })}
                                 onRequestDelete={setDeleteTarget}
                                 liveCounts={liveCounts}
+                                currentOutline={currentOutline}
                             />
                         </nav>
                     </div>
@@ -685,6 +698,7 @@ export default function Workspace() {
                                     printLayout={printLayout}
                                     bridgeRef={bridgeRef}
                                     onStateChange={handleEditorStateChange}
+                                    onOutlineChange={setCurrentOutline}
                                 />
                             ) : (
                                 <ManuscriptEditor

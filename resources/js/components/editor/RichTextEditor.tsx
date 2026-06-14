@@ -441,11 +441,11 @@ export default function RichTextEditor({
             if (style === 'normal') {
                 editor.chain().focus().setParagraph().run();
             } else if (style === 'title' || style === 'heading1') {
-                editor.chain().focus().toggleHeading({ level: 1 }).run();
+                editor.chain().focus().setHeading({ level: 1 }).run();
             } else if (style === 'subtitle' || style === 'heading2') {
-                editor.chain().focus().toggleHeading({ level: 2 }).run();
+                editor.chain().focus().setHeading({ level: 2 }).run();
             } else if (style === 'heading3') {
-                editor.chain().focus().toggleHeading({ level: 3 }).run();
+                editor.chain().focus().setHeading({ level: 3 }).run();
             }
         },
         currentBlockStyle() {

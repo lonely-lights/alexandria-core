@@ -110,6 +110,15 @@ button:not(:disabled),
     pointer-events: none;
     color: color-mix(in srgb, var(--theme-base-content) 40%, transparent);
 }
+.tiptap-editor .ProseMirror h1 {
+    font-family: "Libre Baskerville", serif;
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+    font-weight: 700;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--theme-base-content);
+}
 .tiptap-editor .ProseMirror h2 {
     font-family: "Libre Baskerville", serif;
     font-size: 1.875rem;
@@ -129,6 +138,7 @@ button:not(:disabled),
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
 }
+.tiptap-editor .ProseMirror > h1:first-child,
 .tiptap-editor .ProseMirror > h2:first-child,
 .tiptap-editor .ProseMirror > h3:first-child {
     margin-top: 0;

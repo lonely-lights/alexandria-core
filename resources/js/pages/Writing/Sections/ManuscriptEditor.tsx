@@ -5,6 +5,7 @@ import RichTextEditor from '@alexandria/components/editor/RichTextEditor';
 import type { CurrentSection } from '../Workspace';
 import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
 import SectionChrome from './SectionChrome';
+import { extractSectionOutline, type SectionOutlineItem } from './sectionOutline';
 import useSectionAutosave, { type SectionCountsCallback } from './useSectionAutosave';
 
 /**
@@ -50,6 +51,7 @@ export interface ManuscriptEditorProps {
     bridgeRef?: Ref<WritingEditorBridge>;
     /** Editor selection/content tick — the Workspace bumps `editorTick`. */
     onStateChange?: () => void;
+    onOutlineChange?: (outline: SectionOutlineItem[]) => void;
 }
 
 export const PRINT_LAYOUT_STORAGE_KEY = 'alexandria.writing.print_layout';
@@ -74,6 +76,7 @@ export default function ManuscriptEditor({
     chrome,
     bridgeRef,
     onStateChange,
+    onOutlineChange,
 }: ManuscriptEditorProps) {
     const { noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
@@ -87,6 +90,7 @@ export default function ManuscriptEditor({
 
     function handleChange(wiki: string) {
         setContent(wiki);
+        onOutlineChange?.(extractSectionOutline(wiki));
         noteChange(wiki);
     }
 
@@ -95,6 +99,7 @@ export default function ManuscriptEditor({
     // pending save — on the same id change).
     useEffect(() => {
         setContent(section.content ?? '');
+        onOutlineChange?.(extractSectionOutline(section.content));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [section.id]);
 

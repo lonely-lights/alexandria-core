@@ -7,6 +7,7 @@ import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
 
 import type { SectionNode } from '../Workspace';
 import RenameSectionModal from './RenameSectionModal';
+import type { SectionOutlineItem } from './sectionOutline';
 
 /**
  * Workspace section Navigator — Stage 8g.1 (Plan 2 Task 6; drag-reorder
@@ -42,6 +43,8 @@ interface NavigatorProps {
     onRequestDelete: (node: SectionNode) => void;
     /** Autosave-confirmed word counts (by section id) overlaying the prop tree. */
     liveCounts?: Record<number, number>;
+    /** Headings extracted from the current prose section, rendered as an in-section outline. */
+    currentOutline?: SectionOutlineItem[];
 }
 
 /* ── Theme styles ── */
@@ -133,6 +136,7 @@ export default function Navigator({
     onRequestAdd,
     onRequestDelete,
     liveCounts,
+    currentOutline = [],
 }: NavigatorProps) {
     const t = useT();
     const [expanded, setExpanded] = useState<Set<number>>(
@@ -182,6 +186,7 @@ export default function Navigator({
         },
         onRename: setRenameTarget,
         liveCounts,
+        currentOutline,
         t,
     };
 
@@ -270,6 +275,7 @@ interface TreeShared {
     onDuplicate: (node: SectionNode) => void;
     onRename: (node: SectionNode) => void;
     liveCounts?: Record<number, number>;
+    currentOutline: SectionOutlineItem[];
     t: Translator;
 }
 
@@ -346,6 +352,7 @@ function NavigatorRow({
     const isExpanded = expanded.has(node.id);
     const wordCount = liveCounts?.[node.id] ?? node.word_count;
     const sectionUrl = `/works/${projectSlug}/${workSlug}/${node.slug}`;
+    const outline = isSelected ? shared.currentOutline : [];
 
     function copyLink() {
         const url = new URL(sectionUrl, window.location.origin).toString();
@@ -495,6 +502,29 @@ function NavigatorRow({
                     </span>
                 )}
             </div>
+
+            {outline.length > 0 && (
+                <div className="flex flex-col gap-0.5" data-writing-section-outline={node.id}>
+                    {outline.map((item) => (
+                        <div
+                            key={item.id}
+                            className="flex items-center gap-1 py-0.5 pr-2 text-xs"
+                            data-writing-section-outline-item={item.id}
+                            style={{
+                                paddingLeft: `${depth * 18 + 34 + (item.level - 1) * 12}px`,
+                                color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 48%, transparent))',
+                            }}
+                        >
+                            <i
+                                className="fa-solid fa-heading shrink-0 text-[8px]"
+                                aria-hidden="true"
+                                style={chevronStyle}
+                            />
+                            <span className="min-w-0 truncate">{item.title}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {hasChildren && isExpanded && (
                 <SiblingGroup
