@@ -220,6 +220,7 @@ return [
     'ribbon.element' => 'Element',
     'ribbon.keys' => 'Screenplay keys',
     'ribbon.entry_link' => 'Insert entry link',
+    'ribbon.scene_links' => 'Scene links',
     'ribbon.print_layout' => 'Print layout',
     'ribbon.neutral_chrome' => 'Neutral chrome',
     'ribbon.panel' => 'Reference panel',

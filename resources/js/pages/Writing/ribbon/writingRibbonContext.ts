@@ -36,6 +36,7 @@ export interface WritingRibbonContext {
     format: 'prose' | 'screenplay';
     canUpdate: boolean;
     panelOpen: boolean;
+    sceneLinksPanelOpen: boolean;
     printLayout: boolean;
     neutralChrome: boolean;
     zoom: string;
@@ -45,6 +46,7 @@ export interface WritingRibbonContext {
     editor: WritingEditorBridge | null;
     actions: {
         togglePanel(): void;
+        toggleSceneLinksPanel(): void;
         togglePrintLayout(): void;
         toggleNeutralChrome(): void;
         setZoom(value: string): void;

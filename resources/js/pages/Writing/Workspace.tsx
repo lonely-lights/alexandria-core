@@ -226,6 +226,9 @@ export default function Workspace() {
     const [saveSignal, setSaveSignal] = useState(0);
 
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
+    const [referencePanelTab, setReferencePanelTab] = useState(() =>
+        work.format === 'screenplay' ? 'scene-links' : 'browse',
+    );
     const [structureOpen, setStructureOpen] = useState(readStructureOpenPreference);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
@@ -255,6 +258,7 @@ export default function Workspace() {
 
     const handleEntryLinkSelect = useCallback(() => {
         setPanelOpen(true);
+        setReferencePanelTab('scene-links');
         setSceneLinksFocusSignal((signal) => signal + 1);
         try {
             localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
@@ -262,6 +266,26 @@ export default function Workspace() {
             // Persistence is best-effort; private-mode failures are fine.
         }
     }, []);
+
+    const toggleSceneLinksPanel = useCallback(() => {
+        setPanelOpen((prev) => {
+            const shouldClose = prev && referencePanelTab === 'scene-links';
+            const next = !shouldClose;
+
+            if (next) {
+                setReferencePanelTab('scene-links');
+                setSceneLinksFocusSignal((signal) => signal + 1);
+            }
+
+            try {
+                localStorage.setItem(PANEL_OPEN_STORAGE_KEY, String(next));
+            } catch {
+                // Persistence is best-effort; private-mode failures are fine.
+            }
+
+            return next;
+        });
+    }, [referencePanelTab]);
 
     useEffect(() => {
         setCurrentOutline(
@@ -271,8 +295,11 @@ export default function Workspace() {
         );
         if (currentSection?.format !== 'screenplay') {
             setScreenplaySceneLinks([]);
+            if (work.format !== 'screenplay' && referencePanelTab === 'scene-links') {
+                setReferencePanelTab('browse');
+            }
         }
-    }, [currentSection?.id, currentSection?.content, currentSection?.format]);
+    }, [currentSection?.id, currentSection?.content, currentSection?.format, referencePanelTab, work.format]);
 
     useEffect(() => {
         const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -441,6 +468,7 @@ export default function Workspace() {
             format: (currentSection?.format ?? work.format) === 'screenplay' ? 'screenplay' : 'prose',
             canUpdate: can.update,
             panelOpen,
+            sceneLinksPanelOpen: panelOpen && referencePanelTab === 'scene-links',
             printLayout,
             neutralChrome,
             zoom,
@@ -455,6 +483,7 @@ export default function Workspace() {
             },
             actions: {
                 togglePanel,
+                toggleSceneLinksPanel,
                 togglePrintLayout,
                 toggleNeutralChrome,
                 setZoom: updateZoom,
@@ -498,6 +527,7 @@ export default function Workspace() {
         work.status,
         can.update,
         panelOpen,
+        referencePanelTab,
         printLayout,
         neutralChrome,
         zoom,
@@ -505,6 +535,7 @@ export default function Workspace() {
         sections,
         editorTick,
         togglePanel,
+        toggleSceneLinksPanel,
         togglePrintLayout,
         toggleNeutralChrome,
         updateZoom,
@@ -759,6 +790,8 @@ export default function Workspace() {
                                 saveSignal={saveSignal}
                                 sceneLinks={screenplaySceneLinks}
                                 sceneLinksFocusSignal={sceneLinksFocusSignal}
+                                activeTab={referencePanelTab}
+                                onActiveTabChange={setReferencePanelTab}
                             />
                         </aside>
                     )}

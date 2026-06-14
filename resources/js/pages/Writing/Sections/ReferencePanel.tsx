@@ -56,6 +56,8 @@ interface ReferencePanelProps {
     saveSignal: number;
     sceneLinks?: ScreenplaySceneLink[];
     sceneLinksFocusSignal?: number;
+    activeTab?: string;
+    onActiveTabChange?: (tab: string) => void;
 }
 
 /* ── Theme styles ── */
@@ -754,28 +756,53 @@ export default function ReferencePanel({
     saveSignal,
     sceneLinks = [],
     sceneLinksFocusSignal = 0,
+    activeTab,
+    onActiveTabChange,
 }: ReferencePanelProps) {
     const t = useT();
-    const [activeTab, setActiveTab] = useState('browse');
+    const [internalActiveTab, setInternalActiveTab] = useState(
+        (currentSection?.format ?? work.format) === 'screenplay' ? 'scene-links' : 'browse',
+    );
     const lastSceneLinksFocusSignal = useRef(sceneLinksFocusSignal);
     const extraPanels = useSyncExternalStore(subscribeWritingPanels, getWritingPanels);
     const showSceneLinks = (currentSection?.format ?? work.format) === 'screenplay';
+    const currentTab = activeTab ?? internalActiveTab;
+
+    function setCurrentTab(tab: string) {
+        if (activeTab === undefined) {
+            setInternalActiveTab(tab);
+        }
+
+        onActiveTabChange?.(tab);
+    }
 
     useEffect(() => {
         if (sceneLinksFocusSignal !== lastSceneLinksFocusSignal.current) {
             lastSceneLinksFocusSignal.current = sceneLinksFocusSignal;
 
             if (sceneLinksFocusSignal > 0) {
-                setActiveTab('scene-links');
+                setCurrentTab('scene-links');
             }
         }
+        // setCurrentTab is intentionally local to this render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sceneLinksFocusSignal]);
 
     useEffect(() => {
-        if (!showSceneLinks && activeTab === 'scene-links') {
-            setActiveTab('section');
+        if (!showSceneLinks && currentTab === 'scene-links') {
+            setCurrentTab('section');
         }
-    }, [activeTab, showSceneLinks]);
+        // setCurrentTab is intentionally local to this render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentTab, showSceneLinks]);
+
+    useEffect(() => {
+        if (showSceneLinks && currentTab === 'browse' && sceneLinks.length > 0) {
+            setCurrentTab('scene-links');
+        }
+        // setCurrentTab is intentionally local to this render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentTab, sceneLinks.length, showSceneLinks]);
 
     const builtIns: BuiltInTab[] = [
         { id: 'browse', label: t('writing.panel.browse'), icon: 'fa-solid fa-magnifying-glass' },
@@ -791,7 +818,7 @@ export default function ReferencePanel({
         ...extraPanels.map((panel) => ({ id: panel.id, label: t(panel.labelKey), icon: panel.icon })),
     ];
 
-    const activeExtra = extraPanels.find((panel) => panel.id === activeTab);
+    const activeExtra = extraPanels.find((panel) => panel.id === currentTab);
     const panelContext = {
         project,
         work,
@@ -805,13 +832,13 @@ export default function ReferencePanel({
             {/* Tab strip */}
             <div className="flex shrink-0 items-center gap-1 px-2 py-1.5" style={tabStripStyle}>
                 {tabs.map((tab) => {
-                    const isActive = tab.id === activeTab;
+                    const isActive = tab.id === currentTab;
 
                     return (
                         <Tooltip key={tab.id} content={tab.label}>
                             <button
                                 type="button"
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => setCurrentTab(tab.id)}
                                 aria-label={tab.label}
                                 aria-pressed={isActive}
                                 className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${isActive ? 'alex-toolbar-btn--active' : ''}`}
@@ -825,13 +852,13 @@ export default function ReferencePanel({
             </div>
 
             {/* Tab content */}
-            {activeTab === 'browse' && (
+            {currentTab === 'browse' && (
                 <BrowseTab project={project} work={work} canUpdate={canUpdate} t={t} />
             )}
-            {activeTab === 'pins' && (
+            {currentTab === 'pins' && (
                 <PinsTab project={project} work={work} pins={pins} canUpdate={canUpdate} t={t} />
             )}
-            {activeTab === 'section' && (
+            {currentTab === 'section' && (
                 <SectionTab
                     project={project}
                     work={work}
@@ -841,7 +868,7 @@ export default function ReferencePanel({
                     t={t}
                 />
             )}
-            {activeTab === 'scene-links' && (
+            {currentTab === 'scene-links' && (
                 <SceneLinksTab project={project} links={sceneLinks} t={t} />
             )}
             {activeExtra !== undefined && (
