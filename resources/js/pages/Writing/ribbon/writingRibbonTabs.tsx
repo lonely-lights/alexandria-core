@@ -158,6 +158,14 @@ const editTab: RibbonTab<Ctx> = {
                         ctx.editor?.setBlockStyle(value);
                     },
                 },
+                {
+                    id: 'screenplay-keys',
+                    type: 'button',
+                    icon: 'fa-solid fa-keyboard',
+                    labelKey: 'writing.ribbon.keys',
+                    visible: screenplayEditable,
+                    onAction: (ctx) => ctx.editor?.openHelp(),
+                },
                 markToggle('bold', 'fa-solid fa-bold'),
                 markToggle('italic', 'fa-solid fa-italic'),
                 markToggle('underline', 'fa-solid fa-underline'),
@@ -202,34 +210,7 @@ const editTab: RibbonTab<Ctx> = {
         {
             id: 'element',
             labelKey: 'writing.ribbon.group_element',
-            controls: [
-                {
-                    id: 'element-select',
-                    type: 'select',
-                    icon: 'fa-solid fa-clapperboard',
-                    labelKey: 'writing.ribbon.element',
-                    visible: screenplayEditable,
-                    options: () =>
-                        ELEMENTS.map((element) => ({
-                            value: element,
-                            labelKey: `writing.elements.${element}`,
-                        })),
-                    value: (ctx) => ctx.editor?.currentElement() ?? 'action',
-                    onAction: (ctx, value) => {
-                        if (value !== undefined) {
-                            ctx.editor?.setElement(value);
-                        }
-                    },
-                },
-                {
-                    id: 'screenplay-keys',
-                    type: 'button',
-                    icon: 'fa-solid fa-keyboard',
-                    labelKey: 'writing.ribbon.keys',
-                    visible: screenplayEditable,
-                    onAction: (ctx) => ctx.editor?.openHelp(),
-                },
-            ],
+            controls: [],
         },
         {
             id: 'world',

@@ -27,6 +27,14 @@ import useSectionAutosave from './useSectionAutosave';
 // Same platform sniff RichTextEditor uses for shortcut labels.
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
 type HistoryCommand = 'undo' | 'redo';
+type ScreenplayKeyHelp = 'keys_enter' | 'keys_tab' | 'keys_paren' | 'keys_elements';
+
+const SCREENPLAY_KEY_HELP: ScreenplayKeyHelp[] = [
+    'keys_enter',
+    'keys_tab',
+    'keys_paren',
+    'keys_elements',
+];
 
 function runHistoryCommand(editor: Editor | null, command: HistoryCommand): void {
     const chain = editor?.chain().focus() as (Record<HistoryCommand, unknown> & { run?: () => boolean }) | undefined;
@@ -247,16 +255,23 @@ function ScreenplaySurface({
             </div>
 
             {/* Keyboard-flow help — opened via bridge.openHelp() */}
-            <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-md">
+            <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-lg">
                 <ModalHeader title={t('writing.workspace.keys_title')} onClose={() => setShowKeys(false)} />
-                <div className="space-y-3 p-6 text-sm">
-                    {(['keys_enter', 'keys_tab', 'keys_paren', 'keys_elements'] as const).map((key) => (
-                        <div key={key} className="flex items-start gap-3">
+                <div className="grid gap-2.5 p-5 text-sm">
+                    {SCREENPLAY_KEY_HELP.map((key) => (
+                        <div
+                            key={key}
+                            className="flex items-start gap-3 rounded-md px-3 py-3"
+                            style={{
+                                background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                            }}
+                        >
                             <kbd
-                                className="mt-0.5 shrink-0 px-1.5 py-0.5 font-mono text-xs"
+                                className="inline-flex min-h-7 min-w-[4.5rem] shrink-0 items-center justify-center px-2 font-mono text-[11px] font-semibold"
                                 style={{
-                                    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-                                    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+                                    background: 'color-mix(in srgb, var(--theme-base-content) 9%, transparent)',
+                                    border: '1px solid color-mix(in srgb, var(--theme-base-content) 18%, transparent)',
                                     borderRadius: 'var(--theme-radius-button)',
                                     color: 'var(--theme-base-content)',
                                 }}
@@ -271,7 +286,7 @@ function ScreenplaySurface({
                                                 ? '⌘⌥ 0–5'
                                                 : 'Ctrl+Alt+0–5'}
                             </kbd>
-                            <p className="min-w-0">{t(`writing.workspace.${key}`)}</p>
+                            <p className="min-w-0 pt-0.5 leading-relaxed">{t(`writing.workspace.${key}`)}</p>
                         </div>
                     ))}
                 </div>
