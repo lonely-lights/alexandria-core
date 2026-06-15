@@ -10,7 +10,7 @@
  *                 filled on hover)
  *   - danger     (status-error fill)
  *
- * Sizes: sm | md | lg.
+ * Sizes: xs | sm | md | lg.
  *
  * Disabled and loading states render at 40% opacity with cursor not-allowed.
  * Hover behavior is defined globally in core/resources/css/components/buttons.css
@@ -33,7 +33,7 @@ export type ButtonVariant =
     | "outline"
     | "danger";
 
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 /** FontAwesome class string or any ReactNode (SVG, custom JSX, etc.). */
 export type ButtonIcon = ReactNode | string;
@@ -154,6 +154,7 @@ export function renderIcon(icon: ButtonIcon | undefined): ReactNode {
 }
 
 const SIZE_STYLES: Record<ButtonSize, { padding: string; fontSize: string }> = {
+    xs: { padding: "0.25rem 0.5rem", fontSize: "0.75rem" },
     sm: { padding: "0.375rem 0.75rem", fontSize: "0.875rem" },
     md: { padding: "0.5rem 1rem", fontSize: "1rem" },
     lg: { padding: "0.75rem 1.5rem", fontSize: "1.125rem" },

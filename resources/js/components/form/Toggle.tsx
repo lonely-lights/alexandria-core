@@ -11,7 +11,8 @@ interface ToggleProps {
  * Sliding-pill toggle. Paints a track + thumb via the `.alex-toggle`
  * class (see core/resources/css/components/inputs.css) so theming and
  * focus-visible state can reach the right pseudo-elements without
- * inline-style specificity conflicts.
+ * inline-style specificity conflicts. Controlled-only: callers own the
+ * checked state and update it through `onChange`.
  */
 export default function Toggle({
     label,
