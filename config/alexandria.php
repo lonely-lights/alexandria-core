@@ -194,10 +194,12 @@ return [
     | Model Bindings
     |--------------------------------------------------------------------------
     |
-    | Override any Alexandria model with your own subclass. The framework
-    | resolves model classes through these config values, never via direct
-    | class references. To swap a model, extend the default class and
-    | replace the binding here.
+    | Override public Alexandria models with your own subclasses. The
+    | framework resolves extension-facing model classes through these
+    | config values, never via direct class references. Internal support
+    | models that are not extension seams, such as audit rows, invite
+    | internals, permissions package tables, pivots, and derived writing
+    | indexes, intentionally keep their default classes.
     |
     */
     'models' => [

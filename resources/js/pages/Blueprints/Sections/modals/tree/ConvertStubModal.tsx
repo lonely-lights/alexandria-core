@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import Modal from "@alexandria/components/ui/Modal";
 import useT from "@alexandria/hooks/useT";
@@ -89,13 +89,6 @@ export default function ConvertStubModal({
               bp.name.toLowerCase().includes(bpSearch.toLowerCase()),
           )
         : availableBlueprints;
-
-    // Auto-convert if only one blueprint and mode is create
-    useEffect(() => {
-        if (availableBlueprints.length === 1 && mode === "choose") {
-            // Don't auto — let the user choose create vs link
-        }
-    }, []);
 
     function handleCreateConvert(blueprintId: number) {
         setConverting(true);
