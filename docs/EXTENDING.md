@@ -113,13 +113,7 @@ Core auto-registers Fortify with an Inertia-aware view layer (`Auth/Login`, `Aut
 
 To replace one, override the page (Section 3). Core's view registration passes the view name; Inertia resolves it through the page resolver, which honors the local override.
 
-To replace the entire flow (e.g., custom routes, alternate provider), publish core's Fortify config:
-
-```bash
-php artisan vendor:publish --tag=fortify-config
-```
-
-…and unregister core's view bindings by extending `AlexandriaServiceProvider` and skipping the `bindFortifyViews()` call. This is the heavier path — most consumers should override individual pages.
+To replace the entire flow (e.g., custom routes, alternate provider), override Laravel Fortify from the consumer app's own config/provider layer and unregister core's view bindings by extending `AlexandriaServiceProvider` and skipping the `bindFortifyViews()` call. This is the heavier path — most consumers should override individual pages.
 
 ---
 
@@ -157,6 +151,8 @@ The following are deliberately out of scope for `v0.1.0`. They'll likely become 
 
 ## Tracking what you've overridden
 
-Run `php artisan vendor:publish --provider="Alexandria\Core\AlexandriaServiceProvider" --pretend` to see every publishable artifact core exposes. Each tag (`alexandria-config`, `fortify-config`) is independent — publish only what you intend to override, leave the rest pulling from the package.
+Run `php artisan vendor:publish --provider="Alexandria\Core\AlexandriaServiceProvider" --pretend` to see every publishable artifact core exposes. Each tag (`alexandria-config`, `alexandria-translations`) is independent — publish only what you intend to override, leave the rest pulling from the package.
+
+Core seeders are package classes and are meant to be invoked directly from the consumer app's `DatabaseSeeder`; there is no `alexandria-seeders` publish tag in the current installer surface.
 
 If you find yourself needing to fork-and-edit a core file that isn't covered by the points above, that's a signal to open an issue on `lonely-lights/alexandria-core` — extension points exist precisely so consumers don't have to maintain forks.
