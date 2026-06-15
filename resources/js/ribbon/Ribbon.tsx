@@ -133,7 +133,7 @@ export default function Ribbon<Ctx>({
             return;
         }
 
-        const close = (event?: globalThis.MouseEvent) => {
+        const close = (event?: Event) => {
             const target = event?.target;
 
             if (target instanceof Element && target.closest('[data-ribbon-tab]')) {
@@ -183,9 +183,7 @@ export default function Ribbon<Ctx>({
             },
             body: JSON.stringify({ items: normalized }),
         }).catch((error: unknown) => {
-            if (import.meta.env.DEV) {
-                console.warn('[ribbon] quick action save failed', error);
-            }
+            console.warn('[ribbon] quick action save failed', error);
         });
     }
 
@@ -265,12 +263,12 @@ export default function Ribbon<Ctx>({
         }
     }
 
-    function onTabPreview(id: string, event: MouseEvent<HTMLButtonElement>): void {
+    function onTabPreview(id: string, element: HTMLElement): void {
         if (!fixedBand || !menuPlaceholder || menuPlaceholder.tabId === id) {
             return;
         }
 
-        const nextPosition = menuPosition(id, event.currentTarget);
+        const nextPosition = menuPosition(id, element);
 
         setMenuPlaceholder(nextPosition);
     }
@@ -294,8 +292,8 @@ export default function Ribbon<Ctx>({
                     aria-selected={!fixedBand && tab.id === activeTab.id}
                     className={`ribbon-tab ${!fixedBand && tab.id === activeTab.id ? 'ribbon-tab--active' : ''} ${fixedBand && menuPlaceholder?.tabId === tab.id ? 'ribbon-tab--menu-open' : ''}`}
                     onClick={(event) => onTabClick(tab.id, event)}
-                    onFocus={(event) => onTabPreview(tab.id, event)}
-                    onMouseEnter={(event) => onTabPreview(tab.id, event)}
+                    onFocus={(event) => onTabPreview(tab.id, event.currentTarget)}
+                    onMouseEnter={(event) => onTabPreview(tab.id, event.currentTarget)}
                 >
                     {t(tab.labelKey)}
                 </button>

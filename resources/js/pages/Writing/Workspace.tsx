@@ -754,7 +754,9 @@ export default function Workspace() {
                             <Navigator
                                 projectSlug={project.slug}
                                 workSlug={work.slug}
+                                work={work}
                                 sections={sections}
+                                currentSection={currentSection}
                                 currentSlug={currentSection?.slug ?? null}
                                 canUpdate={can.update}
                                 onSelect={selectSection}

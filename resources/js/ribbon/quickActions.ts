@@ -39,7 +39,7 @@ export function findControlById<Ctx>(
     return null;
 }
 
-export function canPinControl(control: RibbonControl | null): boolean {
+export function canPinControl<Ctx>(control: RibbonControl<Ctx> | null): boolean {
     return control !== null && control.type !== 'select';
 }
 

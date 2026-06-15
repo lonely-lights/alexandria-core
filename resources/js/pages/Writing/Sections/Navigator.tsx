@@ -5,9 +5,10 @@ import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
 
-import type { SectionNode } from '../Workspace';
+import type { CurrentSection, SectionNode } from '../Workspace';
 import RenameSectionModal from './RenameSectionModal';
 import type { SectionOutlineItem } from './sectionOutline';
+import { getStructureGuidance, type StructureGuidanceState } from './structureGuidance';
 
 /**
  * Workspace section Navigator — Stage 8g.1 (Plan 2 Task 6; drag-reorder
@@ -33,7 +34,18 @@ import type { SectionOutlineItem } from './sectionOutline';
 interface NavigatorProps {
     projectSlug: string;
     workSlug: string;
+    work: {
+        type: string;
+        format: string;
+        target_pages: number | null;
+        length_plan: {
+            target_lines?: number | null;
+            target_pages?: number | null;
+            preset?: string | null;
+        } | null;
+    };
     sections: SectionNode[];
+    currentSection: CurrentSection | null;
     currentSlug: string | null;
     canUpdate: boolean;
     onSelect: (slug: string) => void;
@@ -95,6 +107,30 @@ const panelActionStyle: CSSProperties = {
     color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 58%, transparent))',
 };
 
+const guidanceCardStyle: CSSProperties = {
+    background: 'var(--alex-writing-section-pane-bg, var(--theme-base-surface))',
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+    boxShadow: '0 10px 28px rgb(0 0 0 / 0.16)',
+};
+
+const guidanceItemStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const guidanceStateStyle: Record<StructureGuidanceState, CSSProperties> = {
+    complete: {
+        color: 'var(--theme-success, var(--theme-brand-primary-500))',
+    },
+    current: {
+        color: 'var(--theme-brand-primary-500)',
+    },
+    open: {
+        color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 50%, transparent))',
+    },
+};
+
 /** Collect the ids of every node that has children (default-expanded set). */
 function collectParentIds(nodes: SectionNode[], into: Set<number>): Set<number> {
     for (const node of nodes) {
@@ -129,7 +165,9 @@ function findNodeBySlug(nodes: SectionNode[], slug: string | null): SectionNode 
 export default function Navigator({
     projectSlug,
     workSlug,
+    work,
     sections,
+    currentSection,
     currentSlug,
     canUpdate,
     onSelect,
@@ -144,6 +182,7 @@ export default function Navigator({
     );
     const [renameTarget, setRenameTarget] = useState<SectionNode | null>(null);
     const currentNode = findNodeBySlug(sections, currentSlug);
+    const guidance = getStructureGuidance({ work, sections, currentSection });
 
     function toggle(id: number) {
         setExpanded((prev) => {
@@ -248,6 +287,48 @@ export default function Navigator({
                 </div>
             )}
             <div className="flex min-h-0 flex-1 flex-col gap-0.5 p-2">
+                {guidance !== null && (
+                    <section
+                        className="mb-2 grid gap-2 px-2 py-2.5"
+                        data-writing-structure-guidance={guidance.id}
+                        style={guidanceCardStyle}
+                    >
+                        <div className="grid gap-1">
+                            <h3 className="text-xs font-semibold" style={{ color: 'var(--theme-base-content)' }}>
+                                {t(guidance.titleKey)}
+                            </h3>
+                            <p className="text-[11px] leading-relaxed" style={wordCountStyle}>
+                                {t(guidance.bodyKey)}
+                            </p>
+                        </div>
+                        <div className="grid gap-1">
+                            {guidance.items.map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="flex items-center gap-2 px-2 py-1.5 text-[11px]"
+                                    data-writing-structure-guidance-item={item.id}
+                                    data-state={item.state}
+                                    style={guidanceItemStyle}
+                                >
+                                    <i
+                                        className={`fa-solid ${item.icon} w-3 text-center text-[10px]`}
+                                        aria-hidden="true"
+                                        style={guidanceStateStyle[item.state]}
+                                    />
+                                    <span className="min-w-0 flex-1 truncate" style={wordCountStyle}>
+                                        {t(item.labelKey)}
+                                    </span>
+                                    <span
+                                        className="shrink-0 font-mono text-[10px] font-semibold tabular-nums"
+                                        style={guidanceStateStyle[item.state]}
+                                    >
+                                        {item.valueKey !== undefined ? t(item.valueKey) : item.value}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
                 <SiblingGroup nodes={sections} parentId={null} depth={0} shared={shared} />
             </div>
             {renameTarget !== null && (
@@ -358,18 +439,8 @@ function NavigatorRow({
         const url = new URL(sectionUrl, window.location.origin).toString();
 
         if (navigator.clipboard?.writeText) {
-            void navigator.clipboard.writeText(url);
-            return;
+            void navigator.clipboard.writeText(url).catch(() => {});
         }
-
-        const input = document.createElement('input');
-        input.value = url;
-        input.style.position = 'fixed';
-        input.style.opacity = '0';
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand('copy');
-        input.remove();
     }
 
     // The wrapper div is the SortableJS draggable item — the row plus
@@ -390,7 +461,7 @@ function NavigatorRow({
                 {/* Expand/collapse chevron (leaf nodes render a dot) */}
                 <button
                     type="button"
-                    className="flex h-5 w-5 flex-shrink-0 items-center justify-center"
+                    className="flex h-5 w-5 shrink-0 items-center justify-center"
                     onClick={(e) => {
                         e.stopPropagation();
                         if (hasChildren) {
@@ -411,7 +482,7 @@ function NavigatorRow({
                 </button>
 
                 {node.label && (
-                    <span className="flex-shrink-0" style={labelChipStyle}>
+                    <span className="shrink-0" style={labelChipStyle}>
                         {node.label}
                     </span>
                 )}
@@ -422,7 +493,7 @@ function NavigatorRow({
 
                 {/* Hover actions */}
                 {canUpdate && (
-                    <span className={`flex flex-shrink-0 items-center gap-0.5 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
+                    <span className={`flex shrink-0 items-center gap-0.5 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
                         <span
                             className="drag-handle flex h-5 w-5 cursor-grab items-center justify-center active:cursor-grabbing"
                             style={hoverActionStyle}
@@ -495,7 +566,7 @@ function NavigatorRow({
 
                 {wordCount > 0 && (
                     <span
-                        className="flex-shrink-0 text-[11px] tabular-nums"
+                        className="shrink-0 text-[11px] tabular-nums"
                         style={wordCountStyle}
                     >
                         {wordCount.toLocaleString()}

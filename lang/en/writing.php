@@ -102,6 +102,22 @@ return [
     'workspace.keys_paren' => 'Typing ( at the start of a dialogue line starts a parenthetical.',
     'workspace.keys_elements' => 'Jump straight to an element, Final Draft numbering: 0 scene heading, 1 action, 2 character, 3 parenthetical, 4 dialogue, 5 transition.',
 
+    'guidance.screenplay.title' => 'Screenplay structure',
+    'guidance.screenplay.body' => 'A quick check against the default act-and-scene shape for a feature screenplay.',
+    'guidance.stage_play.title' => 'Stage play structure',
+    'guidance.stage_play.body' => 'A quick check against the default act-and-scene shape for a stage play.',
+    'guidance.poem.title' => 'Poem structure',
+    'guidance.poem.body' => 'A compact check for keeping this poem together as one focused section.',
+    'guidance.poem.body_with_target' => 'A compact check against the selected line-based form.',
+    'guidance.metric_acts' => 'Acts',
+    'guidance.metric_scenes' => 'Scenes',
+    'guidance.metric_pages' => 'Target pages',
+    'guidance.metric_current_scene' => 'Current scene',
+    'guidance.metric_sections' => 'Sections',
+    'guidance.metric_lines' => 'Target lines',
+    'guidance.value_active' => 'Active',
+    'guidance.value_select' => 'Select',
+
     'statusbar.back' => 'Back to works',
 
     'elements.slugline' => 'Scene heading',
