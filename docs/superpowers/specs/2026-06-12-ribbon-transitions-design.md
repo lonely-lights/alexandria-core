@@ -150,6 +150,18 @@ resources/js/transitions/
 3. **Plan 3:** transition repository + progress bar + NProgress off + PageTransition reconciliation + smokes.
 4. **(Deferred) Plan 4:** QAT, after the user's refine pass on the clean ribbon.
 
+## Completion addendum — 2026-06-14 writing workspace polish
+
+The initial writing ribbon/chrome pass is complete and intentionally leaves richer command inventory work for later. Current shape:
+
+- Writing uses a desktop-app menu row: **File / Edit / View** over a fixed formatting band. The menus are populated from the same `RibbonControl` definitions as the band so commands do not fork.
+- Menu behavior follows standard desktop UX: click opens, hover follows between open menu titles, active title click dismisses, Escape/outside click closes, select commands open right-side submenus.
+- Quick access sits beside the menu row and remains visually distinct from the fixed formatting band.
+- Paper color is paper-only. It can use the current theme page color or neutral paper colors while the surrounding chrome stays themed.
+- The workspace adds the right app rail, floating section panel, improved rulers, icon/tooltips in the header cluster, and no body-level page scrollbars.
+- Screenplay scene links support `@` entry insertion, editable display text, scene-panel grouping by canonical entry with visible variants, persistence after reload, and dialogue word counts that exclude parentheticals.
+- Manual edge-case coverage lives in `alexandria-app/docs/tests/2026-06-14-writing-ribbon-edge-cases.md`.
+
 ## Out of scope (tracked)
 
 - #42 structure-guidance rendering (own brainstorm next; its ribbon home is reserved)

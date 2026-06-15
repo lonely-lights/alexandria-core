@@ -5,6 +5,11 @@ export interface ScreenplaySceneLink {
     id: number | string | null;
     name: string;
     displayText: string;
+    variants: Array<{
+        text: string;
+        mentions: number;
+        characterCues: number;
+    }>;
     slug: string | null;
     blueprintSlug: string | null;
     mentions: number;
@@ -56,8 +61,43 @@ function collectEntryLinks(node: JSONContent): LinkRef[] {
     return (node.content ?? []).flatMap(collectEntryLinks);
 }
 
+function normalizeSpaces(text: string): string {
+    return text.replace(/\s+/g, " ").trim();
+}
+
+function stripContinuationSuffix(text: string): string {
+    return normalizeSpaces(
+        text.replace(
+            /\s*\((?:CONT\.?|CONT'D|CONTINUED)\)\s*$/i,
+            "",
+        ),
+    );
+}
+
+function characterRef(ref: LinkRef): LinkRef {
+    if (ref.id !== null) {
+        return ref;
+    }
+
+    const name = stripContinuationSuffix(ref.name);
+
+    return {
+        ...ref,
+        key: `name:${name.toLocaleLowerCase()}`,
+        name,
+    };
+}
+
 function countWords(text: string): number {
     return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function stripParentheticals(text: string): string {
+    return text.replace(/\([^)]*\)/g, " ");
+}
+
+function countDialogueWords(text: string): number {
+    return countWords(stripParentheticals(text));
 }
 
 function sceneBounds(doc: JSONContent, activeBlockIndex: number): { start: number; end: number } {
@@ -91,6 +131,31 @@ export function extractScreenplaySceneLinks(
     const links = new Map<string, ScreenplaySceneLink>();
     let activeCharacterKeys: string[] = [];
 
+    function addVariant(
+        link: ScreenplaySceneLink,
+        text: string,
+        isCharacterCue: boolean,
+    ): void {
+        const variantText = normalizeSpaces(text);
+
+        if (variantText === "") {
+            return;
+        }
+
+        let variant = link.variants.find((item) => item.text === variantText);
+
+        if (variant === undefined) {
+            variant = { text: variantText, mentions: 0, characterCues: 0 };
+            link.variants.push(variant);
+        }
+
+        variant.mentions += 1;
+
+        if (isCharacterCue) {
+            variant.characterCues += 1;
+        }
+    }
+
     function ensureLink(ref: LinkRef): ScreenplaySceneLink {
         const existing = links.get(ref.key);
 
@@ -103,6 +168,7 @@ export function extractScreenplaySceneLinks(
             id: ref.id,
             name: ref.name,
             displayText: ref.displayText,
+            variants: [],
             slug: ref.slug,
             blueprintSlug: ref.blueprintSlug,
             mentions: 0,
@@ -122,11 +188,20 @@ export function extractScreenplaySceneLinks(
             continue;
         }
 
-        const refs = collectEntryLinks(block);
+        const refs = collectEntryLinks(block)
+            .map((ref) => (block.type === "character" ? characterRef(ref) : ref));
+        const characterCue = block.type === "character"
+            ? normalizeSpaces(textFromNode(block))
+            : "";
 
         for (const ref of refs) {
             const link = ensureLink(ref);
             link.mentions += 1;
+            addVariant(
+                link,
+                characterCue !== "" ? characterCue : ref.displayText,
+                block.type === "character",
+            );
 
             if (block.type === "character") {
                 link.characterCues += 1;
@@ -136,7 +211,7 @@ export function extractScreenplaySceneLinks(
         if (block.type === "character") {
             activeCharacterKeys = refs.map((ref) => ref.key);
         } else if (block.type === "dialogue" && activeCharacterKeys.length > 0) {
-            const words = countWords(textFromNode(block));
+            const words = countDialogueWords(textFromNode(block));
 
             for (const key of activeCharacterKeys) {
                 const link = links.get(key);

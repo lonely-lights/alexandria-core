@@ -1,4 +1,5 @@
 import { Extension, Node, type Editor, type JSONContent } from "@tiptap/core";
+import { UndoRedo } from "@tiptap/extensions";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 
 import createEntryLinkExtension, {
@@ -302,6 +303,7 @@ export function buildScreenplayExtensions({
             triggers: ["[[", "@"],
             onSelect: onEntryLinkSelect,
         }),
+        UndoRedo,
         ScreenplayKeymap,
     ];
 }

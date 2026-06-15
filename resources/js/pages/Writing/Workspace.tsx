@@ -2,13 +2,14 @@ import { router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
-import { useTheme } from '@alexandria/hooks/useTheme';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
 import Ribbon from '@alexandria/ribbon/Ribbon';
 import LogoMark from '@alexandria/components/brand/LogoMark';
 import CompactUserMenu from '@alexandria/components/navigation/CompactUserMenu';
 import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
+import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
+import Tooltip from '@alexandria/components/ui/Tooltip';
 
 import AddSectionModal from './Sections/AddSectionModal';
 import ManuscriptEditor, {
@@ -109,11 +110,26 @@ interface WorkspaceProps {
 
 /** Persisted reference-panel visibility (desktop only — the xl: gate still applies). */
 export const PANEL_OPEN_STORAGE_KEY = 'alexandria.writing.panel_open';
-export const NEUTRAL_CHROME_STORAGE_KEY = 'alexandria.writing.neutral_chrome';
+export const PAPER_COLOR_STORAGE_KEY = 'alexandria.writing.paper_color';
 export const STRUCTURE_OPEN_STORAGE_KEY = 'alexandria.writing.structure_open';
 export const ZOOM_STORAGE_KEY = 'alexandria.writing.zoom';
+const LEGACY_NEUTRAL_PAPER_STORAGE_KEY = 'alexandria.writing.neutral_paper';
+const LEGACY_NEUTRAL_CHROME_STORAGE_KEY = 'alexandria.writing.neutral_chrome';
 const DEFAULT_ZOOM = '100';
 const ZOOM_VALUES = new Set(['75', '90', '100', '110', '125', '150']);
+const DEFAULT_PAPER_COLOR = 'white';
+const PAPER_COLOR_VALUES = new Set(['theme', 'white', 'ivory', 'cream', 'gray']);
+const PAPER_COLOR_OPTIONS = ['theme', 'white', 'ivory', 'cream', 'gray'];
+const PAPER_COLOR_SWATCHES: Record<string, { background: string; border: string }> = {
+    theme: {
+        background: 'var(--theme-surface-card)',
+        border: 'color-mix(in srgb, var(--theme-base-content) 16%, transparent)',
+    },
+    white: { background: '#ffffff', border: '#d8dee8' },
+    ivory: { background: '#fffaf0', border: '#eadfcb' },
+    cream: { background: '#fdf6e3', border: '#e8dcc4' },
+    gray: { background: '#f8fafc', border: '#d8dee8' },
+};
 
 function readPanelOpenPreference(): boolean {
     try {
@@ -123,11 +139,25 @@ function readPanelOpenPreference(): boolean {
     }
 }
 
-function readNeutralChromePreference(): boolean {
+function readPaperColorPreference(): string {
     try {
-        return localStorage.getItem(NEUTRAL_CHROME_STORAGE_KEY) !== 'false';
+        const stored = localStorage.getItem(PAPER_COLOR_STORAGE_KEY);
+
+        if (stored !== null && PAPER_COLOR_VALUES.has(stored)) {
+            return stored;
+        }
+
+        const legacyPaper = localStorage.getItem(LEGACY_NEUTRAL_PAPER_STORAGE_KEY);
+
+        if (legacyPaper !== null && PAPER_COLOR_VALUES.has(legacyPaper)) {
+            return legacyPaper;
+        }
+
+        return localStorage.getItem(LEGACY_NEUTRAL_CHROME_STORAGE_KEY) === 'false'
+            ? 'theme'
+            : DEFAULT_PAPER_COLOR;
     } catch {
-        return true;
+        return DEFAULT_PAPER_COLOR;
     }
 }
 
@@ -207,7 +237,6 @@ const paneBorderColor = 'color-mix(in srgb, var(--theme-base-content) 10%, trans
 
 export default function Workspace() {
     const t = useT();
-    const theme = useTheme();
     const { project, work, sections, currentSection, pins, types, lengthPlans, can } =
         usePage<WorkspaceProps>().props;
 
@@ -231,8 +260,9 @@ export default function Workspace() {
     );
     const [structureOpen, setStructureOpen] = useState(readStructureOpenPreference);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [paperModalOpen, setPaperModalOpen] = useState(false);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
-    const [neutralChrome, setNeutralChrome] = useState(readNeutralChromePreference);
+    const [paperColor, setPaperColor] = useState(readPaperColorPreference);
     const [zoom, setZoom] = useState(readZoomPreference);
     const [currentOutline, setCurrentOutline] = useState<SectionOutlineItem[]>(() =>
         currentSection?.format === 'prose' ? extractSectionOutline(currentSection.content) : [],
@@ -408,16 +438,16 @@ export default function Workspace() {
         });
     }, []);
 
-    const toggleNeutralChrome = useCallback(() => {
-        setNeutralChrome((prev) => {
-            const next = !prev;
-            try {
-                localStorage.setItem(NEUTRAL_CHROME_STORAGE_KEY, String(next));
-            } catch {
-                // Persistence is best-effort; private-mode failures are fine.
-            }
-            return next;
-        });
+    const updatePaperColor = useCallback((value: string) => {
+        const next = PAPER_COLOR_VALUES.has(value) ? value : DEFAULT_PAPER_COLOR;
+        setPaperColor(next);
+        try {
+            localStorage.setItem(PAPER_COLOR_STORAGE_KEY, next);
+            localStorage.removeItem(LEGACY_NEUTRAL_PAPER_STORAGE_KEY);
+            localStorage.removeItem(LEGACY_NEUTRAL_CHROME_STORAGE_KEY);
+        } catch {
+            // Persistence is best-effort; private-mode failures are fine.
+        }
     }, []);
 
     const updateZoom = useCallback((value: string) => {
@@ -470,7 +500,7 @@ export default function Workspace() {
             panelOpen,
             sceneLinksPanelOpen: panelOpen && referencePanelTab === 'scene-links',
             printLayout,
-            neutralChrome,
+            paperColor,
             zoom,
             hasSection: currentSection !== null,
             editorTick,
@@ -485,7 +515,7 @@ export default function Workspace() {
                 togglePanel,
                 toggleSceneLinksPanel,
                 togglePrintLayout,
-                toggleNeutralChrome,
+                setPaperColor: updatePaperColor,
                 setZoom: updateZoom,
                 openSettings: () => setSettingsOpen(true),
                 openReports: () => router.visit(`/works/${projectSlug}/${workSlug}/reports`),
@@ -529,7 +559,7 @@ export default function Workspace() {
         panelOpen,
         referencePanelTab,
         printLayout,
-        neutralChrome,
+        paperColor,
         zoom,
         currentSection,
         sections,
@@ -537,7 +567,7 @@ export default function Workspace() {
         togglePanel,
         toggleSceneLinksPanel,
         togglePrintLayout,
-        toggleNeutralChrome,
+        updatePaperColor,
         updateZoom,
     ]);
 
@@ -580,8 +610,8 @@ export default function Workspace() {
                 some dev pipelines (vendor/ is .gitignored) — inline
                 styles can't be skipped by a CSS generator. */}
             <div
-                className={`writing-workspace-shell flex flex-col ${neutralChrome ? 'writing-neutral-chrome' : ''}`}
-                data-writing-mode={theme?.mode ?? 'light'}
+                className="writing-workspace-shell flex flex-col"
+                data-writing-paper-color={paperColor}
                 style={{
                     height: '100dvh',
                     overflow: 'hidden',
@@ -641,42 +671,50 @@ export default function Workspace() {
                         }
                         trailing={
                             <>
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        window.dispatchEvent(
-                                            new CustomEvent('alexandria-core:command-palette-toggle'),
-                                        )
-                                    }
-                                    aria-label={t('ribbon.search')}
-                                    className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                                >
-                                    <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={toggleNeutralChrome}
-                                    aria-label={t('writing.ribbon.neutral_chrome')}
-                                    title={t('writing.ribbon.neutral_chrome')}
-                                    aria-pressed={neutralChrome}
-                                    data-writing-neutral-chrome
-                                    className={`alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs ${neutralChrome ? 'alex-toolbar-btn--active' : ''}`}
-                                >
-                                    <i className="fa-solid fa-circle-half-stroke" aria-hidden="true" />
-                                </button>
-                                {can.update && (
+                                <Tooltip content={t('ribbon.search')}>
                                     <button
                                         type="button"
-                                        onClick={() => setSettingsOpen(true)}
-                                        aria-label={t('writing.settings.title')}
-                                        title={t('writing.settings.title')}
-                                        data-writing-work-settings
+                                        onClick={() =>
+                                            window.dispatchEvent(
+                                                new CustomEvent('alexandria-core:command-palette-toggle'),
+                                            )
+                                        }
+                                        aria-label={t('ribbon.search')}
                                         className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
                                     >
-                                        <i className="fa-solid fa-gear" aria-hidden="true" />
+                                        <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
                                     </button>
+                                </Tooltip>
+                                <Tooltip content={t('writing.ribbon.paper_color')}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPaperModalOpen(true)}
+                                        aria-label={t('writing.ribbon.paper_color')}
+                                        aria-pressed={paperColor !== 'theme'}
+                                        data-writing-paper-select="true"
+                                        className={`alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs ${paperColor !== 'theme' ? 'alex-toolbar-btn--active' : ''}`}
+                                    >
+                                        <i className="fa-solid fa-file-lines" aria-hidden="true" />
+                                    </button>
+                                </Tooltip>
+                                {can.update && (
+                                    <Tooltip content={t('writing.settings.title')}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSettingsOpen(true)}
+                                            aria-label={t('writing.settings.title')}
+                                            data-writing-work-settings
+                                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                                        >
+                                            <i className="fa-solid fa-gear" aria-hidden="true" />
+                                        </button>
+                                    </Tooltip>
                                 )}
-                                <CompactUserMenu ariaLabel={t('ribbon.account')} size={36} />
+                                <Tooltip content={t('ribbon.account')}>
+                                    <span className="inline-flex">
+                                        <CompactUserMenu ariaLabel={t('ribbon.account')} size={36} />
+                                    </span>
+                                </Tooltip>
                             </>
                         }
                     />
@@ -821,6 +859,63 @@ export default function Workspace() {
                     onClose={() => setSettingsOpen(false)}
                 />
             )}
+
+            <Modal
+                open={paperModalOpen}
+                onClose={() => setPaperModalOpen(false)}
+                maxWidth="max-w-sm"
+            >
+                <ModalHeader
+                    title={t('writing.ribbon.paper_color')}
+                    onClose={() => setPaperModalOpen(false)}
+                />
+                <div className="grid gap-2 p-4">
+                    {PAPER_COLOR_OPTIONS.map((value) => {
+                        const selected = value === paperColor;
+                        const swatch = PAPER_COLOR_SWATCHES[value];
+
+                        return (
+                            <button
+                                key={value}
+                                type="button"
+                                onClick={() => {
+                                    updatePaperColor(value);
+                                    setPaperModalOpen(false);
+                                }}
+                                className="alex-row flex items-center gap-3 px-3 py-2 text-left text-sm"
+                                data-writing-paper-option={value}
+                                style={{
+                                    borderRadius: 'var(--theme-radius-button)',
+                                    background: selected
+                                        ? 'var(--theme-brand-primary-highlight-bg)'
+                                        : 'transparent',
+                                    color: selected
+                                        ? 'var(--theme-brand-primary-highlight-fg)'
+                                        : 'var(--theme-base-content)',
+                                }}
+                                aria-pressed={selected}
+                            >
+                                <span
+                                    className="h-6 w-6 shrink-0"
+                                    style={{
+                                        background: swatch.background,
+                                        border: `1px solid ${swatch.border}`,
+                                        borderRadius: 'var(--theme-radius-button)',
+                                        boxShadow: '0 1px 4px rgb(0 0 0 / 0.12)',
+                                    }}
+                                    aria-hidden="true"
+                                />
+                                <span className="min-w-0 flex-1">
+                                    {t(`writing.ribbon.paper_${value}`)}
+                                </span>
+                                {selected && (
+                                    <i className="fa-solid fa-check text-xs" aria-hidden="true" />
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            </Modal>
 
             {addTarget !== null && (
                 <AddSectionModal

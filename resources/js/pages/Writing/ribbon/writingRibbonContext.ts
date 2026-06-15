@@ -38,7 +38,7 @@ export interface WritingRibbonContext {
     panelOpen: boolean;
     sceneLinksPanelOpen: boolean;
     printLayout: boolean;
-    neutralChrome: boolean;
+    paperColor: string;
     zoom: string;
     hasSection: boolean;
     /** bumped on editor selection/content changes so active/value states re-render */
@@ -48,7 +48,7 @@ export interface WritingRibbonContext {
         togglePanel(): void;
         toggleSceneLinksPanel(): void;
         togglePrintLayout(): void;
-        toggleNeutralChrome(): void;
+        setPaperColor(value: string): void;
         setZoom(value: string): void;
         openSettings(): void;
         openReports(): void;

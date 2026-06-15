@@ -168,17 +168,20 @@ button:not(:disabled),
     padding: 0.125rem 0.25rem;
 }
 .tiptap-editor .ProseMirror .entry-link {
-    background-color: color-mix(
-        in srgb,
-        var(--theme-brand-secondary-500) 10%,
-        transparent
+    background-color: var(
+        --alex-editor-entry-link-bg,
+        color-mix(in srgb, var(--theme-brand-secondary-500) 10%, transparent)
     );
     border-radius: var(--theme-radius-button);
     padding: 0.125rem 0.25rem;
-    color: var(--theme-brand-primary-500);
+    color: var(--alex-editor-entry-link-color, var(--theme-brand-primary-500));
     text-decoration: none;
 }
 .tiptap-editor .ProseMirror .entry-link:hover {
+    background-color: var(
+        --alex-editor-entry-link-hover-bg,
+        color-mix(in srgb, var(--theme-brand-secondary-500) 16%, transparent)
+    );
     text-decoration: underline;
 }
 .tiptap-mention-popup {

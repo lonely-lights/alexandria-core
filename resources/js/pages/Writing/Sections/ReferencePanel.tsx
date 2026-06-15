@@ -700,10 +700,18 @@ function SceneLinksTab({
                                 aria-hidden="true"
                             />
                             <div className="min-w-0 flex-1">
-                                <div className="truncate font-medium">{link.displayText}</div>
-                                {link.displayText !== link.name && (
-                                    <div className="truncate text-[11px]" style={rowSubStyle}>
-                                        {link.name}
+                                <div className="truncate font-medium">{link.name}</div>
+                                {link.variants.length > 0 && (
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                        {link.variants.map((variant) => (
+                                            <span
+                                                key={variant.text}
+                                                className="max-w-full truncate px-1.5 py-0.5 text-[11px] font-medium"
+                                                style={countChipStyle}
+                                            >
+                                                {variant.text}
+                                            </span>
+                                        ))}
                                     </div>
                                 )}
                             </div>

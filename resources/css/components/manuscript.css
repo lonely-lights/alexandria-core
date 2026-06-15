@@ -23,128 +23,45 @@
  * same plain black-alpha idiom as ui-polish.css's elevation shadows.
  */
 
-/* Neutral workspace chrome: a local Docs-like palette for the writing
-   surface. Turning the ribbon toggle off removes this class and lets the
-   project/theme tokens pass through again. */
-.writing-neutral-chrome {
-    --alex-writing-scrollbar-track: #eef2f7;
-    --alex-writing-scrollbar-thumb: #cbd5e1;
-    --alex-writing-scrollbar-thumb-hover: #94a3b8;
-    --alex-writing-section-pane-bg: #f8fafc;
-    --alex-writing-section-row-hover-bg: #eef2f7;
-    --alex-writing-section-row-selected-bg: #dbeafe;
-    --alex-writing-section-row-selected-fg: #1d4ed8;
-    --alex-writing-section-muted: #64748b;
-    --alex-writing-section-chip-bg: #e5e7eb;
-    --alex-writing-section-chip-fg: #475569;
-    --alex-writing-section-dot-bg: #cbd5e1;
-    --alex-manuscript-ruler-bg: #f8fafc;
-    --alex-manuscript-ruler-border: #d8dee8;
-    --alex-manuscript-ruler-label: #64748b;
-    --alex-manuscript-ruler-margin-bg: #e5e7eb;
-    --alex-manuscript-ruler-marker: #2563eb;
-    --alex-manuscript-ruler-tick: #94a3b8;
-    --theme-surface-page: #f8fafc;
-    --theme-surface-sunken: #eef2f7;
-    --theme-surface-raised: #f1f5f9;
-    --theme-surface-card: #ffffff;
-    --theme-surface-card-raised: #ffffff;
-    --theme-surface-modal: #ffffff;
-    --theme-surface-popover: #ffffff;
-    --theme-surface-tooltip: #111827;
-    --theme-surface-sidebar: #f8fafc;
-    --theme-surface-header: #f8fafc;
-    --theme-surface-footer: #f8fafc;
-    --theme-surface-on-page: #111827;
-    --theme-base-50: #ffffff;
-    --theme-base-100: #ffffff;
-    --theme-base-200: #f8fafc;
-    --theme-base-300: #eef2f7;
-    --theme-base-400: #d8dee8;
-    --theme-base-500: #94a3b8;
-    --theme-base-600: #64748b;
-    --theme-base-700: #475569;
-    --theme-base-800: #1f2937;
-    --theme-base-900: #111827;
-    --theme-base-page: #f8fafc;
-    --theme-base-surface: #ffffff;
-    --theme-base-chrome: #eef2f7;
-    --theme-base-content: #1f2937;
-    --theme-brand-primary-500: #2563eb;
-    --theme-brand-primary-content: #ffffff;
-    --theme-brand-primary-highlight-bg: #dbeafe;
-    --theme-brand-primary-highlight-fg: #1d4ed8;
-    --theme-brand-secondary-500: #2563eb;
-    --theme-brand-secondary-content: #ffffff;
-    --theme-brand-secondary-highlight-bg: #dbeafe;
-    --theme-brand-secondary-highlight-fg: #1d4ed8;
-    --theme-brand-accent-500: #64748b;
-    --theme-brand-accent-content: #ffffff;
-}
-
-.writing-neutral-chrome[data-writing-mode="dark"] {
-    --alex-writing-scrollbar-track: #111827;
-    --alex-writing-scrollbar-thumb: #3f4b5f;
-    --alex-writing-scrollbar-thumb-hover: #64748b;
-    --alex-writing-section-pane-bg: #111827;
-    --alex-writing-section-row-hover-bg: #1f2937;
-    --alex-writing-section-row-selected-bg: #1e3a8a;
-    --alex-writing-section-row-selected-fg: #bfdbfe;
-    --alex-writing-section-muted: #94a3b8;
-    --alex-writing-section-chip-bg: #1f2937;
-    --alex-writing-section-chip-fg: #cbd5e1;
-    --alex-writing-section-dot-bg: #64748b;
-    --alex-manuscript-ruler-bg: #111827;
-    --alex-manuscript-ruler-border: #3f4b5f;
-    --alex-manuscript-ruler-label: #94a3b8;
-    --alex-manuscript-ruler-margin-bg: #1f2937;
-    --alex-manuscript-ruler-marker: #60a5fa;
-    --alex-manuscript-ruler-tick: #64748b;
-    --theme-surface-page: #111827;
-    --theme-surface-sunken: #0f172a;
-    --theme-surface-raised: #1f2937;
-    --theme-surface-card: #f8fafc;
-    --theme-surface-card-raised: #ffffff;
-    --theme-surface-modal: #1f2937;
-    --theme-surface-popover: #1f2937;
-    --theme-surface-tooltip: #f8fafc;
-    --theme-surface-sidebar: #111827;
-    --theme-surface-header: #111827;
-    --theme-surface-footer: #111827;
-    --theme-surface-on-page: #f8fafc;
-    --theme-base-50: #f8fafc;
-    --theme-base-100: #1f2937;
-    --theme-base-200: #111827;
-    --theme-base-300: #273244;
-    --theme-base-400: #3f4b5f;
-    --theme-base-500: #64748b;
-    --theme-base-600: #94a3b8;
-    --theme-base-700: #cbd5e1;
-    --theme-base-800: #e2e8f0;
-    --theme-base-900: #f8fafc;
-    --theme-base-page: #111827;
-    --theme-base-surface: #1f2937;
-    --theme-base-chrome: #111827;
-    --theme-base-content: #e5e7eb;
-    --theme-brand-primary-500: #60a5fa;
-    --theme-brand-primary-content: #0f172a;
-    --theme-brand-primary-highlight-bg: #1e3a8a;
-    --theme-brand-primary-highlight-fg: #bfdbfe;
-    --theme-brand-secondary-500: #93c5fd;
-    --theme-brand-secondary-content: #0f172a;
-    --theme-brand-secondary-highlight-bg: #1e3a8a;
-    --theme-brand-secondary-highlight-fg: #dbeafe;
-    --theme-brand-accent-500: #94a3b8;
-    --theme-brand-accent-content: #0f172a;
-}
-
-.writing-neutral-chrome .rte-manuscript .tiptap-editor .ProseMirror {
+/* Paper color mode: the picker recolors only the editor sheet while
+   the surrounding workspace chrome keeps the active project/theme
+   palette. */
+.writing-workspace-shell[data-writing-paper-color="white"] .rte-manuscript .tiptap-editor .ProseMirror,
+.writing-workspace-shell[data-writing-paper-color="ivory"] .rte-manuscript .tiptap-editor .ProseMirror,
+.writing-workspace-shell[data-writing-paper-color="cream"] .rte-manuscript .tiptap-editor .ProseMirror,
+.writing-workspace-shell[data-writing-paper-color="gray"] .rte-manuscript .tiptap-editor .ProseMirror {
+    --alex-editor-entry-link-bg: #dbeafe;
+    --alex-editor-entry-link-color: #1d4ed8;
+    --alex-editor-entry-link-hover-bg: #bfdbfe;
     border-radius: 0.125rem;
     color: #111827 !important;
     caret-color: #111827;
 }
 
-.writing-neutral-chrome .rte-manuscript .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+.writing-workspace-shell[data-writing-paper-color="white"] .rte-manuscript .tiptap-editor .ProseMirror {
+    background: #ffffff;
+    border-color: #d8dee8;
+}
+
+.writing-workspace-shell[data-writing-paper-color="ivory"] .rte-manuscript .tiptap-editor .ProseMirror {
+    background: #fffaf0;
+    border-color: #eadfcb;
+}
+
+.writing-workspace-shell[data-writing-paper-color="cream"] .rte-manuscript .tiptap-editor .ProseMirror {
+    background: #fdf6e3;
+    border-color: #e8dcc4;
+}
+
+.writing-workspace-shell[data-writing-paper-color="gray"] .rte-manuscript .tiptap-editor .ProseMirror {
+    background: #f8fafc;
+    border-color: #d8dee8;
+}
+
+.writing-workspace-shell[data-writing-paper-color="white"] .rte-manuscript .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before,
+.writing-workspace-shell[data-writing-paper-color="ivory"] .rte-manuscript .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before,
+.writing-workspace-shell[data-writing-paper-color="cream"] .rte-manuscript .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before,
+.writing-workspace-shell[data-writing-paper-color="gray"] .rte-manuscript .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
     color: #94a3b8;
 }
 

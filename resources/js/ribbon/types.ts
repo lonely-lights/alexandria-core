@@ -20,6 +20,8 @@ export interface RibbonControl<Ctx = unknown> {
     labelKey: string;
     /** TipTap-style notation, e.g. 'Mod-Shift-R'. Binder + tooltip read it. */
     shortcut?: string;
+    /** Display-only shortcut hint for commands bound by the editor, not the ribbon. */
+    menuShortcut?: string;
     visible?: (ctx: Ctx) => boolean;
     disabled?: (ctx: Ctx) => boolean;
     /** Pressed state for toggles (and buttons that track state). */

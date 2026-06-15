@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { usePage } from '@inertiajs/react';
 
@@ -6,6 +6,7 @@ import useT from '@alexandria/hooks/useT';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 
 import { getRibbonTabs, subscribeRibbon } from './ribbonRegistry';
+import { formatShortcutLabel } from './shortcuts';
 import useRibbonShortcuts from './useRibbonShortcuts';
 import QuickActionBar from './QuickActionBar';
 import {
@@ -22,6 +23,14 @@ import RibbonMenu from './controls/RibbonMenu';
 import type { RibbonControl, RibbonMode, RibbonTab } from './types';
 
 const MODE_STORAGE_KEY = 'alexandria.ribbon.mode';
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
+const paperColorPreview: Record<string, string> = {
+    theme: 'var(--theme-base-page)',
+    white: '#ffffff',
+    ivory: '#fffaf0',
+    cream: '#fdf6e3',
+    gray: '#f8fafc',
+};
 
 function readMode(): RibbonMode {
     try {
@@ -90,6 +99,12 @@ export default function Ribbon<Ctx>({
         [quickActions, pageQuickActions],
     );
     const [quickActionItems, setQuickActionItems] = useState<RibbonQuickAction[]>(initialQuickActions);
+    const [menuPlaceholder, setMenuPlaceholder] = useState<{
+        tabId: string;
+        left: number;
+        top: number;
+        width: number;
+    } | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; controlId: string } | null>(null);
 
     useRibbonShortcuts(tabs, context);
@@ -112,6 +127,37 @@ export default function Ribbon<Ctx>({
             window.removeEventListener('scroll', close, true);
         };
     }, [contextMenu]);
+
+    useEffect(() => {
+        if (!menuPlaceholder) {
+            return;
+        }
+
+        const close = (event?: globalThis.MouseEvent) => {
+            const target = event?.target;
+
+            if (target instanceof Element && target.closest('[data-ribbon-tab]')) {
+                return;
+            }
+
+            setMenuPlaceholder(null);
+        };
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                close();
+            }
+        };
+
+        document.addEventListener('mousedown', close);
+        document.addEventListener('keydown', closeOnEscape);
+        window.addEventListener('resize', close);
+
+        return () => {
+            document.removeEventListener('mousedown', close);
+            document.removeEventListener('keydown', closeOnEscape);
+            window.removeEventListener('resize', close);
+        };
+    }, [menuPlaceholder]);
 
     if (tabs.length === 0) {
         return null;
@@ -194,13 +240,39 @@ export default function Ribbon<Ctx>({
         }
     }
 
-    function onTabClick(id: string): void {
-        if (!fixedBand) {
-            setActiveTabId(id);
+    function menuPosition(id: string, element: HTMLElement) {
+        const rect = element.getBoundingClientRect();
+
+        return {
+            tabId: id,
+            left: rect.left,
+            top: rect.bottom + 6,
+            width: rect.width,
+        };
+    }
+
+    function onTabClick(id: string, event: MouseEvent<HTMLButtonElement>): void {
+        if (fixedBand) {
+            const nextPosition = menuPosition(id, event.currentTarget);
+
+            setMenuPlaceholder((current) => current?.tabId === id ? null : nextPosition);
+            return;
         }
+
+        setActiveTabId(id);
         if (mode === 'collapsed') {
             setOverlayOpen(true);
         }
+    }
+
+    function onTabPreview(id: string, event: MouseEvent<HTMLButtonElement>): void {
+        if (!fixedBand || !menuPlaceholder || menuPlaceholder.tabId === id) {
+            return;
+        }
+
+        const nextPosition = menuPosition(id, event.currentTarget);
+
+        setMenuPlaceholder(nextPosition);
     }
 
     const bandVisible = mode !== 'collapsed' || overlayOpen;
@@ -216,9 +288,14 @@ export default function Ribbon<Ctx>({
                     key={tab.id}
                     type="button"
                     role="tab"
+                    data-ribbon-tab={tab.id}
+                    aria-haspopup={fixedBand ? 'menu' : undefined}
+                    aria-expanded={fixedBand ? menuPlaceholder?.tabId === tab.id : undefined}
                     aria-selected={!fixedBand && tab.id === activeTab.id}
-                    className={`ribbon-tab ${!fixedBand && tab.id === activeTab.id ? 'ribbon-tab--active' : ''}`}
-                    onClick={() => onTabClick(tab.id)}
+                    className={`ribbon-tab ${!fixedBand && tab.id === activeTab.id ? 'ribbon-tab--active' : ''} ${fixedBand && menuPlaceholder?.tabId === tab.id ? 'ribbon-tab--menu-open' : ''}`}
+                    onClick={(event) => onTabClick(tab.id, event)}
+                    onFocus={(event) => onTabPreview(tab.id, event)}
+                    onMouseEnter={(event) => onTabPreview(tab.id, event)}
                 >
                     {t(tab.labelKey)}
                 </button>
@@ -313,6 +390,184 @@ export default function Ribbon<Ctx>({
                 />,
                 document.body,
             )}
+
+            {menuPlaceholder && createPortal(
+                <RibbonTabMenu
+                    tab={tabs.find((tab) => tab.id === menuPlaceholder.tabId) ?? null}
+                    ctx={context}
+                    left={menuPlaceholder.left}
+                    top={menuPlaceholder.top}
+                    width={menuPlaceholder.width}
+                    onClose={() => setMenuPlaceholder(null)}
+                />,
+                document.body,
+            )}
+        </div>
+    );
+}
+
+function RibbonTabMenu<Ctx>({
+    tab,
+    ctx,
+    left,
+    top,
+    width,
+    onClose,
+}: {
+    tab: RibbonTab<Ctx> | null;
+    ctx: Ctx;
+    left: number;
+    top: number;
+    width: number;
+    onClose: () => void;
+}) {
+    const t = useT();
+    const [openSelectId, setOpenSelectId] = useState<string | null>(null);
+    const submenuCloseTimer = useRef<number | null>(null);
+    const groups = tab?.groups.map((group) => ({
+        ...group,
+        controls: group.controls.filter((control) => control.visible?.(ctx) ?? true),
+    })).filter((group) => group.controls.length > 0) ?? [];
+
+    useEffect(() => {
+        setOpenSelectId(null);
+    }, [tab?.id]);
+
+    useEffect(() => () => {
+        if (submenuCloseTimer.current !== null) {
+            window.clearTimeout(submenuCloseTimer.current);
+        }
+    }, []);
+
+    if (groups.length === 0) {
+        return null;
+    }
+
+    function openSubmenu(controlId: string): void {
+        if (submenuCloseTimer.current !== null) {
+            window.clearTimeout(submenuCloseTimer.current);
+            submenuCloseTimer.current = null;
+        }
+
+        setOpenSelectId(controlId);
+    }
+
+    function scheduleSubmenuClose(controlId: string): void {
+        if (submenuCloseTimer.current !== null) {
+            window.clearTimeout(submenuCloseTimer.current);
+        }
+
+        submenuCloseTimer.current = window.setTimeout(() => {
+            setOpenSelectId((value) => value === controlId ? null : value);
+            submenuCloseTimer.current = null;
+        }, 500);
+    }
+
+    function run(control: RibbonControl<Ctx>, value?: string): void {
+        if (control.disabled?.(ctx) ?? false) {
+            return;
+        }
+
+        control.onAction(ctx, value);
+        onClose();
+    }
+
+    return (
+        <div
+            role="menu"
+            data-ribbon-menu
+            className="ribbon-tab-menu"
+            style={{
+                left,
+                top,
+                minWidth: Math.max(width + 96, 220),
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
+        >
+            {groups.map((group, groupIndex) => (
+                <div key={group.id} className="ribbon-tab-menu-group">
+                    {groupIndex > 0 && <div className="ribbon-tab-menu-divider" />}
+                    <div className="ribbon-tab-menu-heading">{t(group.labelKey)}</div>
+                    {group.controls.map((control) => {
+                        if (control.type === 'select') {
+                            const current = control.value?.(ctx);
+                            const disabled = control.disabled?.(ctx) ?? false;
+                            const open = openSelectId === control.id;
+
+                            return (
+                                <div
+                                    key={control.id}
+                                    className="ribbon-tab-menu-select"
+                                    onMouseEnter={() => openSubmenu(control.id)}
+                                    onMouseLeave={() => scheduleSubmenuClose(control.id)}
+                                >
+                                    <button
+                                        type="button"
+                                        role="menuitem"
+                                        aria-haspopup="menu"
+                                        aria-expanded={open}
+                                        className={`ribbon-tab-menu-row ribbon-tab-menu-row--submenu ${open ? 'is-active' : ''}`}
+                                        disabled={disabled}
+                                        onClick={() => setOpenSelectId((value) => value === control.id ? null : control.id)}
+                                        onFocus={() => openSubmenu(control.id)}
+                                    >
+                                        <i className={control.icon} aria-hidden="true" />
+                                        <span>{t(control.labelKey)}</span>
+                                        <i className="fa-solid fa-chevron-right ribbon-tab-menu-chevron" aria-hidden="true" />
+                                    </button>
+                                    {open && (
+                                        <div role="menu" className="ribbon-tab-submenu">
+                                            {(control.options?.(ctx) ?? []).map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    role="menuitemradio"
+                                                    aria-checked={current === option.value}
+                                                    className={`ribbon-tab-menu-row ribbon-tab-menu-row--option ${current === option.value ? 'is-active' : ''}`}
+                                                    disabled={disabled}
+                                                    onClick={() => run(control, option.value)}
+                                                >
+                                                    <i className="fa-solid fa-check" aria-hidden="true" />
+                                                    {control.id === 'paper-color' && (
+                                                        <span
+                                                            className="ribbon-tab-menu-swatch"
+                                                            style={{ background: paperColorPreview[option.value] ?? 'var(--theme-base-page)' }}
+                                                            aria-hidden="true"
+                                                        />
+                                                    )}
+                                                    <span>{t(option.labelKey)}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+
+                        const active = control.active?.(ctx) ?? false;
+                        const disabled = control.disabled?.(ctx) ?? false;
+                        const shortcut = control.menuShortcut ?? control.shortcut;
+
+                        return (
+                            <button
+                                key={control.id}
+                                type="button"
+                                role={control.type === 'toggle' ? 'menuitemcheckbox' : 'menuitem'}
+                                aria-checked={control.type === 'toggle' ? active : undefined}
+                                className={`ribbon-tab-menu-row ${active ? 'is-active' : ''}`}
+                                disabled={disabled}
+                                onClick={() => run(control)}
+                            >
+                                <i className={control.icon} aria-hidden="true" />
+                                <span>{t(control.labelKey)}</span>
+                                {shortcut !== undefined && (
+                                    <kbd>{formatShortcutLabel(shortcut, isMac)}</kbd>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            ))}
         </div>
     );
 }

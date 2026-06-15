@@ -22,6 +22,7 @@ const proseEditable = (ctx: Ctx): boolean => ctx.format === 'prose' && ctx.canUp
 const screenplayEditable = (ctx: Ctx): boolean => ctx.format === 'screenplay' && ctx.canUpdate;
 const editable = (ctx: Ctx): boolean => ctx.canUpdate;
 const zoomOptions = ['75', '90', '100', '110', '125', '150'];
+const paperColorOptions = ['theme', 'white', 'ivory', 'cream', 'gray'];
 const proseStyleOptions = ['normal', 'title', 'subtitle', 'heading1', 'heading2', 'heading3', 'save-preset'];
 
 function markToggle(
@@ -34,6 +35,7 @@ function markToggle(
         icon,
         labelKey: `writing.ribbon.${id}`,
         // No shortcut on purpose — TipTap binds Mod-B/I/U inside the editor.
+        menuShortcut: `Mod-${id[0].toUpperCase()}`,
         visible: proseEditable,
         active: (ctx) => ctx.editor?.isMarkActive(id) ?? false,
         onAction: (ctx) => ctx.editor?.toggleMark(id),
@@ -87,6 +89,7 @@ const editTab: RibbonTab<Ctx> = {
                     type: 'button',
                     icon: 'fa-solid fa-rotate-left',
                     labelKey: 'writing.ribbon.undo',
+                    menuShortcut: 'Mod-Z',
                     visible: editable,
                     disabled: (ctx) => !(ctx.editor?.canUndo() ?? false),
                     onAction: (ctx) => ctx.editor?.undo(),
@@ -96,6 +99,7 @@ const editTab: RibbonTab<Ctx> = {
                     type: 'button',
                     icon: 'fa-solid fa-rotate-right',
                     labelKey: 'writing.ribbon.redo',
+                    menuShortcut: 'Shift-Mod-Z',
                     visible: editable,
                     disabled: (ctx) => !(ctx.editor?.canRedo() ?? false),
                     onAction: (ctx) => ctx.editor?.redo(),
@@ -259,12 +263,21 @@ const viewTab: RibbonTab<Ctx> = {
                     onAction: (ctx) => ctx.actions.togglePrintLayout(),
                 },
                 {
-                    id: 'neutral-chrome',
-                    type: 'toggle',
+                    id: 'paper-color',
+                    type: 'select',
                     icon: 'fa-solid fa-circle-half-stroke',
-                    labelKey: 'writing.ribbon.neutral_chrome',
-                    active: (ctx) => ctx.neutralChrome,
-                    onAction: (ctx) => ctx.actions.toggleNeutralChrome(),
+                    labelKey: 'writing.ribbon.paper_color',
+                    options: () =>
+                        paperColorOptions.map((value) => ({
+                            value,
+                            labelKey: `writing.ribbon.paper_${value}`,
+                        })),
+                    value: (ctx) => ctx.paperColor,
+                    onAction: (ctx, value) => {
+                        if (value !== undefined) {
+                            ctx.actions.setPaperColor(value);
+                        }
+                    },
                 },
                 {
                     id: 'panel',
