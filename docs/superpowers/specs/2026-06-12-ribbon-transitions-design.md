@@ -2,8 +2,8 @@
 
 **Date:** 2026-06-12
 **Status:** Approved (brainstorm with Andrew, visual-companion session, 2026-06-12)
-**Repos:** `alexandria-core` ships everything (app-level chrome infrastructure); `alexandria-app` consumes + tests. Branches `feat/ribbon-transitions`.
-**Board:** #44 (ribbon), #42 reserved seams only (structure guidance gets its own brainstorm after the ribbon lands), plus the new transition repository (this spec).
+**Repos:** `alexandria-core` ships the app-level chrome infrastructure; `alexandria-app` consumes + tests. Built on `feat/ribbon-transitions`, merged to `main` locally during the 2026-06-15 closeout.
+**Board:** #44 ribbon framework/workspace adoption, transition repository, Quick access/QAT, and the first #42 structure-guidance pass are complete. Deeper structure/craft guidance remains in the tracked follow-up list.
 
 ## Goals
 
@@ -12,18 +12,18 @@
 3. **Keyboard shortcuts as a first-class concern** — declared on controls, centrally bound, platform-labeled, conflict-checked.
 4. **Extension seams** for packages and future surfaces: the 8g.2 craft suite contributes a Review-tab group; the add-ons manager (#27's user-facing half) has a documented reserved slot in the Work tab.
 5. **SPA feel**: a transition repository (named page-transition styles, attributable to link anchors later) + our own themed progress bar replacing Inertia's NProgress.
-6. **Quick action bar (QAT)** — user-defined favorites (pinned control ids) + bookmarks. **Built last**, after the ribbon is clean (user instruction).
+6. **Quick action bar (QAT)** — user-defined favorites (pinned control ids) + bookmarks. Built after the ribbon was usable, then folded into the closeout.
 
 ## Decisions log (from the visual session)
 
 | Decision | Choice |
 |---|---|
-| Ribbon shape | Word-style tabbed ribbon (mockup option A) with a persisted **comfortable ↔ slim** display toggle (option C is a setting, not a different design) + Word-style **collapsed** (tabs only) |
-| Tab taxonomy v1 | **Write** (text formatting / screenplay elements / entry links / view toggles), **Structure** (section ops, length plan, reserved #42 guidance group), **Review** (reports, progress, registry-fed craft-suite group), **Work** (settings, status, future export, go-to links, reserved add-ons-manager slot) — user verdicts: Write ✓, Structure ✓ (re-feel in context), Review ✓✓, refine placements after build |
-| Identity vs controls | Section title + label + save status live in a quiet strip UNDER the ribbon (document identity, not controls); word/line/page counts stay in the bottom strip; breadcrumb/back stays beside the tab row |
+| Ribbon shape | The implemented workspace shape is a desktop-app menu row (**File / Edit / View**) plus a visually distinct **Quick access** area and a fixed formatting band. Earlier comfortable/slim/collapsed ideas are deferred customization work, not current UX. |
+| Tab taxonomy v1 | The first mockup taxonomy informed command grouping, then collapsed into desktop menus and context-aware formatting controls. Structure controls now live in the left section panel; length/target/report affordances move to the side surfaces. |
+| Identity vs controls | Work/project identity, settings, paper options, and account-adjacent controls live in the top chrome; document title/type redundancy was removed. Word/line/page counts stay in the bottom strip. |
 | Architecture | **Declarative registry framework** (approach A): tabs/groups/controls are data; rendering, shortcuts, persistence, and the future QAT/customization all read the same definitions |
 | Transitions | Registry of named styles; ship `fade` (simple default) + `slide` (test); our own progress bar; Inertia NProgress disabled; per-anchor attribution via `data-transition` supported by the skeleton |
-| QAT | Final phase; items = control-id references + bookmarks; server-persisted per user |
+| QAT | Shipped as **Quick access** beside the menu row. Items are control-id references/bookmarks and persist per user on `user_preferences.ribbon_quick_actions`. |
 
 ## §1 Ribbon framework (core)
 
@@ -94,7 +94,7 @@ export interface RibbonTab<Ctx = unknown> { id: string; labelKey: string; groups
 The `'writing'` tab set per the approved mockup:
 
 - **Write** — Text group (`visible: prose`): bold/italic/underline/link/lists/H2-H3 driving the editor through the context's editor bridge; Element group (`visible: screenplay`): element select + keys-help; World group: insert entry link; View group: ruler/print toggle, reference-panel toggle, code view; (focus mode = future control slot).
-- **Structure** — Sections group: add section, add inside, delete current; Length plan group: open settings to the plan section, apply-targets action; Guidance group: **reserved, renders nothing until #42** (documented in code).
+- **Structure** — The old ribbon tab was superseded by the integrated left section panel. Add/section-menu actions live there, and the first #42 guidance pass now renders compact structure notes for supported forms. Deeper form-specific guidance remains a follow-up.
 - **Review** — Reports group: open reports; Craft-suite group: **registry-fed, empty until 8g.2**. (No counts control — counts already live in the footer strip; duplicating them as a pseudo-control fights the model.)
 - **Work** — Work group: settings (gear), status select (writes works.update); Export group: **reserved/future**; Go-to group: all works (project index), global writing dashboard; Add-ons group: **reserved slot for the add-ons manager (#27)**.
 
@@ -128,13 +128,13 @@ resources/js/transitions/
 - **Reconcile** the existing `components/ui/PageTransition.tsx`: read at plan time; absorb into the registry as a named style or supersede + migrate its call sites.
 - **Partial reloads** (`only: [...]`, the workspace's section switching) must remain transition-free and progress-bar-quiet under a threshold (only show the bar past ~250ms) — writing-flow latency must not gain chrome noise.
 
-## §6 Quick action bar (final phase — build only after the ribbon is refined)
+## §6 Quick action bar
 
 - A compact strip docked in/beside the tab row: items render left of the tabs (Word QAT position).
 - Item types: **pinned control** (stores a control id + set key; renders that control's icon/action — possible BECAUSE controls are declarative) and **bookmark** (`{url, icon, labelKey-or-raw-label}`).
 - Pin/unpin via control context menu (right-click) + a small QAT editor popover for ordering/removal.
 - **Persistence: server-side** on `user_preferences` (the theme-preference pattern — survives devices). App-side: extend the existing preferences endpoint; no new table.
-- Out of v1 build; spec'd here so the control-id contract is honored from day one.
+- Shipped during the polish pass as **Quick access**. Persistence uses `user_preferences.ribbon_quick_actions`; during alpha cleanup the column was folded into the original `user_preferences` migration rather than left as an additive migration.
 
 ## §7 Testing
 
@@ -148,7 +148,7 @@ resources/js/transitions/
 1. **Plan 1:** ribbon framework (types/registry/renderer/modes/css) + shortcut system + Vitest coverage — standalone, nothing consumes it yet.
 2. **Plan 2:** workspace adoption — editor bridge + `chrome: 'none'` + tab-set definitions + shedding the old surfaces + browser smokes.
 3. **Plan 3:** transition repository + progress bar + NProgress off + PageTransition reconciliation + smokes.
-4. **(Deferred) Plan 4:** QAT, after the user's refine pass on the clean ribbon.
+4. **Plan 4:** QAT / Quick access, shipped during the polish pass after the ribbon and menu row stabilized.
 
 ## Completion addendum — 2026-06-14 writing workspace polish
 
@@ -162,9 +162,13 @@ The initial writing ribbon/chrome pass is complete and intentionally leaves rich
 - Screenplay scene links support `@` entry insertion, editable display text, scene-panel grouping by canonical entry with visible variants, persistence after reload, and dialogue word counts that exclude parentheticals.
 - Manual edge-case coverage lives in `alexandria-app/docs/tests/2026-06-14-writing-ribbon-edge-cases.md`.
 
+## Closeout addendum — 2026-06-15
+
+The ribbon/transitions arc is merged to `main` locally in both repos. The closeout also added the first structure-guidance pass (#42): screenplay/stage-play and line-target poetry get compact, deterministic guidance in the section panel, with app-side Vitest coverage. Review cleanup removed stale `import.meta.env` typings, deprecated React ref types, IDE CSS custom-property warnings, and folded Quick access preferences into the original migration.
+
 ## Out of scope (tracked)
 
-- #42 structure-guidance rendering (own brainstorm next; its ribbon home is reserved)
-- Alt KeyTips; per-page mode overrides; ribbon customization UI (the declarative model is QAT/customization-ready)
+- Deeper #42 structure/craft guidance beyond the first pass: form-specific overlays, richer scene diagnostics, and eventual 8g.2 analyzer output.
+- Richer File/Edit/View command inventory, fuller Quick access customization UI, Alt KeyTips, and per-page mode overrides.
 - Entries/blueprint/admin ribbon adoption (the framework makes it a registration, not a rebuild)
 - Mobile ribbon behavior beyond the existing `md:` workspace gate (mobile pass remains a later stage)

@@ -199,3 +199,18 @@ Discovered while grounding the implementation plan in the actual codebase; these
 8. Reports
 9. Global `/writing` dashboard + navigation registration
 10. Browser smokes in the app
+
+## Completion addendum — 2026-06-15 closeout
+
+8g.1 is complete and merged to `main` locally in both repos. The original branch names and plan files remain useful implementation history, but the restart point is no longer "finish the writing dashboard"; it is 8g.2 craft-suite groundwork.
+
+Shipped after the base dashboard:
+
+- Workspace ribbon/chrome framework, File/Edit/View menu row, fixed formatting band, Quick access/QAT, and custom page transitions/progress bar.
+- Paper-only neutral color options, print-ruler and section-pane polish, app rail, body-scrollbar suppression, and top-chrome cleanup.
+- Screenplay scene links via `@`, editable display text, persistence after reload, canonical entry grouping with visible variants, hover tooltip/page link behavior, and parenthetical-excluded dialogue word counts.
+- First structure-guidance pass (#42) for screenplay/stage-play and line-target poetry, rendered in the section panel with app-side Vitest coverage.
+
+Remaining 8g.1 items are tracked deferrals, not blockers: export/pagination preview, mobile ribbon behavior, cross-parent section moves, beat board/data migration, stage-play preset details, fuller File/Edit/View command inventory, richer scene-link stats/drilldowns, and deeper structure/craft guidance.
+
+Next planned work: 8g.2 `lonely-lights/alexandria-craft`, a new sibling package. Start with package skeleton, analyzer contract, app registration seam, entitlement gate (`craft_suite`), and a deterministic Adverb Review analyzer. Later analyzers include passive voice, weak verbs, cliches, and poem scansion (#41).
