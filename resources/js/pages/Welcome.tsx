@@ -6,27 +6,15 @@ import Card from '../components/ui/Card';
 import Container from '../components/ui/Container';
 import Logo from '../components/ui/Logo';
 import ModeToggle from '../components/theme/ModeToggle';
+import type { SharedProps } from '../types';
 
 interface WelcomeProps {
     loginUrl: string | null;
     registerUrl: string | null;
 }
 
-interface AuthShared {
-    user?: {
-        name: string;
-        email: string;
-    } | null;
-}
-
-interface SharedProps {
-    auth?: AuthShared;
-    name?: string;
-    [key: string]: unknown;
-}
-
 export default function Welcome({ loginUrl, registerUrl }: WelcomeProps) {
-    const page = usePage<SharedProps>();
+    const page = usePage<SharedProps & { name?: string }>();
     const user = page.props.auth?.user ?? null;
     const appName = page.props.name ?? 'Alexandria';
 
