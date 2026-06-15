@@ -1,8 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 
 /**
- * Merge Tailwind CSS classes with proper conflict resolution.
- * Uses clsx for conditional classes (no twMerge needed — DaisyUI handles specificity).
+ * Join conditional class names for Alexandria components.
  */
 export function cn(...inputs: ClassValue[]): string {
     return clsx(inputs);

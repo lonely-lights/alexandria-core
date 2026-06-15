@@ -9,7 +9,6 @@ declare(strict_types=1);
  * Used for automatic cross-linking and relationship discovery. The mention_count
  * field enables importance ranking (entries mentioned more frequently are likely more significant).
  *
- * @REVIEWED 2025-11-23 - Claude Code
  * Batch: 1.1 - EAV Core Migrations
  * Focus: Mention tracking, unique constraints, mention counting
  * Cross-Refs: Batch 3.5 (Content processing), Batch 2.5 (Entry management)

@@ -46,7 +46,7 @@ See [ADR-004](https://github.com/lonely-lights/alexandria-legacy/blob/main/docs/
 - **[`CONFIGURATION.md`](CONFIGURATION.md)** — every config key + environment variable, including how the AI architecture keeps the user as the author
 - **[`docs/EXTENDING.md`](docs/EXTENDING.md)** — override-points catalog (config publish, model swaps, page overrides, layout hooks, service-provider extension)
 
-This package is the framework half — extension and customization happen in the consumer app. For contributing guidance and AI-assistant instructions, see [`alexandria-app`'s `CONTRIBUTING.md`](https://github.com/lonely-lights/alexandria-app/blob/main/CONTRIBUTING.md) and [`AGENTS.md`](https://github.com/lonely-lights/alexandria-app/blob/main/AGENTS.md). Bug reports and missing extension points belong on this repo's issue tracker; everything else routes through the app.
+This package is the framework half — extension and customization happen in the consumer app. For contributing guidance and AI-assistant instructions, see the [`alexandria-app` repository](https://github.com/lonely-lights/alexandria-app). Bug reports and missing extension points belong on this repo's issue tracker; everything else routes through the app.
 
 ## Installation (TL;DR)
 
@@ -78,6 +78,8 @@ The decisions that shaped this package are recorded as ADRs in the legacy repo f
 - [ADR-007 — Stardate as sibling plugin](https://github.com/lonely-lights/alexandria-legacy/blob/main/docs/adr/ADR-007-stardate-as-sibling-plugin.md)
 - [ADR-008 — Tier gates stripped](https://github.com/lonely-lights/alexandria-legacy/blob/main/docs/adr/ADR-008-tier-gates-stripped.md)
 - [ADR-009 — Clean-history extraction](https://github.com/lonely-lights/alexandria-legacy/blob/main/docs/adr/ADR-009-clean-history-extraction.md)
+- [ADR-010 — Concrete AI agents live in consumer apps, not core](https://github.com/lonely-lights/alexandria-legacy/blob/main/docs/adr/ADR-010-ai-agents-in-consumer-apps.md)
+- [ADR-011 — Local-only seeders stored as a private submodule](https://github.com/lonely-lights/alexandria-legacy/blob/main/docs/adr/ADR-011-local-only-seeders-as-private-submodule.md)
 
 ## Extending
 
@@ -104,7 +106,7 @@ The package suite uses Orchestra Testbench so it runs without a host Laravel app
 
 ## Contributing
 
-Contributions welcome once the public API stabilizes around `0.5.0`. Until then, the focus is the initial extraction. See [CONTRIBUTING.md](CONTRIBUTING.md) (added when ready).
+Contributions welcome once the public API stabilizes around `0.5.0`. Until then, the focus is the initial extraction. See the [`alexandria-app` repository](https://github.com/lonely-lights/alexandria-app) for project-wide contribution guidance.
 
 ## License
 

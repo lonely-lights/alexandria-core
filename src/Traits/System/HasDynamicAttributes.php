@@ -141,8 +141,6 @@ trait HasDynamicAttributes
      * Deletes old values for the field and performs a bulk insert of new values,
      * creating one row for each item if value is an array.
      *
-     * UPDATED 2025-11-22: Now uses blueprint_field_id FK instead of field_name string
-     *
      * @param  string  $key  The name of the attribute (e.g., 'titles').
      * @param  mixed  $value  The value to set (can be a single value or an array).
      *
