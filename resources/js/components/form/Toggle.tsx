@@ -1,6 +1,10 @@
+import type { ReactNode } from 'react';
+
 interface ToggleProps {
     label: string;
-    description?: string;
+    hint?: ReactNode;
+    /** Compatibility alias for older callers; prefer `hint`. */
+    description?: ReactNode;
     checked: boolean;
     onChange: (checked: boolean) => void;
     name?: string;
@@ -16,12 +20,15 @@ interface ToggleProps {
  */
 export default function Toggle({
     label,
+    hint,
     description,
     checked,
     onChange,
     name,
     disabled,
 }: ToggleProps) {
+    const helperText = hint ?? description;
+
     return (
         <label className="flex cursor-pointer items-center justify-between gap-4 py-2">
             <div>
@@ -31,14 +38,14 @@ export default function Toggle({
                 >
                     {label}
                 </span>
-                {description && (
+                {helperText && (
                     <p
                         className="text-xs"
                         style={{
                             color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
                         }}
                     >
-                        {description}
+                        {helperText}
                     </p>
                 )}
             </div>
