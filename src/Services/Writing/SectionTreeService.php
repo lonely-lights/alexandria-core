@@ -7,6 +7,7 @@ namespace Alexandria\Core\Services\Writing;
 use Alexandria\Core\Models\Writing\Work;
 use Alexandria\Core\Models\Writing\WorkSection;
 use Alexandria\Core\Models\Writing\WorkSectionEntryMention;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Throwable;
@@ -181,6 +182,7 @@ class SectionTreeService
      */
     private function resequence(int $workId, ?int $parentId, ?int $movedId = null, ?int $movedPosition = null): void
     {
+        /** @var Collection<int, WorkSection> $siblings */
         $siblings = WorkSection::query()
             ->where('work_id', $workId)
             ->where('parent_id', $parentId)

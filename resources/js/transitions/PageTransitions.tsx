@@ -4,7 +4,6 @@ import {
     useMemo,
     useRef,
     useState,
-    type MutableRefObject,
     type ReactNode,
 } from 'react';
 
@@ -50,7 +49,7 @@ function isPartialVisit(visit: PartialVisitShape | undefined): boolean {
     );
 }
 
-function clearTimer(ref: MutableRefObject<number | null>): void {
+function clearTimer(ref: { current: number | null }): void {
     if (ref.current !== null) {
         window.clearTimeout(ref.current);
         ref.current = null;

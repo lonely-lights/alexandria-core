@@ -31,12 +31,10 @@ export default function useRibbonShortcuts<Ctx>(tabs: RibbonTab<Ctx>[], ctx: Ctx
             return;
         }
 
-        if (import.meta.env.DEV) {
-            for (const conflict of findConflicts(bound)) {
-                console.warn(
-                    `[ribbon] shortcut ${conflict.shortcut} (${conflict.kind}) bound by: ${conflict.controlIds.join(', ')}`,
-                );
-            }
+        for (const conflict of findConflicts(bound)) {
+            console.warn(
+                `[ribbon] shortcut ${conflict.shortcut} (${conflict.kind}) bound by: ${conflict.controlIds.join(', ')}`,
+            );
         }
 
         function onKeyDown(event: KeyboardEvent): void {
