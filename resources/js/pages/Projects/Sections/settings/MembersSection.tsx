@@ -9,7 +9,7 @@ import Modal, {
     ModalFooter,
     ModalHeader,
 } from "@alexandria/components/ui/Modal";
-import Select from "@alexandria/components/ui/Select";
+import PickerDropdown from "@alexandria/components/ui/PickerDropdown";
 import useT, { type Translator } from "@alexandria/hooks/useT";
 import type {
     ProjectDetail,
@@ -369,7 +369,7 @@ export default function MembersSection({
                         <label className="mb-1 text-sm font-semibold">
                             {t("projects.members.invite_modal.role_label")}
                         </label>
-                        <Select<string>
+                        <PickerDropdown<string>
                             value={role}
                             options={[
                                 {
@@ -454,7 +454,7 @@ export default function MembersSection({
                     onClose={() => setEditingMember(null)}
                 />
                 <div className="p-6">
-                    <Select<string>
+                    <PickerDropdown<string>
                         value={editRole}
                         options={settings.roles.map((r) => ({
                             value: r.name,

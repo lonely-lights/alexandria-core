@@ -1,5 +1,5 @@
 import useT from '@alexandria/hooks/useT';
-import Select from '@alexandria/components/ui/Select';
+import PickerDropdown from '@alexandria/components/ui/PickerDropdown';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 
 import { formatShortcutLabel } from '../shortcuts';
@@ -24,7 +24,7 @@ export default function RibbonSelect<Ctx>({ control, ctx }: Props<Ctx>) {
     const value = control.value?.(ctx) ?? options[0]?.value ?? '';
 
     const trigger = (
-        <Select
+        <PickerDropdown
             value={value}
             options={options}
             onChange={(next) => control.onAction(ctx, next)}

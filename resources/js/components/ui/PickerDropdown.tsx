@@ -8,7 +8,7 @@ import {
 import { createPortal } from "react-dom";
 
 /**
- * Reusable theme-aware select primitive — picks a single value from a
+ * Reusable theme-aware picker dropdown — picks a single value from a
  * list of options. Use this whenever a native `<select>` would surface
  * (a) un-themable OS chrome on the option list (Chrome/Edge ignore most
  * CSS on `<option>`), or (b) an arrow indicator we can't pad properly.
@@ -21,7 +21,7 @@ import { createPortal } from "react-dom";
  * Generic over the value type so callers don't need to round-trip
  * through string. Typical usage:
  *
- *     <Select
+ *     <PickerDropdown
  *         value={recentLimit}
  *         options={[{ value: 5, label: '5' }, ...]}
  *         onChange={setRecentLimit}
@@ -29,14 +29,14 @@ import { createPortal } from "react-dom";
  *     />
  */
 
-interface SelectOption<T extends string | number> {
+interface PickerDropdownOption<T extends string | number> {
     value: T;
     label: string;
 }
 
-interface SelectProps<T extends string | number> {
+interface PickerDropdownProps<T extends string | number> {
     value: T;
-    options: Array<SelectOption<T>>;
+    options: Array<PickerDropdownOption<T>>;
     onChange: (next: T) => void;
     /** Optional label rendered before the value inside the trigger. */
     triggerLabel?: ReactNode;
@@ -58,7 +58,7 @@ interface SelectProps<T extends string | number> {
     fullWidth?: boolean;
 }
 
-export default function Select<T extends string | number>({
+export default function PickerDropdown<T extends string | number>({
     value,
     options,
     onChange,
@@ -71,7 +71,7 @@ export default function Select<T extends string | number>({
     menuWidth,
     align = "left",
     fullWidth = false,
-}: SelectProps<T>) {
+}: PickerDropdownProps<T>) {
     const [open, setOpen] = useState(false);
     const [triggerHovered, setTriggerHovered] = useState(false);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -220,7 +220,7 @@ export default function Select<T extends string | number>({
                         role="listbox"
                     >
                         {options.map((opt) => (
-                            <SelectRow
+                            <PickerDropdownRow
                                 key={String(opt.value)}
                                 option={opt}
                                 active={opt.value === value}
@@ -242,12 +242,12 @@ export default function Select<T extends string | number>({
  * the rest of the menu family uses; active row carries the brand-tint
  * fill + a check glyph so the user can see the current pick at a glance.
  */
-function SelectRow<T extends string | number>({
+function PickerDropdownRow<T extends string | number>({
     option,
     active,
     onSelect,
 }: {
-    option: SelectOption<T>;
+    option: PickerDropdownOption<T>;
     active: boolean;
     onSelect: () => void;
 }) {

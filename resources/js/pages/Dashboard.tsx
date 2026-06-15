@@ -2,7 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { useEffect, useState, type CSSProperties } from 'react';
 
 import AppLayout from '../layouts/AppLayout';
-import Select from '@alexandria/components/ui/Select';
+import PickerDropdown from '@alexandria/components/ui/PickerDropdown';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import useT from '@alexandria/hooks/useT';
@@ -639,7 +639,7 @@ function RecentFilterToggle({
 /**
  * Count selector — picks how many recent items to show. Persists via
  * the `dashboard:recent-limit` localStorage key. Delegates the trigger
- * + menu chrome to `<Select>` so the option list inherits theme tokens
+ * + menu chrome to `<PickerDropdown>` so the option list inherits theme tokens
  * (the previous native `<select>` rendered its dropdown with stark
  * OS-default white/black that ignored the theme).
  */
@@ -653,7 +653,7 @@ function RecentLimitPicker({
     t: ReturnType<typeof useT>;
 }) {
     return (
-        <Select<RecentLimit>
+        <PickerDropdown<RecentLimit>
             value={value}
             options={RECENT_LIMIT_OPTIONS.map((n) => ({ value: n, label: String(n) }))}
             onChange={onChange}

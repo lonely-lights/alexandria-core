@@ -1,6 +1,6 @@
 import Input from "@alexandria/components/form/Input";
 import Textarea from "@alexandria/components/form/Textarea";
-import Select from "@alexandria/components/ui/Select";
+import PickerDropdown from "@alexandria/components/ui/PickerDropdown";
 import useT from "@alexandria/hooks/useT";
 
 import SettingsActivationToggle from "../SettingsActivationToggle";
@@ -408,7 +408,7 @@ export default function StructuralRulesSlotEditor({
                                         />
                                     </div>
                                 </div>
-                                <Select<CreationPolicy>
+                                <PickerDropdown<CreationPolicy>
                                     value={item.creation_policy}
                                     options={CREATION_POLICIES.map((p) => ({
                                         value: p,

@@ -1,6 +1,6 @@
 import Input from "@alexandria/components/form/Input";
 import Textarea from "@alexandria/components/form/Textarea";
-import Select from "@alexandria/components/ui/Select";
+import PickerDropdown from "@alexandria/components/ui/PickerDropdown";
 import useT from "@alexandria/hooks/useT";
 
 import SettingsObjectList from "../SettingsObjectList";
@@ -80,7 +80,7 @@ export default function BoundariesSlotEditor({
                                     className="font-mono"
                                 />
                             </div>
-                            <Select<BoundaryKind>
+                            <PickerDropdown<BoundaryKind>
                                 value={item.kind}
                                 options={BOUNDARY_KINDS.map((kind) => ({
                                     value: kind,
