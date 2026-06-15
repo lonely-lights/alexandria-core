@@ -257,7 +257,7 @@ in `beforeEach` instead of the global bypass.
 - **Consumer-extended preset registry.** Today `PRESETS` in
   `ThemingBridge.tsx` is a hard-coded map and `Presets::SLUGS` in
   core mirrors it. A consumer SaaS adding its own preset has to
-  override the bridge. Stage 9 release-prep is a good place to add a
+  override the bridge. Stage 16 release-prep is a good place to add a
   proper config-publish path so consumer apps can register presets
   without forking the bridge.
 - **User-level overrides.** The cascade resolver accepts a `user`

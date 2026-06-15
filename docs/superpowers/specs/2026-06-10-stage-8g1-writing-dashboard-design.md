@@ -2,9 +2,11 @@
 
 **Date:** 2026-06-10
 **Status:** Approved (brainstorm with Andrew, 2026-06-10)
-**Repo:** `alexandria-core` — the dashboard is generic creative-writing functionality, free in every install. No SaaS concerns (ADR-008); entitlement gating arrives only with 8g.2's `craft_suite` key, bound in the consumer app.
+**Repo:** `alexandria-core` — the dashboard is generic creative-writing functionality, free in every install. No SaaS concerns (ADR-008); entitlement gating arrives only with Stage 12a's `craft_suite` key, bound in the consumer app.
 **Branch:** `feat/8g1-writing-dashboard`
-**Blocks:** 8g.2 (`lonely-lights/alexandria-craft`) — craft analyzers target this component's works/sections contract.
+**Blocks:** Stage 12a (`lonely-lights/alexandria-craft`) — craft analyzers target this component's works/sections contract.
+
+> **Roadmap reset (2026-06-15):** this spec is implementation history for the completed writing dashboard. Remaining writing work is planned under Stage 11, and package craft work under Stage 12a, in `alexandria-app/docs/REMAINING-ROADMAP.md`.
 
 ## Goals
 
@@ -25,7 +27,7 @@ The structure is founded on Andrew's existing blueprint family (Work, Chapter, S
 - **Migration tooling** for the existing blueprint Works data.
 - **Daily writing-stats table** — v1's progress-over-time uses section `updated_at`; a proper stats table is a follow-up.
 - **Stage play format preset** — reserved slot; the format machinery supports it as a config entry when wanted.
-- AI features inside the dashboard itself — that's 8g.2's job, arriving through the panel seam.
+- AI features inside the dashboard itself — that's Stage 12a's job, arriving through the panel seam.
 
 ## Decisions log
 
@@ -73,7 +75,7 @@ Three tables + one pivot, in core (`src/Models/Writing/`, standard publishable m
 
 - `work_section_id`, `entry_id`, `source` (`mention` | `pov` | `setting`); unique on the triple
 - **Rebuilt on section save** by scanning the document for wiki-link nodes plus the two reference fields — never maintained incrementally, so it can never drift from the prose. A backfill artisan command can rebuild it from documents alone.
-- This is the contract the Work Character / Scene↔Event relationship blueprints collapse into, and the lingua franca for panels, reports, and 8g.2.
+- This is the contract the Work Character / Scene↔Event relationship blueprints collapse into, and the lingua franca for panels, reports, and Stage 12a.
 
 ### `work_entry_pins`
 
@@ -138,7 +140,7 @@ POV/setting craft fields use the existing entry-picker component family, scoped 
 
 ### `WritingPanelRegistry` — the seam
 
-Same shape as `SettingsSlotRegistry`: core renders built-in panel tabs, then registered extras. Registration: `{ id, labelKey, icon, component, placement }`. This is how the rest of the app ties in without core knowing: notes can register a panel tab beside the draft; 8g.2 registers Adverb Review results for the open section; 8h could surface the project calendar. Panels needing server data use their own lazy JSON routes (the SubscriberStats fetch pattern) — core's controllers stay closed.
+Same shape as `SettingsSlotRegistry`: core renders built-in panel tabs, then registered extras. Registration: `{ id, labelKey, icon, component, placement }`. This is how the rest of the app ties in without core knowing: notes can register a panel tab beside the draft; Stage 12a registers Adverb Review results for the open section; Stage 12b could surface the project calendar. Panels needing server data use their own lazy JSON routes (the SubscriberStats fetch pattern) — core's controllers stay closed.
 
 ## Reports + counting plumbing
 
@@ -150,7 +152,7 @@ A **Reports tab on the work** (not a separate area), server-computed live from e
 
 ### `SectionContentAnalyzer`
 
-One server-side walker over the TipTap JSON on save produces: word count (prose) **or** line/page estimate (screenplay, from the format spec), **plus** the mention scan — one tree walk feeds both. Cached numbers are recomputable truth (artisan rebuild command). Rollups: section save → recompute own count → bubble to ancestors + work in a single UPDATE chain; reorder/move re-bubbles affected branches only. 8g.2 analyzers are siblings of this walker, reading the same JSON.
+One server-side walker over the TipTap JSON on save produces: word count (prose) **or** line/page estimate (screenplay, from the format spec), **plus** the mention scan — one tree walk feeds both. Cached numbers are recomputable truth (artisan rebuild command). Rollups: section save → recompute own count → bubble to ancestors + work in a single UPDATE chain; reorder/move re-bubbles affected branches only. Stage 12a analyzers are siblings of this walker, reading the same JSON.
 
 ## Routes, navigation, permissions
 
@@ -182,7 +184,7 @@ Writing item in the main navbar (global dashboard) + a Writing tab in project na
 
 Discovered while grounding the implementation plan in the actual codebase; these override the corresponding lines above.
 
-1. **Content storage is text, not TipTap JSON.** Core's editor round-trips **wiki markup text** (`RichTextEditor` → `parseWikiToHtml` in, `serializeToWiki` out), and `entries.content` is longText wiki. Sections follow suit: prose = wiki markup (mentions stay `[[Name|Display]]`), screenplay = **Fountain-style plain text**. `SectionContentAnalyzer` parses text per format. Bonus: deferred Fountain export becomes nearly free, and 8g.2 analyzers consume text rather than walking JSON.
+1. **Content storage is text, not TipTap JSON.** Core's editor round-trips **wiki markup text** (`RichTextEditor` → `parseWikiToHtml` in, `serializeToWiki` out), and `entries.content` is longText wiki. Sections follow suit: prose = wiki markup (mentions stay `[[Name|Display]]`), screenplay = **Fountain-style plain text**. `SectionContentAnalyzer` parses text per format. Bonus: deferred Fountain export becomes nearly free, and Stage 12a analyzers consume text rather than walking JSON.
 2. **HTTP layer lives in `alexandria-app`** (Stage 4 wiring pattern): core ships models/migrations/factories/services/pages/components; the app ships routes (`routes/web.php`), controllers (`App\Http\Controllers\Writing\*`, like `EntryController`), `WorkPolicy` (Spatie project-scoped `work.view/create/edit/delete` permissions, seeded in `database/seeders/Security/` — no per-entry ACL layer needed), and HTTP feature tests. Core has **no domain routes** (only `routes/auth.php`).
 3. **JS unit tests run in `alexandria-app`'s Vitest setup** — core has no JS test runner. Screenplay transition-map tests import core modules through the app's alias.
 4. **Rollup simplification:** cached counts = per-section *own* words + the work total (`works.word_count` = SUM of sections). Ancestor aggregates derive client-side in the Navigator (it already holds the whole tree) — no bubble-chain writes.
@@ -202,7 +204,7 @@ Discovered while grounding the implementation plan in the actual codebase; these
 
 ## Completion addendum — 2026-06-15 closeout
 
-8g.1 is complete and merged to `main` locally in both repos. The original branch names and plan files remain useful implementation history, but the restart point is no longer "finish the writing dashboard"; it is 8g.2 craft-suite groundwork.
+8g.1 is complete and merged to `main` locally in both repos. The original branch names and plan files remain useful implementation history, but the restart point is no longer "finish the writing dashboard." Priority dashboard follow-ups moved to Stage 11; craft-suite package work moved to Stage 12a.
 
 Shipped after the base dashboard:
 
@@ -213,4 +215,4 @@ Shipped after the base dashboard:
 
 Remaining 8g.1 items are tracked deferrals, not blockers: export/pagination preview, mobile ribbon behavior, cross-parent section moves, beat board/data migration, stage-play preset details, fuller File/Edit/View command inventory, richer scene-link stats/drilldowns, and deeper structure/craft guidance.
 
-Next planned work: 8g.2 `lonely-lights/alexandria-craft`, a new sibling package. Start with package skeleton, analyzer contract, app registration seam, entitlement gate (`craft_suite`), and a deterministic Adverb Review analyzer. Later analyzers include passive voice, weak verbs, cliches, and poem scansion (#41).
+Next planned writing work: Stage 11 for dashboard UX/data follow-ups, then Stage 12a `lonely-lights/alexandria-craft` for package analyzers. Start Stage 12a with package skeleton, analyzer contract, app registration seam, entitlement gate (`craft_suite`), and a deterministic Adverb Review analyzer. Later analyzers include passive voice, weak verbs, cliches, and poem scansion (#41).

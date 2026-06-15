@@ -5,12 +5,14 @@
 **Repos:** `alexandria-core` ships the app-level chrome infrastructure; `alexandria-app` consumes + tests. Built on `feat/ribbon-transitions`, merged to `main` locally during the 2026-06-15 closeout.
 **Board:** #44 ribbon framework/workspace adoption, transition repository, Quick access/QAT, and the first #42 structure-guidance pass are complete. Deeper structure/craft guidance remains in the tracked follow-up list.
 
+> **Roadmap reset (2026-06-15):** this spec is implementation history. Remaining ribbon/writing follow-ups now live in Stage 11 or Stage 14 of `alexandria-app/docs/REMAINING-ROADMAP.md`; package analyzers live in Stage 12a.
+
 ## Goals
 
 1. **One control surface.** A Word/Final Draft-style ribbon replaces the writing workspace's scattered controls (header-strip buttons, section menu bar, editor toolbars). Familiar to anyone who has used Office; navigable like Final Draft's settings.
 2. **App-level infrastructure, not a workspace widget.** Tabs are *portable control sets*: a tab set registered under a key can mount on any page. Blueprint/entry settings pages adopt the ribbon later by registering their own sets — the framework is the deliverable, the workspace is its first consumer. The ribbon "takes on a whole new life as a central part of the application" (user framing).
 3. **Keyboard shortcuts as a first-class concern** — declared on controls, centrally bound, platform-labeled, conflict-checked.
-4. **Extension seams** for packages and future surfaces: the 8g.2 craft suite contributes a Review-tab group; the add-ons manager (#27's user-facing half) has a documented reserved slot in the Work tab.
+4. **Extension seams** for packages and future surfaces: Stage 12a craft-suite work contributes a Review-tab group; the add-ons manager (#27's user-facing half) has a documented reserved slot in the Work tab.
 5. **SPA feel**: a transition repository (named page-transition styles, attributable to link anchors later) + our own themed progress bar replacing Inertia's NProgress.
 6. **Quick action bar (QAT)** — user-defined favorites (pinned control ids) + bookmarks. Built after the ribbon was usable, then folded into the closeout.
 
@@ -95,7 +97,7 @@ The `'writing'` tab set per the approved mockup:
 
 - **Write** — Text group (`visible: prose`): bold/italic/underline/link/lists/H2-H3 driving the editor through the context's editor bridge; Element group (`visible: screenplay`): element select + keys-help; World group: insert entry link; View group: ruler/print toggle, reference-panel toggle, code view; (focus mode = future control slot).
 - **Structure** — The old ribbon tab was superseded by the integrated left section panel. Add/section-menu actions live there, and the first #42 guidance pass now renders compact structure notes for supported forms. Deeper form-specific guidance remains a follow-up.
-- **Review** — Reports group: open reports; Craft-suite group: **registry-fed, empty until 8g.2**. (No counts control — counts already live in the footer strip; duplicating them as a pseudo-control fights the model.)
+- **Review** — Reports group: open reports; Craft-suite group: **registry-fed, empty until Stage 12a**. (No counts control — counts already live in the footer strip; duplicating them as a pseudo-control fights the model.)
 - **Work** — Work group: settings (gear), status select (writes works.update); Export group: **reserved/future**; Go-to group: all works (project index), global writing dashboard; Add-ons group: **reserved slot for the add-ons manager (#27)**.
 
 **Context bridge:** the Workspace builds `WritingRibbonContext` — `{format, canUpdate, panelOpen, printLayout, editor: RibbonEditorBridge | null, actions: {toggleRuler, togglePanel, openSettings, openReports, addSection, addInside, deleteSection, setStatus, insertEntryLink, toggleCodeView}}`. `RibbonEditorBridge` is a small interface BOTH editors implement and expose via ref: `{toggleMark(name), setElement(el), isMarkActive(name), currentElement(), canSetElement()}` — prose implements marks, screenplay implements elements; unsupported calls no-op with `disabled` reflecting capability.
@@ -108,7 +110,7 @@ The `'writing'` tab set per the approved mockup:
 
 ## §4 Extension seams
 
-- `extendRibbonTabs('writing', ...)` is the public door. Documented reserved targets: `review/craft` group (8g.2 registers Adverb Review, meter analysis #41), `work/addons` group (#27 user-facing manager), `structure/guidance` group (#42 toggles).
+- `extendRibbonTabs('writing', ...)` is the public door. Documented reserved targets: `review/craft` group (Stage 12a registers Adverb Review, meter analysis #41), `work/addons` group (#27 user-facing manager), `structure/guidance` group (#42 toggles).
 - Future pages: blueprint/entry settings register `'blueprint-settings'` / `'entry'` sets when they adopt — framework change: none. This is the "informs future choices" payoff and why the framework lives in core's top-level `ribbon/`, not under Writing.
 
 ## §5 Transition repository + SPA polish
@@ -168,7 +170,6 @@ The ribbon/transitions arc is merged to `main` locally in both repos. The closeo
 
 ## Out of scope (tracked)
 
-- Deeper #42 structure/craft guidance beyond the first pass: form-specific overlays, richer scene diagnostics, and eventual 8g.2 analyzer output.
-- Richer File/Edit/View command inventory, fuller Quick access customization UI, Alt KeyTips, and per-page mode overrides.
-- Entries/blueprint/admin ribbon adoption (the framework makes it a registration, not a rebuild)
-- Mobile ribbon behavior beyond the existing `md:` workspace gate (mobile pass remains a later stage)
+- Stage 11: deeper writing-native structure guidance, richer scene diagnostics, File/Edit/View command inventory, and Entries/blueprint/admin ribbon adoption.
+- Stage 12a: package-provided craft analyzer output.
+- Stage 14 or later: fuller Quick access customization UI, Alt KeyTips, per-page mode overrides, and mobile ribbon behavior beyond the existing `md:` workspace gate.
