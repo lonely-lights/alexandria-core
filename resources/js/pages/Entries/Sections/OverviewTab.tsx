@@ -2,8 +2,8 @@ import { type CSSProperties } from 'react';
 import useT from '@alexandria/hooks/useT';
 import MentionAwareContent from '@alexandria/components/ui/MentionAwareContent';
 import Infobox from '@alexandria/components/entries/Infobox';
-import type { InfoboxBlock } from '@alexandria/components/entries/Infobox';
-import type { EntryShowEntry } from '../Show';
+import type { InfoboxBlock } from '@alexandria/types/entries';
+import type { EntryShowEntry } from '@alexandria/types/entries';
 
 interface OverviewTabProps {
     contentHtml: string | null;

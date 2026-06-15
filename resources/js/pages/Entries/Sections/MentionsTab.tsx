@@ -2,7 +2,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import EntryLink from '@alexandria/components/entries/EntryLink';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
-import type { MentionEntry } from '../Show';
+import type { MentionEntry } from '@alexandria/types/entries';
 import {
     cardOuter,
     cardInner,

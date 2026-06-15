@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import type { CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import type { WorkAppearance } from '@alexandria/types/entries';
 import {
     cardOuter,
     cardInner,
@@ -19,16 +20,6 @@ import {
  * mention. Renders on the Overview tab only when the writing
  * dashboard reports at least one appearance.
  */
-
-export interface WorkAppearance {
-    work: { title: string; slug: string };
-    sections: Array<{
-        title: string;
-        slug: string;
-        sources: string[];
-        mention_count: number;
-    }>;
-}
 
 const sectionLinkStyle: CSSProperties = {
     color: 'var(--theme-base-content)',

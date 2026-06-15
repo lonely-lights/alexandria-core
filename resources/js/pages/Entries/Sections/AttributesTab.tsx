@@ -3,7 +3,7 @@ import useT, { type Translator } from '@alexandria/hooks/useT';
 import EntryLink from '@alexandria/components/entries/EntryLink';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import { formatStardate } from '@alexandria/lib/stardate';
-import type { DynamicProperty } from '../Show';
+import type { DynamicProperty } from '@alexandria/types/entries';
 import {
     cardOuter,
     cardInner,

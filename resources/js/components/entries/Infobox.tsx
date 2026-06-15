@@ -2,85 +2,14 @@ import { useState, type CSSProperties, type ReactNode } from 'react';
 import useT from '@alexandria/hooks/useT';
 import EntryLink from '@alexandria/components/entries/EntryLink';
 import MentionAwareContent from '@alexandria/components/ui/MentionAwareContent';
-
-/* ── Types ── */
-
-interface InfoboxItem {
-    text: string;
-    url: string | null;
-    entry_id: number | null;
-}
-
-interface InfoboxHeaderBlock {
-    type: 'header';
-    data: { text: string };
-}
-
-interface InfoboxAttributeBlock {
-    type: 'attribute';
-    data: {
-        label: string;
-        field_name: string;
-        field_type: string;
-        items: InfoboxItem[];
-        limit_enabled: boolean;
-        visible_limit: number;
-    };
-}
-
-interface InfoboxRelationshipItem {
-    label: string;
-    show_label: boolean;
-    entry: {
-        id: number;
-        name: string;
-        slug: string;
-        url: string | null;
-        icon: string;
-    };
-    subtitle_html: string | null;
-}
-
-interface InfoboxRelationshipsBlock {
-    type: 'relationships';
-    data: {
-        header: string;
-        items: InfoboxRelationshipItem[];
-        limit_enabled: boolean;
-        visible_limit: number;
-    };
-}
-
-interface InfoboxHierarchyEntry {
-    id: number;
-    name: string;
-    slug: string;
-    url: string | null;
-    type_name: string | null;
-}
-
-interface InfoboxHierarchyBlock {
-    type: 'hierarchy';
-    data: {
-        parent: InfoboxHierarchyEntry | null;
-        children: InfoboxHierarchyEntry[];
-        children_total: number;
-        limit_enabled: boolean;
-        visible_limit: number;
-    };
-}
-
-interface InfoboxMentionedInBlock {
-    type: 'mentioned_in';
-    data: {
-        label: string;
-        items: InfoboxItem[];
-        limit_enabled: boolean;
-        visible_limit: number;
-    };
-}
-
-export type InfoboxBlock = InfoboxHeaderBlock | InfoboxAttributeBlock | InfoboxRelationshipsBlock | InfoboxHierarchyBlock | InfoboxMentionedInBlock;
+import type {
+    InfoboxBlock,
+    InfoboxHierarchyBlock,
+    InfoboxHierarchyEntry,
+    InfoboxItem,
+    InfoboxRelationshipItem,
+    InfoboxRelationshipsBlock,
+} from '@alexandria/types/entries';
 
 interface InfoboxProps {
     blocks: InfoboxBlock[];

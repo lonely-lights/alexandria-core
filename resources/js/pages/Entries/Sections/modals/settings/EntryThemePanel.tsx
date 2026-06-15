@@ -8,7 +8,7 @@ import ThemePresetPicker, {
 import TokenOverrideEditor from '@alexandria/components/theming/TokenOverrideEditor';
 import useT from '@alexandria/hooks/useT';
 import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
-import type { EntryShowEntry } from '@alexandria/pages/Entries/Show';
+import type { EntryShowEntry } from '@alexandria/types/entries';
 
 /**
  * Page-level theme shape (read from currentProject + blueprint shared

@@ -2,7 +2,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import EntryLink from '@alexandria/components/entries/EntryLink';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
-import type { ConnectionSection } from '../Show';
+import type { ConnectionSection } from '@alexandria/types/entries';
 import {
     cardOuter,
     cardInner,

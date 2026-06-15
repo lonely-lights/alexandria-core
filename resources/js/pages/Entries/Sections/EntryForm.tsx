@@ -7,30 +7,11 @@ import ActionButton from '@alexandria/components/ui/ActionButton';
 import Modal from '@alexandria/components/ui/Modal';
 import StardateInput from '@alexandria/components/fields/StardateInput';
 import MediaSection from '@alexandria/components/media/MediaSection';
-
-interface ReferenceEntry {
-    id: number;
-    name: string;
-}
-
-interface ReferenceConfig {
-    target_blueprint_slug: string | null;
-    target_blueprint_name: string | null;
-    selection_mode: 'single' | 'multiple';
-    entries: ReferenceEntry[];
-}
-
-interface BlueprintFieldDef {
-    id: number;
-    name: string;
-    label: string;
-    type: string;
-    description: string | null;
-    is_required: boolean;
-    validation_rules: Record<string, unknown>;
-    sort_order: number;
-    reference_config?: ReferenceConfig;
-}
+import type {
+    EntryFieldReferenceConfig,
+    EntryFieldReferenceEntry,
+    EntryFormBlueprintField,
+} from '@alexandria/types/entries';
 
 interface ParentEntry {
     id: number;
@@ -53,7 +34,7 @@ interface EntryFormProps {
     blueprintSlug: string;
     blueprintName: string;
     blueprintIcon: string;
-    fields: BlueprintFieldDef[];
+    fields: EntryFormBlueprintField[];
     parentEntries: ParentEntry[];
     entrySlug?: string;
     entryId?: number;
@@ -478,7 +459,7 @@ const temporalAddBtnStyle: CSSProperties = {
 };
 
 function TemporalFieldEditor({ field, records, onChange }: {
-    field: BlueprintFieldDef;
+    field: EntryFormBlueprintField;
     records: TemporalRecord[];
     onChange: (records: TemporalRecord[]) => void;
 }) {
@@ -622,7 +603,7 @@ const booleanLabelStyle: CSSProperties = {
 };
 
 function DynamicFieldInput({ field, value, onChange }: {
-    field: BlueprintFieldDef;
+    field: EntryFormBlueprintField;
     value: unknown;
     onChange: (v: unknown) => void;
 }) {
@@ -756,7 +737,7 @@ const pickerChevronStyle: CSSProperties = {
 };
 
 function EntryReferencePicker({ field, value, onChange }: {
-    field: BlueprintFieldDef;
+    field: EntryFormBlueprintField;
     value: unknown;
     onChange: (v: unknown) => void;
 }) {
@@ -937,15 +918,15 @@ const modalSpinnerStyle: CSSProperties = {
 function EntryReferenceModal({ open, onClose, field, config: initialConfig, selectedIds, onChange }: {
     open: boolean;
     onClose: () => void;
-    field: BlueprintFieldDef;
-    config: ReferenceConfig;
+    field: EntryFormBlueprintField;
+    config: EntryFieldReferenceConfig;
     selectedIds: number[];
     onChange: (ids: number[]) => void;
 }) {
     const t = useT();
     const [search, setSearch] = useState('');
     const [localSelected, setLocalSelected] = useState<number[]>(selectedIds);
-    const [localEntries, setLocalEntries] = useState<ReferenceEntry[]>(initialConfig.entries);
+    const [localEntries, setLocalEntries] = useState<EntryFieldReferenceEntry[]>(initialConfig.entries);
     const [creating, setCreating] = useState(false);
     const sortableRef = useRef<HTMLDivElement>(null);
     const isMulti = initialConfig.selection_mode === 'multiple';
@@ -1001,7 +982,7 @@ function EntryReferenceModal({ open, onClose, field, config: initialConfig, sele
                 body: JSON.stringify({ name }),
             });
             if (res.ok) {
-                const newEntry: ReferenceEntry = await res.json();
+                const newEntry: EntryFieldReferenceEntry = await res.json();
                 setLocalEntries((prev) => [...prev, newEntry]);
                 initialConfig.entries.push(newEntry);
                 if (isMulti) {
@@ -1179,7 +1160,7 @@ function EntryReferenceModal({ open, onClose, field, config: initialConfig, sele
 
 /* ── Helpers ── */
 
-function buildInitialFields(fields: BlueprintFieldDef[], initialValues?: Record<string, unknown>): Record<string, unknown> {
+function buildInitialFields(fields: EntryFormBlueprintField[], initialValues?: Record<string, unknown>): Record<string, unknown> {
     const result: Record<string, unknown> = {};
     for (const field of fields) {
         if (field.type === 'temporal') {

@@ -11,7 +11,7 @@ import {
     rightPaneStyle,
     titleBarStyle,
 } from '@alexandria/pages/Blueprints/Sections/modals/settings/settingsPanelStyles';
-import type { EntryShowEntry } from '@alexandria/pages/Entries/Show';
+import type { EntryShowEntry } from '@alexandria/types/entries';
 
 import EntryThemePanel from './settings/EntryThemePanel';
 

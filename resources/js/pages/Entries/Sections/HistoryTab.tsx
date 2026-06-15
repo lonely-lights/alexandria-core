@@ -1,7 +1,7 @@
 import { useState, useMemo, type CSSProperties } from 'react';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
-import type { HistoryRecord } from '../Show';
+import type { HistoryRecord } from '@alexandria/types/entries';
 import {
     cardOuter,
     cardInner,
