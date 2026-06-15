@@ -175,7 +175,9 @@ return [
             'poem' => [
                 'format' => 'prose',
                 'sections' => [
-                    ['label' => 'Poem', 'title' => 'Untitled'],
+                    // null title → the section inherits the work's title
+                    // (the single section IS the poem).
+                    ['label' => 'Poem', 'title' => null],
                 ],
             ],
             'other' => [

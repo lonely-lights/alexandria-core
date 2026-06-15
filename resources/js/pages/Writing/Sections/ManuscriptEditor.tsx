@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, type Ref } from 'react';
 
-import useT from '@alexandria/hooks/useT';
 import RichTextEditor from '@alexandria/components/editor/RichTextEditor';
-import Tooltip from '@alexandria/components/ui/Tooltip';
 
+import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 import type { CurrentSection } from '../Workspace';
+import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
 import SectionChrome from './SectionChrome';
+import { extractSectionOutline, type SectionOutlineItem } from './sectionOutline';
 import useSectionAutosave, { type SectionCountsCallback } from './useSectionAutosave';
 
 /**
@@ -13,12 +14,17 @@ import useSectionAutosave, { type SectionCountsCallback } from './useSectionAuto
  *
  * The center pane: a RichTextEditor wired to debounced JSON autosave
  * (PUT .../sections/{id}/content) via the shared useSectionAutosave
- * hook, wrapped in the shared SectionChrome (menu bar with inline
- * title / counts footer). Server-confirmed word counts flow back up
- * through `onCounts` so the Workspace header strip + Navigator rows
- * stay live without an Inertia round-trip. Switching sections (or
+ * hook, wrapped in the shared SectionChrome (identity strip with
+ * inline title + save status). Server-confirmed word/page counts flow
+ * back up through `onCounts` so the workspace status bar + Navigator
+ * rows stay live without an Inertia round-trip. Switching sections (or
  * unmounting) flushes any pending save for the outgoing section before
  * state resets.
+ *
+ * Ribbon Plan 2: the editor is headless-capable — `bridgeRef` exposes
+ * the WritingEditorBridge, `onStateChange` ticks the workspace, and
+ * `printLayout` is owned by the Workspace (which also owns the ruler
+ * toggle via the ribbon's View group).
  */
 
 export interface ManuscriptEditorProps {
@@ -28,6 +34,27 @@ export interface ManuscriptEditorProps {
     section: CurrentSection;
     canUpdate: boolean;
     onCounts: SectionCountsCallback;
+    /**
+     * Word-style print layout — lifted to the Workspace (Ribbon Plan 2
+     * Task 3 always passes it, persisting through the exported storage
+     * helpers below). When omitted, the editor falls back to the
+     * stored preference read once on mount, so standalone mounts keep
+     * today's behavior.
+     */
+    printLayout?: boolean;
+    /**
+     * Editor chrome forwarded to RichTextEditor — the Workspace passes
+     * 'none' once the ribbon owns the controls (Task 3). Ignored by
+     * ScreenplayEditor (its toolbar is already gone).
+     */
+    chrome?: 'full' | 'none';
+    /** Ribbon editor bridge — commands + capability queries (Ribbon Plan 2). */
+    bridgeRef?: Ref<WritingEditorBridge>;
+    /** Editor selection/content tick — the Workspace bumps `editorTick`. */
+    onStateChange?: () => void;
+    onOutlineChange?: (outline: SectionOutlineItem[]) => void;
+    onSceneLinksChange?: (links: ScreenplaySceneLink[]) => void;
+    onEntryLinkSelect?: () => void;
 }
 
 export const PRINT_LAYOUT_STORAGE_KEY = 'alexandria.writing.print_layout';
@@ -48,15 +75,25 @@ export default function ManuscriptEditor({
     section,
     canUpdate,
     onCounts,
+    printLayout,
+    chrome,
+    bridgeRef,
+    onStateChange,
+    onOutlineChange,
 }: ManuscriptEditorProps) {
-    const t = useT();
-    const { status, wordCount, pageEstimate, noteChange, initialContent } =
+    const { noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
     const [content, setContent] = useState(initialContent);
-    const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
+
+    // Read the stored preference ONCE (a function-call prop default
+    // would re-read localStorage every render). The `??` fallback keeps
+    // the editor self-sufficient until the Workspace passes the prop.
+    const storedPrintLayout = useMemo(readPrintLayoutPreference, []);
+    const effectivePrintLayout = printLayout ?? storedPrintLayout;
 
     function handleChange(wiki: string) {
         setContent(wiki);
+        onOutlineChange?.(extractSectionOutline(wiki));
         noteChange(wiki);
     }
 
@@ -65,53 +102,12 @@ export default function ManuscriptEditor({
     // pending save — on the same id change).
     useEffect(() => {
         setContent(section.content ?? '');
+        onOutlineChange?.(extractSectionOutline(section.content));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [section.id]);
 
-    function togglePrintLayout() {
-        const next = !printLayout;
-        setPrintLayout(next);
-        try {
-            localStorage.setItem(PRINT_LAYOUT_STORAGE_KEY, String(next));
-        } catch {
-            // Storage unavailable (private mode / quota) — the toggle
-            // still works for this session.
-        }
-    }
-
-    const printLayoutToggleButton = (
-        <Tooltip content={t('writing.workspace.print_layout')}>
-            <button
-                type="button"
-                onClick={togglePrintLayout}
-                aria-pressed={printLayout}
-                className={`alex-toolbar-btn inline-flex h-8 w-8 shrink-0 items-center justify-center text-sm transition-colors ${printLayout ? 'alex-toolbar-btn--active' : ''}`}
-                style={{
-                    background: printLayout
-                        ? 'color-mix(in srgb, var(--theme-brand-secondary-500) 18%, transparent)'
-                        : 'transparent',
-                    color: printLayout
-                        ? 'var(--theme-brand-secondary-500)'
-                        : 'var(--theme-base-content)',
-                    borderRadius: 'var(--theme-radius-button)',
-                }}
-            >
-                <i className="fa-solid fa-ruler-horizontal" />
-            </button>
-        </Tooltip>
-    );
-
     return (
-        <SectionChrome
-            projectSlug={projectSlug}
-            workSlug={workSlug}
-            section={section}
-            canUpdate={canUpdate}
-            status={status}
-            wordCount={wordCount}
-            pageEstimate={pageEstimate}
-            menuExtras={canUpdate ? printLayoutToggleButton : undefined}
-        >
+        <SectionChrome>
             {/* Manuscript — the editor's content wrapper scrolls */}
             {canUpdate ? (
                 <RichTextEditor
@@ -120,15 +116,19 @@ export default function ManuscriptEditor({
                     className="min-h-0 flex-1"
                     value={content}
                     onChange={handleChange}
+                    onImmediateChange={(wiki) => onOutlineChange?.(extractSectionOutline(wiki))}
                     tier="pro"
                     enableEntryLinks
                     enableMentions={false}
                     projectId={projectId}
                     maxLength={0}
-                    printLayout={printLayout}
+                    printLayout={effectivePrintLayout}
+                    chrome={chrome}
+                    bridgeRef={bridgeRef}
+                    onStateChange={onStateChange}
                 />
             ) : (
-                <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
                     <pre className="mx-auto w-full max-w-3xl px-6 pt-10 pb-[40vh] font-sans text-sm leading-relaxed whitespace-pre-wrap">
                         {content}
                     </pre>

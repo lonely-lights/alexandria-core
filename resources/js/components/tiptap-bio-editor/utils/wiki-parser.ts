@@ -62,7 +62,7 @@ export function parseWikiToHtml(wiki: string): string {
  */
 function processHeadings(text: string): string {
     // H6 to H2 (process longer markers first)
-    for (let level = 6; level >= 2; level--) {
+    for (let level = 6; level >= 1; level--) {
         const marker = '='.repeat(level);
         // Trailing whitespace must be [ \t]*, not \s* — \s matches \n,
         // which ate one of the two newlines after a heading and glued

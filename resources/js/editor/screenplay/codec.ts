@@ -23,9 +23,29 @@ const FORCE_MARKER = /^[.>@!]/;
 
 const FULLY_PARENTHESIZED = /^\(.*\)$/;
 
+const WIKI_LINK_PATTERN = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+
 /** At least one letter, no lowercase letters (digits/punct/spaces fine). */
 function isAllCaps(line: string): boolean {
     return /\p{Lu}/u.test(line) && !/\p{Ll}/u.test(line);
+}
+
+function hasWikiLink(text: string): boolean {
+    return text.match(WIKI_LINK_PATTERN) !== null;
+}
+
+function uppercasePreservingWikiLinks(text: string): string {
+    let result = "";
+    let cursor = 0;
+
+    for (const match of text.matchAll(WIKI_LINK_PATTERN)) {
+        const index = match.index ?? 0;
+        result += text.slice(cursor, index).toUpperCase();
+        result += match[0];
+        cursor = index + match[0].length;
+    }
+
+    return result + text.slice(cursor).toUpperCase();
 }
 
 export function parseScreenplay(text: string): ScreenplayBlock[] {
@@ -94,7 +114,7 @@ function parseRun(lines: string[], blocks: ScreenplayBlock[]): void {
         case "@":
             blocks.push({
                 element: "character",
-                text: first.slice(1).toUpperCase(),
+                text: uppercasePreservingWikiLinks(first.slice(1)),
             });
             parseSpeechLines(rest, blocks);
 
@@ -176,7 +196,7 @@ export function serializeScreenplay(blocks: ScreenplayBlock[]): string {
                 break;
             }
             case "character": {
-                const upper = block.text.toUpperCase();
+                const upper = uppercasePreservingWikiLinks(block.text);
                 const next = blocks[index + 1];
                 const hasSpeech =
                     next?.element === "parenthetical" ||
@@ -187,6 +207,7 @@ export function serializeScreenplay(blocks: ScreenplayBlock[]): string {
                 // (or transition/slugline).
                 const needsEscape =
                     !hasSpeech ||
+                    hasWikiLink(upper) ||
                     SLUGLINE_PREFIX.test(upper) ||
                     FORCE_MARKER.test(upper);
                 runs.push([needsEscape ? `@${upper}` : upper]);

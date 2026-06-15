@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, 
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import Input from '@alexandria/components/form/Input';
 import Tooltip from '@alexandria/components/ui/Tooltip';
+import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 
 import type { CurrentSection } from '../Workspace';
 import { getWritingPanels, subscribeWritingPanels } from '../writingPanelRegistry';
@@ -47,12 +48,16 @@ interface SectionMentionsPayload {
 
 interface ReferencePanelProps {
     project: { id: number; name: string; slug: string };
-    work: { id: number; title: string; slug: string };
+    work: { id: number; title: string; slug: string; format?: string };
     currentSection: CurrentSection | null;
     pins: EntryCard[];
     canUpdate: boolean;
     /** Bumped by the Workspace after each confirmed autosave. */
     saveSignal: number;
+    sceneLinks?: ScreenplaySceneLink[];
+    sceneLinksFocusSignal?: number;
+    activeTab?: string;
+    onActiveTabChange?: (tab: string) => void;
 }
 
 /* ── Theme styles ── */
@@ -256,7 +261,7 @@ function BrowseTab({
                     size="sm"
                 />
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
+            <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 pb-2">
                 {!query.trim() ? (
                     <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
                         {t('writing.panel.search_hint')}
@@ -319,7 +324,7 @@ function PinsTab({
     }
 
     return (
-        <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+        <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 py-2">
             {pins.length === 0 ? (
                 <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
                     {t('writing.panel.no_pins')}
@@ -460,7 +465,7 @@ function SectionTab({
     }
 
     return (
-        <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+        <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 py-2">
             {failed && (
                 <p className="px-3 py-2 text-xs" style={errorTextStyle}>
                     {t('writing.panel.no_results')}
@@ -659,6 +664,91 @@ function ReferenceSlot({
 
 /* ── Panel shell ── */
 
+function SceneLinksTab({
+    project,
+    links,
+    t,
+}: {
+    project: { slug: string };
+    links: ScreenplaySceneLink[];
+    t: Translator;
+}) {
+    if (links.length === 0) {
+        return (
+            <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
+                {t('writing.panel.no_scene_links')}
+            </p>
+        );
+    }
+
+    return (
+        <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 py-2">
+            {links.map((link) => {
+                const url = link.slug && link.blueprintSlug
+                    ? `/p/${project.slug}/${link.blueprintSlug}/${link.slug}`
+                    : null;
+
+                return (
+                    <div key={link.key}>
+                        <div
+                            className="alex-row group flex w-full items-center gap-2.5 px-3 py-2 text-sm"
+                            style={{ borderRadius: 'var(--theme-radius-button)' }}
+                        >
+                            <i
+                                className="fa-solid fa-link w-4 shrink-0 text-center text-xs"
+                                style={rowIconStyle}
+                                aria-hidden="true"
+                            />
+                            <div className="min-w-0 flex-1">
+                                <div className="truncate font-medium">{link.name}</div>
+                                {link.variants.length > 0 && (
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                        {link.variants.map((variant) => (
+                                            <span
+                                                key={variant.text}
+                                                className="max-w-full truncate px-1.5 py-0.5 text-[11px] font-medium"
+                                                style={countChipStyle}
+                                            >
+                                                {variant.text}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            {url !== null && (
+                                <a
+                                    href={url}
+                                    className="flex h-6 w-6 shrink-0 items-center justify-center opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                                    style={rowActionStyle}
+                                    title={t('writing.panel.open_entry')}
+                                    aria-label={t('writing.panel.open_entry')}
+                                >
+                                    <i className="fa-solid fa-arrow-up-right-from-square text-[10px]" />
+                                </a>
+                            )}
+                        </div>
+                        <div className="mx-3 mb-1.5 flex flex-wrap gap-1.5 px-3 pb-2">
+                            <span style={countChipStyle}>
+                                {t('writing.panel.scene_mentions').replace(':count', link.mentions.toLocaleString())}
+                            </span>
+                            {link.characterCues > 0 && (
+                                <span style={countChipStyle}>
+                                    {t('writing.panel.scene_cues').replace(':count', link.characterCues.toLocaleString())}
+                                </span>
+                            )}
+                            {link.dialogueWords > 0 && (
+                                <span style={countChipStyle}>
+                                    {t('writing.panel.scene_dialogue_words').replace(':count', link.dialogueWords.toLocaleString())}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
 interface BuiltInTab {
     id: string;
     label: string;
@@ -672,15 +762,63 @@ export default function ReferencePanel({
     pins,
     canUpdate,
     saveSignal,
+    sceneLinks = [],
+    sceneLinksFocusSignal = 0,
+    activeTab,
+    onActiveTabChange,
 }: ReferencePanelProps) {
     const t = useT();
-    const [activeTab, setActiveTab] = useState('browse');
+    const [internalActiveTab, setInternalActiveTab] = useState(
+        (currentSection?.format ?? work.format) === 'screenplay' ? 'scene-links' : 'browse',
+    );
+    const lastSceneLinksFocusSignal = useRef(sceneLinksFocusSignal);
     const extraPanels = useSyncExternalStore(subscribeWritingPanels, getWritingPanels);
+    const showSceneLinks = (currentSection?.format ?? work.format) === 'screenplay';
+    const currentTab = activeTab ?? internalActiveTab;
+
+    function setCurrentTab(tab: string) {
+        if (activeTab === undefined) {
+            setInternalActiveTab(tab);
+        }
+
+        onActiveTabChange?.(tab);
+    }
+
+    useEffect(() => {
+        if (sceneLinksFocusSignal !== lastSceneLinksFocusSignal.current) {
+            lastSceneLinksFocusSignal.current = sceneLinksFocusSignal;
+
+            if (sceneLinksFocusSignal > 0) {
+                setCurrentTab('scene-links');
+            }
+        }
+        // setCurrentTab is intentionally local to this render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sceneLinksFocusSignal]);
+
+    useEffect(() => {
+        if (!showSceneLinks && currentTab === 'scene-links') {
+            setCurrentTab('section');
+        }
+        // setCurrentTab is intentionally local to this render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentTab, showSceneLinks]);
+
+    useEffect(() => {
+        if (showSceneLinks && currentTab === 'browse' && sceneLinks.length > 0) {
+            setCurrentTab('scene-links');
+        }
+        // setCurrentTab is intentionally local to this render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentTab, sceneLinks.length, showSceneLinks]);
 
     const builtIns: BuiltInTab[] = [
         { id: 'browse', label: t('writing.panel.browse'), icon: 'fa-solid fa-magnifying-glass' },
         { id: 'pins', label: t('writing.panel.pins'), icon: 'fa-solid fa-thumbtack' },
         { id: 'section', label: t('writing.panel.section'), icon: 'fa-solid fa-paragraph' },
+        ...(showSceneLinks
+            ? [{ id: 'scene-links', label: t('writing.panel.scene_links'), icon: 'fa-solid fa-link' }]
+            : []),
     ];
 
     const tabs: BuiltInTab[] = [
@@ -688,7 +826,7 @@ export default function ReferencePanel({
         ...extraPanels.map((panel) => ({ id: panel.id, label: t(panel.labelKey), icon: panel.icon })),
     ];
 
-    const activeExtra = extraPanels.find((panel) => panel.id === activeTab);
+    const activeExtra = extraPanels.find((panel) => panel.id === currentTab);
     const panelContext = {
         project,
         work,
@@ -702,13 +840,13 @@ export default function ReferencePanel({
             {/* Tab strip */}
             <div className="flex shrink-0 items-center gap-1 px-2 py-1.5" style={tabStripStyle}>
                 {tabs.map((tab) => {
-                    const isActive = tab.id === activeTab;
+                    const isActive = tab.id === currentTab;
 
                     return (
                         <Tooltip key={tab.id} content={tab.label}>
                             <button
                                 type="button"
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => setCurrentTab(tab.id)}
                                 aria-label={tab.label}
                                 aria-pressed={isActive}
                                 className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${isActive ? 'alex-toolbar-btn--active' : ''}`}
@@ -722,13 +860,13 @@ export default function ReferencePanel({
             </div>
 
             {/* Tab content */}
-            {activeTab === 'browse' && (
+            {currentTab === 'browse' && (
                 <BrowseTab project={project} work={work} canUpdate={canUpdate} t={t} />
             )}
-            {activeTab === 'pins' && (
+            {currentTab === 'pins' && (
                 <PinsTab project={project} work={work} pins={pins} canUpdate={canUpdate} t={t} />
             )}
-            {activeTab === 'section' && (
+            {currentTab === 'section' && (
                 <SectionTab
                     project={project}
                     work={work}
@@ -738,8 +876,11 @@ export default function ReferencePanel({
                     t={t}
                 />
             )}
+            {currentTab === 'scene-links' && (
+                <SceneLinksTab project={project} links={sceneLinks} t={t} />
+            )}
             {activeExtra !== undefined && (
-                <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
                     <activeExtra.component {...panelContext} />
                 </div>
             )}

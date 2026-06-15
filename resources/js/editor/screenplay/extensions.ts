@@ -1,7 +1,10 @@
 import { Extension, Node, type Editor, type JSONContent } from "@tiptap/core";
+import { UndoRedo } from "@tiptap/extensions";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 
-import createEntryLinkExtension from "../../components/tiptap-bio-editor/extensions/entry-link";
+import createEntryLinkExtension, {
+    type EntryLinkSearchResult,
+} from "../../components/tiptap-bio-editor/extensions/entry-link";
 import { ELEMENTS, ENTER_NEXT, TAB_CYCLE } from "./formatSpec";
 import type { ScreenplayBlock, ScreenplayElement } from "./types";
 
@@ -33,9 +36,9 @@ const ScreenplayText = Node.create({
 /**
  * One factory for the six block nodes. Each renders as
  * `<p data-element="<name>" class="sp-<name>">` (layout lives in
- * resources/css/components/screenplay.css). Action additionally admits
- * the inline `entryLink` atom so worldbuilding links live in action
- * lines only.
+ * resources/css/components/screenplay.css). Action and character
+ * additionally admit the inline `entryLink` atom so worldbuilding links
+ * can annotate action beats and tie character cues to entries.
  */
 function createScreenplayBlock(name: ScreenplayElement, content = "text*") {
     return Node.create({
@@ -55,7 +58,7 @@ function createScreenplayBlock(name: ScreenplayElement, content = "text*") {
 
 const Slugline = createScreenplayBlock("slugline");
 const Action = createScreenplayBlock("action", "(text | entryLink)*");
-const Character = createScreenplayBlock("character");
+const Character = createScreenplayBlock("character", "(text | entryLink)*");
 const Parenthetical = createScreenplayBlock("parenthetical");
 const Dialogue = createScreenplayBlock("dialogue");
 const Transition = createScreenplayBlock("transition");
@@ -154,6 +157,41 @@ function handleTab(editor: Editor, direction: 1 | -1): boolean {
     return true;
 }
 
+function closeInlineParenthetical(editor: Editor): boolean {
+    const { selection } = editor.state;
+    const { $from, empty } = selection;
+    const parent = $from.parent;
+
+    if (
+        !empty ||
+        parent.type.name !== "parenthetical" ||
+        $from.parentOffset !== parent.content.size
+    ) {
+        return false;
+    }
+
+    const text = parent.textContent;
+    const wrappedText = `(${text})`;
+    const content = wrappedText !== "" ? [{ type: "text", text: wrappedText }] : [];
+    const cursor = $from.before() + 1 + wrappedText.length;
+
+    editor
+        .chain()
+        .insertContentAt(
+            { from: $from.before(), to: $from.after() },
+            { type: "dialogue", ...(content.length > 0 ? { content } : {}) },
+        )
+        .setTextSelection(cursor)
+        .scrollIntoView()
+        .run();
+
+    return true;
+}
+
+function handleArrowRight(editor: Editor): boolean {
+    return closeInlineParenthetical(editor);
+}
+
 const ScreenplayKeymap = Extension.create({
     name: "screenplayKeymap",
 
@@ -190,6 +228,7 @@ const ScreenplayKeymap = Extension.create({
             Enter: ({ editor }) => handleEnter(editor),
             Tab: ({ editor }) => handleTab(editor, 1),
             "Shift-Tab": ({ editor }) => handleTab(editor, -1),
+            ArrowRight: ({ editor }) => handleArrowRight(editor),
             ...elementShortcuts,
         };
     },
@@ -207,6 +246,10 @@ const ScreenplayKeymap = Extension.create({
                     // ::before/::after, so the stored text stays
                     // unwrapped, matching the codec's canonical form.
                     handleTextInput(view, _from, _to, text): boolean {
+                        if (text === ")") {
+                            return closeInlineParenthetical(extension.editor);
+                        }
+
                         if (text !== "(") {
                             return false;
                         }
@@ -239,7 +282,13 @@ const ScreenplayKeymap = Extension.create({
  * empty-node decoration CSS targets paragraph geometry and fights the
  * indented screenplay elements — revisit if onboarding needs it.
  */
-export function buildScreenplayExtensions({ projectId }: { projectId?: number } = {}) {
+export function buildScreenplayExtensions({
+    projectId,
+    onEntryLinkSelect,
+}: {
+    projectId?: number;
+    onEntryLinkSelect?: (item: EntryLinkSearchResult) => void;
+} = {}) {
     return [
         ScreenplayDocument,
         ScreenplayText,
@@ -249,7 +298,12 @@ export function buildScreenplayExtensions({ projectId }: { projectId?: number } 
         Parenthetical,
         Dialogue,
         Transition,
-        createEntryLinkExtension({ projectId: projectId ?? null }),
+        createEntryLinkExtension({
+            projectId: projectId ?? null,
+            triggers: ["[[", "@"],
+            onSelect: onEntryLinkSelect,
+        }),
+        UndoRedo,
         ScreenplayKeymap,
     ];
 }
@@ -257,7 +311,7 @@ export function buildScreenplayExtensions({ projectId }: { projectId?: number } 
 /* ── Doc ↔ blocks bridge ── */
 
 /**
- * Entry links inside action serialize back to wiki text using the
+ * Entry links inside action/character serialize back to wiki text using the
  * exact emission format of wiki-serializer.ts's serializeEntryLink:
  * `[[Name]]`, or `[[Name|Display]]` when a distinct display text is
  * set.
@@ -269,7 +323,9 @@ function inlineNodeToText(node: JSONContent): string {
 
     if (node.type === "entryLink") {
         const name = (node.attrs?.name as string | undefined) ?? "";
-        const displayText = (node.attrs?.displayText as string | undefined) ?? "";
+        const displayText = (node.content ?? []).map(inlineNodeToText).join("")
+            || (node.attrs?.displayText as string | undefined)
+            || "";
 
         if (displayText && displayText !== name) {
             return `[[${name}|${displayText}]]`;
@@ -281,12 +337,56 @@ function inlineNodeToText(node: JSONContent): string {
     return "";
 }
 
+const WIKI_LINK_PATTERN = /\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/g;
+
+function blockAllowsEntryLinks(element: ScreenplayElement): boolean {
+    return element === "action" || element === "character";
+}
+
+function inlineContentFromText(text: string, allowEntryLinks: boolean): JSONContent[] {
+    if (!allowEntryLinks) {
+        return text === "" ? [] : [{ type: "text", text }];
+    }
+
+    const content: JSONContent[] = [];
+    let cursor = 0;
+
+    for (const match of text.matchAll(WIKI_LINK_PATTERN)) {
+        const index = match.index ?? 0;
+
+        if (index > cursor) {
+            content.push({ type: "text", text: text.slice(cursor, index) });
+        }
+
+        const name = match[1];
+        const displayText = match[2] ?? name;
+        content.push({
+            type: "entryLink",
+            attrs: {
+                id: null,
+                name,
+                displayText,
+                slug: null,
+                blueprintSlug: null,
+            },
+            content: displayText !== "" ? [{ type: "text", text: displayText }] : [],
+        });
+        cursor = index + match[0].length;
+    }
+
+    if (cursor < text.length) {
+        content.push({ type: "text", text: text.slice(cursor) });
+    }
+
+    return content;
+}
+
 /**
  * Blocks → TipTap doc JSON. Parenthetical text arrives WITHOUT parens
  * (codec canonical form) and stays unwrapped — the CSS renders the
- * parens. `[[...]]` wiki links load as plain text (v1): the entry-link
- * extension's live `[[` autocomplete creates real entryLink nodes as
- * the user types, and docToBlocks serializes those back to wiki text.
+ * parens. `[[...]]` wiki links hydrate as entryLink atoms in blocks that
+ * admit links, so saved screenplay references remain inspectable after
+ * reload.
  *
  * Multi-line block text (codec runs can join lines with \n) splits
  * into consecutive sibling blocks of the same element — text nodes
@@ -298,9 +398,11 @@ export function blocksToDoc(blocks: ScreenplayBlock[]): JSONContent {
 
     for (const block of blocks) {
         for (const line of block.text.split("\n")) {
+            const inlineContent = inlineContentFromText(line, blockAllowsEntryLinks(block.element));
+
             content.push({
                 type: block.element,
-                ...(line !== "" ? { content: [{ type: "text", text: line }] } : {}),
+                ...(inlineContent.length > 0 ? { content: inlineContent } : {}),
             });
         }
     }
@@ -331,7 +433,7 @@ export function convertCurrentBlock(editor: Editor, element: ScreenplayElement):
         }
     });
 
-    if (!hasEntryLinks) {
+    if (!hasEntryLinks || blockAllowsEntryLinks(element)) {
         editor.commands.setNode(element);
 
         return;

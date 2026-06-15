@@ -1,95 +1,303 @@
 import type { CSSProperties } from 'react';
 
 /**
- * ManuscriptRuler — the Word-style horizontal ruler shown in the
- * manuscript editor's print layout (Stage 8g.1).
+ * Static manuscript ruler for print layout.
  *
- * A static, non-interactive strip pinned between the toolbar and the
- * scrolling page (Word pins its ruler; the page scrolls beneath it).
- * Geometry mirrors the print-layout page exactly: US Letter (8.5in)
- * with 1in side margins, the strip centered the same way the page is.
- * Tick marks every 1/4in across the content zone, taller inch marks
- * numbered 1–6 measured from the left margin (Word convention: inch
- * numbers count the writing area, not the paper edge).
- *
- * Honest limitation: width/margins representation only — no pagination
- * or page-break preview (that arrives with export).
+ * The geometry mirrors US Letter: 8.5in x 11in with 1in margins.
+ * It intentionally follows the familiar Docs/word-processor pattern:
+ * shaded margin zones, eighth-inch ticks, inch labels inside the
+ * writing area, and blue indent/margin handles as non-interactive
+ * affordances. Width/margins representation only; exporting owns true
+ * pagination later.
  */
 
-/* US Letter, 1in margins → 6.5in content zone → 26 quarter-inch steps. */
-const CONTENT_QUARTERS = 26;
+type RulerOrientation = 'horizontal' | 'vertical';
+type TickDivision = 'whole' | 'half' | 'quarter' | 'eighth';
 
-const barStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 3%, transparent)',
-    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-    height: '1.25rem',
+interface ManuscriptRulerProps {
+    orientation?: RulerOrientation;
+}
+
+const PAGE_WIDTH_IN = 8.5;
+const PAGE_HEIGHT_IN = 11;
+const MARGIN_IN = 1;
+const CONTENT_WIDTH_IN = PAGE_WIDTH_IN - MARGIN_IN * 2;
+const CONTENT_HEIGHT_IN = PAGE_HEIGHT_IN - MARGIN_IN * 2;
+const EIGHTHS_PER_INCH = 8;
+
+const horizontalEighthSteps = Array.from(
+    { length: PAGE_WIDTH_IN * EIGHTHS_PER_INCH - 1 },
+    (_, i) => i + 1,
+);
+
+const verticalEighthSteps = Array.from(
+    { length: PAGE_HEIGHT_IN * EIGHTHS_PER_INCH - 1 },
+    (_, i) => i + 1,
+);
+
+const rulerBaseStyle: CSSProperties = {
+    background: 'var(--alex-manuscript-ruler-bg, color-mix(in srgb, var(--theme-base-content) 3%, transparent))',
+    color: 'var(--alex-manuscript-ruler-label, color-mix(in srgb, var(--theme-base-content) 56%, transparent))',
     overflow: 'hidden',
-    // Mirror the manuscript scroll container's reserved scrollbar
-    // gutter (manuscript.css) so the centered strip and the centered
-    // page compute their centers in the same available width.
-    scrollbarGutter: 'stable',
 };
 
-const stripStyle: CSSProperties = {
-    width: '8.5in',
+const horizontalStripStyle: CSSProperties = {
+    width: `${PAGE_WIDTH_IN}in`,
+    height: '100%',
     marginInline: 'auto',
     position: 'relative',
-    height: '100%',
 };
 
-const marginZoneStyle: CSSProperties = {
+const verticalStripStyle: CSSProperties = {
+    width: '100%',
+    height: `${PAGE_HEIGHT_IN}in`,
+    marginBlock: '1.5rem',
+    position: 'relative',
+};
+
+const horizontalMarginStyle: CSSProperties = {
     position: 'absolute',
     top: 0,
     height: '100%',
-    width: '1in',
-    background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    width: `${MARGIN_IN}in`,
+    background: 'var(--alex-manuscript-ruler-margin-bg, color-mix(in srgb, var(--theme-base-content) 12%, transparent))',
 };
 
-const tickStyle: CSSProperties = {
+const verticalMarginStyle: CSSProperties = {
     position: 'absolute',
-    bottom: '2px',
+    left: 0,
+    width: '100%',
+    height: `${MARGIN_IN}in`,
+    background: 'var(--alex-manuscript-ruler-margin-bg, color-mix(in srgb, var(--theme-base-content) 12%, transparent))',
+};
+
+const horizontalTickStyle: CSSProperties = {
+    position: 'absolute',
+    bottom: 0,
     width: '1px',
-    background: 'color-mix(in srgb, var(--theme-base-content) 35%, transparent)',
+    background: 'var(--alex-manuscript-ruler-tick, color-mix(in srgb, var(--theme-base-content) 36%, transparent))',
 };
 
-const labelStyle: CSSProperties = {
+const verticalTickStyle: CSSProperties = {
     position: 'absolute',
-    top: '1px',
+    right: 0,
+    height: '1px',
+    background: 'var(--alex-manuscript-ruler-tick, color-mix(in srgb, var(--theme-base-content) 36%, transparent))',
+};
+
+const horizontalLabelStyle: CSSProperties = {
+    position: 'absolute',
+    top: '4px',
     transform: 'translateX(-50%)',
     fontSize: '9px',
     lineHeight: 1,
-    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
 
-/* Quarter-inch steps strictly inside the content zone (1in–7.5in);
-   the zone boundaries themselves read as the margin-shade edges. */
-const QUARTERS = Array.from({ length: CONTENT_QUARTERS - 1 }, (_, i) => i + 1);
+const verticalLabelStyle: CSSProperties = {
+    position: 'absolute',
+    right: '15px',
+    transform: 'translateY(-50%)',
+    fontSize: '9px',
+    lineHeight: 1,
+};
 
-export default function ManuscriptRuler() {
+const markerColor = 'var(--alex-manuscript-ruler-marker, var(--theme-brand-primary-500))';
+
+function isHorizontalMargin(step: number): boolean {
+    return step < MARGIN_IN * EIGHTHS_PER_INCH ||
+        step > (PAGE_WIDTH_IN - MARGIN_IN) * EIGHTHS_PER_INCH;
+}
+
+function isVerticalMargin(step: number): boolean {
+    return step < MARGIN_IN * EIGHTHS_PER_INCH ||
+        step > (PAGE_HEIGHT_IN - MARGIN_IN) * EIGHTHS_PER_INCH;
+}
+
+function tickDivision(step: number): TickDivision {
+    if (step % EIGHTHS_PER_INCH === 0) {
+        return 'whole';
+    }
+
+    if (step % 4 === 0) {
+        return 'half';
+    }
+
+    if (step % 2 === 0) {
+        return 'quarter';
+    }
+
+    return 'eighth';
+}
+
+function tickSize(
+    step: number,
+    sizes: Record<TickDivision, string>,
+): string {
+    return sizes[tickDivision(step)];
+}
+
+function contentLabel(step: number): number | null {
+    const contentStep = step - MARGIN_IN * EIGHTHS_PER_INCH;
+
+    if (contentStep <= 0 || contentStep % EIGHTHS_PER_INCH !== 0) {
+        return null;
+    }
+
+    return contentStep / EIGHTHS_PER_INCH;
+}
+
+function HorizontalIndentMarkers() {
     return (
-        <div aria-hidden="true" className="w-full shrink-0" style={barStyle}>
-            <div style={stripStyle}>
-                <div style={{ ...marginZoneStyle, left: 0 }} />
-                <div style={{ ...marginZoneStyle, left: '7.5in' }} />
-                {QUARTERS.map((n) => (
+        <>
+            <span
+                className="alex-manuscript-ruler__first-line-marker"
+                style={{
+                    position: 'absolute',
+                    left: `${MARGIN_IN}in`,
+                    top: '2px',
+                    width: 0,
+                    height: 0,
+                    borderLeft: '5px solid transparent',
+                    borderRight: '5px solid transparent',
+                    borderTop: `6px solid ${markerColor}`,
+                    transform: 'translateX(-50%)',
+                }}
+            />
+            <span
+                className="alex-manuscript-ruler__left-indent-marker"
+                style={{
+                    position: 'absolute',
+                    left: `${MARGIN_IN}in`,
+                    bottom: '2px',
+                    width: '10px',
+                    height: '4px',
+                    background: markerColor,
+                    borderRadius: '1px',
+                    transform: 'translateX(-50%)',
+                }}
+            />
+            <span
+                className="alex-manuscript-ruler__right-indent-marker"
+                style={{
+                    position: 'absolute',
+                    left: `${MARGIN_IN + CONTENT_WIDTH_IN}in`,
+                    bottom: '2px',
+                    width: 0,
+                    height: 0,
+                    borderLeft: '5px solid transparent',
+                    borderRight: '5px solid transparent',
+                    borderBottom: `6px solid ${markerColor}`,
+                    transform: 'translateX(-50%)',
+                }}
+            />
+        </>
+    );
+}
+
+function HorizontalRuler() {
+    return (
+        <div
+            aria-hidden="true"
+            className="alex-manuscript-ruler alex-manuscript-ruler--horizontal w-full shrink-0"
+            data-manuscript-ruler="horizontal"
+            style={{
+                ...rulerBaseStyle,
+                height: '1.5rem',
+                borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
+                scrollbarGutter: 'stable',
+            }}
+        >
+            <div style={horizontalStripStyle}>
+                <div style={{ ...horizontalMarginStyle, left: 0 }} />
+                <div style={{ ...horizontalMarginStyle, right: 0 }} />
+                {horizontalEighthSteps.map((n) => (
                     <span
                         key={`tick-${n}`}
+                        className="alex-manuscript-ruler__tick"
+                        data-ruler-tick="horizontal"
+                        data-ruler-division={tickDivision(n)}
+                        data-ruler-zone={isHorizontalMargin(n) ? 'margin' : 'content'}
                         style={{
-                            ...tickStyle,
-                            left: `calc(1in + ${n} * 0.25in)`,
-                            height: n % 4 === 0 ? '6px' : '3px',
+                            ...horizontalTickStyle,
+                            left: `calc(${n} * 0.125in)`,
+                            height: tickSize(n, {
+                                whole: '9px',
+                                half: '7px',
+                                quarter: '5px',
+                                eighth: '3px',
+                            }),
                         }}
                     />
                 ))}
-                {QUARTERS.filter((n) => n % 4 === 0).map((n) => (
-                    <span
-                        key={`label-${n}`}
-                        style={{ ...labelStyle, left: `calc(1in + ${n} * 0.25in)` }}
-                    >
-                        {n / 4}
-                    </span>
-                ))}
+                {horizontalEighthSteps.map((n) => {
+                    const label = contentLabel(n);
+
+                    return label === null || label >= CONTENT_WIDTH_IN ? null : (
+                        <span
+                            key={`label-${n}`}
+                            style={{ ...horizontalLabelStyle, left: `calc(${n} * 0.125in)` }}
+                        >
+                            {label}
+                        </span>
+                    );
+                })}
+                <HorizontalIndentMarkers />
             </div>
         </div>
     );
+}
+
+function VerticalRuler() {
+    return (
+        <div
+            aria-hidden="true"
+            className="alex-manuscript-ruler alex-manuscript-ruler--vertical hidden shrink-0 md:block"
+            data-manuscript-ruler="vertical"
+            style={{
+                ...rulerBaseStyle,
+                width: '2rem',
+                borderRight: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
+            }}
+        >
+            <div style={verticalStripStyle}>
+                <div style={{ ...verticalMarginStyle, top: 0 }} />
+                <div style={{ ...verticalMarginStyle, bottom: 0 }} />
+                {verticalEighthSteps.map((n) => (
+                    <span
+                        key={`tick-${n}`}
+                        className="alex-manuscript-ruler__tick"
+                        data-ruler-tick="vertical"
+                        data-ruler-division={tickDivision(n)}
+                        data-ruler-zone={isVerticalMargin(n) ? 'margin' : 'content'}
+                        style={{
+                            ...verticalTickStyle,
+                            top: `calc(${n} * 0.125in)`,
+                            width: tickSize(n, {
+                                whole: '12px',
+                                half: '10px',
+                                quarter: '7px',
+                                eighth: '4px',
+                            }),
+                        }}
+                    />
+                ))}
+                {verticalEighthSteps.map((n) => {
+                    const label = contentLabel(n);
+
+                    return label === null || label >= CONTENT_HEIGHT_IN ? null : (
+                        <span
+                            key={`label-${n}`}
+                            style={{ ...verticalLabelStyle, top: `calc(${n} * 0.125in)` }}
+                        >
+                            {label}
+                        </span>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+export default function ManuscriptRuler({ orientation = 'horizontal' }: ManuscriptRulerProps) {
+    return orientation === 'vertical' ? <VerticalRuler /> : <HorizontalRuler />;
 }

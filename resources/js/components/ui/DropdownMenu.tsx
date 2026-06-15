@@ -18,6 +18,8 @@ interface DropdownMenuDivider {
 
 type DropdownMenuEntry = DropdownMenuItem | DropdownMenuDivider;
 
+const MENU_TRANSITION_MS = 150;
+
 interface DropdownMenuProps {
     /** Menu items — use { divider: true } for separators */
     items: DropdownMenuEntry[];
@@ -25,9 +27,24 @@ interface DropdownMenuProps {
     trigger?: ReactNode;
     /** Alignment of the dropdown relative to the trigger */
     align?: 'left' | 'right';
+    density?: 'default' | 'compact';
+    labelAlign?: 'left' | 'right';
+    menuStyle?: CSSProperties;
+    menuClassName?: string;
+    inheritCssVariables?: string[];
 }
 
-function DropdownRow({ item, onClose }: { item: DropdownMenuItem; onClose: () => void }) {
+function DropdownRow({
+    item,
+    onClose,
+    density,
+    labelAlign,
+}: {
+    item: DropdownMenuItem;
+    onClose: () => void;
+    density: 'default' | 'compact';
+    labelAlign: 'left' | 'right';
+}) {
     const [hovered, setHovered] = useState(false);
 
     const iconClass = item.icon
@@ -71,7 +88,7 @@ function DropdownRow({ item, onClose }: { item: DropdownMenuItem; onClose: () =>
     const content = (
         <>
             {iconClass && <i className={`${iconClass} w-5 flex-shrink-0 text-center text-xs`} style={iconStyle} />}
-            <span className="flex-1">{item.label}</span>
+            <span className={`flex-1 ${labelAlign === 'right' ? 'text-right' : ''}`}>{item.label}</span>
             {item.badge != null && (
                 <span
                     className="ml-4 flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium"
@@ -83,7 +100,9 @@ function DropdownRow({ item, onClose }: { item: DropdownMenuItem; onClose: () =>
         </>
     );
 
-    const rowClass = 'flex w-full items-center gap-3 px-4 py-2 text-left text-sm';
+    const rowClass = density === 'compact'
+        ? 'flex w-full items-center gap-3 px-3.5 py-2 text-left text-[13px]'
+        : 'flex w-full items-center gap-3 px-4 py-2 text-left text-sm';
     const handlers = {
         onMouseEnter: () => setHovered(true),
         onMouseLeave: () => setHovered(false),
@@ -110,8 +129,19 @@ function DropdownRow({ item, onClose }: { item: DropdownMenuItem; onClose: () =>
     );
 }
 
-export default function DropdownMenu({ items, trigger, align = 'right' }: DropdownMenuProps) {
+export default function DropdownMenu({
+    items,
+    trigger,
+    align = 'right',
+    density = 'default',
+    labelAlign = 'left',
+    menuStyle: menuStyleOverride,
+    menuClassName = '',
+    inheritCssVariables = [],
+}: DropdownMenuProps) {
     const [open, setOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const [visible, setVisible] = useState(false);
     const [defaultTriggerHovered, setDefaultTriggerHovered] = useState(false);
     const triggerRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -130,9 +160,24 @@ export default function DropdownMenu({ items, trigger, align = 'right' }: Dropdo
         return { top: rect.bottom + 4, left };
     }
 
+    useEffect(() => {
+        if (open) {
+            setMounted(true);
+            const frame = window.requestAnimationFrame(() => setVisible(true));
+
+            return () => window.cancelAnimationFrame(frame);
+        }
+
+        setVisible(false);
+
+        const timeout = window.setTimeout(() => setMounted(false), MENU_TRANSITION_MS);
+
+        return () => window.clearTimeout(timeout);
+    }, [open]);
+
     // Close on outside click
     useEffect(() => {
-        if (!open) return;
+        if (!mounted) return;
         function handleClick(e: MouseEvent) {
             const target = e.target as Node;
             if (
@@ -144,15 +189,15 @@ export default function DropdownMenu({ items, trigger, align = 'right' }: Dropdo
         }
         document.addEventListener('mousedown', handleClick);
         return () => document.removeEventListener('mousedown', handleClick);
-    }, [open]);
+    }, [mounted]);
 
     // Close on scroll (menu position would be stale)
     useEffect(() => {
-        if (!open) return;
+        if (!mounted) return;
         const handleScroll = () => setOpen(false);
         window.addEventListener('scroll', handleScroll, true);
         return () => window.removeEventListener('scroll', handleScroll, true);
-    }, [open]);
+    }, [mounted]);
 
     const defaultTriggerStyle: CSSProperties = {
         display: 'inline-flex',
@@ -170,13 +215,40 @@ export default function DropdownMenu({ items, trigger, align = 'right' }: Dropdo
         transition: 'background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
     };
 
+    function inheritedVariableStyle(): CSSProperties {
+        if (!triggerRef.current || inheritCssVariables.length === 0) {
+            return {};
+        }
+
+        const computed = getComputedStyle(triggerRef.current);
+        const values: Record<string, string> = {};
+
+        for (const variable of inheritCssVariables) {
+            const value = computed.getPropertyValue(variable).trim();
+
+            if (value !== '') {
+                values[variable] = value;
+            }
+        }
+
+        return values as CSSProperties;
+    }
+
     const menuStyle: CSSProperties = {
+        ...inheritedVariableStyle(),
         ...getPosition(),
         background: 'var(--theme-base-surface)',
         border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
         borderRadius: 'var(--theme-radius-card)',
         color: 'var(--theme-base-content)',
-        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
+        boxShadow: '0 12px 32px rgb(0 0 0 / 0.22)',
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? 'auto' : 'none',
+        transform: visible ? 'translateY(0) scale(1)' : 'translateY(-0.5rem) scale(0.985)',
+        transformOrigin: 'top left',
+        transition: 'opacity 150ms ease, transform 150ms ease, visibility 150ms ease',
+        visibility: visible ? 'visible' : 'hidden',
+        ...menuStyleOverride,
     };
 
     const dividerStyle: CSSProperties = {
@@ -206,10 +278,11 @@ export default function DropdownMenu({ items, trigger, align = 'right' }: Dropdo
                 Uses --theme-* tokens so the panel tracks the active
                 preset (page surface + content text + theme corner
                 radius). */}
-            {open && createPortal(
+            {mounted && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[9999] w-60 overflow-hidden"
+                    className={`fixed z-[9999] overflow-hidden ${menuClassName || 'w-60'}`}
+                    data-open={visible ? 'true' : 'false'}
                     style={menuStyle}
                 >
                     {items.map((item, i) => {
@@ -217,7 +290,15 @@ export default function DropdownMenu({ items, trigger, align = 'right' }: Dropdo
                             return <div key={i} style={dividerStyle} />;
                         }
 
-                        return <DropdownRow key={i} item={item} onClose={() => setOpen(false)} />;
+                        return (
+                            <DropdownRow
+                                key={i}
+                                item={item}
+                                onClose={() => setOpen(false)}
+                                density={density}
+                                labelAlign={labelAlign}
+                            />
+                        );
                     })}
                 </div>,
                 document.body,

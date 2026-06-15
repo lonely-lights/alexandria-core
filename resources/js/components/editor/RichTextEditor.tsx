@@ -3,7 +3,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import LinkExtension from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import { useState, useEffect, useRef, useCallback, type MouseEvent, type ReactNode } from 'react';
+import { useState, useEffect, useImperativeHandle, useRef, useCallback, type MouseEvent, type ReactNode, type Ref } from 'react';
 import AiWritingModal from './AiWritingModal';
 import ManuscriptRuler from './ManuscriptRuler';
 import { parseWikiToHtml } from '../tiptap-bio-editor/utils/wiki-parser';
@@ -14,6 +14,8 @@ import Tooltip from '@alexandria/components/ui/Tooltip';
 import Input from '@alexandria/components/form/Input';
 import Button from '@alexandria/components/ui/Button';
 import useT from '@alexandria/hooks/useT';
+import type { WritingEditorBridge } from '@alexandria/pages/Writing/ribbon/writingRibbonContext';
+import { ProseTabKeymap } from './proseTabKeymap';
 
 /**
  * RichTextEditor — Tiptap 3 wiki-markup editor surface.
@@ -47,6 +49,8 @@ interface RichTextEditorProps {
     value: string;
     /** Called with wiki markup on change (300ms debounced) */
     onChange: (wiki: string) => void;
+    /** Called immediately with wiki markup on editor updates. */
+    onImmediateChange?: (wiki: string) => void;
     placeholder?: string;
     maxLength?: number;
     /** Controls which toolbar buttons are available */
@@ -84,6 +88,27 @@ interface RichTextEditorProps {
      * representation only — no pagination preview.
      */
     printLayout?: boolean;
+    /**
+     * Toolbar chrome (meaningful for the manuscript variant only; card
+     * mode always renders its toolbar). `'none'` drops the toolbar row
+     * — and with it the band border — entirely: the writing workspace
+     * ribbon owns the controls (Ribbon Plan 2) and drives the editor
+     * through `bridgeRef`. The content surface, modals, and change
+     * events are untouched.
+     */
+    chrome?: 'full' | 'none';
+    /**
+     * Imperative ribbon bridge (Ribbon Plan 2) — formatting commands +
+     * capability queries. Screenplay-only methods (`setElement`,
+     * `currentElement`) are safe no-ops here.
+     */
+    bridgeRef?: Ref<WritingEditorBridge>;
+    /**
+     * Fires (debounced ~100ms) on editor transactions, and immediately
+     * on code-view toggles, so the host can re-read active states
+     * through the bridge (the Workspace bumps its `editorTick`).
+     */
+    onStateChange?: () => void;
 }
 
 /* ── Toolbar button definitions ── */
@@ -222,6 +247,7 @@ function ToolbarIconButton({
 export default function RichTextEditor({
     value,
     onChange,
+    onImmediateChange,
     placeholder = 'Start writing...',
     maxLength = 1000,
     tier = 'free',
@@ -233,6 +259,9 @@ export default function RichTextEditor({
     className,
     variant = 'card',
     printLayout = false,
+    chrome = 'full',
+    bridgeRef,
+    onStateChange,
     projectId,
     aiInstructions = [],
 }: RichTextEditorProps) {
@@ -249,10 +278,35 @@ export default function RichTextEditor({
     const [, setEditorState] = useState(0);
     const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
     const isExternalUpdate = useRef(false);
+    const onImmediateChangeRef = useRef(onImmediateChange);
+    onImmediateChangeRef.current = onImmediateChange;
+
+    // Ribbon state tick (Ribbon Plan 2). The latest callback lives in a
+    // ref so the debounced notifier — and the useEditor event handlers
+    // that close over it — never go stale when the prop identity
+    // changes between renders.
+    const onStateChangeRef = useRef(onStateChange);
+    onStateChangeRef.current = onStateChange;
+    const stateChangeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    /** Debounced (~100ms) onStateChange — transactions fire per keystroke. */
+    const notifyStateChange = useCallback(() => {
+        if (!onStateChangeRef.current) return;
+        if (stateChangeTimerRef.current) clearTimeout(stateChangeTimerRef.current);
+        stateChangeTimerRef.current = setTimeout(() => onStateChangeRef.current?.(), 100);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (stateChangeTimerRef.current) clearTimeout(stateChangeTimerRef.current);
+        };
+    }, []);
 
     const extensions = [
         StarterKit.configure({
-            heading: tier !== 'free' ? { levels: [2, 3] } : false,
+            heading: tier !== 'free' ? { levels: [1, 2, 3] } : false,
+            link: false,
+            underline: false,
         }),
         Underline,
         LinkExtension.configure({
@@ -261,6 +315,7 @@ export default function RichTextEditor({
         }),
         Placeholder.configure({ placeholder }),
         ...(enableMentions ? [createMentionExtension({ searchEndpoint: mentionSearchEndpoint })] : []),
+        ProseTabKeymap,
     ];
 
     const editor = useEditor({
@@ -276,14 +331,20 @@ export default function RichTextEditor({
         onUpdate: ({ editor: e }) => {
             if (isExternalUpdate.current) return;
 
+            const wiki = serializeToWiki(e);
+            onImmediateChangeRef.current?.(wiki);
+
             if (debounceRef.current) clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(() => {
-                onChange(serializeToWiki(e));
+                onChange(wiki);
             }, 300);
         },
         onFocus: () => setIsFocused(true),
         onBlur: () => setIsFocused(false),
-        onTransaction: () => setEditorState((n) => n + 1),
+        onTransaction: () => {
+            setEditorState((n) => n + 1);
+            notifyStateChange();
+        },
     });
 
     // Subscribe to per-button active states via useEditorState. Tiptap
@@ -307,6 +368,7 @@ export default function RichTextEditor({
                 link: e.isActive('link'),
                 bulletList: e.isActive('bulletList'),
                 orderedList: e.isActive('orderedList'),
+                heading1: e.isActive('heading', { level: 1 }),
                 heading2: e.isActive('heading', { level: 2 }),
                 heading3: e.isActive('heading', { level: 3 }),
                 mention: false,
@@ -335,6 +397,7 @@ export default function RichTextEditor({
             isExternalUpdate.current = true;
             editor.commands.setContent(parseWikiToHtml(codeValue), { emitUpdate: false });
             isExternalUpdate.current = false;
+            onImmediateChangeRef.current?.(codeValue);
             onChange(codeValue);
             setCodeView(false);
         } else {
@@ -342,9 +405,97 @@ export default function RichTextEditor({
             setCodeValue(serializeToWiki(editor));
             setCodeView(true);
         }
+        // Discrete toggle — tick the ribbon immediately (no debounce)
+        // so the code-view control's active state flips in step.
+        onStateChangeRef.current?.();
     }
 
+    // Ribbon editor bridge (Ribbon Plan 2 Task 2) — recreated per
+    // render so it always closes over the current editor + codeView.
+    useImperativeHandle(bridgeRef, (): WritingEditorBridge => ({
+        toggleMark(name) {
+            if (!editor) return;
+            if (name === 'bold') {
+                editor.chain().focus().toggleBold().run();
+            } else if (name === 'italic') {
+                editor.chain().focus().toggleItalic().run();
+            } else {
+                editor.chain().focus().toggleUnderline().run();
+            }
+        },
+        toggleList(name) {
+            if (!editor) return;
+            if (name === 'bulletList') {
+                editor.chain().focus().toggleBulletList().run();
+            } else {
+                editor.chain().focus().toggleOrderedList().run();
+            }
+        },
+        toggleHeading(level) {
+            editor?.chain().focus().toggleHeading({ level }).run();
+        },
+        isMarkActive(name) {
+            if (!editor) return false;
+            // Task 1 convention: 'heading2'/'heading3' map onto TipTap's
+            // ('heading', { level }) — every other name is 1:1.
+            if (name === 'heading1') return editor.isActive('heading', { level: 1 });
+            if (name === 'heading2') return editor.isActive('heading', { level: 2 });
+            if (name === 'heading3') return editor.isActive('heading', { level: 3 });
+
+            return editor.isActive(name);
+        },
+        // Screenplay-only — safe no-ops on the prose surface.
+        setBlockStyle(style) {
+            if (!editor) return;
+            if (style === 'normal') {
+                editor.chain().focus().setParagraph().run();
+            } else if (style === 'title' || style === 'heading1') {
+                editor.chain().focus().setHeading({ level: 1 }).run();
+            } else if (style === 'subtitle' || style === 'heading2') {
+                editor.chain().focus().setHeading({ level: 2 }).run();
+            } else if (style === 'heading3') {
+                editor.chain().focus().setHeading({ level: 3 }).run();
+            }
+        },
+        currentBlockStyle() {
+            if (!editor) return 'normal';
+            if (editor.isActive('heading', { level: 1 })) return 'heading1';
+            if (editor.isActive('heading', { level: 2 })) return 'heading2';
+            if (editor.isActive('heading', { level: 3 })) return 'heading3';
+
+            return 'normal';
+        },
+        setElement() {},
+        currentElement: () => null,
+        insertEntryLink() {
+            editor?.chain().focus().insertContent('[[').run();
+        },
+        openHelp() {
+            setShowLegend(true);
+        },
+        toggleCodeView,
+        isCodeView: () => codeView,
+        undo() {
+            editor?.chain().focus().undo().run();
+        },
+        redo() {
+            editor?.chain().focus().redo().run();
+        },
+        canUndo() {
+            return editor?.can().chain().undo().run() ?? false;
+        },
+        canRedo() {
+            return editor?.can().chain().redo().run() ?? false;
+        },
+        focus() {
+            editor?.commands.focus();
+        },
+    }));
+
     const isManuscript = variant === 'manuscript';
+    // chrome='none' is only meaningful for the manuscript surface — the
+    // ribbon-driven workspace; card callers always keep their toolbar.
+    const showToolbar = !isManuscript || chrome !== 'none';
 
     // Manuscript mode: the prose measure (48rem, via manuscript.css) is
     // narrower than the pane, so clicks in the horizontal gutters land
@@ -446,7 +597,9 @@ export default function RichTextEditor({
                 }
                 // Trigger onChange
                 if (debounceRef.current) clearTimeout(debounceRef.current);
-                onChange(serializeToWiki(editor));
+                const wiki = serializeToWiki(editor);
+                onImmediateChangeRef.current?.(wiki);
+                onChange(wiki);
             }
         }
 
@@ -565,7 +718,9 @@ export default function RichTextEditor({
                           }
                 }
             >
-                {/* Toolbar */}
+                {/* Toolbar — absent entirely under chrome='none' (the
+                    workspace ribbon owns the controls; no band border) */}
+                {showToolbar && (
                 <div
                     className={`flex items-center justify-between p-2 ${isManuscript ? 'shrink-0' : ''}`}
                     style={toolbarStyle}
@@ -677,12 +832,7 @@ export default function RichTextEditor({
                         </Tooltip>
                     </div>
                 </div>
-
-                {/* Print-layout ruler — a pinned sibling between the
-                    toolbar and the scroll container (Word pins its
-                    ruler; the page scrolls beneath it). Hidden in code
-                    view, where there is no page to measure. */}
-                {isManuscript && printLayout && !codeView && <ManuscriptRuler />}
+                )}
 
                 {/* Editor Area / Code View */}
                 {codeView ? (
@@ -692,7 +842,11 @@ export default function RichTextEditor({
                     >
                         <textarea
                             value={codeValue}
-                            onChange={(e) => { setCodeValue(e.target.value); onChange(e.target.value); }}
+                            onChange={(e) => {
+                                setCodeValue(e.target.value);
+                                onImmediateChangeRef.current?.(e.target.value);
+                                onChange(e.target.value);
+                            }}
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setIsFocused(false)}
                             className={`w-full resize-none p-4 font-mono text-sm outline-none ${isManuscript ? 'min-h-0 flex-1' : 'min-h-30'}`}
@@ -708,11 +862,28 @@ export default function RichTextEditor({
                        prose measure + paddings live on .ProseMirror
                        itself (components/manuscript.css) so native
                        click-to-focus covers the whole surface. */
-                    <EditorContent
-                        editor={editor}
-                        className="tiptap-editor min-h-0 flex-1 overflow-y-auto"
-                        onMouseDown={handleGutterMouseDown}
-                    />
+                    <div className="flex min-h-0 flex-1 flex-col">
+                        {printLayout && (
+                            <div className="flex shrink-0">
+                                <div
+                                    className="hidden w-8 shrink-0 md:block"
+                                    style={{
+                                        background: 'var(--alex-manuscript-ruler-bg, color-mix(in srgb, var(--theme-base-content) 3%, transparent))',
+                                        borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
+                                    }}
+                                />
+                                <ManuscriptRuler />
+                            </div>
+                        )}
+                        <div className="flex min-h-0 flex-1">
+                            {printLayout && <ManuscriptRuler orientation="vertical" />}
+                            <EditorContent
+                                editor={editor}
+                                className="tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto"
+                                onMouseDown={handleGutterMouseDown}
+                            />
+                        </div>
+                    </div>
                 ) : (
                     <div
                         className="tiptap-editor overflow-hidden [&_.ProseMirror>*:last-child]:mb-0"

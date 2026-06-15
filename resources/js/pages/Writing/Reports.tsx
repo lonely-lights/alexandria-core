@@ -96,7 +96,7 @@ export default function Reports() {
     }
 
     return (
-        <AppLayout title={`${t('writing.reports.title')} - ${work.title}`} immersive>
+        <AppLayout title={`${t('writing.reports.title')} - ${work.title}`} immersive fabActions={null}>
             <PageHeader
                 breadcrumbs={[
                     { label: project.name, href: `/p/${project.slug}` },

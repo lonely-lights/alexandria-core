@@ -1,9 +1,9 @@
+import type { Editor } from '@tiptap/core';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type MouseEvent, type Ref } from 'react';
 
-import Select from '@alexandria/components/form/Select';
+import EntryHoverCard from '@alexandria/components/entries/EntryHoverCard';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
-import Tooltip from '@alexandria/components/ui/Tooltip';
 import { parseScreenplay, serializeScreenplay } from '@alexandria/editor/screenplay/codec';
 import {
     blocksToDoc,
@@ -12,82 +12,81 @@ import {
     docToBlocks,
 } from '@alexandria/editor/screenplay/extensions';
 import { ELEMENTS } from '@alexandria/editor/screenplay/formatSpec';
+import {
+    extractScreenplaySceneLinks,
+    type ScreenplaySceneLink,
+} from '@alexandria/editor/screenplay/sceneLinks';
 import type { ScreenplayElement } from '@alexandria/editor/screenplay/types';
 import useT from '@alexandria/hooks/useT';
 
 import ManuscriptRuler from '@alexandria/components/editor/ManuscriptRuler';
 
 import {
-    PRINT_LAYOUT_STORAGE_KEY,
     readPrintLayoutPreference,
     type ManuscriptEditorProps,
 } from './ManuscriptEditor';
+import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
 import SectionChrome from './SectionChrome';
 import useSectionAutosave from './useSectionAutosave';
 
 // Same platform sniff RichTextEditor uses for shortcut labels.
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
+type HistoryCommand = 'undo' | 'redo';
+type ScreenplayKeyHelp = 'keys_enter' | 'keys_tab' | 'keys_paren' | 'keys_elements';
+
+const SCREENPLAY_KEY_HELP: ScreenplayKeyHelp[] = [
+    'keys_enter',
+    'keys_tab',
+    'keys_paren',
+    'keys_elements',
+];
+
+function runHistoryCommand(editor: Editor | null, command: HistoryCommand): void {
+    const chain = editor?.chain().focus() as (Record<HistoryCommand, unknown> & { run?: () => boolean }) | undefined;
+    const fn = chain?.[command];
+
+    if (typeof fn !== 'function') {
+        return;
+    }
+
+    const runnable = fn.call(chain) as { run?: () => boolean };
+    runnable.run?.();
+}
+
+function canRunHistoryCommand(editor: Editor | null, command: HistoryCommand): boolean {
+    const chain = editor?.can().chain() as (Record<HistoryCommand, unknown> & { run?: () => boolean }) | undefined;
+    const fn = chain?.[command];
+
+    if (typeof fn !== 'function') {
+        return false;
+    }
+
+    const runnable = fn.call(chain) as { run?: () => boolean };
+
+    return runnable.run?.() ?? false;
+}
 
 /**
  * Workspace screenplay editor — Stage 8g.1 (Plan 3 Task 2).
  *
  * The center pane for `format: 'screenplay'` sections: same shell
- * contract as ManuscriptEditor (the shared SectionChrome menu bar +
- * counts footer, autosave via the shared useSectionAutosave hook), but
+ * contract as ManuscriptEditor (the shared SectionChrome identity
+ * strip, autosave via the shared useSectionAutosave hook), but
  * the writing surface is a schema-constrained TipTap instance whose
  * document only admits the six screenplay block nodes
  * (editor/screenplay/extensions.ts). Storage format is the
  * Fountain-flavored codec text (editor/screenplay/codec.ts).
  *
+ * Ribbon Plan 2: the surface is headless — the old toolbar (element
+ * select, entry-link, ruler toggle, help) is gone; the workspace
+ * ribbon drives everything through `bridgeRef`. `printLayout` is owned
+ * by the Workspace; the keys modal stays mounted here, opened via
+ * `bridge.openHelp()`.
+ *
  * The chrome root carries BOTH `rte-manuscript` and `rte-screenplay`,
  * so the desk/sheet/print geometry comes from manuscript.css and the
  * Courier voice + element indents from screenplay.css.
  */
-
-/* ── Theme styles ── */
-
-const toolbarStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
-    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-};
-
-/** Compact icon button — same idiom as RichTextEditor's toolbar buttons. */
-function ToolbarIconButton({
-    onMouseDown,
-    active = false,
-    disabled = false,
-    icon,
-    pressed,
-}: {
-    onMouseDown: (e: MouseEvent) => void;
-    active?: boolean;
-    disabled?: boolean;
-    icon: string;
-    pressed?: boolean;
-}) {
-    return (
-        <button
-            type="button"
-            onMouseDown={onMouseDown}
-            disabled={disabled}
-            aria-pressed={pressed}
-            className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${active ? 'alex-toolbar-btn--active' : ''}`}
-            style={{
-                background: active
-                    ? 'color-mix(in srgb, var(--theme-brand-secondary-500) 18%, transparent)'
-                    : 'transparent',
-                color: active
-                    ? 'var(--theme-brand-secondary-500)'
-                    : 'var(--theme-base-content)',
-                borderRadius: 'var(--theme-radius-button)',
-                opacity: disabled ? 0.4 : 1,
-                cursor: disabled ? 'not-allowed' : 'pointer',
-            }}
-        >
-            <i className={`fa-solid ${icon}`} />
-        </button>
-    );
-}
 
 /* ── Editable surface ── */
 
@@ -95,7 +94,12 @@ interface ScreenplaySurfaceProps {
     projectId: number;
     initialContent: string;
     printLayout: boolean;
-    onTogglePrintLayout: () => void;
+    /** Ribbon editor bridge (Ribbon Plan 2) — element commands + queries. */
+    bridgeRef?: Ref<WritingEditorBridge>;
+    /** Fires when the selection's element changes — the Workspace bumps `editorTick`. */
+    onStateChange?: () => void;
+    onSceneLinksChange?: (links: ScreenplaySceneLink[]) => void;
+    onEntryLinkSelect?: () => void;
     /** Receives the codec-serialized doc, 300ms-debounced. */
     onSerialized: (serialized: string) => void;
 }
@@ -108,21 +112,65 @@ function ScreenplaySurface({
     projectId,
     initialContent,
     printLayout,
-    onTogglePrintLayout,
+    bridgeRef,
+    onStateChange,
+    onSceneLinksChange,
+    onEntryLinkSelect,
     onSerialized,
 }: ScreenplaySurfaceProps) {
     const t = useT();
     const [showKeys, setShowKeys] = useState(false);
+    const [hoveredEntry, setHoveredEntry] = useState<{ entryId: number; rect: DOMRect } | null>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const entryLookupCacheRef = useRef(new Map<string, number | 'loading' | 'missing'>());
+    const onStateChangeRef = useRef(onStateChange);
+    const onSceneLinksChangeRef = useRef(onSceneLinksChange);
+    const onEntryLinkSelectRef = useRef(onEntryLinkSelect);
+    onStateChangeRef.current = onStateChange;
+    onSceneLinksChangeRef.current = onSceneLinksChange;
+    onEntryLinkSelectRef.current = onEntryLinkSelect;
+
+    function currentBlockIndex(e: Editor): number {
+        let activeIndex = 0;
+        const selectionPosition = e.state.selection.from;
+
+        e.state.doc.forEach((node, offset, index) => {
+            if (selectionPosition >= offset && selectionPosition <= offset + node.nodeSize) {
+                activeIndex = index;
+            }
+        });
+
+        return activeIndex;
+    }
+
+    function reportSceneLinks(e: Editor) {
+        onSceneLinksChangeRef.current?.(
+            extractScreenplaySceneLinks(e.getJSON(), currentBlockIndex(e)),
+        );
+    }
 
     const editor = useEditor({
-        extensions: buildScreenplayExtensions({ projectId }),
+        extensions: buildScreenplayExtensions({
+            projectId,
+            onEntryLinkSelect: () => {
+                onEntryLinkSelectRef.current?.();
+            },
+        }),
         content: blocksToDoc(parseScreenplay(initialContent)),
+        onCreate: ({ editor: e }) => {
+            reportSceneLinks(e);
+        },
         onUpdate: ({ editor: e }) => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(() => {
                 onSerialized(serializeScreenplay(docToBlocks(e.getJSON())));
             }, 300);
+            reportSceneLinks(e);
+        },
+        onTransaction: ({ editor: e }) => {
+            onStateChangeRef.current?.();
+            reportSceneLinks(e);
         },
     });
 
@@ -134,12 +182,18 @@ function ScreenplaySurface({
             if (debounceRef.current !== null) {
                 clearTimeout(debounceRef.current);
             }
+            if (hoverCloseTimerRef.current !== null) {
+                clearTimeout(hoverCloseTimerRef.current);
+            }
         };
     }, []);
 
-    // The current selection's block element drives the indicator
-    // Select; useEditorState subscribes to transactions, so it tracks
-    // selectionUpdate without shouldRerenderOnTransaction.
+    // The current selection's block element. The toolbar indicator it
+    // used to feed is gone (Ribbon Plan 2), but useEditorState's
+    // transaction subscription remains the change signal the ribbon
+    // needs: when the element under the cursor changes, tick the host
+    // so bridge-driven states (element select value, entry-link
+    // disabling) re-read.
     const currentElement = useEditorState({
         editor,
         selector: ({ editor: e }): ScreenplayElement => {
@@ -151,6 +205,67 @@ function ScreenplaySurface({
         },
     }) ?? 'action';
 
+    useEffect(() => {
+        onStateChangeRef.current?.();
+    }, [currentElement]);
+
+    // Ribbon editor bridge (Ribbon Plan 2 Task 2) — recreated per
+    // render so it always closes over the current editor. Prose-only
+    // methods are safe no-ops: the schema makes marks/headings/lists
+    // impossible by construction.
+    useImperativeHandle(bridgeRef, (): WritingEditorBridge => ({
+        toggleMark() {},
+        toggleList() {},
+        toggleHeading() {},
+        isMarkActive: () => false,
+        setBlockStyle(style) {
+            if (!editor || !(ELEMENTS as string[]).includes(style)) return;
+            editor.commands.focus();
+            convertCurrentBlock(editor, style as ScreenplayElement);
+        },
+        currentBlockStyle() {
+            const name = editor?.state.selection.$from.parent.type.name ?? '';
+
+            return (ELEMENTS as string[]).includes(name) ? name : 'action';
+        },
+        setElement(element) {
+            if (!editor || !(ELEMENTS as string[]).includes(element)) return;
+            editor.commands.focus();
+            convertCurrentBlock(editor, element as ScreenplayElement);
+        },
+        currentElement() {
+            const name = editor?.state.selection.$from.parent.type.name ?? '';
+
+            return (ELEMENTS as string[]).includes(name) ? name : null;
+        },
+        insertEntryLink() {
+            // Entry links only live in action blocks — no-op elsewhere
+            // (the ribbon control disables itself off currentElement()).
+            if (!editor || editor.state.selection.$from.parent.type.name !== 'action') return;
+            editor.chain().focus().insertContent('[[').run();
+        },
+        openHelp() {
+            setShowKeys(true);
+        },
+        toggleCodeView() {},
+        isCodeView: () => false,
+        undo() {
+            runHistoryCommand(editor, 'undo');
+        },
+        redo() {
+            runHistoryCommand(editor, 'redo');
+        },
+        canUndo() {
+            return canRunHistoryCommand(editor, 'undo');
+        },
+        canRedo() {
+            return canRunHistoryCommand(editor, 'redo');
+        },
+        focus() {
+            editor?.commands.focus();
+        },
+    }));
+
     // Forward desk-gutter clicks into the editor (the sheet is
     // narrower than the pane) — same affordance as RichTextEditor's
     // manuscript mode.
@@ -160,85 +275,180 @@ function ScreenplaySurface({
         editor?.commands.focus('end');
     }
 
+    function entryLinkFromTarget(target: EventTarget | null): HTMLAnchorElement | null {
+        return target instanceof Element
+            ? target.closest<HTMLAnchorElement>('a[data-type="entry-link"]')
+            : null;
+    }
+
+    function entryIdFromLink(link: HTMLAnchorElement): number | null {
+        const rawId = link.getAttribute('data-id');
+        const entryId = rawId !== null ? Number.parseInt(rawId, 10) : Number.NaN;
+
+        return Number.isFinite(entryId) ? entryId : null;
+    }
+
+    function openEntryHover(entryId: number, rect: DOMRect) {
+        clearHoverTimer();
+        setHoveredEntry((current) => (
+            current?.entryId === entryId
+                ? current
+                : { entryId, rect }
+        ));
+    }
+
+    function resolveEntryHover(link: HTMLAnchorElement) {
+        const directId = entryIdFromLink(link);
+        const rect = link.getBoundingClientRect();
+
+        if (directId !== null) {
+            openEntryHover(directId, rect);
+
+            return;
+        }
+
+        const name = link.getAttribute('data-name')?.trim() ?? '';
+
+        if (name === '') {
+            return;
+        }
+
+        const cached = entryLookupCacheRef.current.get(name);
+
+        if (typeof cached === 'number') {
+            openEntryHover(cached, rect);
+
+            return;
+        }
+
+        if (cached === 'loading' || cached === 'missing') {
+            return;
+        }
+
+        entryLookupCacheRef.current.set(name, 'loading');
+        fetch(`/api/v1/entries/search?q=${encodeURIComponent(name)}&project_id=${projectId}&limit=5`, {
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        })
+            .then((response) => (response.ok ? response.json() : Promise.reject()))
+            .then((payload: { data?: Array<{ id: number | string; name: string }> }) => {
+                const match = (payload.data ?? []).find(
+                    (row) => row.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
+                ) ?? payload.data?.[0];
+                const resolvedId = match ? Number.parseInt(String(match.id), 10) : Number.NaN;
+
+                if (Number.isFinite(resolvedId)) {
+                    entryLookupCacheRef.current.set(name, resolvedId);
+                    openEntryHover(resolvedId, rect);
+                } else {
+                    entryLookupCacheRef.current.set(name, 'missing');
+                }
+            })
+            .catch(() => {
+                entryLookupCacheRef.current.set(name, 'missing');
+            });
+    }
+
+    function clearHoverTimer() {
+        if (hoverCloseTimerRef.current !== null) {
+            clearTimeout(hoverCloseTimerRef.current);
+            hoverCloseTimerRef.current = null;
+        }
+    }
+
+    function closeHoveredEntry() {
+        clearHoverTimer();
+        hoverCloseTimerRef.current = setTimeout(() => {
+            setHoveredEntry(null);
+        }, 120);
+    }
+
+    function handleEntryLinkMouseMove(e: MouseEvent<HTMLDivElement>) {
+        const link = entryLinkFromTarget(e.target);
+
+        if (link === null) {
+            return;
+        }
+
+        clearHoverTimer();
+        resolveEntryHover(link);
+    }
+
+    function handleEntryLinkMouseLeave() {
+        closeHoveredEntry();
+    }
+
+    function handleEntryLinkClick(e: MouseEvent<HTMLDivElement>) {
+        const link = entryLinkFromTarget(e.target);
+
+        if (link === null || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+            return;
+        }
+
+        e.preventDefault();
+        onEntryLinkSelectRef.current?.();
+    }
+
     if (!editor) return null;
 
     return (
-        <>
-            {/* Toolbar — element indicator + entry link left, ruler + help right */}
-            <div className="flex shrink-0 items-center justify-between p-2" style={toolbarStyle}>
-                <div className="flex items-center gap-2">
-                    <div className="w-44">
-                        <Select
-                            size="sm"
-                            aria-label={t('writing.workspace.element')}
-                            options={ELEMENTS.map((element) => ({
-                                value: element,
-                                label: t(`writing.elements.${element}`),
-                            }))}
-                            value={currentElement}
-                            onChange={(e) => {
-                                editor.commands.focus();
-                                convertCurrentBlock(editor, e.target.value as ScreenplayElement);
-                            }}
-                        />
-                    </div>
-                    <Tooltip content={t('editor.toolbar.entry_link.title')}>
-                        <ToolbarIconButton
-                            icon="fa-file-lines"
-                            disabled={currentElement !== 'action'}
-                            onMouseDown={(e) => {
-                                e.preventDefault();
-                                editor.chain().focus().insertContent('[[').run();
-                            }}
-                        />
-                    </Tooltip>
+        <div className="flex min-h-0 flex-1 flex-col">
+            {printLayout && (
+                <div className="flex shrink-0">
+                    <div
+                        className="hidden w-8 shrink-0 md:block"
+                        style={{
+                            background: 'var(--alex-manuscript-ruler-bg, color-mix(in srgb, var(--theme-base-content) 3%, transparent))',
+                            borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
+                        }}
+                    />
+                    <ManuscriptRuler />
                 </div>
-                <div className="flex items-center gap-1">
-                    <Tooltip content={t('writing.workspace.print_layout')}>
-                        <ToolbarIconButton
-                            icon="fa-ruler-horizontal"
-                            active={printLayout}
-                            pressed={printLayout}
-                            onMouseDown={(e) => {
-                                e.preventDefault();
-                                onTogglePrintLayout();
-                            }}
-                        />
-                    </Tooltip>
-                    <Tooltip content={t('writing.workspace.keys_title')}>
-                        <ToolbarIconButton
-                            icon="fa-circle-question"
-                            onMouseDown={(e) => {
-                                e.preventDefault();
-                                setShowKeys(true);
-                            }}
-                        />
-                    </Tooltip>
-                </div>
+            )}
+
+            {/* The sheet: geometry from manuscript.css, element layout from screenplay.css. */}
+            <div className="flex min-h-0 flex-1">
+                {printLayout && <ManuscriptRuler orientation="vertical" />}
+                <EditorContent
+                    editor={editor}
+                    className="tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto"
+                    onClick={handleEntryLinkClick}
+                    onMouseMove={handleEntryLinkMouseMove}
+                    onMouseLeave={handleEntryLinkMouseLeave}
+                    onMouseDown={handleGutterMouseDown}
+                />
             </div>
 
-            {/* Print-layout ruler — pinned between toolbar and the scrolling page */}
-            {printLayout && <ManuscriptRuler />}
+            {hoveredEntry !== null && (
+                <EntryHoverCard
+                    entryId={hoveredEntry.entryId}
+                    triggerRect={hoveredEntry.rect}
+                    onEnter={clearHoverTimer}
+                    onClose={closeHoveredEntry}
+                />
+            )}
 
-            {/* The sheet — the content wrapper scrolls; geometry from
-                manuscript.css, element layout from screenplay.css */}
-            <EditorContent
-                editor={editor}
-                className="tiptap-editor min-h-0 flex-1 overflow-y-auto"
-                onMouseDown={handleGutterMouseDown}
-            />
-
-            {/* Keyboard-flow help */}
-            <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-md">
+            {/* Keyboard-flow help — opened via bridge.openHelp() */}
+            <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-lg">
                 <ModalHeader title={t('writing.workspace.keys_title')} onClose={() => setShowKeys(false)} />
-                <div className="space-y-3 p-6 text-sm">
-                    {(['keys_enter', 'keys_tab', 'keys_paren', 'keys_elements'] as const).map((key) => (
-                        <div key={key} className="flex items-start gap-3">
+                <div className="grid gap-2.5 p-5 text-sm">
+                    {SCREENPLAY_KEY_HELP.map((key) => (
+                        <div
+                            key={key}
+                            className="flex items-start gap-3 rounded-md px-3 py-3"
+                            style={{
+                                background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                            }}
+                        >
                             <kbd
-                                className="mt-0.5 shrink-0 px-1.5 py-0.5 font-mono text-xs"
+                                className="inline-flex min-h-7 min-w-[4.5rem] shrink-0 items-center justify-center px-2 font-mono text-[11px] font-semibold"
                                 style={{
-                                    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-                                    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+                                    background: 'color-mix(in srgb, var(--theme-base-content) 9%, transparent)',
+                                    border: '1px solid color-mix(in srgb, var(--theme-base-content) 18%, transparent)',
                                     borderRadius: 'var(--theme-radius-button)',
                                     color: 'var(--theme-base-content)',
                                 }}
@@ -253,12 +463,12 @@ function ScreenplaySurface({
                                                 ? '⌘⌥ 0–5'
                                                 : 'Ctrl+Alt+0–5'}
                             </kbd>
-                            <p className="min-w-0">{t(`writing.workspace.${key}`)}</p>
+                            <p className="min-w-0 pt-0.5 leading-relaxed">{t(`writing.workspace.${key}`)}</p>
                         </div>
                     ))}
                 </div>
             </Modal>
-        </>
+        </div>
     );
 }
 
@@ -271,46 +481,42 @@ export default function ScreenplayEditor({
     section,
     canUpdate,
     onCounts,
+    printLayout,
+    bridgeRef,
+    onStateChange,
+    onSceneLinksChange,
+    onEntryLinkSelect,
 }: ManuscriptEditorProps) {
-    const { status, wordCount, pageEstimate, noteChange, initialContent } =
+    const { noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
-    const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
 
-    function togglePrintLayout() {
-        const next = !printLayout;
-        setPrintLayout(next);
-        try {
-            localStorage.setItem(PRINT_LAYOUT_STORAGE_KEY, String(next));
-        } catch {
-            // Storage unavailable (private mode / quota) — the toggle
-            // still works for this session.
-        }
-    }
+    // Read the stored preference ONCE (a function-call prop default
+    // would re-read localStorage every render). The `??` fallback keeps
+    // the editor self-sufficient until the Workspace passes the prop
+    // (Ribbon Plan 2 Task 3 always does).
+    const storedPrintLayout = useMemo(readPrintLayoutPreference, []);
+    const effectivePrintLayout = printLayout ?? storedPrintLayout;
 
     return (
         <SectionChrome
-            projectSlug={projectSlug}
-            workSlug={workSlug}
-            section={section}
-            canUpdate={canUpdate}
-            status={status}
-            wordCount={wordCount}
-            pageEstimate={pageEstimate}
-            className={`rte-manuscript rte-screenplay${printLayout && canUpdate ? ' rte-manuscript--print' : ''}`}
+            className={`rte-manuscript rte-screenplay${effectivePrintLayout && canUpdate ? ' rte-manuscript--print' : ''}`}
         >
             {canUpdate ? (
                 <ScreenplaySurface
                     projectId={projectId}
                     initialContent={initialContent}
-                    printLayout={printLayout}
-                    onTogglePrintLayout={togglePrintLayout}
+                    printLayout={effectivePrintLayout}
+                    bridgeRef={bridgeRef}
+                    onStateChange={onStateChange}
+                    onSceneLinksChange={onSceneLinksChange}
+                    onEntryLinkSelect={onEntryLinkSelect}
                     onSerialized={noteChange}
                 />
             ) : (
                 /* Read-only: the parsed blocks as styled static markup
                    inside the sheet — no editor instance. The class
                    names reuse the desk/sheet/element CSS directly. */
-                <div className="tiptap-editor min-h-0 flex-1 overflow-y-auto">
+                <div className="tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
                     <div className="ProseMirror">
                         {parseScreenplay(initialContent).map((block, index) => (
                             <p

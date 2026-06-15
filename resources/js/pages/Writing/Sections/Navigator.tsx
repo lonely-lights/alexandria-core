@@ -1,25 +1,26 @@
-import { router, useForm } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { useRef, useState, type CSSProperties } from 'react';
 
+import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
-import Button from '@alexandria/components/ui/Button';
-import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
-import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
-import Input from '@alexandria/components/form/Input';
 
 import type { SectionNode } from '../Workspace';
+import RenameSectionModal from './RenameSectionModal';
+import type { SectionOutlineItem } from './sectionOutline';
 
 /**
  * Workspace section Navigator — Stage 8g.1 (Plan 2 Task 6; drag-reorder
- * added in Plan 4 Task 5).
+ * added in Plan 4 Task 5; modal state lifted in Ribbon Plan 2 Task 3).
  *
  * Recursive section tree with expand/collapse, selection, and (when
  * the viewer can update the work) add-child / delete hover actions
- * plus a root-level add button. Mutations POST/DELETE through Inertia;
- * the server sends fresh `sections` props back, so no manual tree
- * state sync is needed — the expanded set keys off ids and tolerates
- * stale entries.
+ * plus a root-level add button. The add/delete modals live in the
+ * Workspace (shared with the ribbon's Structure tab) — the hover
+ * affordances request them via `onRequestAdd`/`onRequestDelete`.
+ * Mutations POST/DELETE through Inertia; the server sends fresh
+ * `sections` props back, so no manual tree state sync is needed — the
+ * expanded set keys off ids and tolerates stale entries.
  *
  * Reordering: every sibling group (the root list + each expanded
  * `children` container) is its own SortableJS container via
@@ -36,28 +37,37 @@ interface NavigatorProps {
     currentSlug: string | null;
     canUpdate: boolean;
     onSelect: (slug: string) => void;
+    /** Open the Workspace-owned AddSectionModal (null = root section). */
+    onRequestAdd: (parentId: number | null) => void;
+    /** Open the Workspace-owned delete ConfirmModal for this node. */
+    onRequestDelete: (node: SectionNode) => void;
     /** Autosave-confirmed word counts (by section id) overlaying the prop tree. */
     liveCounts?: Record<number, number>;
+    /** Headings extracted from the current prose section, rendered as an in-section outline. */
+    currentOutline?: SectionOutlineItem[];
 }
 
 /* ── Theme styles ── */
 
 const selectedRowStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)',
-    color: 'var(--theme-brand-primary-500)',
+    background:
+        'var(--alex-writing-section-row-selected-bg, color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent))',
+    color: 'var(--alex-writing-section-row-selected-fg, var(--theme-brand-primary-500))',
 };
 
 const chevronStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 40%, transparent))',
 };
 
 const leafDotStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
+    background:
+        'var(--alex-writing-section-dot-bg, color-mix(in srgb, var(--theme-base-content) 15%, transparent))',
 };
 
 const labelChipStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+    background:
+        'var(--alex-writing-section-chip-bg, color-mix(in srgb, var(--theme-base-content) 8%, transparent))',
+    color: 'var(--alex-writing-section-chip-fg, color-mix(in srgb, var(--theme-base-content) 60%, transparent))',
     borderRadius: 'var(--theme-radius-badge)',
     padding: '0 0.375rem',
     fontSize: '0.625rem',
@@ -69,11 +79,20 @@ const labelChipStyle: CSSProperties = {
 };
 
 const wordCountStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)',
+    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 45%, transparent))',
 };
 
 const hoverActionStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 50%, transparent))',
+};
+
+const panelHeaderStyle: CSSProperties = {
+    borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
+};
+
+const panelActionStyle: CSSProperties = {
+    borderRadius: 'var(--theme-radius-button)',
+    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 58%, transparent))',
 };
 
 /** Collect the ids of every node that has children (default-expanded set). */
@@ -87,6 +106,26 @@ function collectParentIds(nodes: SectionNode[], into: Set<number>): Set<number> 
     return into;
 }
 
+function findNodeBySlug(nodes: SectionNode[], slug: string | null): SectionNode | null {
+    if (slug === null) {
+        return null;
+    }
+
+    for (const node of nodes) {
+        if (node.slug === slug) {
+            return node;
+        }
+
+        const found = findNodeBySlug(node.children, slug);
+
+        if (found !== null) {
+            return found;
+        }
+    }
+
+    return null;
+}
+
 export default function Navigator({
     projectSlug,
     workSlug,
@@ -94,15 +133,17 @@ export default function Navigator({
     currentSlug,
     canUpdate,
     onSelect,
+    onRequestAdd,
+    onRequestDelete,
     liveCounts,
+    currentOutline = [],
 }: NavigatorProps) {
     const t = useT();
     const [expanded, setExpanded] = useState<Set<number>>(
         () => collectParentIds(sections, new Set()),
     );
-    const [addTarget, setAddTarget] = useState<{ parentId: number | null } | null>(null);
-    const [deleteTarget, setDeleteTarget] = useState<SectionNode | null>(null);
-    const [deleting, setDeleting] = useState(false);
+    const [renameTarget, setRenameTarget] = useState<SectionNode | null>(null);
+    const currentNode = findNodeBySlug(sections, currentSlug);
 
     function toggle(id: number) {
         setExpanded((prev) => {
@@ -120,22 +161,7 @@ export default function Navigator({
         // Pre-expand the parent so the new child is visible when the
         // fresh tree comes back.
         setExpanded((prev) => new Set(prev).add(node.id));
-        setAddTarget({ parentId: node.id });
-    }
-
-    function confirmDelete() {
-        if (deleteTarget === null) {
-            return;
-        }
-
-        router.delete(`/works/${projectSlug}/${workSlug}/sections/${deleteTarget.id}`, {
-            preserveScroll: true,
-            onStart: () => setDeleting(true),
-            onFinish: () => {
-                setDeleting(false);
-                setDeleteTarget(null);
-            },
-        });
+        onRequestAdd(node.id);
     }
 
     const shared: TreeShared = {
@@ -147,48 +173,91 @@ export default function Navigator({
         onSelect,
         onToggle: toggle,
         onAddChild: openAddChild,
-        onDelete: setDeleteTarget,
+        onDuplicate: (node) => {
+            router.post(
+                `/works/${projectSlug}/${workSlug}/sections/${node.id}/duplicate`,
+                {},
+                {
+                    preserveScroll: true,
+                    preserveState: true,
+                    only: ['sections', 'currentSection'],
+                },
+            );
+        },
+        onRename: setRenameTarget,
         liveCounts,
+        currentOutline,
         t,
     };
 
     return (
-        <div className="flex flex-col gap-0.5 p-2">
-            <SiblingGroup nodes={sections} parentId={null} depth={0} shared={shared} />
-
+        <div className="flex min-h-full flex-col">
             {canUpdate && (
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    fullWidth
-                    icon="fa-solid fa-plus"
-                    iconPosition="before"
-                    className="mt-2"
-                    onClick={() => setAddTarget({ parentId: null })}
+                <div
+                    className="flex shrink-0 items-center justify-between gap-2 px-2 py-1.5"
+                    style={panelHeaderStyle}
                 >
-                    {t('writing.workspace.add_section')}
-                </Button>
+                    <span className="text-xs font-semibold uppercase tracking-[0.04em]" style={wordCountStyle}>
+                        {t('writing.workspace.sections')}
+                    </span>
+                    <div className="flex items-center gap-0.5">
+                        <button
+                            type="button"
+                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                            data-writing-section-action="add-section"
+                            style={panelActionStyle}
+                            title={t('writing.workspace.add_section')}
+                            aria-label={t('writing.workspace.add_section')}
+                            onClick={() => onRequestAdd(null)}
+                        >
+                            <i className="fa-solid fa-plus" aria-hidden="true" />
+                        </button>
+                        <button
+                            type="button"
+                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                            data-writing-section-action="add-inside"
+                            style={{ ...panelActionStyle, opacity: currentNode === null ? 0.4 : 1 }}
+                            title={t('writing.workspace.add_child')}
+                            aria-label={t('writing.workspace.add_child')}
+                            disabled={currentNode === null}
+                            onClick={() => {
+                                if (currentNode !== null) {
+                                    openAddChild(currentNode);
+                                }
+                            }}
+                        >
+                            <i className="fa-solid fa-indent" aria-hidden="true" />
+                        </button>
+                        <button
+                            type="button"
+                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                            data-writing-section-action="delete-section"
+                            style={{ ...panelActionStyle, opacity: currentNode === null ? 0.4 : 1 }}
+                            title={t('writing.workspace.delete_section')}
+                            aria-label={t('writing.workspace.delete_section')}
+                            disabled={currentNode === null}
+                            onClick={() => {
+                                if (currentNode !== null) {
+                                    onRequestDelete(currentNode);
+                                }
+                            }}
+                        >
+                            <i className="fa-solid fa-trash-can" aria-hidden="true" />
+                        </button>
+                    </div>
+                </div>
             )}
-
-            {addTarget !== null && (
-                <AddSectionModal
+            <div className="flex min-h-0 flex-1 flex-col gap-0.5 p-2">
+                <SiblingGroup nodes={sections} parentId={null} depth={0} shared={shared} />
+            </div>
+            {renameTarget !== null && (
+                <RenameSectionModal
                     projectSlug={projectSlug}
                     workSlug={workSlug}
-                    parentId={addTarget.parentId}
-                    onClose={() => setAddTarget(null)}
+                    section={renameTarget}
+                    onClose={() => setRenameTarget(null)}
                 />
             )}
-
-            <ConfirmModal
-                open={deleteTarget !== null}
-                onClose={() => setDeleteTarget(null)}
-                onConfirm={confirmDelete}
-                title={t('writing.workspace.delete_confirm_title')}
-                message={t('writing.workspace.delete_confirm_body')}
-                confirmLabel={t('writing.workspace.delete_confirm_action')}
-                variant="danger"
-                loading={deleting}
-            />
         </div>
     );
 }
@@ -203,8 +272,10 @@ interface TreeShared {
     onSelect: (slug: string) => void;
     onToggle: (id: number) => void;
     onAddChild: (node: SectionNode) => void;
-    onDelete: (node: SectionNode) => void;
+    onDuplicate: (node: SectionNode) => void;
+    onRename: (node: SectionNode) => void;
     liveCounts?: Record<number, number>;
+    currentOutline: SectionOutlineItem[];
     t: Translator;
 }
 
@@ -273,13 +344,33 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDelete, liveCounts, t } =
+    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, liveCounts, t } =
         shared;
 
     const isSelected = node.slug === currentSlug;
     const hasChildren = node.children.length > 0;
     const isExpanded = expanded.has(node.id);
     const wordCount = liveCounts?.[node.id] ?? node.word_count;
+    const sectionUrl = `/works/${projectSlug}/${workSlug}/${node.slug}`;
+    const outline = isSelected ? shared.currentOutline : [];
+
+    function copyLink() {
+        const url = new URL(sectionUrl, window.location.origin).toString();
+
+        if (navigator.clipboard?.writeText) {
+            void navigator.clipboard.writeText(url);
+            return;
+        }
+
+        const input = document.createElement('input');
+        input.value = url;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
+    }
 
     // The wrapper div is the SortableJS draggable item — the row plus
     // its (expanded) subtree move together, and collapsed children ride
@@ -288,6 +379,7 @@ function NavigatorRow({
         <div className="flex flex-col gap-0.5">
             <div
                 className="alex-row group flex cursor-pointer items-center gap-1 py-1 pr-2 text-sm"
+                data-selected={isSelected ? 'true' : undefined}
                 style={{
                     paddingLeft: `${depth * 18 + 8}px`,
                     borderRadius: 'var(--theme-radius-button)',
@@ -330,7 +422,7 @@ function NavigatorRow({
 
                 {/* Hover actions */}
                 {canUpdate && (
-                    <span className="flex flex-shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+                    <span className={`flex flex-shrink-0 items-center gap-0.5 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
                         <span
                             className="drag-handle flex h-5 w-5 cursor-grab items-center justify-center active:cursor-grabbing"
                             style={hoverActionStyle}
@@ -339,32 +431,65 @@ function NavigatorRow({
                         >
                             <i className="fa-solid fa-grip-vertical text-[10px]" aria-hidden="true" />
                         </span>
-                        <button
-                            type="button"
-                            className="flex h-5 w-5 items-center justify-center"
-                            style={hoverActionStyle}
-                            title={t('writing.workspace.add_child')}
-                            aria-label={t('writing.workspace.add_child')}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onAddChild(node);
-                            }}
-                        >
-                            <i className="fa-solid fa-plus text-[10px]" />
-                        </button>
-                        <button
-                            type="button"
-                            className="flex h-5 w-5 items-center justify-center"
-                            style={hoverActionStyle}
-                            title={t('writing.workspace.delete_section')}
-                            aria-label={t('writing.workspace.delete_section')}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(node);
-                            }}
-                        >
-                            <i className="fa-solid fa-trash text-[10px]" />
-                        </button>
+                        <span onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu
+                                align="left"
+                                density="compact"
+                                labelAlign="right"
+                                menuClassName="w-48 py-1"
+                                inheritCssVariables={[
+                                    '--alex-writing-section-pane-bg',
+                                    '--alex-writing-section-row-hover-bg',
+                                    '--alex-writing-section-muted',
+                                    '--theme-base-content',
+                                    '--theme-base-surface',
+                                    '--theme-motion-duration-fast',
+                                    '--theme-motion-easing-standard',
+                                    '--theme-radius-button',
+                                    '--theme-radius-card',
+                                ]}
+                                menuStyle={{
+                                    background: 'var(--alex-writing-section-pane-bg, var(--theme-base-surface))',
+                                    borderColor: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                                    color: 'var(--theme-base-content)',
+                                }}
+                                trigger={
+                                    <button
+                                        type="button"
+                                        className="flex h-5 w-5 items-center justify-center rounded-full"
+                                        data-writing-section-menu={node.id}
+                                        style={hoverActionStyle}
+                                        title={t('writing.workspace.section_options')}
+                                        aria-label={t('writing.workspace.section_options')}
+                                    >
+                                        <i className="fa-solid fa-ellipsis-vertical text-[10px]" aria-hidden="true" />
+                                    </button>
+                                }
+                                items={[
+                                    {
+                                        label: t('writing.workspace.add_subsection'),
+                                        icon: 'fa-plus',
+                                        onClick: () => onAddChild(node),
+                                    },
+                                    {
+                                        label: t('writing.workspace.duplicate_section'),
+                                        icon: 'fa-copy',
+                                        onClick: () => onDuplicate(node),
+                                    },
+                                    {
+                                        label: t('writing.workspace.rename_section'),
+                                        icon: 'fa-pen',
+                                        onClick: () => onRename(node),
+                                    },
+                                    { divider: true },
+                                    {
+                                        label: t('writing.workspace.copy_section_link'),
+                                        icon: 'fa-link',
+                                        onClick: copyLink,
+                                    },
+                                ]}
+                            />
+                        </span>
                     </span>
                 )}
 
@@ -378,6 +503,29 @@ function NavigatorRow({
                 )}
             </div>
 
+            {outline.length > 0 && (
+                <div className="flex flex-col gap-0.5" data-writing-section-outline={node.id}>
+                    {outline.map((item) => (
+                        <div
+                            key={item.id}
+                            className="flex items-center gap-1 py-0.5 pr-2 text-xs"
+                            data-writing-section-outline-item={item.id}
+                            style={{
+                                paddingLeft: `${depth * 18 + 34 + (item.level - 1) * 12}px`,
+                                color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 48%, transparent))',
+                            }}
+                        >
+                            <i
+                                className="fa-solid fa-heading shrink-0 text-[8px]"
+                                aria-hidden="true"
+                                style={chevronStyle}
+                            />
+                            <span className="min-w-0 truncate">{item.title}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {hasChildren && isExpanded && (
                 <SiblingGroup
                     nodes={node.children}
@@ -387,84 +535,5 @@ function NavigatorRow({
                 />
             )}
         </div>
-    );
-}
-
-function AddSectionModal({
-    projectSlug,
-    workSlug,
-    parentId,
-    onClose,
-}: {
-    projectSlug: string;
-    workSlug: string;
-    parentId: number | null;
-    onClose: () => void;
-}) {
-    const t = useT();
-    const form = useForm<{ title: string; label: string; parent_id: number | null }>({
-        title: '',
-        label: '',
-        parent_id: parentId,
-    });
-
-    function submit() {
-        form.post(`/works/${projectSlug}/${workSlug}/sections`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                form.reset();
-                onClose();
-            },
-        });
-    }
-
-    return (
-        <Modal open onClose={onClose} maxWidth="max-w-md">
-            <ModalHeader
-                title={
-                    parentId === null
-                        ? t('writing.workspace.add_section')
-                        : t('writing.workspace.add_child')
-                }
-                onClose={onClose}
-            />
-            {/* noValidate: server-side validation owns the error UI. */}
-            <form
-                noValidate
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    submit();
-                }}
-            >
-                <div className="flex flex-col gap-4 px-6 py-5">
-                    <Input
-                        label={t('writing.workspace.section_title_placeholder')}
-                        name="title"
-                        value={form.data.title}
-                        onChange={(e) => form.setData('title', e.target.value)}
-                        error={form.errors.title}
-                        autoFocus
-                        required
-                        size="md"
-                    />
-                    <Input
-                        label={t('writing.workspace.section_label')}
-                        name="label"
-                        value={form.data.label}
-                        onChange={(e) => form.setData('label', e.target.value)}
-                        error={form.errors.label}
-                        size="md"
-                    />
-                </div>
-                <ModalFooter>
-                    <Button variant="ghost" onClick={onClose}>
-                        {t('writing.form.cancel')}
-                    </Button>
-                    <Button type="submit" loading={form.processing}>
-                        {t('writing.form.create')}
-                    </Button>
-                </ModalFooter>
-            </form>
-        </Modal>
     );
 }

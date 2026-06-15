@@ -332,7 +332,7 @@ function serializeMention(node: WikiNode): string {
  */
 function serializeEntryLink(node: WikiNode): string {
     const name = (node.attrs?.name as string | undefined) ?? (node.attrs?.label as string | undefined) ?? '';
-    const displayText = (node.attrs?.displayText as string | undefined) ?? '';
+    const displayText = serializeInlineContent(node.content, {}) || (node.attrs?.displayText as string | undefined) || '';
 
     if (displayText && displayText !== name) {
         return `[[${name}|${displayText}]]`;

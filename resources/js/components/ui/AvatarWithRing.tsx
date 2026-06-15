@@ -36,14 +36,18 @@ export default function AvatarWithRing({
     ringSettings,
     ringThickness = 6,
 }: AvatarWithRingProps) {
-    const avatarSize = size;
     const gapSize = size + ringThickness;
     const ringSize = size + ringThickness * 2;
 
+    // Constant footprint with or without a ring: ringless avatars
+    // expand the IMAGE to the ring's outer edge instead of shrinking
+    // the component, so avatars sit at one consistent size everywhere
+    // regardless of the user's ring preference.
+    const avatarSize = ring !== 'none' ? size : ringSize;
+    const outerSize = ringSize;
+
     const isAnimated = ring === 'animated' || ring === 'rainbow';
     const gradient = ringSettings?.gradient;
-
-    const outerSize = ring !== 'none' ? ringSize : avatarSize;
 
     return (
         <div className="relative inline-flex flex-shrink-0 items-center justify-center" style={{ width: outerSize, height: outerSize, minWidth: outerSize, minHeight: outerSize }}>
