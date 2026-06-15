@@ -1,7 +1,8 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import Button from '@alexandria/components/ui/Button';
 import Input from '@alexandria/components/form/Input';
+import StatusBadge, { type StatusBadgeVariant } from '@alexandria/components/ui/StatusBadge';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { useEnterAnimation } from '@alexandria/hooks/useEnterAnimation';
 import useT, { type Translator } from '@alexandria/hooks/useT';
@@ -35,7 +36,7 @@ interface LinksSectionProps {
     onLinksChanged: () => void;
 }
 
-type VisibilityVariant = 'success' | 'info' | 'neutral';
+type VisibilityVariant = Extract<StatusBadgeVariant, 'success' | 'info' | 'neutral'>;
 
 interface VisibilityConfig {
     labelKey: string;
@@ -48,32 +49,6 @@ const VISIBILITY_CONFIG: Record<string, VisibilityConfig> = {
     authenticated: { labelKey: 'links.visibility.authenticated', icon: 'fa-users', variant: 'info' },
     private: { labelKey: 'links.visibility.private', icon: 'fa-lock', variant: 'neutral' },
 };
-
-/* ── Status pill — matches AiSections / PrivacySections families. ── */
-function StatusBadge({ children, variant = 'neutral', icon }: {
-    children: ReactNode;
-    variant?: VisibilityVariant;
-    icon?: string;
-}) {
-    const palettes: Record<VisibilityVariant, { bg: string; fg: string }> = {
-        success: { bg: 'var(--theme-status-success-subtle)', fg: 'var(--theme-status-success-fill)' },
-        info: { bg: 'var(--theme-status-info-subtle)', fg: 'var(--theme-status-info-fill)' },
-        neutral: {
-            bg: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-            fg: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
-        },
-    };
-    const p = palettes[variant];
-    return (
-        <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold"
-            style={{ background: p.bg, color: p.fg, borderRadius: '9999px' }}
-        >
-            {icon && <i className={`${icon} text-[10px]`} />}
-            {children}
-        </span>
-    );
-}
 
 /* ── Visibility radio-pill cluster, shared between Add and Edit forms. ── */
 function VisibilityPicker({ t, value, onChange }: { t: Translator; value: string; onChange: (v: string) => void }) {
