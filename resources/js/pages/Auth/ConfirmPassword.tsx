@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import type { SyntheticEvent } from 'react';
 
 import FormGroup from '../../components/form/FormGroup';
+import LegalFooter from '../../components/legal/LegalFooter';
 import TextField from '../../components/form/TextField';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import Alert from '../../components/ui/Alert';
@@ -90,24 +91,12 @@ export default function ConfirmPassword({
                 </Button>
             </form>
 
-            <p
-                className="text-center text-xs pt-4"
-                style={{ color: 'var(--theme-base-content)', opacity: 0.4 }}
-            >
-                <a
-                    href={termsUrl}
-                    className="underline hover:opacity-80 transition-opacity"
-                >
-                    {copy['legal.terms_of_service']}
-                </a>
-                {' · '}
-                <a
-                    href={privacyUrl}
-                    className="underline hover:opacity-80 transition-opacity"
-                >
-                    {copy['legal.privacy_policy']}
-                </a>
-            </p>
+            <LegalFooter
+                termsUrl={termsUrl}
+                privacyUrl={privacyUrl}
+                termsLabel={copy['legal.terms_of_service']}
+                privacyLabel={copy['legal.privacy_policy']}
+            />
         </AuthLayout>
     );
 }

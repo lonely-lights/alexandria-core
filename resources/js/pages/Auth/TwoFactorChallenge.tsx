@@ -8,6 +8,7 @@ import {
 } from 'react';
 
 import FormGroup from '../../components/form/FormGroup';
+import LegalFooter from '../../components/legal/LegalFooter';
 import OtpField from '../../components/form/OtpField';
 import TextField from '../../components/form/TextField';
 import useT from '../../hooks/useT';
@@ -133,24 +134,12 @@ export default function TwoFactorChallenge({
                     : copy['two_factor.challenge.use_recovery']}
             </Button>
 
-            <p
-                className="text-center text-xs pt-4"
-                style={{ color: 'var(--theme-base-content)', opacity: 0.4 }}
-            >
-                <a
-                    href={termsUrl}
-                    className="underline hover:opacity-80 transition-opacity"
-                >
-                    {copy['legal.terms_of_service']}
-                </a>
-                {' · '}
-                <a
-                    href={privacyUrl}
-                    className="underline hover:opacity-80 transition-opacity"
-                >
-                    {copy['legal.privacy_policy']}
-                </a>
-            </p>
+            <LegalFooter
+                termsUrl={termsUrl}
+                privacyUrl={privacyUrl}
+                termsLabel={copy['legal.terms_of_service']}
+                privacyLabel={copy['legal.privacy_policy']}
+            />
         </AuthLayout>
     );
 }

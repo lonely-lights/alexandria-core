@@ -4,6 +4,7 @@ import type { SyntheticEvent } from 'react';
 import HeroRotator from '@alexandria/components/ui/HeroRotator';
 import CheckboxField from '../../components/form/CheckboxField';
 import FormGroup from '../../components/form/FormGroup';
+import LegalFooter from '../../components/legal/LegalFooter';
 import TextField from '../../components/form/TextField';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import Alert from '../../components/ui/Alert';
@@ -198,26 +199,14 @@ export default function Login({
                 </>
             )}
 
-            <p
-                className="text-center text-xs pt-4"
-                style={{ color: 'var(--theme-base-content)', opacity: 0.4 }}
-            >
-                {copy['login.agree_terms']}{' '}
-                <a
-                    href={termsUrl}
-                    className="underline hover:opacity-80 transition-opacity"
-                >
-                    {copy['legal.terms_of_service']}
-                </a>{' '}
-                {copy['login.and']}{' '}
-                <a
-                    href={privacyUrl}
-                    className="underline hover:opacity-80 transition-opacity"
-                >
-                    {copy['legal.privacy_policy']}
-                </a>
-                .
-            </p>
+            <LegalFooter
+                termsUrl={termsUrl}
+                privacyUrl={privacyUrl}
+                termsLabel={copy['legal.terms_of_service']}
+                privacyLabel={copy['legal.privacy_policy']}
+                agreementText={copy['login.agree_terms']}
+                conjunction={copy['login.and']}
+            />
         </AuthLayout>
     );
 }
