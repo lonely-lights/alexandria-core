@@ -88,6 +88,21 @@ return [
     */
     'ai' => [
         'allow_env_fallback' => env('ALEXANDRIA_AI_ALLOW_ENV_FALLBACK', false),
+
+        /*
+        | Backdate entries to their source note's creation date.
+        |
+        | When true, an entry that the AI executor creates from — or links a
+        | note to — inherits that note's created_at whenever the note is
+        | earlier, so an entry's "first created" honestly reflects when the
+        | idea first existed (e.g. an imported 2022 note backdates the entry
+        | it seeds). The source note is read from the command's
+        | context.note_id. The date only ever moves earlier, never forward.
+        |
+        | Off by default to keep the package unopinionated; note-import-driven
+        | apps set ALEXANDRIA_BACKDATE_TO_SOURCE_NOTE=true.
+        */
+        'backdate_to_source_note' => env('ALEXANDRIA_BACKDATE_TO_SOURCE_NOTE', false),
     ],
 
     /*

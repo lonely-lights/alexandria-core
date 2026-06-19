@@ -54,6 +54,7 @@ class AiCommandExecutor
             foreach ($commands as $command) {
                 try {
                     $this->executeCommand($command);
+                    $this->backdateToSourceNote($command);
                     $command->update(['status' => 'executed', 'executed_at' => now()]);
                     $results['success']++;
                 } catch (Throwable $e) {
@@ -140,6 +141,124 @@ class AiCommandExecutor
             'create_relationship' => $this->handleCreateRelationship($command),
             default => throw new Exception("Unsupported action_type: $command->action_type"),
         };
+    }
+
+    /**
+     * Backdate the entry a command created or linked a note to, so its
+     * created_at follows the source note when the note is earlier.
+     *
+     * Gated by config('alexandria.ai.backdate_to_source_note'). The source
+     * note comes from the command's context.note_id. Best-effort: a failure
+     * here is logged and swallowed so it never fails an otherwise-successful
+     * command. The date only ever moves earlier, never forward.
+     */
+    private function backdateToSourceNote(AiReviewCommand $command): void
+    {
+        if (! config('alexandria.ai.backdate_to_source_note', false)) {
+            return;
+        }
+
+        $noteId = is_array($command->context) ? ($command->context['note_id'] ?? null) : null;
+        if ($noteId === null) {
+            return;
+        }
+
+        /** @var class-string $entryClass */
+        $entryClass = config('alexandria.models.entry');
+
+        $entryId = $this->backdateTargetEntryId($command, $entryClass);
+        if ($entryId === null) {
+            return;
+        }
+
+        try {
+            /** @var class-string $noteClass */
+            $noteClass = config('alexandria.models.note');
+            $note = $noteClass::find($noteId);
+            $entry = $entryClass::find($entryId);
+
+            if ($note === null || $entry === null || $note->created_at === null) {
+                return;
+            }
+
+            // Only ever move the date earlier — never forward.
+            if ($entry->created_at !== null && $note->created_at->greaterThanOrEqualTo($entry->created_at)) {
+                return;
+            }
+
+            // Write created_at only; leave updated_at on its own edit frame.
+            $entry->timestamps = false;
+            $entry->created_at = $note->created_at;
+            $entry->save();
+            $entry->timestamps = true;
+
+            Log::info('AiCommandExecutor: Backdated entry created_at to source note', [
+                'command_id' => $command->id,
+                'entry_id' => $entry->id,
+                'note_id' => $noteId,
+                'backdated_to' => $note->created_at->toDateTimeString(),
+            ]);
+        } catch (Throwable $e) {
+            Log::warning('AiCommandExecutor: Backdating to source note failed', [
+                'command_id' => $command->id,
+                'note_id' => $noteId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * The id of the entry a command creates or links a note to, or null when
+     * the command neither creates nor links to an entry.
+     */
+    private function backdateTargetEntryId(AiReviewCommand $command, string $entryClass): ?int
+    {
+        $payload = $command->payload;
+
+        return match ($command->action_type) {
+            'create_entry', 'create_model' => $this->createdEntryId($payload),
+            'transfer_note', 'copy_note' => $this->entryTargetId($payload, 'target_model_class', 'target_model_id', $entryClass),
+            'move_note' => $this->entryTargetId($payload, 'destination_model_class', 'destination_model_id', $entryClass),
+            default => null,
+        };
+    }
+
+    /**
+     * The id of the entry just created by a create_entry command, resolved via
+     * the batch tempIdMap. Null when there's no temp_id or the mapped value is
+     * a relationship marker ('rel_...') rather than an entry id.
+     */
+    private function createdEntryId(array $payload): ?int
+    {
+        $tempId = $payload['temp_id'] ?? null;
+        if ($tempId === null) {
+            return null;
+        }
+
+        $resolved = $this->tempIdMap[$tempId] ?? null;
+
+        return is_int($resolved) ? $resolved : null;
+    }
+
+    /**
+     * The target entry id for a note-link action, but only when the note is
+     * attached to an Entry. Notes can also attach to projects/blueprints (the
+     * routing inbox), which must never be backdated.
+     */
+    private function entryTargetId(array $payload, string $classKey, string $idKey, string $entryClass): ?int
+    {
+        $class = $payload[$classKey] ?? null;
+        $id = $payload[$idKey] ?? null;
+
+        if (! is_string($class) || $id === null) {
+            return null;
+        }
+
+        if (ltrim($class, '\\') !== ltrim($entryClass, '\\')) {
+            return null;
+        }
+
+        return is_numeric($id) ? (int) $id : null;
     }
 
     /**
