@@ -9,9 +9,9 @@ use Alexandria\Core\Models\AiProvider;
 use Illuminate\Database\Seeder;
 
 /**
- * Anthropic Claude model catalog (Opus, Sonnet, Haiku).
+ * Anthropic Claude model catalog (Fable, Opus, Sonnet, Haiku).
  *
- * Pricing snapshot: 2026-05-05 from https://docs.claude.com/en/docs/about-claude/pricing.
+ * Pricing snapshot: 2026-06-19 from https://platform.claude.com/docs/en/about-claude/pricing.
  * Cache pricing follows Anthropic's standard multipliers: 5m write = 1.25x base
  * input, 1h write = 2x base input, cache hit = 0.1x base input. Notes capture
  * the per-model rates for quick reference; the canonical source is the docs.
@@ -37,7 +37,43 @@ class AnthropicModelSeeder extends Seeder
     private function models(): array
     {
         return [
-            // Claude 4.7 — current flagship Opus (Apr 2026, new tokenizer)
+            // Claude Opus 4.8 — current flagship Opus (1M context, new tokenizer, fast mode)
+            [
+                'model_id' => 'claude-opus-4-8',
+                'display_name' => 'Claude Opus 4.8',
+                'category' => 'creative',
+                'context_window' => 1000000,
+                'input_price_per_million' => 5.00,
+                'output_price_per_million' => 25.00,
+                'supports_json_mode' => true,
+                'supports_vision' => true,
+                'is_flagship' => true,
+                'is_recommended' => true,
+                'is_active' => true,
+                'notes' => 'Current flagship Opus. 1M context at standard pricing. New tokenizer (~35% more tokens for same text). Fast mode available ($10/$50 per MTok). Cache 5m write: $6.25/MTok, hit: $0.50/MTok.',
+                'capabilities' => ['extended_thinking', 'vision', 'tool_use', '1m_context', 'fast_mode'],
+                'released_at' => '2026-06-01',
+            ],
+
+            // Claude Fable 5 — premium frontier model (1M context)
+            [
+                'model_id' => 'claude-fable-5',
+                'display_name' => 'Claude Fable 5',
+                'category' => 'creative',
+                'context_window' => 1000000,
+                'input_price_per_million' => 10.00,
+                'output_price_per_million' => 50.00,
+                'supports_json_mode' => true,
+                'supports_vision' => true,
+                'is_flagship' => true,
+                'is_recommended' => false,
+                'is_active' => true,
+                'notes' => 'Premium frontier model. 1M context at standard pricing. Batch: $5/$25 per MTok. Cache 5m write: $12.50/MTok, 1h write: $20/MTok, hit: $1/MTok.',
+                'capabilities' => ['extended_thinking', 'vision', 'tool_use', '1m_context'],
+                'released_at' => '2026-06-01',
+            ],
+
+            // Claude 4.7 — previous flagship Opus (Apr 2026, new tokenizer)
             [
                 'model_id' => 'claude-opus-4-7',
                 'display_name' => 'Claude Opus 4.7',
@@ -48,9 +84,9 @@ class AnthropicModelSeeder extends Seeder
                 'supports_json_mode' => true,
                 'supports_vision' => true,
                 'is_flagship' => true,
-                'is_recommended' => true,
+                'is_recommended' => false,
                 'is_active' => true,
-                'notes' => 'Latest Opus. 1M context. New tokenizer (~35% more tokens for same text). Cache 5m write: $6.25/MTok, hit: $0.50/MTok.',
+                'notes' => 'Previous flagship Opus, superseded by 4.8. 1M context. New tokenizer (~35% more tokens for same text). Cache 5m write: $6.25/MTok, hit: $0.50/MTok.',
                 'capabilities' => ['extended_thinking', 'vision', 'tool_use', '1m_context'],
                 'released_at' => '2026-04-15',
             ],
@@ -66,7 +102,7 @@ class AnthropicModelSeeder extends Seeder
                 'supports_json_mode' => true,
                 'supports_vision' => true,
                 'is_flagship' => true,
-                'is_recommended' => true,
+                'is_recommended' => false,
                 'is_active' => true,
                 'notes' => '1M context. Fast mode available (6x premium pricing). Cache 5m write: $6.25/MTok, hit: $0.50/MTok.',
                 'capabilities' => ['extended_thinking', 'vision', 'tool_use', '1m_context', 'fast_mode'],
@@ -210,8 +246,8 @@ class AnthropicModelSeeder extends Seeder
                 'supports_json_mode' => true,
                 'supports_vision' => true,
                 'is_recommended' => false,
-                'is_active' => true,
-                'notes' => 'Cache 5m write: $1.00/MTok, hit: $0.08/MTok.',
+                'is_active' => false,
+                'notes' => 'RETIRED on the first-party API (Bedrock/Vertex only). Cache 5m write: $1.00/MTok, hit: $0.08/MTok.',
                 'capabilities' => ['vision', 'tool_use'],
                 'released_at' => '2024-10-22',
             ],
@@ -240,8 +276,8 @@ class AnthropicModelSeeder extends Seeder
                 'supports_json_mode' => true,
                 'supports_vision' => true,
                 'is_recommended' => false,
-                'is_active' => true,
-                'notes' => 'Most affordable Claude. Cache 5m write: $0.30/MTok, hit: $0.03/MTok.',
+                'is_active' => false,
+                'notes' => 'RETIRED on the first-party API (Bedrock/Vertex only). Most affordable legacy Claude. Cache 5m write: $0.30/MTok, hit: $0.03/MTok.',
                 'capabilities' => ['vision', 'tool_use'],
                 'released_at' => '2024-03-07',
             ],
