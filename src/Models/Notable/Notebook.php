@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 /**
  * Notebook Model
@@ -27,11 +28,14 @@ use Illuminate\Support\Carbon;
  * @property int $project_id
  * @property int|null $user_id
  * @property string $title
+ * @property string|null $slug
  * @property string|null $description
  * @property string|null $color
  * @property string|null $icon
  * @property string $status
  * @property bool $is_pinned
+ * @property bool $allow_ai_sort
+ * @property bool $is_catch_all
  * @property int $sort_order
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
@@ -65,10 +69,27 @@ class Notebook extends Model
         return NotebookFactory::new();
     }
 
+    /**
+     * Generate a slug from the title on create when one is not supplied.
+     * Mirrors the Project model's slug-on-create convention (no extra package
+     * dependency). The slug is the notebook's stable routing token and the
+     * identifier the AI sorter returns when filing a note to this notebook.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Notebook $notebook): void {
+            if (empty($notebook->slug) && ! empty($notebook->title)) {
+                $notebook->slug = Str::slug($notebook->title);
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
             'is_pinned' => 'boolean',
+            'allow_ai_sort' => 'boolean',
+            'is_catch_all' => 'boolean',
             'metadata' => 'array',
         ];
     }

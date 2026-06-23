@@ -6,6 +6,7 @@ namespace Alexandria\Core\Models\Framework;
 
 use Alexandria\Core\Database\Factories\Framework\ProjectFactory;
 use Alexandria\Core\Models\Notable\Note;
+use Alexandria\Core\Models\Notable\Notebook;
 use Alexandria\Core\Models\ProjectAiInstruction;
 use Alexandria\Core\Models\ProjectAiSetting;
 use Alexandria\Core\Models\System\AiTransaction;
@@ -56,6 +57,7 @@ use Spatie\Tags\HasTags;
  * @property-read ProjectAiSetting|null $aiSettings
  * @property-read Collection<int, ProjectAiInstruction> $aiInstructions
  * @property-read Collection<int, AiTransaction> $aiTransactions
+ * @property-read Collection<int, Notebook> $notebooks
  * @property-read Collection<int, Work> $works
  * @property-read Collection<int, Model> $users
  * @property-read string|null $page_image_url
@@ -176,6 +178,11 @@ class Project extends Model implements HasMedia
     public function works(): HasMany
     {
         return $this->hasMany(Work::class);
+    }
+
+    public function notebooks(): HasMany
+    {
+        return $this->hasMany(Notebook::class);
     }
 
     public function aiSettings(): HasOne

@@ -18,11 +18,14 @@ return new class extends Migration
             // this package cannot reference the host application's users table.
             $table->unsignedBigInteger('user_id')->nullable()->comment('Creator');
             $table->string('title');
+            $table->string('slug')->nullable()->comment('Stable routing token; also the AI-sort file target identifier');
             $table->text('description')->nullable();
             $table->string('color', 7)->nullable()->comment('Hex color for visual distinction');
             $table->string('icon')->nullable()->comment('FontAwesome class');
             $table->enum('status', ['active', 'archived'])->default('active');
             $table->boolean('is_pinned')->default(false);
+            $table->boolean('allow_ai_sort')->default(false)->comment('Notebook is a valid AI sort/file target');
+            $table->boolean('is_catch_all')->default(false)->comment('Fits-nowhere fallback target for the AI sorter; at most one per project');
             $table->integer('sort_order')->default(0);
             $table->json('metadata')->nullable()->comment('auto_categorize, retention_policy, default_visibility');
             $table->timestamps();
@@ -30,6 +33,7 @@ return new class extends Migration
 
             $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
             $table->index(['project_id', 'status']);
+            $table->unique(['project_id', 'slug']);
         });
 
         // Notebook <-> Notable (polymorphic: project/blueprint/entry)
