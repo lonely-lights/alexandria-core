@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 
 import Button from '@alexandria/components/ui/Button';
 import Input from '@alexandria/components/form/Input';
@@ -28,7 +28,26 @@ export default function RenameSectionModal({
             preserveScroll: true,
             preserveState: true,
             only: ['sections', 'currentSection'],
-            onSuccess: onClose,
+            onSuccess: (page) => {
+                const fresh = (page.props as {
+                    currentSection?: { id: number; slug: string } | null;
+                }).currentSection;
+
+                // The rename regenerated the slug server-side; if the renamed
+                // section is the one that's open, sync the address bar with a
+                // client-side replace (no server round-trip, no editor remount).
+                if (
+                    fresh &&
+                    fresh.id === section.id &&
+                    !window.location.pathname.endsWith(`/${fresh.slug}`)
+                ) {
+                    router.replace({
+                        url: `/works/${projectSlug}/${workSlug}/${fresh.slug}`,
+                    });
+                }
+
+                onClose();
+            },
         });
     }
 
