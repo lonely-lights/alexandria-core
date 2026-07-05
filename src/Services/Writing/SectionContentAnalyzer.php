@@ -45,6 +45,9 @@ class SectionContentAnalyzer
         if ($format === 'screenplay') {
             $linesPerPage = max(1, (int) config('alexandria.writing.formats.screenplay.lines_per_page', 55));
             $pageEstimate = (int) ceil($lineCount / $linesPerPage);
+        } else {
+            $wordsPerPage = max(1, (int) config('alexandria.writing.formats.prose.words_per_page', 250));
+            $pageEstimate = (int) ceil($wordCount / $wordsPerPage);
         }
 
         return new AnalyzedSectionContent($wordCount, $pageEstimate, $lineCount, $mentionNames);

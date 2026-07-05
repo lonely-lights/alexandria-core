@@ -9,8 +9,9 @@ it('counts prose words treating wiki links as their display text', function () {
         ->analyze('[[Mira Vance|Mira]] crossed the bridge to [[Haven Spire]].', 'prose');
 
     // Visible text: "Mira crossed the bridge to Haven Spire." = 7 words
+    // 7 words at 250 words/page => ceil(7/250) = 1
     expect($result->wordCount)->toBe(7)
-        ->and($result->pageEstimate)->toBeNull()
+        ->and($result->pageEstimate)->toBe(1)
         ->and($result->mentionNames)->toBe(['Mira Vance' => 1, 'Haven Spire' => 1]);
 });
 
@@ -46,8 +47,9 @@ it('counts non-empty trimmed lines for prose content', function () {
 
     $result = app(SectionContentAnalyzer::class)->analyze($content, 'prose');
 
+    // 12 words across 3 lines; ceil(12/250) = 1
     expect($result->lineCount)->toBe(3) // blank/whitespace-only lines don't count
-        ->and($result->pageEstimate)->toBeNull();
+        ->and($result->pageEstimate)->toBe(1);
 });
 
 it('counts lines of the visible text after wiki-link replacement', function () {
@@ -63,4 +65,22 @@ it('extracts mentions from screenplay action lines too', function () {
         ->analyze("INT. SPIRE - DAY\n\n[[Mira Vance]] enters.", 'screenplay');
 
     expect($result->mentionNames)->toBe(['Mira Vance' => 1]);
+});
+
+it('estimates prose pages from the words-per-page metric', function () {
+    $analyzer = app(SectionContentAnalyzer::class);
+
+    // 500 words at 250 words/page => 2 pages.
+    $content = implode(' ', array_fill(0, 500, 'word'));
+
+    $result = $analyzer->analyze($content, 'prose');
+
+    expect($result->pageEstimate)->toBe(2);
+});
+
+it('keeps a one-page floor for short prose', function () {
+    $analyzer = app(SectionContentAnalyzer::class);
+
+    expect($analyzer->analyze('just a few words', 'prose')->pageEstimate)->toBe(1);
+    expect($analyzer->analyze('', 'prose')->pageEstimate)->toBe(0);
 });
