@@ -6,6 +6,7 @@ import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
 
 import type { CurrentSection, SectionNode } from '../Workspace';
+import MoveSectionModal from './MoveSectionModal';
 import RenameSectionModal from './RenameSectionModal';
 import type { SectionOutlineItem } from './sectionOutline';
 import { getStructureGuidance, type StructureGuidanceState } from './structureGuidance';
@@ -162,6 +163,25 @@ function findNodeBySlug(nodes: SectionNode[], slug: string | null): SectionNode 
     return null;
 }
 
+function findNodeById(nodes: SectionNode[], id: number): SectionNode | null {
+    for (const node of nodes) {
+        if (node.id === id) return node;
+        const found = findNodeById(node.children, id);
+        if (found !== null) return found;
+    }
+    return null;
+}
+
+/** True when `candidateId` is `nodeId` itself or inside its subtree. */
+function isSelfOrDescendant(nodes: SectionNode[], nodeId: number, candidateId: number | null): boolean {
+    if (candidateId === null) return false;
+    const node = findNodeById(nodes, nodeId);
+    if (node === null) return false;
+    const walk = (n: SectionNode): boolean =>
+        n.id === candidateId || n.children.some(walk);
+    return walk(node);
+}
+
 export default function Navigator({
     projectSlug,
     workSlug,
@@ -181,6 +201,7 @@ export default function Navigator({
         () => collectParentIds(sections, new Set()),
     );
     const [renameTarget, setRenameTarget] = useState<SectionNode | null>(null);
+    const [moveTarget, setMoveTarget] = useState<SectionNode | null>(null);
     const currentNode = findNodeBySlug(sections, currentSlug);
     const guidance = getStructureGuidance({ work, sections, currentSection });
 
@@ -201,6 +222,20 @@ export default function Navigator({
         // fresh tree comes back.
         setExpanded((prev) => new Set(prev).add(node.id));
         onRequestAdd(node.id);
+    }
+
+    function moveSection(sectionId: number, toParentId: number | null, position: number) {
+        if (isSelfOrDescendant(sections, sectionId, toParentId)) {
+            return; // dropping a parent into its own subtree — ignore
+        }
+        if (toParentId !== null) {
+            setExpanded((prev) => new Set(prev).add(toParentId));
+        }
+        router.put(
+            `/works/${projectSlug}/${workSlug}/sections/${sectionId}/move`,
+            { parent_id: toParentId, position },
+            { preserveScroll: true, preserveState: true, only: ['sections'] },
+        );
     }
 
     const shared: TreeShared = {
@@ -224,6 +259,8 @@ export default function Navigator({
             );
         },
         onRename: setRenameTarget,
+        onMove: moveSection,
+        onMoveTo: setMoveTarget,
         liveCounts,
         currentOutline,
         t,
@@ -339,6 +376,14 @@ export default function Navigator({
                     onClose={() => setRenameTarget(null)}
                 />
             )}
+            {moveTarget !== null && (
+                <MoveSectionModal
+                    section={moveTarget}
+                    sections={sections}
+                    onMove={moveSection}
+                    onClose={() => setMoveTarget(null)}
+                />
+            )}
         </div>
     );
 }
@@ -355,6 +400,8 @@ interface TreeShared {
     onAddChild: (node: SectionNode) => void;
     onDuplicate: (node: SectionNode) => void;
     onRename: (node: SectionNode) => void;
+    onMove: (sectionId: number, toParentId: number | null, position: number) => void;
+    onMoveTo: (node: SectionNode) => void;
     liveCounts?: Record<number, number>;
     currentOutline: SectionOutlineItem[];
     t: Translator;
@@ -405,10 +452,15 @@ function SiblingGroup({
             });
         },
         shared.canUpdate,
+        {
+            group: 'writing-sections',
+            onMoveAcross: (sectionId, toParentId, newIndex) =>
+                shared.onMove(sectionId, toParentId, newIndex),
+        },
     );
 
     return (
-        <div ref={groupRef} className="flex flex-col gap-0.5">
+        <div ref={groupRef} data-sortable-parent={parentId ?? 'root'} className="flex flex-col gap-0.5">
             {ordered.map((node) => (
                 <NavigatorRow key={node.id} node={node} depth={depth} shared={shared} />
             ))}
@@ -425,7 +477,7 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, liveCounts, t } =
+    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, liveCounts, t } =
         shared;
 
     const isSelected = node.slug === currentSlug;
@@ -447,7 +499,7 @@ function NavigatorRow({
     // its (expanded) subtree move together, and collapsed children ride
     // along since they live inside it.
     return (
-        <div className="flex flex-col gap-0.5">
+        <div data-section-id={node.id} className="flex flex-col gap-0.5">
             <div
                 className="alex-row group flex cursor-pointer items-center gap-1 py-1 pr-2 text-sm"
                 data-selected={isSelected ? 'true' : undefined}
@@ -551,6 +603,11 @@ function NavigatorRow({
                                         label: t('writing.workspace.rename_section'),
                                         icon: 'fa-pen',
                                         onClick: () => onRename(node),
+                                    },
+                                    {
+                                        label: t('writing.workspace.move_section'),
+                                        icon: 'fa-arrows-up-down-left-right',
+                                        onClick: () => onMoveTo(node),
                                     },
                                     { divider: true },
                                     {
