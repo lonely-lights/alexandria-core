@@ -175,6 +175,14 @@ export default function WorkspaceStatusBar({
                             {sectionFormat === 'screenplay' && sectionPages !== null && (
                                 <> · {t('writing.workspace.pages').replace(':count', sectionPages.toLocaleString())}</>
                             )}
+                            {sectionFormat !== 'screenplay' && sectionPages !== null && sectionPages > 0 && (
+                                <>
+                                    {' · '}
+                                    <span title={t('writing.workspace.page_estimate_title')}>
+                                        {t('writing.workspace.page_estimate').replace(':pages', sectionPages.toLocaleString())}
+                                    </span>
+                                </>
+                            )}
                         </span>
                         <span aria-hidden="true" style={crumbSeparatorStyle}>
                             ·

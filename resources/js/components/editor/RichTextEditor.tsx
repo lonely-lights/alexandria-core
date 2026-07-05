@@ -15,6 +15,8 @@ import Input from '@alexandria/components/form/Input';
 import Button from '@alexandria/components/ui/Button';
 import useT from '@alexandria/hooks/useT';
 import type { WritingEditorBridge } from '@alexandria/pages/Writing/ribbon/writingRibbonContext';
+import PageBreakGuides from '@alexandria/pages/Writing/Sections/PageBreakGuides';
+import { LINES_PER_PAGE } from '@alexandria/pages/Writing/Sections/pageBreakMath';
 import { ProseTabKeymap } from './proseTabKeymap';
 
 /**
@@ -877,11 +879,23 @@ export default function RichTextEditor({
                         )}
                         <div className="flex min-h-0 flex-1">
                             {printLayout && <ManuscriptRuler orientation="vertical" />}
-                            <EditorContent
-                                editor={editor}
-                                className="tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto"
-                                onMouseDown={handleGutterMouseDown}
-                            />
+                            {/* Scroll container — overflow-y-auto here so the
+                                inner `relative` wrapper grows to full content
+                                height (not the clipped viewport), which lets
+                                the page-break guides' absolute inset-0 fill
+                                the correct content-tall area. */}
+                            <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
+                                <div className="relative">
+                                    <EditorContent
+                                        editor={editor}
+                                        className="tiptap-editor"
+                                        onMouseDown={handleGutterMouseDown}
+                                    />
+                                    {printLayout && (
+                                        <PageBreakGuides linesPerPage={LINES_PER_PAGE.prose} />
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 ) : (
