@@ -1,7 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import type { CSSProperties } from 'react';
 
-import useT from '@alexandria/hooks/useT';
+import useT, { type Translator } from '@alexandria/hooks/useT';
 import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
@@ -83,15 +83,16 @@ const continueButtonStyle: CSSProperties = {
     transition: 'opacity 150ms ease',
 };
 
-/** Render relative time from an ISO 8601 timestamp. */
-function relativeTime(iso: string | null): string {
+/** Render relative time from an ISO 8601 timestamp, localised via lang keys. */
+function relativeTime(iso: string | null, t: Translator): string {
     if (!iso) return '';
     const diff = Date.now() - new Date(iso).getTime();
     const minutes = Math.floor(diff / 60_000);
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 1) return t('writing.dashboard.just_now');
+    if (minutes < 60) return t('writing.dashboard.minutes_ago').replace(':count', String(minutes));
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
+    if (hours < 24) return t('writing.dashboard.hours_ago').replace(':count', String(hours));
+    return t('writing.dashboard.days_ago').replace(':count', String(Math.floor(hours / 24)));
 }
 
 export default function WritingDashboard() {
@@ -190,7 +191,7 @@ export default function WritingDashboard() {
                                             color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
                                         }}
                                     >
-                                        {relativeTime(section.updated_at)}
+                                        {relativeTime(section.updated_at, t)}
                                     </span>
                                 </Link>
                             ))}

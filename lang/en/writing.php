@@ -15,6 +15,10 @@ return [
     'dashboard.nav' => 'Writing',
     'dashboard.continue' => 'Continue writing',
     'dashboard.recent_sections' => 'Recent sections',
+    'dashboard.just_now' => 'just now',
+    'dashboard.minutes_ago' => ':count m ago',
+    'dashboard.hours_ago' => ':count h ago',
+    'dashboard.days_ago' => ':count d ago',
 
     'index.title' => 'Writing',
     'index.intro' => 'The manuscripts of :project — novels, screenplays, essays, and everything between.',

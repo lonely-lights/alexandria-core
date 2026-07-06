@@ -499,14 +499,14 @@ export default function RichTextEditor({
     // ribbon-driven workspace; card callers always keep their toolbar.
     const showToolbar = !isManuscript || chrome !== 'none';
 
-    // Manuscript mode: the prose measure (48rem, via manuscript.css) is
-    // narrower than the pane, so clicks in the horizontal gutters land
-    // on the scroll wrapper instead of the ProseMirror element (which
-    // owns the full vertical surface thanks to its min-height + bottom
-    // padding). Forward gutter clicks into the editor; clicks on the
-    // paper itself are TipTap's to handle natively.
+    // Manuscript mode: the scroll wrapper (.writing-workspace-scroll) is
+    // wider than the prose measure and, via the flex height chain, taller
+    // than a short document. Clicks in the horizontal gutters (beside the
+    // paper) and in the vertical desk below a short sheet both land on the
+    // scroll wrapper. Forward those into the editor; clicks inside
+    // ProseMirror content are TipTap's to handle natively.
     function handleGutterMouseDown(e: MouseEvent<HTMLDivElement>) {
-        if (e.target !== e.currentTarget) return;
+        if ((e.target as Element).closest?.('.ProseMirror')) return;
         e.preventDefault();
         editor?.commands.focus('end');
     }
@@ -884,12 +884,14 @@ export default function RichTextEditor({
                                 height (not the clipped viewport), which lets
                                 the page-break guides' absolute inset-0 fill
                                 the correct content-tall area. */}
-                            <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
-                                <div className="relative">
+                            <div
+                                className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto flex flex-col"
+                                onMouseDown={handleGutterMouseDown}
+                            >
+                                <div className="relative flex min-h-full flex-col">
                                     <EditorContent
                                         editor={editor}
-                                        className="tiptap-editor"
-                                        onMouseDown={handleGutterMouseDown}
+                                        className="tiptap-editor flex-1 flex flex-col"
                                     />
                                     {printLayout && (
                                         <PageBreakGuides linesPerPage={LINES_PER_PAGE.prose} />

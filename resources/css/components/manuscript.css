@@ -11,9 +11,9 @@
  * large bottom padding), Docs-style, not as desk below it.
  *
  * The sheet IS `.ProseMirror`, so TipTap's native click-to-focus
- * covers the whole page; gutter clicks land on the EditorContent
- * scroll wrapper, whose onMouseDown fallback in RichTextEditor.tsx
- * focuses the end of the document.
+ * covers the whole page; gutter clicks land on `.writing-workspace-scroll`
+ * (the actual scroll container), whose onMouseDown fallback in
+ * RichTextEditor.tsx focuses the end of the document.
  *
  * The 3-class selector deliberately out-specifies ui-polish.css's
  * `.tiptap-editor .ProseMirror` base rule (padding: 1rem;
@@ -285,10 +285,15 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
    rulers, and canvas read as one workspace around the paper. */
 .rte-manuscript .tiptap-editor {
     background: var(--theme-base-page);
-    /* Reserve the scrollbar gutter even before content overflows so
-       the centered sheet (and, in print layout, the pinned ruler
-       above it — which reserves the same gutter) never shifts when
-       the scrollbar appears. */
+}
+
+/* Reserve the scrollbar gutter on the ACTUAL scroll container so the
+   centered sheet (and, in print layout, the pinned ruler above it —
+   which reserves the same gutter) never shifts when the scrollbar
+   appears. `.tiptap-editor` is no longer the scroll container after the
+   Task 4 flex-chain restructure; the gutter must sit on the outer
+   `.writing-workspace-scroll` wrapper instead. */
+.rte-manuscript .writing-workspace-scroll {
     scrollbar-gutter: stable;
 }
 
