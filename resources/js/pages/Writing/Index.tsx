@@ -47,6 +47,10 @@ const emptyStateStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
 
+const groupHeaderStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
 export default function WritingIndex() {
     const t = useT();
     const { project, works, types, lengthPlans, can } = usePage<WritingIndexProps>().props;
@@ -108,19 +112,47 @@ export default function WritingIndex() {
                         {t('writing.index.empty')}
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-3">
-                        {works.map((work) => (
-                            <WorkCard
-                                key={work.id}
-                                work={work}
-                                projectSlug={project.slug}
-                                t={t}
-                                // can.create as the per-work gate proxy (v1) —
-                                // index carries no per-work abilities yet.
-                                onSettings={can.create ? () => setSettingsWork(work) : undefined}
-                            />
-                        ))}
-                    </div>
+                    /* Group works by franchise breadcrumb; named groups first, Standalone last */
+                    (() => {
+                        const groupMap = new Map<string | null, WorkRow[]>();
+                        for (const work of works) {
+                            const key = work.group ?? null;
+                            if (!groupMap.has(key)) groupMap.set(key, []);
+                            groupMap.get(key)!.push(work);
+                        }
+                        const groups = [...groupMap.entries()].sort(([a], [b]) => {
+                            if (a === null) return 1;
+                            if (b === null) return -1;
+                            return a.localeCompare(b);
+                        });
+                        return (
+                            <div className="flex flex-col gap-6">
+                                {groups.map(([groupKey, groupWorks]) => (
+                                    <div key={groupKey ?? '__standalone'}>
+                                        <h2
+                                            className="mb-2 text-xs font-semibold uppercase tracking-wide"
+                                            style={groupHeaderStyle}
+                                        >
+                                            {groupKey ?? t('writing.dashboard.ungrouped')}
+                                        </h2>
+                                        <div className="flex flex-col gap-3">
+                                            {groupWorks.map((work) => (
+                                                <WorkCard
+                                                    key={work.id}
+                                                    work={work}
+                                                    projectSlug={project.slug}
+                                                    t={t}
+                                                    // can.create as the per-work gate proxy (v1) —
+                                                    // index carries no per-work abilities yet.
+                                                    onSettings={can.create ? () => setSettingsWork(work) : undefined}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })()
                 )}
             </div>
 

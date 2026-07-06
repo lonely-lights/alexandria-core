@@ -153,4 +153,6 @@ export interface EntryListItem {
     url: string;
     fields?: Record<string, unknown>;
     calculated?: Record<string, number>;
+    /** Slug of the linked Writing work, when the entry carries metadata.writing. */
+    writing_work_slug?: string | null;
 }

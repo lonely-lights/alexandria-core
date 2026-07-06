@@ -235,6 +235,8 @@ export interface TreeNode {
         parent_id: number | null;
         at: string;
     } | null;
+    /** Slug of the linked Writing work, when the entry carries metadata.writing. */
+    writing_work_slug?: string | null;
 }
 
 interface TreeViewProps {
@@ -845,6 +847,7 @@ export default function TreeView({
                                         rearrangeMode={rearrangeMode}
                                         draggingParentId={draggingParentId}
                                         savingEntryId={savingEntryId}
+                                        projectSlug={project.slug}
                                         onDragStart={(parentId) =>
                                             setDraggingParentId(parentId)
                                         }
@@ -909,6 +912,7 @@ export default function TreeView({
                                                     savingEntryId={
                                                         savingEntryId
                                                     }
+                                                    projectSlug={project.slug}
                                                     onDragStart={(parentId) =>
                                                         setDraggingParentId(
                                                             parentId,
@@ -1702,6 +1706,7 @@ function SortableTree({
     rearrangeMode,
     draggingParentId,
     savingEntryId,
+    projectSlug,
     onDragStart,
     onDragEnd,
     onReorder,
@@ -1718,6 +1723,7 @@ function SortableTree({
     rearrangeMode: boolean;
     draggingParentId: number | null | undefined;
     savingEntryId: number | null;
+    projectSlug: string;
     onDragStart: (parentId: number | null) => void;
     onDragEnd: () => void;
     onReorder: (parentId: number | null, orderedIds: number[]) => void;
@@ -1811,6 +1817,7 @@ function SortableTree({
                     rearrangeMode={rearrangeMode}
                     draggingParentId={draggingParentId}
                     savingEntryId={savingEntryId}
+                    projectSlug={projectSlug}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
                     onReorder={onReorder}
@@ -1835,6 +1842,7 @@ function TreeNodeItem({
     rearrangeMode,
     draggingParentId,
     savingEntryId,
+    projectSlug,
     onDragStart,
     onDragEnd,
     onReorder,
@@ -1851,6 +1859,7 @@ function TreeNodeItem({
     rearrangeMode: boolean;
     draggingParentId: number | null | undefined;
     savingEntryId: number | null;
+    projectSlug: string;
     onDragStart: (parentId: number | null) => void;
     onDragEnd: () => void;
     onReorder: (parentId: number | null, orderedIds: number[]) => void;
@@ -1879,6 +1888,7 @@ function TreeNodeItem({
                 rearrangeMode={rearrangeMode}
                 draggingParentId={draggingParentId}
                 savingEntryId={savingEntryId}
+                projectSlug={projectSlug}
             />
             {isExpanded && children.length > 0 && (
                 <SortableTree
@@ -1893,6 +1903,7 @@ function TreeNodeItem({
                     rearrangeMode={rearrangeMode}
                     draggingParentId={draggingParentId}
                     savingEntryId={savingEntryId}
+                    projectSlug={projectSlug}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
                     onReorder={onReorder}
@@ -1917,6 +1928,7 @@ function TreeNodeRow({
     rearrangeMode,
     draggingParentId,
     savingEntryId,
+    projectSlug,
 }: {
     entry: TreeNode;
     depth: number;
@@ -1929,6 +1941,7 @@ function TreeNodeRow({
     rearrangeMode: boolean;
     draggingParentId: number | null | undefined;
     savingEntryId: number | null;
+    projectSlug: string;
 }) {
     if (matchingIds && !matchingIds.has(entry.id)) return null;
 
@@ -2001,6 +2014,25 @@ function TreeNodeRow({
                     />
                     {entry.name}
                 </span>
+
+                {/* Open-in-Writing affordance — icon-only, stopPropagation keeps row select intact */}
+                {entry.writing_work_slug && !rearrangeMode && (
+                    <Tooltip content={t("entries.show.open_in_writing")}>
+                        <a
+                            href={`/works/${projectSlug}/${entry.writing_work_slug}`}
+                            title={t("entries.show.open_in_writing")}
+                            aria-label={t("entries.show.open_in_writing")}
+                            onClick={(e) => e.stopPropagation()}
+                            className={ghostIconBtnClass}
+                            style={{
+                                ...ghostIconBtnStyle,
+                                color: "var(--theme-brand-primary-500)",
+                            }}
+                        >
+                            <i className="fa-solid fa-feather text-[10px]" />
+                        </a>
+                    </Tooltip>
+                )}
 
                 {/* Saving indicator */}
                 {savingEntryId === entry.id && (

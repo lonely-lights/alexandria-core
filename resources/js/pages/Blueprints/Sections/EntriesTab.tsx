@@ -983,7 +983,24 @@ export default function EntriesTab({
                                                 {/* Single three-dots menu houses all row actions.
                                                 Tighter than the old icon row and gives room to
                                                 grow (more actions don't widen the column). */}
-                                                <div className="flex justify-end">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    {entry.writing_work_slug && (
+                                                        <Tooltip content={t("entries.show.open_in_writing")}>
+                                                            <a
+                                                                href={`/works/${project.slug}/${entry.writing_work_slug}`}
+                                                                title={t("entries.show.open_in_writing")}
+                                                                aria-label={t("entries.show.open_in_writing")}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="inline-flex h-6 w-6 items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
+                                                                style={{
+                                                                    borderRadius: "var(--theme-radius-button)",
+                                                                    color: "var(--theme-brand-primary-500)",
+                                                                }}
+                                                            >
+                                                                <i className="fa-solid fa-feather text-[11px]" />
+                                                            </a>
+                                                        </Tooltip>
+                                                    )}
                                                     <DropdownMenu
                                                         align="right"
                                                         items={[

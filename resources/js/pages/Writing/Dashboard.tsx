@@ -56,6 +56,10 @@ const projectCountStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
 
+const groupHeaderStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+};
+
 const emptyStateStyle: CSSProperties = {
     background: 'var(--theme-surface-card)',
     border: '1px dashed var(--theme-neutral-300)',
@@ -222,16 +226,40 @@ export default function WritingDashboard() {
                                         )}
                                     </span>
                                 </div>
-                                <div className="flex flex-col gap-3">
-                                    {project.works.map((work) => (
-                                        <WorkCard
-                                            key={work.id}
-                                            work={work}
-                                            projectSlug={project.slug}
-                                            t={t}
-                                        />
-                                    ))}
-                                </div>
+                                {/* Group works by franchise breadcrumb; named groups first, Standalone last */}
+                                {(() => {
+                                    const groupMap = new Map<string | null, typeof project.works>();
+                                    for (const work of project.works) {
+                                        const key = work.group ?? null;
+                                        if (!groupMap.has(key)) groupMap.set(key, []);
+                                        groupMap.get(key)!.push(work);
+                                    }
+                                    const groups = [...groupMap.entries()].sort(([a], [b]) => {
+                                        if (a === null) return 1;
+                                        if (b === null) return -1;
+                                        return a.localeCompare(b);
+                                    });
+                                    return groups.map(([groupKey, works]) => (
+                                        <div key={groupKey ?? '__standalone'} className="mb-4 last:mb-0">
+                                            <h3
+                                                className="mb-2 text-xs font-semibold uppercase tracking-wide"
+                                                style={groupHeaderStyle}
+                                            >
+                                                {groupKey ?? t('writing.dashboard.ungrouped')}
+                                            </h3>
+                                            <div className="flex flex-col gap-3">
+                                                {works.map((work) => (
+                                                    <WorkCard
+                                                        key={work.id}
+                                                        work={work}
+                                                        projectSlug={project.slug}
+                                                        t={t}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ));
+                                })()}
                             </section>
                         ))}
                     </div>

@@ -30,6 +30,8 @@ export interface WorkRow {
     target_words: number | null;
     sections_count: number;
     updated_at: string | null;
+    /** Franchise breadcrumb (root-first ancestor names joined with ' › '), null for standalone works. */
+    group?: string | null;
 }
 
 /* ── Theme styles ── */
