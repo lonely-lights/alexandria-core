@@ -103,6 +103,20 @@ const popoverFooterStyle: CSSProperties = {
     borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
 };
 
+const writingChipStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    marginTop: '0.25rem',
+    fontSize: '0.6875rem',
+    padding: '0.125rem 0.5rem',
+    borderRadius: 'var(--theme-radius-badge)',
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+    color: 'var(--theme-brand-primary-500)',
+    textDecoration: 'none',
+    transition: 'background-color var(--theme-motion-duration-fast, 150ms) ease',
+};
+
 const popoverHeadingStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
 };
@@ -210,6 +224,7 @@ export default function EntryShow() {
     const [settingsOpen, setSettingsOpen] = useState(false);
 
     const iconClass = blueprint.icon.includes(' ') ? blueprint.icon : `fa-solid ${blueprint.icon}`;
+    const writingWorkSlug = (entry.metadata?.writing as { work_slug?: string } | undefined)?.work_slug ?? null;
 
     // Sync hash
     useEffect(() => {
@@ -345,6 +360,12 @@ export default function EntryShow() {
                                 className="entry-summary-links mt-1 text-sm"
                                 style={summaryStyle}
                             />
+                        )}
+                        {writingWorkSlug && (
+                            <a href={`/works/${project.slug}/${writingWorkSlug}`} style={writingChipStyle}>
+                                <i className="fa-solid fa-feather" />
+                                {t('entries.show.open_in_writing')}
+                            </a>
                         )}
                     </div>
                 </div>

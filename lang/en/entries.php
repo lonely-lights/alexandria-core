@@ -72,6 +72,7 @@ return [
     // ── Show + OverviewTab (Subsection A) ──
     'show.edit_entry' => 'Edit Entry',
     'show.entry_settings' => 'Entry Settings',
+    'show.open_in_writing' => 'Open in Writing',
 
     // ── Entry Settings modal (Stage 8b M3) ──
     'entry_settings.title' => 'Entry Settings —',
