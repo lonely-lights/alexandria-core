@@ -55,18 +55,34 @@ In print-layout mode only: render page-break divider lines with page numbers ins
 - Core ships the query surface (works + recent-section activity for a user); the app owns the page and nav placement.
 - Respects project membership/permissions — only works the user can see.
 
-## Slice 2 — Blueprint→Works migration (full retire)
+## Slice 2 — Blueprint→Works migration (compendium-aware full retire)
 
-A local, app-side artisan command `local:writing:migrate-blueprint-family {--project=undaunted} {--dry-run} {--force}`, transaction-wrapped. Snapshot (`local:db:snapshot --name=pre-works-migration`) is a documented operator step before running.
+> **Amended 2026-07-06** after mapping the live Compendium structure (`/p/undaunted/compendium`) with Andrew. The original Slice 2 assumed scenes attach to works via relationships — false. The real structure is one interleaved `parent_id` tree: compendium roots (Ad Astra Saga, Anthology, The Muses, Undaunted Beyond) contain **work** entries (story containers and medium-works), medium-works contain **compendium act** nodes, and **56 of 57 scene entries hang under compendium acts** (scenes carry zero relationships). The compendium (blueprint #15, `structural`, 156 entries typed by the 17-value compendium-type list) is canonical franchise architecture with authored data (e.g. Ad Astra Saga: 11K chars of content). A blind retire of work/scene would punch holes in that tree.
+>
+> **Decision (Andrew, check-in #1): "Compendium above, Works below."** The compendium stays canonical for the franchise layer (saga → story → medium variants → series → seasons → episodes) and is untouched above the medium-work level. Everything below a medium-work (acts, scenes) is manuscript-internal and migrates into the Works system. Work entries that serve as tree nodes convert to compendium entries linking to their new Works, so the tree stays whole and the blueprints can retire without holes.
+>
+> **Process requirements (Andrew):** phased execution with a check-in gate after every phase; **retiring the old blueprints is the LAST step**, only after he has verified the migrated state.
 
-1. **Works:** each `work` blueprint entry becomes a `Work` — title, timestamps preserved. Form inference: use the entry's form/type EAV field when one exists and maps cleanly; otherwise default to `screenplay` (Andrew's works are film-first) and list every inferred/defaulted form in the dry-run for correction; forms remain editable in Work Settings afterward. EAV fields with no Works-table home are preserved verbatim in a `migration_notes` payload on the work (nothing silently dropped).
-2. **Sections:** each `scene` entry becomes a `WorkSection`. Parent resolution: scene→work relationships where present; orphans land under a project-level **"Scene Bank"** work in an **"Unsorted scenes"** group. `chapter` has 0 entries — nothing to migrate, but the blueprint still retires.
-3. **Relationship inventory + loss report:** before writing anything, inventory scene↔event and other relationships touching the family. Representable ones become in-text scene links; the rest are recorded in `migration_notes`. The command prints an explicit per-item loss report; `--dry-run` prints the full plan (counts, mappings, losses) without writing.
-4. **Retire:** `allow_ai_sorting = false` for all three; blueprints hidden from creation surfaces but not deleted; removed from the AI sort catalog (follows the `local:notes:retire-excerpt` pattern).
-5. **Routed notes (80) — triage, not blanket:** a Fable-model review pass (same pipeline as the 2026-07 corpus work: guide + blind reasoning + decision console batch) assigns each note `nb:plot-points` (scene/story ideas), `nb:project-meta` (pitch/production material), or another notebook where clearly right. Output goes to a decision console batch for Andrew's approval before apply — never auto-applied.
-6. **Review-queue redirect:** Andrew's 18 pending `→ bp:scene` full-pass proposals are folded into the same triage (they can no longer target a retired blueprint).
+### Mapping rules
 
-Acceptance: after running against a snapshot-verified live DB — 22 works + Scene Bank exist; 57 sections placed (orphan count matches the dry-run plan); blueprints hidden and unsortable; loss report reviewed; the 80 notes have new notebook homes approved by Andrew; `review-final.csv` synced for any note moves.
+- **Medium-works** (work entries owning manuscript structure — act/scene descendants, e.g. "The Lonely Sister (Film)") → each becomes a writing-system `Work` (form inferred from name/medium: Film → screenplay, Novel → novel; every inference listed in the dry-run for correction). Its compendium **act** children become top-level sections; **scene** entries beneath become child sections (titles, content, summaries, timestamps preserved; unmappable EAV/summary data lands in `migration_notes`).
+- **Structural work entries** (story containers like "The Lonely Sister", and every migrated medium-work's tree node) → convert to **compendium entries** (blueprint re-home, typed via compendium-type: Films/Novels/etc.), preserving name, slug, position, `parent_id`, and all authored data. Migrated medium-work nodes additionally carry a **link to their Work** (entry metadata + an "Open in Writing" affordance on the entry page).
+- **Compendium act nodes** that migrated into sections are removed from the tree (their content lives in the Work now); anything not cleanly migratable stays put and is reported.
+- **Seasons/episodes** (S1E01 etc.) stay compendium nodes for now — no manuscripts exist for them; when Andrew writes one, he creates a Work and links it (same affordance).
+- **Orphan scene** (1 top-level) → project-level **"Scene Bank"** work, "Unsorted scenes" group.
+- **Relationships:** scenes have none (verified). Works carry 10 `work-character` + 1 `depicts_event` — preserved by re-pointing to the converted compendium entry (relationships are entry↔entry; the converted node keeps the entry id if re-homing in place, which is the preferred mechanism: change `blueprint_id`, keep the row).
+- `chapter` (0 entries) retires trivially.
+
+### Phases (each ends in an Andrew check-in)
+
+- **Phase A — Inventory & mapping report (read-only):** full tree dump with the proposed per-node disposition (becomes-Work / converts-to-compendium / migrates-to-section / stays). Andrew reviews and corrects the mapping — especially which work entries count as medium-works and the compendium-type assigned to each converted node.
+- **Phase B — Migration command dry-run:** `local:writing:migrate-blueprint-family {--project=undaunted} {--dry-run} {--force}` prints the full creation/conversion/loss plan from the approved mapping. Check-in on the plan output.
+- **Phase C — Apply creation (additive only):** snapshot → create Works + sections + links + converted nodes; **nothing removed or hidden yet** — old and new live side by side. Andrew explores `/writing` and the compendium and confirms.
+- **Phase D — Notes triage:** the 80 routed notes (work 8 / chapter 7 / scene 65) go through the Fable console pipeline (blind reasoning per note → decision console) proposing `nb:plot-points`, `nb:project-meta`, or another notebook; his 18 pending `→ bp:scene` full-pass proposals fold in. Applied only on his approval; `review-final.csv` synced.
+- **Phase E — Tree cleanup:** remove migrated act/scene nodes from the old tree positions (their converted parents now point at Works). Check-in: compendium renders exactly as before above the manuscript line.
+- **Phase F — Retire (LAST):** `allow_ai_sorting = false` + hidden-not-deleted for work/chapter/scene (retire-excerpt pattern), removed from the AI sort catalog. Final verification pass together.
+
+Acceptance: compendium tree renders identically at/above the medium-work level with all authored data intact; every medium-work opens in the writing workspace with its acts/scenes as sections; converted nodes link to their Works; the 80 notes have approved homes; blueprints retired last; every phase snapshot-guarded (`pre-works-migration-<phase>`).
 
 **Consumer note:** the command ships app-side because the blueprint family is Andrew's seeded content. The entry→work/section mapping logic should live in a small service class so a future consumer-facing import can reuse it, but no consumer surface ships in Stage 11 (YAGNI).
 
