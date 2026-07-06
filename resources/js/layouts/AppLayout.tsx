@@ -102,6 +102,12 @@ function buildDefaultBottomNavTabs(
             icon: 'fa-solid fa-house',
         },
         {
+            id: 'writing',
+            label: 'Writing',
+            href: '/writing',
+            icon: 'fa-solid fa-feather',
+        },
+        {
             id: 'search',
             label: 'Search',
             href: '#',

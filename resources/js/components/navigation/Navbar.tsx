@@ -12,6 +12,7 @@ import AvatarWithRing from "../ui/AvatarWithRing";
 import Tooltip from "../ui/Tooltip";
 import UserMenuPanel from "./UserMenuPanel";
 import type { UserMenuItem } from "../../types/navigation";
+import useT from "../../hooks/useT";
 
 interface NavbarProps {
     /** Toggles the Sidebar drawer. */
@@ -97,6 +98,7 @@ export default function Navbar({
     userMenuFooter,
     guestActions,
 }: NavbarProps) {
+    const t = useT();
     const { auth } = usePage<SharedProps>().props;
     const user = auth?.user ?? null;
     const [scrolled, setScrolled] = useState(false);
@@ -299,6 +301,35 @@ export default function Navbar({
                                     </button>
                                 </Tooltip>
                             )}
+
+                            {/* Writing nav link — icon + text so the
+                                label is searchable in browser tests and
+                                screen readers without relying on the
+                                tooltip alone. Hidden on mobile; the
+                                BottomNav Writing tab covers that slot. */}
+                            <Tooltip
+                                content={t("writing.dashboard.nav")}
+                                placement="bottom"
+                            >
+                                <Link
+                                    href="/writing"
+                                    className="alex-nav-icon-btn alex-nav-icon-btn--ghost hidden h-10 flex-shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 transition-colors sm:flex"
+                                    style={{
+                                        background: "transparent",
+                                        color: "var(--theme-base-content)",
+                                        textDecoration: "none",
+                                    }}
+                                    aria-label={t("writing.dashboard.nav")}
+                                >
+                                    <i
+                                        className="fa-solid fa-feather"
+                                        aria-hidden="true"
+                                    />
+                                    <span className="text-sm font-medium">
+                                        {t("writing.dashboard.nav")}
+                                    </span>
+                                </Link>
+                            </Tooltip>
 
                             {extraActions}
 

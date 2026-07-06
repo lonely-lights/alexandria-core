@@ -27,9 +27,22 @@ interface DashboardProject {
     works: WorkRow[];
 }
 
+interface RecentSection {
+    id: number;
+    title: string;
+    slug: string;
+    work_slug: string;
+    work_title: string;
+    project_slug: string;
+    word_count: number;
+    updated_at: string | null;
+}
+
 interface WritingDashboardProps {
     projects: DashboardProject[];
     hasProjects: boolean;
+    recentSections: RecentSection[];
+    continueUrl: string | null;
     [key: string]: unknown;
 }
 
@@ -50,9 +63,41 @@ const emptyStateStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
 
+const recentSectionRowStyle: CSSProperties = {
+    background: 'var(--theme-base-surface)',
+    border: '1px solid var(--theme-base-400)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const continueButtonStyle: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.5rem 1.25rem',
+    borderRadius: 'var(--theme-radius-button)',
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+    fontWeight: 600,
+    fontSize: '0.875rem',
+    textDecoration: 'none',
+    transition: 'opacity 150ms ease',
+};
+
+/** Render relative time from an ISO 8601 timestamp. */
+function relativeTime(iso: string | null): string {
+    if (!iso) return '';
+    const diff = Date.now() - new Date(iso).getTime();
+    const minutes = Math.floor(diff / 60_000);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+}
+
 export default function WritingDashboard() {
     const t = useT();
-    const { projects } = usePage<WritingDashboardProps>().props;
+    const { projects, recentSections = [], continueUrl } =
+        usePage<WritingDashboardProps>().props;
 
     // Smaller hero tile on mobile so it doesn't claim a quarter of the
     // hero row alongside the heading — same breakpoint Writing/Index uses.
@@ -90,6 +135,69 @@ export default function WritingDashboard() {
             </PageHeader>
 
             <div className="container mx-auto max-w-7xl px-4 py-8">
+                {/* Continue writing shortcut — only renders when the user
+                    has at least one recently-edited section. */}
+                {continueUrl && (
+                    <div className="mb-6">
+                        <Link href={continueUrl} style={continueButtonStyle}>
+                            <i className="fa-solid fa-feather" aria-hidden="true" />
+                            {t('writing.dashboard.continue')}
+                        </Link>
+                    </div>
+                )}
+
+                {/* Recent sections — the 8 most recently-touched sections
+                    across all accessible projects; each row links directly
+                    into the workspace. Hidden when empty (fresh account or
+                    all works deleted). */}
+                {recentSections.length > 0 && (
+                    <div className="mb-8">
+                        <h2
+                            className="mb-3 text-xs font-semibold uppercase tracking-wide"
+                            style={{
+                                color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                            }}
+                        >
+                            {t('writing.dashboard.recent_sections')}
+                        </h2>
+                        <div className="flex flex-col gap-2">
+                            {recentSections.map((section) => (
+                                <Link
+                                    key={section.id}
+                                    href={`/works/${section.project_slug}/${section.work_slug}/${section.slug}`}
+                                    className="flex items-center justify-between px-4 py-3 no-underline transition-opacity hover:opacity-80"
+                                    style={recentSectionRowStyle}
+                                >
+                                    <div className="min-w-0">
+                                        <span
+                                            className="block truncate text-sm font-medium"
+                                            style={{ color: 'var(--theme-base-content)' }}
+                                        >
+                                            {section.title}
+                                        </span>
+                                        <span
+                                            className="block truncate text-xs"
+                                            style={{
+                                                color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                                            }}
+                                        >
+                                            {section.work_title}
+                                        </span>
+                                    </div>
+                                    <span
+                                        className="ml-4 flex-shrink-0 text-xs"
+                                        style={{
+                                            color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+                                        }}
+                                    >
+                                        {relativeTime(section.updated_at)}
+                                    </span>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {projects.length === 0 ? (
                     <div className="px-6 py-16 text-center text-sm italic" style={emptyStateStyle}>
                         {t('writing.dashboard.empty')}

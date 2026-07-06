@@ -12,6 +12,9 @@ return [
     'dashboard.intro' => 'Every manuscript across your projects.',
     'dashboard.empty' => 'No works yet. Open a project and start one.',
     'dashboard.work_count' => ':count works',
+    'dashboard.nav' => 'Writing',
+    'dashboard.continue' => 'Continue writing',
+    'dashboard.recent_sections' => 'Recent sections',
 
     'index.title' => 'Writing',
     'index.intro' => 'The manuscripts of :project — novels, screenplays, essays, and everything between.',
