@@ -81,6 +81,6 @@ it('estimates prose pages from the words-per-page metric', function () {
 it('keeps a one-page floor for short prose', function () {
     $analyzer = app(SectionContentAnalyzer::class);
 
-    expect($analyzer->analyze('just a few words', 'prose')->pageEstimate)->toBe(1);
-    expect($analyzer->analyze('', 'prose')->pageEstimate)->toBe(0);
+    expect($analyzer->analyze('just a few words', 'prose')->pageEstimate)->toBe(1)
+        ->and($analyzer->analyze('', 'prose')->pageEstimate)->toBe(0);
 });
