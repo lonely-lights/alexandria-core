@@ -627,6 +627,18 @@ button:not(:disabled),
     );
 }
 
+/* Entry Writing chip — primary tint that deepens on hover. */
+.alex-writing-chip {
+    transition: background-color var(--theme-motion-duration-fast, 150ms) ease;
+}
+.alex-writing-chip:hover {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 18%,
+        transparent
+    );
+}
+
 /* Inline link fallbacks for MentionAwareContent — kicks in if the server
    sanitizer drops the class on <a data-type="mention|entry">. */
 .alex-mention,

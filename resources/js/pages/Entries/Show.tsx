@@ -114,7 +114,6 @@ const writingChipStyle: CSSProperties = {
     background: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
     color: 'var(--theme-brand-primary-500)',
     textDecoration: 'none',
-    transition: 'background-color var(--theme-motion-duration-fast, 150ms) ease',
 };
 
 const popoverHeadingStyle: CSSProperties = {
@@ -362,7 +361,7 @@ export default function EntryShow() {
                             />
                         )}
                         {writingWorkSlug && (
-                            <a href={`/works/${project.slug}/${writingWorkSlug}`} style={writingChipStyle}>
+                            <a href={`/works/${project.slug}/${writingWorkSlug}`} className="alex-writing-chip" style={writingChipStyle}>
                                 <i className="fa-solid fa-feather" />
                                 {t('entries.show.open_in_writing')}
                             </a>
