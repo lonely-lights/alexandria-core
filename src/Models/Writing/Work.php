@@ -48,8 +48,11 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, WorkSection> $sections
  * @property-read Collection<int, WorkSection> $rootSections
  * @property-read Collection<int, WorkEntryPin> $pins
+ * @property-read int|null $sections_count
  *
  * @method static WorkFactory factory($count = null, $state = [])
+ *
+ * @mixin \Eloquent
  */
 class Work extends Model
 {

@@ -1943,6 +1943,8 @@ function TreeNodeRow({
     savingEntryId: number | null;
     projectSlug: string;
 }) {
+    const t = useT();
+
     if (matchingIds && !matchingIds.has(entry.id)) return null;
 
     const isExpanded = expandedIds.has(entry.id);

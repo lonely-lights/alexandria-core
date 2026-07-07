@@ -58,6 +58,8 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, WorkSectionEntryMention> $entryMentions
  *
  * @method static WorkSectionFactory factory($count = null, $state = [])
+ *
+ * @mixin \Eloquent
  */
 class WorkSection extends Model
 {
