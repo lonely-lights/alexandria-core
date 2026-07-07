@@ -183,6 +183,8 @@ return [
     'panel.scene_mentions' => ':count mentions',
     'panel.scene_cues' => ':count cues',
     'panel.scene_dialogue_words' => ':count dialogue words',
+    'panel.scene_link_loading' => 'Loading…',
+    'panel.scene_link_empty' => 'No appearances found.',
     'panel.none_set' => 'Not set',
     'panel.choose' => 'Choose',
     'panel.clear' => 'Clear',

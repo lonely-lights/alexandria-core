@@ -832,6 +832,7 @@ export default function Workspace() {
                                 sceneLinksFocusSignal={sceneLinksFocusSignal}
                                 activeTab={referencePanelTab}
                                 onActiveTabChange={setReferencePanelTab}
+                                onSelect={selectSection}
                             />
                         </aside>
                     )}

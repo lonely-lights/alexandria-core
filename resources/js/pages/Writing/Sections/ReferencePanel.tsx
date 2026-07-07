@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, 
 
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import Input from '@alexandria/components/form/Input';
+import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 
@@ -58,6 +59,8 @@ interface ReferencePanelProps {
     sceneLinksFocusSignal?: number;
     activeTab?: string;
     onActiveTabChange?: (tab: string) => void;
+    /** Navigate to a section by slug — passed from Workspace.selectSection. */
+    onSelect?: (slug: string) => void;
 }
 
 /* ── Theme styles ── */
@@ -664,15 +667,140 @@ function ReferenceSlot({
 
 /* ── Panel shell ── */
 
+interface SectionAppearance {
+    id: number;
+    slug: string;
+    title: string;
+    label: string | null;
+    mentions: number;
+}
+
+/**
+ * Per-section drilldown modal — Stage 11 Slice 3 Task 4. Fetches
+ * section appearances for one canonical scene link and lets the user
+ * jump straight to any section that contains it. characterCues and
+ * dialogueWords are editor-only and not available server-side, so only
+ * the mention count is shown (acceptable middle path per spec).
+ */
+function SceneLinkDrilldownModal({
+    open,
+    onClose,
+    project,
+    work,
+    link,
+    onSelect,
+    t,
+}: {
+    open: boolean;
+    onClose: () => void;
+    project: { slug: string };
+    work: { slug: string };
+    link: ScreenplaySceneLink | null;
+    onSelect?: (slug: string) => void;
+    t: Translator;
+}) {
+    const [loading, setLoading] = useState(false);
+    const [sections, setSections] = useState<SectionAppearance[]>([]);
+
+    useEffect(() => {
+        if (!open || link === null || !link.slug) {
+            setSections([]);
+            setLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        setLoading(true);
+
+        fetch(`/works/${project.slug}/${work.slug}/panel/scene-link/${link.slug}`, {
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Scene-link drilldown fetch failed: ${response.status}`);
+                }
+
+                return response.json() as Promise<{ sections: SectionAppearance[] }>;
+            })
+            .then((payload) => {
+                if (!cancelled) {
+                    setSections(payload.sections);
+                    setLoading(false);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setSections([]);
+                    setLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [open, link?.slug, project.slug, work.slug]);
+
+    return (
+        <Modal open={open} onClose={onClose} maxWidth="max-w-sm">
+            <ModalHeader title={link?.name ?? ''} onClose={onClose} />
+            <div className="min-h-[6rem] px-1 py-2">
+                {loading && (
+                    <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
+                        {t('writing.panel.scene_link_loading')}
+                    </p>
+                )}
+                {!loading && sections.length === 0 && (
+                    <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
+                        {t('writing.panel.scene_link_empty')}
+                    </p>
+                )}
+                {!loading &&
+                    sections.map((section) => (
+                        <button
+                            key={section.id}
+                            type="button"
+                            className="alex-row flex w-full items-center gap-2.5 px-3 py-2 text-sm"
+                            style={{ borderRadius: 'var(--theme-radius-button)' }}
+                            onClick={() => {
+                                onSelect?.(section.slug);
+                                onClose();
+                            }}
+                        >
+                            <span className="min-w-0 flex-1 truncate text-left font-medium">{section.title}</span>
+                            {section.label !== null && (
+                                <span className="shrink-0 text-[11px]" style={rowSubStyle}>
+                                    {section.label}
+                                </span>
+                            )}
+                            <span style={countChipStyle}>
+                                {t('writing.panel.scene_mentions').replace(':count', section.mentions.toLocaleString())}
+                            </span>
+                        </button>
+                    ))}
+            </div>
+        </Modal>
+    );
+}
+
 function SceneLinksTab({
     project,
+    work,
     links,
+    onSelect,
     t,
 }: {
     project: { slug: string };
+    work: { slug: string };
     links: ScreenplaySceneLink[];
+    onSelect?: (slug: string) => void;
     t: Translator;
 }) {
+    const [drilldownLink, setDrilldownLink] = useState<ScreenplaySceneLink | null>(null);
+
     if (links.length === 0) {
         return (
             <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
@@ -682,70 +810,124 @@ function SceneLinksTab({
     }
 
     return (
-        <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 py-2">
-            {links.map((link) => {
-                const url = link.slug && link.blueprintSlug
-                    ? `/p/${project.slug}/${link.blueprintSlug}/${link.slug}`
-                    : null;
+        <>
+            <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 py-2">
+                {links.map((link) => {
+                    const url =
+                        link.slug && link.blueprintSlug
+                            ? `/p/${project.slug}/${link.blueprintSlug}/${link.slug}`
+                            : null;
+                    const canDrill = link.slug !== null && link.slug !== '';
 
-                return (
-                    <div key={link.key}>
-                        <div
-                            className="alex-row group flex w-full items-center gap-2.5 px-3 py-2 text-sm"
-                            style={{ borderRadius: 'var(--theme-radius-button)' }}
-                        >
-                            <i
-                                className="fa-solid fa-link w-4 shrink-0 text-center text-xs"
-                                style={rowIconStyle}
-                                aria-hidden="true"
-                            />
-                            <div className="min-w-0 flex-1">
-                                <div className="truncate font-medium">{link.name}</div>
-                                {link.variants.length > 0 && (
-                                    <div className="mt-1 flex flex-wrap gap-1">
-                                        {link.variants.map((variant) => (
-                                            <span
-                                                key={variant.text}
-                                                className="max-w-full truncate px-1.5 py-0.5 text-[11px] font-medium"
-                                                style={countChipStyle}
-                                            >
-                                                {variant.text}
-                                            </span>
-                                        ))}
-                                    </div>
+                    return (
+                        <div key={link.key}>
+                            <div
+                                className="alex-row group flex w-full items-center gap-2.5 px-3 py-2 text-sm"
+                                style={{ borderRadius: 'var(--theme-radius-button)' }}
+                            >
+                                <i
+                                    className="fa-solid fa-link w-4 shrink-0 text-center text-xs"
+                                    style={rowIconStyle}
+                                    aria-hidden="true"
+                                />
+                                <div className="min-w-0 flex-1">
+                                    <div className="truncate font-medium">{link.name}</div>
+                                    {link.variants.length > 0 && (
+                                        <div className="mt-1 flex flex-wrap gap-1">
+                                            {link.variants.map((variant) => (
+                                                <span
+                                                    key={variant.text}
+                                                    className="max-w-full truncate px-1.5 py-0.5 text-[11px] font-medium"
+                                                    style={countChipStyle}
+                                                >
+                                                    {variant.text}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                {url !== null && (
+                                    <a
+                                        href={url}
+                                        className="flex h-6 w-6 shrink-0 items-center justify-center opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                                        style={rowActionStyle}
+                                        title={t('writing.panel.open_entry')}
+                                        aria-label={t('writing.panel.open_entry')}
+                                    >
+                                        <i className="fa-solid fa-arrow-up-right-from-square text-[10px]" />
+                                    </a>
                                 )}
                             </div>
-                            {url !== null && (
-                                <a
-                                    href={url}
-                                    className="flex h-6 w-6 shrink-0 items-center justify-center opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-                                    style={rowActionStyle}
-                                    title={t('writing.panel.open_entry')}
-                                    aria-label={t('writing.panel.open_entry')}
+                            {canDrill ? (
+                                <button
+                                    type="button"
+                                    className="mx-3 mb-1.5 flex flex-wrap gap-1.5 px-3 pb-2 hover:opacity-80"
+                                    onClick={() => setDrilldownLink(link)}
+                                    title={link.name}
                                 >
-                                    <i className="fa-solid fa-arrow-up-right-from-square text-[10px]" />
-                                </a>
+                                    <span style={countChipStyle}>
+                                        {t('writing.panel.scene_mentions').replace(
+                                            ':count',
+                                            link.mentions.toLocaleString(),
+                                        )}
+                                    </span>
+                                    {link.characterCues > 0 && (
+                                        <span style={countChipStyle}>
+                                            {t('writing.panel.scene_cues').replace(
+                                                ':count',
+                                                link.characterCues.toLocaleString(),
+                                            )}
+                                        </span>
+                                    )}
+                                    {link.dialogueWords > 0 && (
+                                        <span style={countChipStyle}>
+                                            {t('writing.panel.scene_dialogue_words').replace(
+                                                ':count',
+                                                link.dialogueWords.toLocaleString(),
+                                            )}
+                                        </span>
+                                    )}
+                                </button>
+                            ) : (
+                                <div className="mx-3 mb-1.5 flex flex-wrap gap-1.5 px-3 pb-2">
+                                    <span style={countChipStyle}>
+                                        {t('writing.panel.scene_mentions').replace(
+                                            ':count',
+                                            link.mentions.toLocaleString(),
+                                        )}
+                                    </span>
+                                    {link.characterCues > 0 && (
+                                        <span style={countChipStyle}>
+                                            {t('writing.panel.scene_cues').replace(
+                                                ':count',
+                                                link.characterCues.toLocaleString(),
+                                            )}
+                                        </span>
+                                    )}
+                                    {link.dialogueWords > 0 && (
+                                        <span style={countChipStyle}>
+                                            {t('writing.panel.scene_dialogue_words').replace(
+                                                ':count',
+                                                link.dialogueWords.toLocaleString(),
+                                            )}
+                                        </span>
+                                    )}
+                                </div>
                             )}
                         </div>
-                        <div className="mx-3 mb-1.5 flex flex-wrap gap-1.5 px-3 pb-2">
-                            <span style={countChipStyle}>
-                                {t('writing.panel.scene_mentions').replace(':count', link.mentions.toLocaleString())}
-                            </span>
-                            {link.characterCues > 0 && (
-                                <span style={countChipStyle}>
-                                    {t('writing.panel.scene_cues').replace(':count', link.characterCues.toLocaleString())}
-                                </span>
-                            )}
-                            {link.dialogueWords > 0 && (
-                                <span style={countChipStyle}>
-                                    {t('writing.panel.scene_dialogue_words').replace(':count', link.dialogueWords.toLocaleString())}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
+                    );
+                })}
+            </div>
+            <SceneLinkDrilldownModal
+                open={drilldownLink !== null}
+                onClose={() => setDrilldownLink(null)}
+                project={project}
+                work={work}
+                link={drilldownLink}
+                onSelect={onSelect}
+                t={t}
+            />
+        </>
     );
 }
 
@@ -766,6 +948,7 @@ export default function ReferencePanel({
     sceneLinksFocusSignal = 0,
     activeTab,
     onActiveTabChange,
+    onSelect,
 }: ReferencePanelProps) {
     const t = useT();
     const [internalActiveTab, setInternalActiveTab] = useState(
@@ -877,7 +1060,7 @@ export default function ReferencePanel({
                 />
             )}
             {currentTab === 'scene-links' && (
-                <SceneLinksTab project={project} links={sceneLinks} t={t} />
+                <SceneLinksTab project={project} work={work} links={sceneLinks} onSelect={onSelect} t={t} />
             )}
             {activeExtra !== undefined && (
                 <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
