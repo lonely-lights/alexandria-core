@@ -81,6 +81,11 @@ function stateForCount(count: number, target: number): StructureGuidanceState {
     return count >= target ? 'complete' : 'open';
 }
 
+/** Recursively sum word_count for a node and all its descendants. */
+function subtreeWords(node: SectionNode): number {
+    return node.word_count + node.children.reduce((sum, child) => sum + subtreeWords(child), 0);
+}
+
 /**
  * Build a DiagnosticInput from the Navigator's section tree and work summary.
  *
@@ -101,9 +106,10 @@ export function buildDiagnosticInput(
             : null;
 
     // Top-level sections with cumulative word-count end positions.
+    // subtreeWords is used so act nodes (word_count=0) accumulate words from scene children.
     let cumulative = 0;
     const mappedSections: DiagnosticInput['sections'] = sections.map((section) => {
-        cumulative += section.word_count;
+        cumulative += subtreeWords(section); // subtree-sum: acts carry word_count=0, prose lives in scene children
         return {
             id: section.id,
             title: section.title,
