@@ -289,11 +289,11 @@ export default function CharactersReport({
                                 </tr>
                             </thead>
                             <tbody>
-                                {actBreakdown.map((act) => {
+                                {actBreakdown.map((act, actIndex) => {
                                     const visible = act.characters.slice(0, ACT_CHIPS_MAX);
                                     const overflow = act.characters.length - visible.length;
                                     return (
-                                        <tr key={act.label} style={rowBorderStyle}>
+                                        <tr key={actIndex} style={rowBorderStyle}>
                                             <td className="py-1.5 pr-2 font-medium">{act.label}</td>
                                             <td className="px-2 py-1.5 text-right tabular-nums" style={mutedCellStyle}>
                                                 {act.sections.toLocaleString()}

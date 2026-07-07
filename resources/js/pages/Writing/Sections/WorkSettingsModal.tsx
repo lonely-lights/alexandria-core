@@ -443,6 +443,7 @@ export default function WorkSettingsModal({
                                         name={`structure_beat_${i}_name`}
                                         value={beat.name}
                                         onChange={(e) => handleBeatChange(i, 'name', e.target.value)}
+                                        error={allErrors[`length_plan.structure.beats.${i}.name`]}
                                         size="sm"
                                     />
                                     <Input

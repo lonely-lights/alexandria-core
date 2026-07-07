@@ -109,7 +109,7 @@ export function beatPlacementDiagnostics(input: DiagnosticInput): Diagnostic[] {
             return {
                 id: `beat-${i + 1}`,
                 state: 'open',
-                labelKey: 'guidance.beat_pending',
+                labelKey: 'writing.guidance.beat_pending',
                 value: beat.name,
                 severity: 'ok',
             };
@@ -123,8 +123,8 @@ export function beatPlacementDiagnostics(input: DiagnosticInput): Diagnostic[] {
         return {
             id: `beat-${i + 1}`,
             state: 'complete',
-            labelKey: onTarget ? 'guidance.beat_on_target' : 'guidance.beat_off_target',
-            value: `${Math.round(actualPct)}% (target ${beat.target}±${beat.tolerance})`,
+            labelKey: onTarget ? 'writing.guidance.beat_on_target' : 'writing.guidance.beat_off_target',
+            value: `${actualPct.toFixed(1)}% / ${beat.target}±${beat.tolerance}`,
             severity: onTarget ? 'ok' : 'warn',
         };
     });
@@ -149,16 +149,16 @@ export function lengthOutlierDiagnostics(input: DiagnosticInput): Diagnostic[] {
             result.push({
                 id: `outlier-long-${section.id}`,
                 state: 'complete',
-                labelKey: 'guidance.outlier_long',
-                value: `"${section.title}" (${section.words} words)`,
+                labelKey: 'writing.guidance.outlier_long',
+                value: `"${section.title}" — ${section.words}`,
                 severity: 'warn',
             });
         } else if (section.words < med * template.outlierLow) {
             result.push({
                 id: `outlier-short-${section.id}`,
                 state: 'complete',
-                labelKey: 'guidance.outlier_short',
-                value: `"${section.title}" (${section.words} words)`,
+                labelKey: 'writing.guidance.outlier_short',
+                value: `"${section.title}" — ${section.words}`,
                 severity: 'warn',
             });
         }
@@ -182,8 +182,8 @@ export function characterLoadDiagnostics(input: DiagnosticInput): Diagnostic[] {
             result.push({
                 id: `char-load-act-${i + 1}`,
                 state: 'complete',
-                labelKey: 'guidance.character_load',
-                value: `${bucket.label}: ${count} (limit ${template.characterLoadHint})`,
+                labelKey: 'writing.guidance.character_load',
+                value: `${bucket.label}: ${count}/${template.characterLoadHint}`,
                 severity: 'warn',
             });
         }
@@ -203,8 +203,8 @@ export function orphanedLinkDiagnostics(input: DiagnosticInput): Diagnostic[] {
         {
             id: 'orphaned-links',
             state: 'open',
-            labelKey: 'guidance.orphaned_links',
-            value: `${orphaned.length} unresolved`,
+            labelKey: 'writing.guidance.orphaned_links',
+            value: `${orphaned.length}`,
             severity: 'warn',
         },
     ];
