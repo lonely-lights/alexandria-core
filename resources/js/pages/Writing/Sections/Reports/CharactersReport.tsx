@@ -5,7 +5,7 @@ import type { Translator } from '@alexandria/hooks/useT';
 import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
 
-import type { CharacterReportRow } from '../../Reports';
+import type { ActBreakdownRow, CharacterReportRow } from '../../Reports';
 import { blueprintIconClass } from '../EntryPickerModal';
 import ReportCard from './ReportCard';
 
@@ -59,17 +59,49 @@ const firstLinkStyle: CSSProperties = {
     color: 'var(--theme-brand-primary-500)',
 };
 
+const lastLinkStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+};
+
+const chipStyle: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    color: 'color-mix(in srgb, var(--theme-base-content) 65%, transparent)',
+    borderRadius: 'var(--theme-radius-badge)',
+    padding: '0 0.375rem',
+    fontSize: '0.625rem',
+    fontWeight: 600,
+    lineHeight: 1.6,
+    whiteSpace: 'nowrap' as const,
+};
+
+const overflowChipStyle: CSSProperties = {
+    ...chipStyle,
+    background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+};
+
+const sectionHeadingStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+    fontSize: '0.625rem',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+};
+
 const emptyStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
 
+const ACT_CHIPS_MAX = 6;
+
 export default function CharactersReport({
     characters,
+    actBreakdown,
     projectSlug,
     workSlug,
     t,
 }: {
     characters: CharacterReportRow[];
+    actBreakdown: ActBreakdownRow[];
     projectSlug: string;
     workSlug: string;
     t: Translator;
@@ -159,6 +191,9 @@ export default function CharactersReport({
                                 <th className="px-2 py-1.5 text-left" style={headCellStyle}>
                                     {t('writing.reports.col_first')}
                                 </th>
+                                <th className="px-2 py-1.5 text-left" style={headCellStyle}>
+                                    {t('writing.reports.col_last')}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -207,11 +242,87 @@ export default function CharactersReport({
                                             </Link>
                                         )}
                                     </td>
+                                    <td className="px-2 py-2">
+                                        {row.last_section !== null &&
+                                            row.last_section.slug !== row.first_section?.slug && (
+                                            <Link
+                                                href={`/works/${projectSlug}/${workSlug}/${row.last_section.slug}`}
+                                                className="hover:underline"
+                                                style={lastLinkStyle}
+                                            >
+                                                {row.last_section.title}
+                                            </Link>
+                                        )}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            {/* By-act breakdown — only shown when there are top-level sections */}
+            {actBreakdown.length > 0 && (
+                <>
+                    <p className="mt-6 mb-1" style={sectionHeadingStyle}>
+                        {t('writing.reports.act_breakdown_heading')}
+                    </p>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr>
+                                    <th className="py-1 pr-2 text-left" style={headCellStyle}>
+                                        {t('writing.reports.col_act')}
+                                    </th>
+                                    <th className="px-2 py-1 text-right" style={headCellStyle}>
+                                        {t('writing.reports.col_count')}
+                                    </th>
+                                    <th className="px-2 py-1 text-right" style={headCellStyle}>
+                                        {t('writing.reports.col_words')}
+                                    </th>
+                                    <th className="px-2 py-1 text-right" style={headCellStyle}>
+                                        {t('writing.reports.col_distinct_chars')}
+                                    </th>
+                                    <th className="py-1 pl-2 text-left" style={headCellStyle}>
+                                        {t('writing.reports.col_top_chars')}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {actBreakdown.map((act) => {
+                                    const visible = act.characters.slice(0, ACT_CHIPS_MAX);
+                                    const overflow = act.characters.length - visible.length;
+                                    return (
+                                        <tr key={act.label} style={rowBorderStyle}>
+                                            <td className="py-1.5 pr-2 font-medium">{act.label}</td>
+                                            <td className="px-2 py-1.5 text-right tabular-nums" style={mutedCellStyle}>
+                                                {act.sections.toLocaleString()}
+                                            </td>
+                                            <td className="px-2 py-1.5 text-right tabular-nums" style={mutedCellStyle}>
+                                                {act.words.toLocaleString()}
+                                            </td>
+                                            <td className="px-2 py-1.5 text-right tabular-nums" style={mutedCellStyle}>
+                                                {act.distinct_characters.toLocaleString()}
+                                            </td>
+                                            <td className="py-1.5 pl-2">
+                                                <span className="flex flex-wrap gap-1">
+                                                    {visible.map((char) => (
+                                                        <span key={char.slug} style={chipStyle}>
+                                                            {char.name}
+                                                        </span>
+                                                    ))}
+                                                    {overflow > 0 && (
+                                                        <span style={overflowChipStyle}>+{overflow}</span>
+                                                    )}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
             )}
         </ReportCard>
     );

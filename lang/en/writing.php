@@ -222,6 +222,11 @@ return [
     'reports.recent_heading' => 'Recent activity',
     'reports.recent_caption' => 'Grouped by each section\'s last edit — not a true daily log.',
     'reports.recent_empty' => 'Nothing edited in the last two weeks.',
+    'reports.col_last' => 'Last appears',
+    'reports.act_breakdown_heading' => 'By act',
+    'reports.col_act' => 'Act',
+    'reports.col_distinct_chars' => 'Characters',
+    'reports.col_top_chars' => 'Top characters',
 
     'appears_in.title' => 'Appears in',
     'appears_in.mention' => 'Mention',

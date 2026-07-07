@@ -25,6 +25,15 @@ export interface CharacterReportRow extends EntryCard {
     sections_count: number;
     sources: string[];
     first_section: { title: string; slug: string } | null;
+    last_section: { title: string; slug: string } | null;
+}
+
+export interface ActBreakdownRow {
+    label: string;
+    sections: number;
+    words: number;
+    characters: { name: string; slug: string; mentions: number }[];
+    distinct_characters: number;
 }
 
 export interface StructureReportRow {
@@ -67,6 +76,7 @@ interface ReportsProps {
         length_plan: Record<string, unknown> | null;
     };
     characters: CharacterReportRow[];
+    act_breakdown: ActBreakdownRow[];
     structure: StructureReportRow[];
     progress: ProgressReportData;
     [key: string]: unknown;
@@ -80,7 +90,7 @@ const subtitleStyle: CSSProperties = {
 
 export default function Reports() {
     const t = useT();
-    const { project, work, characters, structure, progress } = usePage<ReportsProps>().props;
+    const { project, work, characters, act_breakdown, structure, progress } = usePage<ReportsProps>().props;
 
     // Same precedence as the workspace header strip: a word target
     // wins; a line target (poetry plans) steps in only when no word
@@ -117,6 +127,7 @@ export default function Reports() {
             <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8">
                 <CharactersReport
                     characters={characters}
+                    actBreakdown={act_breakdown}
                     projectSlug={project.slug}
                     workSlug={work.slug}
                     t={t}
