@@ -462,6 +462,7 @@ export default function WorkSettingsModal({
                                         max={50}
                                         value={beat.tolerance.toString()}
                                         onChange={(e) => handleBeatChange(i, 'tolerance', e.target.value)}
+                                        error={allErrors[`length_plan.structure.beats.${i}.tolerance`]}
                                         size="sm"
                                     />
                                 </div>
