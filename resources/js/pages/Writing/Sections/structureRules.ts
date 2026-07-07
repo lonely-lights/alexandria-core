@@ -13,9 +13,12 @@
  *
  * All functions are pure: never throw, never return NaN/undefined, return []
  * when input is insufficient (no template, <3 sections, zero totals).
+ *
+ * DiagnosticInput fields: sections = top-level (beat mapping), leafSections =
+ * leaf sections (outliers; falls back to sections for flat works).
  */
 
-import type { StructureTemplate } from './structureTemplates';
+import type { StructureTemplate, WorkStructure } from './structureTemplates';
 
 // ---------------------------------------------------------------------------
 // Public interfaces
@@ -23,15 +26,14 @@ import type { StructureTemplate } from './structureTemplates';
 
 export interface DiagnosticInput {
     /** Per-work structure snapshot (beats editable per work). */
-    structure: import('./structureTemplates').WorkStructure | null;
+    structure: WorkStructure | null;
     /** Resolved template, null when custom/none. */
     template: StructureTemplate | null;
     unit: 'pages' | 'words';
     /** Work page estimate or word count. */
     totalUnits: number;
     /**
-     * Flat list of sections (pre-filtered to top-level for beat mapping,
-     * or all leaf sections for outlier detection, depending on call site).
+     * Top-level sections — used by beat placement (positional mapping by endUnits).
      * endUnits = cumulative position where the section ends.
      */
     sections: Array<{
@@ -41,6 +43,11 @@ export interface DiagnosticInput {
         words: number;
         endUnits: number;
     }>;
+    /**
+     * Leaf sections (scenes / lowest-level nodes) — used by outlier detection.
+     * Falls back to sections for flat works where all sections are leaves.
+     */
+    leafSections?: DiagnosticInput['sections'];
     sceneLinks: Array<{
         name: string;
         slug: string | null;
@@ -128,7 +135,8 @@ export function beatPlacementDiagnostics(input: DiagnosticInput): Diagnostic[] {
  * Requires at least 3 sections and a non-zero median; otherwise returns [].
  */
 export function lengthOutlierDiagnostics(input: DiagnosticInput): Diagnostic[] {
-    const { template, sections } = input;
+    const { template } = input;
+    const sections = input.leafSections ?? input.sections;
     if (!template || sections.length < 3) return [];
 
     const words = sections.map((s) => s.words);
