@@ -10,6 +10,7 @@ import MoveSectionModal from './MoveSectionModal';
 import RenameSectionModal from './RenameSectionModal';
 import type { SectionOutlineItem } from './sectionOutline';
 import { getStructureGuidance, type StructureGuidanceState } from './structureGuidance';
+import type { WorkStructure } from './structureTemplates';
 
 /**
  * Workspace section Navigator — Stage 8g.1 (Plan 2 Task 6; drag-reorder
@@ -43,6 +44,7 @@ interface NavigatorProps {
             target_lines?: number | null;
             target_pages?: number | null;
             preset?: string | null;
+            structure?: WorkStructure | null;
         } | null;
     };
     sections: SectionNode[];

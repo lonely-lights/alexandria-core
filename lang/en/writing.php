@@ -142,6 +142,20 @@ return [
     'guidance.value_active' => 'Active',
     'guidance.value_select' => 'Select',
 
+    // Template-driven diagnostic labels (Stage 11 Slice 3).
+    'guidance.beat_on_target' => 'Beat on target',
+    'guidance.beat_off_target' => 'Beat off target',
+    'guidance.beat_pending' => 'Beat pending',
+    'guidance.outlier_long' => 'Unusually long section',
+    'guidance.outlier_short' => 'Unusually short section',
+    'guidance.character_load' => 'Act character load',
+    'guidance.orphaned_links' => 'Unresolved scene links',
+    'guidance.template_three_act_screenplay' => 'Three-act screenplay',
+    'guidance.template_five_act_screenplay' => 'Five-act screenplay',
+    'guidance.template_three_act_prose' => 'Three-act prose',
+    'guidance.template.title' => 'Structure plan',
+    'guidance.template.body' => 'Checked against your selected structure template.',
+
     'statusbar.back' => 'Back to works',
 
     'elements.slugline' => 'Scene heading',
