@@ -67,11 +67,50 @@ const fileTab: RibbonTab<Ctx> = {
             ],
         },
         {
-            // RESERVED — future export tooling (manuscript/PDF/Fountain
-            // export) contributes controls here when it ships.
+            id: 'sections',
+            labelKey: 'writing.ribbon.group_sections',
+            controls: [
+                {
+                    id: 'work-settings',
+                    type: 'button',
+                    icon: 'fa-solid fa-gear',
+                    labelKey: 'writing.ribbon.settings',
+                    visible: editable,
+                    onAction: (ctx) => ctx.actions.openSettings(),
+                },
+                {
+                    id: 'add-section',
+                    type: 'button',
+                    icon: 'fa-solid fa-plus',
+                    labelKey: 'writing.ribbon.add_section',
+                    visible: editable,
+                    onAction: (ctx) => ctx.actions.addSection(),
+                },
+                {
+                    id: 'add-inside',
+                    type: 'button',
+                    icon: 'fa-solid fa-indent',
+                    labelKey: 'writing.ribbon.add_inside',
+                    visible: editable,
+                    disabled: (ctx) => !ctx.hasSection,
+                    onAction: (ctx) => ctx.actions.addInside(),
+                },
+            ],
+        },
+        {
             id: 'export',
             labelKey: 'writing.ribbon.group_export',
-            controls: [],
+            controls: [
+                {
+                    // Placeholder — manuscript/PDF/Fountain export ships later.
+                    id: 'export-stub',
+                    type: 'button',
+                    icon: 'fa-solid fa-file-export',
+                    labelKey: 'writing.ribbon.export_coming',
+                    disabled: () => true,
+                    onAction: () => { /* stub — export not yet implemented */ },
+                },
+            ],
         },
     ],
 };

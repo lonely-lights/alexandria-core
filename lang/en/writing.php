@@ -302,6 +302,7 @@ return [
     'ribbon.all_works' => 'All works',
     'ribbon.writing_home' => 'Writing dashboard',
     'ribbon.locked_hint' => 'Available in the store',
+    'ribbon.export_coming' => 'Export (coming later)',
 
     'flash.work_created' => 'Work created.',
     'flash.work_updated' => 'Work updated.',
