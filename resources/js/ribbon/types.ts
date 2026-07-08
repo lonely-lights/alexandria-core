@@ -10,6 +10,28 @@
 
 export type RibbonControlType = 'button' | 'toggle' | 'select' | 'menu';
 
+/**
+ * Permission/entitlement requirements for a ribbon control.
+ * Evaluated at render time against the `gates` prop supplied to Ribbon.
+ */
+export interface RibbonRequires {
+    /** A key in `RibbonGates.can` that must be truthy for the control to be visible. */
+    permission?: string;
+    /** A key that must be present in `RibbonGates.entitlements` (string[]) for
+     *  the control to be fully enabled; failing renders it locked (disabled + lock icon). */
+    entitlement?: string;
+}
+
+/**
+ * Runtime gate state threaded into Ribbon from the host mount.
+ * `can` maps permission keys to booleans; `entitlements` is a string[]
+ * of active entitlement keys (truthy values from `auth.entitlements`).
+ */
+export interface RibbonGates {
+    can: Record<string, boolean>;
+    entitlements: string[];
+}
+
 export interface RibbonControl<Ctx = unknown> {
     /** Globally unique within a set — QAT pins and customization reference this. */
     id: string;
@@ -22,6 +44,8 @@ export interface RibbonControl<Ctx = unknown> {
     shortcut?: string;
     /** Display-only shortcut hint for commands bound by the editor, not the ribbon. */
     menuShortcut?: string;
+    /** Optional permission/entitlement gate — see ribbonGates.ts for resolution rules. */
+    requires?: RibbonRequires;
     visible?: (ctx: Ctx) => boolean;
     disabled?: (ctx: Ctx) => boolean;
     /** Pressed state for toggles (and buttons that track state). */

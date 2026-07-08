@@ -6,6 +6,7 @@ import useT from '@alexandria/hooks/useT';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 
 import { getRibbonTabs, subscribeRibbon } from './ribbonRegistry';
+import { resolveGate } from './ribbonGates';
 import { formatShortcutLabel } from './shortcuts';
 import useRibbonShortcuts from './useRibbonShortcuts';
 import QuickActionBar from './QuickActionBar';
@@ -20,7 +21,7 @@ import RibbonButton from './controls/RibbonButton';
 import RibbonToggle from './controls/RibbonToggle';
 import RibbonSelect from './controls/RibbonSelect';
 import RibbonMenu from './controls/RibbonMenu';
-import type { RibbonControl, RibbonMode, RibbonTab } from './types';
+import type { RibbonControl, RibbonGates, RibbonMode, RibbonTab } from './types';
 
 const MODE_STORAGE_KEY = 'alexandria.ribbon.mode';
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
@@ -48,6 +49,10 @@ function readMode(): RibbonMode {
 interface RibbonProps<Ctx> {
     setKey: string;
     context: Ctx;
+    /** Permission/entitlement gates for this ribbon instance.
+     *  Controls with `requires` are filtered (hidden) or locked (disabled + lock icon)
+     *  based on the resolved verdict. Controls without `requires` are always visible. */
+    gates?: RibbonGates;
     /** Optional host content rendered before the tabs (e.g. a breadcrumb).
      *  With `headerRow` set, this instead becomes a left column spanning
      *  the full height of BOTH header rows (Docs-style logo block). */
@@ -78,6 +83,7 @@ interface RibbonProps<Ctx> {
 export default function Ribbon<Ctx>({
     setKey,
     context,
+    gates,
     leading,
     trailing,
     headerRow,
@@ -163,10 +169,27 @@ export default function Ribbon<Ctx>({
         return null;
     }
 
+    // Filter tabs that have at least one non-hidden visible control after gating.
+    // Locked controls (disabled + upsell) still count as visible for tab presence.
+    const visibleTabs = tabs.filter((tab) =>
+        tab.groups.some((group) =>
+            group.controls.some((control) => {
+                if (!(control.visible?.(context) ?? true)) {
+                    return false;
+                }
+                return resolveGate(control.requires, gates) !== 'hidden';
+            }),
+        ),
+    );
+
+    if (visibleTabs.length === 0) {
+        return null;
+    }
+
     const fixedBand = bandTabId !== undefined;
-    const selectedTab = activeTabId === null ? null : (tabs.find((tab) => tab.id === activeTabId) ?? null);
-    const activeTab = selectedTab ?? tabs[0];
-    const bandTab = (bandTabId ? tabs.find((tab) => tab.id === bandTabId) : null) ?? activeTab;
+    const selectedTab = activeTabId === null ? null : (visibleTabs.find((tab) => tab.id === activeTabId) ?? null);
+    const activeTab = selectedTab ?? visibleTabs[0];
+    const bandTab = (bandTabId ? visibleTabs.find((tab) => tab.id === bandTabId) : null) ?? activeTab;
 
     function persistQuickActions(next: RibbonQuickAction[]): void {
         const normalized = normalizeQuickActions(next);
@@ -278,10 +301,11 @@ export default function Ribbon<Ctx>({
     /* The strip is its own scroll container so a cramped viewport
        (merged-header mode on mobile) scrolls the tabs horizontally
        instead of wrapping or crushing the leading/trailing clusters.
-       role="tablist" lives here — host content stays outside it. */
+       role="tablist" lives here — host content stays outside it.
+       Empty tabs (all controls gated hidden) are omitted. */
     const tabStrip = (
         <div className={`ribbon-tabstrip ${fixedBand ? 'ribbon-tabstrip--menu' : ''}`} role="tablist">
-            {tabs.map((tab) => (
+            {visibleTabs.map((tab) => (
                 <button
                     key={tab.id}
                     type="button"
@@ -316,6 +340,7 @@ export default function Ribbon<Ctx>({
                                 setKey={setKey}
                                 tabs={tabs}
                                 context={context}
+                                gates={gates}
                                 actions={quickActionItems}
                                 onChange={persistQuickActions}
                             />
@@ -345,18 +370,48 @@ export default function Ribbon<Ctx>({
                     onMouseLeave={() => mode === 'collapsed' && setOverlayOpen(false)}
                 >
                     {bandTab.groups.map((group) => {
-                        const visibleControls = group.controls.filter(
-                            (control) => control.visible?.(context) ?? true,
-                        );
+                        // Apply visibility predicate then gate resolution.
+                        // 'hidden' → exclude; 'locked' → disabled + lock glyph.
+                        const gatedControls = group.controls
+                            .filter((control) => control.visible?.(context) ?? true)
+                            .map((control) => ({
+                                control,
+                                verdict: resolveGate(control.requires, gates),
+                            }))
+                            .filter(({ verdict }) => verdict !== 'hidden');
 
-                        if (visibleControls.length === 0) {
+                        if (gatedControls.length === 0) {
                             return null;
                         }
 
                         return (
                             <div key={group.id} className="ribbon-group">
                                 <div className="ribbon-group-controls">
-                                    {visibleControls.map((control) => renderControl(control, context))}
+                                    {gatedControls.map(({ control, verdict }) => {
+                                        if (verdict === 'locked') {
+                                            // Force disabled; overlay a lock badge.
+                                            // The title on the wrapper acts as a tooltip for
+                                            // the upsell hint (writing.ribbon.locked_hint).
+                                            const lockedControl: RibbonControl<Ctx> = {
+                                                ...control,
+                                                disabled: (_ctx: Ctx) => true,
+                                            };
+                                            return (
+                                                <div
+                                                    key={control.id}
+                                                    className="relative inline-flex"
+                                                    title={t('writing.ribbon.locked_hint')}
+                                                >
+                                                    {renderControl(lockedControl, context)}
+                                                    <i
+                                                        className="fa-solid fa-lock ribbon-ctl-lock pointer-events-none absolute bottom-0 right-0 text-[8px]"
+                                                        aria-hidden="true"
+                                                    />
+                                                </div>
+                                            );
+                                        }
+                                        return renderControl(control, context);
+                                    })}
                                 </div>
                             </div>
                         );

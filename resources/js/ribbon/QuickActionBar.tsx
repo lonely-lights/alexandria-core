@@ -3,18 +3,22 @@ import { router } from '@inertiajs/react';
 import useT from '@alexandria/hooks/useT';
 
 import QuickActionEditor from './QuickActionEditor';
+import { resolveGate } from './ribbonGates';
 import {
     findControlById,
     normalizeQuickActions,
     replaceVisibleQuickActions,
     type RibbonQuickAction,
 } from './quickActions';
-import type { RibbonTab } from './types';
+import type { RibbonGates, RibbonTab } from './types';
 
 interface QuickActionBarProps<Ctx> {
     setKey: string;
     tabs: RibbonTab<Ctx>[];
     context: Ctx;
+    /** Gate state from the parent Ribbon — controls with requires are
+     *  filtered (hidden) or locked (disabled + lock icon) in the QAT too. */
+    gates?: RibbonGates;
     actions: RibbonQuickAction[];
     onChange: (next: RibbonQuickAction[]) => void;
 }
@@ -23,6 +27,7 @@ export default function QuickActionBar<Ctx>({
     setKey,
     tabs,
     context,
+    gates,
     actions,
     onChange,
 }: QuickActionBarProps<Ctx>) {
@@ -77,7 +82,35 @@ export default function QuickActionBar<Ctx>({
                     return null;
                 }
 
+                const verdict = resolveGate(control.requires, gates);
+
+                if (verdict === 'hidden') {
+                    return null;
+                }
+
                 const label = t(control.labelKey);
+
+                if (verdict === 'locked') {
+                    return (
+                        <span key={item.id} className="relative inline-flex">
+                            <button
+                                type="button"
+                                data-ribbon-quick-action={control.id}
+                                className="ribbon-qat-item alex-toolbar-btn"
+                                title={t('writing.ribbon.locked_hint')}
+                                aria-label={label}
+                                disabled
+                            >
+                                <i className={control.icon} aria-hidden="true" />
+                            </button>
+                            <i
+                                className="fa-solid fa-lock ribbon-ctl-lock pointer-events-none absolute bottom-0 right-0 text-[8px]"
+                                aria-hidden="true"
+                            />
+                        </span>
+                    );
+                }
+
                 const disabled = control.disabled?.(context) ?? false;
                 const active = control.active?.(context) ?? false;
 

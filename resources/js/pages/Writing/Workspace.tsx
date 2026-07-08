@@ -5,6 +5,7 @@ import useT from '@alexandria/hooks/useT';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
 import Ribbon from '@alexandria/ribbon/Ribbon';
+import type { RibbonGates } from '@alexandria/ribbon/types';
 import LogoMark from '@alexandria/components/brand/LogoMark';
 import CompactUserMenu from '@alexandria/components/navigation/CompactUserMenu';
 import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
@@ -237,8 +238,20 @@ const paneBorderColor = 'color-mix(in srgb, var(--theme-base-content) 10%, trans
 
 export default function Workspace() {
     const t = useT();
-    const { project, work, sections, currentSection, pins, types, lengthPlans, can } =
-        usePage<WorkspaceProps>().props;
+    const pageProps = usePage<WorkspaceProps>().props;
+    const { project, work, sections, currentSection, pins, types, lengthPlans, can } = pageProps;
+
+    // Build ribbon gates: permission map from the page `can` prop +
+    // entitlement keys from auth.entitlements (string[] of truthy keys).
+    const rawEntitlements = (pageProps as unknown as {
+        auth?: { entitlements?: Record<string, unknown> };
+    }).auth?.entitlements ?? {};
+    const writingGates: RibbonGates = {
+        can: { 'work.update': can.update },
+        entitlements: Object.entries(rawEntitlements)
+            .filter(([, v]) => Boolean(v))
+            .map(([k]) => k),
+    };
 
     // Server-confirmed counts from autosave responses overlay the
     // Inertia props until the next full prop refresh catches up.
@@ -627,6 +640,7 @@ export default function Workspace() {
                     <Ribbon
                         setKey="writing"
                         context={ribbonCtx}
+                        gates={writingGates}
                         bandTabId="edit"
                         leading={
                             /* The logo doubles as the hamburger here — the
