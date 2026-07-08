@@ -1,4 +1,4 @@
-import { registerRibbonTabs } from '@alexandria/ribbon/ribbonRegistry';
+﻿import { registerRibbonTabs } from '@alexandria/ribbon/ribbonRegistry';
 import type { RibbonTab } from '@alexandria/ribbon/types';
 
 import type { EntriesRibbonContext } from './entriesRibbonContext';
@@ -25,6 +25,28 @@ const fileTab: RibbonTab<Ctx> = {
     id: 'file',
     labelKey: 'entries.ribbon.tab_file',
     groups: [
+        {
+            id: 'goto',
+            labelKey: 'entries.ribbon.group_goto',
+            controls: [
+                {
+                    id: 'view-in-tree',
+                    type: 'button',
+                    icon: 'fa-solid fa-sitemap',
+                    labelKey: 'entries.show.menu.view_in_tree',
+                    visible: (ctx) => ctx.showTreeView,
+                    onAction: (ctx) => ctx.actions.goToTree(),
+                },
+                {
+                    id: 'all-entries',
+                    type: 'button',
+                    icon: 'fa-solid fa-list',
+                    labelKey: 'entries.show.menu.all_plural',
+                    labelFn: (ctx) => ctx.allEntriesLabel,
+                    onAction: (ctx) => ctx.actions.goToBlueprint(),
+                },
+            ],
+        },
         {
             id: 'actions',
             labelKey: 'entries.ribbon.group_actions',

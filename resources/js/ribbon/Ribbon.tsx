@@ -113,7 +113,7 @@ export default function Ribbon<Ctx>({
     } | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; controlId: string } | null>(null);
 
-    useRibbonShortcuts(tabs, context);
+    useRibbonShortcuts(tabs, context, gates);
 
     useEffect(() => {
         setQuickActionItems(initialQuickActions);
@@ -356,6 +356,7 @@ export default function Ribbon<Ctx>({
                         setKey={setKey}
                         tabs={tabs}
                         context={context}
+                        gates={gates}
                         actions={quickActionItems}
                         onChange={persistQuickActions}
                     />
@@ -578,7 +579,7 @@ function RibbonTabMenu<Ctx>({
                                         onFocus={() => openSubmenu(control.id)}
                                     >
                                         <i className={control.icon} aria-hidden="true" />
-                                        <span>{t(control.labelKey)}</span>
+                                        <span>{control.labelFn?.(ctx) ?? t(control.labelKey)}</span>
                                         {isLocked ? (
                                             <i className="fa-solid fa-lock ribbon-ctl-lock" aria-hidden="true" />
                                         ) : (
@@ -630,7 +631,7 @@ function RibbonTabMenu<Ctx>({
                                 onClick={() => run(control)}
                             >
                                 <i className={control.icon} aria-hidden="true" />
-                                <span>{t(control.labelKey)}</span>
+                                <span>{control.labelFn?.(ctx) ?? t(control.labelKey)}</span>
                                 {isLocked ? (
                                     <i className="fa-solid fa-lock ribbon-ctl-lock" aria-hidden="true" />
                                 ) : (

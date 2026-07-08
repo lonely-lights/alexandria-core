@@ -15,7 +15,7 @@ export default function RibbonButton<Ctx>({ control, ctx }: Props<Ctx>) {
     const t = useT();
     const disabled = control.disabled?.(ctx) ?? false;
     const active = control.active?.(ctx) ?? false;
-    const label = t(control.labelKey);
+    const label = control.labelFn?.(ctx) ?? t(control.labelKey);
     const tip = control.shortcut ? `${label} · ${formatShortcutLabel(control.shortcut, isMac)}` : label;
 
     const trigger = (

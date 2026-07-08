@@ -40,6 +40,9 @@ export interface RibbonControl<Ctx = unknown> {
     icon: string;
     /** useT key (flat). */
     labelKey: string;
+    /** Optional dynamic label — takes precedence over labelKey when present.
+     *  Use when the label depends on runtime context (e.g. blueprint plural names). */
+    labelFn?: (ctx: Ctx) => string;
     /** TipTap-style notation, e.g. 'Mod-Shift-R'. Binder + tooltip read it. */
     shortcut?: string;
     /** Display-only shortcut hint for commands bound by the editor, not the ribbon. */

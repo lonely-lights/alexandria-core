@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { collectShortcuts, findConflicts, matchesEvent, type BoundShortcut } from './shortcuts';
-import type { RibbonTab } from './types';
+import type { RibbonGates, RibbonTab } from './types';
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
 
@@ -20,12 +20,14 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
  * remount the editor anyway); revisit if a consumer needs per-render
  * visibility rebinds.
  */
-export default function useRibbonShortcuts<Ctx>(tabs: RibbonTab<Ctx>[], ctx: Ctx): void {
+export default function useRibbonShortcuts<Ctx>(tabs: RibbonTab<Ctx>[], ctx: Ctx, gates?: RibbonGates): void {
     const ctxRef = useRef(ctx);
     ctxRef.current = ctx;
+    const gatesRef = useRef(gates);
+    gatesRef.current = gates;
 
     useEffect(() => {
-        const bound: BoundShortcut<Ctx>[] = collectShortcuts(tabs, ctxRef.current);
+        const bound: BoundShortcut<Ctx>[] = collectShortcuts(tabs, ctxRef.current, gatesRef.current);
 
         if (bound.length === 0) {
             return;

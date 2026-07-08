@@ -19,7 +19,7 @@ export default function RibbonSelect<Ctx>({ control, ctx }: Props<Ctx>) {
         value: option.value,
         label: t(option.labelKey),
     }));
-    const label = t(control.labelKey);
+    const label = control.labelFn?.(ctx) ?? t(control.labelKey);
     const tip = control.shortcut ? `${label} - ${formatShortcutLabel(control.shortcut, isMac)}` : label;
     const value = control.value?.(ctx) ?? options[0]?.value ?? '';
 

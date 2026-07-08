@@ -1,4 +1,5 @@
-import type { RibbonControl, RibbonTab } from './types';
+import { resolveGate } from './ribbonGates';
+import type { RibbonControl, RibbonGates, RibbonTab } from './types';
 
 /**
  * Pure shortcut helpers — parsing, event matching, platform labels,
@@ -77,8 +78,8 @@ export function formatShortcutLabel(shortcut: string, isMac: boolean): string {
     return parts.join('+');
 }
 
-/** Visible controls (per ctx) that declare a shortcut. */
-export function collectShortcuts<Ctx>(tabs: RibbonTab<Ctx>[], ctx: Ctx): BoundShortcut<Ctx>[] {
+/** Visible, gate-allowed controls (per ctx + gates) that declare a shortcut. */
+export function collectShortcuts<Ctx>(tabs: RibbonTab<Ctx>[], ctx: Ctx, gates?: RibbonGates): BoundShortcut<Ctx>[] {
     const bound: BoundShortcut<Ctx>[] = [];
 
     for (const tab of tabs) {
@@ -86,6 +87,7 @@ export function collectShortcuts<Ctx>(tabs: RibbonTab<Ctx>[], ctx: Ctx): BoundSh
             for (const control of group.controls) {
                 if (control.shortcut === undefined) continue;
                 if (control.visible !== undefined && !control.visible(ctx)) continue;
+                if (resolveGate(control.requires, gates) !== 'visible') continue;
 
                 bound.push({ shortcut: control.shortcut, parsed: parseShortcut(control.shortcut), control });
             }

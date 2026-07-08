@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Entries ribbon context — the host-defined Ctx the Show page threads
  * through `<Ribbon setKey="entries">` (Stage 11 Slice 4, Task 3).
  *
@@ -33,6 +33,10 @@ export interface EntriesRibbonContext {
     hasHistory: boolean;
     /** Inertia href for the edit page (built once in Show, passed through context). */
     editHref: string;
+    /** Whether the blueprint has tree view enabled — controls visibility of the View-in-Tree goto link. */
+    showTreeView: boolean;
+    /** Pre-computed "All {plural}" label for the goto group (e.g. "All Characters"). */
+    allEntriesLabel: string;
     actions: {
         /** Switch the visible content tab. */
         setTab(tab: EntryTab): void;
@@ -42,5 +46,9 @@ export interface EntriesRibbonContext {
         editEntry(): void;
         /** Open the delete confirmation modal. */
         deleteEntry(): void;
+        /** Navigate to the blueprint index page (all entries listing). */
+        goToBlueprint(): void;
+        /** Navigate to the blueprint tree view (/blueprint-index#tree). */
+        goToTree(): void;
     };
 }

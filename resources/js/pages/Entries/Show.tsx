@@ -1,4 +1,4 @@
-import { usePage, router } from '@inertiajs/react';
+﻿import { usePage, router } from '@inertiajs/react';
 import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from 'react';
 import { useCmdK } from '@alexandria/hooks/useCmdK';
 import useT from '@alexandria/hooks/useT';
@@ -233,6 +233,8 @@ export default function EntryShow() {
 
     const editHref = `/p/${project.slug}/${blueprint.slug}/${entry.slug}/edit`;
 
+    const blueprintHref = `/p/${project.slug}/${blueprint.slug}`;
+
     const ribbonCtx = useMemo<EntriesRibbonContext>(() => ({
         activeTab,
         hasChildren: entry.has_children,
@@ -244,11 +246,15 @@ export default function EntryShow() {
         hasMentionedIn: mentionedIn.length > 0,
         hasHistory: history.length > 0,
         editHref,
+        showTreeView: blueprint.show_tree_view,
+        allEntriesLabel: t('entries.show.menu.all_plural').replace(':plural', blueprint.plural_name),
         actions: {
             setTab: (tab) => setActiveTab(tab),
             openSettings: () => setSettingsOpen(true),
             editEntry: () => router.visit(editHref),
             deleteEntry: () => setDeleteOpen(true),
+            goToBlueprint: () => router.visit(blueprintHref),
+            goToTree: () => router.visit(`${blueprintHref}#tree`),
         },
     }), [
         activeTab,
@@ -263,6 +269,9 @@ export default function EntryShow() {
         mentionedIn.length,
         history.length,
         editHref,
+        blueprint.show_tree_view,
+        blueprint.plural_name,
+        blueprintHref,
     ]);
 
     return (

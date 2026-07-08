@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 declare(strict_types=1);
 
@@ -229,6 +229,7 @@ return [
     'ribbon.tab.media' => 'Media',
     'ribbon.tab.history' => 'History',
     'ribbon.tab.timeline' => 'Timeline',
+    'ribbon.group_goto' => 'Go To',
     'ribbon.delete.title' => 'Delete Entry?',
     'ribbon.delete.message' => 'Delete ":name"? It will be removed from this project.',
     'ribbon.delete.confirm' => 'Delete',
