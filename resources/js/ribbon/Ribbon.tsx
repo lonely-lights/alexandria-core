@@ -448,6 +448,7 @@ export default function Ribbon<Ctx>({
                 <RibbonTabMenu
                     tab={tabs.find((tab) => tab.id === menuPlaceholder.tabId) ?? null}
                     ctx={context}
+                    gates={gates}
                     left={menuPlaceholder.left}
                     top={menuPlaceholder.top}
                     width={menuPlaceholder.width}
@@ -462,6 +463,7 @@ export default function Ribbon<Ctx>({
 function RibbonTabMenu<Ctx>({
     tab,
     ctx,
+    gates,
     left,
     top,
     width,
@@ -469,6 +471,9 @@ function RibbonTabMenu<Ctx>({
 }: {
     tab: RibbonTab<Ctx> | null;
     ctx: Ctx;
+    /** Same gate state threaded from the host Ribbon — controls gated
+     *  `hidden` are filtered out; `locked` render disabled + lock icon. */
+    gates?: RibbonGates;
     left: number;
     top: number;
     width: number;
@@ -477,10 +482,15 @@ function RibbonTabMenu<Ctx>({
     const t = useT();
     const [openSelectId, setOpenSelectId] = useState<string | null>(null);
     const submenuCloseTimer = useRef<number | null>(null);
-    const groups = tab?.groups.map((group) => ({
-        ...group,
-        controls: group.controls.filter((control) => control.visible?.(ctx) ?? true),
-    })).filter((group) => group.controls.length > 0) ?? [];
+    // Apply visibility predicate then gate resolution — mirrors the band render.
+    // 'hidden' controls are excluded; 'locked' controls stay but render disabled.
+    const groups = tab?.groups.map((group) => {
+        const gatedControls = group.controls
+            .filter((control) => control.visible?.(ctx) ?? true)
+            .map((control) => ({ control, verdict: resolveGate(control.requires, gates) }))
+            .filter(({ verdict }) => verdict !== 'hidden');
+        return { ...group, gatedControls };
+    }).filter((group) => group.gatedControls.length > 0) ?? [];
 
     useEffect(() => {
         setOpenSelectId(null);
@@ -541,10 +551,12 @@ function RibbonTabMenu<Ctx>({
                 <div key={group.id} className="ribbon-tab-menu-group">
                     {groupIndex > 0 && <div className="ribbon-tab-menu-divider" />}
                     <div className="ribbon-tab-menu-heading">{t(group.labelKey)}</div>
-                    {group.controls.map((control) => {
+                    {group.gatedControls.map(({ control, verdict }) => {
+                        const isLocked = verdict === 'locked';
+
                         if (control.type === 'select') {
                             const current = control.value?.(ctx);
-                            const disabled = control.disabled?.(ctx) ?? false;
+                            const disabled = isLocked || (control.disabled?.(ctx) ?? false);
                             const open = openSelectId === control.id;
 
                             return (
@@ -561,12 +573,17 @@ function RibbonTabMenu<Ctx>({
                                         aria-expanded={open}
                                         className={`ribbon-tab-menu-row ribbon-tab-menu-row--submenu ${open ? 'is-active' : ''}`}
                                         disabled={disabled}
+                                        title={isLocked ? t('writing.ribbon.locked_hint') : undefined}
                                         onClick={() => setOpenSelectId((value) => value === control.id ? null : control.id)}
                                         onFocus={() => openSubmenu(control.id)}
                                     >
                                         <i className={control.icon} aria-hidden="true" />
                                         <span>{t(control.labelKey)}</span>
-                                        <i className="fa-solid fa-chevron-right ribbon-tab-menu-chevron" aria-hidden="true" />
+                                        {isLocked ? (
+                                            <i className="fa-solid fa-lock ribbon-ctl-lock" aria-hidden="true" />
+                                        ) : (
+                                            <i className="fa-solid fa-chevron-right ribbon-tab-menu-chevron" aria-hidden="true" />
+                                        )}
                                     </button>
                                     {open && (
                                         <div role="menu" className="ribbon-tab-submenu">
@@ -598,7 +615,7 @@ function RibbonTabMenu<Ctx>({
                         }
 
                         const active = control.active?.(ctx) ?? false;
-                        const disabled = control.disabled?.(ctx) ?? false;
+                        const disabled = isLocked || (control.disabled?.(ctx) ?? false);
                         const shortcut = control.menuShortcut ?? control.shortcut;
 
                         return (
@@ -609,12 +626,15 @@ function RibbonTabMenu<Ctx>({
                                 aria-checked={control.type === 'toggle' ? active : undefined}
                                 className={`ribbon-tab-menu-row ${active ? 'is-active' : ''}`}
                                 disabled={disabled}
+                                title={isLocked ? t('writing.ribbon.locked_hint') : undefined}
                                 onClick={() => run(control)}
                             >
                                 <i className={control.icon} aria-hidden="true" />
                                 <span>{t(control.labelKey)}</span>
-                                {shortcut !== undefined && (
-                                    <kbd>{formatShortcutLabel(shortcut, isMac)}</kbd>
+                                {isLocked ? (
+                                    <i className="fa-solid fa-lock ribbon-ctl-lock" aria-hidden="true" />
+                                ) : (
+                                    shortcut !== undefined && <kbd>{formatShortcutLabel(shortcut, isMac)}</kbd>
                                 )}
                             </button>
                         );

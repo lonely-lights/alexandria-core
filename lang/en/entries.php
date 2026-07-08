@@ -230,7 +230,7 @@ return [
     'ribbon.tab.history' => 'History',
     'ribbon.tab.timeline' => 'Timeline',
     'ribbon.delete.title' => 'Delete Entry?',
-    'ribbon.delete.message' => 'This will permanently delete ":name". This action cannot be undone.',
+    'ribbon.delete.message' => 'Delete ":name"? It will be removed from this project.',
     'ribbon.delete.confirm' => 'Delete',
 
     // ── HistoryTab (Subsection D) ──
