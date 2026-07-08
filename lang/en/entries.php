@@ -211,6 +211,28 @@ return [
     'tab.timeline.table.date' => 'Date',
     'tab.timeline.empty_cell' => '—',
 
+    // ── Entry ribbon (Stage 11 Slice 4) ──
+    'ribbon.tab_file' => 'File',
+    'ribbon.tab_view' => 'View',
+    'ribbon.group_actions' => 'Actions',
+    'ribbon.group_navigation' => 'Navigation',
+    'ribbon.edit_entry' => 'Edit Entry',
+    'ribbon.entry_settings' => 'Entry Settings',
+    'ribbon.delete_entry' => 'Delete Entry',
+    'ribbon.tab.overview' => 'Overview',
+    'ribbon.tab.structure' => 'Structure',
+    'ribbon.tab.attributes' => 'Attributes',
+    'ribbon.tab.relationships' => 'Relationships',
+    'ribbon.tab.connections' => 'Connections',
+    'ribbon.tab.mentions' => 'Mentions',
+    'ribbon.tab.mentioned_in' => 'Mentioned In',
+    'ribbon.tab.media' => 'Media',
+    'ribbon.tab.history' => 'History',
+    'ribbon.tab.timeline' => 'Timeline',
+    'ribbon.delete.title' => 'Delete Entry?',
+    'ribbon.delete.message' => 'This will permanently delete ":name". This action cannot be undone.',
+    'ribbon.delete.confirm' => 'Delete',
+
     // ── HistoryTab (Subsection D) ──
     'tab.history.empty' => 'No history yet',
     'tab.history.heading' => 'Revision History',
