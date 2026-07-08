@@ -92,12 +92,11 @@ export default function QuickActionBar<Ctx>({
 
                 if (verdict === 'locked') {
                     return (
-                        <span key={item.id} className="relative inline-flex">
+                        <span key={item.id} className="relative inline-flex" title={t('writing.ribbon.locked_hint')}>
                             <button
                                 type="button"
                                 data-ribbon-quick-action={control.id}
                                 className="ribbon-qat-item alex-toolbar-btn"
-                                title={t('writing.ribbon.locked_hint')}
                                 aria-label={label}
                                 disabled
                             >

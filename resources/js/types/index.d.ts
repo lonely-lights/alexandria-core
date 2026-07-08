@@ -11,6 +11,9 @@ export interface SharedProps {
         user: User;
         // Coarse UI-gating flag; server-side gates remain authoritative.
         is_admin: boolean;
+        // Entitlement map shared by the host app; only truthy values are
+        // meaningful — use the useEntitlements() hook to get a string[].
+        entitlements?: Record<string, unknown>;
     } | null;
     flash: FlashMessage;
     projects: ProjectSummary[];

@@ -2,6 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import useEntitlements from '@alexandria/hooks/useEntitlements';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
 import Ribbon from '@alexandria/ribbon/Ribbon';
@@ -238,19 +239,15 @@ const paneBorderColor = 'color-mix(in srgb, var(--theme-base-content) 10%, trans
 
 export default function Workspace() {
     const t = useT();
+    const entitlements = useEntitlements();
     const pageProps = usePage<WorkspaceProps>().props;
     const { project, work, sections, currentSection, pins, types, lengthPlans, can } = pageProps;
 
     // Build ribbon gates: permission map from the page `can` prop +
-    // entitlement keys from auth.entitlements (string[] of truthy keys).
-    const rawEntitlements = (pageProps as unknown as {
-        auth?: { entitlements?: Record<string, unknown> };
-    }).auth?.entitlements ?? {};
+    // entitlement keys normalised by useEntitlements() (truthy keys only).
     const writingGates: RibbonGates = {
         can: { 'work.update': can.update },
-        entitlements: Object.entries(rawEntitlements)
-            .filter(([, v]) => Boolean(v))
-            .map(([k]) => k),
+        entitlements,
     };
 
     // Server-confirmed counts from autosave responses overlay the
