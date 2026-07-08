@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Entries ribbon context — the host-defined Ctx the Show page threads
  * through `<Ribbon setKey="entries">` (Stage 11 Slice 4, Task 3).
  *

@@ -1,4 +1,4 @@
-﻿import { registerRibbonTabs } from '@alexandria/ribbon/ribbonRegistry';
+import { registerRibbonTabs } from '@alexandria/ribbon/ribbonRegistry';
 import type { RibbonTab } from '@alexandria/ribbon/types';
 
 import type { EntriesRibbonContext } from './entriesRibbonContext';

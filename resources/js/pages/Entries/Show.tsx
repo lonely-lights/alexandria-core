@@ -1,4 +1,4 @@
-﻿import { usePage, router } from '@inertiajs/react';
+import { usePage, router } from '@inertiajs/react';
 import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from 'react';
 import { useCmdK } from '@alexandria/hooks/useCmdK';
 import useT from '@alexandria/hooks/useT';
