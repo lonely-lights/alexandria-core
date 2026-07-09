@@ -195,6 +195,22 @@ return [
     'panel.collapse' => 'Hide panel',
     'panel.expand' => 'Show panel',
 
+    // Mode switcher (Stage 11.5 Task 4)
+    'panel.mode_linked' => 'Linked items',
+    'panel.mode_notes' => 'Notes',
+    'panel.mode_comments' => 'Comments',
+
+    // Sidebar notes panel
+    'panel.notes_no_section' => 'Select a section to see its notes.',
+    'panel.notes_loading' => 'Loading notes…',
+    'panel.notes_error' => 'Could not load notes.',
+    'panel.notes_empty' => 'No notes for this section.',
+    'panel.notes_untitled' => 'Untitled note',
+    'panel.notes_open_drawer' => 'Open notes',
+    'panel.notes_all_sections' => 'All sections',
+    'panel.notes_this_section' => 'This section',
+    'panel.notes_project_scope' => 'Project notes',
+
     'rail.label' => 'Project sections',
     'rail.project_home' => 'Project home',
     'rail.writing' => 'Writing',

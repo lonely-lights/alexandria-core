@@ -21,7 +21,9 @@ import ManuscriptEditor, {
 } from './Sections/ManuscriptEditor';
 import Navigator from './Sections/Navigator';
 import CommentRail from './Sections/CommentRail';
+import PanelModeSwitcher from './Sections/PanelModeSwitcher';
 import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
+import SidebarNotesPanel from './Sections/SidebarNotesPanel';
 import ScreenplayEditor from './Sections/ScreenplayEditor';
 import { extractSectionOutline, type SectionOutlineItem } from './Sections/sectionOutline';
 import WorkspaceAppRail from './Sections/WorkspaceAppRail';
@@ -32,6 +34,7 @@ import WorkSettingsModal, {
 import WorkspaceStatusBar from './Sections/WorkspaceStatusBar';
 import type { WritingEditorBridge, WritingRibbonContext } from './ribbon/writingRibbonContext';
 import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
+import { type PanelMode, readPanelMode, writePanelMode } from './panelMode';
 
 /**
  * Writing dashboard → workspace — Stage 8g.1 (ribbon-driven since
@@ -276,7 +279,11 @@ export default function Workspace() {
     const [highlightCommentId, setHighlightCommentId] = useState<number | null>(null);
 
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
-    const [referencePanelTab, setReferencePanelTab] = useState(() =>
+    // Per-work panel mode (Linked items · Notes · Comments); persisted to
+    // localStorage keyed by work id (Task 4). Separate from the linked-mode's
+    // internal tab (linkedPanelTab) which mirrors the old referencePanelTab.
+    const [panelMode, setPanelMode] = useState<PanelMode>(() => readPanelMode(work.id));
+    const [linkedPanelTab, setLinkedPanelTab] = useState(() =>
         work.format === 'screenplay' ? 'scene-links' : 'browse',
     );
     const [structureOpen, setStructureOpen] = useState(readStructureOpenPreference);
@@ -309,14 +316,16 @@ export default function Workspace() {
 
     const handleEntryLinkSelect = useCallback(() => {
         setPanelOpen(true);
-        setReferencePanelTab('scene-links');
+        setPanelMode('linked');
+        writePanelMode(work.id, 'linked');
+        setLinkedPanelTab('scene-links');
         setSceneLinksFocusSignal((signal) => signal + 1);
         try {
             localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
         } catch {
             // Persistence is best-effort; private-mode failures are fine.
         }
-    }, []);
+    }, [work.id]);
 
     /** Open the notes drawer scoped to the current section; fall back to
      *  project scope when no section is active (e.g., empty work). */
@@ -342,11 +351,13 @@ export default function Workspace() {
 
     const toggleSceneLinksPanel = useCallback(() => {
         setPanelOpen((prev) => {
-            const shouldClose = prev && referencePanelTab === 'scene-links';
+            const shouldClose = prev && panelMode === 'linked' && linkedPanelTab === 'scene-links';
             const next = !shouldClose;
 
             if (next) {
-                setReferencePanelTab('scene-links');
+                setPanelMode('linked');
+                writePanelMode(work.id, 'linked');
+                setLinkedPanelTab('scene-links');
                 setSceneLinksFocusSignal((signal) => signal + 1);
             }
 
@@ -358,36 +369,42 @@ export default function Workspace() {
 
             return next;
         });
-    }, [referencePanelTab]);
+    }, [panelMode, linkedPanelTab, work.id]);
 
-    // Toggle the comment rail panel on/off (mirrors toggleSceneLinksPanel).
+    // Toggle the comment rail panel on/off. When already in comments mode,
+    // closes the panel; otherwise opens and switches to comments mode.
     const toggleCommentsPanel = useCallback(() => {
-        setPanelOpen((prev) => {
-            const shouldClose = prev && referencePanelTab === 'comments';
-            const next = !shouldClose;
-            if (next) {
-                setReferencePanelTab('comments');
-            }
+        if (panelOpen && panelMode === 'comments') {
+            setPanelOpen(false);
             try {
-                localStorage.setItem(PANEL_OPEN_STORAGE_KEY, String(next));
+                localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'false');
             } catch {
                 // Best-effort.
             }
-            return next;
-        });
-    }, [referencePanelTab]);
+        } else {
+            setPanelOpen(true);
+            setPanelMode('comments');
+            writePanelMode(work.id, 'comments');
+            try {
+                localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
+            } catch {
+                // Best-effort.
+            }
+        }
+    }, [panelOpen, panelMode, work.id]);
 
-    // Fired by editor floating button — opens comment rail in composer mode.
+    // Fired by editor floating button — opens the sidebar in comments mode.
     const handleAddComment = useCallback((anchor: { from: number; to: number; text: string }) => {
         setPendingCommentAnchor(anchor);
         setPanelOpen(true);
-        setReferencePanelTab('comments');
+        setPanelMode('comments');
+        writePanelMode(work.id, 'comments');
         try {
             localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
         } catch {
             // Best-effort.
         }
-    }, []);
+    }, [work.id]);
 
     // Listen for mark-click events from the editor (click on a comment-mark
     // span) → open comment rail and highlight the matching card.
@@ -398,7 +415,8 @@ export default function Workspace() {
             const id = detail.commentId;
             if (isFinite(id)) {
                 setPanelOpen(true);
-                setReferencePanelTab('comments');
+                setPanelMode('comments');
+                writePanelMode(work.id, 'comments');
                 setHighlightCommentId(id);
                 try {
                     localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
@@ -419,11 +437,11 @@ export default function Workspace() {
         );
         if (currentSection?.format !== 'screenplay') {
             setScreenplaySceneLinks([]);
-            if (work.format !== 'screenplay' && referencePanelTab === 'scene-links') {
-                setReferencePanelTab('browse');
+            if (work.format !== 'screenplay' && linkedPanelTab === 'scene-links') {
+                setLinkedPanelTab('browse');
             }
         }
-    }, [currentSection?.id, currentSection?.content, currentSection?.format, referencePanelTab, work.format]);
+    }, [currentSection?.id, currentSection?.content, currentSection?.format, linkedPanelTab, work.format]);
 
     useEffect(() => {
         const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -592,7 +610,7 @@ export default function Workspace() {
             format: (currentSection?.format ?? work.format) === 'screenplay' ? 'screenplay' : 'prose',
             canUpdate: can.update,
             panelOpen,
-            sceneLinksPanelOpen: panelOpen && referencePanelTab === 'scene-links',
+            sceneLinksPanelOpen: panelOpen && panelMode === 'linked' && linkedPanelTab === 'scene-links',
             printLayout,
             paperColor,
             zoom,
@@ -651,7 +669,8 @@ export default function Workspace() {
         work.status,
         can.update,
         panelOpen,
-        referencePanelTab,
+        panelMode,
+        linkedPanelTab,
         printLayout,
         paperColor,
         zoom,
@@ -810,9 +829,9 @@ export default function Workspace() {
                                         type="button"
                                         onClick={toggleCommentsPanel}
                                         aria-label={t('writing.comments.toggle_button')}
-                                        aria-pressed={panelOpen && referencePanelTab === 'comments'}
+                                        aria-pressed={panelOpen && panelMode === 'comments'}
                                         data-writing-comments-toggle
-                                        className={`alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs ${panelOpen && referencePanelTab === 'comments' ? 'alex-toolbar-btn--active' : ''}`}
+                                        className={`alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs ${panelOpen && panelMode === 'comments' ? 'alex-toolbar-btn--active' : ''}`}
                                     >
                                         <i className="fa-solid fa-comment-dots" aria-hidden="true" />
                                     </button>
@@ -925,43 +944,62 @@ export default function Workspace() {
                         )}
                     </section>
 
-                    {/* Right rail — comment rail (Stage 11.5 Task 3) or reference
-                        panel, toggled by referencePanelTab. The xl: responsive
-                        gate stays on top of the user toggle. */}
+                    {/* Right rail — multi-purpose sidebar (Stage 11.5 Task 4).
+                        Mode switcher (Linked items · Notes · Comments) sits at
+                        the top; content below is keyed by panelMode. The xl:
+                        responsive gate stays on top of the user toggle. */}
                     {panelOpen && (
                         <aside
-                            className="writing-workspace-scroll hidden min-h-0 w-80 shrink-0 overflow-y-auto border-l xl:block"
+                            className="hidden min-h-0 w-80 shrink-0 border-l xl:flex xl:flex-col"
                             style={{ borderColor: paneBorderColor }}
                         >
-                            {referencePanelTab === 'comments' && currentSection !== null ? (
-                                <CommentRail
-                                    workSlug={work.slug}
-                                    projectSlug={project.slug}
-                                    sectionId={currentSection.id}
-                                    editorBridge={bridgeRef.current}
-                                    editorTick={editorTick}
-                                    currentUserId={currentUserId}
-                                    canUpdate={can.update}
-                                    pendingAnchor={pendingCommentAnchor}
-                                    onComposerDismiss={() => setPendingCommentAnchor(null)}
-                                    highlightCommentId={highlightCommentId}
-                                    onHighlightHandled={() => setHighlightCommentId(null)}
-                                />
-                            ) : (
-                                <ReferencePanel
-                                    project={project}
-                                    work={work}
-                                    currentSection={currentSection}
-                                    pins={pins}
-                                    canUpdate={can.update}
-                                    saveSignal={saveSignal}
-                                    sceneLinks={screenplaySceneLinks}
-                                    sceneLinksFocusSignal={sceneLinksFocusSignal}
-                                    activeTab={referencePanelTab}
-                                    onActiveTabChange={setReferencePanelTab}
-                                    onSelect={selectSection}
-                                />
-                            )}
+                            <PanelModeSwitcher
+                                mode={panelMode}
+                                onChange={(mode) => {
+                                    setPanelMode(mode);
+                                    writePanelMode(work.id, mode);
+                                }}
+                            />
+                            <div className="min-h-0 flex-1">
+                                {panelMode === 'linked' && (
+                                    <ReferencePanel
+                                        project={project}
+                                        work={work}
+                                        currentSection={currentSection}
+                                        pins={pins}
+                                        canUpdate={can.update}
+                                        saveSignal={saveSignal}
+                                        sceneLinks={screenplaySceneLinks}
+                                        sceneLinksFocusSignal={sceneLinksFocusSignal}
+                                        activeTab={linkedPanelTab}
+                                        onActiveTabChange={setLinkedPanelTab}
+                                        onSelect={selectSection}
+                                    />
+                                )}
+                                {panelMode === 'notes' && (
+                                    <SidebarNotesPanel
+                                        projectId={project.id}
+                                        projectSlug={project.slug}
+                                        currentSection={currentSection}
+                                        sections={sections}
+                                    />
+                                )}
+                                {panelMode === 'comments' && (
+                                    <CommentRail
+                                        workSlug={work.slug}
+                                        projectSlug={project.slug}
+                                        sectionId={currentSection?.id ?? null}
+                                        editorBridge={bridgeRef.current}
+                                        editorTick={editorTick}
+                                        currentUserId={currentUserId}
+                                        canUpdate={can.update}
+                                        pendingAnchor={pendingCommentAnchor}
+                                        onComposerDismiss={() => setPendingCommentAnchor(null)}
+                                        highlightCommentId={highlightCommentId}
+                                        onHighlightHandled={() => setHighlightCommentId(null)}
+                                    />
+                                )}
+                            </div>
                         </aside>
                     )}
 
