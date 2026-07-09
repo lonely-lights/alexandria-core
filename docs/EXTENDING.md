@@ -187,7 +187,9 @@ The `requires` field on a registered mode follows the same rules as ribbon contr
 - `requires.entitlement` not held → button is **disabled** with a padlock badge and a "Available in the store" tooltip (same locked treatment as ribbon controls).
 - Both checks pass (or no `requires`) → button is **visible** and active.
 
-A user whose entitlement is revoked mid-session will see the mode button locked; their previously persisted mode preference is reset to `'linked'` on next workspace load.
+A user whose entitlement is revoked will see the mode button locked after their next page navigation (entitlements travel via Inertia shared props, which refresh on server-driven visits — not live mid-session); their previously persisted mode preference resets to `'linked'` on the next workspace load. Note this is CLIENT-SIDE packaging, not a security boundary — gate any server data your mode fetches separately.
+
+Register modes synchronously at package boot (a module-level call in the entry your consumer app imports). Deferred/async registration still adds the button when it lands, but the user's persisted mode preference falls back to `'linked'` for that session because the preference is validated once at workspace mount.
 
 ### Persistence
 
