@@ -416,6 +416,9 @@ export default function RichTextEditor({
             isExternalUpdate.current = true;
             editor.commands.setContent(parseWikiToHtml(value), { emitUpdate: false });
             isExternalUpdate.current = false;
+            // The wiki codec drops comment marks — tell the rail this doc was
+            // replaced so durable anchors may re-apply.
+            window.dispatchEvent(new CustomEvent('alexandria:comment-doc-replaced'));
         }
     }, [value]);
 
@@ -427,6 +430,7 @@ export default function RichTextEditor({
             isExternalUpdate.current = true;
             editor.commands.setContent(parseWikiToHtml(codeValue), { emitUpdate: false });
             isExternalUpdate.current = false;
+            window.dispatchEvent(new CustomEvent('alexandria:comment-doc-replaced'));
             onImmediateChangeRef.current?.(codeValue);
             onChange(codeValue);
             setCodeView(false);
@@ -721,6 +725,7 @@ export default function RichTextEditor({
                 } else {
                     // Replace all content
                     editor.commands.setContent(htmlContent, { emitUpdate: false });
+                    window.dispatchEvent(new CustomEvent('alexandria:comment-doc-replaced'));
                 }
                 // Trigger onChange
                 if (debounceRef.current) clearTimeout(debounceRef.current);

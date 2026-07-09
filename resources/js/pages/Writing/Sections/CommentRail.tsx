@@ -255,22 +255,47 @@ export default function CommentRail({
         setPositionMap(editorBridge.getCommentPositionMap());
     }, [editorBridge, editorTick]);
 
-    /* ── Re-anchor on comment-list load/reload (never on ordinary editing ticks) ── */
-    /* Runs when comments change (section fetch) or editorBridge changes (section   */
-    /* switch / doc replacement). Deleting anchor text must orphan the comment in   */
-    /* the rail — this effect must NOT be in the tick-driven map above.             */
+    /* ── Re-anchor on load + doc replacement — never for anchors the user removed ── */
+    /* Once a comment has been anchored in this doc instance, the document history   */
+    /* is the only truth: deleting the anchor orphans it (undo restores it). The     */
+    /* seen-set records every id observed anchored; only unseen ids re-anchor. The   */
+    /* set resets when the doc is genuinely replaced (new editor instance, or the    */
+    /* 'alexandria:comment-doc-replaced' event from code-view/AI-apply round-trips). */
+
+    const seenAnchoredIdsRef = useRef<Set<number>>(new Set());
+    const [docEpoch, setDocEpoch] = useState(0);
+
+    useEffect(() => {
+        seenAnchoredIdsRef.current = new Set();
+    }, [editorBridge]);
+
+    useEffect(() => {
+        function handleDocReplaced() {
+            seenAnchoredIdsRef.current = new Set();
+            setDocEpoch((n) => n + 1);
+        }
+        window.addEventListener('alexandria:comment-doc-replaced', handleDocReplaced);
+        return () => window.removeEventListener('alexandria:comment-doc-replaced', handleDocReplaced);
+    }, []);
+
+    useEffect(() => {
+        for (const id of Object.keys(positionMap)) {
+            seenAnchoredIdsRef.current.add(Number(id));
+        }
+    }, [positionMap]);
 
     useEffect(() => {
         if (!editorBridge || !canUpdate) return;
+        const liveMap = editorBridge.getCommentPositionMap();
         const toReanchor = comments.filter(
-            (c) => c.anchor_text && !(c.id in editorBridge.getCommentPositionMap()),
+            (c) => c.anchor_text && !(c.id in liveMap) && !seenAnchoredIdsRef.current.has(c.id),
         );
         if (toReanchor.length > 0) {
             reanchorComments(editorBridge, toReanchor);
             // The dispatch triggers onStateChange → editorTick bumps →
             // position-map effect above re-reads the updated map.
         }
-    }, [editorBridge, comments, canUpdate]);
+    }, [editorBridge, comments, canUpdate, docEpoch]);
 
     /* ── Scroll to + flash when highlightCommentId changes ── */
 
