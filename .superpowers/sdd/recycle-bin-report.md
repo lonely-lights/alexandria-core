@@ -40,3 +40,22 @@ Text at full stroke opacity is now visually distinct from muted non-danger items
 ## Concerns / open items
 
 None. Route ordering was the only unexpected blocker (caught by the first test run, fixed immediately). The `final readonly class` cannot extend non-readonly `Controller` — removed the `extends Controller` to match `EntryController` convention.
+
+---
+
+## Visual parity + controls pass — 2026-07-08
+
+**Commits:** Core `24a0229` · App `d39b1de`
+
+**Tests:** 15 recycle-bin tests / 15 passed (6 new bulk-restore cases). Vitest 398/398. Build clean.
+
+**Sibling pattern matched:** `Blueprints/Show.tsx` — font-serif 3xl/4xl h1 + count subtitle inside PageHeader children; `container mx-auto max-w-7xl px-4 py-8` body wrapper; theme-token CSS vars throughout (no zinc Tailwind classes).
+
+**Changes:**
+- Header: upgraded `text-xl` title → `font-serif text-3xl md:text-4xl font-bold` with icon box + count subtitle; eliminates the excess vertical dead space.
+- Container: `max-w-4xl` → `max-w-7xl` (matches every other project page).
+- Toolbar: name search (client-side, clears selection on change) + blueprint filter select (hidden unless 2+ blueprints present) + "Restore Selected (N)" button right-aligned, disabled at 0.
+- Checkboxes: per-row + header select-all with indeterminate state; selection resets after successful bulk restore.
+- Bulk route: `POST /p/{project}/recycle-bin/restore` (entries.restore-bulk, can:update,project); registered before the per-entry restore so "restore" is not captured as {entry:slug}. Non-trashed + foreign-project ids silently ignored; per-entry Gate::allows('delete') filter inside the method.
+- Lang: 12 new `entries.recycle_bin.*` keys; flash messages use inline strings matching existing `__('Entry restored.')` pattern.
+- THEMING-TOKEN-USAGE.md regenerated (was drifted before this PR).
