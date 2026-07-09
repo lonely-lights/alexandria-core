@@ -302,21 +302,23 @@ export default function Navbar({
                                 </Tooltip>
                             )}
 
-                            {/* Writing nav link — icon + text so the
-                                label is searchable in browser tests and
-                                screen readers without relying on the
-                                tooltip alone. Hidden on mobile; the
-                                BottomNav Writing tab covers that slot. */}
+                            {/* Writing nav link — third circle icon in
+                                the Search/Notes trio (brand-accent fill,
+                                same 60%-mix shape). Label lives in the
+                                tooltip + aria-label. Hidden on mobile;
+                                the BottomNav Writing tab covers that
+                                slot. */}
                             <Tooltip
                                 content={t("writing.dashboard.nav")}
                                 placement="bottom"
                             >
                                 <Link
                                     href="/writing"
-                                    className="alex-nav-icon-btn alex-nav-icon-btn--ghost hidden h-10 flex-shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 transition-colors sm:flex"
+                                    className="alex-nav-icon-btn alex-nav-icon-btn--brand-accent hidden h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors sm:flex"
                                     style={{
-                                        background: "transparent",
-                                        color: "var(--theme-base-content)",
+                                        background:
+                                            "color-mix(in srgb, var(--theme-brand-accent-500) 60%, transparent)",
+                                        color: "var(--theme-brand-accent-content)",
                                         textDecoration: "none",
                                     }}
                                     aria-label={t("writing.dashboard.nav")}
@@ -325,9 +327,6 @@ export default function Navbar({
                                         className="fa-solid fa-feather"
                                         aria-hidden="true"
                                     />
-                                    <span className="text-sm font-medium">
-                                        {t("writing.dashboard.nav")}
-                                    </span>
                                 </Link>
                             </Tooltip>
 

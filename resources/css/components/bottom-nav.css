@@ -214,6 +214,18 @@ nav[aria-label='Primary mobile navigation'] button:focus-visible::before {
     color: var(--theme-brand-secondary-content) !important;
 }
 
+/* Third member of the navbar icon trio (the Writing feather), painted
+   with --theme-brand-accent-* at rest — same reasoning as the
+   secondary rule above. */
+.alex-nav-icon-btn--brand-accent:hover {
+    background: color-mix(
+        in srgb,
+        var(--theme-brand-accent-500) 80%,
+        transparent
+    ) !important;
+    color: var(--theme-brand-accent-content) !important;
+}
+
 .alex-nav-icon-btn--ghost:hover {
     background: color-mix(
         in srgb,
