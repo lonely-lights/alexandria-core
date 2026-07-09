@@ -102,7 +102,9 @@ function WorkProgress({ work, workWords }: { work: StatusBarWork; workWords: num
             .replace(':target', work.target_pages.toLocaleString());
         progressRatio = work.target_pages > 0 ? work.page_estimate / work.target_pages : null;
     } else {
-        countLabel = t('writing.workspace.words').replace(':count', workWords.toLocaleString());
+        // No target set: label the work total so it can't read as a duplicate
+        // of the section counter when both sit in the bar.
+        countLabel = t('writing.workspace.words_total').replace(':count', workWords.toLocaleString());
     }
 
     return (
@@ -172,10 +174,10 @@ export default function WorkspaceStatusBar({
                     <>
                         <span className="shrink-0 tabular-nums" style={metaTextStyle}>
                             {sectionWordsLabel}
-                            {sectionFormat === 'screenplay' && sectionPages !== null && (
+                            {sectionFormat === 'screenplay' && sectionPages !== null && sectionWords > 0 && (
                                 <> · {t('writing.workspace.pages').replace(':count', sectionPages.toLocaleString())}</>
                             )}
-                            {sectionFormat !== 'screenplay' && sectionPages !== null && sectionPages > 0 && (
+                            {sectionFormat !== 'screenplay' && sectionPages !== null && sectionPages > 0 && sectionWords > 0 && (
                                 <>
                                     {' · '}
                                     <span title={t('writing.workspace.page_estimate_title')}>

@@ -110,6 +110,7 @@ return [
     'workspace.container_hint' => 'This section holds others. Select a child to write, or start writing here.',
     'workspace.start_writing' => 'Start writing here',
     'workspace.words' => ':count words',
+    'workspace.words_total' => ':count words in work',
     'workspace.lines' => ':count lines',
     'workspace.of_target' => 'of :target',
     'workspace.pages' => '~:count pages',
