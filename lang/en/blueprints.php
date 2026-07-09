@@ -29,15 +29,6 @@ return [
     'tab.settings' => 'Settings',
     'description.fallback' => ':classification blueprint',
 
-    // ── Desktop menu bar (Show.tsx DesktopMenuBar) ──────────────────
-    'menu.file' => 'File',
-    'menu.edit' => 'Edit',
-    'menu.view' => 'View',
-    'menu.file.new_entry' => 'New Entry',
-    'menu.file.new_connection' => 'New Connection',
-    'menu.file.blueprint_settings' => 'Blueprint Settings',
-    'menu.edit.rename' => 'Rename',
-
     // ── Structure tab (StructureTab.tsx) ────────────────────────────
     'structure.field.untitled' => 'Untitled field',
     'structure.field.label' => 'Label',

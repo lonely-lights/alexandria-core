@@ -1,17 +1,16 @@
 import { usePage, router } from '@inertiajs/react';
-import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from 'react';
+import { useState, useEffect, useCallback, useRef, type CSSProperties } from 'react';
 import { useCmdK } from '@alexandria/hooks/useCmdK';
 import useT from '@alexandria/hooks/useT';
-import useEntitlements from '@alexandria/hooks/useEntitlements';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import CommandPalette from '@alexandria/components/search/CommandPalette';
 import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
 import { projectSearch } from '@alexandria/lib/projectSearch';
 import MentionAwareContent from '@alexandria/components/ui/MentionAwareContent';
+import ActionButton from '@alexandria/components/ui/ActionButton';
+import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import IconTile from '@alexandria/components/ui/IconTile';
-import Ribbon from '@alexandria/ribbon/Ribbon';
-import type { RibbonGates } from '@alexandria/ribbon/types';
 import type { EntryShowProps } from '@alexandria/types/entries';
 import AppearancesCard from './Sections/AppearancesCard';
 import OverviewTab from './Sections/OverviewTab';
@@ -25,20 +24,36 @@ import TreeView from '@alexandria/pages/Blueprints/Sections/TreeView';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import MediaSection from '@alexandria/components/media/MediaSection';
 import EntrySettingsModal from './Sections/modals/EntrySettingsModal';
-import type { EntriesRibbonContext } from './ribbon/entriesRibbonContext';
-import { registerEntriesRibbon } from './ribbon/entriesRibbonTabs';
-
-registerEntriesRibbon();
 
 /* ── Tabs ── */
 
 type Tab = 'overview' | 'structure' | 'attributes' | 'relationships' | 'connections' | 'mentions' | 'mentioned_in' | 'media' | 'history' | 'timeline';
 
 /* ── Theme-token style recipes ──
-   Structure-settings popover + thumbnail repaint from --theme-*
-   tokens so preset swaps reach this chrome alongside the rest.
-   (Tab-button styles removed in Stage 11 Slice 4 — navigation moved
-   to the ribbon View band.) */
+   Tab buttons + structure-settings popover repaint from --theme-*
+   tokens so preset swaps reach this chrome alongside the rest. */
+
+const tabBtnBase: CSSProperties = {
+    fontSize: '0.875rem',
+    padding: '0.375rem 0.75rem',
+    borderRadius: 'var(--theme-radius-button)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    transition: 'background-color var(--theme-motion-duration-fast, 150ms) ease',
+};
+
+const tabBtnActiveStyle: CSSProperties = {
+    ...tabBtnBase,
+    background: 'var(--theme-brand-primary-500)',
+    color: 'var(--theme-brand-primary-content)',
+};
+
+const tabBtnIdleStyle: CSSProperties = {
+    ...tabBtnBase,
+    background: 'transparent',
+    color: 'var(--theme-base-content)',
+};
 
 const thumbRingStyle: CSSProperties = {
     boxShadow: '0 0 0 1px color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
@@ -167,7 +182,6 @@ const saveBtnStyle: CSSProperties = {
 
 export default function EntryShow() {
     const t = useT();
-    const entitlements = useEntitlements();
     const props = usePage<EntryShowProps>().props;
     const { project, blueprint, entry, contentHtml, summaryHtml, dynamicProperties, relationships, relationshipBlueprints, connections, mentions, mentionedIn, appearances, history, infoboxBlocks, timelineEvents, timelineEpoch } = props;
 
@@ -208,7 +222,7 @@ export default function EntryShow() {
     const [searchOpen, setSearchOpen] = useState(false);
     // Stage 8b M3 — Entry settings modal (theme override panel).
     const [settingsOpen, setSettingsOpen] = useState(false);
-    // Stage 11 Slice 4 — delete confirmation modal.
+    // Delete confirmation modal — triggered from the dropdown danger item.
     const [deleteOpen, setDeleteOpen] = useState(false);
 
     const iconClass = blueprint.icon.includes(' ') ? blueprint.icon : `fa-solid ${blueprint.icon}`;
@@ -221,68 +235,117 @@ export default function EntryShow() {
 
     useCmdK(useCallback(() => setSearchOpen(true), []));
 
-    // ── Ribbon wiring ─────────────────────────────────────────────────────────
+    // Dropdown menu items — tabs that aren't pinned to the bar
+    const menuItems: Array<{ label: string; icon: string; key: Tab; badge?: string | number }> = [];
 
-    const entriesGates: RibbonGates = {
-        can: {
-            'entry.update': entry.can.update,
-            'entry.delete': entry.can.delete,
-        },
-        entitlements,
-    };
+    if (dynamicProperties.length > 0) {
+        menuItems.push({ key: 'attributes', label: t('entries.show.menu.attributes'), icon: 'fa-solid fa-list', badge: dynamicProperties.length });
+    }
+    if (relationships.length > 0) {
+        menuItems.push({ key: 'relationships', label: t('entries.show.menu.relationships'), icon: 'fa-solid fa-diagram-project', badge: relationships.length });
+    }
+    if (mentions.length > 0) {
+        menuItems.push({ key: 'mentions', label: t('entries.show.menu.mentions'), icon: 'fa-solid fa-at', badge: mentions.length });
+    }
+    if (mentionedIn.length > 0) {
+        menuItems.push({ key: 'mentioned_in', label: t('entries.show.menu.mentioned_in'), icon: 'fa-solid fa-reply', badge: mentionedIn.length });
+    }
+    menuItems.push({ key: 'media', label: t('entries.show.menu.media'), icon: 'fa-solid fa-images' });
+    if (history.length > 0) {
+        menuItems.push({ key: 'history', label: t('entries.show.menu.history'), icon: 'fa-solid fa-clock-rotate-left' });
+    }
 
-    const editHref = `/p/${project.slug}/${blueprint.slug}/${entry.slug}/edit`;
-
-    const blueprintHref = `/p/${project.slug}/${blueprint.slug}`;
-
-    const ribbonCtx = useMemo<EntriesRibbonContext>(() => ({
-        activeTab,
-        hasChildren: entry.has_children,
-        hasTimelineEvents: timelineEvents.length > 0,
-        hasConnections: connections.length > 0,
-        hasAttributes: dynamicProperties.length > 0,
-        hasRelationships: relationships.length > 0,
-        hasMentions: mentions.length > 0,
-        hasMentionedIn: mentionedIn.length > 0,
-        hasHistory: history.length > 0,
-        editHref,
-        showTreeView: blueprint.show_tree_view,
-        allEntriesLabel: t('entries.show.menu.all_plural').replace(':plural', blueprint.plural_name),
-        actions: {
-            setTab: (tab) => setActiveTab(tab),
-            openSettings: () => setSettingsOpen(true),
-            editEntry: () => router.visit(editHref),
-            deleteEntry: () => setDeleteOpen(true),
-            goToBlueprint: () => router.visit(blueprintHref),
-            goToTree: () => router.visit(`${blueprintHref}#tree`),
-        },
-    }), [
-        activeTab,
-        entry.has_children,
-        entry.can.update,
-        entry.can.delete,
-        timelineEvents.length,
-        connections.length,
-        dynamicProperties.length,
-        relationships.length,
-        mentions.length,
-        mentionedIn.length,
-        history.length,
-        editHref,
-        blueprint.show_tree_view,
-        blueprint.plural_name,
-        blueprintHref,
-    ]);
+    // Build dropdown items: tab navigation + nav links + danger zone (delete)
+    const dropdownItems = [
+        ...menuItems.map((item) => ({
+            label: item.label,
+            icon: item.icon,
+            badge: item.badge,
+            onClick: () => setActiveTab(item.key),
+        })),
+        ...(menuItems.length > 0 ? [{ divider: true as const }] : []),
+        ...(blueprint.show_tree_view ? [{ label: t('entries.show.menu.view_in_tree'), icon: 'fa-solid fa-sitemap', href: `/p/${project.slug}/${blueprint.slug}#tree` }] : []),
+        { label: t('entries.show.menu.all_plural').replace(':plural', blueprint.plural_name), icon: blueprint.icon, href: `/p/${project.slug}/${blueprint.slug}` },
+        ...(entry.can.delete ? [
+            { divider: true as const },
+            { label: t('entries.show.delete_entry'), icon: 'fa-solid fa-trash', onClick: () => setDeleteOpen(true), danger: true as const },
+        ] : []),
+    ];
 
     return (
         <AppLayout title={`${entry.name} - ${project.name}`} immersive onSearchToggle={() => setSearchOpen(true)}>
-            {/* PageHeader: breadcrumbs + title block (actions + tab row moved to ribbon). */}
             <PageHeader
                 breadcrumbs={[
                     { label: project.name, href: `/p/${project.slug}` },
                     { label: blueprint.name, href: `/p/${project.slug}/${blueprint.slug}`, icon: blueprint.icon },
                     { label: entry.name },
                 ]}
+                actions={
+                    <div className="flex items-center gap-2">
+                        {entry.can.update && (
+                            <ActionButton
+                                icon="fa-solid fa-palette"
+                                label={t('entries.show.entry_settings')}
+                                onClick={() => setSettingsOpen(true)}
+                                variant="ghost"
+                                size="md"
+                            />
+                        )}
+                        {entry.can.update && (
+                            <ActionButton
+                                icon="fa-solid fa-pencil"
+                                label={t('entries.show.edit_entry')}
+                                href={`/p/${project.slug}/${blueprint.slug}/${entry.slug}/edit`}
+                                size="md"
+                            />
+                        )}
+                    </div>
+                }
+                tabs={
+                    <>
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className="alex-view-toggle-btn"
+                            data-active={activeTab === 'overview' ? 'true' : 'false'}
+                            style={activeTab === 'overview' ? tabBtnActiveStyle : tabBtnIdleStyle}
+                        >
+                            <i className="fa-solid fa-eye text-xs" /> {t('entries.show.tab.overview')}
+                        </button>
+                        {entry.has_children && (
+                            <button
+                                onClick={() => setActiveTab('structure')}
+                                className="alex-view-toggle-btn"
+                                data-active={activeTab === 'structure' ? 'true' : 'false'}
+                                style={activeTab === 'structure' ? tabBtnActiveStyle : tabBtnIdleStyle}
+                            >
+                                <i className="fa-solid fa-sitemap text-xs" /> {t('entries.show.tab.structure')}
+                            </button>
+                        )}
+                        {timelineEvents.length > 0 && (
+                            <button
+                                onClick={() => setActiveTab('timeline')}
+                                className="alex-view-toggle-btn"
+                                data-active={activeTab === 'timeline' ? 'true' : 'false'}
+                                style={activeTab === 'timeline' ? tabBtnActiveStyle : tabBtnIdleStyle}
+                            >
+                                <i className="fa-solid fa-timeline text-xs" /> {t('entries.show.tab.timeline')}
+                            </button>
+                        )}
+                        {connections.length > 0 && (
+                            <button
+                                onClick={() => setActiveTab('connections')}
+                                className="alex-view-toggle-btn"
+                                data-active={activeTab === 'connections' ? 'true' : 'false'}
+                                style={activeTab === 'connections' ? tabBtnActiveStyle : tabBtnIdleStyle}
+                            >
+                                <i className="fa-solid fa-share-nodes text-xs" /> {t('entries.show.tab.connections')}
+                            </button>
+                        )}
+                        {dropdownItems.length > 0 && (
+                            <DropdownMenu items={dropdownItems} />
+                        )}
+                    </>
+                }
             >
                 <div className="flex items-center gap-4">
                     {entry.thumbnail_url ? (
@@ -315,21 +378,6 @@ export default function EntryShow() {
                     </div>
                 </div>
             </PageHeader>
-
-            {/*
-              * Entry ribbon — plain band below the PageHeader.
-              * Mount strategy: AppLayout's navbar stays; the ribbon sits between
-              * the PageHeader title bar and the content area (no merged-header
-              * needed — this is a standard content page, not a navbar-less
-              * workspace). bandTabId="view" keeps navigation controls always
-              * visible in the icon band; the File tab drops down as a menu.
-              */}
-            <Ribbon
-                setKey="entries"
-                context={ribbonCtx}
-                gates={entriesGates}
-                bandTabId="view"
-            />
 
             {/* Tab content */}
             <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -494,7 +542,7 @@ export default function EntryShow() {
                 entry={entry}
             />
 
-            {/* Delete confirmation (Stage 11 Slice 4 — ribbon File tab → delete-entry control). */}
+            {/* Delete confirmation — dropdown danger item → confirm → entries.destroy. */}
             <ConfirmModal
                 open={deleteOpen}
                 onClose={() => setDeleteOpen(false)}
@@ -503,9 +551,9 @@ export default function EntryShow() {
                         onSuccess: () => setDeleteOpen(false),
                     });
                 }}
-                title={t('entries.ribbon.delete.title')}
-                message={t('entries.ribbon.delete.message').replace(':name', entry.name)}
-                confirmLabel={t('entries.ribbon.delete.confirm')}
+                title={t('entries.show.delete.title')}
+                message={t('entries.show.delete.message').replace(':name', entry.name)}
+                confirmLabel={t('entries.show.delete.confirm')}
                 variant="danger"
             />
         </AppLayout>

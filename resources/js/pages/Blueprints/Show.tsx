@@ -36,7 +36,6 @@ const subtitle40: CSSProperties = {
     color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
 };
 import { useCmdK } from "@alexandria/hooks/useCmdK";
-import useEntitlements from "@alexandria/hooks/useEntitlements";
 import useT from "@alexandria/hooks/useT";
 import { useVisitedTabs } from "@alexandria/hooks/useVisitedTabs";
 import AppLayout from "@alexandria/layouts/AppLayout";
@@ -45,8 +44,6 @@ import ConnectionsView from "./Sections/ConnectionsView";
 import TreeView from "./Sections/TreeView";
 import TimelineView from "./Sections/TimelineView";
 import ActionButton from "@alexandria/components/ui/ActionButton";
-import DesktopMenuBar from "@alexandria/components/chrome/DesktopMenuBar";
-import type { DesktopMenuBarItemDef, DesktopMenuBarMenuDef } from "@alexandria/components/chrome/DesktopMenuBar";
 import IconTile from "@alexandria/components/ui/IconTile";
 import PageHeader from "@alexandria/components/layout/PageHeader";
 import CommandPalette from "@alexandria/components/search/CommandPalette";
@@ -61,7 +58,6 @@ type ViewMode = string;
 
 export default function BlueprintShow() {
     const t = useT();
-    const entitlements = useEntitlements();
     const {
         project,
         blueprint,
@@ -184,138 +180,6 @@ export default function BlueprintShow() {
     const animation =
         blueprint.classification === "standard" ? "beat-fade" : undefined;
 
-    // ── Desktop menu bar (File / Edit / View) ──────────────────────────────
-    // Built at render time — cheap since menus are small. Mirrors the existing
-    // tab pills and settings modal hook; no new capabilities introduced.
-    const blueprintGates = {
-        can: {
-            "blueprint.update": blueprint.can.update,
-            "blueprint.delete": blueprint.can.delete,
-        },
-        entitlements,
-    };
-
-    const fileItems: DesktopMenuBarItemDef[] = [
-        {
-            id: "new-entry",
-            labelKey:
-                blueprint.classification === "relationship"
-                    ? "blueprints.menu.file.new_connection"
-                    : "blueprints.menu.file.new_entry",
-            icon: "fa-solid fa-plus",
-            href: `/p/${project.slug}/${blueprint.slug}/create`,
-        },
-        {
-            id: "blueprint-settings",
-            labelKey: "blueprints.menu.file.blueprint_settings",
-            icon: "fa-solid fa-gear",
-            onSelect: () => openSettings("main"),
-            requires: { permission: "blueprint.update" },
-        },
-    ];
-
-    // Edit: Rename opens the settings modal on the Main panel (which has the
-    // Name field). No blueprint delete route exists → Delete is skipped.
-    const editItems: DesktopMenuBarItemDef[] = [
-        {
-            id: "rename",
-            labelKey: "blueprints.menu.edit.rename",
-            icon: "fa-solid fa-i-cursor",
-            onSelect: () => openSettings("main"),
-            requires: { permission: "blueprint.update" },
-        },
-    ];
-
-    // View: mirror the existing tab pill options for the current classification.
-    const viewItems: DesktopMenuBarItemDef[] = [];
-    if (blueprint.classification === "relationship") {
-        viewItems.push({
-            id: "view-connections",
-            labelKey: "blueprints.tab.connections",
-            icon: "fa-solid fa-diagram-project",
-            onSelect: () => setActiveTab("entries"),
-            checked: activeTab === "entries",
-        });
-    } else if (blueprint.classification === "structural") {
-        viewItems.push({
-            id: "view-tree",
-            labelKey: "views.tree.label",
-            icon: TreeViewDef.icon,
-            onSelect: () => setActiveTab("entries"),
-            checked: activeTab === "entries",
-        });
-    } else {
-        // Standard / list: Table is always available.
-        viewItems.push({
-            id: "view-table",
-            labelKey: "blueprints.tab.table",
-            icon: "fa-solid fa-table-list",
-            onSelect: () => {
-                setActiveTab("entries");
-                setViewMode("table");
-            },
-            checked: activeTab === "entries" && viewMode === "table",
-        });
-        // Registry-driven views (Kanban, Gallery, Graph — not tree/timeline).
-        resolvedViews
-            .filter(
-                (v) =>
-                    v.definition.type !== "tree" &&
-                    v.definition.type !== "timeline",
-            )
-            .filter((v) => v.enabledForBlueprint && v.applicableForBlueprint)
-            .forEach((v) => {
-                const vIcon = v.definition.icon.includes(" ")
-                    ? v.definition.icon
-                    : `fa-solid ${v.definition.icon}`;
-                viewItems.push({
-                    id: `view-${v.definition.type}`,
-                    labelKey: `views.${v.definition.type}.label`,
-                    icon: vIcon,
-                    onSelect: () => {
-                        setActiveTab("entries");
-                        setViewMode(v.definition.type);
-                    },
-                    checked:
-                        activeTab === "entries" &&
-                        viewMode === v.definition.type,
-                    disabled: !v.accessibleForUser,
-                });
-            });
-        // Tree (legacy flag — standard/list blueprints only).
-        if (hasTreeView) {
-            viewItems.push({
-                id: "view-tree",
-                labelKey: "views.tree.label",
-                icon: TreeViewDef.icon,
-                onSelect: () => {
-                    setActiveTab("entries");
-                    setViewMode("tree");
-                },
-                checked: activeTab === "entries" && viewMode === "tree",
-            });
-        }
-        // Timeline.
-        if (hasTimelineView) {
-            viewItems.push({
-                id: "view-timeline",
-                labelKey: "views.timeline.label",
-                icon: "fa-solid fa-timeline",
-                onSelect: () => {
-                    setActiveTab("entries");
-                    setViewMode("timeline");
-                },
-                checked: activeTab === "entries" && viewMode === "timeline",
-            });
-        }
-    }
-
-    const blueprintMenus: DesktopMenuBarMenuDef[] = [
-        { id: "file", labelKey: "blueprints.menu.file", items: fileItems },
-        { id: "edit", labelKey: "blueprints.menu.edit", items: editItems },
-        { id: "view", labelKey: "blueprints.menu.view", items: viewItems },
-    ];
-
     return (
         <AppLayout title={`${blueprint.name} - ${project.name}`} immersive>
             <PageHeader
@@ -333,12 +197,6 @@ export default function BlueprintShow() {
                         }
                         href={`/p/${project.slug}/${blueprint.slug}/create`}
                         size="md"
-                    />
-                }
-                menuBar={
-                    <DesktopMenuBar
-                        menus={blueprintMenus}
-                        gates={blueprintGates}
                     />
                 }
                 tabs={

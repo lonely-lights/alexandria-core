@@ -39,12 +39,6 @@ interface PageHeaderProps {
      * themed background behind the title.
      */
     className?: string;
-    /**
-     * Optional narrow strip rendered between the title bar and the
-     * breadcrumb/tab strip — used for lightweight desktop menu bars
-     * (File / Edit / View). The slot is generic so any ReactNode works.
-     */
-    menuBar?: ReactNode;
 }
 
 export default function PageHeader({
@@ -55,7 +49,6 @@ export default function PageHeader({
     py = 6,
     bannerImage,
     className = '',
-    menuBar,
 }: PageHeaderProps) {
     // Tailwind scale: 1 unit = 0.25rem. py is the caller's chosen padding;
     // we add the --navbar-height CSS var to the top so the banner/bg
@@ -120,9 +113,6 @@ export default function PageHeader({
                     </div>
                 </div>
             </div>
-
-            {/* Menu bar slot — desktop File/Edit/View chrome (optional). */}
-            {menuBar}
 
             {/* Bar 2: Breadcrumbs + tabs. Skip entirely when both are
                 empty — otherwise we'd render an orphaned bordered strip

@@ -73,6 +73,10 @@ return [
     'show.edit_entry' => 'Edit Entry',
     'show.entry_settings' => 'Entry Settings',
     'show.open_in_writing' => 'Open in Writing',
+    'show.delete_entry' => 'Delete Entry',
+    'show.delete.title' => 'Delete Entry?',
+    'show.delete.message' => 'Delete ":name"? It will be removed from this project.',
+    'show.delete.confirm' => 'Delete',
 
     // ── Entry Settings modal (Stage 8b M3) ──
     'entry_settings.title' => 'Entry Settings —',
@@ -210,29 +214,6 @@ return [
     'tab.timeline.table.type' => 'Type',
     'tab.timeline.table.date' => 'Date',
     'tab.timeline.empty_cell' => '—',
-
-    // ── Entry ribbon (Stage 11 Slice 4) ──
-    'ribbon.tab_file' => 'File',
-    'ribbon.tab_view' => 'View',
-    'ribbon.group_actions' => 'Actions',
-    'ribbon.group_navigation' => 'Navigation',
-    'ribbon.edit_entry' => 'Edit Entry',
-    'ribbon.entry_settings' => 'Entry Settings',
-    'ribbon.delete_entry' => 'Delete Entry',
-    'ribbon.tab.overview' => 'Overview',
-    'ribbon.tab.structure' => 'Structure',
-    'ribbon.tab.attributes' => 'Attributes',
-    'ribbon.tab.relationships' => 'Relationships',
-    'ribbon.tab.connections' => 'Connections',
-    'ribbon.tab.mentions' => 'Mentions',
-    'ribbon.tab.mentioned_in' => 'Mentioned In',
-    'ribbon.tab.media' => 'Media',
-    'ribbon.tab.history' => 'History',
-    'ribbon.tab.timeline' => 'Timeline',
-    'ribbon.group_goto' => 'Go To',
-    'ribbon.delete.title' => 'Delete Entry?',
-    'ribbon.delete.message' => 'Delete ":name"? It will be removed from this project.',
-    'ribbon.delete.confirm' => 'Delete',
 
     // ── HistoryTab (Subsection D) ──
     'tab.history.empty' => 'No history yet',
