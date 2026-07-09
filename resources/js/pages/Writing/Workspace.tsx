@@ -20,6 +20,7 @@ import ManuscriptEditor, {
     readPrintLayoutPreference,
 } from './Sections/ManuscriptEditor';
 import Navigator from './Sections/Navigator';
+import CommentRail from './Sections/CommentRail';
 import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
 import ScreenplayEditor from './Sections/ScreenplayEditor';
 import { extractSectionOutline, type SectionOutlineItem } from './Sections/sectionOutline';
@@ -244,6 +245,11 @@ export default function Workspace() {
     const pageProps = usePage<WorkspaceProps>().props;
     const { project, work, sections, currentSection, pins, types, lengthPlans, can } = pageProps;
 
+    // WorkspaceProps uses `[key: string]: unknown` for the Inertia shared
+    // bag, so `auth` is not strongly typed here — cast narrowly.
+    const currentUserId =
+        (pageProps as { auth?: { user?: { id: number } } }).auth?.user?.id ?? 0;
+
     // Build ribbon gates: permission map from the page `can` prop +
     // entitlement keys normalised by useEntitlements() (truthy keys only).
     const writingGates: RibbonGates = {
@@ -264,6 +270,10 @@ export default function Workspace() {
     // Bumped after each confirmed autosave so the reference panel
     // re-fetches the section's server-synced mentions.
     const [saveSignal, setSaveSignal] = useState(0);
+
+    // Comment rail state (Stage 11.5 Task 3)
+    const [pendingCommentAnchor, setPendingCommentAnchor] = useState<{ from: number; to: number } | null>(null);
+    const [highlightCommentId, setHighlightCommentId] = useState<number | null>(null);
 
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
     const [referencePanelTab, setReferencePanelTab] = useState(() =>
@@ -349,6 +359,55 @@ export default function Workspace() {
             return next;
         });
     }, [referencePanelTab]);
+
+    // Toggle the comment rail panel on/off (mirrors toggleSceneLinksPanel).
+    const toggleCommentsPanel = useCallback(() => {
+        setPanelOpen((prev) => {
+            const shouldClose = prev && referencePanelTab === 'comments';
+            const next = !shouldClose;
+            if (next) {
+                setReferencePanelTab('comments');
+            }
+            try {
+                localStorage.setItem(PANEL_OPEN_STORAGE_KEY, String(next));
+            } catch {
+                // Best-effort.
+            }
+            return next;
+        });
+    }, [referencePanelTab]);
+
+    // Fired by editor floating button — opens comment rail in composer mode.
+    const handleAddComment = useCallback((anchor: { from: number; to: number }) => {
+        setPendingCommentAnchor(anchor);
+        setPanelOpen(true);
+        setReferencePanelTab('comments');
+        try {
+            localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
+        } catch {
+            // Best-effort.
+        }
+    }, []);
+
+    // Listen for mark-click events from the editor (click on a comment-mark
+    // span) → open comment rail and highlight the matching card.
+    useEffect(() => {
+        function handleCommentAnchorClick(e: Event) {
+            const id = (e as CustomEvent<{ commentId: number }>).detail.commentId;
+            if (isFinite(id)) {
+                setPanelOpen(true);
+                setReferencePanelTab('comments');
+                setHighlightCommentId(id);
+                try {
+                    localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
+                } catch {
+                    // Best-effort.
+                }
+            }
+        }
+        window.addEventListener('alexandria:comment-anchor-click', handleCommentAnchorClick);
+        return () => window.removeEventListener('alexandria:comment-anchor-click', handleCommentAnchorClick);
+    }, []);
 
     useEffect(() => {
         setCurrentOutline(
@@ -744,6 +803,18 @@ export default function Workspace() {
                                         </button>
                                     </Tooltip>
                                 )}
+                                <Tooltip content={t('writing.comments.toggle_button')}>
+                                    <button
+                                        type="button"
+                                        onClick={toggleCommentsPanel}
+                                        aria-label={t('writing.comments.toggle_button')}
+                                        aria-pressed={panelOpen && referencePanelTab === 'comments'}
+                                        data-writing-comments-toggle
+                                        className={`alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs ${panelOpen && referencePanelTab === 'comments' ? 'alex-toolbar-btn--active' : ''}`}
+                                    >
+                                        <i className="fa-solid fa-comment-dots" aria-hidden="true" />
+                                    </button>
+                                </Tooltip>
                                 <Tooltip content={t('ribbon.account')}>
                                     <span className="inline-flex">
                                         <CompactUserMenu ariaLabel={t('ribbon.account')} size={36} />
@@ -822,6 +893,8 @@ export default function Workspace() {
                                     onOutlineChange={setCurrentOutline}
                                     onSceneLinksChange={setScreenplaySceneLinks}
                                     onEntryLinkSelect={handleEntryLinkSelect}
+                                    enableComments={can.update}
+                                    onAddComment={handleAddComment}
                                 />
                             ) : (
                                 <ManuscriptEditor
@@ -836,6 +909,8 @@ export default function Workspace() {
                                     bridgeRef={bridgeRef}
                                     onStateChange={handleEditorStateChange}
                                     onOutlineChange={setCurrentOutline}
+                                    enableComments={can.update}
+                                    onAddComment={handleAddComment}
                                 />
                             )
                         ) : (
@@ -848,26 +923,43 @@ export default function Workspace() {
                         )}
                     </section>
 
-                    {/* Right rail — reference panel (Plan 3). The xl: responsive
+                    {/* Right rail — comment rail (Stage 11.5 Task 3) or reference
+                        panel, toggled by referencePanelTab. The xl: responsive
                         gate stays on top of the user toggle. */}
                     {panelOpen && (
                         <aside
                             className="writing-workspace-scroll hidden min-h-0 w-80 shrink-0 overflow-y-auto border-l xl:block"
                             style={{ borderColor: paneBorderColor }}
                         >
-                            <ReferencePanel
-                                project={project}
-                                work={work}
-                                currentSection={currentSection}
-                                pins={pins}
-                                canUpdate={can.update}
-                                saveSignal={saveSignal}
-                                sceneLinks={screenplaySceneLinks}
-                                sceneLinksFocusSignal={sceneLinksFocusSignal}
-                                activeTab={referencePanelTab}
-                                onActiveTabChange={setReferencePanelTab}
-                                onSelect={selectSection}
-                            />
+                            {referencePanelTab === 'comments' && currentSection !== null ? (
+                                <CommentRail
+                                    workSlug={work.slug}
+                                    projectSlug={project.slug}
+                                    sectionId={currentSection.id}
+                                    editorBridge={bridgeRef.current}
+                                    editorTick={editorTick}
+                                    currentUserId={currentUserId}
+                                    canUpdate={can.update}
+                                    pendingAnchor={pendingCommentAnchor}
+                                    onComposerDismiss={() => setPendingCommentAnchor(null)}
+                                    highlightCommentId={highlightCommentId}
+                                    onHighlightHandled={() => setHighlightCommentId(null)}
+                                />
+                            ) : (
+                                <ReferencePanel
+                                    project={project}
+                                    work={work}
+                                    currentSection={currentSection}
+                                    pins={pins}
+                                    canUpdate={can.update}
+                                    saveSignal={saveSignal}
+                                    sceneLinks={screenplaySceneLinks}
+                                    sceneLinksFocusSignal={sceneLinksFocusSignal}
+                                    activeTab={referencePanelTab}
+                                    onActiveTabChange={setReferencePanelTab}
+                                    onSelect={selectSection}
+                                />
+                            )}
                         </aside>
                     )}
 

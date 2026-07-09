@@ -5,6 +5,7 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import createEntryLinkExtension, {
     type EntryLinkSearchResult,
 } from "../../components/tiptap-bio-editor/extensions/entry-link";
+import { CommentMark } from "../extensions/commentMark";
 import { ELEMENTS, ENTER_NEXT, TAB_CYCLE } from "./formatSpec";
 import type { ScreenplayBlock, ScreenplayElement } from "./types";
 
@@ -285,9 +286,11 @@ const ScreenplayKeymap = Extension.create({
 export function buildScreenplayExtensions({
     projectId,
     onEntryLinkSelect,
+    enableComments = false,
 }: {
     projectId?: number;
     onEntryLinkSelect?: (item: EntryLinkSearchResult) => void;
+    enableComments?: boolean;
 } = {}) {
     return [
         ScreenplayDocument,
@@ -305,6 +308,9 @@ export function buildScreenplayExtensions({
         }),
         UndoRedo,
         ScreenplayKeymap,
+        // Comment mark (Stage 11.5 Task 3). The screenplay schema does not
+        // restrict marks on text nodes, so the mark applies cleanly.
+        ...(enableComments ? [CommentMark] : []),
     ];
 }
 

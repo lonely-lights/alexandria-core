@@ -102,6 +102,10 @@ interface ScreenplaySurfaceProps {
     onEntryLinkSelect?: () => void;
     /** Receives the codec-serialized doc, 300ms-debounced. */
     onSerialized: (serialized: string) => void;
+    /** Enable the floating "Add comment" affordance (Stage 11.5 Task 3). */
+    enableComments?: boolean;
+    /** Fires with the selected range when the user clicks "Add comment". */
+    onAddComment?: (anchor: { from: number; to: number }) => void;
 }
 
 /**
@@ -117,6 +121,8 @@ function ScreenplaySurface({
     onSceneLinksChange,
     onEntryLinkSelect,
     onSerialized,
+    enableComments = false,
+    onAddComment,
 }: ScreenplaySurfaceProps) {
     const t = useT();
     const [showKeys, setShowKeys] = useState(false);
@@ -156,6 +162,7 @@ function ScreenplaySurface({
             onEntryLinkSelect: () => {
                 onEntryLinkSelectRef.current?.();
             },
+            enableComments,
         }),
         content: blocksToDoc(parseScreenplay(initialContent)),
         onCreate: ({ editor: e }) => {
@@ -208,6 +215,17 @@ function ScreenplaySurface({
     useEffect(() => {
         onStateChangeRef.current?.();
     }, [currentElement]);
+
+    // Comment selection state (Stage 11.5 Task 3) — mirrors
+    // RichTextEditor's commentSelectionRange; must run before early return.
+    const commentSelectionRange = useEditorState({
+        editor,
+        selector: ({ editor: e }): { from: number; to: number } | null => {
+            if (!e || !enableComments) return null;
+            const { from, to } = e.state.selection;
+            return from !== to ? { from, to } : null;
+        },
+    }) ?? null;
 
     // Ribbon editor bridge (Ribbon Plan 2 Task 2) — recreated per
     // render so it always closes over the current editor. Prose-only
@@ -263,6 +281,49 @@ function ScreenplaySurface({
         },
         focus() {
             editor?.commands.focus();
+        },
+        // Comment mark operations (Stage 11.5 Task 3) — same impl as prose
+        applyCommentMark(from, to, commentId) {
+            if (!editor) return;
+            editor.chain()
+                .setTextSelection({ from, to })
+                .setMark('comment', { commentId })
+                .run();
+        },
+        scrollToCommentMark(commentId) {
+            if (!editor) return;
+            const el = editor.view.dom.querySelector(
+                `mark.comment-mark[data-comment-id="${commentId}"]`,
+            );
+            if (!el) return;
+            el.classList.add('comment-mark--flash');
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            setTimeout(() => el.classList.remove('comment-mark--flash'), 900);
+        },
+        hasNonEmptySelection() {
+            if (!editor) return false;
+            const { from, to } = editor.state.selection;
+            return from !== to;
+        },
+        getSelectionRange() {
+            if (!editor) return null;
+            const { from, to } = editor.state.selection;
+            return from !== to ? { from, to } : null;
+        },
+        getCommentPositionMap() {
+            if (!editor) return {};
+            const map: Record<number, number> = {};
+            editor.state.doc.descendants((node, pos) => {
+                for (const mark of node.marks) {
+                    if (mark.type.name !== 'comment') continue;
+                    const raw = mark.attrs.commentId;
+                    if (raw === null || raw === undefined) continue;
+                    const id = Number(raw);
+                    if (!Number.isFinite(id) || id in map) continue;
+                    map[id] = pos;
+                }
+            });
+            return map;
         },
     }));
 
@@ -431,6 +492,52 @@ function ScreenplaySurface({
                 />
             )}
 
+            {/* Floating "Add comment" bubble — matches RichTextEditor pattern */}
+            {enableComments && commentSelectionRange !== null && (() => {
+                let top = 0;
+                let left = 0;
+                try {
+                    const fromCoords = editor.view.coordsAtPos(commentSelectionRange.from);
+                    const toCoords = editor.view.coordsAtPos(commentSelectionRange.to);
+                    top = Math.min(fromCoords.top, toCoords.top) - 38;
+                    left = (fromCoords.left + toCoords.right) / 2;
+                } catch {
+                    return null;
+                }
+                return (
+                    <button
+                        type="button"
+                        aria-label={t('writing.comments.add')}
+                        onMouseDown={(e: MouseEvent) => {
+                            e.preventDefault();
+                            onAddComment?.(commentSelectionRange);
+                        }}
+                        style={{
+                            position: 'fixed',
+                            top,
+                            left,
+                            transform: 'translateX(-50%)',
+                            zIndex: 200,
+                            background: 'var(--theme-status-warning-stroke, #f59e0b)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '999px',
+                            padding: '0.2rem 0.6rem',
+                            fontSize: '0.6875rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                            boxShadow: '0 2px 8px rgb(0 0 0 / 0.18)',
+                        }}
+                    >
+                        <i className="fa-solid fa-comment-medical" style={{ fontSize: '0.625rem' }} aria-hidden="true" />
+                        {t('writing.comments.add')}
+                    </button>
+                );
+            })()}
+
             {/* Keyboard-flow help — opened via bridge.openHelp() */}
             <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-lg">
                 <ModalHeader title={t('writing.workspace.keys_title')} onClose={() => setShowKeys(false)} />
@@ -486,6 +593,8 @@ export default function ScreenplayEditor({
     onStateChange,
     onSceneLinksChange,
     onEntryLinkSelect,
+    enableComments,
+    onAddComment,
 }: ManuscriptEditorProps) {
     const { noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
@@ -511,6 +620,8 @@ export default function ScreenplayEditor({
                     onSceneLinksChange={onSceneLinksChange}
                     onEntryLinkSelect={onEntryLinkSelect}
                     onSerialized={noteChange}
+                    enableComments={enableComments}
+                    onAddComment={onAddComment}
                 />
             ) : (
                 /* Read-only: the parsed blocks as styled static markup

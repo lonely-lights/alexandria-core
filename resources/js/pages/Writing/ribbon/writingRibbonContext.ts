@@ -30,6 +30,12 @@ export interface WritingEditorBridge {
     canUndo(): boolean;
     canRedo(): boolean;
     focus(): void;
+    // Comment mark operations (Stage 11.5 Task 3)
+    applyCommentMark(from: number, to: number, commentId: number): void;
+    scrollToCommentMark(commentId: number): void;
+    hasNonEmptySelection(): boolean;
+    getSelectionRange(): { from: number; to: number } | null;
+    getCommentPositionMap(): Record<number, number>;
 }
 
 export interface WritingRibbonContext {

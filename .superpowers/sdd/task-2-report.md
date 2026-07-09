@@ -1,19 +1,61 @@
-### Task 2 Report: Writing File/Edit/View bounded additions
+﻿# Stage 11.5 Task 2 — Anchored Comments Backend: Implementation Report
 
-**Status:** Complete
+## Migration / Model Home Decision
 
-**Commits:**
-- `alexandria-core`: `feat(writing): File/Edit/View ribbon additions (bounded)` — lang key + `writingRibbonTabs.tsx`
-- `alexandria-app`: test commit for `writing-ribbon-tabs.test.ts` — 7 new tests
+Migration lands in `alexandria-core/database/migrations/` (sequence `000935`, after `000930_create_work_entry_pins_table`), loaded by `AlexandriaServiceProvider` via `loadMigrationsFrom`. The model lives beside its parent in `src/Models/Writing/WorkSectionComment.php`.
 
-**Test summary:** 25 passing (18 pre-existing + 7 new), 0 failures. Full Vitest suite: 1 pre-existing failure in `token-usage.test.ts` (vendor doc sync, unrelated to this work). `npm run build` clean.
+This is the same boundary that `WorkSection` and `Work` use — the schema is framework-level and must exist in any consumer that mounts the writing surface. App-level concerns (controller logic, permission checks) stay in `alexandria-app`.
 
-**Per-area verdicts:**
+## Endpoint Shapes
 
-- **File / sections group (ADDED):** `work-settings` (openSettings, canUpdate-gated), `add-section` (addSection, canUpdate-gated), `add-inside` (addInside, canUpdate-gated, disabled when !hasSection). All three actions pre-existed in `WritingRibbonContext.actions`.
-- **File / export group (ADDED stub):** `export-stub` button — always disabled, labeled `writing.ribbon.export_coming`. Lang key added.
-- **File / rename section (SKIPPED):** `RenameSectionModal` is owned internally by `Navigator` (`renameTarget` state, lines 205/373 of Navigator.tsx). Workspace owns the add/delete modals (the pattern for ribbon exposure) but does NOT own the rename modal. Lifting it would require new state + prop threading — new work outside bounded scope.
-- **Edit / scene-link management (SKIPPED):** `WritingEditorBridge` has no scene-link editing commands. Interface exposes: toggleMark/List/Heading, isMarkActive, setBlockStyle, currentBlockStyle, setElement, currentElement, insertEntryLink, openHelp, toggleCodeView, isCodeView, undo/redo, canUndo/canRedo, focus. No editDisplayText / convertToCanonical / removeLink methods exist.
-- **View panel toggles (NOTHING ADDED):** ReferencePanel tabs are `browse`, `pins`, `section`, `scene-links` (screenplay only). View tab already covers all: `panel` (general show/hide), `scene-links-panel` (screenplay scene-links tab opener). Fully covered.
+All comment endpoints are under the `/works` prefix group in `alexandria-app/routes/web.php`, registered **before** the `/{project:slug}/{work:slug}/{section?}` catch-all.
 
-**Self-review:** read-only users (`canUpdate=false`) see none of the three sections controls (verified by test). Export stub is visible to all but always disabled. No existing View controls duplicated.
+| Method | Path | Route name | Auth |
+|--------|------|------------|------|
+| GET | `/works/{project}/{work}/sections/{section}/comments` | `works.sections.comments.index` | `can:view,work` |
+| POST | `/works/{project}/{work}/sections/comments` | `works.sections.comments.store` | `can:update,work` |
+| PATCH | `/works/{project}/{work}/sections/comments/{comment}` | `works.sections.comments.update` | `can:view,work` + owner inline |
+| DELETE | `/works/{project}/{work}/sections/comments/{comment}` | `works.sections.comments.destroy` | `can:view,work` + owner inline |
+| POST | `/works/{project}/{work}/sections/comments/{comment}/resolve` | `works.sections.comments.resolve` | `can:view,work` + (owner OR work.edit) |
+| POST | `/works/{project}/{work}/sections/comments/{comment}/unresolve` | `works.sections.comments.unresolve` | `can:view,work` + (owner OR work.edit) |
+
+### JSON response shape
+
+`index` returns `{"comments": [...]}` ordered `created_at` asc.
+Each comment: `{id, body, author: {id, name}, resolved_at, resolved_by, created_at, updated_at}`.
+`store` returns 201. `destroy` returns `{"deleted": true}` 200.
+
+`section_id` for `store` comes from the request body (not the URL). The controller validates `exists:work_sections,id` then does a same-work guard (`abort_unless $section->work_id === $work->id, 404`).
+
+## Permission Matrix Results (9 authorization tests, all green)
+
+| Actor | Action | Result |
+|-------|--------|--------|
+| Viewer (work.view) | list | 200 |
+| Viewer (work.view) | store | 403 |
+| Collaborator (work.edit) | store | 201 |
+| Author (Collaborator) | update own | 200 |
+| Interloper (Collaborator) | update other's | 403 |
+| Author (Collaborator) | delete own | 200 |
+| Interloper (Collaborator) | delete other's | 403 |
+| Viewer — own comment | resolve | 200 (author bypass) |
+| Collaborator (work.edit) | resolve other's | 200 |
+| Viewer (work.view) | resolve other's | 403 |
+
+## Test Coverage Summary
+
+- `WorkSectionCommentTest` (11 tests, Gate bypass): list shape, resolved comments included, store + author attribution, empty-body validation, update, soft-delete, resolve/unresolve cycle, cross-work 404s, undo-rule proof (content update does not cascade-delete comments).
+- `WorkSectionCommentAuthorizationTest` (9 tests, no bypass): full permission matrix.
+- Total new tests: 20 / 20 passing. Full WorkSection regression (49 tests) green.
+
+## Self-Review Notes
+
+- `config('alexandria.models.user')` pattern (same as AiTransaction) keeps model/factory decoupled from app-level User.
+- `WorkSection::comments()` orders by `created_at` at the relation level; controllers add no redundant sort.
+- `resolve`/`unresolve` use `Gate::allows('update', $work)` which invokes `WorkPolicy::update` -> Spatie `work.edit`.
+- `parent_id` uses `nullOnDelete` on the self-FK — deleted parent comments orphan children rather than cascading, safest for schema stability while the feature is v1.
+
+## Commits
+
+- Core (`alexandria-core` branch `feat/stage-11-5-planning-layer`): `575c412` — `feat(writing): work-section comment model + migration`
+- App (`alexandria-app` branch `feat/stage-11-5-planning-layer`): `1dd9b12` — `feat(writing): comments endpoints + policy + coverage`

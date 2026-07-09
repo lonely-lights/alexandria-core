@@ -55,6 +55,10 @@ export interface ManuscriptEditorProps {
     onOutlineChange?: (outline: SectionOutlineItem[]) => void;
     onSceneLinksChange?: (links: ScreenplaySceneLink[]) => void;
     onEntryLinkSelect?: () => void;
+    /** Enable the floating "Add comment" affordance (Stage 11.5 Task 3). */
+    enableComments?: boolean;
+    /** Fires when the user clicks "Add comment" with text selected. */
+    onAddComment?: (anchor: { from: number; to: number }) => void;
 }
 
 export const PRINT_LAYOUT_STORAGE_KEY = 'alexandria.writing.print_layout';
@@ -80,6 +84,8 @@ export default function ManuscriptEditor({
     bridgeRef,
     onStateChange,
     onOutlineChange,
+    enableComments,
+    onAddComment,
 }: ManuscriptEditorProps) {
     const { noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
@@ -126,6 +132,8 @@ export default function ManuscriptEditor({
                     chrome={chrome}
                     bridgeRef={bridgeRef}
                     onStateChange={onStateChange}
+                    enableComments={enableComments}
+                    onAddComment={onAddComment}
                 />
             ) : (
                 <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">

@@ -338,3 +338,64 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
     padding: 1in 1in 1.5in;
     border-radius: 0; /* crisp page corners in print layout */
 }
+
+/* ── Comment marks (Stage 11.5 Task 3) ──────────────────────────────────── */
+
+/* The TipTap CommentMark extension renders anchored spans as <mark
+   class="comment-mark" data-comment-id="N">. A subtle amber tint marks
+   the range without obscuring the prose; the hover darkens it slightly
+   for discoverability. Marks are session-only (the wiki serializer has
+   no comment-mark syntax) — they're applied after the rail composer
+   saves and lost on page reload. */
+.comment-mark {
+    background: color-mix(in srgb, var(--theme-status-warning-stroke, #d97706) 18%, transparent);
+    border-radius: 2px;
+    cursor: pointer;
+    /* Remove browser default mark background so the theme token rules. */
+    color: inherit;
+}
+
+.comment-mark:hover {
+    background: color-mix(in srgb, var(--theme-status-warning-stroke, #d97706) 32%, transparent);
+}
+
+/* Paper-color overrides: on light paper sheets the amber tint needs to
+   work against a white/ivory/cream/gray background rather than the
+   themed surface, so we keep the same formula — no overrides needed
+   because color-mix(in srgb, …, transparent) degrades gracefully over
+   any background. */
+
+/* Flash animation — triggered by bridge.scrollToCommentMark() adding
+   the class for ~900ms before removing it. Short pulse that fades in
+   quickly and decays slowly so the eye catches it even for short spans. */
+@keyframes comment-mark-flash {
+    0%   { background: color-mix(in srgb, var(--theme-status-warning-stroke, #d97706) 55%, transparent); }
+    30%  { background: color-mix(in srgb, var(--theme-status-warning-stroke, #d97706) 50%, transparent); }
+    100% { background: color-mix(in srgb, var(--theme-status-warning-stroke, #d97706) 18%, transparent); }
+}
+
+.comment-mark--flash {
+    animation: comment-mark-flash 0.9s ease-out forwards;
+}
+
+/* Floating "Add comment" button (injected into the editor JSX while
+   text is selected). Position:fixed; managed by coordsAtPos in the
+   editor. The amber pill echoes the comment-mark color family. */
+.writing-add-comment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: nowrap;
+    background: var(--theme-status-warning-stroke, #d97706);
+    color: #fff;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.2);
+    border: none;
+    cursor: pointer;
+    user-select: none;
+    z-index: 9999;
+}
