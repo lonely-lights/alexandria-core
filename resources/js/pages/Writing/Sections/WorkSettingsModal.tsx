@@ -325,11 +325,19 @@ export default function WorkSettingsModal({
                     />
 
                     {/* ── Length plan ── */}
-                    <div
-                        className="text-xs font-semibold uppercase tracking-wide"
-                        style={{ color: sectionHeadingColor }}
-                    >
-                        {t('writing.settings.length_heading')}
+                    <div>
+                        <div
+                            className="text-xs font-semibold uppercase tracking-wide"
+                            style={{ color: sectionHeadingColor }}
+                        >
+                            {t('writing.settings.length_heading')}
+                        </div>
+                        <p
+                            className="mt-0.5 text-xs"
+                            style={{ color: columnLabelColor }}
+                        >
+                            {t('writing.settings.length_help')}
+                        </p>
                     </div>
                     <Select
                         label={t('writing.settings.preset')}
@@ -407,11 +415,19 @@ export default function WorkSettingsModal({
                     </div>
 
                     {/* ── Structure ── */}
-                    <div
-                        className="text-xs font-semibold uppercase tracking-wide"
-                        style={{ color: sectionHeadingColor }}
-                    >
-                        {t('writing.settings.structure_heading')}
+                    <div>
+                        <div
+                            className="text-xs font-semibold uppercase tracking-wide"
+                            style={{ color: sectionHeadingColor }}
+                        >
+                            {t('writing.settings.structure_heading')}
+                        </div>
+                        <p
+                            className="mt-0.5 text-xs"
+                            style={{ color: columnLabelColor }}
+                        >
+                            {t('writing.settings.structure_help')}
+                        </p>
                     </div>
                     <Select
                         label={t('writing.settings.structure_template')}

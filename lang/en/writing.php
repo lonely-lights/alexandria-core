@@ -53,6 +53,7 @@ return [
 
     'settings.title' => 'Work settings',
     'settings.length_heading' => 'Length plan',
+    'settings.length_help' => 'Word, line, and page targets — how much you plan to write.',
     'settings.preset' => 'Preset',
     'settings.preset_none' => 'Custom / none',
     'settings.preset_short_story' => 'Short story',
@@ -72,6 +73,7 @@ return [
     'settings.apply_targets_help' => 'New sections only pick up the default when created from a plan; this stamps it onto everything already here.',
     'settings.save' => 'Save',
     'settings.structure_heading' => 'Structure',
+    'settings.structure_help' => 'Beat checkpoints for your acts — pick a template and the Navigator\'s guidance card checks your structure against it as you write.',
     'settings.structure_none' => 'None',
     'settings.structure_template' => 'Template',
     'settings.structure_three_act_screenplay' => 'Three-act screenplay',
