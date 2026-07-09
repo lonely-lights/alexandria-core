@@ -427,7 +427,7 @@ export default function Workspace() {
         }
         window.addEventListener('alexandria:comment-anchor-click', handleCommentAnchorClick);
         return () => window.removeEventListener('alexandria:comment-anchor-click', handleCommentAnchorClick);
-    }, []);
+    }, [work.id]);
 
     useEffect(() => {
         setCurrentOutline(
