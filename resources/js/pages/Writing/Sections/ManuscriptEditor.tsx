@@ -57,8 +57,8 @@ export interface ManuscriptEditorProps {
     onEntryLinkSelect?: () => void;
     /** Enable the floating "Add comment" affordance (Stage 11.5 Task 3). */
     enableComments?: boolean;
-    /** Fires when the user clicks "Add comment" with text selected. */
-    onAddComment?: (anchor: { from: number; to: number }) => void;
+    /** Fires with selected range + snapshotted text when the user clicks "Add comment". */
+    onAddComment?: (anchor: { from: number; to: number; text: string }) => void;
 }
 
 export const PRINT_LAYOUT_STORAGE_KEY = 'alexandria.writing.print_layout';

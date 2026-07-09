@@ -36,6 +36,17 @@ export interface WritingEditorBridge {
     hasNonEmptySelection(): boolean;
     getSelectionRange(): { from: number; to: number } | null;
     getCommentPositionMap(): Record<number, number>;
+    /**
+     * Find all occurrences of `text` in the current doc.
+     * Returns doc-position ranges { from, to } for each match.
+     * Used by reanchorComments to restore marks after page reload.
+     */
+    findTextInDoc(text: string): Array<{ from: number; to: number }>;
+    /**
+     * Apply a comment mark from `from` to `to` without adding to undo
+     * history. Used by reanchorComments — re-anchoring must not be undoable.
+     */
+    reanchorCommentMark(from: number, to: number, commentId: number): void;
 }
 
 export interface WritingRibbonContext {

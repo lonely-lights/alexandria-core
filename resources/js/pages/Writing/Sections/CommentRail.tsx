@@ -6,9 +6,11 @@ import type { WritingEditorBridge } from '@alexandria/pages/Writing/ribbon/writi
 import {
     extractPositionMap,
     groupComments,
+    sortByCreatedAt,
     type CommentData,
     type PositionMap,
 } from './commentRailModel';
+import { reanchorComments } from './reanchorComments';
 import CommentRailList from './CommentRailList';
 
 /**
@@ -50,7 +52,7 @@ interface CommentRailProps {
     currentUserId: number;
     canUpdate: boolean;
     /** Non-null when the user clicked "Add comment" with text selected. */
-    pendingAnchor: { from: number; to: number } | null;
+    pendingAnchor: { from: number; to: number; text: string } | null;
     onComposerDismiss: () => void;
     /** Set when the user clicks a comment mark in the editor. */
     highlightCommentId: number | null;
@@ -194,6 +196,7 @@ export default function CommentRail({
     const [error, setError] = useState(false);
     const [draft, setDraft] = useState('');
     const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState(false);
     const [positionMap, setPositionMap] = useState<PositionMap>({});
 
     /* ── Fetch comments when section changes ── */
@@ -240,15 +243,30 @@ export default function CommentRail({
     }, [projectSlug, workSlug, sectionId]);
 
     /* ── Rebuild position map on every editor transaction ── */
+    /* F1: also re-anchor comments whose mark got lost (page reload / doc-replace) */
 
     useEffect(() => {
         if (!editorBridge) {
             setPositionMap({});
             return;
         }
-        setPositionMap(editorBridge.getCommentPositionMap());
-        // editorTick is the dependency that changes on every transaction
-    }, [editorBridge, editorTick]);
+        const map = editorBridge.getCommentPositionMap();
+        // Re-anchor any comments that have anchor_text but no live mark.
+        // canUpdate gate: read-only viewers have no CommentMark extension.
+        if (canUpdate) {
+            const toReanchor = comments.filter(
+                (c) => c.anchor_text && !(c.id in map),
+            );
+            if (toReanchor.length > 0) {
+                reanchorComments(editorBridge, toReanchor);
+                // Marks are dispatched synchronously; read the updated map now.
+                setPositionMap(editorBridge.getCommentPositionMap());
+                return;
+            }
+        }
+        setPositionMap(map);
+        // editorTick changes on every transaction; comments captures fetch results
+    }, [editorBridge, editorTick, comments, canUpdate]);
 
     /* ── Scroll to + flash when highlightCommentId changes ── */
 
@@ -267,25 +285,45 @@ export default function CommentRail({
     }, [editorBridge, highlightCommentId]);
 
     /* ── Derived ordered list ── */
+    /* F2: read-only viewers have no CommentMark extension; bypass orphan filter */
 
-    const ordered = useMemo(
-        () => groupComments(comments, positionMap),
-        [comments, positionMap],
-    );
+    const ordered = useMemo(() => {
+        // When there's no editor bridge OR the user can't author marks
+        // (read-only viewer), fall back to created_at order and show all
+        // comments without orphan filtering — no mark = no position map.
+        if (!editorBridge || !canUpdate) {
+            const all = sortByCreatedAt(comments);
+            return {
+                active: all.filter((c) => c.resolved_at === null),
+                resolved: all.filter((c) => c.resolved_at !== null),
+            };
+        }
+        return groupComments(comments, positionMap);
+    }, [comments, positionMap, editorBridge, canUpdate]);
 
     /* ── Add-comment save ── */
 
     const handleSave = useCallback(async () => {
         if (!draft.trim() || sectionId === null || saving) return;
         setSaving(true);
+        setSaveError(false);
         try {
+            const body: Record<string, unknown> = {
+                work_section_id: sectionId,
+                body: draft.trim(),
+            };
+            // F1: persist anchor_text + offset hint so marks survive reload.
+            if (pendingAnchor) {
+                body.anchor_text = pendingAnchor.text;
+                body.anchor_offset_hint = pendingAnchor.from;
+            }
             const r = await fetch(
                 `/works/${projectSlug}/${workSlug}/sections/comments`,
                 {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: apiHeaders(true),
-                    body: JSON.stringify({ work_section_id: sectionId, body: draft.trim() }),
+                    body: JSON.stringify(body),
                 },
             );
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -298,7 +336,8 @@ export default function CommentRail({
             setDraft('');
             onComposerDismiss();
         } catch {
-            // Leave composer open so user can retry
+            // F4: show inline error so the user knows the save failed.
+            setSaveError(true);
         } finally {
             setSaving(false);
         }
@@ -404,7 +443,7 @@ export default function CommentRail({
                         <button
                             type="button"
                             style={btnSecondaryStyle}
-                            onClick={() => { setDraft(''); onComposerDismiss(); }}
+                            onClick={() => { setDraft(''); setSaveError(false); onComposerDismiss(); }}
                             disabled={saving}
                         >
                             {t('writing.comments.cancel')}
@@ -418,6 +457,11 @@ export default function CommentRail({
                             {saving ? '…' : t('writing.comments.save')}
                         </button>
                     </div>
+                    {saveError && (
+                        <p style={{ ...errorStyle, padding: '0.375rem 0', textAlign: 'left' }}>
+                            {t('writing.comments.error')}
+                        </p>
+                    )}
                 </div>
             )}
 

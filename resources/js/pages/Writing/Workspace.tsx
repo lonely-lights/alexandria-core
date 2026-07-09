@@ -271,8 +271,8 @@ export default function Workspace() {
     // re-fetches the section's server-synced mentions.
     const [saveSignal, setSaveSignal] = useState(0);
 
-    // Comment rail state (Stage 11.5 Task 3)
-    const [pendingCommentAnchor, setPendingCommentAnchor] = useState<{ from: number; to: number } | null>(null);
+    // Comment rail state (Stage 11.5 Task 3) — includes snapshotted text for anchor_text (F1)
+    const [pendingCommentAnchor, setPendingCommentAnchor] = useState<{ from: number; to: number; text: string } | null>(null);
     const [highlightCommentId, setHighlightCommentId] = useState<number | null>(null);
 
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
@@ -378,7 +378,7 @@ export default function Workspace() {
     }, [referencePanelTab]);
 
     // Fired by editor floating button — opens comment rail in composer mode.
-    const handleAddComment = useCallback((anchor: { from: number; to: number }) => {
+    const handleAddComment = useCallback((anchor: { from: number; to: number; text: string }) => {
         setPendingCommentAnchor(anchor);
         setPanelOpen(true);
         setReferencePanelTab('comments');
@@ -393,7 +393,9 @@ export default function Workspace() {
     // span) → open comment rail and highlight the matching card.
     useEffect(() => {
         function handleCommentAnchorClick(e: Event) {
-            const id = (e as CustomEvent<{ commentId: number }>).detail.commentId;
+            const detail = (e as CustomEvent<{ commentId: number } | null>).detail;
+            if (!detail) return;
+            const id = detail.commentId;
             if (isFinite(id)) {
                 setPanelOpen(true);
                 setReferencePanelTab('comments');

@@ -119,10 +119,11 @@ interface RichTextEditorProps {
      */
     enableComments?: boolean;
     /**
-     * Fires with the selected range when the user clicks "Add comment".
-     * The Workspace uses this to open CommentRail in composer mode.
+     * Fires with the selected range + snapshotted text when the user
+     * clicks "Add comment". The Workspace uses this to open CommentRail
+     * in composer mode; `text` becomes the server-persisted anchor_text.
      */
-    onAddComment?: (anchor: { from: number; to: number }) => void;
+    onAddComment?: (anchor: { from: number; to: number; text: string }) => void;
 }
 
 /* ── Toolbar button definitions ── */
@@ -561,6 +562,43 @@ export default function RichTextEditor({
                 }
             });
             return map;
+        },
+        findTextInDoc(text: string): Array<{ from: number; to: number }> {
+            if (!editor || !text) return [];
+            // Build a flat string + position mapping by walking text nodes.
+            const docPositions: number[] = [];
+            let fullText = '';
+            editor.state.doc.descendants((node, pos) => {
+                if (node.isText && node.text) {
+                    for (let i = 0; i < node.text.length; i++) {
+                        docPositions.push(pos + i);
+                        fullText += node.text[i];
+                    }
+                }
+            });
+            const results: Array<{ from: number; to: number }> = [];
+            const textLen = text.length;
+            let idx = 0;
+            while ((idx = fullText.indexOf(text, idx)) !== -1) {
+                if (idx + textLen - 1 < docPositions.length) {
+                    results.push({
+                        from: docPositions[idx],
+                        // +1: ProseMirror `to` is exclusive end
+                        to: docPositions[idx + textLen - 1] + 1,
+                    });
+                }
+                idx++;
+            }
+            return results;
+        },
+        reanchorCommentMark(from: number, to: number, commentId: number): void {
+            if (!editor) return;
+            const commentMarkType = editor.schema.marks['comment'];
+            if (!commentMarkType) return;
+            const tr = editor.state.tr;
+            tr.addMark(from, to, commentMarkType.create({ commentId }));
+            tr.setMeta('addToHistory', false);
+            editor.view.dispatch(tr);
         },
     }));
 
@@ -1116,10 +1154,12 @@ export default function RichTextEditor({
                 return (
                     <button
                         type="button"
-                        aria-label={t('writing.comments.add')}
+                        aria-label={t('writing.comments.add_comment')}
                         onMouseDown={(e) => {
                             e.preventDefault();
-                            onAddComment?.(commentSelectionRange);
+                            const { from, to } = commentSelectionRange;
+                            const anchorText = editor.state.doc.textBetween(from, to, ' ');
+                            onAddComment?.({ from, to, text: anchorText });
                         }}
                         style={{
                             position: 'fixed',
@@ -1143,7 +1183,7 @@ export default function RichTextEditor({
                         }}
                     >
                         <i className="fa-solid fa-comment-medical" style={{ fontSize: '0.625rem' }} aria-hidden="true" />
-                        {t('writing.comments.add')}
+                        {t('writing.comments.add_comment')}
                     </button>
                 );
             })()}

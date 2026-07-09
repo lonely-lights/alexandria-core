@@ -33,6 +33,10 @@ export interface CommentData {
     resolved_by: number | null;
     created_at: string;
     updated_at: string;
+    /** The selected text snapshotted when the comment was created (F1 durable anchor). */
+    anchor_text: string | null;
+    /** ProseMirror `from` position at creation time — hint for nearest-occurrence selection. */
+    anchor_offset_hint: number | null;
 }
 
 /**
@@ -137,6 +141,18 @@ export function sortByDocPosition(
         if (posA !== posB) return posA - posB;
         return a.id - b.id;
     });
+}
+
+/**
+ * Sort comments by created_at ascending (server insertion order).
+ * Used for the read-only viewer path where the editor has no comment
+ * marks and orphan filtering must be skipped.
+ *
+ * Returns [] on empty input; does not mutate the input array.
+ */
+export function sortByCreatedAt(comments: CommentData[]): CommentData[] {
+    if (comments.length === 0) return [];
+    return [...comments].sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
 /**

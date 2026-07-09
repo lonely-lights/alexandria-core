@@ -308,7 +308,7 @@ export default function CommentRailList({
                             style={{ fontSize: '0.625rem' }}
                             aria-hidden="true"
                         />
-                        {t('writing.comments.resolved_group', { count: resolved.length })}
+                        {t('writing.comments.resolved_group').replace(':count', String(resolved.length))}
                     </button>
 
                     {resolvedOpen && (

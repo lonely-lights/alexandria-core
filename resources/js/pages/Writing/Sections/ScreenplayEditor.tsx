@@ -104,8 +104,8 @@ interface ScreenplaySurfaceProps {
     onSerialized: (serialized: string) => void;
     /** Enable the floating "Add comment" affordance (Stage 11.5 Task 3). */
     enableComments?: boolean;
-    /** Fires with the selected range when the user clicks "Add comment". */
-    onAddComment?: (anchor: { from: number; to: number }) => void;
+    /** Fires with the selected range + snapshotted text when the user clicks "Add comment". */
+    onAddComment?: (anchor: { from: number; to: number; text: string }) => void;
 }
 
 /**
@@ -325,6 +325,41 @@ function ScreenplaySurface({
             });
             return map;
         },
+        findTextInDoc(text: string): Array<{ from: number; to: number }> {
+            if (!editor || !text) return [];
+            const docPositions: number[] = [];
+            let fullText = '';
+            editor.state.doc.descendants((node, pos) => {
+                if (node.isText && node.text) {
+                    for (let i = 0; i < node.text.length; i++) {
+                        docPositions.push(pos + i);
+                        fullText += node.text[i];
+                    }
+                }
+            });
+            const results: Array<{ from: number; to: number }> = [];
+            const textLen = text.length;
+            let idx = 0;
+            while ((idx = fullText.indexOf(text, idx)) !== -1) {
+                if (idx + textLen - 1 < docPositions.length) {
+                    results.push({
+                        from: docPositions[idx],
+                        to: docPositions[idx + textLen - 1] + 1,
+                    });
+                }
+                idx++;
+            }
+            return results;
+        },
+        reanchorCommentMark(from: number, to: number, commentId: number): void {
+            if (!editor) return;
+            const commentMarkType = editor.schema.marks['comment'];
+            if (!commentMarkType) return;
+            const tr = editor.state.tr;
+            tr.addMark(from, to, commentMarkType.create({ commentId }));
+            tr.setMeta('addToHistory', false);
+            editor.view.dispatch(tr);
+        },
     }));
 
     // Forward desk-gutter clicks into the editor (the sheet is
@@ -507,10 +542,12 @@ function ScreenplaySurface({
                 return (
                     <button
                         type="button"
-                        aria-label={t('writing.comments.add')}
+                        aria-label={t('writing.comments.add_comment')}
                         onMouseDown={(e: MouseEvent) => {
                             e.preventDefault();
-                            onAddComment?.(commentSelectionRange);
+                            const { from, to } = commentSelectionRange;
+                            const anchorText = editor.state.doc.textBetween(from, to, ' ');
+                            onAddComment?.({ from, to, text: anchorText });
                         }}
                         style={{
                             position: 'fixed',
@@ -533,7 +570,7 @@ function ScreenplaySurface({
                         }}
                     >
                         <i className="fa-solid fa-comment-medical" style={{ fontSize: '0.625rem' }} aria-hidden="true" />
-                        {t('writing.comments.add')}
+                        {t('writing.comments.add_comment')}
                     </button>
                 );
             })()}

@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained();
             $table->foreignId('parent_id')->nullable()->constrained('work_section_comments')->nullOnDelete();
             $table->text('body');
+            $table->text('anchor_text')->nullable();
+            $table->unsignedInteger('anchor_offset_hint')->nullable();
             $table->timestamp('resolved_at')->nullable();
             $table->foreignId('resolved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
