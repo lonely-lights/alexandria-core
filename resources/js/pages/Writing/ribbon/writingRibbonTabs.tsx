@@ -371,5 +371,5 @@ export function registerWritingRibbon(): void {
     }
 
     registered = true;
-    registerRibbonTabs('writing', WRITING_TABS as RibbonTab<unknown>[]);
+    registerRibbonTabs('writing', WRITING_TABS as RibbonTab[]);
 }

@@ -141,8 +141,8 @@ export default function RecycleBin() {
 
     const summaryLabel =
         entries.length === 1
-            ? t('entries.recycle_bin.summary.singular', { count: 1 })
-            : t('entries.recycle_bin.summary.plural', { count: entries.length });
+            ? t('entries.recycle_bin.summary.singular').replace(':count', '1')
+            : t('entries.recycle_bin.summary.plural').replace(':count', String(entries.length));
 
     return (
         <AppLayout>
@@ -226,9 +226,10 @@ export default function RecycleBin() {
                             <ActionButton
                                 label={
                                     selectedIds.length > 0
-                                        ? t('entries.recycle_bin.restore_selected_count', {
-                                              count: selectedIds.length,
-                                          })
+                                        ? t('entries.recycle_bin.restore_selected_count').replace(
+                                              ':count',
+                                              String(selectedIds.length),
+                                          )
                                         : t('entries.recycle_bin.restore_selected')
                                 }
                                 icon="fa-solid fa-rotate-left"
