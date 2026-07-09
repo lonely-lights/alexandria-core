@@ -176,6 +176,11 @@ export default function ProjectNavigation({
                 trailing={<ArchiveCount projectId={project.id} />}
             />
             <SidebarRow
+                href={`/p/${project.slug}/recycle-bin`}
+                icon="fa-solid fa-trash-can"
+                label={t('nav.recycle_bin')}
+            />
+            <SidebarRow
                 href="#"
                 icon="fa-solid fa-list"
                 label={t('nav.list_manager')}

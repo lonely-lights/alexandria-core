@@ -54,15 +54,20 @@ function DropdownRow({
     // Color resolution branches on danger flag + hover state. Danger
     // rows track --theme-status-error-stroke; non-danger rows track
     // --theme-base-content with alpha-mix variants.
+    //
+    // Contrast fix (Stage 11 Slice 4): danger text is full stroke at rest
+    // (was 80% — too similar to muted non-danger text). Hover bg uses the
+    // pre-baked --theme-status-error-subtle token (fill @ 10% opacity)
+    // for token consistency instead of an ad-hoc 12% mix.
     const baseColor = item.danger ? 'var(--theme-status-error-stroke)' : 'var(--theme-base-content)';
     const fadedColor = item.danger
-        ? 'color-mix(in srgb, var(--theme-status-error-stroke) 80%, transparent)'
+        ? 'var(--theme-status-error-stroke)'
         : 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)';
     const iconFadedColor = item.danger
-        ? 'color-mix(in srgb, var(--theme-status-error-stroke) 70%, transparent)'
+        ? 'color-mix(in srgb, var(--theme-status-error-stroke) 75%, transparent)'
         : 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)';
     const hoverBg = item.danger
-        ? 'color-mix(in srgb, var(--theme-status-error-stroke) 12%, transparent)'
+        ? 'var(--theme-status-error-subtle)'
         : 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)';
 
     const rowStyle: CSSProperties = {

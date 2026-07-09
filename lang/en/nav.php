@@ -22,6 +22,7 @@ return [
     'commands' => 'Commands',
     'models' => 'Models',
     'archive' => 'Archive',
+    'recycle_bin' => 'Recycle Bin',
     'list_manager' => 'List Manager',
     'structural_manager' => 'Structural Manager',
     'relationship_manager' => 'Relationship Manager',

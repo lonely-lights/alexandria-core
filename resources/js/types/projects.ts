@@ -154,3 +154,26 @@ export interface SearchResults {
     }>;
     total: number;
 }
+
+export interface TrashedEntry {
+    id: number;
+    name: string;
+    slug: string;
+    /** Human-readable relative time, e.g. "3 days ago". */
+    deleted_at_human: string;
+    blueprint: {
+        name: string | null;
+        slug: string | null;
+        icon: string | null;
+    };
+}
+
+export interface RecycleBinProps {
+    project: {
+        id: number;
+        name: string;
+        slug: string;
+    };
+    entries: TrashedEntry[];
+    [key: string]: unknown;
+}
