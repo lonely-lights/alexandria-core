@@ -19,6 +19,13 @@ const COMMENT_MARK_PLUGIN_KEY = new PluginKey('alexandriaCommentMark');
 export const CommentMark = Mark.create({
     name: 'comment',
 
+    /**
+     * Exclusive trailing edge (Word-like behaviour): typing at the very end
+     * of a commented span does NOT extend the comment mark — the cursor
+     * sits just outside. Typing inside the span still inherits the mark.
+     */
+    inclusive: false,
+
     addAttributes() {
         return {
             commentId: {

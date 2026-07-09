@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type CSSProperties, type RefObject } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, type CSSProperties, type RefObject } from 'react';
 import { usePage } from '@inertiajs/react';
 import { createPortal } from 'react-dom';
 import gsap from 'gsap';
@@ -526,8 +526,13 @@ export default function NotesDrawer() {
         return () => window.removeEventListener(OPEN_EVENT, handleOpen);
     }, []);
 
-    // Animate open/close (skip when opening via page transition)
-    useEffect(() => {
+    // Animate open/close (skip when opening via page transition).
+    // useLayoutEffect fires before the browser paints, so GSAP sets the
+    // FROM state (y:100% off-screen) before the first visible frame — no
+    // flash at the natural position.  This mirrors useFloatingPanel and
+    // fixes the "snap" seen when opening from the writing workspace rail
+    // (where the body-lock context makes the post-paint delay noticeable).
+    useLayoutEffect(() => {
         if (open) {
             document.body.style.overflow = 'hidden';
             if (skipAnimationRef.current) {
@@ -1003,6 +1008,7 @@ export default function NotesDrawer() {
                 + filters at phone widths). */}
             <div
                 ref={drawerRef}
+                data-notes-drawer
                 className={`fixed inset-x-0 bottom-0 z-50 flex flex-col transition-[height] duration-300 ease-out ${isMobileDrawer ? 'h-[calc(100vh-var(--navbar-height,3.5rem))]' : drawerHeightClass}`}
                 style={drawerBgStyle}
             >
