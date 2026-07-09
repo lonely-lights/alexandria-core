@@ -1,17 +1,22 @@
 /**
- * Panel mode persistence helpers — Stage 11.5 Task 4.
+ * Panel mode persistence helpers — Stage 11.5 Task 4; extended Stage 12a.
  *
  * Per-work client-side storage for the right-rail mode switcher
- * (Linked items · Notes · Comments). Key per work:
- * `alexandria.writing.panel-mode:<workId>`.
+ * (Linked items · Notes · Comments + package-registered modes). Key per
+ * work: `alexandria.writing.panel-mode:<workId>`.
  *
  * Designed as a pure module so Vitest can test the helpers without
  * a DOM or React runtime (localStorage tests use happy-dom opt-in).
  */
 
-export type PanelMode = 'linked' | 'notes' | 'comments';
+/**
+ * The three built-in modes plus any id registered via sidebarModeRegistry.
+ * The `(string & {})` tail preserves autocomplete for the literals while
+ * accepting arbitrary registered ids.
+ */
+export type PanelMode = 'linked' | 'notes' | 'comments' | (string & {});
 
-const VALID_MODES = new Set<string>(['linked', 'notes', 'comments'] as const);
+const BUILT_IN_MODES = new Set<string>(['linked', 'notes', 'comments'] as const);
 const KEY_PREFIX = 'alexandria.writing.panel-mode';
 
 /** Build the localStorage key for a given work id. */
@@ -21,20 +26,34 @@ export function panelModeKey(workId: number): string {
 
 /**
  * Coerce a raw stored string to a valid PanelMode.
- * Defaults to 'linked' for null, undefined, or unrecognised values.
+ *
+ * Built-in modes ('linked' | 'notes' | 'comments') are always accepted.
+ * A registered mode id is accepted only when it appears in allowedIds —
+ * the caller supplies the ids whose gate currently resolves to 'visible'.
+ * Unknown ids and ids absent from allowedIds (i.e. locked or hidden modes)
+ * fall back to 'linked' so a downgraded user is never stranded.
  */
-export function normalizePanelMode(value: string | null | undefined): PanelMode {
-    if (value !== null && value !== undefined && VALID_MODES.has(value)) {
-        return value as PanelMode;
+export function normalizePanelMode(
+    value: string | null | undefined,
+    allowedIds?: string[],
+): PanelMode {
+    if (value !== null && value !== undefined) {
+        if (BUILT_IN_MODES.has(value)) {
+            return value as PanelMode;
+        }
+
+        if (allowedIds !== undefined && allowedIds.includes(value)) {
+            return value as PanelMode;
+        }
     }
 
     return 'linked';
 }
 
 /** Read the persisted mode for a work (defaults to 'linked'). */
-export function readPanelMode(workId: number): PanelMode {
+export function readPanelMode(workId: number, allowedIds?: string[]): PanelMode {
     try {
-        return normalizePanelMode(localStorage.getItem(panelModeKey(workId)));
+        return normalizePanelMode(localStorage.getItem(panelModeKey(workId)), allowedIds);
     } catch {
         return 'linked';
     }

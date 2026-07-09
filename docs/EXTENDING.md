@@ -138,7 +138,64 @@ $this->app->bind(
 
 ---
 
-## 7. What's *not* an extension point yet
+## 7. Registering a writing workspace sidebar mode
+
+Core's writing workspace right-rail ships three built-in modes (Linked items, Notes, Comments). Sibling packages — such as `lonely-lights/alexandria-craft` — can contribute additional modes that appear after the built-ins in the mode switcher.
+
+### API
+
+```ts
+import {
+    registerSidebarModes,
+    type RegisteredSidebarMode,
+    type SidebarModeContext,
+} from '@alexandria/pages/Writing/sidebarModeRegistry';
+
+// Call once at package boot (e.g. from the package's setup file or
+// the entry-point imported by the consumer app's app.tsx):
+registerSidebarModes([
+    {
+        id: 'craft',
+        labelKey: 'craft::sidebar.mode_label',     // useT key (craft:: lang group)
+        icon: 'fa-solid fa-pen-nib',
+        component: CraftSidebarPanel,              // ComponentType<SidebarModeContext>
+        requires: { entitlement: 'craft_suite' },  // optional gate
+    },
+]);
+```
+
+`registerSidebarModes` is idempotent by `id` — calling it multiple times with the same id is safe (first registration wins). Multiple packages may each call it at boot; they accumulate in order.
+
+### Context
+
+Your component receives `SidebarModeContext`:
+
+| Prop | Type | Description |
+|---|---|---|
+| `project` | `{ id, name, slug }` | The active project. |
+| `work` | `{ id, title, slug }` | The active work. |
+| `currentSection` | `{ id, title, slug } \| null` | The section open in the editor, or `null`. |
+| `editorBridge` | `WritingEditorBridge \| null` | Live editor API — use for reading/manipulating doc content. |
+| `editorTick` | `number` | Bumped on every editor transaction so your component can re-read the bridge. |
+| `canUpdate` | `boolean` | Whether the current user has write permission on the work. |
+
+### Entitlement gating
+
+The `requires` field on a registered mode follows the same rules as ribbon controls (see `ribbonGates.ts`):
+
+- `requires.permission` falsy → button is **hidden** from the switcher.
+- `requires.entitlement` not held → button is **disabled** with a padlock badge and a "Available in the store" tooltip (same locked treatment as ribbon controls).
+- Both checks pass (or no `requires`) → button is **visible** and active.
+
+A user whose entitlement is revoked mid-session will see the mode button locked; their previously persisted mode preference is reset to `'linked'` on next workspace load.
+
+### Persistence
+
+The workspace persists the active mode to `localStorage` per work. If a user has mode `'craft'` persisted but opens the workspace without the `craft_suite` entitlement, `normalizePanelMode` silently falls back to `'linked'` — no stale or broken state.
+
+---
+
+## 8. What's *not* an extension point yet
 
 The following are deliberately out of scope for `v0.1.0`. They'll likely become extension points in a later minor version, but for now consumers either copy + modify the relevant files into their own app or vendor-fork:
 

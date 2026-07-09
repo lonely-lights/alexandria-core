@@ -1,21 +1,29 @@
-import type { CSSProperties } from 'react';
+import { useSyncExternalStore, type CSSProperties } from 'react';
 
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import useT from '@alexandria/hooks/useT';
+import useEntitlements from '@alexandria/hooks/useEntitlements';
+import { resolveGate } from '@alexandria/ribbon/ribbonGates';
+import type { RibbonGates } from '@alexandria/ribbon/types';
 
 import type { PanelMode } from '../panelMode';
+import { getSidebarModes, subscribeSidebarModes } from '../sidebarModeRegistry';
 
 /**
- * Right-rail mode switcher — Stage 11.5 Task 4.
+ * Right-rail mode switcher — Stage 11.5 Task 4; extended Stage 12a Task 2.
  *
- * Three icon buttons (Linked items · Notes · Comments) rendered as a
- * thin strip above the panel content. Styled identically to
- * ReferencePanel's internal tab strip for visual continuity.
+ * Three built-in icon buttons (Linked items · Notes · Comments) followed by
+ * any modes registered via sidebarModeRegistry. Registered modes are
+ * entitlement-gated via resolveGate: 'hidden' → omit, 'locked' → disabled
+ * button + fa-lock badge + locked-hint title, 'visible' → normal button.
  */
 
 interface PanelModeSwitcherProps {
     mode: PanelMode;
     onChange: (mode: PanelMode) => void;
+    /** Permission map threaded from Workspace (e.g. work.update) — used
+     *  alongside entitlements to gate registered modes. Defaults to {}. */
+    can?: Record<string, boolean>;
 }
 
 const stripStyle: CSSProperties = {
@@ -40,8 +48,11 @@ const MODES: Array<{ id: PanelMode; icon: string; labelKey: string }> = [
     { id: 'comments', icon: 'fa-solid fa-comment-dots', labelKey: 'writing.panel.mode_comments' },
 ];
 
-export default function PanelModeSwitcher({ mode, onChange }: PanelModeSwitcherProps) {
+export default function PanelModeSwitcher({ mode, onChange, can = {} }: PanelModeSwitcherProps) {
     const t = useT();
+    const entitlements = useEntitlements();
+    const registeredModes = useSyncExternalStore(subscribeSidebarModes, getSidebarModes);
+    const gates: RibbonGates = { can, entitlements };
 
     return (
         <div
@@ -64,6 +75,58 @@ export default function PanelModeSwitcher({ mode, onChange }: PanelModeSwitcherP
                             style={isActive ? activeBtnStyle : idleBtnStyle}
                         >
                             <i className={icon} aria-hidden="true" />
+                        </button>
+                    </Tooltip>
+                );
+            })}
+
+            {registeredModes.map((m) => {
+                const verdict = resolveGate(m.requires, gates);
+
+                if (verdict === 'hidden') {
+                    return null;
+                }
+
+                const isActive = m.id === mode;
+                const label = t(m.labelKey);
+
+                if (verdict === 'locked') {
+                    return (
+                        <span
+                            key={m.id}
+                            className="relative inline-flex"
+                            title={t('writing.ribbon.locked_hint')}
+                        >
+                            <button
+                                type="button"
+                                disabled
+                                aria-label={label}
+                                data-panel-mode-btn={m.id}
+                                className="alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors"
+                                style={idleBtnStyle}
+                            >
+                                <i className={m.icon} aria-hidden="true" />
+                            </button>
+                            <i
+                                className="fa-solid fa-lock ribbon-ctl-lock pointer-events-none absolute bottom-0 right-0 text-[8px]"
+                                aria-hidden="true"
+                            />
+                        </span>
+                    );
+                }
+
+                return (
+                    <Tooltip key={m.id} content={label}>
+                        <button
+                            type="button"
+                            onClick={() => onChange(m.id)}
+                            aria-label={label}
+                            aria-pressed={isActive}
+                            data-panel-mode-btn={m.id}
+                            className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${isActive ? 'alex-toolbar-btn--active' : ''}`}
+                            style={isActive ? activeBtnStyle : idleBtnStyle}
+                        >
+                            <i className={m.icon} aria-hidden="true" />
                         </button>
                     </Tooltip>
                 );

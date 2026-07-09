@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 import useEntitlements from '@alexandria/hooks/useEntitlements';
@@ -35,6 +35,8 @@ import WorkspaceStatusBar from './Sections/WorkspaceStatusBar';
 import type { WritingEditorBridge, WritingRibbonContext } from './ribbon/writingRibbonContext';
 import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
 import { type PanelMode, readPanelMode, writePanelMode } from './panelMode';
+import { getSidebarModes, subscribeSidebarModes } from './sidebarModeRegistry';
+import { resolveGate } from '@alexandria/ribbon/ribbonGates';
 
 /**
  * Writing dashboard → workspace — Stage 8g.1 (ribbon-driven since
@@ -278,11 +280,22 @@ export default function Workspace() {
     const [pendingCommentAnchor, setPendingCommentAnchor] = useState<{ from: number; to: number; text: string } | null>(null);
     const [highlightCommentId, setHighlightCommentId] = useState<number | null>(null);
 
+    // Subscribe to sidebar mode registry — re-renders when packages register
+    // new modes at boot (useSyncExternalStore is safe for concurrent mode).
+    const registeredModes = useSyncExternalStore(subscribeSidebarModes, getSidebarModes);
+
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
-    // Per-work panel mode (Linked items · Notes · Comments); persisted to
-    // localStorage keyed by work id (Task 4). Separate from the linked-mode's
-    // internal tab (linkedPanelTab) which mirrors the old referencePanelTab.
-    const [panelMode, setPanelMode] = useState<PanelMode>(() => readPanelMode(work.id));
+    // Per-work panel mode (Linked items · Notes · Comments + registered modes);
+    // persisted to localStorage keyed by work id (Task 4). Separate from the
+    // linked-mode's internal tab (linkedPanelTab).
+    // allowedIds = registered modes whose gate currently resolves to 'visible';
+    // a stored id that is unknown or locked falls back to 'linked'.
+    const [panelMode, setPanelMode] = useState<PanelMode>(() => {
+        const initAllowedIds = getSidebarModes()
+            .filter((m) => resolveGate(m.requires, writingGates) === 'visible')
+            .map((m) => m.id);
+        return readPanelMode(work.id, initAllowedIds);
+    });
     const [linkedPanelTab, setLinkedPanelTab] = useState(() =>
         work.format === 'screenplay' ? 'scene-links' : 'browse',
     );
@@ -965,6 +978,7 @@ export default function Workspace() {
                                     setPanelMode(mode);
                                     writePanelMode(work.id, mode);
                                 }}
+                                can={{ 'work.update': can.update }}
                             />
                             <div className="min-h-0 flex-1">
                                 {panelMode === 'linked' && (
@@ -1004,6 +1018,19 @@ export default function Workspace() {
                                         highlightCommentId={highlightCommentId}
                                         onHighlightHandled={() => setHighlightCommentId(null)}
                                     />
+                                )}
+                                {registeredModes.map((m) =>
+                                    m.id === panelMode ? (
+                                        <m.component
+                                            key={m.id}
+                                            project={project}
+                                            work={work}
+                                            currentSection={currentSection}
+                                            editorBridge={bridgeRef.current}
+                                            editorTick={editorTick}
+                                            canUpdate={can.update}
+                                        />
+                                    ) : null,
                                 )}
                             </div>
                         </aside>
