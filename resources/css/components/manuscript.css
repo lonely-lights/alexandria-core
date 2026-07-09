@@ -344,9 +344,10 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
 /* The TipTap CommentMark extension renders anchored spans as <mark
    class="comment-mark" data-comment-id="N">. A subtle amber tint marks
    the range without obscuring the prose; the hover darkens it slightly
-   for discoverability. Marks are session-only (the wiki serializer has
-   no comment-mark syntax) — they're applied after the rail composer
-   saves and lost on page reload. */
+   for discoverability. Durable server-side text-quote anchors persist
+   across reloads; reanchorComments runs on load/doc-replacement to restore
+   marks. Multi-paragraph anchors do not re-anchor in v1 (single-block
+   text matching only). */
 .comment-mark {
     background: color-mix(in srgb, var(--theme-status-warning-stroke, #d97706) 18%, transparent);
     border-radius: 2px;

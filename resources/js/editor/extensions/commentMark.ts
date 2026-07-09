@@ -10,11 +10,11 @@ const COMMENT_MARK_PLUGIN_KEY = new PluginKey('alexandriaCommentMark');
  * Clicking a marked span dispatches 'alexandria:comment-anchor-click' on
  * window so CommentRail can highlight the matching card and scroll to it.
  *
- * Marks live in TipTap's undo history (session-only in v1; anchor
- * persistence across page reloads deferred — the wiki serializer has no
- * comment-mark syntax). Orphaned comment rows — those whose commentId has
- * no live mark in the current doc — simply don't render in the rail; the
- * server row is retained for future re-anchoring.
+ * Marks live in TipTap's undo history. Durable server-side text-quote
+ * anchors (anchor_text / anchor_offset_hint) are stored on the comment
+ * row; reanchorComments() re-applies marks on load/doc-replacement.
+ * Multi-paragraph anchors do not re-anchor in v1 (single-block text
+ * matching). Orphaned rows retry per editorTick.
  */
 export const CommentMark = Mark.create({
     name: 'comment',

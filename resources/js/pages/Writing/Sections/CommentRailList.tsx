@@ -1,6 +1,7 @@
 import { useState, type CSSProperties, type MouseEvent } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import { relativeDate } from '@alexandria/lib/formatDate';
 
 import type { CommentData } from './commentRailModel';
 
@@ -120,18 +121,6 @@ const emptyStyle: CSSProperties = {
     padding: '1.5rem 0.5rem',
 };
 
-/* ── Relative time helper ── */
-
-function relativeTime(dateStr: string): string {
-    const diffMs = Date.now() - new Date(dateStr).getTime();
-    const diffMins = Math.floor(diffMs / 60_000);
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${Math.floor(diffHours / 24)}d ago`;
-}
-
 /* ── Single comment card ── */
 
 interface CommentCardProps {
@@ -179,7 +168,7 @@ function CommentCard({ comment, currentUserId, canUpdate, highlighted, callbacks
             {/* Header row */}
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.375rem' }}>
                 <span style={authorStyle}>{comment.author.name}</span>
-                <span style={timeStyle}>{relativeTime(comment.created_at)}</span>
+                <span style={timeStyle}>{relativeDate(comment.created_at)}</span>
             </div>
 
             {editing ? (

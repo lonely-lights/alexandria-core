@@ -10,10 +10,11 @@
  * doc via extractPositionMap(), then passes it to groupComments() to
  * derive the ordered, orphan-filtered, resolved-split display list.
  *
- * Known v1 limitation: marks are session-only (the wiki serializer has
- * no comment-mark syntax). After a page reload all comments become
- * orphaned (both groups empty). The rows are retained server-side for
- * a future re-anchoring pass.
+ * Anchor persistence: durable server-side text-quote anchors are stored
+ * in anchor_text / anchor_offset_hint. reanchorComments() restores marks
+ * on load/doc-replacement. Multi-paragraph anchors do not re-anchor in
+ * v1 (single-block text matching). Permanently-orphaned anchors retry per
+ * editorTick; memoization deferred to style A.
  */
 
 // ---------------------------------------------------------------------------

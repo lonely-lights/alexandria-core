@@ -275,7 +275,9 @@ export default function SidebarNotesPanel({
 
                 {showEmpty && !noSectionAndSectionScope && (
                     <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
-                        {t('writing.panel.notes_empty')}
+                        {wholeWork
+                            ? t('writing.panel.notes_empty_work')
+                            : t('writing.panel.notes_empty')}
                     </p>
                 )}
 

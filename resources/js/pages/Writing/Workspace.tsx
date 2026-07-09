@@ -443,6 +443,12 @@ export default function Workspace() {
         }
     }, [currentSection?.id, currentSection?.content, currentSection?.format, linkedPanelTab, work.format]);
 
+    /* Clear transient comment state when the active section changes. */
+    useEffect(() => {
+        setPendingCommentAnchor(null);
+        setHighlightCommentId(null);
+    }, [currentSection?.id]);
+
     useEffect(() => {
         const previousHtmlOverflow = document.documentElement.style.overflow;
         const previousHtmlHeight = document.documentElement.style.height;

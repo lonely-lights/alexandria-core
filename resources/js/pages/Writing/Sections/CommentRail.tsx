@@ -4,7 +4,6 @@ import useT from '@alexandria/hooks/useT';
 import type { WritingEditorBridge } from '@alexandria/pages/Writing/ribbon/writingRibbonContext';
 
 import {
-    extractPositionMap,
     groupComments,
     sortByCreatedAt,
     type CommentData,
@@ -25,10 +24,11 @@ import CommentRailList from './CommentRailList';
  * referencePanelTab === 'comments' (Task 3 minimal wire); Task 4
  * will fold it into the multi-mode sidebar tab system.
  *
- * Known v1 limitation: comment marks are session-only (the wiki
- * serializer has no comment-mark syntax). After a page reload all
- * comments are orphaned (hidden from the ordered list). The rows
- * are retained server-side for a future re-anchoring pass.
+ * Anchor persistence: durable server-side text-quote anchors;
+ * reanchorComments runs on load/doc-replacement to restore marks from
+ * anchor_text. Multi-paragraph anchors do not re-anchor in v1 (single-
+ * block text matching only). Permanently-orphaned anchors retry per
+ * editorTick; memoization of re-anchor results deferred to style A.
  *
  * Preference stub: COMMENT_RAIL_STYLE is a module constant for now.
  * TODO: Stage 16 — read from `writing.comment_rail_style` user
@@ -314,7 +314,7 @@ export default function CommentRail({
             };
             // F1: persist anchor_text + offset hint so marks survive reload.
             if (pendingAnchor) {
-                body.anchor_text = pendingAnchor.text;
+                body.anchor_text = pendingAnchor.text.slice(0, 2000);
                 body.anchor_offset_hint = pendingAnchor.from;
             }
             const r = await fetch(
