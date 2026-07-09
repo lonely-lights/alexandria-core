@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Alexandria\Core\Models\Writing;
 
 use Alexandria\Core\Database\Factories\Writing\WorkSectionFactory;
+use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\System\Entry;
+use Alexandria\Core\Traits\Notable\HasNotes;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -56,6 +58,7 @@ use Illuminate\Support\Str;
  * @property-read Entry|null $povEntry
  * @property-read Entry|null $settingEntry
  * @property-read Collection<int, WorkSectionEntryMention> $entryMentions
+ * @property-read Collection<int, Note> $notes
  *
  * @method static WorkSectionFactory factory($count = null, $state = [])
  *
@@ -64,6 +67,7 @@ use Illuminate\Support\Str;
 class WorkSection extends Model
 {
     use HasFactory;
+    use HasNotes;
     use SoftDeletes;
 
     protected $guarded = ['id'];

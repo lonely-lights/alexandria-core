@@ -5,6 +5,7 @@ import useT from '@alexandria/hooks/useT';
 import useEntitlements from '@alexandria/hooks/useEntitlements';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
+import { openNotesDrawer } from '@alexandria/components/notes/NotesDrawer';
 import Ribbon from '@alexandria/ribbon/Ribbon';
 import type { RibbonGates } from '@alexandria/ribbon/types';
 import LogoMark from '@alexandria/components/brand/LogoMark';
@@ -306,6 +307,28 @@ export default function Workspace() {
             // Persistence is best-effort; private-mode failures are fine.
         }
     }, []);
+
+    /** Open the notes drawer scoped to the current section; fall back to
+     *  project scope when no section is active (e.g., empty work). */
+    const handleNotesClick = useCallback(() => {
+        if (currentSection !== null) {
+            openNotesDrawer({
+                projectId: project.id,
+                projectSlug: project.slug,
+                contextType: 'work_section',
+                contextId: currentSection.id,
+                contextLabel: currentSection.title,
+            });
+        } else {
+            openNotesDrawer({
+                projectId: project.id,
+                projectSlug: project.slug,
+                contextType: 'project',
+                contextId: project.id,
+                contextLabel: project.name,
+            });
+        }
+    }, [project.id, project.slug, project.name, currentSection]);
 
     const toggleSceneLinksPanel = useCallback(() => {
         setPanelOpen((prev) => {
@@ -848,7 +871,11 @@ export default function Workspace() {
                         </aside>
                     )}
 
-                    <WorkspaceAppRail projectSlug={project.slug} workSlug={work.slug} />
+                    <WorkspaceAppRail
+                        projectSlug={project.slug}
+                        workSlug={work.slug}
+                        onNotesClick={handleNotesClick}
+                    />
                 </div>
 
                 {/* Bottom-attached status bar — full workspace width */}

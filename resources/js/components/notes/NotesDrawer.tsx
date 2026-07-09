@@ -49,7 +49,7 @@ const NOTEBOOK_COLOR_SWATCHES = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3
 export interface NotesContext {
     projectId: number;
     projectSlug: string;
-    contextType: 'project' | 'blueprint' | 'entry';
+    contextType: 'project' | 'blueprint' | 'entry' | 'work_section';
     contextId: number;
     contextLabel: string;
     contextSlug?: string;

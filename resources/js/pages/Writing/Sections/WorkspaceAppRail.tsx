@@ -7,6 +7,8 @@ import useT from '@alexandria/hooks/useT';
 interface WorkspaceAppRailProps {
     projectSlug: string;
     workSlug: string;
+    /** When provided, the notes rail item fires this callback instead of navigating to the notes dashboard. */
+    onNotesClick?: () => void;
 }
 
 interface RailItem {
@@ -17,7 +19,7 @@ interface RailItem {
     isActive: (path: string) => boolean;
 }
 
-export default function WorkspaceAppRail({ projectSlug, workSlug }: WorkspaceAppRailProps) {
+export default function WorkspaceAppRail({ projectSlug, workSlug, onNotesClick }: WorkspaceAppRailProps) {
     const t = useT();
     const { url } = usePage();
     const currentPath = url.split('?')[0] ?? url;
@@ -75,19 +77,32 @@ export default function WorkspaceAppRail({ projectSlug, workSlug }: WorkspaceApp
             {items.map((item) => {
                 const label = t(item.labelKey);
                 const active = item.isActive(currentPath);
+                const isNotesButton = item.key === 'notes' && onNotesClick !== undefined;
 
                 return (
                     <Tooltip key={item.key} content={label} placement="left">
-                        <Link
-                            href={item.href}
-                            aria-label={label}
-                            aria-current={active ? 'page' : undefined}
-                            className="writing-app-rail__link"
-                            data-transition="slide"
-                            data-writing-app-rail-link={item.key}
-                        >
-                            <i className={item.icon} aria-hidden="true" />
-                        </Link>
+                        {isNotesButton ? (
+                            <button
+                                type="button"
+                                onClick={onNotesClick}
+                                aria-label={label}
+                                className="writing-app-rail__link"
+                                data-writing-app-rail-link={item.key}
+                            >
+                                <i className={item.icon} aria-hidden="true" />
+                            </button>
+                        ) : (
+                            <Link
+                                href={item.href}
+                                aria-label={label}
+                                aria-current={active ? 'page' : undefined}
+                                className="writing-app-rail__link"
+                                data-transition="slide"
+                                data-writing-app-rail-link={item.key}
+                            >
+                                <i className={item.icon} aria-hidden="true" />
+                            </Link>
+                        )}
                     </Tooltip>
                 );
             })}
