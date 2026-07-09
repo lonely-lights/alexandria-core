@@ -233,4 +233,19 @@ return [
     'tab.history.change_type.attribute_update' => 'Attribute Update',
     'tab.history.change_type.metadata_update' => 'Metadata Update',
     'tab.history.change_type.bulk_update' => 'Bulk Update',
+
+    // ── Recycle Bin (Stage 11 Slice 4) ──────────────────────────────────
+    'recycle_bin.col.entry' => 'Entry',
+    'recycle_bin.col.blueprint' => 'Blueprint',
+    'recycle_bin.col.deleted' => 'Deleted',
+    'recycle_bin.col.select_all' => 'Select all',
+    'recycle_bin.search_placeholder' => 'Search entries…',
+    'recycle_bin.filter.all_blueprints' => 'All blueprints',
+    'recycle_bin.restore' => 'Restore',
+    'recycle_bin.restore_selected' => 'Restore Selected',
+    'recycle_bin.restore_selected_count' => 'Restore :count selected',
+    'recycle_bin.summary.singular' => ':count deleted entry',
+    'recycle_bin.summary.plural' => ':count deleted entries',
+    'recycle_bin.empty' => 'The bin is empty',
+    'recycle_bin.no_results' => 'No entries match your filters',
 ];
