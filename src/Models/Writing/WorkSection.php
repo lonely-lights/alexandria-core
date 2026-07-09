@@ -59,6 +59,7 @@ use Illuminate\Support\Str;
  * @property-read Entry|null $settingEntry
  * @property-read Collection<int, WorkSectionEntryMention> $entryMentions
  * @property-read Collection<int, Note> $notes
+ * @property-read Collection<int, WorkSectionComment> $comments
  *
  * @method static WorkSectionFactory factory($count = null, $state = [])
  *
@@ -124,6 +125,11 @@ class WorkSection extends Model
     public function entryMentions(): HasMany
     {
         return $this->hasMany(WorkSectionEntryMention::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(WorkSectionComment::class)->orderBy('created_at');
     }
 
     /**
