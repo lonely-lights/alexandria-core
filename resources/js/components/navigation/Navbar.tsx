@@ -324,7 +324,7 @@ export default function Navbar({
                                     aria-label={t("writing.dashboard.nav")}
                                 >
                                     <i
-                                        className="fa-solid fa-feather"
+                                        className="fa-light fa-feather"
                                         aria-hidden="true"
                                     />
                                 </Link>
