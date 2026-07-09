@@ -443,7 +443,7 @@ export default function AppLayout({
         const noteId = parseInt(stored, 10);
         if (Number.isNaN(noteId)) return;
         const t = setTimeout(() => {
-            const ctx = buildNotesContext({ preSelectNoteId: noteId });
+            const ctx = buildNotesContext({ preSelectNoteId: noteId, skipAnimation: true });
             if (ctx) openNotesDrawer(ctx);
         }, 100);
         return () => clearTimeout(t);

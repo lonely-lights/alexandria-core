@@ -47,6 +47,12 @@ export interface WritingEditorBridge {
      * history. Used by reanchorComments — re-anchoring must not be undoable.
      */
     reanchorCommentMark(from: number, to: number, commentId: number): void;
+    /**
+     * Remove the comment mark for `commentId` from the entire doc in a
+     * single transaction (regular history — undoing a delete restores the
+     * highlight). Called by CommentRail immediately after a successful DELETE.
+     */
+    removeCommentMark(commentId: number): void;
 }
 
 export interface WritingRibbonContext {

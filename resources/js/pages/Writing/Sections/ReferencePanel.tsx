@@ -532,6 +532,17 @@ function SectionTab({
                 />
             </div>
 
+            {currentSection.synopsis !== null && (
+                <>
+                    <p className="px-3 pt-3 pb-1" style={groupHeadingStyle}>
+                        {t('writing.panel.section_synopsis')}
+                    </p>
+                    <p className="px-3 pb-3 text-xs leading-relaxed" style={hintStyle}>
+                        {currentSection.synopsis}
+                    </p>
+                </>
+            )}
+
             <EntryPickerModal
                 open={pickTarget !== null}
                 onClose={() => setPickTarget(null)}

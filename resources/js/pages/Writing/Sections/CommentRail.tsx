@@ -25,10 +25,11 @@ import CommentRailList from './CommentRailList';
  * will fold it into the multi-mode sidebar tab system.
  *
  * Anchor persistence: durable server-side text-quote anchors;
- * reanchorComments runs on load/doc-replacement to restore marks from
- * anchor_text. Multi-paragraph anchors do not re-anchor in v1 (single-
- * block text matching only). Permanently-orphaned anchors retry per
- * editorTick; memoization of re-anchor results deferred to style A.
+ * reanchorComments runs on comment-list load/reload (section fetch) and
+ * on editor-bridge changes (section switch / doc replacement) to restore
+ * marks from anchor_text. NEVER runs on ordinary editing ticks — deleting
+ * an anchor hides the comment from the rail in-session (undo restores).
+ * Multi-paragraph anchors do not re-anchor in v1 (single-block text only).
  *
  * Preference stub: COMMENT_RAIL_STYLE is a module constant for now.
  * TODO: Stage 16 — read from `writing.comment_rail_style` user
@@ -243,30 +244,33 @@ export default function CommentRail({
     }, [projectSlug, workSlug, sectionId]);
 
     /* ── Rebuild position map on every editor transaction ── */
-    /* F1: also re-anchor comments whose mark got lost (page reload / doc-replace) */
+    /* Runs on every editorTick so card ordering and orphan-filtering stay live. */
+    /* Never calls reanchorComments here — that would resurrect just-deleted anchors. */
 
     useEffect(() => {
         if (!editorBridge) {
             setPositionMap({});
             return;
         }
-        const map = editorBridge.getCommentPositionMap();
-        // Re-anchor any comments that have anchor_text but no live mark.
-        // canUpdate gate: read-only viewers have no CommentMark extension.
-        if (canUpdate) {
-            const toReanchor = comments.filter(
-                (c) => c.anchor_text && !(c.id in map),
-            );
-            if (toReanchor.length > 0) {
-                reanchorComments(editorBridge, toReanchor);
-                // Marks are dispatched synchronously; read the updated map now.
-                setPositionMap(editorBridge.getCommentPositionMap());
-                return;
-            }
+        setPositionMap(editorBridge.getCommentPositionMap());
+    }, [editorBridge, editorTick]);
+
+    /* ── Re-anchor on comment-list load/reload (never on ordinary editing ticks) ── */
+    /* Runs when comments change (section fetch) or editorBridge changes (section   */
+    /* switch / doc replacement). Deleting anchor text must orphan the comment in   */
+    /* the rail — this effect must NOT be in the tick-driven map above.             */
+
+    useEffect(() => {
+        if (!editorBridge || !canUpdate) return;
+        const toReanchor = comments.filter(
+            (c) => c.anchor_text && !(c.id in editorBridge.getCommentPositionMap()),
+        );
+        if (toReanchor.length > 0) {
+            reanchorComments(editorBridge, toReanchor);
+            // The dispatch triggers onStateChange → editorTick bumps →
+            // position-map effect above re-reads the updated map.
         }
-        setPositionMap(map);
-        // editorTick changes on every transaction; comments captures fetch results
-    }, [editorBridge, editorTick, comments, canUpdate]);
+    }, [editorBridge, comments, canUpdate]);
 
     /* ── Scroll to + flash when highlightCommentId changes ── */
 
@@ -400,10 +404,13 @@ export default function CommentRail({
             );
             if (!r.ok) return;
             setComments((prev) => prev.filter((c) => c.id !== id));
+            // F2: clear the highlight from the editor immediately on delete.
+            // Resolved comments keep their anchors by design — only deletes remove them.
+            editorBridge?.removeCommentMark(id);
         } catch {
             // Silent
         }
-    }, [projectSlug, workSlug]);
+    }, [projectSlug, workSlug, editorBridge]);
 
     const handleAnchorClick = useCallback((id: number) => {
         editorBridge?.scrollToCommentMark(id);

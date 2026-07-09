@@ -192,6 +192,7 @@ return [
     'panel.choose' => 'Choose',
     'panel.clear' => 'Clear',
     'panel.target_words' => 'Target words',
+    'panel.section_synopsis' => 'Synopsis',
     'panel.no_section' => 'Select a section to see its references.',
     'panel.collapse' => 'Hide panel',
     'panel.expand' => 'Show panel',

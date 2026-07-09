@@ -54,6 +54,14 @@ export interface NotesContext {
     contextLabel: string;
     contextSlug?: string;
     preSelectNoteId?: number;
+    /**
+     * When true, the open animation is skipped (drawer appears instantly).
+     * Use ONLY for page-transition paths where the drawer is already
+     * contextually expected (e.g. Sorting History → note open). The
+     * sidebar-notes-panel note-click path must NOT set this so it animates.
+     * Default: false (animate).
+     */
+    skipAnimation?: boolean;
 }
 
 /* ── Theme styles ── */
@@ -509,7 +517,7 @@ export default function NotesDrawer() {
     useEffect(() => {
         function handleOpen(e: Event) {
             const ctx = (e as CustomEvent<NotesContext>).detail;
-            skipAnimationRef.current = !!ctx.preSelectNoteId;
+            skipAnimationRef.current = ctx.skipAnimation === true;
             setContext(ctx);
             setOpen(true);
             setCurrentView('active');

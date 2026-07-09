@@ -600,6 +600,23 @@ export default function RichTextEditor({
             tr.setMeta('addToHistory', false);
             editor.view.dispatch(tr);
         },
+        removeCommentMark(commentId: number): void {
+            if (!editor) return;
+            const commentMarkType = editor.schema.marks['comment'];
+            if (!commentMarkType) return;
+            const tr = editor.state.tr;
+            let changed = false;
+            editor.state.doc.descendants((node, pos) => {
+                if (!node.isText) return;
+                for (const mark of node.marks) {
+                    if (mark.type.name !== 'comment') continue;
+                    if (Number(mark.attrs.commentId) !== commentId) continue;
+                    tr.removeMark(pos, pos + node.nodeSize, commentMarkType);
+                    changed = true;
+                }
+            });
+            if (changed) editor.view.dispatch(tr);
+        },
     }));
 
     const isManuscript = variant === 'manuscript';
