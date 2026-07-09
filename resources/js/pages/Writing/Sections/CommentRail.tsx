@@ -265,9 +265,13 @@ export default function CommentRail({
     const seenAnchoredIdsRef = useRef<Set<number>>(new Set());
     const [docEpoch, setDocEpoch] = useState(0);
 
+    // Key the reset on the SECTION, not the bridge object — the editors
+    // recreate their imperative handle on every render, so bridge identity
+    // churns per keystroke (confirmed via logging 2026-07-09) and had been
+    // wiping the seen-set continuously, licensing re-anchors mid-edit.
     useEffect(() => {
         seenAnchoredIdsRef.current = new Set();
-    }, [editorBridge]);
+    }, [sectionId]);
 
     useEffect(() => {
         function handleDocReplaced() {
