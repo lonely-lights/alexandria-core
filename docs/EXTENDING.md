@@ -156,12 +156,18 @@ import {
 registerSidebarModes([
     {
         id: 'craft',
-        labelKey: 'craft::sidebar.mode_label',     // useT key (craft:: lang group)
+        labelKey: 'craft.panel.title',    // bag-key form: group 'craft', key 'panel.title'
         icon: 'fa-solid fa-pen-nib',
-        component: CraftSidebarPanel,              // ComponentType<SidebarModeContext>
+        component: CraftSidebarPanel,     // ComponentType<SidebarModeContext>
         requires: { entitlement: 'craft_suite' },  // optional gate
     },
 ]);
+
+// Translation keys use the flat bag-key form ('craft.panel.title'), not the
+// Laravel package namespace ('craft::panel.title'). The host app wires the
+// package's lang group into the shared Inertia bag in HandleInertiaRequests
+// (e.g. adding 'craft' => trans('craft::craft') to the translations array),
+// after which useT() resolves 'craft.*' keys exactly like any app key.
 ```
 
 `registerSidebarModes` is idempotent by `id` — calling it multiple times with the same id is safe (first registration wins). Multiple packages may each call it at boot; they accumulate in order.

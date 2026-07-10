@@ -623,13 +623,25 @@ export default function RichTextEditor({
         },
         getPlainText(): string {
             if (!editor) return '';
-            let text = '';
-            editor.state.doc.descendants((node) => {
-                if (node.isText && node.text) {
-                    text += node.text;
-                }
+            // Traverse top-level blocks separately and join with '\n' so
+            // adjacent blocks never merge their boundary tokens into one word
+            // (e.g. a "MARGO" paragraph + "Slowly" paragraph would otherwise
+            // produce the concatenated token "MARGOSlowly", falsely flagged
+            // as an adverb by -ly analyzers).
+            // Jump offsets from findTextInDoc still work: every finding excerpt
+            // is a single word token that never contains '\n', so ProseMirror
+            // locates it within one text node without crossing block boundaries.
+            const parts: string[] = [];
+            editor.state.doc.forEach((block) => {
+                let blockText = '';
+                block.descendants((node) => {
+                    if (node.isText && node.text) {
+                        blockText += node.text;
+                    }
+                });
+                parts.push(blockText);
             });
-            return text;
+            return parts.join('\n');
         },
         scrollToOffset(pos: number): void {
             if (!editor) return;
