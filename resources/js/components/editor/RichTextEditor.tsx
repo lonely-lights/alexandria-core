@@ -621,6 +621,31 @@ export default function RichTextEditor({
             });
             if (changed) editor.view.dispatch(tr);
         },
+        getPlainText(): string {
+            if (!editor) return '';
+            let text = '';
+            editor.state.doc.descendants((node) => {
+                if (node.isText && node.text) {
+                    text += node.text;
+                }
+            });
+            return text;
+        },
+        scrollToOffset(pos: number): void {
+            if (!editor) return;
+            try {
+                const domInfo = editor.view.domAtPos(pos);
+                const el =
+                    domInfo.node.nodeType === Node.TEXT_NODE
+                        ? (domInfo.node.parentElement as Element | null)
+                        : (domInfo.node as Element);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            } catch {
+                // pos out of range — silently ignore
+            }
+        },
     }));
 
     const isManuscript = variant === 'manuscript';

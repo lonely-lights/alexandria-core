@@ -53,6 +53,20 @@ export interface WritingEditorBridge {
      * highlight). Called by CommentRail immediately after a successful DELETE.
      */
     removeCommentMark(commentId: number): void;
+    /**
+     * Return the editor's current text content as a plain string (no markup).
+     * Uses the same text-node traversal as findTextInDoc so character offsets
+     * from analyzers map directly to positions returned by findTextInDoc.
+     * Returns '' when no editor is active.
+     */
+    getPlainText(): string;
+    /**
+     * Scroll the editor viewport to show the given ProseMirror document
+     * position. Used by panel consumers (e.g. CraftPanel) to jump to a
+     * finding without modifying the selection. No-op when the position is
+     * out of range or no editor is active.
+     */
+    scrollToOffset(pos: number): void;
 }
 
 export interface WritingRibbonContext {
