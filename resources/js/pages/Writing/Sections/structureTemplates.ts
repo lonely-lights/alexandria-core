@@ -80,4 +80,28 @@ export const STRUCTURE_TEMPLATES: StructureTemplate[] = [
             { name: 'Act 2 end', target: 75, tolerance: 5 },
         ],
     },
+    // Blake Snyder's Save the Cat beat sheet — the point-beats of the
+    // classic 110-page board, expressed as % positions. Range beats
+    // (Set-Up, Debate, Fun and Games…) are represented by the checkpoint
+    // where they END, since our diagnostics check cumulative positions.
+    {
+        slug: 'save-the-cat',
+        labelKey: 'writing.settings.structure_save_the_cat',
+        unit: 'pages',
+        outlierHigh: 2,
+        outlierLow: 0.333,
+        characterLoadHint: 8,
+        beats: [
+            { name: 'Opening Image', target: 1, tolerance: 2 },
+            { name: 'Theme Stated', target: 5, tolerance: 3 },
+            { name: 'Set-Up', target: 10, tolerance: 3 },
+            { name: 'Catalyst', target: 12, tolerance: 3 },
+            { name: 'Break into Two', target: 23, tolerance: 4 },
+            { name: 'B Story', target: 27, tolerance: 4 },
+            { name: 'Midpoint', target: 50, tolerance: 5 },
+            { name: 'All Is Lost', target: 68, tolerance: 4 },
+            { name: 'Break into Three', target: 77, tolerance: 4 },
+            { name: 'Final Image', target: 100, tolerance: 2 },
+        ],
+    },
 ];

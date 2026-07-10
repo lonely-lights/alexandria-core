@@ -79,6 +79,7 @@ return [
     'settings.structure_three_act_screenplay' => 'Three-act screenplay',
     'settings.structure_five_act_screenplay' => 'Five-act screenplay',
     'settings.structure_three_act_prose' => 'Three-act prose',
+    'settings.structure_save_the_cat' => 'Save the Cat',
     'settings.structure_col_beat' => 'Beat',
     'settings.structure_col_target' => 'Target %',
     'settings.structure_col_tolerance' => 'Tolerance %',
