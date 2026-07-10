@@ -319,6 +319,15 @@ export default function RichTextEditor({
         };
     }, []);
 
+    // One mount tick: without it, consumers waiting on editorTick (comment
+    // re-anchoring, the Craft panel's staleness gate) sit idle after a
+    // section switch until the first keystroke — prose transactions are the
+    // only other trigger. ScreenplayEditor already ticks on mount.
+    useEffect(() => {
+        notifyStateChange();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const extensions = [
         StarterKit.configure({
             heading: tier !== 'free' ? { levels: [1, 2, 3] } : false,
