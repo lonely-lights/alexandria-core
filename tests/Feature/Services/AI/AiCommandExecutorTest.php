@@ -362,3 +362,197 @@ it('creates an entry_relationships row with the supplied parent/child IDs and me
         ->and($row->child_label)->toBe('Apprentice')
         ->and($row->metadata)->toBe(['since' => 'TA 2950']);
 });
+
+// ---------------------------------------------------------------------------
+// Dedup guard: create_entry skips when a live entry with the same slug exists
+// ---------------------------------------------------------------------------
+
+it('dedup guard skips creation and marks command executed when a live entry with same slug exists', function () {
+    $batchId = (string) Str::uuid();
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+
+    // Pre-existing live entry whose slug matches Str::slug('Rivendell') = 'rivendell'.
+    $existing = Entry::factory()->inProjectWithBlueprint($project, $blueprint)->create([
+        'name' => 'Rivendell',
+        'slug' => 'rivendell',
+    ]);
+
+    $command = AiReviewCommand::factory()
+        ->forBatch($batchId)
+        ->approved()
+        ->create([
+            'action_type' => 'create_entry',
+            'reasoning' => 'Original reasoning.',
+            'payload' => [
+                'model_class' => Entry::class,
+                'temp_id' => 'temp_rivendell',
+                'attributes' => [
+                    'blueprint_id' => $blueprint->id,
+                    'project_id' => $project->id,
+                    'name' => 'Rivendell',
+                ],
+            ],
+        ]);
+
+    $result = (new AiCommandExecutor)->executeBatch($batchId);
+
+    // Command counted as success (not failed), marked executed.
+    expect($result)->toBe(['success' => 1, 'failed' => 0]);
+
+    $command->refresh();
+    expect($command->status)->toBe('executed')
+        ->and($command->executed_at)->not->toBeNull();
+
+    // No second entry created.
+    expect(Entry::query()
+        ->where('project_id', $project->id)
+        ->where('blueprint_id', $blueprint->id)
+        ->where('slug', 'rivendell')
+        ->count())->toBe(1);
+});
+
+it('dedup guard annotates reasoning with [dedup: matched existing #id]', function () {
+    $batchId = (string) Str::uuid();
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+
+    $existing = Entry::factory()->inProjectWithBlueprint($project, $blueprint)->create([
+        'name' => 'Minas Tirith',
+        'slug' => 'minas-tirith',
+    ]);
+
+    $command = AiReviewCommand::factory()
+        ->forBatch($batchId)
+        ->approved()
+        ->create([
+            'action_type' => 'create_entry',
+            'reasoning' => 'Looks like a new location.',
+            'payload' => [
+                'model_class' => Entry::class,
+                'attributes' => [
+                    'blueprint_id' => $blueprint->id,
+                    'project_id' => $project->id,
+                    'name' => 'Minas Tirith',
+                ],
+            ],
+        ]);
+
+    (new AiCommandExecutor)->executeBatch($batchId);
+
+    $command->refresh();
+    expect($command->reasoning)->toContain('[dedup: matched existing #'.$existing->id.']');
+});
+
+it('dedup guard maps temp_id to existing entry so a following create_relationship resolves to it', function () {
+    $batchId = (string) Str::uuid();
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+
+    // Pre-existing entry whose slug will match the create_entry command.
+    $existing = Entry::factory()->inProjectWithBlueprint($project, $blueprint)->create([
+        'name' => 'Gondor',
+        'slug' => 'gondor',
+    ]);
+    $child = Entry::factory()->inProjectWithBlueprint($project, $blueprint)->create();
+
+    // Command 1: create_entry that will be dedup'd - temp_id must map to $existing->id.
+    AiReviewCommand::factory()->forBatch($batchId)->approved()->create([
+        'action_type' => 'create_entry',
+        'payload' => [
+            'model_class' => Entry::class,
+            'temp_id' => 'temp_gondor',
+            'attributes' => [
+                'blueprint_id' => $blueprint->id,
+                'project_id' => $project->id,
+                'name' => 'Gondor',
+            ],
+        ],
+    ]);
+
+    // Command 2: create_relationship using the temp_id from command 1.
+    $relCmd = AiReviewCommand::factory()->forBatch($batchId)->approved()->create([
+        'action_type' => 'create_relationship',
+        'payload' => [
+            'parent_entry_temp_id' => 'temp_gondor',
+            'child_entry_id' => $child->id,
+            'relationship_type' => 'contains',
+        ],
+    ]);
+
+    $result = (new AiCommandExecutor)->executeBatch($batchId);
+
+    expect($result)->toBe(['success' => 2, 'failed' => 0]);
+
+    $relCmd->refresh();
+    expect($relCmd->status)->toBe('executed');
+
+    // The relationship must point at the PRE-EXISTING entry, not a newly created one.
+    expect(EntryRelationship::query()
+        ->where('parent_entry_id', $existing->id)
+        ->where('child_entry_id', $child->id)
+        ->where('relationship_type', 'contains')
+        ->exists())->toBeTrue();
+});
+
+it('dedup guard does not fire for a non-duplicate name - new entry is created normally', function () {
+    $batchId = (string) Str::uuid();
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+
+    // Pre-existing entry with a DIFFERENT name/slug.
+    Entry::factory()->inProjectWithBlueprint($project, $blueprint)->create([
+        'name' => 'Rohan',
+        'slug' => 'rohan',
+    ]);
+
+    AiReviewCommand::factory()->forBatch($batchId)->approved()->create([
+        'action_type' => 'create_entry',
+        'payload' => [
+            'model_class' => Entry::class,
+            'attributes' => [
+                'blueprint_id' => $blueprint->id,
+                'project_id' => $project->id,
+                'name' => 'Gondor',
+            ],
+        ],
+    ]);
+
+    $result = (new AiCommandExecutor)->executeBatch($batchId);
+
+    expect($result)->toBe(['success' => 1, 'failed' => 0])
+        ->and(Entry::query()->where('name', 'Gondor')->exists())->toBeTrue();
+});
+
+it('dedup guard does not match an archived entry - a new entry is created', function () {
+    $batchId = (string) Str::uuid();
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+
+    // Archived entry with the same slug - should NOT block creation.
+    Entry::factory()->inProjectWithBlueprint($project, $blueprint)->create([
+        'name' => 'Osgiliath',
+        'slug' => 'osgiliath',
+        'archived_at' => now(),
+    ]);
+
+    AiReviewCommand::factory()->forBatch($batchId)->approved()->create([
+        'action_type' => 'create_entry',
+        'payload' => [
+            'model_class' => Entry::class,
+            'attributes' => [
+                'blueprint_id' => $blueprint->id,
+                'project_id' => $project->id,
+                'name' => 'Osgiliath',
+            ],
+        ],
+    ]);
+
+    $result = (new AiCommandExecutor)->executeBatch($batchId);
+
+    expect($result)->toBe(['success' => 1, 'failed' => 0])
+        ->and(Entry::query()
+            ->whereNull('archived_at')
+            ->where('name', 'Osgiliath')
+            ->exists())->toBeTrue();
+});

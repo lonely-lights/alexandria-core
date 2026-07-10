@@ -12,6 +12,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -98,6 +99,52 @@ class EntryActionService
             $this->handleCreateRelationshipEntry($command, $tempIdMap);
 
             return;
+        }
+
+        // Dedup guard: before creating, check whether a live entry with the
+        // same slug already exists in the same (project, blueprint). "Live"
+        // means not soft-deleted (SoftDeletes handles that automatically) and
+        // not archived (archived_at IS NULL). Uses the same Str::slug() call
+        // that Entry::generateUniqueSlug uses, so the comparison is
+        // byte-for-byte identical.
+        //
+        // project_id may arrive via payload attributes OR via command context
+        // (Entry::getRequiredContextKeys maps context.project_id). We probe
+        // both so the guard fires regardless of which path the caller used.
+        $dedupProjectId = $attributes['project_id']
+            ?? Arr::get($command, 'context.project_id')
+            ?? null;
+        $dedupBlueprintId = $attributes['blueprint_id'] ?? null;
+        $dedupName = $attributes['name'] ?? null;
+
+        if ($dedupProjectId !== null && $dedupBlueprintId !== null && $dedupName !== null) {
+            $dedupSlug = Str::slug((string) $dedupName);
+            /** @var class-string $entryClass */
+            $entryClass = $this->entryModel();
+            $existing = $entryClass::query()
+                ->where('project_id', $dedupProjectId)
+                ->where('blueprint_id', $dedupBlueprintId)
+                ->where('slug', $dedupSlug)
+                ->whereNull('archived_at')
+                ->first();
+
+            if ($existing !== null) {
+                if (isset($payload['temp_id'])) {
+                    $tempIdMap[$payload['temp_id']] = $existing->id;
+                }
+
+                $annotation = ' [dedup: matched existing #'.$existing->id.']';
+                $command->update(['reasoning' => ($command->reasoning ?? '').$annotation]);
+
+                Log::info('EntryActionService: Dedup guard — skipped creation, mapped to existing entry', [
+                    'command_id' => $command->id,
+                    'existing_entry_id' => $existing->id,
+                    'slug' => $dedupSlug,
+                    'temp_id' => $payload['temp_id'] ?? null,
+                ]);
+
+                return;
+            }
         }
 
         // Inject context (project_id, user_id, etc.) if model supports it.
