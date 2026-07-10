@@ -26,6 +26,7 @@ import {
     type ManuscriptEditorProps,
 } from './ManuscriptEditor';
 import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
+import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
 import SectionChrome from './SectionChrome';
 import useSectionAutosave from './useSectionAutosave';
 
@@ -282,138 +283,46 @@ function ScreenplaySurface({
         focus() {
             editor?.commands.focus();
         },
-        // Comment mark operations (Stage 11.5 Task 3) — same impl as prose
+        // Comment mark operations (Stage 11.5 Task 3) — delegated to commentBridgeHelpers
         applyCommentMark(from, to, commentId) {
             if (!editor) return;
-            editor.chain()
-                .setTextSelection({ from, to })
-                .setMark('comment', { commentId })
-                .run();
+            bridge.applyCommentMark(editor, from, to, commentId);
         },
         scrollToCommentMark(commentId) {
             if (!editor) return;
-            const el = editor.view.dom.querySelector(
-                `mark.comment-mark[data-comment-id="${commentId}"]`,
-            );
-            if (!el) return;
-            el.classList.add('comment-mark--flash');
-            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            setTimeout(() => el.classList.remove('comment-mark--flash'), 900);
+            bridge.scrollToCommentMark(editor, commentId);
         },
         hasNonEmptySelection() {
             if (!editor) return false;
-            const { from, to } = editor.state.selection;
-            return from !== to;
+            return bridge.hasNonEmptySelection(editor);
         },
         getSelectionRange() {
             if (!editor) return null;
-            const { from, to } = editor.state.selection;
-            return from !== to ? { from, to } : null;
+            return bridge.getSelectionRange(editor);
         },
         getCommentPositionMap() {
             if (!editor) return {};
-            const map: Record<number, number> = {};
-            editor.state.doc.descendants((node, pos) => {
-                for (const mark of node.marks) {
-                    if (mark.type.name !== 'comment') continue;
-                    const raw = mark.attrs.commentId;
-                    if (raw === null || raw === undefined) continue;
-                    const id = Number(raw);
-                    if (!Number.isFinite(id) || id in map) continue;
-                    map[id] = pos;
-                }
-            });
-            return map;
+            return bridge.getCommentPositionMap(editor);
         },
         findTextInDoc(text: string): Array<{ from: number; to: number }> {
-            if (!editor || !text) return [];
-            const docPositions: number[] = [];
-            let fullText = '';
-            editor.state.doc.descendants((node, pos) => {
-                if (node.isText && node.text) {
-                    for (let i = 0; i < node.text.length; i++) {
-                        docPositions.push(pos + i);
-                        fullText += node.text[i];
-                    }
-                }
-            });
-            const results: Array<{ from: number; to: number }> = [];
-            const textLen = text.length;
-            let idx = 0;
-            while ((idx = fullText.indexOf(text, idx)) !== -1) {
-                if (idx + textLen - 1 < docPositions.length) {
-                    results.push({
-                        from: docPositions[idx],
-                        to: docPositions[idx + textLen - 1] + 1,
-                    });
-                }
-                idx++;
-            }
-            return results;
+            if (!editor) return [];
+            return bridge.findTextInDoc(editor, text);
         },
         reanchorCommentMark(from: number, to: number, commentId: number): void {
             if (!editor) return;
-            const commentMarkType = editor.schema.marks['comment'];
-            if (!commentMarkType) return;
-            const tr = editor.state.tr;
-            tr.addMark(from, to, commentMarkType.create({ commentId }));
-            tr.setMeta('addToHistory', false);
-            editor.view.dispatch(tr);
+            bridge.reanchorCommentMark(editor, from, to, commentId);
         },
         removeCommentMark(commentId: number): void {
             if (!editor) return;
-            const commentMarkType = editor.schema.marks['comment'];
-            if (!commentMarkType) return;
-            const tr = editor.state.tr;
-            let changed = false;
-            editor.state.doc.descendants((node, pos) => {
-                if (!node.isText) return;
-                for (const mark of node.marks) {
-                    if (mark.type.name !== 'comment') continue;
-                    if (Number(mark.attrs.commentId) !== commentId) continue;
-                    tr.removeMark(pos, pos + node.nodeSize, commentMarkType);
-                    changed = true;
-                }
-            });
-            if (changed) editor.view.dispatch(tr);
+            bridge.removeCommentMark(editor, commentId);
         },
         getPlainText(): string {
             if (!editor) return '';
-            // Traverse top-level blocks separately and join with '\n' so
-            // adjacent blocks never merge their boundary tokens into one word.
-            // This is especially important in screenplays where an ALL-CAPS
-            // character name immediately precedes an action line — without the
-            // separator "MARGO" + "Slowly" concatenates to "MARGOSlowly",
-            // which the adverb analyzer would falsely flag.
-            // Jump offsets from findTextInDoc still work: every finding excerpt
-            // is a single word token that never contains '\n', so ProseMirror
-            // locates it within one text node without crossing block boundaries.
-            const parts: string[] = [];
-            editor.state.doc.forEach((block) => {
-                let blockText = '';
-                block.descendants((node) => {
-                    if (node.isText && node.text) {
-                        blockText += node.text;
-                    }
-                });
-                parts.push(blockText);
-            });
-            return parts.join('\n');
+            return bridge.getPlainText(editor);
         },
         scrollToOffset(pos: number): void {
             if (!editor) return;
-            try {
-                const domInfo = editor.view.domAtPos(pos);
-                const el =
-                    domInfo.node.nodeType === Node.TEXT_NODE
-                        ? (domInfo.node.parentElement as Element | null)
-                        : (domInfo.node as Element);
-                if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            } catch {
-                // pos out of range — silently ignore
-            }
+            bridge.scrollToOffset(editor, pos);
         },
     }));
 
