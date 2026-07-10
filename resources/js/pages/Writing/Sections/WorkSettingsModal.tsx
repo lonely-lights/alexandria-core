@@ -242,250 +242,270 @@ export default function WorkSettingsModal({
     const columnLabelColor = 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)';
 
     return (
-        <Modal open onClose={onClose} maxWidth="max-w-lg">
+        <Modal open onClose={onClose} maxWidth="max-w-3xl">
             <ModalHeader title={t('writing.settings.title')} onClose={onClose} />
             {/* noValidate: the server validates `required`; without it
                 Chrome's native constraint bubble fires before submit and
                 the error poppers never get a chance. */}
             <form
                 noValidate
+                className="flex flex-1 flex-col overflow-hidden"
                 onSubmit={(e) => {
                     e.preventDefault();
                     submit();
                 }}
             >
-                <div className="flex flex-col gap-4 px-6 py-5">
-                    <Tooltip
-                        content={form.errors.title}
-                        open={!!form.errors.title}
-                        tone="error"
-                        placement="top-end"
-                    >
-                        <Input
-                            label={t('writing.form.title')}
-                            name="title"
-                            value={form.data.title}
-                            onChange={(e) => {
-                                form.setData('title', e.target.value);
-                                if (form.errors.title) {
-                                    form.clearErrors('title');
-                                }
-                            }}
-                            error={form.errors.title}
-                            hideErrorText
-                            autoFocus
-                            required
-                            size="md"
-                        />
-                    </Tooltip>
-                    <div className="grid grid-cols-2 gap-3">
-                        <Select
-                            label={t('writing.form.type')}
-                            name="type"
-                            value={form.data.type}
-                            onChange={(e) => {
-                                form.setData('type', e.target.value);
-                                if (form.errors.type) {
-                                    form.clearErrors('type');
-                                }
-                            }}
-                            error={form.errors.type}
-                            options={types.map((type) => ({
-                                value: type,
-                                label: t(`writing.types.${type}`, type),
-                            }))}
-                            size="md"
-                        />
-                        <Select
-                            label={t('writing.form.status')}
-                            name="status"
-                            value={form.data.status}
-                            onChange={(e) => {
-                                form.setData('status', e.target.value);
-                                if (form.errors.status) {
-                                    form.clearErrors('status');
-                                }
-                            }}
-                            error={form.errors.status}
-                            options={WORK_STATUSES.map((status) => ({
-                                value: status,
-                                label: t(`writing.statuses.${status}`, status),
-                            }))}
-                            size="md"
-                        />
-                    </div>
-                    <Textarea
-                        label={t('writing.form.logline')}
-                        name="logline"
-                        value={form.data.logline}
-                        onChange={(e) => form.setData('logline', e.target.value)}
-                        error={form.errors.logline}
-                        rows={2}
-                        size="md"
-                    />
-
-                    {/* ── Length plan ── */}
-                    <div>
-                        <div
-                            className="text-xs font-semibold uppercase tracking-wide"
-                            style={{ color: sectionHeadingColor }}
-                        >
-                            {t('writing.settings.length_heading')}
+                <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-5">
+                    {/* ── md+: two-column grid — Basics left, Length Plan right ── */}
+                    <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+                        {/* Left column: Basics */}
+                        <div className="flex flex-col gap-4">
+                            <Tooltip
+                                content={form.errors.title}
+                                open={!!form.errors.title}
+                                tone="error"
+                                placement="top-end"
+                            >
+                                <Input
+                                    label={t('writing.form.title')}
+                                    name="title"
+                                    value={form.data.title}
+                                    onChange={(e) => {
+                                        form.setData('title', e.target.value);
+                                        if (form.errors.title) {
+                                            form.clearErrors('title');
+                                        }
+                                    }}
+                                    error={form.errors.title}
+                                    hideErrorText
+                                    autoFocus
+                                    required
+                                    size="md"
+                                />
+                            </Tooltip>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Select
+                                    label={t('writing.form.type')}
+                                    name="type"
+                                    value={form.data.type}
+                                    onChange={(e) => {
+                                        form.setData('type', e.target.value);
+                                        if (form.errors.type) {
+                                            form.clearErrors('type');
+                                        }
+                                    }}
+                                    error={form.errors.type}
+                                    options={types.map((type) => ({
+                                        value: type,
+                                        label: t(`writing.types.${type}`, type),
+                                    }))}
+                                    size="md"
+                                />
+                                <Select
+                                    label={t('writing.form.status')}
+                                    name="status"
+                                    value={form.data.status}
+                                    onChange={(e) => {
+                                        form.setData('status', e.target.value);
+                                        if (form.errors.status) {
+                                            form.clearErrors('status');
+                                        }
+                                    }}
+                                    error={form.errors.status}
+                                    options={WORK_STATUSES.map((status) => ({
+                                        value: status,
+                                        label: t(`writing.statuses.${status}`, status),
+                                    }))}
+                                    size="md"
+                                />
+                            </div>
+                            <Textarea
+                                label={t('writing.form.logline')}
+                                name="logline"
+                                value={form.data.logline}
+                                onChange={(e) => form.setData('logline', e.target.value)}
+                                error={form.errors.logline}
+                                rows={2}
+                                size="md"
+                            />
                         </div>
-                        <p
-                            className="mt-0.5 text-xs"
-                            style={{ color: columnLabelColor }}
-                        >
-                            {t('writing.settings.length_help')}
-                        </p>
-                    </div>
-                    <Select
-                        label={t('writing.settings.preset')}
-                        name="preset"
-                        value={form.data.preset}
-                        onChange={(e) => handlePresetChange(e.target.value)}
-                        error={allErrors['length_plan.preset']}
-                        options={[
-                            { value: '', label: t('writing.settings.preset_none') },
-                            ...lengthPlans.map((plan) => ({
-                                value: plan.key,
-                                // Key fallback keeps future presets usable
-                                // before their label lands.
-                                label: t(`writing.settings.preset_${plan.key}`, plan.key),
-                            })),
-                        ]}
-                        size="md"
-                    />
-                    <div className="grid grid-cols-2 gap-3">
-                        <Input
-                            label={t('writing.settings.target_words')}
-                            name="target_words"
-                            type="number"
-                            min={0}
-                            value={form.data.target_words}
-                            onChange={(e) => handleNumberChange('target_words', e.target.value)}
-                            error={allErrors['length_plan.target_words']}
-                            size="md"
-                        />
-                        <Input
-                            label={t('writing.settings.per_section_words')}
-                            name="per_section_words"
-                            type="number"
-                            min={0}
-                            value={form.data.per_section_words}
-                            onChange={(e) => handleNumberChange('per_section_words', e.target.value)}
-                            error={allErrors['length_plan.per_section_words']}
-                            size="md"
-                        />
-                        <Input
-                            label={t('writing.settings.target_lines')}
-                            name="target_lines"
-                            type="number"
-                            min={0}
-                            value={form.data.target_lines}
-                            onChange={(e) => handleNumberChange('target_lines', e.target.value)}
-                            error={allErrors['length_plan.target_lines']}
-                            size="md"
-                        />
-                        <Input
-                            label={t('writing.settings.target_pages')}
-                            name="target_pages"
-                            type="number"
-                            min={0}
-                            value={form.data.target_pages}
-                            onChange={(e) => handleNumberChange('target_pages', e.target.value)}
-                            error={allErrors['length_plan.target_pages']}
-                            size="md"
-                        />
-                    </div>
-                    <div>
-                        <CheckboxField
-                            label={t('writing.settings.apply_targets')}
-                            name="apply_section_targets"
-                            align="start"
-                            checked={form.data.apply_section_targets}
-                            onChange={(e) => form.setData('apply_section_targets', e.target.checked)}
-                        />
-                        <p
-                            className="mt-1 pl-7 text-xs"
-                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}
-                        >
-                            {t('writing.settings.apply_targets_help')}
-                        </p>
+
+                        {/* Right column: Length plan */}
+                        <div className="flex flex-col gap-4">
+                            <div>
+                                <div
+                                    className="text-xs font-semibold uppercase tracking-wide"
+                                    style={{ color: sectionHeadingColor }}
+                                >
+                                    {t('writing.settings.length_heading')}
+                                </div>
+                                <p
+                                    className="mt-0.5 text-xs"
+                                    style={{ color: columnLabelColor }}
+                                >
+                                    {t('writing.settings.length_help')}
+                                </p>
+                            </div>
+                            <Select
+                                label={t('writing.settings.preset')}
+                                name="preset"
+                                value={form.data.preset}
+                                onChange={(e) => handlePresetChange(e.target.value)}
+                                error={allErrors['length_plan.preset']}
+                                options={[
+                                    { value: '', label: t('writing.settings.preset_none') },
+                                    ...lengthPlans.map((plan) => ({
+                                        value: plan.key,
+                                        // Key fallback keeps future presets usable
+                                        // before their label lands.
+                                        label: t(`writing.settings.preset_${plan.key}`, plan.key),
+                                    })),
+                                ]}
+                                size="md"
+                            />
+                            <div className="grid grid-cols-2 gap-3">
+                                <Input
+                                    label={t('writing.settings.target_words')}
+                                    name="target_words"
+                                    type="number"
+                                    min={0}
+                                    value={form.data.target_words}
+                                    onChange={(e) => handleNumberChange('target_words', e.target.value)}
+                                    error={allErrors['length_plan.target_words']}
+                                    size="md"
+                                />
+                                <Input
+                                    label={t('writing.settings.per_section_words')}
+                                    name="per_section_words"
+                                    type="number"
+                                    min={0}
+                                    value={form.data.per_section_words}
+                                    onChange={(e) => handleNumberChange('per_section_words', e.target.value)}
+                                    error={allErrors['length_plan.per_section_words']}
+                                    size="md"
+                                />
+                                <Input
+                                    label={t('writing.settings.target_lines')}
+                                    name="target_lines"
+                                    type="number"
+                                    min={0}
+                                    value={form.data.target_lines}
+                                    onChange={(e) => handleNumberChange('target_lines', e.target.value)}
+                                    error={allErrors['length_plan.target_lines']}
+                                    size="md"
+                                />
+                                <Input
+                                    label={t('writing.settings.target_pages')}
+                                    name="target_pages"
+                                    type="number"
+                                    min={0}
+                                    value={form.data.target_pages}
+                                    onChange={(e) => handleNumberChange('target_pages', e.target.value)}
+                                    error={allErrors['length_plan.target_pages']}
+                                    size="md"
+                                />
+                            </div>
+                            <div>
+                                <CheckboxField
+                                    label={t('writing.settings.apply_targets')}
+                                    name="apply_section_targets"
+                                    align="start"
+                                    checked={form.data.apply_section_targets}
+                                    onChange={(e) => form.setData('apply_section_targets', e.target.checked)}
+                                />
+                                <p
+                                    className="mt-1 pl-7 text-xs"
+                                    style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}
+                                >
+                                    {t('writing.settings.apply_targets_help')}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* ── Structure ── */}
-                    <div>
-                        <div
-                            className="text-xs font-semibold uppercase tracking-wide"
-                            style={{ color: sectionHeadingColor }}
-                        >
-                            {t('writing.settings.structure_heading')}
-                        </div>
-                        <p
-                            className="mt-0.5 text-xs"
-                            style={{ color: columnLabelColor }}
-                        >
-                            {t('writing.settings.structure_help')}
-                        </p>
-                    </div>
-                    <Select
-                        label={t('writing.settings.structure_template')}
-                        name="structure_template"
-                        value={form.data.structure_template}
-                        onChange={(e) => handleStructureTemplateChange(e.target.value)}
-                        options={[
-                            { value: '', label: t('writing.settings.structure_none') },
-                            ...STRUCTURE_TEMPLATES.map((template) => ({
-                                value: template.slug,
-                                label: t(template.labelKey, template.slug),
-                            })),
-                        ]}
-                        size="md"
-                    />
-                    {form.data.structure_template !== '' && form.data.structure_beats.length > 0 && (
-                        <div className="flex flex-col gap-2">
+                    {/* ── Structure (full width) ── */}
+                    <div className="flex flex-col gap-4">
+                        <div>
                             <div
-                                className="grid grid-cols-[1fr_5rem_5rem] gap-2 text-xs"
+                                className="text-xs font-semibold uppercase tracking-wide"
+                                style={{ color: sectionHeadingColor }}
+                            >
+                                {t('writing.settings.structure_heading')}
+                            </div>
+                            <p
+                                className="mt-0.5 text-xs"
                                 style={{ color: columnLabelColor }}
                             >
-                                <span>{t('writing.settings.structure_col_beat')}</span>
-                                <span>{t('writing.settings.structure_col_target')}</span>
-                                <span>{t('writing.settings.structure_col_tolerance')}</span>
-                            </div>
-                            {form.data.structure_beats.map((beat, i) => (
-                                <div key={i} className="grid grid-cols-[1fr_5rem_5rem] gap-2">
-                                    <Input
-                                        name={`structure_beat_${i}_name`}
-                                        value={beat.name}
-                                        onChange={(e) => handleBeatChange(i, 'name', e.target.value)}
-                                        error={allErrors[`length_plan.structure.beats.${i}.name`]}
-                                        size="sm"
-                                    />
-                                    <Input
-                                        name={`structure_beat_${i}_target`}
-                                        type="number"
-                                        min={0}
-                                        max={100}
-                                        value={beat.target.toString()}
-                                        onChange={(e) => handleBeatChange(i, 'target', e.target.value)}
-                                        error={allErrors[`length_plan.structure.beats.${i}.target`]}
-                                        size="sm"
-                                    />
-                                    <Input
-                                        name={`structure_beat_${i}_tolerance`}
-                                        type="number"
-                                        min={0}
-                                        max={50}
-                                        value={beat.tolerance.toString()}
-                                        onChange={(e) => handleBeatChange(i, 'tolerance', e.target.value)}
-                                        error={allErrors[`length_plan.structure.beats.${i}.tolerance`]}
-                                        size="sm"
-                                    />
-                                </div>
-                            ))}
+                                {t('writing.settings.structure_help')}
+                            </p>
                         </div>
-                    )}
+                        <Select
+                            label={t('writing.settings.structure_template')}
+                            name="structure_template"
+                            value={form.data.structure_template}
+                            onChange={(e) => handleStructureTemplateChange(e.target.value)}
+                            options={[
+                                { value: '', label: t('writing.settings.structure_none') },
+                                ...STRUCTURE_TEMPLATES.map((template) => ({
+                                    value: template.slug,
+                                    label: t(template.labelKey, template.slug),
+                                })),
+                            ]}
+                            size="md"
+                        />
+                        {form.data.structure_template !== '' && form.data.structure_beats.length > 0 && (
+                            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2">
+                                {/* Column headers — repeated for the right column on md+ */}
+                                <div
+                                    className="grid grid-cols-[1fr_5rem_5rem] gap-2 text-xs"
+                                    style={{ color: columnLabelColor }}
+                                >
+                                    <span>{t('writing.settings.structure_col_beat')}</span>
+                                    <span>{t('writing.settings.structure_col_target')}</span>
+                                    <span>{t('writing.settings.structure_col_tolerance')}</span>
+                                </div>
+                                <div
+                                    className="hidden md:grid grid-cols-[1fr_5rem_5rem] gap-2 text-xs"
+                                    style={{ color: columnLabelColor }}
+                                >
+                                    <span>{t('writing.settings.structure_col_beat')}</span>
+                                    <span>{t('writing.settings.structure_col_target')}</span>
+                                    <span>{t('writing.settings.structure_col_tolerance')}</span>
+                                </div>
+                                {form.data.structure_beats.map((beat, i) => (
+                                    <div key={i} className="grid grid-cols-[1fr_5rem_5rem] gap-2">
+                                        <Input
+                                            name={`structure_beat_${i}_name`}
+                                            value={beat.name}
+                                            onChange={(e) => handleBeatChange(i, 'name', e.target.value)}
+                                            error={allErrors[`length_plan.structure.beats.${i}.name`]}
+                                            size="sm"
+                                        />
+                                        <Input
+                                            name={`structure_beat_${i}_target`}
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            value={beat.target.toString()}
+                                            onChange={(e) => handleBeatChange(i, 'target', e.target.value)}
+                                            error={allErrors[`length_plan.structure.beats.${i}.target`]}
+                                            size="sm"
+                                        />
+                                        <Input
+                                            name={`structure_beat_${i}_tolerance`}
+                                            type="number"
+                                            min={0}
+                                            max={50}
+                                            value={beat.tolerance.toString()}
+                                            onChange={(e) => handleBeatChange(i, 'tolerance', e.target.value)}
+                                            error={allErrors[`length_plan.structure.beats.${i}.tolerance`]}
+                                            size="sm"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <ModalFooter>
                     <Button variant="ghost" onClick={onClose}>
