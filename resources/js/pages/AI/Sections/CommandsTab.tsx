@@ -1,3 +1,9 @@
+/**
+ * @deprecated CommandsTab is superseded by the Sorting Workbench Creation tab
+ * (pages/AI/Workbench.tsx → WorkbenchCreationTab → Review pane) for Level-2
+ * command generation and review. Do not extend this component; new command
+ * review surfaces belong in WorkbenchCreationTab.
+ */
 import { useMemo, useState, type CSSProperties } from 'react';
 import CommandReviewModal from '@alexandria/components/notes/CommandReviewModal';
 import Pagination from '@alexandria/components/ui/Pagination';

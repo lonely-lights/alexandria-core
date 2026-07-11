@@ -43,3 +43,58 @@ export interface RoutedNotesPage {
     current_page: number;
     last_page: number;
 }
+
+export interface L2BlueprintSummary {
+    id: number;
+    slug: string;
+    name: string;
+    pending_count: number;
+}
+
+export interface L2RelationshipEdge {
+    blueprint_slug: string;
+    relationship_name: string;
+    ai_priority: string;
+    ai_instruction: string | null;
+    index_size: number;
+}
+
+export interface L2SourceMap {
+    blueprint_name: string;
+    blueprint_slug: string;
+    blueprint_description: string | null;
+    field_schema: string;
+    target_index_size: number;
+    target_pruned: boolean;
+    relationship_edges: L2RelationshipEdge[];
+    notes_in_batch: number;
+}
+
+export interface L2PreviewResult {
+    prompt: string;
+    token_estimate: number;
+    source_map: L2SourceMap;
+}
+
+export interface AiCommand {
+    id: number;
+    batch_id: string;
+    action_type: 'create_entry' | 'copy_note' | 'transfer_note' | 'create_relationship';
+    payload: Record<string, unknown>;
+    reasoning: string | null;
+    is_active: boolean;
+    status: 'pending' | 'approved' | 'rejected' | 'executed' | 'failed';
+    failure_reason: string | null;
+    validation_errors: Record<string, string> | null;
+    context: { note_id?: number; blueprint_slug?: string; [key: string]: unknown };
+    order_index: number;
+}
+
+export interface NoteGroup {
+    noteId: number;
+    noteTitle: string;
+    noteText: string;
+    commands: AiCommand[];
+    activeCommands: AiCommand[];
+    malformedCommands: AiCommand[];
+}

@@ -7,6 +7,7 @@ import NeuralConstellationBg from '@alexandria/components/backgrounds/NeuralCons
 import useT from '@alexandria/hooks/useT';
 import { useVisitedTabs } from '@alexandria/hooks/useVisitedTabs';
 import WorkbenchRoutingTab from './Sections/WorkbenchRoutingTab';
+import WorkbenchCreationTab from './Sections/WorkbenchCreationTab';
 import type { WorkbenchProps } from '@alexandria/types/workbench';
 
 type Tab = 'routing' | 'creation';
@@ -32,11 +33,6 @@ const subtitleStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
 
-const placeholderStyle: CSSProperties = {
-    border: '1px dashed color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
-    borderRadius: 'var(--theme-radius-card)',
-    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
-};
 
 function tabFromHash(): Tab {
     const hash = window.location.hash.slice(1) as Tab;
@@ -109,10 +105,10 @@ export default function Workbench() {
                     )}
                     {visited.has('creation') && (
                         <div hidden={activeTab !== 'creation'}>
-                            <div className="flex flex-col items-center justify-center py-20 text-center" style={placeholderStyle}>
-                                <i className="fa-solid fa-wand-magic-sparkles text-3xl mb-4" aria-hidden="true" />
-                                <p className="text-sm font-medium">{t('ai.workbench.tab.creation_placeholder')}</p>
-                            </div>
+                            <WorkbenchCreationTab
+                                projectSlug={project.slug}
+                                projectId={project.id}
+                            />
                         </div>
                     )}
                 </div>
