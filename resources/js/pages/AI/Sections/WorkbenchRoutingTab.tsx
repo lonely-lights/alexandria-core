@@ -3,7 +3,7 @@ import { router } from '@inertiajs/react';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { fetchJson, FetchJsonError } from '@alexandria/lib/fetchJson';
 import useT from '@alexandria/hooks/useT';
-import type { WorkbenchBlueprint, WorkbenchNotebook, RoutedNote, RoutedNotesPage } from '@alexandria/types/workbench';
+import type { WorkbenchBlueprint, WorkbenchNotebook, RoutedNotesPage } from '@alexandria/types/workbench';
 
 interface WorkbenchRoutingTabProps {
     projectSlug: string;
@@ -345,7 +345,6 @@ function ReviewSection({
 
     // Local review state (client-only for keeps/flags during session)
     const [localFlags, setLocalFlags] = useState<Record<number, 'kept' | 'flagged' | null>>({});
-    const [busyNoteIds, setBusyNoteIds] = useState<Record<number, boolean>>({});
 
     // Re-route modal
     const [reRouteNoteId, setReRouteNoteId] = useState<number | null>(null);
@@ -383,7 +382,6 @@ function ReviewSection({
     const cursorNote = notes[cursorIdx] ?? null;
 
     async function updateFlag(noteId: number, flag: 'workbench' | null) {
-        setBusyNoteIds((prev) => ({ ...prev, [noteId]: true }));
         try {
             await fetchJson(`/p/${projectSlug}/ai/workbench/notes/${noteId}/review-flag`, {
                 method: 'PATCH',
@@ -396,8 +394,6 @@ function ReviewSection({
             }));
         } catch {
             // no-op
-        } finally {
-            setBusyNoteIds((prev) => { const c = { ...prev }; delete c[noteId]; return c; });
         }
     }
 
@@ -816,7 +812,7 @@ export default function WorkbenchRoutingTab({
                                         <div className="flex flex-col items-end gap-1 flex-shrink-0">
                                             <ToggleSwitch
                                                 checked={bp.allow_ai_sorting}
-                                                disabled={!!busyBp[bp.id]}
+                                                disabled={busyBp[bp.id]}
                                                 label={`${t('ai.workbench.roster.toggle_label')}: ${bp.name}`}
                                                 onChange={() => void toggleBlueprint(bp)}
                                             />
@@ -937,7 +933,7 @@ export default function WorkbenchRoutingTab({
                                         <div className="flex flex-col items-end gap-1 flex-shrink-0">
                                             <ToggleSwitch
                                                 checked={nb.allow_ai_sort}
-                                                disabled={!!busyNb[nb.id]}
+                                                disabled={busyNb[nb.id]}
                                                 label={`${t('ai.workbench.roster.toggle_label')}: ${nb.title}`}
                                                 onChange={() => void toggleNotebook(nb)}
                                             />
