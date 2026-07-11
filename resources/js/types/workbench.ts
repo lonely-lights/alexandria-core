@@ -27,3 +27,19 @@ export interface WorkbenchProps {
     pending_count: number;
     [key: string]: unknown;
 }
+
+export interface RoutedNote {
+    id: number;
+    title: string;
+    text: string;
+    review_flag: string | null;
+    created_at: string;
+}
+
+export interface RoutedNotesPage {
+    data: RoutedNote[];
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+}

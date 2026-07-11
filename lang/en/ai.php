@@ -307,4 +307,38 @@ return [
     'workbench.roster.toggle_label' => 'AI sorting',
     'workbench.roster.empty_blueprints' => 'No blueprints in this project.',
     'workbench.roster.empty_notebooks' => 'No notebooks in this project.',
+
+    // Task 2: routing text editor
+    'workbench.routing_text.edit_button' => 'Edit routing text',
+    'workbench.routing_text.save_button' => 'Save',
+    'workbench.routing_text.cancel_button' => 'Cancel',
+    'workbench.routing_text.char_count' => ':count / :max',
+    'workbench.routing_text.saved_indicator' => 'Saved',
+    'workbench.routing_text.save_error' => 'Save failed',
+
+    // Task 2: L1 prompt preview
+    'workbench.prompt_preview.button' => 'Preview classifier prompt',
+    'workbench.prompt_preview.modal_title' => 'L1 Classifier Prompt',
+    'workbench.prompt_preview.copy_button' => 'Copy',
+    'workbench.prompt_preview.copied' => 'Copied!',
+    'workbench.prompt_preview.loading' => 'Loading prompt…',
+    'workbench.prompt_preview.token_estimate' => '~:count tokens',
+
+    // Task 3: routing review
+    'workbench.review.heading' => 'Routing Review',
+    'workbench.review.empty' => 'No routed notes for this destination.',
+    'workbench.review.loading' => 'Loading notes…',
+    'workbench.review.note_count' => ':count note(s)',
+    'workbench.review.keep_all' => 'Keep all',
+    'workbench.review.kept_badge' => 'Kept',
+    'workbench.review.flagged_badge' => 'Flagged',
+    'workbench.review.key_a' => 'Keep',
+    'workbench.review.key_g' => 'Flag',
+    'workbench.review.key_s' => 'Skip',
+    'workbench.review.key_r' => 'Re-route',
+    'workbench.review.reroute_modal_title' => 'Re-route note',
+    'workbench.review.reroute_confirm' => 'Move to',
+    'workbench.review.rerouting' => 'Moving…',
+    'workbench.review.pagination' => 'Page :current of :last',
+    'workbench.review.counts' => ':kept kept · :flagged flagged · :pending remaining',
 ];
