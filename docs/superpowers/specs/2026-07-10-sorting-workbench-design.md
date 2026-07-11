@@ -19,6 +19,18 @@ An in-app Inertia page (core, `pages/AI/Workbench.tsx` + sections), routed app-s
 - Radar item folds in naturally later: separating sorter-facing instructions from public blueprint descriptions gets an editing home here.
 - Andrew's 52 location notes are the acceptance dataset: the phase itself (processing his backlog) begins only when he can run it comfortably through this tool.
 
+## Round-2 (owner-approved 2026-07-10): TWO LEVELS, Level 1 leads
+
+**Level 1 — Routing pane (build first; real results exist):**
+- Sort roster: every blueprint + notebook as cards — live toggles (blueprints.allow_ai_sorting / notebooks.allow_ai_sort), catch-all badge, per-target routed-note counts.
+- Routing text surfaced per target (the classifier-facing description) — view + edit inline (writes the same field the classifier reads; eventual home for the sorter-text/public-description separation radar item).
+- L1 prompt preview: the classifier's rendered prompt (roster + descriptions), no AI call.
+- Routing review: routed notes grouped by destination, A/S/G keyboard verdicts + a re-route picker (single-note re-route via the existing placement mechanics).
+
+**MVP cut (approved):** (1) shell + config gate + L1 roster w/ toggles + counts; (2) routing text view/edit + L1 prompt preview; (3) L1 routing review + re-route; (4) L2 Run + Review (preview/run/tabbed review/execute) with Hone read-only (prompt + source map + links).
+
+**Future-planned (explicitly deferred):** golden-note regression sets; in-pane editing of AI outputs; prompt version history/diffs; AI-suggested routing-text improvements; sorter-text schema separation; entity-merge review; Phase-2 relationship-proposal review; cost dashboards/budget caps; Reverb live progress; Import Studio integration; SaaS gating (Stage 13).
+
 ## Out of scope (v1)
 
 SaaS exposure/billing gates (Stage 13), prompt A/B history beyond the last-render diff, editing AI outputs inline (approve/reject only), mobile.
