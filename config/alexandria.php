@@ -107,6 +107,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Sorting Workbench
+    |--------------------------------------------------------------------------
+    |
+    | The Sorting Workbench is a developer/operator tool for tuning the AI
+    | sorter. Keep it disabled in SaaS production; enable for self-hosted
+    | deployments and local development.
+    |
+    | Override per-app by publishing config/alexandria.php and setting
+    | ALEXANDRIA_WORKBENCH_ENABLED=true in .env.
+    |
+    */
+    'workbench' => [
+        'enabled' => env('ALEXANDRIA_WORKBENCH_ENABLED', app()->environment('local')),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Writing Dashboard
     |--------------------------------------------------------------------------
     |

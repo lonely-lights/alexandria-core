@@ -287,4 +287,24 @@ return [
     'write.cancel' => 'Cancel',
     'write.apply' => 'Apply',
     'write.generate' => 'Generate',
+
+    // ── Sorting Workbench (pages/AI/Workbench.tsx) ──────────────────────────
+    'workbench.breadcrumb' => 'Sorting Workbench',
+    'workbench.heading.title' => 'Sorting Workbench',
+    'workbench.heading.subtitle' => 'Tune AI routing for :project',
+    'workbench.tab.routing' => 'Routing',
+    'workbench.tab.creation' => 'Creation',
+    'workbench.tab.creation_placeholder' => 'Level-2 Command Generation (coming soon)',
+
+    'workbench.roster.blueprints_heading' => 'Blueprints',
+    'workbench.roster.notebooks_heading' => 'Notebooks',
+    'workbench.roster.routed_count' => ':count routed',
+    'workbench.roster.note_count' => ':count notes',
+    'workbench.roster.unsorted' => ':count unsorted',
+    'workbench.roster.pending' => ':count pending',
+    'workbench.roster.catch_all_badge' => 'Catch-All',
+    'workbench.roster.no_description' => 'No description set',
+    'workbench.roster.toggle_label' => 'AI sorting',
+    'workbench.roster.empty_blueprints' => 'No blueprints in this project.',
+    'workbench.roster.empty_notebooks' => 'No notebooks in this project.',
 ];
