@@ -362,7 +362,7 @@ function ReviewSection({
         if (!activeTarget) return;
         setNotesLoading(true);
         fetchJson(
-            `/p/${projectSlug}/ai/workbench/routed-notes?kind=${activeTarget.kind}&id=${activeTarget.id}&page=${page}`,
+            `/ai/${projectSlug}/workbench/routed-notes?kind=${activeTarget.kind}&id=${activeTarget.id}&page=${page}`,
         )
             .then((data) => {
                 setNotesPage(data as RoutedNotesPage);
@@ -383,7 +383,7 @@ function ReviewSection({
 
     async function updateFlag(noteId: number, flag: 'workbench' | null) {
         try {
-            await fetchJson(`/p/${projectSlug}/ai/workbench/notes/${noteId}/review-flag`, {
+            await fetchJson(`/ai/${projectSlug}/workbench/notes/${noteId}/review-flag`, {
                 method: 'PATCH',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ flag }),
@@ -400,7 +400,7 @@ function ReviewSection({
     async function doReRoute(noteId: number, target: DestTarget) {
         setReRouteBusy(true);
         try {
-            await fetchJson(`/p/${projectSlug}/ai/workbench/notes/${noteId}/re-route`, {
+            await fetchJson(`/ai/${projectSlug}/workbench/notes/${noteId}/re-route`, {
                 method: 'POST',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ to: { kind: target.kind, id: target.id } }),
@@ -660,7 +660,7 @@ export default function WorkbenchRoutingTab({
         setBusyBp((prev) => ({ ...prev, [bp.id]: true }));
 
         try {
-            await fetchJson(`/p/${projectSlug}/ai/workbench/blueprints/${bp.slug}`, {
+            await fetchJson(`/ai/${projectSlug}/workbench/blueprints/${bp.slug}`, {
                 method: 'PATCH',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ allow_ai_sorting: next }),
@@ -680,7 +680,7 @@ export default function WorkbenchRoutingTab({
         setBusyNb((prev) => ({ ...prev, [nb.id]: true }));
 
         try {
-            await fetchJson(`/p/${projectSlug}/ai/workbench/notebooks/${nb.slug}`, {
+            await fetchJson(`/ai/${projectSlug}/workbench/notebooks/${nb.slug}`, {
                 method: 'PATCH',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ allow_ai_sort: next }),
@@ -717,7 +717,7 @@ export default function WorkbenchRoutingTab({
     async function saveDesc(slug: string, kind: 'blueprint' | 'notebook') {
         setSavingDesc(true);
         try {
-            await fetchJson(`/p/${projectSlug}/ai/workbench/${kind === 'blueprint' ? 'blueprints' : 'notebooks'}/${slug}/description`, {
+            await fetchJson(`/ai/${projectSlug}/workbench/${kind === 'blueprint' ? 'blueprints' : 'notebooks'}/${slug}/description`, {
                 method: 'PATCH',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ description: editText || null }),
@@ -740,7 +740,7 @@ export default function WorkbenchRoutingTab({
         setPromptModalOpen(true);
         setPromptLoading(true);
         try {
-            const data = await fetchJson(`/p/${projectSlug}/ai/workbench/l1-prompt`) as { prompt: string; token_estimate: number };
+            const data = await fetchJson(`/ai/${projectSlug}/workbench/l1-prompt`) as { prompt: string; token_estimate: number };
             setPromptContent(data.prompt);
             setPromptTokens(data.token_estimate);
         } catch {

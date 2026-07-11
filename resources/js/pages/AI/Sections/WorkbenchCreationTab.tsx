@@ -610,7 +610,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
     /* ── Load summary on mount ── */
     useEffect(() => {
         setSummaryLoading(true);
-        fetchJson(`/p/${projectSlug}/ai/workbench/l2-summary`)
+        fetchJson(`/ai/${projectSlug}/workbench/l2-summary`)
             .then((data) => setSummary((data as { blueprints: L2BlueprintSummary[] }).blueprints))
             .catch(() => {})
             .finally(() => setSummaryLoading(false));
@@ -626,7 +626,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
         setCursorIdx(0);
 
         const cmdUrl = `/api/v1/projects/${projectId}/ai/batches/${activeBatchId}/commands`;
-        const notesUrl = `/p/${projectSlug}/ai/workbench/l2-batch/${activeBatchId}/notes`;
+        const notesUrl = `/ai/${projectSlug}/workbench/l2-batch/${activeBatchId}/notes`;
 
         Promise.all([
             fetchJson(cmdUrl),
@@ -704,7 +704,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
         setHoneLoading(true);
         setHoneData(null);
         try {
-            const data = await fetchJson(`/p/${projectSlug}/ai/workbench/l2-preview-prompt`, {
+            const data = await fetchJson(`/ai/${projectSlug}/workbench/l2-preview-prompt`, {
                 method: 'POST',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ blueprint_slug: selectedSlug, batch_size: batchSize }),
@@ -722,7 +722,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
         setConfirmOpen(false);
         setRunning(true);
         try {
-            const data = await fetchJson(`/p/${projectSlug}/ai/workbench/l2-run-batch`, {
+            const data = await fetchJson(`/ai/${projectSlug}/workbench/l2-run-batch`, {
                 method: 'POST',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ blueprint_slug: selectedSlug, batch_size: batchSize }),
@@ -735,7 +735,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                 setActiveBatchId(newBatches[0].batchId);
 
                 // Refresh summary counts
-                fetchJson(`/p/${projectSlug}/ai/workbench/l2-summary`)
+                fetchJson(`/ai/${projectSlug}/workbench/l2-summary`)
                     .then((sd) => setSummary((sd as { blueprints: L2BlueprintSummary[] }).blueprints))
                     .catch(() => {});
             }
