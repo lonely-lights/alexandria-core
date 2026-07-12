@@ -402,14 +402,14 @@ it('dedup guard skips creation and marks command executed when a live entry with
 
     $command->refresh();
     expect($command->status)->toBe('executed')
-        ->and($command->executed_at)->not->toBeNull();
+        ->and($command->executed_at)->not->toBeNull()
+        ->and(Entry::query()
+            ->where('project_id', $project->id)
+            ->where('blueprint_id', $blueprint->id)
+            ->where('slug', 'rivendell')
+            ->count())->toBe(1);
 
     // No second entry created.
-    expect(Entry::query()
-        ->where('project_id', $project->id)
-        ->where('blueprint_id', $blueprint->id)
-        ->where('slug', 'rivendell')
-        ->count())->toBe(1);
 });
 
 it('dedup guard annotates reasoning with [dedup: matched existing #id]', function () {
@@ -485,14 +485,14 @@ it('dedup guard maps temp_id to existing entry so a following create_relationshi
     expect($result)->toBe(['success' => 2, 'failed' => 0]);
 
     $relCmd->refresh();
-    expect($relCmd->status)->toBe('executed');
+    expect($relCmd->status)->toBe('executed')
+        ->and(EntryRelationship::query()
+            ->where('parent_entry_id', $existing->id)
+            ->where('child_entry_id', $child->id)
+            ->where('relationship_type', 'contains')
+            ->exists())->toBeTrue();
 
     // The relationship must point at the PRE-EXISTING entry, not a newly created one.
-    expect(EntryRelationship::query()
-        ->where('parent_entry_id', $existing->id)
-        ->where('child_entry_id', $child->id)
-        ->where('relationship_type', 'contains')
-        ->exists())->toBeTrue();
 });
 
 it('dedup guard does not fire for a non-duplicate name - new entry is created normally', function () {
