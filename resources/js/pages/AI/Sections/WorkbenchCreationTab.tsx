@@ -72,7 +72,7 @@ const chipStyle: CSSProperties = {
     color: 'var(--theme-base-content)',
 };
 
-function badge(label: string, color: string): CSSProperties {
+function badge(color: string): CSSProperties {
     return {
         display: 'inline-flex',
         alignItems: 'center',
@@ -459,7 +459,7 @@ function NoteGroupCard({
 }: {
     group: NoteGroup;
     isCursor: boolean;
-    localStatus: Record<number, 'approved' | 'rejected'>;
+    localStatus: Record<number, 'approved' | 'rejected' | undefined>;
     execResults: Record<number, 'executed' | 'failed'>;
     onClick: () => void;
     t: (k: string) => string;
@@ -525,7 +525,7 @@ function NoteGroupCard({
                                 <div key={cmd.id} className="space-y-1">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <CommandChip cmd={cmd} />
-                                        <span style={{ ...badge(status, statusColor(status)), fontSize: '0.6875rem' }}>
+                                        <span style={{ ...badge(statusColor(status)), fontSize: '0.6875rem' }}>
                                             {t(`ai.workbench.creation.review.${status}_badge`)}
                                         </span>
                                     </div>
@@ -599,7 +599,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
     const [commands, setCommands] = useState<AiCommand[]>([]);
     const [noteMap, setNoteMap] = useState<Record<number, { title: string; text: string }>>({});
     const [commandsLoading, setCommandsLoading] = useState(false);
-    const [localStatus, setLocalStatus] = useState<Record<number, 'approved' | 'rejected'>>({});
+    const [localStatus, setLocalStatus] = useState<Record<number, 'approved' | 'rejected' | undefined>>({});
     const [cursorIdx, setCursorIdx] = useState(0);
     const [executing, setExecuting] = useState(false);
     const [execResults, setExecResults] = useState<Record<number, 'executed' | 'failed'>>({});
