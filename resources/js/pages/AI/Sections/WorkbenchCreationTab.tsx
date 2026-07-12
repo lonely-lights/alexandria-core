@@ -2,6 +2,8 @@ import { useState, useEffect, type CSSProperties } from 'react';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { fetchJson } from '@alexandria/lib/fetchJson';
 import useT from '@alexandria/hooks/useT';
+import HoneDrawer from './HoneDrawer';
+import WorkbenchKeyLegend from './WorkbenchKeyLegend';
 import type {
     L2BlueprintSummary,
     L2PreviewResult,
@@ -18,11 +20,12 @@ interface WorkbenchCreationTabProps {
 
 /* ── Theme styles (matching WorkbenchRoutingTab conventions) ── */
 
-const cardStyle: CSSProperties = {
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
-    borderRadius: 'var(--theme-radius-card)',
-    padding: '1rem',
+const railHeadingStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)',
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
 };
 
 const labelStyle: CSSProperties = {
@@ -97,246 +100,22 @@ const secondaryBtn: CSSProperties = {
     borderRadius: 'var(--theme-radius-button)',
 };
 
-/* ── Hone modal ── */
+const railRowStyle: CSSProperties = {
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+};
 
-function HoneModal({
-    open,
-    data,
-    loading,
-    projectSlug,
-    onClose,
-    t,
-}: {
-    open: boolean;
-    data: L2PreviewResult | null;
-    loading: boolean;
-    projectSlug: string;
-    onClose: () => void;
-    t: (k: string) => string;
-}) {
-    const [copied, setCopied] = useState(false);
-    const [promptVisible, setPromptVisible] = useState(true);
+const railRowSelectedStyle: CSSProperties = {
+    ...railRowStyle,
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)',
+    boxShadow: 'inset 3px 0 0 var(--theme-brand-primary-500)',
+};
 
-    if (!open) return null;
+const actionBarStyle: CSSProperties = {
+    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 3%, transparent)',
+};
 
-    function handleCopy() {
-        if (!data) return;
-        void navigator.clipboard.writeText(data.prompt).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        });
-    }
-
-    const sm = data?.source_map;
-
-    return (
-        <div
-            style={{
-                position: 'fixed',
-                inset: 0,
-                zIndex: 50,
-                background: 'rgba(0,0,0,0.55)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '1rem',
-            }}
-            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-        >
-            <div
-                style={{
-                    background: 'var(--theme-base-100)',
-                    borderRadius: 'var(--theme-radius-card)',
-                    padding: '1.5rem',
-                    maxWidth: '64rem',
-                    width: '100%',
-                    maxHeight: '90vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '1rem',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                }}
-            >
-                {/* Header */}
-                <div className="flex items-center justify-between gap-4">
-                    <h2 className="font-semibold text-base" style={{ color: 'var(--theme-base-content)' }}>
-                        {t('ai.workbench.creation.hone.modal_title')}
-                    </h2>
-                    <div className="flex items-center gap-2">
-                        {data && data.token_estimate > 0 && (
-                            <span style={countStyle}>
-                                {t('ai.workbench.creation.hone.token_estimate').replace(':count', String(data.token_estimate))}
-                            </span>
-                        )}
-                        {sm && (
-                            <span style={countStyle}>
-                                {t('ai.workbench.creation.hone.notes_in_batch').replace(':count', String(sm.notes_in_batch))}
-                            </span>
-                        )}
-                        <button
-                            type="button"
-                            className="alex-btn px-2 py-1 text-sm"
-                            onClick={onClose}
-                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)' }}
-                            aria-label="Close"
-                        >
-                            <i className="fa-solid fa-xmark" aria-hidden="true" />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Two-column layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" style={{ overflowY: 'auto', minHeight: 0, flexGrow: 1 }}>
-                    {/* Left: prompt */}
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold" style={labelStyle}>
-                                {t('ai.workbench.creation.hone.prompt_section')}
-                            </span>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    className="alex-btn px-2 py-1 text-xs"
-                                    onClick={() => setPromptVisible((v) => !v)}
-                                    style={secondaryBtn}
-                                >
-                                    {promptVisible ? '▲' : '▼'}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="alex-btn px-3 py-1 text-xs"
-                                    onClick={handleCopy}
-                                    style={secondaryBtn}
-                                >
-                                    {copied ? t('ai.workbench.creation.hone.copied') : t('ai.workbench.creation.hone.copy_button')}
-                                </button>
-                            </div>
-                        </div>
-                        {promptVisible && (
-                            <div style={{ overflowY: 'auto', maxHeight: '60vh', ...cardStyle }}>
-                                {loading ? (
-                                    <p style={labelStyle}>{t('ai.workbench.creation.hone.loading')}</p>
-                                ) : (
-                                    <pre style={monoStyle}>{data?.prompt ?? ''}</pre>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Right: source map */}
-                    <div className="flex flex-col gap-3">
-                        <span className="text-xs font-semibold" style={labelStyle}>
-                            {t('ai.workbench.creation.hone.source_map_section')}
-                        </span>
-
-                        {sm ? (
-                            <div className="space-y-3">
-                                {/* Blueprint description */}
-                                <div style={cardStyle} className="space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                                            {t('ai.workbench.creation.hone.blueprint_desc_label')}
-                                        </span>
-                                        <a
-                                            href={`/p/${projectSlug}/blueprints/${sm.blueprint_slug}`}
-                                            className="text-xs"
-                                            style={{ color: 'var(--theme-brand-primary-500)' }}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
-                                            {t('ai.workbench.creation.hone.blueprint_desc_edit')} ↗
-                                        </a>
-                                    </div>
-                                    <p style={descStyle}>
-                                        {sm.blueprint_description ?? t('ai.workbench.creation.hone.blueprint_desc_none')}
-                                    </p>
-                                </div>
-
-                                {/* Field schema */}
-                                <div style={cardStyle} className="space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                                            {t('ai.workbench.creation.hone.field_schema_label')}
-                                        </span>
-                                        <a
-                                            href={`/p/${projectSlug}/blueprints/${sm.blueprint_slug}?tab=fields`}
-                                            className="text-xs"
-                                            style={{ color: 'var(--theme-brand-primary-500)' }}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
-                                            {t('ai.workbench.creation.hone.field_schema_edit')} ↗
-                                        </a>
-                                    </div>
-                                    <pre style={{ ...monoStyle, fontSize: '0.75rem', maxHeight: '8rem', overflowY: 'auto' }}>
-                                        {sm.field_schema}
-                                    </pre>
-                                </div>
-
-                                {/* Target index */}
-                                <div style={cardStyle} className="space-y-1">
-                                    <span className="text-xs font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                                        {t('ai.workbench.creation.hone.target_index_label')}
-                                    </span>
-                                    <p style={countStyle}>
-                                        {t('ai.workbench.creation.hone.target_index_count').replace(':count', String(sm.target_index_size))}
-                                        {sm.target_pruned && (
-                                            <span style={{ marginLeft: '0.5rem', fontStyle: 'italic' }}>
-                                                {t('ai.workbench.creation.hone.target_index_pruned')}
-                                            </span>
-                                        )}
-                                    </p>
-                                </div>
-
-                                {/* Relationship edges */}
-                                {sm.relationship_edges.length > 0 && (
-                                    <div style={cardStyle} className="space-y-2">
-                                        <span className="text-xs font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                                            {t('ai.workbench.creation.hone.edges_label')}
-                                        </span>
-                                        {sm.relationship_edges.map((edge, idx) => (
-                                            <div key={idx} className="space-y-1 pl-2" style={{ borderLeft: '2px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)' }}>
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <span style={{ ...chipStyle, fontSize: '0.6875rem' }}>
-                                                            {edge.ai_priority === 'required'
-                                                                ? t('ai.workbench.creation.hone.edge_required')
-                                                                : t('ai.workbench.creation.hone.edge_preferred')}
-                                                        </span>
-                                                        <span className="text-xs font-medium" style={{ color: 'var(--theme-base-content)' }}>
-                                                            {edge.relationship_name} → {edge.blueprint_slug}
-                                                        </span>
-                                                    </div>
-                                                    <a
-                                                        href={`/p/${projectSlug}/blueprints/${edge.blueprint_slug}`}
-                                                        className="text-xs flex-shrink-0"
-                                                        style={{ color: 'var(--theme-brand-primary-500)' }}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                    >
-                                                        {t('ai.workbench.creation.hone.edge_edit')} ↗
-                                                    </a>
-                                                </div>
-                                                <p style={countStyle}>
-                                                    {t('ai.workbench.creation.hone.edge_index_count').replace(':count', String(edge.index_size))}
-                                                </p>
-                                                {edge.ai_instruction && (
-                                                    <p style={descStyle}>{edge.ai_instruction}</p>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            loading && <p style={labelStyle}>{t('ai.workbench.creation.hone.loading')}</p>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
+const paneBorderColor = 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)';
 
 /* ── Confirm run dialog ── */
 
@@ -584,7 +363,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
     const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
     const [batchSize, setBatchSize] = useState(25);
 
-    /* ── Hone modal state ── */
+    /* ── Hone drawer state ── */
     const [honeOpen, setHoneOpen] = useState(false);
     const [honeData, setHoneData] = useState<L2PreviewResult | null>(null);
     const [honeLoading, setHoneLoading] = useState(false);
@@ -854,14 +633,17 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
     /* ── Render ── */
 
     return (
-        <div className="space-y-8">
-            {/* ─── Run pane ─── */}
-            <section className="space-y-4">
-                <h2 className="text-base font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                    {t('ai.workbench.creation.run.heading')}
-                </h2>
+        <div className="flex h-full min-h-0 flex-col lg:flex-row">
+            {/* ─── Rail: blueprint picker + batch controls + batch list ─── */}
+            <div
+                className="flex max-h-[45vh] min-h-0 shrink-0 flex-col lg:max-h-none lg:w-[360px] lg:border-r"
+                style={{ borderColor: paneBorderColor }}
+            >
+                <div className="shrink-0 space-y-3 border-b p-3" style={{ borderColor: paneBorderColor }}>
+                    <h2 className="text-sm font-semibold" style={{ color: 'var(--theme-base-content)' }}>
+                        {t('ai.workbench.creation.run.heading')}
+                    </h2>
 
-                <div style={cardStyle} className="space-y-4">
                     {/* Blueprint picker */}
                     <div className="space-y-1">
                         <label className="text-xs font-medium" style={labelStyle}>
@@ -893,43 +675,43 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                     </div>
 
                     {/* Batch size */}
-                    <div className="space-y-1">
-                        <label className="text-xs font-medium" style={labelStyle}>
-                            {t('ai.workbench.creation.run.batch_size_label')}
-                        </label>
-                        <input
-                            type="number"
-                            min={1}
-                            max={50}
-                            value={batchSize}
-                            onChange={(e) => setBatchSize(Math.max(1, Math.min(50, Number(e.target.value))))}
-                            className="w-24 text-sm"
-                            style={{
-                                background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
-                                border: '1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
-                                borderRadius: 'var(--theme-radius-button)',
-                                padding: '0.375rem 0.5rem',
-                                color: 'var(--theme-base-content)',
-                            }}
-                        />
+                    <div className="flex items-end justify-between gap-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium" style={labelStyle}>
+                                {t('ai.workbench.creation.run.batch_size_label')}
+                            </label>
+                            <input
+                                type="number"
+                                min={1}
+                                max={50}
+                                value={batchSize}
+                                onChange={(e) => setBatchSize(Math.max(1, Math.min(50, Number(e.target.value))))}
+                                className="w-20 text-sm"
+                                style={{
+                                    background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+                                    border: '1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
+                                    borderRadius: 'var(--theme-radius-button)',
+                                    padding: '0.375rem 0.5rem',
+                                    color: 'var(--theme-base-content)',
+                                }}
+                            />
+                        </div>
+                        {selectedBp && (
+                            <p className="flex-1 text-right" style={countStyle}>
+                                {selectedBp.pending_count === 0
+                                    ? t('ai.workbench.creation.run.no_pending')
+                                    : t('ai.workbench.creation.run.pending_count').replace(':count', String(selectedBp.pending_count))}
+                            </p>
+                        )}
                     </div>
 
-                    {/* Pending count info */}
-                    {selectedBp && (
-                        <p style={countStyle}>
-                            {selectedBp.pending_count === 0
-                                ? t('ai.workbench.creation.run.no_pending')
-                                : t('ai.workbench.creation.run.pending_count').replace(':count', String(selectedBp.pending_count))}
-                        </p>
-                    )}
-
                     {/* Action buttons */}
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <button
                             type="button"
                             disabled={!selectedSlug || honeLoading}
                             onClick={() => void openHone()}
-                            className="alex-btn px-4 py-2 text-sm inline-flex items-center gap-2"
+                            className="alex-btn px-3 py-1.5 text-sm inline-flex items-center gap-1.5"
                             style={!selectedSlug || honeLoading ? { ...secondaryBtn, opacity: 0.5 } : secondaryBtn}
                         >
                             <i className="fa-solid fa-eye text-xs" aria-hidden="true" />
@@ -939,7 +721,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                             type="button"
                             disabled={!selectedSlug || !selectedBp || selectedBp.pending_count === 0 || running}
                             onClick={() => setConfirmOpen(true)}
-                            className="alex-btn px-4 py-2 text-sm inline-flex items-center gap-2"
+                            className="alex-btn px-3 py-1.5 text-sm inline-flex items-center gap-1.5"
                             style={(!selectedSlug || !selectedBp || selectedBp?.pending_count === 0 || running)
                                 ? { ...primaryBtn, opacity: 0.5 }
                                 : primaryBtn}
@@ -949,110 +731,121 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                         </button>
                     </div>
                 </div>
-            </section>
+
+                {/* Batch tabs list */}
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <div className="px-3 pt-2">
+                        <span style={railHeadingStyle}>{t('ai.workbench.creation.review.batches_heading')}</span>
+                    </div>
+                    {batches.length === 0 ? (
+                        <p className="px-3 py-2" style={labelStyle}>{t('ai.workbench.creation.review.no_batches')}</p>
+                    ) : (
+                        batches.map((b) => (
+                            <button
+                                key={b.batchId}
+                                type="button"
+                                onClick={() => setActiveBatchId(b.batchId)}
+                                data-selected={activeBatchId === b.batchId}
+                                className="alex-row block w-full truncate px-3 py-2 text-left text-sm"
+                                style={activeBatchId === b.batchId ? railRowSelectedStyle : railRowStyle}
+                            >
+                                {b.label}
+                            </button>
+                        ))
+                    )}
+                </div>
+            </div>
 
             {/* ─── Review pane ─── */}
-            <section className="space-y-4">
-                <h2 className="text-base font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                    {t('ai.workbench.creation.review.heading')}
-                </h2>
-
-                {batches.length === 0 ? (
-                    <p style={labelStyle}>{t('ai.workbench.creation.review.no_batches')}</p>
+            <div className="flex min-h-0 flex-1 flex-col">
+                {!activeBatchId ? (
+                    <div className="flex flex-1 items-center justify-center p-6 text-center">
+                        <p style={labelStyle}>
+                            {batches.length === 0
+                                ? t('ai.workbench.creation.review.no_batches')
+                                : t('ai.workbench.creation.review.select_batch')}
+                        </p>
+                    </div>
                 ) : (
                     <>
-                        {/* Batch tabs */}
-                        <div className="flex flex-wrap gap-2">
-                            {batches.map((b) => (
-                                <button
-                                    key={b.batchId}
-                                    type="button"
-                                    onClick={() => setActiveBatchId(b.batchId)}
-                                    className="alex-btn px-3 py-1 text-sm"
-                                    style={activeBatchId === b.batchId ? primaryBtn : secondaryBtn}
-                                >
-                                    {b.label}
-                                </button>
+                        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+                            {execSummary && (
+                                <p style={{ color: 'var(--theme-status-success-stroke, #22c55e)', fontSize: '0.8125rem' }}>
+                                    {t('ai.workbench.creation.review.execute_results')
+                                        .replace(':success', String(execSummary.success))
+                                        .replace(':failed', String(execSummary.failed))}
+                                </p>
+                            )}
+                            {commandsLoading && (
+                                <p style={labelStyle}>{t('ai.workbench.creation.review.loading')}</p>
+                            )}
+                            {!commandsLoading && noteGroups.length === 0 && (
+                                <p style={labelStyle}>{t('ai.workbench.creation.review.empty')}</p>
+                            )}
+                            {!commandsLoading && noteGroups.map((group, idx) => (
+                                <NoteGroupCard
+                                    key={group.noteId}
+                                    group={group}
+                                    isCursor={idx === cursorIdx}
+                                    localStatus={localStatus}
+                                    execResults={execResults}
+                                    onClick={() => setCursorIdx(idx)}
+                                    t={t}
+                                />
                             ))}
                         </div>
 
-                        {activeBatchId && (
-                            <>
-                                {/* Counts bar + bulk actions */}
-                                <div className="flex items-center justify-between flex-wrap gap-3">
-                                    <span style={countStyle}>
-                                        {t('ai.workbench.creation.review.counts')
-                                            .replace(':approved', String(approvedCount))
-                                            .replace(':rejected', String(rejectedCount))
-                                            .replace(':pending', String(pendingCount))}
-                                    </span>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <button
-                                            type="button"
-                                            onClick={() => void bulkApproveAll()}
-                                            className="alex-btn px-3 py-1 text-sm"
-                                            style={secondaryBtn}
-                                        >
-                                            {t('ai.workbench.creation.review.approve_all')}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => void bulkRejectAll()}
-                                            className="alex-btn px-3 py-1 text-sm"
-                                            style={secondaryBtn}
-                                        >
-                                            {t('ai.workbench.creation.review.reject_all')}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            disabled={executing || approvedCount === 0}
-                                            onClick={() => void executeApproved()}
-                                            className="alex-btn px-3 py-1 text-sm inline-flex items-center gap-1.5"
-                                            style={executing || approvedCount === 0 ? { ...primaryBtn, opacity: 0.5 } : primaryBtn}
-                                        >
-                                            <i className="fa-solid fa-bolt text-xs" aria-hidden="true" />
-                                            {executing ? t('ai.workbench.creation.review.executing') : t('ai.workbench.creation.review.execute_button')}
-                                        </button>
-                                    </div>
+                        {/* Slim sticky action bar — counts, keyboard legend, bulk + execute */}
+                        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 py-2.5" style={actionBarStyle}>
+                            <span style={countStyle}>
+                                {t('ai.workbench.creation.review.counts')
+                                    .replace(':approved', String(approvedCount))
+                                    .replace(':rejected', String(rejectedCount))
+                                    .replace(':pending', String(pendingCount))}
+                            </span>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <WorkbenchKeyLegend
+                                    pairs={[
+                                        ['A', t('ai.workbench.creation.review.key_a')],
+                                        ['G', t('ai.workbench.creation.review.key_g')],
+                                    ]}
+                                />
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <button
+                                        type="button"
+                                        onClick={() => void bulkApproveAll()}
+                                        className="alex-btn px-3 py-1 text-sm"
+                                        style={secondaryBtn}
+                                    >
+                                        {t('ai.workbench.creation.review.approve_all')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void bulkRejectAll()}
+                                        className="alex-btn px-3 py-1 text-sm"
+                                        style={secondaryBtn}
+                                    >
+                                        {t('ai.workbench.creation.review.reject_all')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={executing || approvedCount === 0}
+                                        onClick={() => void executeApproved()}
+                                        className="alex-btn px-3 py-1 text-sm inline-flex items-center gap-1.5"
+                                        style={executing || approvedCount === 0 ? { ...primaryBtn, opacity: 0.5 } : primaryBtn}
+                                    >
+                                        <i className="fa-solid fa-bolt text-xs" aria-hidden="true" />
+                                        {executing ? t('ai.workbench.creation.review.executing') : t('ai.workbench.creation.review.execute_button')}
+                                    </button>
                                 </div>
-
-                                {/* Execute results */}
-                                {execSummary && (
-                                    <p style={{ color: 'var(--theme-status-success-stroke, #22c55e)', fontSize: '0.8125rem' }}>
-                                        {t('ai.workbench.creation.review.execute_results')
-                                            .replace(':success', String(execSummary.success))
-                                            .replace(':failed', String(execSummary.failed))}
-                                    </p>
-                                )}
-
-                                {/* Note group cards */}
-                                <div className="space-y-3">
-                                    {commandsLoading && (
-                                        <p style={labelStyle}>{t('ai.workbench.creation.review.loading')}</p>
-                                    )}
-                                    {!commandsLoading && noteGroups.length === 0 && (
-                                        <p style={labelStyle}>{t('ai.workbench.creation.review.empty')}</p>
-                                    )}
-                                    {!commandsLoading && noteGroups.map((group, idx) => (
-                                        <NoteGroupCard
-                                            key={group.noteId}
-                                            group={group}
-                                            isCursor={idx === cursorIdx}
-                                            localStatus={localStatus}
-                                            execResults={execResults}
-                                            onClick={() => setCursorIdx(idx)}
-                                            t={t}
-                                        />
-                                    ))}
-                                </div>
-                            </>
-                        )}
+                            </div>
+                        </div>
                     </>
                 )}
-            </section>
+            </div>
 
-            {/* ─── Modals ─── */}
-            <HoneModal
+            {/* ─── Overlays ─── */}
+            <HoneDrawer
                 open={honeOpen}
                 data={honeData}
                 loading={honeLoading}

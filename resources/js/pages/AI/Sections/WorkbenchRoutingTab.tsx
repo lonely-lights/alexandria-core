@@ -3,6 +3,7 @@ import { router } from '@inertiajs/react';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { fetchJson, FetchJsonError } from '@alexandria/lib/fetchJson';
 import useT from '@alexandria/hooks/useT';
+import WorkbenchKeyLegend from './WorkbenchKeyLegend';
 import type { WorkbenchBlueprint, WorkbenchNotebook, RoutedNotesPage } from '@alexandria/types/workbench';
 
 interface WorkbenchRoutingTabProps {
@@ -13,16 +14,30 @@ interface WorkbenchRoutingTabProps {
     pending_count: number;
 }
 
-/* ── Theme styles ── */
-const cardStyle: CSSProperties = {
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
-    borderRadius: 'var(--theme-radius-card)',
-    padding: '1rem',
-};
+/** A roster entry — blueprint or notebook, normalised for the rail + detail pane. */
+type RosterKind = 'blueprint' | 'notebook';
 
-const cardHoverStyle: CSSProperties = {
-    borderColor: 'color-mix(in srgb, var(--theme-base-content) 18%, transparent)',
+interface RosterEntry {
+    kind: RosterKind;
+    id: number;
+    slug: string;
+    name: string;
+    allowSort: boolean;
+    description: string | null;
+    count: number;
+    isCatchAll: boolean;
+}
+
+type Selected = { kind: RosterKind; id: number } | null;
+
+/* ── Theme styles ── */
+
+const railHeadingStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)',
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
 };
 
 const labelStyle: CSSProperties = {
@@ -45,10 +60,11 @@ const catchAllBadgeStyle: CSSProperties = {
     background: 'color-mix(in srgb, var(--theme-brand-primary-500) 15%, transparent)',
     color: 'var(--theme-brand-primary-500)',
     borderRadius: 'var(--theme-radius-badge)',
-    padding: '0.125rem 0.5rem',
-    fontSize: '0.6875rem',
+    padding: '0.0625rem 0.375rem',
+    fontSize: '0.625rem',
     fontWeight: 600,
     letterSpacing: '0.025em',
+    flexShrink: 0,
 };
 
 const toggleTrackOn: CSSProperties = {
@@ -77,6 +93,16 @@ const toggleThumb: CSSProperties = {
     transition: 'left var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)',
 };
 
+const railRowStyle: CSSProperties = {
+    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+};
+
+const railRowSelectedStyle: CSSProperties = {
+    ...railRowStyle,
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)',
+    boxShadow: 'inset 3px 0 0 var(--theme-brand-primary-500)',
+};
+
 const reviewCardStyle: CSSProperties = {
     border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
     background: 'color-mix(in srgb, var(--theme-base-content) 3%, transparent)',
@@ -96,6 +122,19 @@ const monoStyle: CSSProperties = {
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
 };
+
+const actionBarStyle: CSSProperties = {
+    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-content) 3%, transparent)',
+};
+
+const secondaryBtn: CSSProperties = {
+    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    color: 'var(--theme-base-content)',
+    borderRadius: 'var(--theme-radius-button)',
+};
+
+const paneBorderColor = 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)';
 
 const MAX_DESC = 2000;
 
@@ -125,7 +164,7 @@ function ToggleSwitch({
     );
 }
 
-function descriptionPreview(text: string | null, maxLen = 120): string {
+function descriptionPreview(text: string | null, maxLen = 160): string {
     if (!text) return '';
     return text.length > maxLen ? `${text.slice(0, maxLen).trim()}…` : text;
 }
@@ -313,32 +352,65 @@ function ReRouteModal({
     );
 }
 
-/* ── Review section ── */
-function ReviewSection({
+/* ── Rail row ── */
+function RosterRow({
+    entry,
+    isSelected,
+    busy,
+    countLabel,
+    toggleLabel,
+    catchAllLabel,
+    onSelect,
+    onToggle,
+}: {
+    entry: RosterEntry;
+    isSelected: boolean;
+    busy: boolean;
+    countLabel: string;
+    toggleLabel: string;
+    catchAllLabel: string;
+    onSelect: () => void;
+    onToggle: () => void;
+}) {
+    return (
+        <div
+            className="alex-row flex items-center gap-2 px-3 py-2"
+            data-selected={isSelected}
+            style={isSelected ? railRowSelectedStyle : railRowStyle}
+        >
+            <button type="button" className="min-w-0 flex-1 text-left" onClick={onSelect}>
+                <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate text-sm font-medium" style={{ color: 'var(--theme-base-content)' }}>
+                        {entry.name}
+                    </span>
+                    {entry.isCatchAll && <span style={catchAllBadgeStyle}>{catchAllLabel}</span>}
+                </span>
+                <span className="block" style={countStyle}>{countLabel}</span>
+            </button>
+            <ToggleSwitch
+                checked={entry.allowSort}
+                disabled={busy}
+                label={`${toggleLabel}: ${entry.name}`}
+                onChange={onToggle}
+            />
+        </div>
+    );
+}
+
+/* ── Target review (rail-selection driven note review) ── */
+function TargetReview({
     projectSlug,
+    target,
     blueprints,
     notebooks,
     t,
 }: {
     projectSlug: string;
+    target: RosterEntry;
     blueprints: WorkbenchBlueprint[];
     notebooks: WorkbenchNotebook[];
     t: (k: string) => string;
 }) {
-    // Build destination tabs: blueprints with routed_count > 0, notebooks with note_count > 0
-    const allTargets = useMemo(() => {
-        const bpTargets = blueprints
-            .filter((bp) => bp.routed_count > 0)
-            .map((bp) => ({ kind: 'blueprint' as const, id: bp.id, name: bp.name, count: bp.routed_count }));
-        const nbTargets = notebooks
-            .filter((nb) => nb.note_count > 0)
-            .map((nb) => ({ kind: 'notebook' as const, id: nb.id, name: nb.title, count: nb.note_count }));
-        return [...bpTargets, ...nbTargets];
-    }, [blueprints, notebooks]);
-
-    const [activeTabIdx, setActiveTabIdx] = useState(0);
-    const activeTarget = allTargets[activeTabIdx] ?? null;
-
     const [notesPage, setNotesPage] = useState<RoutedNotesPage | null>(null);
     const [notesLoading, setNotesLoading] = useState(false);
     const [cursorIdx, setCursorIdx] = useState(0);
@@ -359,10 +431,9 @@ function ReviewSection({
     const containerRef = useRef<HTMLDivElement>(null);
 
     function loadNotes(page = 1) {
-        if (!activeTarget) return;
         setNotesLoading(true);
         fetchJson(
-            `/ai/${projectSlug}/workbench/routed-notes?kind=${activeTarget.kind}&id=${activeTarget.id}&page=${page}`,
+            `/ai/${projectSlug}/workbench/routed-notes?kind=${target.kind}&id=${target.id}&page=${page}`,
         )
             .then((data) => {
                 setNotesPage(data as RoutedNotesPage);
@@ -374,9 +445,9 @@ function ReviewSection({
     }
 
     useEffect(() => {
-        if (activeTarget) loadNotes(1);
+        loadNotes(1);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeTabIdx]);
+    }, [target.kind, target.id]);
 
     const notes = notesPage?.data ?? [];
     const cursorNote = notes[cursorIdx] ?? null;
@@ -397,13 +468,13 @@ function ReviewSection({
         }
     }
 
-    async function doReRoute(noteId: number, target: DestTarget) {
+    async function doReRoute(noteId: number, dest: DestTarget) {
         setReRouteBusy(true);
         try {
             await fetchJson(`/ai/${projectSlug}/workbench/notes/${noteId}/re-route`, {
                 method: 'POST',
                 headers: csrfHeaders(),
-                body: JSON.stringify({ to: { kind: target.kind, id: target.id } }),
+                body: JSON.stringify({ to: { kind: dest.kind, id: dest.id } }),
             });
             setReRouteNoteId(null);
             loadNotes(notesPage?.current_page ?? 1);
@@ -452,74 +523,13 @@ function ReviewSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [cursorNote, notes]);
 
-    if (allTargets.length === 0) {
-        return null;
-    }
-
     const keptCount = notes.filter((n) => localFlags[n.id] === 'kept').length;
     const flaggedCount = notes.filter((n) => localFlags[n.id] === 'flagged').length;
     const pendingCount = notes.filter((n) => !localFlags[n.id]).length;
 
     return (
-        <section className="space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-                <h2 className="text-base font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                    {t('ai.workbench.review.heading')}
-                </h2>
-                {notes.length > 0 && (
-                    <div className="flex items-center gap-3">
-                        <span style={countStyle}>
-                            {t('ai.workbench.review.counts')
-                                .replace(':kept', String(keptCount))
-                                .replace(':flagged', String(flaggedCount))
-                                .replace(':pending', String(pendingCount))}
-                        </span>
-                        <button
-                            type="button"
-                            className="alex-btn px-3 py-1 text-sm"
-                            onClick={() => void bulkKeepAll()}
-                            style={{
-                                background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-                                borderRadius: 'var(--theme-radius-button)',
-                                color: 'var(--theme-base-content)',
-                            }}
-                        >
-                            {t('ai.workbench.review.keep_all')}
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* Destination tabs */}
-            <div className="flex flex-wrap gap-2">
-                {allTargets.map((target, idx) => (
-                    <button
-                        key={`${target.kind}-${target.id}`}
-                        type="button"
-                        onClick={() => { setActiveTabIdx(idx); }}
-                        className="alex-btn px-3 py-1 text-sm"
-                        style={
-                            idx === activeTabIdx
-                                ? {
-                                    background: 'var(--theme-brand-primary-500)',
-                                    color: 'var(--theme-brand-primary-content)',
-                                    borderRadius: 'var(--theme-radius-button)',
-                                  }
-                                : {
-                                    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-                                    color: 'var(--theme-base-content)',
-                                    borderRadius: 'var(--theme-radius-button)',
-                                  }
-                        }
-                    >
-                        {target.name}
-                        <span style={{ ...countStyle, marginLeft: '0.35rem' }}>({target.count})</span>
-                    </button>
-                ))}
-            </div>
-
-            {/* Notes list */}
-            <div className="space-y-3" ref={containerRef}>
+        <div className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4" ref={containerRef}>
                 {notesLoading && (
                     <p style={labelStyle}>{t('ai.workbench.review.loading')}</p>
                 )}
@@ -572,32 +582,62 @@ function ReviewSection({
                 })}
             </div>
 
-            {/* Pagination */}
-            {notesPage && notesPage.last_page > 1 && (
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        disabled={notesPage.current_page <= 1}
-                        onClick={() => loadNotes(notesPage.current_page - 1)}
-                        className="alex-btn px-3 py-1 text-sm"
-                        style={{ color: 'var(--theme-base-content)', background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)', borderRadius: 'var(--theme-radius-button)' }}
-                    >
-                        ←
-                    </button>
-                    <span style={labelStyle}>
-                        {t('ai.workbench.review.pagination')
-                            .replace(':current', String(notesPage.current_page))
-                            .replace(':last', String(notesPage.last_page))}
-                    </span>
-                    <button
-                        type="button"
-                        disabled={notesPage.current_page >= notesPage.last_page}
-                        onClick={() => loadNotes(notesPage.current_page + 1)}
-                        className="alex-btn px-3 py-1 text-sm"
-                        style={{ color: 'var(--theme-base-content)', background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)', borderRadius: 'var(--theme-radius-button)' }}
-                    >
-                        →
-                    </button>
+            {/* Slim sticky action bar — counts, pagination, keyboard legend, keep-all */}
+            {notes.length > 0 && (
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 py-2.5" style={actionBarStyle}>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <span style={countStyle}>
+                            {t('ai.workbench.review.counts')
+                                .replace(':kept', String(keptCount))
+                                .replace(':flagged', String(flaggedCount))
+                                .replace(':pending', String(pendingCount))}
+                        </span>
+                        {notesPage && notesPage.last_page > 1 && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    disabled={notesPage.current_page <= 1}
+                                    onClick={() => loadNotes(notesPage.current_page - 1)}
+                                    className="alex-btn px-2 py-0.5 text-xs"
+                                    style={secondaryBtn}
+                                >
+                                    ←
+                                </button>
+                                <span style={labelStyle}>
+                                    {t('ai.workbench.review.pagination')
+                                        .replace(':current', String(notesPage.current_page))
+                                        .replace(':last', String(notesPage.last_page))}
+                                </span>
+                                <button
+                                    type="button"
+                                    disabled={notesPage.current_page >= notesPage.last_page}
+                                    onClick={() => loadNotes(notesPage.current_page + 1)}
+                                    className="alex-btn px-2 py-0.5 text-xs"
+                                    style={secondaryBtn}
+                                >
+                                    →
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <WorkbenchKeyLegend
+                            pairs={[
+                                ['A', t('ai.workbench.review.key_a')],
+                                ['G', t('ai.workbench.review.key_g')],
+                                ['S', t('ai.workbench.review.key_s')],
+                                ['R', t('ai.workbench.review.key_r')],
+                            ]}
+                        />
+                        <button
+                            type="button"
+                            className="alex-btn px-3 py-1 text-sm"
+                            onClick={() => void bulkKeepAll()}
+                            style={secondaryBtn}
+                        >
+                            {t('ai.workbench.review.keep_all')}
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -606,13 +646,13 @@ function ReviewSection({
                 open={reRouteNoteId !== null}
                 targets={reRouteTargets}
                 busy={reRouteBusy}
-                onSelect={(target) => {
-                    if (reRouteNoteId !== null) void doReRoute(reRouteNoteId, target);
+                onSelect={(dest) => {
+                    if (reRouteNoteId !== null) void doReRoute(reRouteNoteId, dest);
                 }}
                 onClose={() => setReRouteNoteId(null)}
                 t={t}
             />
-        </section>
+        </div>
     );
 }
 
@@ -620,8 +660,6 @@ export default function WorkbenchRoutingTab({
     projectSlug,
     blueprints: initialBlueprints,
     notebooks: initialNotebooks,
-    unsorted_count,
-    pending_count,
 }: WorkbenchRoutingTabProps) {
     const t = useT();
 
@@ -644,6 +682,9 @@ export default function WorkbenchRoutingTab({
     const [promptTokens, setPromptTokens] = useState(0);
     const [promptLoading, setPromptLoading] = useState(false);
 
+    // Rail selection — drives the detail pane + review target.
+    const [selected, setSelected] = useState<Selected>(null);
+
     const blueprints = initialBlueprints.map((bp) => ({
         ...bp,
         allow_ai_sorting: bpOverrides[bp.id] ?? bp.allow_ai_sorting,
@@ -653,6 +694,53 @@ export default function WorkbenchRoutingTab({
         ...nb,
         allow_ai_sort: nbOverrides[nb.id] ?? nb.allow_ai_sort,
     }));
+
+    const rosterBlueprints: RosterEntry[] = blueprints.map((bp) => ({
+        kind: 'blueprint',
+        id: bp.id,
+        slug: bp.slug,
+        name: bp.name,
+        allowSort: bp.allow_ai_sorting,
+        description: bp.description,
+        count: bp.routed_count,
+        isCatchAll: false,
+    }));
+
+    const rosterNotebooks: RosterEntry[] = notebooks.map((nb) => ({
+        kind: 'notebook',
+        id: nb.id,
+        slug: nb.slug,
+        name: nb.title,
+        allowSort: nb.allow_ai_sort,
+        description: nb.description,
+        count: nb.note_count,
+        isCatchAll: nb.is_catch_all,
+    }));
+
+    // Default the rail selection to the first entry with routed notes
+    // (closest to the old "first destination tab" default), falling
+    // back to the very first roster entry so the detail pane isn't
+    // empty as soon as there's anything to route.
+    useEffect(() => {
+        if (selected !== null) return;
+        const withNotes = [...rosterBlueprints, ...rosterNotebooks].find((e) => e.count > 0);
+        const fallback = rosterBlueprints[0] ?? rosterNotebooks[0];
+        const initial = withNotes ?? fallback;
+        if (initial) setSelected({ kind: initial.kind, id: initial.id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [rosterBlueprints.length, rosterNotebooks.length]);
+
+    const selectedEntry: RosterEntry | null =
+        selected === null
+            ? null
+            : [...rosterBlueprints, ...rosterNotebooks].find(
+                  (e) => e.kind === selected.kind && e.id === selected.id,
+              ) ?? null;
+
+    const isEditing = selectedEntry !== null && (
+        (selectedEntry.kind === 'blueprint' && editingBpId === selectedEntry.id) ||
+        (selectedEntry.kind === 'notebook' && editingNbId === selectedEntry.id)
+    );
 
     async function toggleBlueprint(bp: WorkbenchBlueprint) {
         const next = !(bpOverrides[bp.id] ?? bp.allow_ai_sorting);
@@ -694,17 +782,15 @@ export default function WorkbenchRoutingTab({
         }
     }
 
-    function openBpEdit(bp: WorkbenchBlueprint) {
-        setEditingBpId(bp.id);
-        setEditingNbId(null);
-        setEditText(bp.description ?? '');
-        setDescSaved(false);
-    }
-
-    function openNbEdit(nb: WorkbenchNotebook) {
-        setEditingNbId(nb.id);
-        setEditingBpId(null);
-        setEditText(nb.description ?? '');
+    function openEdit(entry: RosterEntry) {
+        if (entry.kind === 'blueprint') {
+            setEditingBpId(entry.id);
+            setEditingNbId(null);
+        } else {
+            setEditingNbId(entry.id);
+            setEditingBpId(null);
+        }
+        setEditText(entry.description ?? '');
         setDescSaved(false);
     }
 
@@ -714,7 +800,7 @@ export default function WorkbenchRoutingTab({
         setEditText('');
     }
 
-    async function saveDesc(slug: string, kind: 'blueprint' | 'notebook') {
+    async function saveDesc(slug: string, kind: RosterKind) {
         setSavingDesc(true);
         try {
             await fetchJson(`/ai/${projectSlug}/workbench/${kind === 'blueprint' ? 'blueprints' : 'notebooks'}/${slug}/description`, {
@@ -752,276 +838,175 @@ export default function WorkbenchRoutingTab({
     }
 
     return (
-        <div className="space-y-8">
-            {/* Summary counts bar + prompt preview button */}
-            <div className="flex items-center gap-6 flex-wrap justify-between">
-                <div className="flex items-center gap-6 flex-wrap">
-                    <span style={countStyle}>
-                        <i className="fa-solid fa-inbox mr-1.5" aria-hidden="true" />
-                        {t('ai.workbench.roster.unsorted').replace(':count', String(unsorted_count))}
-                    </span>
-                    <span style={countStyle}>
-                        <i className="fa-solid fa-hourglass-half mr-1.5" aria-hidden="true" />
-                        {t('ai.workbench.roster.pending').replace(':count', String(pending_count))}
-                    </span>
-                </div>
-                <button
-                    type="button"
-                    onClick={() => void openPromptPreview()}
-                    className="alex-btn px-3 py-1.5 text-sm inline-flex items-center gap-1.5"
-                    style={{
-                        background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-                        borderRadius: 'var(--theme-radius-button)',
-                        color: 'var(--theme-base-content)',
-                    }}
+        <div className="flex h-full min-h-0 flex-col lg:flex-row">
+            {/* ─── Rail ─── */}
+            <div
+                className="flex max-h-[45vh] min-h-0 shrink-0 flex-col lg:max-h-none lg:w-[340px] lg:border-r"
+                style={{ borderColor: paneBorderColor }}
+            >
+                <div
+                    className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2"
+                    style={{ borderColor: paneBorderColor }}
                 >
-                    <i className="fa-solid fa-eye text-xs" aria-hidden="true" />
-                    {t('ai.workbench.prompt_preview.button')}
-                </button>
+                    <span style={railHeadingStyle}>{t('ai.workbench.tab.routing')}</span>
+                    <button
+                        type="button"
+                        onClick={() => void openPromptPreview()}
+                        className="alex-btn inline-flex items-center gap-1.5 px-2 py-1 text-xs"
+                        style={secondaryBtn}
+                    >
+                        <i className="fa-solid fa-eye text-[10px]" aria-hidden="true" />
+                        {t('ai.workbench.prompt_preview.button')}
+                    </button>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <div className="px-3 pt-2">
+                        <span style={railHeadingStyle}>{t('ai.workbench.roster.blueprints_heading')}</span>
+                    </div>
+                    {rosterBlueprints.length === 0 ? (
+                        <p className="px-3 py-2" style={labelStyle}>{t('ai.workbench.roster.empty_blueprints')}</p>
+                    ) : (
+                        rosterBlueprints.map((entry) => (
+                            <RosterRow
+                                key={`blueprint-${entry.id}`}
+                                entry={entry}
+                                isSelected={selected?.kind === 'blueprint' && selected.id === entry.id}
+                                busy={!!busyBp[entry.id]}
+                                countLabel={t('ai.workbench.roster.routed_count').replace(':count', String(entry.count))}
+                                toggleLabel={t('ai.workbench.roster.toggle_label')}
+                                catchAllLabel={t('ai.workbench.roster.catch_all_badge')}
+                                onSelect={() => setSelected({ kind: 'blueprint', id: entry.id })}
+                                onToggle={() => void toggleBlueprint(blueprints.find((bp) => bp.id === entry.id)!)}
+                            />
+                        ))
+                    )}
+
+                    <div className="px-3 pt-3">
+                        <span style={railHeadingStyle}>{t('ai.workbench.roster.notebooks_heading')}</span>
+                    </div>
+                    {rosterNotebooks.length === 0 ? (
+                        <p className="px-3 py-2" style={labelStyle}>{t('ai.workbench.roster.empty_notebooks')}</p>
+                    ) : (
+                        rosterNotebooks.map((entry) => (
+                            <RosterRow
+                                key={`notebook-${entry.id}`}
+                                entry={entry}
+                                isSelected={selected?.kind === 'notebook' && selected.id === entry.id}
+                                busy={!!busyNb[entry.id]}
+                                countLabel={t('ai.workbench.roster.note_count').replace(':count', String(entry.count))}
+                                toggleLabel={t('ai.workbench.roster.toggle_label')}
+                                catchAllLabel={t('ai.workbench.roster.catch_all_badge')}
+                                onSelect={() => setSelected({ kind: 'notebook', id: entry.id })}
+                                onToggle={() => void toggleNotebook(notebooks.find((nb) => nb.id === entry.id)!)}
+                            />
+                        ))
+                    )}
+                </div>
             </div>
 
-            {/* Blueprints section */}
-            <section>
-                <h2 className="mb-4 text-base font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                    {t('ai.workbench.roster.blueprints_heading')}
-                </h2>
-
-                {blueprints.length === 0 ? (
-                    <p style={labelStyle}>{t('ai.workbench.roster.empty_blueprints')}</p>
+            {/* ─── Detail pane ─── */}
+            <div className="flex min-h-0 flex-1 flex-col">
+                {selectedEntry === null ? (
+                    <div className="flex flex-1 items-center justify-center p-6 text-center">
+                        <p style={labelStyle}>{t('ai.workbench.roster.select_prompt')}</p>
+                    </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {blueprints.map((bp) => {
-                            const isEditing = editingBpId === bp.id;
-                            return (
-                                <div
-                                    key={bp.id}
-                                    style={cardStyle}
-                                    className="group transition-[border-color]"
-                                    onMouseEnter={(e) => Object.assign((e.currentTarget as HTMLElement).style, cardHoverStyle)}
-                                    onMouseLeave={(e) => Object.assign((e.currentTarget as HTMLElement).style, { borderColor: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)' })}
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0 flex-1">
-                                            <p className="font-medium truncate" style={{ color: 'var(--theme-base-content)' }}>
-                                                {bp.name}
-                                            </p>
-                                            <p style={countStyle} className="mt-0.5">
-                                                {t('ai.workbench.roster.routed_count').replace(':count', String(bp.routed_count))}
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                            <ToggleSwitch
-                                                checked={bp.allow_ai_sorting}
-                                                disabled={busyBp[bp.id]}
-                                                label={`${t('ai.workbench.roster.toggle_label')}: ${bp.name}`}
-                                                onChange={() => void toggleBlueprint(bp)}
-                                            />
-                                            <span style={labelStyle}>{t('ai.workbench.roster.toggle_label')}</span>
+                    <>
+                        <div className="shrink-0 space-y-2 border-b p-4" style={{ borderColor: paneBorderColor }}>
+                            <div className="flex items-center gap-2">
+                                <h2 className="truncate text-base font-semibold" style={{ color: 'var(--theme-base-content)' }}>
+                                    {selectedEntry.name}
+                                </h2>
+                                {selectedEntry.isCatchAll && (
+                                    <span style={catchAllBadgeStyle}>{t('ai.workbench.roster.catch_all_badge')}</span>
+                                )}
+                            </div>
+                            <p style={countStyle}>
+                                {selectedEntry.kind === 'blueprint'
+                                    ? t('ai.workbench.roster.routed_count').replace(':count', String(selectedEntry.count))
+                                    : t('ai.workbench.roster.note_count').replace(':count', String(selectedEntry.count))}
+                            </p>
+
+                            {isEditing ? (
+                                <div className="space-y-2">
+                                    <textarea
+                                        value={editText}
+                                        onChange={(e) => setEditText(e.target.value)}
+                                        maxLength={MAX_DESC}
+                                        rows={3}
+                                        className="w-full text-sm resize-none"
+                                        style={{
+                                            background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
+                                            border: '1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
+                                            borderRadius: 'var(--theme-radius-button)',
+                                            padding: '0.5rem',
+                                            color: 'var(--theme-base-content)',
+                                            outline: 'none',
+                                        }}
+                                        autoFocus
+                                        placeholder={t('ai.workbench.roster.no_description')}
+                                    />
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span style={labelStyle}>
+                                            {t('ai.workbench.routing_text.char_count')
+                                                .replace(':count', String(editText.length))
+                                                .replace(':max', String(MAX_DESC))}
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={cancelEdit}
+                                                disabled={savingDesc}
+                                                className="alex-btn px-2 py-1 text-xs"
+                                                style={{ color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)' }}
+                                            >
+                                                {t('ai.workbench.routing_text.cancel_button')}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void saveDesc(selectedEntry.slug, selectedEntry.kind)}
+                                                disabled={savingDesc}
+                                                className="alex-btn px-3 py-1 text-xs"
+                                                style={{
+                                                    background: 'var(--theme-brand-primary-500)',
+                                                    color: 'var(--theme-brand-primary-content)',
+                                                    borderRadius: 'var(--theme-radius-button)',
+                                                }}
+                                            >
+                                                {descSaved ? t('ai.workbench.routing_text.saved_indicator') : t('ai.workbench.routing_text.save_button')}
+                                            </button>
                                         </div>
                                     </div>
-
-                                    {isEditing ? (
-                                        <div className="mt-3 space-y-2">
-                                            <textarea
-                                                value={editText}
-                                                onChange={(e) => setEditText(e.target.value)}
-                                                maxLength={MAX_DESC}
-                                                rows={4}
-                                                className="w-full text-sm resize-none"
-                                                style={{
-                                                    background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
-                                                    border: '1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
-                                                    borderRadius: 'var(--theme-radius-button)',
-                                                    padding: '0.5rem',
-                                                    color: 'var(--theme-base-content)',
-                                                    outline: 'none',
-                                                }}
-                                                autoFocus
-                                                placeholder={t('ai.workbench.roster.no_description')}
-                                            />
-                                            <div className="flex items-center justify-between gap-2">
-                                                <span style={labelStyle}>
-                                                    {t('ai.workbench.routing_text.char_count')
-                                                        .replace(':count', String(editText.length))
-                                                        .replace(':max', String(MAX_DESC))}
-                                                </span>
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={cancelEdit}
-                                                        disabled={savingDesc}
-                                                        className="alex-btn px-2 py-1 text-xs"
-                                                        style={{ color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)' }}
-                                                    >
-                                                        {t('ai.workbench.routing_text.cancel_button')}
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => void saveDesc(bp.slug, 'blueprint')}
-                                                        disabled={savingDesc}
-                                                        className="alex-btn px-3 py-1 text-xs"
-                                                        style={{
-                                                            background: 'var(--theme-brand-primary-500)',
-                                                            color: 'var(--theme-brand-primary-content)',
-                                                            borderRadius: 'var(--theme-radius-button)',
-                                                        }}
-                                                    >
-                                                        {descSaved ? t('ai.workbench.routing_text.saved_indicator') : t('ai.workbench.routing_text.save_button')}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            onClick={() => openBpEdit(bp)}
-                                            className="mt-2 w-full text-left"
-                                            title={t('ai.workbench.routing_text.edit_button')}
-                                        >
-                                            {bp.description ? (
-                                                <p style={descStyle}>{descriptionPreview(bp.description)}</p>
-                                            ) : (
-                                                <p className="italic" style={{ ...descStyle, opacity: 0.5 }}>
-                                                    {t('ai.workbench.roster.no_description')}
-                                                </p>
-                                            )}
-                                        </button>
-                                    )}
                                 </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </section>
-
-            {/* Notebooks section */}
-            <section>
-                <h2 className="mb-4 text-base font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                    {t('ai.workbench.roster.notebooks_heading')}
-                </h2>
-
-                {notebooks.length === 0 ? (
-                    <p style={labelStyle}>{t('ai.workbench.roster.empty_notebooks')}</p>
-                ) : (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {notebooks.map((nb) => {
-                            const isEditing = editingNbId === nb.id;
-                            return (
-                                <div
-                                    key={nb.id}
-                                    style={cardStyle}
-                                    className="group transition-[border-color]"
-                                    onMouseEnter={(e) => Object.assign((e.currentTarget as HTMLElement).style, cardHoverStyle)}
-                                    onMouseLeave={(e) => Object.assign((e.currentTarget as HTMLElement).style, { borderColor: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)' })}
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => openEdit(selectedEntry)}
+                                    className="w-full text-left"
+                                    title={t('ai.workbench.routing_text.edit_button')}
                                 >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <p className="font-medium truncate" style={{ color: 'var(--theme-base-content)' }}>
-                                                    {nb.title}
-                                                </p>
-                                                {nb.is_catch_all && (
-                                                    <span style={catchAllBadgeStyle}>
-                                                        {t('ai.workbench.roster.catch_all_badge')}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p style={countStyle} className="mt-0.5">
-                                                {t('ai.workbench.roster.note_count').replace(':count', String(nb.note_count))}
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                            <ToggleSwitch
-                                                checked={nb.allow_ai_sort}
-                                                disabled={busyNb[nb.id]}
-                                                label={`${t('ai.workbench.roster.toggle_label')}: ${nb.title}`}
-                                                onChange={() => void toggleNotebook(nb)}
-                                            />
-                                            <span style={labelStyle}>{t('ai.workbench.roster.toggle_label')}</span>
-                                        </div>
-                                    </div>
-
-                                    {isEditing ? (
-                                        <div className="mt-3 space-y-2">
-                                            <textarea
-                                                value={editText}
-                                                onChange={(e) => setEditText(e.target.value)}
-                                                maxLength={MAX_DESC}
-                                                rows={4}
-                                                className="w-full text-sm resize-none"
-                                                style={{
-                                                    background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
-                                                    border: '1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
-                                                    borderRadius: 'var(--theme-radius-button)',
-                                                    padding: '0.5rem',
-                                                    color: 'var(--theme-base-content)',
-                                                    outline: 'none',
-                                                }}
-                                                autoFocus
-                                                placeholder={t('ai.workbench.roster.no_description')}
-                                            />
-                                            <div className="flex items-center justify-between gap-2">
-                                                <span style={labelStyle}>
-                                                    {t('ai.workbench.routing_text.char_count')
-                                                        .replace(':count', String(editText.length))
-                                                        .replace(':max', String(MAX_DESC))}
-                                                </span>
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={cancelEdit}
-                                                        disabled={savingDesc}
-                                                        className="alex-btn px-2 py-1 text-xs"
-                                                        style={{ color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)' }}
-                                                    >
-                                                        {t('ai.workbench.routing_text.cancel_button')}
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => void saveDesc(nb.slug as string, 'notebook')}
-                                                        disabled={savingDesc}
-                                                        className="alex-btn px-3 py-1 text-xs"
-                                                        style={{
-                                                            background: 'var(--theme-brand-primary-500)',
-                                                            color: 'var(--theme-brand-primary-content)',
-                                                            borderRadius: 'var(--theme-radius-button)',
-                                                        }}
-                                                    >
-                                                        {descSaved ? t('ai.workbench.routing_text.saved_indicator') : t('ai.workbench.routing_text.save_button')}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    {selectedEntry.description ? (
+                                        <p style={descStyle}>{descriptionPreview(selectedEntry.description)}</p>
                                     ) : (
-                                        <button
-                                            type="button"
-                                            onClick={() => openNbEdit(nb)}
-                                            className="mt-2 w-full text-left"
-                                            title={t('ai.workbench.routing_text.edit_button')}
-                                        >
-                                            {nb.description ? (
-                                                <p style={descStyle}>{descriptionPreview(nb.description)}</p>
-                                            ) : (
-                                                <p className="italic" style={{ ...descStyle, opacity: 0.5 }}>
-                                                    {t('ai.workbench.roster.no_description')}
-                                                </p>
-                                            )}
-                                        </button>
+                                        <p className="italic" style={{ ...descStyle, opacity: 0.5 }}>
+                                            {t('ai.workbench.roster.no_description')}
+                                        </p>
                                     )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </section>
+                                </button>
+                            )}
+                        </div>
 
-            {/* Review section */}
-            <ReviewSection
-                projectSlug={projectSlug}
-                blueprints={initialBlueprints}
-                notebooks={initialNotebooks}
-                t={t}
-            />
+                        <TargetReview
+                            projectSlug={projectSlug}
+                            target={selectedEntry}
+                            blueprints={initialBlueprints}
+                            notebooks={initialNotebooks}
+                            t={t}
+                        />
+                    </>
+                )}
+            </div>
 
             {/* Prompt preview modal */}
             <PromptPreviewModal

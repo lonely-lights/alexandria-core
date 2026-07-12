@@ -307,6 +307,7 @@ return [
     'workbench.roster.toggle_label' => 'AI sorting',
     'workbench.roster.empty_blueprints' => 'No blueprints in this project.',
     'workbench.roster.empty_notebooks' => 'No notebooks in this project.',
+    'workbench.roster.select_prompt' => 'Select a blueprint or notebook from the list to view its routing details.',
 
     // Task 2: routing text editor
     'workbench.routing_text.edit_button' => 'Edit routing text',
@@ -410,4 +411,6 @@ return [
     'workbench.creation.review.command_type_create_relationship' => 'Create relationship',
     'workbench.creation.review.counts' => ':approved approved · :rejected rejected · :pending pending',
     'workbench.creation.review.pagination' => 'Note :current of :total',
+    'workbench.creation.review.batches_heading' => 'Batches',
+    'workbench.creation.review.select_batch' => 'Select a batch from the list to review its commands.',
 ];
