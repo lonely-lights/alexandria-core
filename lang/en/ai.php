@@ -426,6 +426,7 @@ return [
     'workbench.creation.review.counts' => ':approved approved · :rejected rejected · :pending pending',
     'workbench.creation.review.pagination' => 'Note :current of :total',
     'workbench.creation.run.pick_tab' => 'Pick notes',
+    'workbench.creation.run.key_toggle' => 'Select',
     'workbench.creation.run.pick_hint' => 'Choose a blueprint on the left to browse its pending notes.',
     'workbench.creation.review.batches_heading' => 'Batches',
     'workbench.creation.review.select_batch' => 'Select a batch from the list to review its commands.',
