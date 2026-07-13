@@ -4,6 +4,7 @@ import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { fetchJson, FetchJsonError } from '@alexandria/lib/fetchJson';
 import useT from '@alexandria/hooks/useT';
 import WorkbenchKeyLegend from './WorkbenchKeyLegend';
+import { keepCursorInBand } from '../cursorScroll';
 import { readWorkbenchState, writeWorkbenchState } from '../workbenchState';
 import type { WorkbenchBlueprint, WorkbenchNotebook, RoutedNotesPage } from '@alexandria/types/workbench';
 
@@ -595,7 +596,7 @@ function TargetReview({
                     return (
                         <div
                             key={note.id}
-                            ref={isCursor ? (el) => el?.scrollIntoView({ block: 'nearest' }) : undefined}
+                            ref={isCursor ? keepCursorInBand : undefined}
                             style={isCursor ? reviewCardActiveStyle : reviewCardStyle}
                             onClick={() => setCursorIdx(idx)}
                         >

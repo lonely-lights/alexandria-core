@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { L2PendingNote } from '@alexandria/types/workbench';
 import type { Translator } from '@alexandria/hooks/useT';
+import { keepCursorInBand } from '../cursorScroll';
 import WorkbenchKeyLegend from './WorkbenchKeyLegend';
 
 /**
@@ -157,7 +158,7 @@ export default function WorkbenchPendingNotesPicker({
                     return (
                         <div
                             key={note.id}
-                            ref={isCursor ? (el) => el?.scrollIntoView({ block: 'nearest' }) : undefined}
+                            ref={isCursor ? keepCursorInBand : undefined}
                             data-testid="workbench-pending-note-row"
                             data-selected={checked}
                             style={{
