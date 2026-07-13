@@ -451,6 +451,7 @@ function TargetReview({
 
     const notes = notesPage?.data ?? [];
     const cursorNote = notes[cursorIdx] ?? null;
+    const cursorBodyRef = useRef<HTMLDivElement | null>(null);
 
     async function updateFlag(noteId: number, flag: 'workbench' | null) {
         try {
@@ -555,6 +556,15 @@ function TargetReview({
             } else if (e.key === 'r' || e.key === 'R') {
                 e.preventDefault();
                 rerouteCursor();
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const delta = e.key === 'ArrowDown' ? 1 : -1;
+                if (e.shiftKey) {
+                    // Shift+arrows scroll INSIDE the active note's overflow.
+                    cursorBodyRef.current?.scrollBy({ top: delta * 96, behavior: 'smooth' });
+                } else {
+                    setCursorIdx((i) => Math.max(0, Math.min(i + delta, notes.length - 1)));
+                }
             }
         }
 
@@ -605,12 +615,15 @@ function TargetReview({
                                     )}
                                 </div>
                             </div>
-                            <div style={{
-                                marginTop: '0.5rem',
-                                maxHeight: '6rem',
-                                overflowY: 'auto',
-                                ...descStyle,
-                            }}>
+                            <div
+                                ref={isCursor ? cursorBodyRef : undefined}
+                                style={{
+                                    marginTop: '0.5rem',
+                                    maxHeight: '6rem',
+                                    overflowY: 'auto',
+                                    ...descStyle,
+                                }}
+                            >
                                 {note.text || '(empty)'}
                             </div>
                         </div>
@@ -664,6 +677,8 @@ function TargetReview({
                                     { key: 'G', label: t('ai.workbench.review.key_g'), onPress: flagCursor },
                                     { key: 'S', label: t('ai.workbench.review.key_s'), onPress: skipCursor },
                                     { key: 'R', label: t('ai.workbench.review.key_r'), onPress: rerouteCursor },
+                                    { key: '↑↓', label: t('ai.workbench.review.key_nav') },
+                                    { key: '⇧↑↓', label: t('ai.workbench.review.key_scroll') },
                                 ]}
                             />
                         )}

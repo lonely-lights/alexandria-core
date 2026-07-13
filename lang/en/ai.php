@@ -337,6 +337,8 @@ return [
     'workbench.review.key_g' => 'Flag',
     'workbench.review.key_s' => 'Skip',
     'workbench.review.key_r' => 'Re-route',
+    'workbench.review.key_nav' => 'Navigate',
+    'workbench.review.key_scroll' => 'Scroll note',
     'workbench.review.reroute_modal_title' => 'Re-route note',
     'workbench.review.reroute_confirm' => 'Move to',
     'workbench.review.rerouting' => 'Moving…',
