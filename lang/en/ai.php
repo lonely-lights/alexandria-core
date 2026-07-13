@@ -360,6 +360,18 @@ return [
     'workbench.creation.run.confirm_body' => 'This will make a real AI call for :count notes using blueprint ":blueprint". AI usage will be charged to your account.',
     'workbench.creation.run.confirm_ok' => 'Run batch',
     'workbench.creation.run.confirm_cancel' => 'Cancel',
+    'workbench.creation.run.confirm_body_selected' => 'This will make a real AI call for :count selected notes using blueprint ":blueprint". AI usage will be charged to your account.',
+
+    // Task 4b: L2 creation tab — Run pane cherry-pick note picker
+    'workbench.creation.run.pending_notes_heading' => 'Pending notes',
+    'workbench.creation.run.loading_pending_notes' => 'Loading notes…',
+    'workbench.creation.run.no_pending_notes' => 'No pending notes to show.',
+    'workbench.creation.run.select_all' => 'Select all',
+    'workbench.creation.run.select_none' => 'Select none',
+    'workbench.creation.run.selected_count' => ':count selected',
+    'workbench.creation.run.run_button_sized' => 'Run batch (:count)',
+    'workbench.creation.run.run_selected' => 'Run selected (:count)',
+    'workbench.creation.run.note_snippet_empty' => '(empty)',
 
     // Task 4: L2 creation tab — Hone strip (prompt preview modal)
     'workbench.creation.hone.modal_title' => 'L2 Prompt Preview & Source Map',

@@ -44,6 +44,12 @@ export interface RoutedNotesPage {
     last_page: number;
 }
 
+export interface L2PendingNote {
+    id: number;
+    title: string;
+    snippet: string;
+}
+
 export interface L2BlueprintSummary {
     id: number;
     slug: string;
@@ -74,6 +80,7 @@ export interface L2PreviewResult {
     prompt: string;
     token_estimate: number;
     source_map: L2SourceMap;
+    skipped_ids?: number[];
 }
 
 export interface AiCommand {

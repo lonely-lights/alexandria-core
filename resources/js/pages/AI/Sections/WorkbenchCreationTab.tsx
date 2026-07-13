@@ -6,8 +6,10 @@ import HoneDrawer from './HoneDrawer';
 import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
 import WorkbenchKeyLegend from './WorkbenchKeyLegend';
+import WorkbenchPendingNotesPicker from './WorkbenchPendingNotesPicker';
 import type {
     L2BlueprintSummary,
+    L2PendingNote,
     L2PreviewResult,
     AiCommand,
     NoteGroup,
@@ -127,6 +129,7 @@ function ConfirmRunDialog({
     open,
     blueprintName,
     pendingCount,
+    selectedCount,
     onConfirm,
     onCancel,
     t,
@@ -134,11 +137,16 @@ function ConfirmRunDialog({
     open: boolean;
     blueprintName: string;
     pendingCount: number;
+    selectedCount: number;
     onConfirm: () => void;
     onCancel: () => void;
     t: (k: string) => string;
 }) {
     if (!open) return null;
+    const bodyKey = selectedCount > 0
+        ? 'ai.workbench.creation.run.confirm_body_selected'
+        : 'ai.workbench.creation.run.confirm_body';
+    const bodyCount = selectedCount > 0 ? selectedCount : pendingCount;
     return (
         <div
             style={{
@@ -170,8 +178,8 @@ function ConfirmRunDialog({
                     {t('ai.workbench.creation.run.confirm_title')}
                 </h2>
                 <p style={descStyle}>
-                    {t('ai.workbench.creation.run.confirm_body')
-                        .replace(':count', String(pendingCount))
+                    {t(bodyKey)
+                        .replace(':count', String(bodyCount))
                         .replace(':blueprint', blueprintName)}
                 </p>
                 <div className="flex justify-end gap-2">
@@ -367,6 +375,12 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
     const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
     const [batchSize, setBatchSize] = useState(25);
 
+    /* ── Cherry-pick note selection (owner: control the testing environment
+       by choosing exact notes instead of always running the whole batch) ── */
+    const [pendingNotes, setPendingNotes] = useState<L2PendingNote[]>([]);
+    const [pendingNotesLoading, setPendingNotesLoading] = useState(false);
+    const [selectedNoteIds, setSelectedNoteIds] = useState<Set<number>>(new Set());
+
     /* ── Hone drawer state ── */
     const [honeOpen, setHoneOpen] = useState(false);
     const [honeData, setHoneData] = useState<L2PreviewResult | null>(null);
@@ -389,6 +403,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
     const [execSummary, setExecSummary] = useState<{ success: number; failed: number } | null>(null);
 
     const selectedBp = summary.find((b) => b.slug === selectedSlug) ?? null;
+    const selectedNoteCount = selectedNoteIds.size;
 
     /* ── Load summary on mount ── */
     useEffect(() => {
@@ -398,6 +413,38 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
             .catch(() => {})
             .finally(() => setSummaryLoading(false));
     }, [projectSlug]);
+
+    /* ── Load pending notes for the cherry-pick list when the blueprint changes ── */
+    useEffect(() => {
+        setSelectedNoteIds(new Set());
+        if (!selectedSlug) {
+            setPendingNotes([]);
+            return;
+        }
+        setPendingNotesLoading(true);
+        fetchJson(`/ai/${projectSlug}/workbench/l2-pending-notes?blueprint_slug=${encodeURIComponent(selectedSlug)}`)
+            .then((data) => setPendingNotes((data as { notes: L2PendingNote[] }).notes))
+            .catch(() => setPendingNotes([]))
+            .finally(() => setPendingNotesLoading(false));
+    }, [projectSlug, selectedSlug]);
+
+    function toggleNoteSelected(id: number) {
+        setSelectedNoteIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    }
+
+    function toggleSelectAllNotes() {
+        setSelectedNoteIds((prev) =>
+            prev.size === pendingNotes.length ? new Set() : new Set(pendingNotes.map((n) => n.id)),
+        );
+    }
 
     /* ── Load commands + notes when active batch changes ── */
     useEffect(() => {
@@ -498,10 +545,15 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
         setHoneLoading(true);
         setHoneData(null);
         try {
+            const noteIds = Array.from(selectedNoteIds);
             const data = await fetchJson(`/ai/${projectSlug}/workbench/l2-preview-prompt`, {
                 method: 'POST',
                 headers: csrfHeaders(),
-                body: JSON.stringify({ blueprint_slug: selectedSlug, batch_size: batchSize }),
+                body: JSON.stringify({
+                    blueprint_slug: selectedSlug,
+                    batch_size: batchSize,
+                    ...(noteIds.length > 0 ? { note_ids: noteIds } : {}),
+                }),
             });
             setHoneData(data as L2PreviewResult);
         } catch {
@@ -516,10 +568,15 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
         setConfirmOpen(false);
         setRunning(true);
         try {
+            const noteIds = Array.from(selectedNoteIds);
             const data = await fetchJson(`/ai/${projectSlug}/workbench/l2-run-batch`, {
                 method: 'POST',
                 headers: csrfHeaders(),
-                body: JSON.stringify({ blueprint_slug: selectedSlug, batch_size: batchSize }),
+                body: JSON.stringify({
+                    blueprint_slug: selectedSlug,
+                    batch_size: batchSize,
+                    ...(noteIds.length > 0 ? { note_ids: noteIds } : {}),
+                }),
             }) as { batch_ids: string[]; notes_processed: number; commands_created: number };
 
             if (data.batch_ids.length > 0) {
@@ -528,10 +585,17 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                 setBatches((prev) => [...prev, ...newBatches]);
                 setActiveBatchId(newBatches[0].batchId);
 
-                // Refresh summary counts
+                // Refresh summary counts + the cherry-pick list (some notes just
+                // flipped to completed and should drop out of the picker).
+                setSelectedNoteIds(new Set());
                 fetchJson(`/ai/${projectSlug}/workbench/l2-summary`)
                     .then((sd) => setSummary((sd as { blueprints: L2BlueprintSummary[] }).blueprints))
                     .catch(() => {});
+                if (selectedSlug) {
+                    fetchJson(`/ai/${projectSlug}/workbench/l2-pending-notes?blueprint_slug=${encodeURIComponent(selectedSlug)}`)
+                        .then((nd) => setPendingNotes((nd as { notes: L2PendingNote[] }).notes))
+                        .catch(() => {});
+                }
             }
         } catch {
             // no-op
@@ -680,9 +744,11 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                         />
                     )}
 
-                    {/* Batch size */}
+                    {/* Batch size — de-emphasized/disabled while a cherry-pick
+                        selection is active, since the selection then decides
+                        exactly which notes run (owner: controlled testing). */}
                     <div className="flex items-end justify-between gap-3">
-                        <div className="w-24">
+                        <div className="w-24" style={selectedNoteCount > 0 ? { opacity: 0.5 } : undefined}>
                             <Input
                                 label={t('ai.workbench.creation.run.batch_size_label')}
                                 name="workbench-batch-size"
@@ -690,6 +756,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                                 min={1}
                                 max={50}
                                 value={batchSize}
+                                disabled={selectedNoteCount > 0}
                                 onChange={(e) => setBatchSize(Math.max(1, Math.min(50, Number(e.target.value))))}
                                 size="md"
                             />
@@ -702,6 +769,18 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                             </p>
                         )}
                     </div>
+
+                    {/* Cherry-pick note picker */}
+                    {selectedSlug && (
+                        <WorkbenchPendingNotesPicker
+                            notes={pendingNotes}
+                            loading={pendingNotesLoading}
+                            selectedIds={selectedNoteIds}
+                            onToggle={toggleNoteSelected}
+                            onToggleAll={toggleSelectAllNotes}
+                            t={t}
+                        />
+                    )}
 
                     {/* Action buttons */}
                     <div className="flex items-center gap-2 flex-wrap">
@@ -725,7 +804,11 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                                 : primaryBtn}
                         >
                             <i className="fa-solid fa-wand-magic-sparkles text-xs" aria-hidden="true" />
-                            {running ? t('ai.workbench.creation.run.running') : t('ai.workbench.creation.run.run_button')}
+                            {running
+                                ? t('ai.workbench.creation.run.running')
+                                : selectedNoteCount > 0
+                                    ? t('ai.workbench.creation.run.run_selected').replace(':count', String(selectedNoteCount))
+                                    : t('ai.workbench.creation.run.run_button_sized').replace(':count', String(batchSize))}
                         </button>
                     </div>
                 </div>
@@ -857,6 +940,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                 open={confirmOpen}
                 blueprintName={selectedBp?.name ?? ''}
                 pendingCount={selectedBp?.pending_count ?? 0}
+                selectedCount={selectedNoteCount}
                 onConfirm={() => void doRun()}
                 onCancel={() => setConfirmOpen(false)}
                 t={t}
