@@ -37,6 +37,8 @@ const descStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 65%, transparent)',
     fontSize: '0.8125rem',
     lineHeight: '1.4',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
 };
 
 const countStyle: CSSProperties = {
