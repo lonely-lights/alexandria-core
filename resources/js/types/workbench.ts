@@ -48,6 +48,8 @@ export interface L2PendingNote {
     id: number;
     title: string;
     snippet: string;
+    /** Full note text — the pick pane renders complete notes (owner). */
+    text: string;
 }
 
 export interface L2BlueprintSummary {

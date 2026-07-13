@@ -24,14 +24,6 @@ interface WorkbenchCreationTabProps {
 
 /* ── Theme styles (matching WorkbenchRoutingTab conventions) ── */
 
-const railHeadingStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)',
-    fontSize: '0.6875rem',
-    fontWeight: 600,
-    letterSpacing: '0.05em',
-    textTransform: 'uppercase',
-};
-
 const labelStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)',
     fontSize: '0.75rem',
@@ -48,13 +40,6 @@ const descStyle: CSSProperties = {
 const countStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
     fontSize: '0.75rem',
-};
-
-const monoStyle: CSSProperties = {
-    fontFamily: 'monospace',
-    fontSize: '0.8125rem',
-    whiteSpace: 'pre-wrap',
-    wordBreak: 'break-word',
 };
 
 const reviewCardStyle: CSSProperties = {
@@ -770,18 +755,6 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                         )}
                     </div>
 
-                    {/* Cherry-pick note picker */}
-                    {selectedSlug && (
-                        <WorkbenchPendingNotesPicker
-                            notes={pendingNotes}
-                            loading={pendingNotesLoading}
-                            selectedIds={selectedNoteIds}
-                            onToggle={toggleNoteSelected}
-                            onToggleAll={toggleSelectAllNotes}
-                            t={t}
-                        />
-                    )}
-
                     {/* Action buttons */}
                     <div className="flex items-center gap-2 flex-wrap">
                         <button
@@ -813,40 +786,51 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                     </div>
                 </div>
 
-                {/* Batch tabs list */}
-                <div className="min-h-0 flex-1 overflow-y-auto">
-                    <div className="px-3 pt-2">
-                        <span style={railHeadingStyle}>{t('ai.workbench.creation.review.batches_heading')}</span>
-                    </div>
-                    {batches.length === 0 ? (
-                        <p className="px-3 py-2" style={labelStyle}>{t('ai.workbench.creation.review.no_batches')}</p>
-                    ) : (
-                        batches.map((b) => (
-                            <button
-                                key={b.batchId}
-                                type="button"
-                                onClick={() => setActiveBatchId(b.batchId)}
-                                data-selected={activeBatchId === b.batchId}
-                                className="alex-row block w-full truncate px-3 py-2 text-left text-sm"
-                                style={activeBatchId === b.batchId ? railRowSelectedStyle : railRowStyle}
-                            >
-                                {b.label}
-                            </button>
-                        ))
-                    )}
-                </div>
             </div>
 
-            {/* ─── Review pane ─── */}
+            {/* ─── Review pane — tab strip: Pick notes + one tab per batch ─── */}
             <div className="flex min-h-0 flex-1 flex-col">
+                <div
+                    className="flex shrink-0 flex-wrap items-center gap-1 border-b px-3 py-1.5"
+                    style={{ borderColor: paneBorderColor }}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setActiveBatchId(null)}
+                        data-selected={activeBatchId === null}
+                        className="alex-btn px-2.5 py-1 text-xs"
+                        style={activeBatchId === null ? railRowSelectedStyle : railRowStyle}
+                    >
+                        {t('ai.workbench.creation.run.pick_tab')}
+                    </button>
+                    {batches.map((b) => (
+                        <button
+                            key={b.batchId}
+                            type="button"
+                            onClick={() => setActiveBatchId(b.batchId)}
+                            data-selected={activeBatchId === b.batchId}
+                            className="alex-btn max-w-56 truncate px-2.5 py-1 text-xs"
+                            style={activeBatchId === b.batchId ? railRowSelectedStyle : railRowStyle}
+                        >
+                            {b.label}
+                        </button>
+                    ))}
+                </div>
                 {!activeBatchId ? (
-                    <div className="flex flex-1 items-center justify-center p-6 text-center">
-                        <p style={labelStyle}>
-                            {batches.length === 0
-                                ? t('ai.workbench.creation.review.no_batches')
-                                : t('ai.workbench.creation.review.select_batch')}
-                        </p>
-                    </div>
+                    !selectedSlug ? (
+                        <div className="flex flex-1 items-center justify-center p-6 text-center">
+                            <p style={labelStyle}>{t('ai.workbench.creation.run.pick_hint')}</p>
+                        </div>
+                    ) : (
+                        <WorkbenchPendingNotesPicker
+                            notes={pendingNotes}
+                            loading={pendingNotesLoading}
+                            selectedIds={selectedNoteIds}
+                            onToggle={toggleNoteSelected}
+                            onToggleAll={toggleSelectAllNotes}
+                            t={t}
+                        />
+                    )
                 ) : (
                     <>
                         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">

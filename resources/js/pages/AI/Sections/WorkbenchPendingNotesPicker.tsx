@@ -3,39 +3,43 @@ import type { L2PendingNote } from '@alexandria/types/workbench';
 import type { Translator } from '@alexandria/hooks/useT';
 
 /**
- * Cherry-pick note picker for the Creation tab's run pane (owner request:
- * "select which ones I want to sort instead of doing all of them" — for
- * controlled level-2 testing alongside the existing batch-size path).
- *
- * Lists the blueprint's pending notes as checkbox rows; the parent
- * (WorkbenchCreationTab) owns selection state and decides whether preview /
- * run use the selection or fall back to the batch-size window.
+ * Cherry-pick note pane for the Creation tab (owner: "select which ones I
+ * want to sort… I want it to look similar to the previous page with the
+ * note display pane"). Renders the blueprint's pending notes as FULL
+ * cards — title + complete text with internal scroll — in the RIGHT pane;
+ * clicking a card (or its checkbox) toggles selection. The parent owns
+ * selection state and decides whether preview/run use the selection or
+ * the batch-size window.
  */
-
-const headingStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)',
-    fontSize: '0.6875rem',
-    fontWeight: 600,
-    letterSpacing: '0.05em',
-    textTransform: 'uppercase',
-};
 
 const labelStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)',
-    fontSize: '0.75rem',
+    fontSize: '0.8125rem',
 };
 
-const snippetStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
-    fontSize: '0.75rem',
-    lineHeight: '1.3',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
+const bodyStyle: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 65%, transparent)',
+    fontSize: '0.8125rem',
+    lineHeight: '1.4',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
+    marginTop: '0.5rem',
+    maxHeight: '12rem',
+    overflowY: 'auto',
 };
 
-const rowStyle: CSSProperties = {
-    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 6%, transparent)',
+const cardStyle: CSSProperties = {
+    border: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+    borderRadius: 'var(--theme-radius-card)',
+    padding: '0.75rem 1rem',
+    cursor: 'pointer',
+    background: 'color-mix(in srgb, var(--theme-base-content) 3%, transparent)',
+};
+
+const cardSelectedStyle: CSSProperties = {
+    ...cardStyle,
+    border: '1px solid var(--theme-brand-primary-500)',
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 8%, transparent)',
 };
 
 const linkBtnStyle: CSSProperties = {
@@ -43,6 +47,7 @@ const linkBtnStyle: CSSProperties = {
     fontSize: '0.75rem',
     background: 'none',
     border: 'none',
+    cursor: 'pointer',
 };
 
 interface WorkbenchPendingNotesPickerProps {
@@ -64,70 +69,72 @@ export default function WorkbenchPendingNotesPicker({
 }: WorkbenchPendingNotesPickerProps) {
     const allSelected = notes.length > 0 && selectedIds.size === notes.length;
 
-    return (
-        <div className="space-y-1.5" data-testid="workbench-pending-notes-picker">
-            <div className="flex items-center justify-between">
-                <span style={headingStyle}>{t('ai.workbench.creation.run.pending_notes_heading')}</span>
-                {notes.length > 0 && (
-                    <div className="flex items-center gap-2">
-                        <span style={labelStyle}>
-                            {t('ai.workbench.creation.run.selected_count').replace(':count', String(selectedIds.size))}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={onToggleAll}
-                            style={linkBtnStyle}
-                            className="cursor-pointer underline-offset-2 hover:underline"
-                        >
-                            {t(allSelected ? 'ai.workbench.creation.run.select_none' : 'ai.workbench.creation.run.select_all')}
-                        </button>
-                    </div>
-                )}
-            </div>
+    if (loading) {
+        return (
+            <p className="p-4" style={labelStyle}>
+                {t('ai.workbench.creation.run.loading_pending_notes')}
+            </p>
+        );
+    }
 
-            {loading ? (
-                <p style={labelStyle}>{t('ai.workbench.creation.run.loading_pending_notes')}</p>
-            ) : notes.length === 0 ? (
-                <p style={labelStyle}>{t('ai.workbench.creation.run.no_pending_notes')}</p>
-            ) : (
-                <div
-                    className="max-h-48 overflow-y-auto rounded"
-                    style={{ border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)' }}
+    if (notes.length === 0) {
+        return (
+            <p className="p-4" style={labelStyle}>
+                {t('ai.workbench.creation.run.no_pending_notes')}
+            </p>
+        );
+    }
+
+    return (
+        <div className="flex min-h-0 flex-1 flex-col" data-testid="workbench-pending-notes-picker">
+            <div className="flex shrink-0 items-center justify-between px-4 py-2">
+                <span style={labelStyle}>
+                    {t('ai.workbench.creation.run.selected_count').replace(':count', String(selectedIds.size))}
+                </span>
+                <button
+                    type="button"
+                    onClick={onToggleAll}
+                    style={linkBtnStyle}
+                    className="cursor-pointer underline-offset-2 hover:underline"
                 >
-                    {notes.map((note) => {
-                        const checked = selectedIds.has(note.id);
-                        return (
-                            <label
-                                key={note.id}
-                                htmlFor={`workbench-pending-note-${note.id}`}
-                                data-testid="workbench-pending-note-row"
-                                data-selected={checked}
-                                className="flex cursor-pointer items-start gap-2 px-2 py-1.5"
-                                style={rowStyle}
-                            >
+                    {t(allSelected ? 'ai.workbench.creation.run.select_none' : 'ai.workbench.creation.run.select_all')}
+                </button>
+            </div>
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4">
+                {notes.map((note) => {
+                    const checked = selectedIds.has(note.id);
+                    return (
+                        <div
+                            key={note.id}
+                            data-testid="workbench-pending-note-row"
+                            data-selected={checked}
+                            style={checked ? cardSelectedStyle : cardStyle}
+                            onClick={() => onToggle(note.id)}
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <p
+                                    className="min-w-0 flex-1 truncate text-sm font-medium"
+                                    style={{ color: 'var(--theme-base-content)' }}
+                                >
+                                    {note.title || 'Untitled'}
+                                </p>
                                 <input
                                     id={`workbench-pending-note-${note.id}`}
                                     type="checkbox"
                                     checked={checked}
                                     onChange={() => onToggle(note.id)}
+                                    onClick={(e) => e.stopPropagation()}
                                     className="mt-0.5 shrink-0"
+                                    aria-label={note.title || 'Untitled'}
                                 />
-                                <span className="min-w-0 flex-1">
-                                    <span
-                                        className="block truncate text-sm font-medium"
-                                        style={{ color: 'var(--theme-base-content)' }}
-                                    >
-                                        {note.title || 'Untitled'}
-                                    </span>
-                                    <span className="block" style={snippetStyle}>
-                                        {note.snippet || t('ai.workbench.creation.run.note_snippet_empty')}
-                                    </span>
-                                </span>
-                            </label>
-                        );
-                    })}
-                </div>
-            )}
+                            </div>
+                            <div style={bodyStyle}>
+                                {note.text || note.snippet || t('ai.workbench.creation.run.note_snippet_empty')}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
