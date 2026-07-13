@@ -510,6 +510,24 @@ function TargetReview({
 
     function skipCursor() {
         if (!cursorNote) return;
+        // Skip also DE-SELECTS (owner): any existing verdict on the item is
+        // cleared back to pending before the cursor advances.
+        if (localFlags[cursorNote.id]) {
+            const noteId = cursorNote.id;
+            void fetchJson(`/ai/${projectSlug}/workbench/notes/${noteId}/review-flag`, {
+                method: 'PATCH',
+                headers: csrfHeaders(),
+                body: JSON.stringify({ flag: null }),
+            }).then(() => {
+                setLocalFlags((prev) => {
+                    const next = { ...prev };
+                    delete next[noteId];
+                    return next;
+                });
+            }).catch(() => {
+                // no-op — verdict simply stays until retried
+            });
+        }
         setCursorIdx((i) => Math.min(i + 1, notes.length - 1));
     }
 
