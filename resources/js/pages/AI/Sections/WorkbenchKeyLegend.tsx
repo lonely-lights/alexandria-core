@@ -27,15 +27,37 @@ const labelStyle: CSSProperties = {
     fontSize: '0.6875rem',
 };
 
-export default function WorkbenchKeyLegend({ pairs }: { pairs: [string, string][] }) {
+interface LegendPair {
+    key: string;
+    label: string;
+    /** When provided, the pair renders as a clickable button applying
+     *  the same verdict the keyboard shortcut does. */
+    onPress?: () => void;
+}
+
+export default function WorkbenchKeyLegend({ pairs }: { pairs: LegendPair[] }) {
     return (
         <div className="flex flex-wrap items-center gap-2.5">
-            {pairs.map(([key, label]) => (
-                <span key={key} className="inline-flex items-center gap-1">
-                    <kbd style={kbdStyle}>{key}</kbd>
-                    <span style={labelStyle}>{label}</span>
-                </span>
-            ))}
+            {pairs.map(({ key, label, onPress }) =>
+                onPress ? (
+                    <button
+                        key={key}
+                        type="button"
+                        onClick={onPress}
+                        title={`${label} (${key})`}
+                        className="inline-flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-[color-mix(in_srgb,var(--theme-base-content)_8%,transparent)]"
+                        style={{ background: 'none', border: 'none' }}
+                    >
+                        <kbd style={kbdStyle}>{key}</kbd>
+                        <span style={labelStyle}>{label}</span>
+                    </button>
+                ) : (
+                    <span key={key} className="inline-flex items-center gap-1">
+                        <kbd style={kbdStyle}>{key}</kbd>
+                        <span style={labelStyle}>{label}</span>
+                    </span>
+                ),
+            )}
         </div>
     );
 }

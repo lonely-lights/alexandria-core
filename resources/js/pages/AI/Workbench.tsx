@@ -37,8 +37,9 @@ export default function Workbench() {
     const [activeTab, setActiveTab] = useState<WorkbenchLevel>(tabFromHash);
     const visited = useVisitedTabs(activeTab);
 
+    // fabActions off: the quick-note FAB floats over the sticky action bars (owner).
     return (
-        <AppLayout title={t('ai.workbench.breadcrumb')}>
+        <AppLayout title={t('ai.workbench.breadcrumb')} fabActions={null}>
             <div className="flex flex-col lg:h-[calc(100vh-5rem)] lg:overflow-hidden">
                 <WorkbenchHeader
                     t={t}

@@ -492,6 +492,32 @@ function TargetReview({
         }
     }
 
+    // Verdict actions — shared by the keyboard shortcuts and the clickable
+    // legend buttons (owner: the bare A/G/S/R letters read as inert chrome).
+    function keepCursor() {
+        if (!cursorNote) return;
+        void updateFlag(cursorNote.id, null).then(() => {
+            setCursorIdx((i) => Math.min(i + 1, notes.length - 1));
+        });
+    }
+
+    function flagCursor() {
+        if (!cursorNote) return;
+        void updateFlag(cursorNote.id, 'workbench').then(() => {
+            setCursorIdx((i) => Math.min(i + 1, notes.length - 1));
+        });
+    }
+
+    function skipCursor() {
+        if (!cursorNote) return;
+        setCursorIdx((i) => Math.min(i + 1, notes.length - 1));
+    }
+
+    function rerouteCursor() {
+        if (!cursorNote) return;
+        setReRouteNoteId(cursorNote.id);
+    }
+
     // Keyboard handler
     useEffect(() => {
         function handleKey(e: KeyboardEvent) {
@@ -501,20 +527,16 @@ function TargetReview({
 
             if (e.key === 'a' || e.key === 'A') {
                 e.preventDefault();
-                void updateFlag(cursorNote.id, null).then(() => {
-                    setCursorIdx((i) => Math.min(i + 1, notes.length - 1));
-                });
+                keepCursor();
             } else if (e.key === 'g' || e.key === 'G') {
                 e.preventDefault();
-                void updateFlag(cursorNote.id, 'workbench').then(() => {
-                    setCursorIdx((i) => Math.min(i + 1, notes.length - 1));
-                });
+                flagCursor();
             } else if (e.key === 's' || e.key === 'S') {
                 e.preventDefault();
-                setCursorIdx((i) => Math.min(i + 1, notes.length - 1));
+                skipCursor();
             } else if (e.key === 'r' || e.key === 'R') {
                 e.preventDefault();
-                setReRouteNoteId(cursorNote.id);
+                rerouteCursor();
             }
         }
 
@@ -542,6 +564,7 @@ function TargetReview({
                     return (
                         <div
                             key={note.id}
+                            ref={isCursor ? (el) => el?.scrollIntoView({ block: 'nearest' }) : undefined}
                             style={isCursor ? reviewCardActiveStyle : reviewCardStyle}
                             onClick={() => setCursorIdx(idx)}
                         >
@@ -561,11 +584,6 @@ function TargetReview({
                                         <span style={{ ...catchAllBadgeStyle, background: 'color-mix(in srgb, var(--theme-brand-warning, #f59e0b) 15%, transparent)', color: 'var(--theme-brand-warning, #b45309)' }}>
                                             {t('ai.workbench.review.flagged_badge')}
                                         </span>
-                                    )}
-                                    {isCursor && (
-                                        <div className="flex items-center gap-1 text-xs" style={labelStyle}>
-                                            <kbd>A</kbd> <kbd>G</kbd> <kbd>S</kbd> <kbd>R</kbd>
-                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -621,14 +639,16 @@ function TargetReview({
                         )}
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                        <WorkbenchKeyLegend
-                            pairs={[
-                                ['A', t('ai.workbench.review.key_a')],
-                                ['G', t('ai.workbench.review.key_g')],
-                                ['S', t('ai.workbench.review.key_s')],
-                                ['R', t('ai.workbench.review.key_r')],
-                            ]}
-                        />
+                        {notes.length > 0 && (
+                            <WorkbenchKeyLegend
+                                pairs={[
+                                    { key: 'A', label: t('ai.workbench.review.key_a'), onPress: keepCursor },
+                                    { key: 'G', label: t('ai.workbench.review.key_g'), onPress: flagCursor },
+                                    { key: 'S', label: t('ai.workbench.review.key_s'), onPress: skipCursor },
+                                    { key: 'R', label: t('ai.workbench.review.key_r'), onPress: rerouteCursor },
+                                ]}
+                            />
+                        )}
                         <button
                             type="button"
                             className="alex-btn px-3 py-1 text-sm"

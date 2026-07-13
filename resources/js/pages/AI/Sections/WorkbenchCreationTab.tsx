@@ -443,6 +443,21 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
 
     const cursorGroup = noteGroups[cursorIdx] ?? null;
 
+    /* ── Verdict actions — shared by keyboard + clickable legend ── */
+    function approveCursorGroup() {
+        if (!cursorGroup) return;
+        void approveGroup(cursorGroup).then(() => {
+            setCursorIdx((i) => Math.min(i + 1, noteGroups.length - 1));
+        });
+    }
+
+    function rejectCursorGroup() {
+        if (!cursorGroup) return;
+        void rejectGroup(cursorGroup).then(() => {
+            setCursorIdx((i) => Math.min(i + 1, noteGroups.length - 1));
+        });
+    }
+
     /* ── Keyboard handler ── */
     useEffect(() => {
         function handleKey(e: KeyboardEvent) {
@@ -453,14 +468,10 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
 
             if (e.key === 'a' || e.key === 'A') {
                 e.preventDefault();
-                void approveGroup(cursorGroup).then(() => {
-                    setCursorIdx((i) => Math.min(i + 1, noteGroups.length - 1));
-                });
+                approveCursorGroup();
             } else if (e.key === 'g' || e.key === 'G') {
                 e.preventDefault();
-                void rejectGroup(cursorGroup).then(() => {
-                    setCursorIdx((i) => Math.min(i + 1, noteGroups.length - 1));
-                });
+                rejectCursorGroup();
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 setCursorIdx((i) => Math.min(i + 1, noteGroups.length - 1));
@@ -804,12 +815,14 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                                     .replace(':pending', String(pendingCount))}
                             </span>
                             <div className="flex flex-wrap items-center gap-3">
-                                <WorkbenchKeyLegend
-                                    pairs={[
-                                        ['A', t('ai.workbench.creation.review.key_a')],
-                                        ['G', t('ai.workbench.creation.review.key_g')],
-                                    ]}
-                                />
+                                {noteGroups.length > 0 && (
+                                    <WorkbenchKeyLegend
+                                        pairs={[
+                                            { key: 'A', label: t('ai.workbench.creation.review.key_a'), onPress: approveCursorGroup },
+                                            { key: 'G', label: t('ai.workbench.creation.review.key_g'), onPress: rejectCursorGroup },
+                                        ]}
+                                    />
+                                )}
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <button
                                         type="button"
