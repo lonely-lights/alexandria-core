@@ -150,7 +150,7 @@ export default function WorkbenchPendingNotesPicker({
                     </button>
                 </div>
             </div>
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4 pt-1.5">
                 {notes.map((note, idx) => {
                     const checked = selectedIds.has(note.id);
                     const isCursor = idx === cursorIdx;
