@@ -1,17 +1,22 @@
-import { useState, useEffect, type CSSProperties } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
+import { usePage } from '@inertiajs/react';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { fetchJson } from '@alexandria/lib/fetchJson';
 import useT from '@alexandria/hooks/useT';
+import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 import HoneDrawer from './HoneDrawer';
 import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
 import WorkbenchKeyLegend from './WorkbenchKeyLegend';
 import WorkbenchPendingNotesPicker from './WorkbenchPendingNotesPicker';
 import { readWorkbenchState, writeWorkbenchState } from '../workbenchState';
+import type { SharedProps } from '@alexandria/types/index';
 import type {
     L2BlueprintSummary,
+    L2BatchCompletedEvent,
     L2PendingNote,
     L2PreviewResult,
+    L2RunBatchResponse,
     AiCommand,
     NoteGroup,
 } from '@alexandria/types/workbench';
@@ -354,6 +359,8 @@ function NoteGroupCard({
 
 export default function WorkbenchCreationTab({ projectSlug, projectId }: WorkbenchCreationTabProps) {
     const t = useT();
+    const toast = useToastContext();
+    const userId = usePage<SharedProps>().props.auth?.user?.id;
 
     /* ── Run pane state ── */
     const [summary, setSummary] = useState<L2BlueprintSummary[]>([]);
@@ -401,7 +408,7 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
     const [running, setRunning] = useState(false);
 
     /* ── Review pane state ── */
-    const [batches, setBatches] = useState<{ batchId: string; label: string }[]>([]);
+    const [batches, setBatches] = useState<{ batchId: string; label: string; pending?: boolean }[]>([]);
     const [activeBatchId, setActiveBatchId] = useState<string | null>(null);
     const [commands, setCommands] = useState<AiCommand[]>([]);
     const [noteMap, setNoteMap] = useState<Record<number, { title: string; text: string }>>({});
@@ -456,17 +463,17 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
         );
     }
 
-    /* ── Load commands + notes when active batch changes ── */
-    useEffect(() => {
-        if (!activeBatchId) return;
+    /* ── Load commands + notes for a batch (effect on tab switch + re-fetch
+       when a queued run's completion broadcast lands) ── */
+    function loadBatchData(batchId: string) {
         setCommandsLoading(true);
         setLocalStatus({});
         setExecResults({});
         setExecSummary(null);
         setCursorIdx(0);
 
-        const cmdUrl = `/api/v1/projects/${projectId}/ai/batches/${activeBatchId}/commands`;
-        const notesUrl = `/ai/${projectSlug}/workbench/l2-batch/${activeBatchId}/notes`;
+        const cmdUrl = `/api/v1/projects/${projectId}/ai/batches/${batchId}/commands`;
+        const notesUrl = `/ai/${projectSlug}/workbench/l2-batch/${batchId}/notes`;
 
         Promise.all([
             fetchJson(cmdUrl),
@@ -478,8 +485,104 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
             })
             .catch(() => {})
             .finally(() => setCommandsLoading(false));
+    }
+
+    useEffect(() => {
+        if (!activeBatchId) return;
+        loadBatchData(activeBatchId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeBatchId]);
+
+    /* ── Queued-run completion ──
+       l2-run-batch only QUEUES the job (AI latency made the old inline run
+       block the request); the outcome arrives as the app's
+       `.workbench.l2.completed` broadcast on the user's private channel.
+       The listener lives behind a "latest ref" so the subscription is
+       stable while the handler always sees fresh state. */
+    const activeBatchIdRef = useRef(activeBatchId);
+    activeBatchIdRef.current = activeBatchId;
+
+    function handleBatchCompleted(data: L2BatchCompletedEvent) {
+        setRunning(false);
+
+        if (data.notes_processed > 0) {
+            setBatches((prev) => prev.map((b) => (b.batchId === data.batch_id ? { ...b, pending: false } : b)));
+            if (activeBatchIdRef.current === data.batch_id) loadBatchData(data.batch_id);
+
+            toast.show(t('ai.workbench.creation.run.toast_done_title'), {
+                type: 'success',
+                description: t('ai.workbench.creation.run.toast_done_desc')
+                    .replace(':notes', String(data.notes_processed))
+                    .replace(':commands', String(data.commands_created)),
+            });
+
+            // Processed notes just left the pending pool — refresh the
+            // summary counts + the cherry-pick list.
+            setSelectedNoteIds(new Set());
+            fetchJson(`/ai/${projectSlug}/workbench/l2-summary`)
+                .then((sd) => setSummary((sd as { blueprints: L2BlueprintSummary[] }).blueprints))
+                .catch(() => {});
+            if (selectedSlug) {
+                fetchJson(`/ai/${projectSlug}/workbench/l2-pending-notes?blueprint_slug=${encodeURIComponent(selectedSlug)}`)
+                    .then((nd) => setPendingNotes((nd as { notes: L2PendingNote[] }).notes))
+                    .catch(() => {});
+            }
+        } else {
+            setBatches((prev) => prev.filter((b) => b.batchId !== data.batch_id));
+            if (activeBatchIdRef.current === data.batch_id) setActiveBatchId(null);
+
+            toast.show(t('ai.workbench.creation.run.toast_failed_title'), {
+                type: 'danger',
+                description: data.error ?? t('ai.workbench.creation.run.toast_failed_fallback'),
+            });
+        }
+    }
+
+    const onBatchCompletedRef = useRef(handleBatchCompleted);
+    onBatchCompletedRef.current = handleBatchCompleted;
+
+    useEffect(() => {
+        if (!userId || !window.Echo) return;
+        const channel = window.Echo.private(`user.${userId}`);
+        channel.listen('.workbench.l2.completed', (data: L2BatchCompletedEvent) => onBatchCompletedRef.current(data));
+        return () => { channel.stopListening('.workbench.l2.completed'); };
+    }, [userId]);
+
+    /* ── Polling fallback when Echo is unavailable (e.g. Reverb down):
+       watch each pending batch's command count; two consecutive equal
+       non-zero reads = the run finished persisting. ── */
+    const pollCountsRef = useRef<Record<string, number>>({});
+
+    useEffect(() => {
+        const pendingBatches = batches.filter((b) => b.pending);
+        if (pendingBatches.length === 0 || window.Echo) return;
+
+        const interval = setInterval(() => {
+            for (const b of pendingBatches) {
+                fetchJson(`/api/v1/projects/${projectId}/ai/batches/${b.batchId}/commands`)
+                    .then((cmdsData) => {
+                        const count = (cmdsData as AiCommand[]).length;
+                        const last = pollCountsRef.current[b.batchId];
+                        pollCountsRef.current[b.batchId] = count;
+                        if (count > 0 && count === last) {
+                            onBatchCompletedRef.current({
+                                batch_id: b.batchId,
+                                blueprint_slug: selectedSlug ?? '',
+                                blueprint_name: selectedBp?.name ?? '',
+                                notes_processed: count,
+                                commands_created: count,
+                                commands_invalid: 0,
+                                error: null,
+                            });
+                        }
+                    })
+                    .catch(() => {});
+            }
+        }, 10_000);
+
+        return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [batches]);
 
     /* ── Derived: note groups ── */
     const noteGroups: NoteGroup[] = (() => {
@@ -587,29 +690,20 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                     batch_size: batchSize,
                     ...(noteIds.length > 0 ? { note_ids: noteIds } : {}),
                 }),
-            }) as { batch_ids: string[]; notes_processed: number; commands_created: number };
+            }) as L2RunBatchResponse;
 
-            if (data.batch_ids.length > 0) {
+            if (data.queued && data.batch_id) {
+                // The run is on the queue: show its tab in the pending state
+                // and stay `running` (which keeps the Run button disabled so
+                // the same still-pending notes can't be queued twice) until
+                // the completion broadcast lands.
                 const label = `${selectedBp?.name ?? selectedSlug} · ${new Date().toLocaleTimeString()}`;
-                const newBatches = data.batch_ids.map((id) => ({ batchId: id, label }));
-                setBatches((prev) => [...prev, ...newBatches]);
-                setActiveBatchId(newBatches[0].batchId);
-
-                // Refresh summary counts + the cherry-pick list (some notes just
-                // flipped to completed and should drop out of the picker).
-                setSelectedNoteIds(new Set());
-                fetchJson(`/ai/${projectSlug}/workbench/l2-summary`)
-                    .then((sd) => setSummary((sd as { blueprints: L2BlueprintSummary[] }).blueprints))
-                    .catch(() => {});
-                if (selectedSlug) {
-                    fetchJson(`/ai/${projectSlug}/workbench/l2-pending-notes?blueprint_slug=${encodeURIComponent(selectedSlug)}`)
-                        .then((nd) => setPendingNotes((nd as { notes: L2PendingNote[] }).notes))
-                        .catch(() => {});
-                }
+                setBatches((prev) => [...prev, { batchId: data.batch_id!, label, pending: true }]);
+                setActiveBatchId(data.batch_id);
+            } else {
+                setRunning(false);
             }
         } catch {
-            // no-op
-        } finally {
             setRunning(false);
         }
     }
@@ -834,9 +928,13 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                             type="button"
                             onClick={() => setActiveBatchId(b.batchId)}
                             data-selected={activeBatchId === b.batchId}
+                            data-pending={b.pending === true}
                             className="alex-btn max-w-56 truncate px-2.5 py-1 text-xs"
                             style={activeBatchId === b.batchId ? railRowSelectedStyle : railRowStyle}
                         >
+                            {b.pending && (
+                                <i className="fa-solid fa-spinner fa-spin mr-1.5 text-[10px]" aria-hidden="true" />
+                            )}
                             {b.label}
                         </button>
                     ))}
@@ -870,7 +968,11 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                                 <p style={labelStyle}>{t('ai.workbench.creation.review.loading')}</p>
                             )}
                             {!commandsLoading && noteGroups.length === 0 && (
-                                <p style={labelStyle}>{t('ai.workbench.creation.review.empty')}</p>
+                                <p style={labelStyle}>
+                                    {batches.find((b) => b.batchId === activeBatchId)?.pending
+                                        ? t('ai.workbench.creation.run.queued_hint')
+                                        : t('ai.workbench.creation.review.empty')}
+                                </p>
                             )}
                             {!commandsLoading && noteGroups.map((group, idx) => (
                                 <NoteGroupCard

@@ -428,6 +428,11 @@ return [
     'workbench.creation.run.pick_tab' => 'Pick notes',
     'workbench.creation.run.key_toggle' => 'Select',
     'workbench.creation.run.pick_hint' => 'Choose a blueprint on the left to browse its pending notes.',
+    'workbench.creation.run.queued_hint' => 'The batch is running in the background — commands will appear here when it completes.',
+    'workbench.creation.run.toast_done_title' => 'Batch complete',
+    'workbench.creation.run.toast_done_desc' => ':notes notes processed, :commands commands ready for review.',
+    'workbench.creation.run.toast_failed_title' => 'Batch failed',
+    'workbench.creation.run.toast_failed_fallback' => 'The run produced no commands. Check the logs for details.',
     'workbench.creation.review.batches_heading' => 'Batches',
     'workbench.creation.review.select_batch' => 'Select a batch from the list to review its commands.',
 ];

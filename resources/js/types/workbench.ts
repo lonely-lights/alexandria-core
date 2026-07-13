@@ -85,6 +85,24 @@ export interface L2PreviewResult {
     skipped_ids?: number[];
 }
 
+export interface L2RunBatchResponse {
+    queued: boolean;
+    batch_id: string | null;
+    notes_queued: number;
+    skipped_ids: number[];
+}
+
+/** Broadcast payload of the app's WorkbenchLevel2BatchCompleted event. */
+export interface L2BatchCompletedEvent {
+    batch_id: string;
+    blueprint_slug: string;
+    blueprint_name: string;
+    notes_processed: number;
+    commands_created: number;
+    commands_invalid: number;
+    error: string | null;
+}
+
 export interface AiCommand {
     id: number;
     batch_id: string;
