@@ -7,6 +7,7 @@ import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
 import WorkbenchKeyLegend from './WorkbenchKeyLegend';
 import WorkbenchPendingNotesPicker from './WorkbenchPendingNotesPicker';
+import { readWorkbenchState, writeWorkbenchState } from '../workbenchState';
 import type {
     L2BlueprintSummary,
     L2PendingNote,
@@ -357,14 +358,38 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
     /* ── Run pane state ── */
     const [summary, setSummary] = useState<L2BlueprintSummary[]>([]);
     const [summaryLoading, setSummaryLoading] = useState(false);
-    const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
-    const [batchSize, setBatchSize] = useState(25);
+    const [selectedSlug, setSelectedSlugState] = useState<string | null>(
+        () => readWorkbenchState(projectSlug).creationSlug ?? null,
+    );
+    const [batchSize, setBatchSizeState] = useState(
+        () => readWorkbenchState(projectSlug).batchSize ?? 25,
+    );
+
+    function setSelectedSlug(slug: string | null) {
+        setSelectedSlugState(slug);
+        writeWorkbenchState(projectSlug, { creationSlug: slug });
+    }
+
+    function setBatchSize(size: number) {
+        setBatchSizeState(size);
+        writeWorkbenchState(projectSlug, { batchSize: size });
+    }
 
     /* ── Cherry-pick note selection (owner: control the testing environment
        by choosing exact notes instead of always running the whole batch) ── */
     const [pendingNotes, setPendingNotes] = useState<L2PendingNote[]>([]);
     const [pendingNotesLoading, setPendingNotesLoading] = useState(false);
-    const [selectedNoteIds, setSelectedNoteIds] = useState<Set<number>>(new Set());
+    const [selectedNoteIds, setSelectedNoteIdsState] = useState<Set<number>>(
+        () => new Set(readWorkbenchState(projectSlug).selectedNoteIds ?? []),
+    );
+
+    function setSelectedNoteIds(value: Set<number> | ((prev: Set<number>) => Set<number>)) {
+        setSelectedNoteIdsState((prev) => {
+            const next = typeof value === 'function' ? value(prev) : value;
+            writeWorkbenchState(projectSlug, { selectedNoteIds: [...next] });
+            return next;
+        });
+    }
 
     /* ── Hone drawer state ── */
     const [honeOpen, setHoneOpen] = useState(false);

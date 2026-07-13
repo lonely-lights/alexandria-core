@@ -35,6 +35,12 @@ export default function Workbench() {
     const { project, blueprints, notebooks, unsorted_count, pending_count } = props;
 
     const [activeTab, setActiveTab] = useState<WorkbenchLevel>(tabFromHash);
+
+    // Persist the level in the URL hash so a refresh lands where the user was.
+    function changeTab(tab: WorkbenchLevel) {
+        setActiveTab(tab);
+        window.history.replaceState(null, '', `#${tab}`);
+    }
     const visited = useVisitedTabs(activeTab);
 
     // fabActions off: the quick-note FAB floats over the sticky action bars (owner).
@@ -45,7 +51,7 @@ export default function Workbench() {
                     t={t}
                     project={project}
                     activeTab={activeTab}
-                    onTabChange={setActiveTab}
+                    onTabChange={changeTab}
                     unsortedCount={unsorted_count}
                     pendingCount={pending_count}
                 />

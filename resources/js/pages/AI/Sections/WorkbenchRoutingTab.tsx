@@ -4,6 +4,7 @@ import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { fetchJson, FetchJsonError } from '@alexandria/lib/fetchJson';
 import useT from '@alexandria/hooks/useT';
 import WorkbenchKeyLegend from './WorkbenchKeyLegend';
+import { readWorkbenchState, writeWorkbenchState } from '../workbenchState';
 import type { WorkbenchBlueprint, WorkbenchNotebook, RoutedNotesPage } from '@alexandria/types/workbench';
 
 interface WorkbenchRoutingTabProps {
@@ -737,8 +738,20 @@ export default function WorkbenchRoutingTab({
     const [promptTokens, setPromptTokens] = useState(0);
     const [promptLoading, setPromptLoading] = useState(false);
 
-    // Rail selection — drives the detail pane + review target.
-    const [selected, setSelected] = useState<Selected>(null);
+    // Rail selection — drives the detail pane + review target. Restored
+    // from the per-project store so refreshes land where the user was.
+    const [selected, setSelectedState] = useState<Selected>(() => {
+        const stored = readWorkbenchState(projectSlug).routingTarget;
+        if (stored && (stored.kind === 'blueprint' || stored.kind === 'notebook')) {
+            return { kind: stored.kind as RosterKind, id: stored.id };
+        }
+        return null;
+    });
+
+    function setSelected(next: Selected) {
+        setSelectedState(next);
+        writeWorkbenchState(projectSlug, { routingTarget: next });
+    }
 
     const blueprints = initialBlueprints.map((bp) => ({
         ...bp,
