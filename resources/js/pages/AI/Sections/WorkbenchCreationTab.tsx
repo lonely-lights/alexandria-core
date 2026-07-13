@@ -3,6 +3,8 @@ import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { fetchJson } from '@alexandria/lib/fetchJson';
 import useT from '@alexandria/hooks/useT';
 import HoneDrawer from './HoneDrawer';
+import Input from '@alexandria/components/form/Input';
+import Select from '@alexandria/components/form/Select';
 import WorkbenchKeyLegend from './WorkbenchKeyLegend';
 import type {
     L2BlueprintSummary,
@@ -657,56 +659,39 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
                         {t('ai.workbench.creation.run.heading')}
                     </h2>
 
-                    {/* Blueprint picker */}
-                    <div className="space-y-1">
-                        <label className="text-xs font-medium" style={labelStyle}>
-                            {t('ai.workbench.creation.run.picker_label')}
-                        </label>
-                        {summaryLoading ? (
-                            <p style={labelStyle}>{t('ai.workbench.creation.run.loading_summary')}</p>
-                        ) : (
-                            <select
-                                value={selectedSlug ?? ''}
-                                onChange={(e) => setSelectedSlug(e.target.value || null)}
-                                className="w-full text-sm"
-                                style={{
-                                    background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
-                                    border: '1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
-                                    borderRadius: 'var(--theme-radius-button)',
-                                    padding: '0.375rem 0.5rem',
-                                    color: 'var(--theme-base-content)',
-                                }}
-                            >
-                                <option value="">{t('ai.workbench.creation.run.picker_placeholder')}</option>
-                                {summary.map((bp) => (
-                                    <option key={bp.slug} value={bp.slug}>
-                                        {bp.name} ({bp.pending_count})
-                                    </option>
-                                ))}
-                            </select>
-                        )}
-                    </div>
+                    {/* Blueprint picker — the app's reusable Select (owner: readable
+                        options + consistent spacing; native selects pop OS-styled lists). */}
+                    {summaryLoading ? (
+                        <p style={labelStyle}>{t('ai.workbench.creation.run.loading_summary')}</p>
+                    ) : (
+                        <Select
+                            label={t('ai.workbench.creation.run.picker_label')}
+                            name="workbench-blueprint"
+                            value={selectedSlug ?? ''}
+                            onChange={(e) => setSelectedSlug(e.target.value || null)}
+                            options={[
+                                { value: '', label: t('ai.workbench.creation.run.picker_placeholder') },
+                                ...summary.map((bp) => ({
+                                    value: bp.slug,
+                                    label: `${bp.name} (${bp.pending_count})`,
+                                })),
+                            ]}
+                            size="md"
+                        />
+                    )}
 
                     {/* Batch size */}
                     <div className="flex items-end justify-between gap-3">
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium" style={labelStyle}>
-                                {t('ai.workbench.creation.run.batch_size_label')}
-                            </label>
-                            <input
+                        <div className="w-24">
+                            <Input
+                                label={t('ai.workbench.creation.run.batch_size_label')}
+                                name="workbench-batch-size"
                                 type="number"
                                 min={1}
                                 max={50}
                                 value={batchSize}
                                 onChange={(e) => setBatchSize(Math.max(1, Math.min(50, Number(e.target.value))))}
-                                className="w-20 text-sm"
-                                style={{
-                                    background: 'color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
-                                    border: '1px solid color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
-                                    borderRadius: 'var(--theme-radius-button)',
-                                    padding: '0.375rem 0.5rem',
-                                    color: 'var(--theme-base-content)',
-                                }}
+                                size="md"
                             />
                         </div>
                         {selectedBp && (
