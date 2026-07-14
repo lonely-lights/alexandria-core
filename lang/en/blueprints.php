@@ -753,6 +753,7 @@ return [
     'tree.add_entry.field.summary' => 'Summary',
     'tree.add_entry.field.summary_placeholder' => 'Brief description (optional)…',
     'tree.add_entry.children_blueprints.label' => 'Children Blueprints',
+    'tree.add_entry.children_blueprints.help' => 'Optional: allow entries from other blueprints to nest under this one in the tree (e.g. Civilizations under a planet). Leave empty to keep children in this blueprint.',
     'tree.add_entry.children_blueprints.count' => ':count selected',
     'tree.add_entry.children_blueprints.filter' => 'Filter blueprints…',
     'tree.add_entry.children_blueprints.no_matches' => 'No matches',

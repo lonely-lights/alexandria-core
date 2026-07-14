@@ -251,6 +251,9 @@ export default function AddEntryModal({
                     </span>
                 )}
             </div>
+            <p className="mb-2 text-xs" style={subtitle40}>
+                {t("blueprints.tree.add_entry.children_blueprints.help")}
+            </p>
             <input
                 type="text"
                 value={bpSearch}
