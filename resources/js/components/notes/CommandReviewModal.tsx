@@ -61,10 +61,13 @@ const rowDivider: CSSProperties = {
     borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
 };
 
+// Soft primary tint + normal text color: --theme-brand-primary-content is
+// calibrated for SOLID primary fills — over a translucent tint it goes
+// dark-on-dark on dark presets (owner report, 2026-07-13 screenshot).
 const reasoningCalloutStyle: CSSProperties = {
-    border: '1px solid var(--theme-brand-primary-500)',
-    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent)',
-    color: 'var(--theme-brand-primary-content)',
+    border: '1px solid color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+    color: 'var(--theme-base-content)',
     borderRadius: 'var(--theme-radius-card)',
 };
 
