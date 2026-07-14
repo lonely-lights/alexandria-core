@@ -1363,11 +1363,16 @@ export default function NotesDrawer() {
                                                     )}
                                                     {(() => {
                                                         if (!ai || ai.status === 'processing') return null;
+                                                        // Mixed toward base-content so the indicator gains
+                                                        // contrast in BOTH directions: brighter on dark
+                                                        // presets, deeper on light (owner: "the yellow dot
+                                                        // is tough to read").
+                                                        const aiDotColor = 'color-mix(in srgb, var(--theme-status-warning-stroke) 55%, var(--theme-base-content))';
                                                         if (typeof ai.routing_count === 'number' && ai.routing_count > 0 && !ai.batch_id) {
                                                             return (
                                                                 <i
-                                                                    className="fa-solid fa-circle-exclamation text-[10px]"
-                                                                    style={{ color: 'var(--theme-status-warning-stroke)' }}
+                                                                    className="fa-solid fa-circle-exclamation text-[11px]"
+                                                                    style={{ color: aiDotColor }}
                                                                     title={t('notes.drawer.list.routing_pending_aria')}
                                                                     aria-label={t('notes.drawer.list.routing_pending_aria')}
                                                                 />
@@ -1376,8 +1381,8 @@ export default function NotesDrawer() {
                                                         if (ai.batch_id) {
                                                             return (
                                                                 <i
-                                                                    className="fa-solid fa-clipboard-list text-[10px]"
-                                                                    style={{ color: 'var(--theme-status-warning-stroke)' }}
+                                                                    className="fa-solid fa-clipboard-list text-[11px]"
+                                                                    style={{ color: aiDotColor }}
                                                                     title={t('notes.drawer.list.commands_ready_aria')}
                                                                     aria-label={t('notes.drawer.list.commands_ready_aria')}
                                                                 />
