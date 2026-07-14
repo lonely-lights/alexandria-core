@@ -185,14 +185,18 @@ html:not([data-theme^="tf"]) .neural-overlay {
 }
 
 /* Paper-tape feel button (paper-action). Shadow via ::before with independent
-   radius; ::after paints the paper surface. Shadow tint = paper + warm brown.
+   radius; ::after paints the paper surface. The tf layer owns SHAPE ONLY —
+   surface/text/shadow paint from the Stage 8b brand tokens so the button
+   tracks the active preset (owner report 2026-07-14: fixed --tf-paper-yellow
+   + #1a1210 read as hard-coded against customized presets). --tf-tape-shadow
+   keeps the warm paper-shadow character per tf variant.
    Stage 7.1 dropped the `.btn` co-requirement (was `.btn.paper-action`) since
    alex-btn replaced bare `.btn` — `.paper-action` standalone is unique enough. */
 [data-theme^="tf"] .paper-action {
     position: relative;
     isolation: isolate;
     background: transparent !important;
-    color: #1a1210 !important;
+    color: var(--theme-brand-primary-content) !important;
     border: none !important;
     box-shadow: none !important;
     transition: transform 0.12s ease;
@@ -205,7 +209,11 @@ html:not([data-theme^="tf"]) .neural-overlay {
         --paper-action-shadow-radius,
         var(--theme-radius-button)
     );
-    background: color-mix(in srgb, var(--tf-paper-yellow) 35%, #2b1810);
+    background: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 35%,
+        var(--tf-tape-shadow)
+    );
     transform: translate(3px, 3px);
     z-index: -1;
     transition: transform 0.12s ease;
@@ -215,7 +223,7 @@ html:not([data-theme^="tf"]) .neural-overlay {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: var(--tf-paper-yellow);
+    background: var(--theme-brand-primary-500);
     z-index: -1;
 }
 [data-theme^="tf"] .paper-action:hover {
