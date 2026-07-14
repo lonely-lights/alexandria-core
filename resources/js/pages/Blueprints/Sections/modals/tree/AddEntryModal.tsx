@@ -13,10 +13,7 @@ import {
     closeBtnStyle,
     headerStyle,
     inputStyle,
-    listShellStyle,
-    rowBorderStyle,
     selectedChipStyle,
-    selectedRowStyle,
     subtitle40,
     subtitle50,
     subtitle60,
@@ -27,11 +24,6 @@ import {
    they stay local. */
 const tabBarStyle: CSSProperties = {
     borderBottom: "1px solid var(--theme-base-300)",
-};
-
-const childSelectorWrapStyle: CSSProperties = {
-    background: "color-mix(in srgb, var(--theme-base-200) 40%, transparent)",
-    borderRadius: "var(--theme-radius-card)",
 };
 
 /* Tab pill = active vs idle. Active gets a 2px bottom border in the
@@ -54,10 +46,10 @@ const tabIdleStyle: CSSProperties = {
  *  - Entry:  full entry page with its own URL
  *  - Link:   attach an existing entry under a parent
  *
- * The parent's `child_blueprint_ids` list narrows which blueprints are
- * valid under it; if set, search results filter accordingly (togglable
- * via "Search all"). Newly-created folders/entries can carry their
- * own child_blueprint_ids via the shared selector at the bottom.
+ * The parent blueprint's children-blueprints setting (Blueprint
+ * Settings → Hierarchy) narrows which blueprints are valid under it;
+ * if set, search results filter accordingly (togglable via
+ * "Search all").
  */
 export default function AddEntryModal({
     parentId,
@@ -77,20 +69,27 @@ export default function AddEntryModal({
     onClose: () => void;
 }) {
     const t = useT();
+    // Children-blueprints is a blueprint-level setting: a parent's own
+    // blueprint is always a valid child; its blueprint's configured list
+    // (Blueprint Settings → Hierarchy) adds more. Creation always stays
+    // in the parent's own blueprint — the list widens what can be LINKED.
+    const parentBpId = parentEntry?.blueprint_id ?? blueprint.id;
     const parentChildBpIds = parentEntry?.child_blueprint_ids ?? [];
-    const canLink = parentChildBpIds.length > 0;
-    const effectiveBlueprintId =
-        parentChildBpIds.length === 1 ? parentChildBpIds[0] : blueprint.id;
-    const effectiveBpName =
-        parentChildBpIds.length > 0
-            ? parentChildBpIds
-                  .map((id) => projectBlueprints.find((b) => b.id === id)?.name)
-                  .filter(Boolean)
-                  .join(", ")
-            : blueprint.name;
+    const allowedBpIds = [
+        parentBpId,
+        ...parentChildBpIds.filter((id) => id !== parentBpId),
+    ];
+    const effectiveBlueprintId = parentBpId;
+    const effectiveBpName = allowedBpIds
+        .map((id) =>
+            id === blueprint.id
+                ? blueprint.name
+                : projectBlueprints.find((b) => b.id === id)?.name,
+        )
+        .filter(Boolean)
+        .join(", ");
 
     const [mode, setMode] = useState<"folder" | "create" | "link">("folder");
-    const [childBlueprintIds, setChildBlueprintIds] = useState<number[]>([]);
     const [showAllSearch, setShowAllSearch] = useState(false);
 
     // Create state
@@ -128,36 +127,19 @@ export default function AddEntryModal({
                 name: name.trim(),
                 blueprint_id: effectiveBlueprintId,
                 parent_id: parentId,
-                is_stub: true,
+                // Folder tab creates a stub container; Entry tab creates
+                // a full entry page.
+                is_stub: mode === "folder",
                 summary: summary.trim() || undefined,
             }),
         })
             .then((r) => r.json())
-            .then(async (data) => {
+            .then((data) => {
                 const entryId = data.entry?.id;
-                if (!entryId) {
-                    setSaving(false);
-                    return;
-                }
-
-                const metaPayload: Record<string, unknown> = {};
-                if (childBlueprintIds.length > 0)
-                    metaPayload.child_blueprint_ids = childBlueprintIds;
-
-                if (Object.keys(metaPayload).length > 0) {
-                    await fetch(`/api/v1/entries/${entryId}/meta`, {
-                        method: "PATCH",
-                        headers: {
-                            ...csrfHeaders(),
-                            "Content-Type": "application/json",
-                        },
-                        credentials: "same-origin",
-                        body: JSON.stringify(metaPayload),
-                    });
-                }
-
                 setSaving(false);
-                onCreated(entryId);
+                if (entryId) {
+                    onCreated(entryId);
+                }
             })
             .catch(() => setSaving(false));
     }
@@ -181,12 +163,11 @@ export default function AddEntryModal({
             .then((r) => r.json())
             .then((data) => {
                 const results = data.data ?? [];
-                const filtered =
-                    !showAllSearch && parentChildBpIds.length > 0
-                        ? results.filter((r: { blueprint_id?: number }) =>
-                              parentChildBpIds.includes(r.blueprint_id ?? 0),
-                          )
-                        : results;
+                const filtered = !showAllSearch
+                    ? results.filter((r: { blueprint_id?: number }) =>
+                          allowedBpIds.includes(r.blueprint_id ?? 0),
+                      )
+                    : results;
                 setLinkResults(filtered);
                 setSearching(false);
             })
@@ -209,117 +190,12 @@ export default function AddEntryModal({
             credentials: "same-origin",
             body: JSON.stringify({ parent_id: parentId }),
         })
-            .then(async () => {
-                if (childBlueprintIds.length > 0) {
-                    await fetch(`/api/v1/entries/${entryId}/meta`, {
-                        method: "PATCH",
-                        headers: {
-                            ...csrfHeaders(),
-                            "Content-Type": "application/json",
-                        },
-                        credentials: "same-origin",
-                        body: JSON.stringify({
-                            child_blueprint_ids: childBlueprintIds,
-                        }),
-                    });
-                }
+            .then(() => {
                 setLinking(false);
                 onCreated(entryId);
             })
             .catch(() => setLinking(false));
     }
-
-    // Shared children blueprint selector
-    const [bpSearch, setBpSearch] = useState("");
-    const filteredBlueprints = bpSearch.trim()
-        ? projectBlueprints.filter((bp) =>
-              bp.name.toLowerCase().includes(bpSearch.toLowerCase()),
-          )
-        : projectBlueprints;
-
-    const childBlueprintSelect = (
-        <div className="p-3" style={childSelectorWrapStyle}>
-            <div className="mb-1 flex items-center justify-between">
-                <label className="text-xs font-medium" style={subtitle60}>
-                    {t("blueprints.tree.add_entry.children_blueprints.label")}
-                </label>
-                {childBlueprintIds.length > 0 && (
-                    <span className="text-xs" style={subtitle40}>
-                        {t(
-                            "blueprints.tree.add_entry.children_blueprints.count",
-                        ).replace(":count", String(childBlueprintIds.length))}
-                    </span>
-                )}
-            </div>
-            <p className="mb-2 text-xs" style={subtitle40}>
-                {t("blueprints.tree.add_entry.children_blueprints.help")}
-            </p>
-            <input
-                type="text"
-                value={bpSearch}
-                onChange={(e) => setBpSearch(e.target.value)}
-                placeholder={t(
-                    "blueprints.tree.add_entry.children_blueprints.filter",
-                )}
-                className="mb-1 h-8 w-full px-3 text-xs focus:outline-none focus:ring-2"
-                style={inputStyle}
-            />
-            <div
-                className="max-h-[150px] overflow-y-auto"
-                style={listShellStyle}
-            >
-                {filteredBlueprints.map((bp, i) => {
-                    const checked = childBlueprintIds.includes(bp.id);
-                    const isLast = i === filteredBlueprints.length - 1;
-                    return (
-                        <label
-                            key={bp.id}
-                            className="alex-row flex cursor-pointer items-center gap-2 px-3 py-2 text-sm"
-                            style={{
-                                ...(checked ? selectedRowStyle : {}),
-                                ...(isLast ? {} : rowBorderStyle),
-                            }}
-                        >
-                            <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() =>
-                                    setChildBlueprintIds((prev) =>
-                                        checked
-                                            ? prev.filter((id) => id !== bp.id)
-                                            : [...prev, bp.id],
-                                    )
-                                }
-                                style={{
-                                    accentColor:
-                                        "var(--theme-brand-primary-500)",
-                                }}
-                            />
-                            <span
-                                className={checked ? "font-medium" : ""}
-                                style={
-                                    checked
-                                        ? {
-                                              color: "var(--theme-brand-primary-500)",
-                                          }
-                                        : undefined
-                                }
-                            >
-                                {bp.name}
-                            </span>
-                        </label>
-                    );
-                })}
-                {filteredBlueprints.length === 0 && (
-                    <p className="px-3 py-2 text-xs" style={subtitle40}>
-                        {t(
-                            "blueprints.tree.add_entry.children_blueprints.no_matches",
-                        )}
-                    </p>
-                )}
-            </div>
-        </div>
-    );
 
     const parentLabel = parentEntry
         ? parentEntry.name
@@ -445,8 +321,6 @@ export default function AddEntryModal({
                         />
                     </div>
 
-                    {childBlueprintSelect}
-
                     <div className="flex items-center gap-2 pt-2">
                         <ActionButton
                             icon={
@@ -516,7 +390,7 @@ export default function AddEntryModal({
                                         className="text-xs font-medium"
                                         style={subtitle60}
                                     >
-                                        {!showAllSearch && canLink
+                                        {!showAllSearch
                                             ? t(
                                                   "blueprints.tree.add_entry.link.search_scoped",
                                               ).replace(
@@ -527,33 +401,31 @@ export default function AddEntryModal({
                                                   "blueprints.tree.add_entry.link.search_all",
                                               )}
                                     </label>
-                                    {canLink && (
-                                        <label className="flex cursor-pointer items-center gap-1.5">
-                                            <input
-                                                type="checkbox"
-                                                checked={showAllSearch}
-                                                onChange={(e) => {
-                                                    setShowAllSearch(
-                                                        e.target.checked,
-                                                    );
-                                                    setLinkResults([]);
-                                                    setLinkSearch("");
-                                                }}
-                                                style={{
-                                                    accentColor:
-                                                        "var(--theme-brand-primary-500)",
-                                                }}
-                                            />
-                                            <span
-                                                className="text-xs"
-                                                style={subtitle40}
-                                            >
-                                                {t(
-                                                    "blueprints.tree.add_entry.link.toggle_all",
-                                                )}
-                                            </span>
-                                        </label>
-                                    )}
+                                    <label className="flex cursor-pointer items-center gap-1.5">
+                                        <input
+                                            type="checkbox"
+                                            checked={showAllSearch}
+                                            onChange={(e) => {
+                                                setShowAllSearch(
+                                                    e.target.checked,
+                                                );
+                                                setLinkResults([]);
+                                                setLinkSearch("");
+                                            }}
+                                            style={{
+                                                accentColor:
+                                                    "var(--theme-brand-primary-500)",
+                                            }}
+                                        />
+                                        <span
+                                            className="text-xs"
+                                            style={subtitle40}
+                                        >
+                                            {t(
+                                                "blueprints.tree.add_entry.link.toggle_all",
+                                            )}
+                                        </span>
+                                    </label>
                                 </div>
                                 <EntryLinkSearch
                                     query={linkSearch}
@@ -575,8 +447,6 @@ export default function AddEntryModal({
                             </div>
                         </>
                     )}
-
-                    {childBlueprintSelect}
 
                     <div className="flex items-center gap-2 pt-2">
                         <ActionButton

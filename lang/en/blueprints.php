@@ -86,12 +86,11 @@ return [
     'tree.intermediate_hidden.singular' => ':count intermediate level hidden',
     'tree.intermediate_hidden.plural' => ':count intermediate levels hidden',
     'tree.add' => 'Add',
+    'tree.child_blueprint_mismatch' => 'That blueprint cannot nest under this entry.',
     'tree.detail.view_entry' => 'View entry page',
     'tree.detail.set_default' => 'Open tree here by default',
     'tree.detail.clear_default' => 'Clear tree default',
     'tree.detail.restore' => 'Restore to Tree',
-    'tree.detail.set_child_blueprints' => 'Set Child Blueprints',
-    'tree.detail.blueprint_count' => ':count Blueprints',
     'tree.detail.convert_to_entry' => 'Convert to Entry',
     'tree.detail.revert_to_folder' => 'Revert to Folder',
     'tree.detail.revert_to_stub' => 'Revert to Stub',
@@ -520,6 +519,8 @@ return [
     'bp_settings.hierarchy.title' => 'Hierarchy',
     'bp_settings.hierarchy.description' => 'Enable and configure the tree view of entries.',
     'bp_settings.hierarchy.note' => 'Per-entry structure (what to call children, how deep to render, tree-vs-list display) is configured on each entry\'s page — open any entry and use the Structure tab\'s Configure button.',
+    'bp_settings.hierarchy.children.title' => 'Children blueprints',
+    'bp_settings.hierarchy.children.description' => 'Allow entries from these blueprints to nest under entries of this blueprint in the tree (e.g. Civilizations under a planet). Entries of this blueprint itself are always allowed.',
     'bp_settings.timeline.title' => 'Timeline',
     'bp_settings.timeline.description' => 'Enable and configure the timeline view of entries.',
     'bp_settings.kanban.title' => 'Kanban',
@@ -719,10 +720,6 @@ return [
 
     // ── Tree modals (modals/tree/*.tsx) ─────────────────────────────
     // Child blueprint picker
-    'tree.child_blueprints.title' => 'Child Blueprints',
-    'tree.child_blueprints.search_placeholder' => 'Search blueprints…',
-    'tree.child_blueprints.selected_count' => ':count selected',
-    'tree.child_blueprints.none_selected' => 'None selected',
 
     // Stub → entry converter
     'tree.convert_stub.title' => 'Convert to Entry',
@@ -752,11 +749,6 @@ return [
     'tree.add_entry.field.name_placeholder' => 'Entry name…',
     'tree.add_entry.field.summary' => 'Summary',
     'tree.add_entry.field.summary_placeholder' => 'Brief description (optional)…',
-    'tree.add_entry.children_blueprints.label' => 'Children Blueprints',
-    'tree.add_entry.children_blueprints.help' => 'Optional: allow entries from other blueprints to nest under this one in the tree (e.g. Civilizations under a planet). Leave empty to keep children in this blueprint.',
-    'tree.add_entry.children_blueprints.count' => ':count selected',
-    'tree.add_entry.children_blueprints.filter' => 'Filter blueprints…',
-    'tree.add_entry.children_blueprints.no_matches' => 'No matches',
     'tree.add_entry.link.intro' => 'Attach an existing entry from your project into this tree.',
     'tree.add_entry.link.search_scoped' => 'Search :name',
     'tree.add_entry.link.search_all' => 'Search all entries',

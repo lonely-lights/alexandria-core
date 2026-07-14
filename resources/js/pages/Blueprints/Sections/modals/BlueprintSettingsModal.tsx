@@ -15,7 +15,10 @@ import {
     TimelineSettingsPanel,
     TimelineSourcesPanel,
 } from "./settings/TimelinePanels";
-import { TreeActivationPanel } from "./settings/TreePanels";
+import {
+    TreeActivationPanel,
+    TreeChildrenBlueprintsPanel,
+} from "./settings/TreePanels";
 import KanbanPanel from "./settings/KanbanPanel";
 import GraphPanel from "./settings/GraphPanel";
 import RevealCollapse from "@alexandria/components/ui/RevealCollapse";
@@ -248,25 +251,26 @@ export function ColumnConfigModal({
                                 label={t("blueprints.bp_settings.nav.table")}
                             />
                             {blueprint &&
+                                blueprint.classification !== "relationship" && (
+                                    <NavItem
+                                        {...navProps("tree")}
+                                        icon="fa-solid fa-sitemap"
+                                        label={t(
+                                            "blueprints.bp_settings.nav.hierarchy",
+                                        )}
+                                    />
+                                )}
+                            {blueprint &&
                                 !["structural", "relationship"].includes(
                                     blueprint.classification,
                                 ) && (
-                                    <>
-                                        <NavItem
-                                            {...navProps("tree")}
-                                            icon="fa-solid fa-sitemap"
-                                            label={t(
-                                                "blueprints.bp_settings.nav.hierarchy",
-                                            )}
-                                        />
-                                        <NavItem
-                                            {...navProps("timeline")}
-                                            icon="fa-solid fa-timeline"
-                                            label={t(
-                                                "blueprints.bp_settings.nav.timeline",
-                                            )}
-                                        />
-                                    </>
+                                    <NavItem
+                                        {...navProps("timeline")}
+                                        icon="fa-solid fa-timeline"
+                                        label={t(
+                                            "blueprints.bp_settings.nav.timeline",
+                                        )}
+                                    />
                                 )}
                             {blueprint &&
                                 ["standard", "list"].includes(
@@ -380,9 +384,7 @@ export function ColumnConfigModal({
                         {activeMenu === "ai" && blueprint && project && (
                             <>
                                 <PanelHeader
-                                    title={t(
-                                        "blueprints.bp_settings.ai.title",
-                                    )}
+                                    title={t("blueprints.bp_settings.ai.title")}
                                     description={t(
                                         "blueprints.bp_settings.ai.description",
                                     )}
@@ -564,18 +566,27 @@ export function ColumnConfigModal({
                                     )}
                                 />
                                 <div className="flex-1 overflow-y-auto p-5">
-                                    <TreeActivationPanel
+                                    {blueprint.classification !==
+                                        "structural" && (
+                                        <>
+                                            <TreeActivationPanel
+                                                blueprint={blueprint}
+                                                project={project}
+                                            />
+                                            <p
+                                                className="mt-3 text-[11px]"
+                                                style={helperStyle}
+                                            >
+                                                {t(
+                                                    "blueprints.bp_settings.hierarchy.note",
+                                                )}
+                                            </p>
+                                        </>
+                                    )}
+                                    <TreeChildrenBlueprintsPanel
                                         blueprint={blueprint}
                                         project={project}
                                     />
-                                    <p
-                                        className="mt-3 text-[11px]"
-                                        style={helperStyle}
-                                    >
-                                        {t(
-                                            "blueprints.bp_settings.hierarchy.note",
-                                        )}
-                                    </p>
                                 </div>
                             </>
                         )}
@@ -694,4 +705,3 @@ export function ColumnConfigModal({
         </Modal>
     );
 }
-

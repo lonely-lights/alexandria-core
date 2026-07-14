@@ -15,7 +15,6 @@ import ArchiveEntryModal from "@alexandria/components/entries/ArchiveEntryModal"
 import MentionAwareContent from "@alexandria/components/ui/MentionAwareContent";
 import { ColumnConfigModal } from "./modals/BlueprintSettingsModal";
 import ConvertStubModal from "./modals/tree/ConvertStubModal";
-import ChildBlueprintModal from "./modals/tree/ChildBlueprintModal";
 import AddEntryModal from "./modals/tree/AddEntryModal";
 import { csrfHeaders } from "@alexandria/lib/csrfHeaders";
 import type { SiblingBlueprint } from "@alexandria/types/blueprints";
@@ -300,7 +299,6 @@ export default function TreeView({
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
     const [search, setSearch] = useState("");
     const [archiveEntry, setArchiveEntry] = useState<TreeNode | null>(null);
-    const [showChildBpModal, setShowChildBpModal] = useState(false);
     const [showNodeMenu, setShowNodeMenu] = useState(false);
     const [rearrangeMode, setRearrangeMode] = useState(false);
     const [draggingParentId, setDraggingParentId] = useState<
@@ -1208,62 +1206,6 @@ export default function TreeView({
                                                                 dropdownMenuStyle
                                                             }
                                                         >
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setShowNodeMenu(
-                                                                        false,
-                                                                    );
-                                                                    setShowChildBpModal(
-                                                                        true,
-                                                                    );
-                                                                }}
-                                                                className="alex-row flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm"
-                                                                style={{
-                                                                    borderBottom:
-                                                                        "1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)",
-                                                                }}
-                                                            >
-                                                                <i
-                                                                    className="fa-solid fa-diagram-project w-4 text-center text-xs"
-                                                                    style={
-                                                                        stubIconStyle
-                                                                    }
-                                                                />
-                                                                <span>
-                                                                    {selected
-                                                                        .child_blueprint_ids
-                                                                        .length >
-                                                                    0
-                                                                        ? selected
-                                                                              .child_blueprint_ids
-                                                                              .length ===
-                                                                          1
-                                                                            ? (projectBlueprints.find(
-                                                                                  (
-                                                                                      b,
-                                                                                  ) =>
-                                                                                      b.id ===
-                                                                                      selected
-                                                                                          .child_blueprint_ids[0],
-                                                                              )
-                                                                                  ?.name ??
-                                                                              "Blueprint")
-                                                                            : t(
-                                                                                  "blueprints.tree.detail.blueprint_count",
-                                                                              ).replace(
-                                                                                  ":count",
-                                                                                  String(
-                                                                                      selected
-                                                                                          .child_blueprint_ids
-                                                                                          .length,
-                                                                                  ),
-                                                                              )
-                                                                        : t(
-                                                                              "blueprints.tree.detail.set_child_blueprints",
-                                                                          )}
-                                                                </span>
-                                                            </button>
                                                             {!isSubtree && (
                                                                 <button
                                                                     type="button"
@@ -1729,19 +1671,6 @@ export default function TreeView({
                         />
                     );
                 })()}
-
-            {/* Child Blueprint Modal */}
-            {showChildBpModal && selected && (
-                <ChildBlueprintModal
-                    entry={selected}
-                    projectBlueprints={projectBlueprints}
-                    onClose={() => setShowChildBpModal(false)}
-                    onSaved={() => {
-                        setShowChildBpModal(false);
-                        fetchTree();
-                    }}
-                />
-            )}
 
             {/* Blueprint Settings Modal */}
             <ColumnConfigModal
