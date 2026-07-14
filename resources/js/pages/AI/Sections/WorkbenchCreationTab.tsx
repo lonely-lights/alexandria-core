@@ -14,6 +14,7 @@ import type { SharedProps } from '@alexandria/types/index';
 import type {
     L2BlueprintSummary,
     L2BatchCompletedEvent,
+    L2BatchListItem,
     L2PendingNote,
     L2PreviewResult,
     L2RunBatchResponse,
@@ -422,13 +423,27 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
     const selectedBp = summary.find((b) => b.slug === selectedSlug) ?? null;
     const selectedNoteCount = selectedNoteIds.size;
 
-    /* ── Load summary on mount ── */
+    /* ── Load summary + existing batches on mount (batch tabs used to be
+       session-born; the listing rebuilds them after a refresh and shows
+       batches kicked off outside this browser) ── */
     useEffect(() => {
         setSummaryLoading(true);
         fetchJson(`/ai/${projectSlug}/workbench/l2-summary`)
             .then((data) => setSummary((data as { blueprints: L2BlueprintSummary[] }).blueprints))
             .catch(() => {})
             .finally(() => setSummaryLoading(false));
+
+        fetchJson(`/ai/${projectSlug}/workbench/l2-batches`)
+            .then((data) => {
+                const items = (data as { batches: L2BatchListItem[] }).batches ?? [];
+                // Listing is newest-first; render oldest-first so freshly
+                // queued runs appended at the end keep chronological order.
+                setBatches(items.slice().reverse().map((b) => ({
+                    batchId: b.batch_id,
+                    label: `${b.blueprint_slug ?? '?'} · ${b.started_at ? new Date(b.started_at).toLocaleTimeString() : ''}`,
+                })));
+            })
+            .catch(() => {});
     }, [projectSlug]);
 
     /* ── Load pending notes for the cherry-pick list when the blueprint changes ── */
@@ -506,7 +521,14 @@ export default function WorkbenchCreationTab({ projectSlug, projectId }: Workben
         setRunning(false);
 
         if (data.notes_processed > 0) {
-            setBatches((prev) => prev.map((b) => (b.batchId === data.batch_id ? { ...b, pending: false } : b)));
+            setBatches((prev) => prev.some((b) => b.batchId === data.batch_id)
+                ? prev.map((b) => (b.batchId === data.batch_id ? { ...b, pending: false } : b))
+                // A batch this browser didn't queue (e.g. kicked off from the
+                // CLI) — surface it as a fresh tab.
+                : [...prev, {
+                    batchId: data.batch_id,
+                    label: `${data.blueprint_slug || data.blueprint_name || '?'} · ${new Date().toLocaleTimeString()}`,
+                }]);
             if (activeBatchIdRef.current === data.batch_id) loadBatchData(data.batch_id);
 
             toast.show(t('ai.workbench.creation.run.toast_done_title'), {

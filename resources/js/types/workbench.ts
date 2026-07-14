@@ -92,6 +92,15 @@ export interface L2RunBatchResponse {
     skipped_ids: number[];
 }
 
+/** One row of the l2-batches listing (existing batches, newest first). */
+export interface L2BatchListItem {
+    batch_id: string;
+    blueprint_slug: string | null;
+    started_at: string | null;
+    command_count: number;
+    pending_count: number;
+}
+
 /** Broadcast payload of the app's WorkbenchLevel2BatchCompleted event. */
 export interface L2BatchCompletedEvent {
     batch_id: string;
