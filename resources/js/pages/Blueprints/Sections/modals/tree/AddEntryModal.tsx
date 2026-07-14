@@ -41,9 +41,10 @@ const tabIdleStyle: CSSProperties = {
 };
 
 /**
- * Add an entry to the tree — two modes:
- *  - Entry: full entry page (or a stub placeholder via the checkbox)
- *  - Link:  attach an existing entry under a parent
+ * Add an entry to the tree — three modes:
+ *  - Folder: stub container for grouping
+ *  - Entry:  full entry page (or a stub placeholder via the checkbox)
+ *  - Link:   attach an existing entry under a parent
  *
  * The parent blueprint's children-blueprints setting (Blueprint
  * Settings → Hierarchy) narrows which blueprints are valid under it;
@@ -88,7 +89,7 @@ export default function AddEntryModal({
         .filter(Boolean)
         .join(", ");
 
-    const [mode, setMode] = useState<"create" | "link">("create");
+    const [mode, setMode] = useState<"folder" | "create" | "link">("folder");
     const [stubOnly, setStubOnly] = useState(false);
     const [showAllSearch, setShowAllSearch] = useState(false);
 
@@ -127,7 +128,7 @@ export default function AddEntryModal({
                 name: name.trim(),
                 blueprint_id: effectiveBlueprintId,
                 parent_id: parentId,
-                is_stub: stubOnly,
+                is_stub: mode === "folder" || stubOnly,
                 summary: summary.trim() || undefined,
             }),
         })
@@ -228,6 +229,19 @@ export default function AddEntryModal({
             <div className="flex" style={tabBarStyle}>
                 <button
                     type="button"
+                    onClick={() => setMode("folder")}
+                    className="alex-row flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors"
+                    style={
+                        mode === "folder"
+                            ? tabActiveStyle("var(--theme-brand-secondary-500)")
+                            : tabIdleStyle
+                    }
+                >
+                    <i className="fa-solid fa-folder-plus text-xs" />{" "}
+                    {t("blueprints.tree.add_entry.tab.folder")}
+                </button>
+                <button
+                    type="button"
                     onClick={() => setMode("create")}
                     className="alex-row flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors"
                     style={
@@ -256,10 +270,12 @@ export default function AddEntryModal({
                 </button>
             </div>
 
-            {mode === "create" ? (
+            {mode === "create" || mode === "folder" ? (
                 <div className="space-y-4 p-6">
                     <p className="text-xs" style={subtitle50}>
-                        {t("blueprints.tree.add_entry.create.intro")}
+                        {mode === "folder"
+                            ? t("blueprints.tree.add_entry.folder.intro")
+                            : t("blueprints.tree.add_entry.create.intro")}
                     </p>
                     <div>
                         <label
@@ -304,53 +320,67 @@ export default function AddEntryModal({
                         />
                     </div>
 
-                    <div>
-                        <label className="flex cursor-pointer items-start gap-2">
-                            <input
-                                type="checkbox"
-                                checked={stubOnly}
-                                onChange={(e) => setStubOnly(e.target.checked)}
-                                className="mt-0.5"
-                                style={{
-                                    accentColor:
-                                        "var(--theme-brand-secondary-500)",
-                                }}
-                            />
-                            <span>
-                                <span className="block text-xs font-medium">
-                                    {t(
-                                        "blueprints.tree.add_entry.stub_toggle.label",
-                                    )}
+                    {mode === "create" && (
+                        <div>
+                            <label className="flex cursor-pointer items-start gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={stubOnly}
+                                    onChange={(e) =>
+                                        setStubOnly(e.target.checked)
+                                    }
+                                    className="mt-0.5"
+                                    style={{
+                                        accentColor:
+                                            "var(--theme-brand-secondary-500)",
+                                    }}
+                                />
+                                <span>
+                                    <span className="block text-xs font-medium">
+                                        {t(
+                                            "blueprints.tree.add_entry.stub_toggle.label",
+                                        )}
+                                    </span>
+                                    <span
+                                        className="block text-xs"
+                                        style={subtitle40}
+                                    >
+                                        {t(
+                                            "blueprints.tree.add_entry.stub_toggle.help",
+                                        )}
+                                    </span>
                                 </span>
-                                <span
-                                    className="block text-xs"
-                                    style={subtitle40}
-                                >
-                                    {t(
-                                        "blueprints.tree.add_entry.stub_toggle.help",
-                                    )}
-                                </span>
-                            </span>
-                        </label>
-                    </div>
+                            </label>
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-2 pt-2">
                         <ActionButton
                             icon={
-                                stubOnly
+                                mode === "folder"
                                     ? "fa-solid fa-folder-plus"
-                                    : "fa-solid fa-plus"
+                                    : stubOnly
+                                      ? "fa-solid fa-file-circle-question"
+                                      : "fa-solid fa-plus"
                             }
                             label={
-                                stubOnly
+                                mode === "folder"
                                     ? t(
                                           "blueprints.tree.add_entry.folder.action",
                                       )
-                                    : t(
-                                          "blueprints.tree.add_entry.create.action",
-                                      )
+                                    : stubOnly
+                                      ? t(
+                                            "blueprints.tree.add_entry.stub_toggle.action",
+                                        )
+                                      : t(
+                                            "blueprints.tree.add_entry.create.action",
+                                        )
                             }
-                            variant={stubOnly ? "secondary" : "primary"}
+                            variant={
+                                mode === "folder" || stubOnly
+                                    ? "secondary"
+                                    : "primary"
+                            }
                             onClick={handleCreate}
                             loading={saving}
                             disabled={!name.trim()}
