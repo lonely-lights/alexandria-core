@@ -168,15 +168,19 @@ const dropdownMenuStyle: CSSProperties = {
     overflow: "hidden",
 };
 
-/* Children grid cards — icon tile derives its wash from the entry
-   icon's own color via currentColor, so stub/live/cross-bp children
-   each get their matching tint. */
-const childCardStyle: CSSProperties = {
+/* Children list — a contained rounded shell of full-width rows. Each
+   row's icon tile derives its wash from the entry icon's own color via
+   currentColor, so stub/live/cross-bp children keep their identity. */
+const childListShellStyle: CSSProperties = {
     background: "var(--theme-base-100)",
     border: "1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)",
     borderRadius: "var(--theme-radius-card)",
-    transition:
-        "border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), transform var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
+    overflow: "hidden",
+};
+
+const childRowDividerStyle: CSSProperties = {
+    borderBottom:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 6%, transparent)",
 };
 
 const childCardIconTileStyle: CSSProperties = {
@@ -1561,46 +1565,46 @@ export default function TreeView({
                                                 {selectedChildren.length}
                                             </span>
                                         </h3>
-                                        <div
-                                            className="grid gap-2"
-                                            style={{
-                                                gridTemplateColumns:
-                                                    "repeat(auto-fill, minmax(11.5rem, 1fr))",
-                                            }}
-                                        >
-                                            {selectedChildren.map((child) => (
-                                                <button
-                                                    key={child.id}
-                                                    type="button"
-                                                    className="alex-row group/child flex items-center gap-2.5 px-3 py-2.5 text-left"
-                                                    style={childCardStyle}
-                                                    onClick={() => {
-                                                        setSelectedId(
-                                                            child.id,
-                                                        );
-                                                        if (
-                                                            child.has_children
-                                                        )
-                                                            toggleExpand(
+                                        <div style={childListShellStyle}>
+                                            {selectedChildren.map(
+                                                (child, i) => (
+                                                    <button
+                                                        key={child.id}
+                                                        type="button"
+                                                        className="alex-row group/child flex w-full items-center gap-3 px-3 py-2 text-left"
+                                                        style={
+                                                            i ===
+                                                            selectedChildren.length -
+                                                                1
+                                                                ? undefined
+                                                                : childRowDividerStyle
+                                                        }
+                                                        onClick={() => {
+                                                            setSelectedId(
                                                                 child.id,
                                                             );
-                                                    }}
-                                                >
-                                                    <span
-                                                        style={{
-                                                            ...childCardIconTileStyle,
-                                                            ...entryIconStyle(
-                                                                child,
-                                                                child.has_children,
-                                                            ),
+                                                            if (
+                                                                child.has_children
+                                                            )
+                                                                toggleExpand(
+                                                                    child.id,
+                                                                );
                                                         }}
                                                     >
-                                                        <i
-                                                            className={`text-sm ${entryIconClass(child, child.has_children)}`}
-                                                        />
-                                                    </span>
-                                                    <span className="min-w-0 flex-1">
-                                                        <span className="block truncate text-sm font-medium">
+                                                        <span
+                                                            style={{
+                                                                ...childCardIconTileStyle,
+                                                                ...entryIconStyle(
+                                                                    child,
+                                                                    child.has_children,
+                                                                ),
+                                                            }}
+                                                        >
+                                                            <i
+                                                                className={`text-sm ${entryIconClass(child, child.has_children)}`}
+                                                            />
+                                                        </span>
+                                                        <span className="min-w-0 flex-1 truncate text-sm font-medium">
                                                             {child.name}
                                                         </span>
                                                         {child.has_children && (
@@ -1619,13 +1623,13 @@ export default function TreeView({
                                                                 )}
                                                             </span>
                                                         )}
-                                                    </span>
-                                                    <i
-                                                        className="fa-solid fa-chevron-right text-[10px] opacity-0 transition-opacity duration-150 group-hover/child:opacity-60"
-                                                        style={subtitle40}
-                                                    />
-                                                </button>
-                                            ))}
+                                                        <i
+                                                            className="fa-solid fa-chevron-right text-[10px] opacity-0 transition-opacity duration-150 group-hover/child:opacity-60"
+                                                            style={subtitle40}
+                                                        />
+                                                    </button>
+                                                ),
+                                            )}
                                         </div>
                                     </div>
                                 )}
