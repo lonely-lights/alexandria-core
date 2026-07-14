@@ -143,22 +143,25 @@ export default function ProjectNavigation({
                     className="ml-5 flex flex-col gap-0.5 pl-2"
                     style={{ borderLeft: '2px solid var(--theme-base-400)' }}
                 >
+                    {/* Legacy path-style URLs (/queue, /batches, /models)
+                        predate the tabbed AI dashboard and 404 — these
+                        surfaces are hash tabs on /ai/{slug} now. */}
                     <SidebarRow
-                        href={`/ai/${project.slug}/queue`}
+                        href={`/ai/${project.slug}`}
                         icon="fa-solid fa-route"
                         iconColor="var(--theme-status-warning-fill)"
                         label={t('nav.note_queue')}
                         size="sm"
                     />
                     <SidebarRow
-                        href={`/ai/${project.slug}/batches`}
+                        href={`/ai/${project.slug}#commands`}
                         icon="fa-solid fa-terminal"
                         iconColor="var(--theme-brand-secondary-500)"
                         label={t('nav.commands')}
                         size="sm"
                     />
                     <SidebarRow
-                        href={`/ai/${project.slug}/models`}
+                        href={`/ai/${project.slug}#models`}
                         icon="fa-solid fa-microchip"
                         iconColor="var(--theme-status-info-fill)"
                         label={t('nav.models')}

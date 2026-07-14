@@ -63,6 +63,18 @@ export default function AiDashboard() {
         window.location.hash = activeTab === 'dashboard' ? '' : `#${activeTab}`;
     }, [activeTab]);
 
+    // Sidebar AI-hub links are hash URLs (/ai/{slug}#commands etc.) —
+    // follow hash changes while already mounted so those links switch
+    // tabs in place. (The write-effect above re-firing this with the
+    // same tab is a no-op.)
+    useEffect(() => {
+        function onHashChange() {
+            setActiveTab(tabFromHash());
+        }
+        window.addEventListener('hashchange', onHashChange);
+        return () => window.removeEventListener('hashchange', onHashChange);
+    }, []);
+
     // Keep-mounted tabs — lazy-mount on first visit, hide (don't
     // unmount) when the user switches away so fetched data, scroll
     // position, and local filter state all survive. Same pattern used
