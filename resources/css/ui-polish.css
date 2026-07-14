@@ -270,6 +270,24 @@ button:not(:disabled),
     @apply text-base font-semibold mt-4 mb-2;
 }
 
+/* MediaWiki-style bullet lists from the app's ListProcessor. Item text
+   arrives wrapped in a <p> (the paragraph pass runs inside <li>s so
+   inline links/bold still render) — inline it and drop its margins so
+   markers align with single-line spacing. */
+.prose ul.wiki-list {
+    @apply my-4 list-disc pl-6;
+}
+.prose ul.wiki-list ul.wiki-list {
+    @apply my-0;
+}
+.prose ul.wiki-list li {
+    @apply my-1;
+}
+.prose ul.wiki-list li p {
+    display: inline;
+    margin: 0;
+}
+
 .prose blockquote p:first-of-type::before {
     content: "";
 }
