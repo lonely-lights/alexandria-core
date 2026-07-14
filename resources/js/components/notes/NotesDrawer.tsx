@@ -1295,6 +1295,31 @@ export default function NotesDrawer() {
                                     <i className={`fa-solid ${selectMode ? 'fa-xmark' : 'fa-check-double'}`} aria-hidden="true" />
                                 </button>
                             </Tooltip>
+                            {/* Select all / clear — operates on the currently
+                                visible (filtered/searched) list. */}
+                            {selectMode && notes.length > 0 && (
+                                <Tooltip
+                                    content={checkedIds.size === notes.length
+                                        ? t('notes.drawer.tooltip.select_none')
+                                        : t('notes.drawer.tooltip.select_all').replace(':count', String(notes.length))}
+                                    placement="bottom"
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={() => setCheckedIds(
+                                            checkedIds.size === notes.length
+                                                ? new Set()
+                                                : new Set(notes.map((n) => n.id)),
+                                        )}
+                                        style={circleBtn('select-off')}
+                                        aria-label={checkedIds.size === notes.length
+                                            ? t('notes.drawer.tooltip.select_none')
+                                            : t('notes.drawer.tooltip.select_all').replace(':count', String(notes.length))}
+                                    >
+                                        <i className="fa-solid fa-list-check" aria-hidden="true" />
+                                    </button>
+                                </Tooltip>
+                            )}
                         </div>
 
                         {/* Empty trash button */}

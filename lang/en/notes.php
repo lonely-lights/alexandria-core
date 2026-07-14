@@ -497,6 +497,8 @@ return [
     'drawer.tooltip.add' => 'Add Note',
     'drawer.tooltip.select' => 'Select Notes',
     'drawer.tooltip.exit_select' => 'Exit Select',
+    'drawer.tooltip.select_all' => 'Select all (:count)',
+    'drawer.tooltip.select_none' => 'Clear selection',
     'drawer.empty_trash' => 'Empty All Trashed Notes',
     'drawer.list.empty' => 'No matching notes found.',
     'drawer.list.untitled' => 'Untitled',
