@@ -372,6 +372,45 @@ it('replicates the note + tags and attaches it to the target via direct copy for
         ->and($copied->tags->pluck('name')->all())->toEqualCanonicalizing(['lore', 'character']);
 });
 
+it('resets the copy\'s ai_notes to a terminal provenance marker instead of the source routing lifecycle', function () {
+    $target = Project::factory()->create();
+    $note = Note::factory()->create([
+        'title' => 'Routed source',
+        'ai_notes' => [
+            'status' => 'completed',
+            'routed_blueprints' => ['location'],
+            'routing_count' => 1,
+            'routing_confidence' => 0.9,
+        ],
+    ]);
+
+    $command = AiReviewCommand::factory()->create([
+        'action_type' => 'copy_note',
+        'payload' => [
+            'note_id' => $note->id,
+            'target_model_class' => Project::class,
+            'target_model_id' => $target->id,
+        ],
+    ]);
+
+    $tempIdMap = [];
+    (new NoteActionService)->copyNote($command, $tempIdMap);
+
+    $copied = Note::query()
+        ->where('title', 'Routed source')
+        ->where('id', '!=', $note->id)
+        ->first();
+
+    // Routing lifecycle keys would resurrect Process/Reject controls on
+    // the destination's note surfaces (AiStatusFooter's 'routed' state).
+    expect($copied->ai_notes)->toMatchArray([
+        'status' => 'completed',
+        'copied_from_note_id' => $note->id,
+    ])
+        ->and($copied->ai_notes)->not->toHaveKeys(['routed_blueprints', 'routing_count'])
+        ->and($note->refresh()->ai_notes['routed_blueprints'])->toBe(['location']);
+});
+
 it('replicates with (Copy) suffix and pinned=false via legacy format', function () {
     $target = Project::factory()->create();
     $note = Note::factory()->pinned()->create(['title' => 'Important note']);

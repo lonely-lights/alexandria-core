@@ -313,8 +313,17 @@ class NoteActionService
         $originalNote = $noteClass::with('tags')->findOrFail($noteId);
         $destinationModel = $targetModelClass::findOrFail($targetModelId);
 
-        // Create a copy of the note
+        // Create a copy of the note. The copy is a terminal artifact
+        // attached to its destination — it must NOT inherit the source
+        // note's AI routing lifecycle (status/routed_blueprints/
+        // routing_count), which resurrects Process/Reject routing
+        // controls on the destination's note surfaces. Keep provenance
+        // instead; an explicit ai_notes payload still overrides.
         $newNote = $originalNote->replicate();
+        $newNote->ai_notes = [
+            'status' => 'completed',
+            'copied_from_note_id' => $originalNote->id,
+        ];
 
         // Update ai_notes if provided
         if ($aiNotes !== null) {
@@ -399,12 +408,18 @@ class NoteActionService
         $originalNote = $noteClass::with('tags')->findOrFail($sourceNoteId);
         $destinationModel = $destModelClass::findOrFail($destModelId);
 
-        // This logic mimics your LinkNoteModal's 'performCopy'
+        // This logic mimics your LinkNoteModal's 'performCopy'. Same
+        // ai_notes reset as the direct format: copies are terminal and
+        // must not inherit the source's routing lifecycle.
         $newNote = $originalNote->replicate();
         $newNote->title .= ' (Copy)';
         $newNote->user_id = $command->user_id;
         $newNote->note_date = now();
         $newNote->is_pinned = false;
+        $newNote->ai_notes = [
+            'status' => 'completed',
+            'copied_from_note_id' => $originalNote->id,
+        ];
         $newNote->save();
 
         if ($originalNote->relationLoaded('tags') && $originalNote->tags->isNotEmpty()) {
