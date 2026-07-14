@@ -35,6 +35,8 @@ interface NotesViewProps {
     projectId: number;
     initialStatusFilter: NoteStatusFilter | null;
     initialQuickFilter: string | null;
+    /** Pre-fills the search box (command-palette deep link). */
+    initialSearch?: string | null;
     initialNotebookId?: number | null;
     // Bumped on every notebook-tile click in the Notebooks tab so this
     // view re-applies the filter even when the id hasn't changed.
@@ -165,7 +167,7 @@ const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-c
 const muteText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)' };
 const subtleText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' };
 
-export default function NotesView({ projectId, initialStatusFilter, initialQuickFilter, initialNotebookId, notebookSelectionNonce, refetchNonce, contextType, contextId }: NotesViewProps) {
+export default function NotesView({ projectId, initialStatusFilter, initialQuickFilter, initialSearch, initialNotebookId, notebookSelectionNonce, refetchNonce, contextType, contextId }: NotesViewProps) {
     const t = useT();
     const { fmtDate, fmtTime } = useDateFormatters();
     const [data, setData] = useState<NotesListResponse | null>(null);
@@ -173,8 +175,10 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
     const [page, setPage] = useState(1);
     const [statusFilter, setStatusFilter] = useState<NoteStatusFilter>(initialStatusFilter ?? 'active');
     const [quickFilter, setQuickFilter] = useState<NoteQuickFilter>((initialQuickFilter as NoteQuickFilter) || 'all');
-    const [search, setSearch] = useState('');
-    const [debouncedSearch, setDebouncedSearch] = useState('');
+    // Both seeded from initialSearch so a deep-linked search applies on
+    // the FIRST fetch instead of after the debounce round-trip.
+    const [search, setSearch] = useState(initialSearch ?? '');
+    const [debouncedSearch, setDebouncedSearch] = useState(initialSearch ?? '');
     const [sortKey, setSortKey] = useState<NoteSortKey>('created_at');
     const [sortDir, setSortDir] = useState<SortDir>('desc');
     const [creatorIds, setCreatorIds] = useState<number[]>([]);

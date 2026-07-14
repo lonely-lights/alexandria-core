@@ -39,6 +39,11 @@ export default function NotesDashboard() {
     const [activeView, setActiveView] = useState<View>(viewFromHash);
     const [initialStatusFilter, setInitialStatusFilter] = useState<NoteStatusFilter | null>(null);
     const [initialQuickFilter, setInitialQuickFilter] = useState<string | null>(null);
+    // Deep link from the command palette's Notes results:
+    // /notes/{slug}?search=<term>#notes pre-fills the Notes tab search.
+    const [initialSearch] = useState<string | null>(
+        () => new URLSearchParams(window.location.search).get('search'),
+    );
     const [showCreate, setShowCreate] = useState(false);
     const [activeNotebookId, setActiveNotebookId] = useState<number | null>(null);
     // Bumps on every notebook-tile click so NotesView re-applies the
@@ -312,6 +317,7 @@ export default function NotesDashboard() {
                                 projectId={project.id}
                                 initialStatusFilter={initialStatusFilter}
                                 initialQuickFilter={initialQuickFilter}
+                                initialSearch={initialSearch}
                                 initialNotebookId={activeNotebookId}
                                 notebookSelectionNonce={notebookSelectionNonce}
                                 refetchNonce={notesRefetchNonce}
