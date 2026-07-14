@@ -577,7 +577,30 @@ export default function NotesDrawer() {
             }
         });
 
-        return () => { channel.stopListening('.note.ai.status'); };
+        // Blueprint-context bulk categorize runs the unified workbench
+        // batch — surface its completion here too so the drawer resolves
+        // without needing the workbench page open.
+        channel.listen('.workbench.l2.completed', (data: { notes_processed: number; commands_created: number; error: string | null }) => {
+            void fetchNotes();
+            if (data.notes_processed > 0) {
+                toast.show(t('ai.workbench.creation.run.toast_done_title'), {
+                    type: 'success',
+                    description: t('ai.workbench.creation.run.toast_done_desc')
+                        .replace(':notes', String(data.notes_processed))
+                        .replace(':commands', String(data.commands_created)),
+                });
+            } else {
+                toast.show(t('ai.workbench.creation.run.toast_failed_title'), {
+                    type: 'danger',
+                    description: data.error ?? t('ai.workbench.creation.run.toast_failed_fallback'),
+                });
+            }
+        });
+
+        return () => {
+            channel.stopListening('.note.ai.status');
+            channel.stopListening('.workbench.l2.completed');
+        };
     }, [open, userId]);
 
     // Polling fallback for when Echo isn't available
@@ -880,7 +903,22 @@ export default function NotesDrawer() {
         }
 
         try {
-            if (noteIds.length > 1) {
+            if (mode === 'sort') {
+                // Blueprint-level (level-2) — single or multi — goes through
+                // the unified workbench pipeline: one shared batch, the tuned
+                // prompt, review-before-execute. auto/relationships flags are
+                // moot on this path (relationship context is always built).
+                await fetch(`/api/v1/projects/${context.projectId}/notes/batch-categorize`, {
+                    method: 'POST',
+                    headers: csrfHeaders(),
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        note_ids: noteIds,
+                        context_type: contextType,
+                        context_id: contextId,
+                    }),
+                });
+            } else if (noteIds.length > 1) {
                 await fetch(`/api/v1/projects/${context.projectId}/notes/batch-categorize`, {
                     method: 'POST',
                     headers: csrfHeaders(),
@@ -1835,31 +1873,40 @@ export default function NotesDrawer() {
                         )}
                     </div>
 
-                    <label className="mt-4 flex cursor-pointer items-start gap-3 px-2 py-2">
-                        <input
-                            type="checkbox"
-                            className="alex-checkbox mt-0.5"
-                            checked={categorizeAutoProcess}
-                            onChange={(e) => setCategorizeAutoProcess(e.target.checked)}
-                        />
-                        <div>
-                            <p className="text-xs font-medium">{t('notes.drawer.categorize.auto.label')}</p>
-                            <p className="text-xs" style={fadedText}>{t('notes.drawer.categorize.auto.desc')}</p>
-                        </div>
-                    </label>
+                    {/* Sort mode (blueprint context) runs the unified
+                        workbench pipeline: relationships are always built
+                        and execution goes through batch review, so the
+                        auto/relationships toggles only apply to the
+                        project-level (L1) flow. */}
+                    {context?.contextType !== 'blueprint' && (
+                        <>
+                            <label className="mt-4 flex cursor-pointer items-start gap-3 px-2 py-2">
+                                <input
+                                    type="checkbox"
+                                    className="alex-checkbox mt-0.5"
+                                    checked={categorizeAutoProcess}
+                                    onChange={(e) => setCategorizeAutoProcess(e.target.checked)}
+                                />
+                                <div>
+                                    <p className="text-xs font-medium">{t('notes.drawer.categorize.auto.label')}</p>
+                                    <p className="text-xs" style={fadedText}>{t('notes.drawer.categorize.auto.desc')}</p>
+                                </div>
+                            </label>
 
-                    <label className="flex cursor-pointer items-start gap-3 px-2 py-2">
-                        <input
-                            type="checkbox"
-                            className="alex-checkbox mt-0.5"
-                            checked={categorizeWithRelationships}
-                            onChange={(e) => setCategorizeWithRelationships(e.target.checked)}
-                        />
-                        <div>
-                            <p className="text-xs font-medium">{t('notes.drawer.categorize.with_relationships.label')}</p>
-                            <p className="text-xs" style={fadedText}>{t('notes.drawer.categorize.with_relationships.desc')}</p>
-                        </div>
-                    </label>
+                            <label className="flex cursor-pointer items-start gap-3 px-2 py-2">
+                                <input
+                                    type="checkbox"
+                                    className="alex-checkbox mt-0.5"
+                                    checked={categorizeWithRelationships}
+                                    onChange={(e) => setCategorizeWithRelationships(e.target.checked)}
+                                />
+                                <div>
+                                    <p className="text-xs font-medium">{t('notes.drawer.categorize.with_relationships.label')}</p>
+                                    <p className="text-xs" style={fadedText}>{t('notes.drawer.categorize.with_relationships.desc')}</p>
+                                </div>
+                            </label>
+                        </>
+                    )}
 
                     <div className="mt-3 pt-3 text-center" style={sectionBorderTopStyle}>
                         <button
