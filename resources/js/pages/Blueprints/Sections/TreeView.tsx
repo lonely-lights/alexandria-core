@@ -168,14 +168,33 @@ const dropdownMenuStyle: CSSProperties = {
     overflow: "hidden",
 };
 
-const childrenTableShellStyle: CSSProperties = {
-    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+/* Children grid cards — icon tile derives its wash from the entry
+   icon's own color via currentColor, so stub/live/cross-bp children
+   each get their matching tint. */
+const childCardStyle: CSSProperties = {
+    background: "var(--theme-base-100)",
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)",
     borderRadius: "var(--theme-radius-card)",
-    overflow: "hidden",
+    transition:
+        "border-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), background-color var(--theme-motion-duration-fast) var(--theme-motion-easing-standard), transform var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
 };
 
-const childrenTableHeaderStyle: CSSProperties = {
-    background: "color-mix(in srgb, var(--theme-base-200) 50%, transparent)",
+const childCardIconTileStyle: CSSProperties = {
+    width: "2rem",
+    height: "2rem",
+    flexShrink: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "var(--theme-radius-input)",
+    background: "color-mix(in srgb, currentColor 12%, transparent)",
+};
+
+const childCardCountStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 45%, transparent)",
+    fontSize: "0.6875rem",
+    fontWeight: 600,
+    whiteSpace: "nowrap",
 };
 
 const emptyIconWrapStyle: CSSProperties = {
@@ -1542,107 +1561,71 @@ export default function TreeView({
                                                 {selectedChildren.length}
                                             </span>
                                         </h3>
-                                        <div style={childrenTableShellStyle}>
-                                            <table className="table table-sm w-full">
-                                                <thead>
-                                                    <tr className="text-xs [&_th]:normal-case">
-                                                        <th
-                                                            style={
-                                                                childrenTableHeaderStyle
-                                                            }
-                                                        >
-                                                            {t(
-                                                                "blueprints.tree.detail.children_col.name",
-                                                            )}
-                                                        </th>
-                                                        <th
-                                                            className="text-right"
-                                                            style={
-                                                                childrenTableHeaderStyle
-                                                            }
-                                                        >
-                                                            {t(
-                                                                "blueprints.tree.detail.children_col.count",
-                                                            )}
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {selectedChildren.map(
-                                                        (child, i) => {
-                                                            const isLast =
-                                                                i ===
-                                                                selectedChildren.length -
-                                                                    1;
-                                                            const borderStyle: CSSProperties =
-                                                                isLast
-                                                                    ? {}
-                                                                    : {
-                                                                          borderBottom:
-                                                                              "1px dashed color-mix(in srgb, var(--theme-base-content) 8%, transparent)",
-                                                                      };
-                                                            return (
-                                                                <tr
-                                                                    key={
-                                                                        child.id
-                                                                    }
-                                                                    className="alex-row cursor-pointer"
-                                                                    onClick={() => {
-                                                                        setSelectedId(
-                                                                            child.id,
-                                                                        );
-                                                                        if (
-                                                                            child.has_children
-                                                                        )
-                                                                            toggleExpand(
-                                                                                child.id,
-                                                                            );
-                                                                    }}
-                                                                >
-                                                                    <td
-                                                                        style={
-                                                                            borderStyle
-                                                                        }
-                                                                    >
-                                                                        <div className="flex items-center gap-2">
-                                                                            <i
-                                                                                className={`w-4 text-center text-sm ${entryIconClass(child, child.has_children)}`}
-                                                                                style={entryIconStyle(
-                                                                                    child,
-                                                                                    child.has_children,
-                                                                                )}
-                                                                            />
-                                                                            <span className="text-sm font-medium">
-                                                                                {
-                                                                                    child.name
-                                                                                }
-                                                                            </span>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td
-                                                                        className="text-right"
-                                                                        style={
-                                                                            borderStyle
-                                                                        }
-                                                                    >
-                                                                        {child.has_children && (
-                                                                            <span
-                                                                                style={
-                                                                                    countBadgeStyle
-                                                                                }
-                                                                            >
-                                                                                {
-                                                                                    child.children_count
-                                                                                }
-                                                                            </span>
-                                                                        )}
-                                                                    </td>
-                                                                </tr>
+                                        <div
+                                            className="grid gap-2"
+                                            style={{
+                                                gridTemplateColumns:
+                                                    "repeat(auto-fill, minmax(11.5rem, 1fr))",
+                                            }}
+                                        >
+                                            {selectedChildren.map((child) => (
+                                                <button
+                                                    key={child.id}
+                                                    type="button"
+                                                    className="alex-row group/child flex items-center gap-2.5 px-3 py-2.5 text-left"
+                                                    style={childCardStyle}
+                                                    onClick={() => {
+                                                        setSelectedId(
+                                                            child.id,
+                                                        );
+                                                        if (
+                                                            child.has_children
+                                                        )
+                                                            toggleExpand(
+                                                                child.id,
                                                             );
-                                                        },
-                                                    )}
-                                                </tbody>
-                                            </table>
+                                                    }}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            ...childCardIconTileStyle,
+                                                            ...entryIconStyle(
+                                                                child,
+                                                                child.has_children,
+                                                            ),
+                                                        }}
+                                                    >
+                                                        <i
+                                                            className={`text-sm ${entryIconClass(child, child.has_children)}`}
+                                                        />
+                                                    </span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block truncate text-sm font-medium">
+                                                            {child.name}
+                                                        </span>
+                                                        {child.has_children && (
+                                                            <span
+                                                                style={
+                                                                    childCardCountStyle
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    "blueprints.tree.detail.child_count",
+                                                                ).replace(
+                                                                    ":count",
+                                                                    String(
+                                                                        child.children_count,
+                                                                    ),
+                                                                )}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                    <i
+                                                        className="fa-solid fa-chevron-right text-[10px] opacity-0 transition-opacity duration-150 group-hover/child:opacity-60"
+                                                        style={subtitle40}
+                                                    />
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
