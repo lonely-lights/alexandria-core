@@ -87,6 +87,8 @@ return [
     'tree.intermediate_hidden.plural' => ':count intermediate levels hidden',
     'tree.add' => 'Add',
     'tree.detail.view_entry' => 'View entry page',
+    'tree.detail.set_default' => 'Open tree here by default',
+    'tree.detail.clear_default' => 'Clear tree default',
     'tree.detail.restore' => 'Restore to Tree',
     'tree.detail.set_child_blueprints' => 'Set Child Blueprints',
     'tree.detail.blueprint_count' => ':count Blueprints',

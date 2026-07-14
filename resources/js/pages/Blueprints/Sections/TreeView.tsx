@@ -294,6 +294,26 @@ export default function TreeView({
         string | undefined
     >(undefined);
 
+    // Optional tree default — the node the tree opens to (expanded,
+    // selected, scrolled into view) on first load. Stored in blueprint
+    // metadata; set/cleared from the selected node's 3-dot menu.
+    const [defaultEntryId, setDefaultEntryId] = useState<number | null>(
+        (blueprint.metadata?.tree_default_entry_id as number | undefined) ??
+            null,
+    );
+    const openedToDefaultRef = useRef(false);
+    const treeScrollRef = useRef<HTMLDivElement | null>(null);
+
+    function saveTreeDefault(entryId: number | null) {
+        setDefaultEntryId(entryId);
+        void fetch(`/p/${project.slug}/${blueprint.slug}/tree-default`, {
+            method: "PATCH",
+            headers: csrfHeaders(),
+            credentials: "same-origin",
+            body: JSON.stringify({ entry_id: entryId }),
+        });
+    }
+
     // Listen for settings open event from Show.tsx
     useEffect(() => {
         function handleOpenSettings(e: Event) {
@@ -340,6 +360,38 @@ export default function TreeView({
     useEffect(() => {
         fetchTree();
     }, [fetchTree]);
+
+    // Open to the default node on first load: expand its ancestor chain,
+    // select it, and scroll it into view. One-shot — later refetches and
+    // user navigation are left alone.
+    useEffect(() => {
+        if (
+            openedToDefaultRef.current ||
+            isSubtree ||
+            loading ||
+            !defaultEntryId ||
+            allEntries.length === 0
+        ) {
+            return;
+        }
+        const byId = new Map(allEntries.map((e) => [e.id, e]));
+        openedToDefaultRef.current = true;
+        if (!byId.has(defaultEntryId)) return; // default entry no longer in the tree
+
+        const toExpand = new Set<number>([defaultEntryId]);
+        let cursor = byId.get(defaultEntryId);
+        while (cursor && cursor.parent_id !== null) {
+            toExpand.add(cursor.parent_id);
+            cursor = byId.get(cursor.parent_id);
+        }
+        setExpandedIds((prev) => new Set([...prev, ...toExpand]));
+        setSelectedId(defaultEntryId);
+        requestAnimationFrame(() => {
+            treeScrollRef.current
+                ?.querySelector(`[data-id="${defaultEntryId}"]`)
+                ?.scrollIntoView({ block: "center" });
+        });
+    }, [loading, allEntries, defaultEntryId, isSubtree]);
 
     // Build parent→children map
     const childrenMap = useMemo(() => {
@@ -820,7 +872,10 @@ export default function TreeView({
                     </div>
 
                     {/* Tree */}
-                    <div className="max-h-[calc(60vh-80px)] overflow-y-auto p-2">
+                    <div
+                        ref={treeScrollRef}
+                        className="max-h-[calc(60vh-80px)] overflow-y-auto p-2"
+                    >
                         {activeTrueRoots.length === 0 &&
                         orphans.length === 0 ? (
                             <div className="py-8 text-center">
@@ -1186,6 +1241,47 @@ export default function TreeView({
                                                                           )}
                                                                 </span>
                                                             </button>
+                                                            {!isSubtree && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setShowNodeMenu(
+                                                                            false,
+                                                                        );
+                                                                        saveTreeDefault(
+                                                                            defaultEntryId ===
+                                                                                selected.id
+                                                                                ? null
+                                                                                : selected.id,
+                                                                        );
+                                                                    }}
+                                                                    className="alex-row flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm"
+                                                                    style={{
+                                                                        borderBottom:
+                                                                            "1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)",
+                                                                    }}
+                                                                >
+                                                                    <i
+                                                                        className="fa-solid fa-map-pin w-4 text-center text-xs"
+                                                                        style={
+                                                                            defaultEntryId ===
+                                                                            selected.id
+                                                                                ? warningIconStyle
+                                                                                : crossBpIconStyle
+                                                                        }
+                                                                    />
+                                                                    <span>
+                                                                        {defaultEntryId ===
+                                                                        selected.id
+                                                                            ? t(
+                                                                                  "blueprints.tree.detail.clear_default",
+                                                                              )
+                                                                            : t(
+                                                                                  "blueprints.tree.detail.set_default",
+                                                                              )}
+                                                                    </span>
+                                                                </button>
+                                                            )}
                                                             {selected.is_stub ? (
                                                                 <button
                                                                     type="button"
