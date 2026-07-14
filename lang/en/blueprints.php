@@ -86,6 +86,7 @@ return [
     'tree.intermediate_hidden.singular' => ':count intermediate level hidden',
     'tree.intermediate_hidden.plural' => ':count intermediate levels hidden',
     'tree.add' => 'Add',
+    'tree.drop_inside' => 'Drop here to nest',
     'tree.child_blueprint_mismatch' => 'That blueprint cannot nest under this entry.',
     'tree.detail.view_entry' => 'View entry page',
     'tree.detail.set_default' => 'Open tree here by default',

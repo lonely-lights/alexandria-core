@@ -119,6 +119,15 @@ const warningIconStyle: CSSProperties = {
     color: "var(--theme-status-warning-stroke)",
 };
 
+const emptyDropZoneStyle: CSSProperties = {
+    minHeight: "26px",
+    margin: "2px 0",
+    border: "1px dashed color-mix(in srgb, var(--theme-brand-primary-500) 45%, transparent)",
+    borderRadius: "var(--theme-radius-input)",
+    background:
+        "color-mix(in srgb, var(--theme-brand-primary-500) 6%, transparent)",
+};
+
 const stubBadgeStyle: CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
@@ -504,6 +513,42 @@ export default function TreeView({
             });
         }
     }, [matchingIds]);
+
+    // Spring-loading while dragging: hovering a row for a beat expands
+    // it, and (mid-drag) expanded leaves render an empty drop zone so
+    // items can be nested into nodes that have no children yet.
+    const SPRING_EXPAND_MS = 600;
+    const expandedIdsRef = useRef(expandedIds);
+    expandedIdsRef.current = expandedIds;
+    const dragHoverRef = useRef<{
+        id: number | null;
+        timer: ReturnType<typeof setTimeout> | null;
+    }>({ id: null, timer: null });
+
+    function handleDragHover(id: number) {
+        if (dragHoverRef.current.id === id) return;
+        if (dragHoverRef.current.timer)
+            clearTimeout(dragHoverRef.current.timer);
+        dragHoverRef.current.id = id;
+        if (expandedIdsRef.current.has(id)) {
+            dragHoverRef.current.timer = null;
+            return;
+        }
+        dragHoverRef.current.timer = setTimeout(() => {
+            setExpandedIds((prev) => new Set(prev).add(id));
+        }, SPRING_EXPAND_MS);
+    }
+
+    function clearDragHover() {
+        if (dragHoverRef.current.timer)
+            clearTimeout(dragHoverRef.current.timer);
+        dragHoverRef.current = { id: null, timer: null };
+    }
+
+    function handleTreeDragEnd() {
+        clearDragHover();
+        setDraggingParentId(undefined);
+    }
 
     function toggleExpand(id: number) {
         setExpandedIds((prev) => {
@@ -913,6 +958,11 @@ export default function TreeView({
                                 {activeTrueRoots.length > 0 && (
                                     <SortableTree
                                         entries={activeTrueRoots}
+                                        parentId={
+                                            isSubtree
+                                                ? (rootEntryId ?? null)
+                                                : null
+                                        }
                                         depth={0}
                                         childrenMap={activeChildrenMap}
                                         expandedIds={expandedIds}
@@ -927,9 +977,8 @@ export default function TreeView({
                                         onDragStart={(parentId) =>
                                             setDraggingParentId(parentId)
                                         }
-                                        onDragEnd={() =>
-                                            setDraggingParentId(undefined)
-                                        }
+                                        onDragEnd={handleTreeDragEnd}
+                                        onDragHover={handleDragHover}
                                         onReorder={(parentId, orderedIds) =>
                                             handleReorder(parentId, orderedIds)
                                         }
@@ -970,6 +1019,10 @@ export default function TreeView({
                                             <div>
                                                 <SortableTree
                                                     entries={orphans}
+                                                    parentId={
+                                                        orphans[0]?.parent_id ??
+                                                        null
+                                                    }
                                                     depth={1}
                                                     childrenMap={
                                                         activeChildrenMap
@@ -994,10 +1047,11 @@ export default function TreeView({
                                                             parentId,
                                                         )
                                                     }
-                                                    onDragEnd={() =>
-                                                        setDraggingParentId(
-                                                            undefined,
-                                                        )
+                                                    onDragEnd={
+                                                        handleTreeDragEnd
+                                                    }
+                                                    onDragHover={
+                                                        handleDragHover
                                                     }
                                                     onReorder={(
                                                         parentId,
@@ -1708,6 +1762,7 @@ export default function TreeView({
 
 function SortableTree({
     entries,
+    parentId,
     depth,
     childrenMap,
     expandedIds,
@@ -1721,10 +1776,14 @@ function SortableTree({
     projectSlug,
     onDragStart,
     onDragEnd,
+    onDragHover,
     onReorder,
     onReparent,
 }: {
     entries: TreeNode[];
+    /** The node these entries nest under (null = tree root). Explicit so
+     *  empty mid-drag drop zones reparent to the right node. */
+    parentId: number | null;
     depth: number;
     childrenMap: Map<number | null, TreeNode[]>;
     expandedIds: Set<number>;
@@ -1738,6 +1797,7 @@ function SortableTree({
     projectSlug: string;
     onDragStart: (parentId: number | null) => void;
     onDragEnd: () => void;
+    onDragHover: (id: number) => void;
     onReorder: (parentId: number | null, orderedIds: number[]) => void;
     onReparent: (
         entryId: number,
@@ -1745,17 +1805,19 @@ function SortableTree({
         newIndex?: number,
     ) => void;
 }) {
+    const t = useT();
     const containerRef = useRef<HTMLDivElement>(null);
     const sortableInstance = useRef<Sortable | null>(null);
-    const parentId = entries[0]?.parent_id ?? null;
     const entriesRef = useRef(entries);
     entriesRef.current = entries;
     const onDragStartRef = useRef(onDragStart);
     const onDragEndRef = useRef(onDragEnd);
+    const onDragHoverRef = useRef(onDragHover);
     const onReorderRef = useRef(onReorder);
     const onReparentRef = useRef(onReparent);
     onDragStartRef.current = onDragStart;
     onDragEndRef.current = onDragEnd;
+    onDragHoverRef.current = onDragHover;
     onReorderRef.current = onReorder;
     onReparentRef.current = onReparent;
 
@@ -1767,7 +1829,20 @@ function SortableTree({
             handle: ".drag-handle",
             animation: 150,
             ghostClass: "opacity-30",
+            // Lets items drop into empty child lists (the mid-drag zones)
+            emptyInsertThreshold: 10,
             onStart: () => onDragStartRef.current(parentId),
+            onMove: (evt) => {
+                // Spring-loading: report which row the drag is hovering so
+                // the tree can expand it after a beat.
+                const related = evt.related as HTMLElement | null;
+                const host = related?.closest?.("[data-id]");
+                const id = host
+                    ? Number(host.getAttribute("data-id"))
+                    : Number.NaN;
+                if (!Number.isNaN(id)) onDragHoverRef.current(id);
+                return true;
+            },
             onEnd: (evt) => {
                 onDragEndRef.current();
                 // Same group reorder
@@ -1813,8 +1888,29 @@ function SortableTree({
         };
     }, [rearrangeMode, parentId, entries.length]);
 
+    const isEmptyDropZone = entries.length === 0;
+
     return (
-        <div ref={containerRef}>
+        <div
+            ref={containerRef}
+            className={isEmptyDropZone ? "flex items-center" : undefined}
+            style={
+                isEmptyDropZone
+                    ? {
+                          ...emptyDropZoneStyle,
+                          marginLeft: `${depth * 18 + 8}px`,
+                      }
+                    : undefined
+            }
+        >
+            {isEmptyDropZone && (
+                <span
+                    className="pointer-events-none px-2 text-[10px]"
+                    style={subtitle30}
+                >
+                    {t("blueprints.tree.drop_inside")}
+                </span>
+            )}
             {entries.map((entry) => (
                 <TreeNodeItem
                     key={entry.id}
@@ -1832,6 +1928,7 @@ function SortableTree({
                     projectSlug={projectSlug}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
+                    onDragHover={onDragHover}
                     onReorder={onReorder}
                     onReparent={onReparent}
                 />
@@ -1857,6 +1954,7 @@ function TreeNodeItem({
     projectSlug,
     onDragStart,
     onDragEnd,
+    onDragHover,
     onReorder,
     onReparent,
 }: {
@@ -1874,6 +1972,7 @@ function TreeNodeItem({
     projectSlug: string;
     onDragStart: (parentId: number | null) => void;
     onDragEnd: () => void;
+    onDragHover: (id: number) => void;
     onReorder: (parentId: number | null, orderedIds: number[]) => void;
     onReparent: (
         entryId: number,
@@ -1885,6 +1984,9 @@ function TreeNodeItem({
 
     const isExpanded = expandedIds.has(entry.id);
     const children = childrenMap.get(entry.id) ?? [];
+    // Mid-drag, an expanded node with no children still renders its
+    // (empty) child list as a drop zone so items can nest into it.
+    const isMidDrag = draggingParentId !== undefined;
 
     return (
         <div data-id={entry.id}>
@@ -1902,9 +2004,10 @@ function TreeNodeItem({
                 savingEntryId={savingEntryId}
                 projectSlug={projectSlug}
             />
-            {isExpanded && children.length > 0 && (
+            {isExpanded && (children.length > 0 || isMidDrag) && (
                 <SortableTree
                     entries={children}
+                    parentId={entry.id}
                     depth={depth + 1}
                     childrenMap={childrenMap}
                     expandedIds={expandedIds}
@@ -1918,6 +2021,7 @@ function TreeNodeItem({
                     projectSlug={projectSlug}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
+                    onDragHover={onDragHover}
                     onReorder={onReorder}
                     onReparent={onReparent}
                 />
