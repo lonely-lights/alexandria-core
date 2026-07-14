@@ -41,10 +41,9 @@ const tabIdleStyle: CSSProperties = {
 };
 
 /**
- * Add an entry to the tree — three modes:
- *  - Folder: stub-only container for grouping
- *  - Entry:  full entry page with its own URL
- *  - Link:   attach an existing entry under a parent
+ * Add an entry to the tree — two modes:
+ *  - Entry: full entry page (or a stub placeholder via the checkbox)
+ *  - Link:  attach an existing entry under a parent
  *
  * The parent blueprint's children-blueprints setting (Blueprint
  * Settings → Hierarchy) narrows which blueprints are valid under it;
@@ -89,7 +88,8 @@ export default function AddEntryModal({
         .filter(Boolean)
         .join(", ");
 
-    const [mode, setMode] = useState<"folder" | "create" | "link">("folder");
+    const [mode, setMode] = useState<"create" | "link">("create");
+    const [stubOnly, setStubOnly] = useState(false);
     const [showAllSearch, setShowAllSearch] = useState(false);
 
     // Create state
@@ -127,9 +127,7 @@ export default function AddEntryModal({
                 name: name.trim(),
                 blueprint_id: effectiveBlueprintId,
                 parent_id: parentId,
-                // Folder tab creates a stub container; Entry tab creates
-                // a full entry page.
-                is_stub: mode === "folder",
+                is_stub: stubOnly,
                 summary: summary.trim() || undefined,
             }),
         })
@@ -230,19 +228,6 @@ export default function AddEntryModal({
             <div className="flex" style={tabBarStyle}>
                 <button
                     type="button"
-                    onClick={() => setMode("folder")}
-                    className="alex-row flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors"
-                    style={
-                        mode === "folder"
-                            ? tabActiveStyle("var(--theme-brand-secondary-500)")
-                            : tabIdleStyle
-                    }
-                >
-                    <i className="fa-solid fa-folder-plus text-xs" />{" "}
-                    {t("blueprints.tree.add_entry.tab.folder")}
-                </button>
-                <button
-                    type="button"
                     onClick={() => setMode("create")}
                     className="alex-row flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors"
                     style={
@@ -271,12 +256,10 @@ export default function AddEntryModal({
                 </button>
             </div>
 
-            {mode === "create" || mode === "folder" ? (
+            {mode === "create" ? (
                 <div className="space-y-4 p-6">
                     <p className="text-xs" style={subtitle50}>
-                        {mode === "folder"
-                            ? t("blueprints.tree.add_entry.folder.intro")
-                            : t("blueprints.tree.add_entry.create.intro")}
+                        {t("blueprints.tree.add_entry.create.intro")}
                     </p>
                     <div>
                         <label
@@ -321,15 +304,45 @@ export default function AddEntryModal({
                         />
                     </div>
 
+                    <div>
+                        <label className="flex cursor-pointer items-start gap-2">
+                            <input
+                                type="checkbox"
+                                checked={stubOnly}
+                                onChange={(e) => setStubOnly(e.target.checked)}
+                                className="mt-0.5"
+                                style={{
+                                    accentColor:
+                                        "var(--theme-brand-secondary-500)",
+                                }}
+                            />
+                            <span>
+                                <span className="block text-xs font-medium">
+                                    {t(
+                                        "blueprints.tree.add_entry.stub_toggle.label",
+                                    )}
+                                </span>
+                                <span
+                                    className="block text-xs"
+                                    style={subtitle40}
+                                >
+                                    {t(
+                                        "blueprints.tree.add_entry.stub_toggle.help",
+                                    )}
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+
                     <div className="flex items-center gap-2 pt-2">
                         <ActionButton
                             icon={
-                                mode === "folder"
+                                stubOnly
                                     ? "fa-solid fa-folder-plus"
                                     : "fa-solid fa-plus"
                             }
                             label={
-                                mode === "folder"
+                                stubOnly
                                     ? t(
                                           "blueprints.tree.add_entry.folder.action",
                                       )
@@ -337,9 +350,7 @@ export default function AddEntryModal({
                                           "blueprints.tree.add_entry.create.action",
                                       )
                             }
-                            variant={
-                                mode === "folder" ? "secondary" : "primary"
-                            }
+                            variant={stubOnly ? "secondary" : "primary"}
                             onClick={handleCreate}
                             loading={saving}
                             disabled={!name.trim()}
