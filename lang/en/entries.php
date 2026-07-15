@@ -132,6 +132,8 @@ return [
     // ── EntryForm (Subsection B) ──
     'form.name_placeholder' => ':blueprint name',
     'form.slug_placeholder' => 'url-slug (auto-generated from the name)',
+    'form.multi_add' => 'Add item',
+    'form.multi_remove' => 'Remove item',
     'form.summary_label' => 'Summary',
     'form.summary_placeholder' => 'A brief summary of this entry',
     'form.content_heading' => 'Content',
