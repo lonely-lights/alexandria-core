@@ -363,6 +363,89 @@ it('creates an entry_relationships row with the supplied parent/child IDs and me
         ->and($row->metadata)->toBe(['since' => 'TA 2950']);
 });
 
+it('resolves temp_ids nested in create_relationship metadata into batch-created entry ids', function () {
+    $batchId = (string) Str::uuid();
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+    $parent = Entry::factory()->inProjectWithBlueprint($project, $blueprint)->create();
+    $child = Entry::factory()->inProjectWithBlueprint($project, $blueprint)->create();
+
+    // Command 1: create the event entry whose id must land in metadata.
+    AiReviewCommand::factory()->forBatch($batchId)->approved()->create([
+        'action_type' => 'create_entry',
+        'payload' => [
+            'model_class' => Entry::class,
+            'temp_id' => 'evt_discovery',
+            'attributes' => [
+                'blueprint_id' => $blueprint->id,
+                'project_id' => $project->id,
+                'name' => 'Discovery of the Widget',
+            ],
+        ],
+    ]);
+
+    // Command 2: relationship nesting the event by temp_id — prefixed and bare
+    // forms both resolve; ordinary strings pass through untouched.
+    AiReviewCommand::factory()->forBatch($batchId)->approved()->create([
+        'action_type' => 'create_relationship',
+        'payload' => [
+            'parent_entry_id' => $parent->id,
+            'child_entry_id' => $child->id,
+            'relationship_type' => 'innovation-creator',
+            'metadata' => [
+                'contribution' => 'Inventor',
+                'start_event' => 'temp_id:evt_discovery',
+                'end_event' => 'evt_discovery',
+                'priority' => 1,
+            ],
+        ],
+    ]);
+
+    $result = (new AiCommandExecutor)->executeBatch($batchId);
+
+    expect($result)->toBe(['success' => 2, 'failed' => 0]);
+
+    $event = Entry::query()->where('name', 'Discovery of the Widget')->firstOrFail();
+
+    $row = EntryRelationship::query()
+        ->where('parent_entry_id', $parent->id)
+        ->where('child_entry_id', $child->id)
+        ->firstOrFail();
+
+    expect($row->metadata)->toBe([
+        'contribution' => 'Inventor',
+        'start_event' => $event->id,
+        'end_event' => $event->id,
+        'priority' => 1,
+    ]);
+});
+
+it('marks create_relationship failed when metadata references an unresolved temp_id: prefix', function () {
+    $batchId = (string) Str::uuid();
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+    $parent = Entry::factory()->inProjectWithBlueprint($project, $blueprint)->create();
+    $child = Entry::factory()->inProjectWithBlueprint($project, $blueprint)->create();
+
+    $command = AiReviewCommand::factory()->forBatch($batchId)->approved()->create([
+        'action_type' => 'create_relationship',
+        'payload' => [
+            'parent_entry_id' => $parent->id,
+            'child_entry_id' => $child->id,
+            'relationship_type' => 'innovation-creator',
+            'metadata' => ['start_event' => 'temp_id:never_created'],
+        ],
+    ]);
+
+    $result = (new AiCommandExecutor)->executeBatch($batchId);
+
+    expect($result)->toBe(['success' => 0, 'failed' => 1]);
+
+    $command->refresh();
+    expect($command->status)->toBe('failed')
+        ->and($command->failure_reason)->toContain('Unresolved temporary ID');
+});
+
 // ---------------------------------------------------------------------------
 // Dedup guard: create_entry skips when a live entry with the same slug exists
 // ---------------------------------------------------------------------------

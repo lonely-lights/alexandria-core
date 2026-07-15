@@ -122,6 +122,9 @@ class AiCommandExecutor
             $payload['child_entry_id'] = $this->resolveId($payload['child_entry_temp_id']);
             unset($payload['child_entry_temp_id']);
         }
+        if (isset($payload['metadata']) && is_array($payload['metadata'])) {
+            $payload['metadata'] = $this->resolveTempIdsInMetadata($payload['metadata']);
+        }
 
         $command->payload = $payload;
 
@@ -288,6 +291,31 @@ class AiCommandExecutor
         }
 
         return $this->tempIdMap[$tempId];
+    }
+
+    /**
+     * Resolve temp-id strings nested in relationship metadata values —
+     * e.g. `{"start_event": "temp_id:evt_x"}` referencing an Event entry
+     * created earlier in the same batch. Only strings carrying the
+     * explicit `temp_id:` prefix or matching a tempIdMap key exactly are
+     * rewritten; other strings are ordinary metadata text (roles,
+     * contribution labels) and pass through untouched.
+     */
+    private function resolveTempIdsInMetadata(array $metadata): array
+    {
+        foreach ($metadata as $key => $value) {
+            if (! is_string($value)) {
+                continue;
+            }
+
+            if (str_starts_with($value, 'temp_id:')) {
+                $metadata[$key] = $this->resolveId($value);
+            } elseif (isset($this->tempIdMap[$value])) {
+                $metadata[$key] = $this->tempIdMap[$value];
+            }
+        }
+
+        return $metadata;
     }
 
     /**
