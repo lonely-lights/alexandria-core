@@ -189,8 +189,18 @@ class Entry extends Model implements HasMedia
      */
     private static function generateUniqueSlug(string $name, int $projectId, int $blueprintId): string
     {
+        return static::uniqueSlugFor($name, $projectId, $blueprintId);
+    }
+
+    /**
+     * Public form of the unique-slug loop, optionally ignoring one entry
+     * (slug edits: the entry's current slug must not collide with itself).
+     */
+    public static function uniqueSlugFor(string $name, int $projectId, int $blueprintId, ?int $ignoreEntryId = null): string
+    {
         $base = Str::slug($name);
-        $slug = $base;
+        $slug = $base === '' ? 'entry' : $base;
+        $base = $slug;
         $i = 2;
 
         while (
@@ -198,6 +208,7 @@ class Entry extends Model implements HasMedia
                 ->where('project_id', $projectId)
                 ->where('blueprint_id', $blueprintId)
                 ->where('slug', $slug)
+                ->when($ignoreEntryId !== null, fn ($q) => $q->where('id', '!=', $ignoreEntryId))
                 ->exists()
         ) {
             $slug = $base.'-'.$i++;

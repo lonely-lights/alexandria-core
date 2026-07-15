@@ -101,10 +101,14 @@ trait HasDynamicAttributes
         $fieldDefinition = $this->type?->fields->firstWhere('name', $key);
         $dataType = $fieldDefinition?->type ?? 'text';
 
-        // Map over the group of field values and cast each one individually
+        // Map over the group of field values and cast each one individually.
+        // Drop null/empty rows, then reindex: a gapped PHP array (e.g. keys
+        // 1,2 after filtering key 0) JSON-encodes as an OBJECT, which the
+        // frontend renders as "[object Object]". values() keeps it a list.
         $castValues = $attributesGroup
             ->map(fn ($fv): array|bool|float|int|string|Carbon|null => $this->castFieldValue($fv->value, $dataType))
-            ->filter(); // Remove any nulls that might have resulted from casting
+            ->filter(fn ($v): bool => $v !== null && $v !== '')
+            ->values();
 
         // If the group contains more than one item, return the full array. Otherwise, just the single item
         /** @var array|bool|float|int|string|Carbon|null $single */

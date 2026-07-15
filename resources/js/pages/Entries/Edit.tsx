@@ -1,10 +1,10 @@
-import { usePage } from '@inertiajs/react';
-import type { CSSProperties } from 'react';
-import useT from '@alexandria/hooks/useT';
-import AppLayout from '@alexandria/layouts/AppLayout';
-import IconTile from '@alexandria/components/ui/IconTile';
-import PageHeader from '@alexandria/components/layout/PageHeader';
-import EntryForm from './Sections/EntryForm';
+import { usePage } from "@inertiajs/react";
+import type { CSSProperties } from "react";
+import useT from "@alexandria/hooks/useT";
+import AppLayout from "@alexandria/layouts/AppLayout";
+import IconTile from "@alexandria/components/ui/IconTile";
+import PageHeader from "@alexandria/components/layout/PageHeader";
+import EntryForm from "./Sections/EntryForm";
 
 interface EditProps {
     project: { id: number; name: string; slug: string };
@@ -40,35 +40,51 @@ interface EditProps {
 }
 
 const subtitleStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
 };
 
 const stubBadgeStyle: CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '0.0625rem 0.375rem',
-    fontSize: '0.6875rem',
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "0.0625rem 0.375rem",
+    fontSize: "0.6875rem",
     fontWeight: 600,
-    borderRadius: 'var(--theme-radius-badge)',
-    background: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-    color: 'color-mix(in srgb, var(--theme-base-content) 70%, transparent)',
-    marginRight: '0.5rem',
+    borderRadius: "var(--theme-radius-badge)",
+    background:
+        "color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    color: "color-mix(in srgb, var(--theme-base-content) 70%, transparent)",
+    marginRight: "0.5rem",
 };
 
 export default function EntryEdit() {
     const t = useT();
-    const { project, blueprint, entry, fieldValues, parentEntries } = usePage<EditProps>().props;
-    const iconClass = blueprint.icon.includes(' ') ? blueprint.icon : `fa-solid ${blueprint.icon}`;
-    const editTitle = t('entries.form.edit.title').replace(':entry', entry.name);
+    const { project, blueprint, entry, fieldValues, parentEntries } =
+        usePage<EditProps>().props;
+    const iconClass = blueprint.icon.includes(" ")
+        ? blueprint.icon
+        : `fa-solid ${blueprint.icon}`;
+    const editTitle = t("entries.form.edit.title").replace(
+        ":entry",
+        entry.name,
+    );
 
     return (
         <AppLayout title={`${editTitle} - ${project.name}`} immersive>
             <PageHeader
                 breadcrumbs={[
                     { label: project.name, href: `/p/${project.slug}` },
-                    { label: blueprint.name, href: `/p/${project.slug}/${blueprint.slug}`, icon: blueprint.icon },
-                    { label: entry.name, href: entry.is_stub ? undefined : `/p/${project.slug}/${blueprint.slug}/${entry.slug}` },
-                    { label: t('entries.form.edit.breadcrumb') },
+                    {
+                        label: blueprint.name,
+                        href: `/p/${project.slug}/${blueprint.slug}`,
+                        icon: blueprint.icon,
+                    },
+                    {
+                        label: entry.name,
+                        href: entry.is_stub
+                            ? undefined
+                            : `/p/${project.slug}/${blueprint.slug}/${entry.slug}`,
+                    },
+                    { label: t("entries.form.edit.breadcrumb") },
                 ]}
             >
                 <div className="flex items-center gap-4">
@@ -76,7 +92,11 @@ export default function EntryEdit() {
                     <div>
                         <h1 className="text-2xl font-bold">{editTitle}</h1>
                         <p className="mt-1 text-sm" style={subtitleStyle}>
-                            {entry.is_stub && <span style={stubBadgeStyle}>{t('entries.stub.badge')}</span>}
+                            {entry.is_stub && (
+                                <span style={stubBadgeStyle}>
+                                    {t("entries.stub.badge")}
+                                </span>
+                            )}
                             {blueprint.name}
                         </p>
                     </div>
@@ -96,6 +116,7 @@ export default function EntryEdit() {
                     entryId={entry.id}
                     initialValues={{
                         name: entry.name,
+                        slug: entry.slug,
                         summary: entry.summary,
                         content: entry.content,
                         parent_id: entry.parent_id,
