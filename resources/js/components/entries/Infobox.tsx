@@ -1,7 +1,9 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
-import useT from '@alexandria/hooks/useT';
-import EntryLink from '@alexandria/components/entries/EntryLink';
-import MentionAwareContent from '@alexandria/components/ui/MentionAwareContent';
+import { useState, type CSSProperties, type ReactNode } from "react";
+import useT from "@alexandria/hooks/useT";
+import MarqueeText from "../ui/MarqueeText";
+import Tooltip from "../ui/Tooltip";
+import EntryLink from "@alexandria/components/entries/EntryLink";
+import MentionAwareContent from "@alexandria/components/ui/MentionAwareContent";
 import type {
     InfoboxBlock,
     InfoboxHierarchyBlock,
@@ -9,7 +11,7 @@ import type {
     InfoboxItem,
     InfoboxRelationshipItem,
     InfoboxRelationshipsBlock,
-} from '@alexandria/types/entries';
+} from "@alexandria/types/entries";
 
 interface InfoboxProps {
     blocks: InfoboxBlock[];
@@ -22,8 +24,8 @@ interface InfoboxProps {
    varying strengths via color-mix. Section pills invert (content as fill,
    brand-secondary as text). */
 
-const PANEL_BG = 'var(--theme-brand-secondary-500)';
-const CONTENT = 'var(--theme-brand-secondary-content)';
+const PANEL_BG = "var(--theme-brand-secondary-500)";
+const CONTENT = "var(--theme-brand-secondary-content)";
 const tintContent = (pct: number) =>
     `color-mix(in srgb, ${CONTENT} ${pct}%, transparent)`;
 
@@ -42,14 +44,14 @@ export default function Infobox({ blocks, entryName }: InfoboxProps) {
     // Tint the paper-board drop-shadow with a darker secondary so the
     // infobox shadow relates to its own fill color.
     const wrapperStyle = {
-        '--paper-board-shadow-color': `color-mix(in srgb, ${PANEL_BG} 55%, #000 45%)`,
-        borderRadius: 'var(--theme-radius-card)',
+        "--paper-board-shadow-color": `color-mix(in srgb, ${PANEL_BG} 55%, #000 45%)`,
+        borderRadius: "var(--theme-radius-card)",
     } as CSSProperties;
 
     const panelStyle: CSSProperties = {
         background: PANEL_BG,
         color: CONTENT,
-        borderRadius: 'inherit',
+        borderRadius: "inherit",
     };
 
     const headerStyle: CSSProperties = {
@@ -61,7 +63,9 @@ export default function Infobox({ blocks, entryName }: InfoboxProps) {
             <div className="overflow-hidden" style={panelStyle}>
                 {/* Entry name */}
                 <div className="px-4 py-4 text-center" style={headerStyle}>
-                    <h2 className="text-lg font-bold tracking-tight">{entryName}</h2>
+                    <h2 className="text-lg font-bold tracking-tight">
+                        {entryName}
+                    </h2>
                 </div>
 
                 {/* Blocks */}
@@ -77,15 +81,15 @@ export default function Infobox({ blocks, entryName }: InfoboxProps) {
 
 function InfoboxBlockRenderer({ block }: { block: InfoboxBlock }) {
     switch (block.type) {
-        case 'header':
+        case "header":
             return <SectionPill text={block.data.text} />;
-        case 'attribute':
+        case "attribute":
             return <LabeledItemsBlock data={block.data} />;
-        case 'relationships':
+        case "relationships":
             return <RelationshipsBlock data={block.data} />;
-        case 'hierarchy':
+        case "hierarchy":
             return <HierarchyBlock data={block.data} />;
-        case 'mentioned_in':
+        case "mentioned_in":
             return <LabeledItemsBlock data={block.data} />;
     }
 }
@@ -109,7 +113,15 @@ function SectionPill({ text }: { text: string }) {
    Idle/hover color lives in ui-polish.css (.alex-infobox-expander) so the
    :hover transition between the two states can animate via CSS. */
 
-function ShowMoreButton({ hiddenCount, expanded, onToggle }: { hiddenCount: number; expanded: boolean; onToggle: () => void }) {
+function ShowMoreButton({
+    hiddenCount,
+    expanded,
+    onToggle,
+}: {
+    hiddenCount: number;
+    expanded: boolean;
+    onToggle: () => void;
+}) {
     const t = useT();
     return (
         <div className="mb-4 mt-2">
@@ -123,8 +135,11 @@ function ShowMoreButton({ hiddenCount, expanded, onToggle }: { hiddenCount: numb
                     style={PILL_STYLE}
                 >
                     {expanded
-                        ? t('entries.infobox.show_less')
-                        : t('entries.infobox.show_more').replace(':count', String(hiddenCount))}
+                        ? t("entries.infobox.show_less")
+                        : t("entries.infobox.show_more").replace(
+                              ":count",
+                              String(hiddenCount),
+                          )}
                 </div>
                 <div className="h-px flex-grow bg-current" />
             </button>
@@ -138,11 +153,17 @@ function ShowMoreButton({ hiddenCount, expanded, onToggle }: { hiddenCount: numb
    height up front. The inner div owns overflow:hidden so content gets
    clipped cleanly while the row is mid-animation. */
 
-function CollapseWrap({ open, children }: { open: boolean; children: ReactNode }) {
+function CollapseWrap({
+    open,
+    children,
+}: {
+    open: boolean;
+    children: ReactNode;
+}) {
     return (
         <div
             className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-                open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
             }`}
         >
             <div className="min-h-0 overflow-hidden">{children}</div>
@@ -150,9 +171,28 @@ function CollapseWrap({ open, children }: { open: boolean; children: ReactNode }
     );
 }
 
+/* Badge chip for multi-value attribute items — tinted to sit on the
+   infobox card color, one line each with a Tooltip for the full text. */
+const badgeStyle: CSSProperties = {
+    background: tintContent(22),
+    borderRadius: "9999px",
+    padding: "0.075rem 0.625rem",
+    fontSize: "0.6875rem",
+    lineHeight: "1.125rem",
+};
+
 /* ── Labeled Items Block (shared by Attribute and Mentioned In) ── */
 
-function LabeledItemsBlock({ data }: { data: { label: string; items: InfoboxItem[]; limit_enabled: boolean; visible_limit: number } }) {
+function LabeledItemsBlock({
+    data,
+}: {
+    data: {
+        label: string;
+        items: InfoboxItem[];
+        limit_enabled: boolean;
+        visible_limit: number;
+    };
+}) {
     const [expanded, setExpanded] = useState(false);
     const { items, limit_enabled, visible_limit, label } = data;
 
@@ -160,6 +200,29 @@ function LabeledItemsBlock({ data }: { data: { label: string; items: InfoboxItem
     const showExpander = limit_enabled && hiddenCount > 0;
     const visibleItems = limit_enabled ? items.slice(0, visible_limit) : items;
     const hiddenItems = limit_enabled ? items.slice(visible_limit) : [];
+
+    /* Multi-value fields render as badges: each value becomes a chip
+       clamped to a single line, with the full text in a Tooltip on
+       hover. Single values keep the plain wrapped look. */
+    const isList = items.length > 1;
+
+    const renderItem = (item: InfoboxItem, key: number) =>
+        isList ? (
+            <Tooltip key={key} content={item.text} variant="primary">
+                <span
+                    className="inline-flex min-w-0 max-w-full"
+                    style={badgeStyle}
+                >
+                    <MarqueeText>
+                        <InfoboxEntryLink item={item} />
+                    </MarqueeText>
+                </span>
+            </Tooltip>
+        ) : (
+            <div key={key}>
+                <InfoboxEntryLink item={item} />
+            </div>
+        );
 
     return (
         <div>
@@ -170,26 +233,34 @@ function LabeledItemsBlock({ data }: { data: { label: string; items: InfoboxItem
                 >
                     {label}
                 </div>
-                <div className="w-[61.8%] text-sm leading-5">
-                    {visibleItems.map((item, j) => (
-                        <div key={j}>
-                            <InfoboxEntryLink item={item} />
-                        </div>
-                    ))}
+                <div
+                    className={`w-[61.8%] min-w-0 text-sm leading-5 ${isList ? "flex flex-wrap content-start gap-1" : ""}`}
+                >
+                    {visibleItems.map((item, j) => renderItem(item, j))}
                     {hiddenItems.length > 0 && (
                         <CollapseWrap open={expanded}>
-                            {hiddenItems.map((item, j) => (
-                                <div key={j}>
-                                    <InfoboxEntryLink item={item} />
-                                </div>
-                            ))}
+                            <div
+                                className={
+                                    isList
+                                        ? "flex flex-wrap gap-1 pt-1"
+                                        : undefined
+                                }
+                            >
+                                {hiddenItems.map((item, j) =>
+                                    renderItem(item, j),
+                                )}
+                            </div>
                         </CollapseWrap>
                     )}
                 </div>
             </div>
 
             {showExpander && (
-                <ShowMoreButton hiddenCount={hiddenCount} expanded={expanded} onToggle={() => setExpanded(!expanded)} />
+                <ShowMoreButton
+                    hiddenCount={hiddenCount}
+                    expanded={expanded}
+                    onToggle={() => setExpanded(!expanded)}
+                />
             )}
         </div>
     );
@@ -197,7 +268,11 @@ function LabeledItemsBlock({ data }: { data: { label: string; items: InfoboxItem
 
 /* ── Relationships ── */
 
-function RelationshipsBlock({ data }: { data: InfoboxRelationshipsBlock['data'] }) {
+function RelationshipsBlock({
+    data,
+}: {
+    data: InfoboxRelationshipsBlock["data"];
+}) {
     const [expanded, setExpanded] = useState(false);
     const { items, limit_enabled, visible_limit, header } = data;
 
@@ -225,7 +300,11 @@ function RelationshipsBlock({ data }: { data: InfoboxRelationshipsBlock['data'] 
 
             {showExpander && (
                 <div className="mt-4">
-                    <ShowMoreButton hiddenCount={hiddenCount} expanded={expanded} onToggle={() => setExpanded(!expanded)} />
+                    <ShowMoreButton
+                        hiddenCount={hiddenCount}
+                        expanded={expanded}
+                        onToggle={() => setExpanded(!expanded)}
+                    />
                 </div>
             )}
         </div>
@@ -270,21 +349,24 @@ function RelationshipRow({ item }: { item: InfoboxRelationshipItem }) {
 
 /* ── Hierarchy ── */
 
-function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
+function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock["data"] }) {
     const t = useT();
     const [expanded, setExpanded] = useState(false);
-    const { parent, children, children_total, limit_enabled, visible_limit } = data;
+    const { parent, children, children_total, limit_enabled, visible_limit } =
+        data;
 
     const hiddenCount = children_total - visible_limit;
     const showExpander = limit_enabled && hiddenCount > 0;
-    const visibleChildren = limit_enabled ? children.slice(0, visible_limit) : children;
+    const visibleChildren = limit_enabled
+        ? children.slice(0, visible_limit)
+        : children;
     const hiddenChildren = limit_enabled ? children.slice(visible_limit) : [];
 
     const labelStyle: CSSProperties = { color: tintContent(70) };
 
     return (
         <div>
-            <SectionPill text={t('entries.infobox.hierarchy')} />
+            <SectionPill text={t("entries.infobox.hierarchy")} />
 
             <div className="mt-1">
                 {/* Parent */}
@@ -294,7 +376,7 @@ function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
                             className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium"
                             style={labelStyle}
                         >
-                            {t('entries.infobox.parent')}
+                            {t("entries.infobox.parent")}
                         </div>
                         <div className="w-[61.8%] text-sm leading-5">
                             <InfoboxHierarchyLink entry={parent} />
@@ -309,7 +391,11 @@ function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
                             className="w-[38.2%] flex-shrink-0 text-sm leading-5 font-medium"
                             style={labelStyle}
                         >
-                            {t(children_total === 1 ? 'entries.infobox.child.singular' : 'entries.infobox.child.plural')}
+                            {t(
+                                children_total === 1
+                                    ? "entries.infobox.child.singular"
+                                    : "entries.infobox.child.plural",
+                            )}
                         </div>
                         <div className="w-[61.8%] space-y-1 text-sm leading-5">
                             {visibleChildren.map((child, j) => (
@@ -322,7 +408,9 @@ function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
                                     <div className="space-y-1">
                                         {hiddenChildren.map((child, j) => (
                                             <div key={j}>
-                                                <InfoboxHierarchyLink entry={child} />
+                                                <InfoboxHierarchyLink
+                                                    entry={child}
+                                                />
                                             </div>
                                         ))}
                                     </div>
@@ -335,7 +423,11 @@ function HierarchyBlock({ data }: { data: InfoboxHierarchyBlock['data'] }) {
 
             {showExpander && (
                 <div className="mt-4">
-                    <ShowMoreButton hiddenCount={hiddenCount} expanded={expanded} onToggle={() => setExpanded(!expanded)} />
+                    <ShowMoreButton
+                        hiddenCount={hiddenCount}
+                        expanded={expanded}
+                        onToggle={() => setExpanded(!expanded)}
+                    />
                 </div>
             )}
         </div>
@@ -350,7 +442,7 @@ function InfoboxEntryLink({ item }: { item: InfoboxItem }) {
             <EntryLink
                 entryId={item.entry_id}
                 href={item.url}
-                className="text-sm leading-5 transition hover:underline"
+                className="transition hover:underline"
                 style={{ color: CONTENT }}
             >
                 {item.text}
@@ -361,14 +453,14 @@ function InfoboxEntryLink({ item }: { item: InfoboxItem }) {
         return (
             <a
                 href={item.url}
-                className="text-sm leading-5 transition hover:underline"
+                className="transition hover:underline"
                 style={{ color: CONTENT }}
             >
                 {item.text}
             </a>
         );
     }
-    return <span className="text-sm leading-5">{item.text}</span>;
+    return <span>{item.text}</span>;
 }
 
 function InfoboxHierarchyLink({ entry }: { entry: InfoboxHierarchyEntry }) {
@@ -384,10 +476,15 @@ function InfoboxHierarchyLink({ entry }: { entry: InfoboxHierarchyEntry }) {
                     {entry.name}
                 </EntryLink>
             ) : (
-                <span className="text-sm leading-5 font-medium">{entry.name}</span>
+                <span className="text-sm leading-5 font-medium">
+                    {entry.name}
+                </span>
             )}
             {entry.type_name && (
-                <span className="ml-1 text-[10px]" style={{ color: tintContent(60) }}>
+                <span
+                    className="ml-1 text-[10px]"
+                    style={{ color: tintContent(60) }}
+                >
                     ({entry.type_name})
                 </span>
             )}

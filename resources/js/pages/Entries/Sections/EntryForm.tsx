@@ -170,14 +170,6 @@ const fieldDescStyle: CSSProperties = {
     color: "color-mix(in srgb, var(--theme-base-content) 30%, transparent)",
 };
 
-const parentSelectStyle: CSSProperties = {
-    ...baseInputStyle,
-    width: "100%",
-    height: "2rem",
-    padding: "0 0.5rem",
-    fontSize: "0.75rem",
-};
-
 const compactInputStyle: CSSProperties = {
     ...baseInputStyle,
     width: "100%",
@@ -579,27 +571,42 @@ export default function EntryForm({
                                 >
                                     {t("entries.form.parent_helper")}
                                 </p>
-                                <select
-                                    value={form.data.parent_id as string}
-                                    onChange={(e) =>
+                                <EntryReferencePicker
+                                    field={{
+                                        id: -1,
+                                        name: "parent_id",
+                                        label: t("entries.form.parent_label"),
+                                        type: "entry_reference",
+                                        description: null,
+                                        is_required: false,
+                                        validation_rules: {},
+                                        sort_order: 0,
+                                        reference_config: {
+                                            target_blueprint_slug:
+                                                blueprintSlug,
+                                            target_blueprint_name:
+                                                blueprintName,
+                                            selection_mode: "single",
+                                            entries: parentEntries.map(
+                                                (pe) => ({
+                                                    id: pe.id,
+                                                    name: pe.name,
+                                                }),
+                                            ),
+                                        },
+                                    }}
+                                    value={
+                                        (form.data.parent_id as number) || null
+                                    }
+                                    onChange={(v) =>
                                         form.setData(
                                             "parent_id",
-                                            e.target.value
-                                                ? Number(e.target.value)
-                                                : ("" as unknown as number),
+                                            (v as number | null) ??
+                                                ("" as unknown as number),
                                         )
                                     }
-                                    style={parentSelectStyle}
-                                >
-                                    <option value="">
-                                        {t("entries.form.parent_none")}
-                                    </option>
-                                    {parentEntries.map((pe) => (
-                                        <option key={pe.id} value={pe.id}>
-                                            {pe.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                    clearable
+                                />
                             </div>
                         </div>
                     )}
@@ -1135,10 +1142,13 @@ function EntryReferencePicker({
     field,
     value,
     onChange,
+    clearable = false,
 }: {
     field: EntryFormBlueprintField;
     value: unknown;
     onChange: (v: unknown) => void;
+    /** Show an x on the trigger to reset an optional single reference. */
+    clearable?: boolean;
 }) {
     const t = useT();
     const [modalOpen, setModalOpen] = useState(false);
@@ -1194,10 +1204,26 @@ function EntryReferencePicker({
                         )}
                     </span>
                 )}
-                <i
-                    className="fa-solid fa-chevron-down ml-2 text-[10px]"
-                    style={pickerChevronStyle}
-                />
+                <span className="ml-2 inline-flex items-center gap-1.5">
+                    {clearable && selectedIds.length > 0 && (
+                        <span
+                            role="button"
+                            aria-label={t("common.clear")}
+                            className="inline-flex items-center"
+                            style={pickerChevronStyle}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onChange(isMulti ? [] : null);
+                            }}
+                        >
+                            <i className="fa-solid fa-xmark text-[10px]" />
+                        </span>
+                    )}
+                    <i
+                        className="fa-solid fa-chevron-down text-[10px]"
+                        style={pickerChevronStyle}
+                    />
+                </span>
             </button>
 
             <EntryReferenceModal

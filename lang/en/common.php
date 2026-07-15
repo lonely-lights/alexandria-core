@@ -24,6 +24,7 @@ return [
     // Action verbs (universal — page-specific verbs stay in their own files)
     'save' => 'Save',
     'cancel' => 'Cancel',
+    'clear' => 'Clear',
     'submit' => 'Submit',
     'close' => 'Close',
     'back' => 'Back',
