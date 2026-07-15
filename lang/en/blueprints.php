@@ -724,13 +724,10 @@ return [
 
     // Stub → entry converter
     'tree.convert_stub.title' => 'Convert to Entry',
-    'tree.convert_stub.choose.create.title' => 'Create New',
-    'tree.convert_stub.choose.create.subtitle' => 'Create a new entry page',
+    'tree.convert_stub.choose.create.title' => 'Convert in Place',
+    'tree.convert_stub.choose.create.subtitle' => 'This stub becomes a full entry with its own page',
     'tree.convert_stub.choose.link.title' => 'Link Existing',
     'tree.convert_stub.choose.link.subtitle' => 'Attach an existing entry',
-    'tree.convert_stub.create.prompt' => 'Select a blueprint for the new entry:',
-    'tree.convert_stub.create.search_placeholder' => 'Search blueprints…',
-    'tree.convert_stub.create.no_matches' => 'No matches',
     'tree.convert_stub.link.label' => 'Search entries',
     'tree.convert_stub.link.placeholder' => 'Start typing to search…',
     'tree.convert_stub.link.no_results' => 'No results found',

@@ -3,18 +3,12 @@ import ActionButton from "@alexandria/components/ui/ActionButton";
 import Modal from "@alexandria/components/ui/Modal";
 import useT from "@alexandria/hooks/useT";
 import { csrfHeaders } from "@alexandria/lib/csrfHeaders";
-import type { SiblingBlueprint } from "@alexandria/types/blueprints";
 import type { TreeNode } from "../../TreeView";
 import EntryLinkSearch from "./EntryLinkSearch";
 import {
     closeBtnStyle,
     headerStyle,
-    inputStyle,
-    listShellStyle,
-    rowBorderStyle,
     selectedChipStyle,
-    subtitle30,
-    subtitle40,
     subtitle50,
     subtitle60,
 } from "./treeModalStyles";
@@ -42,22 +36,19 @@ const choiceIconBoxStyle: CSSProperties = {
 export default function ConvertStubModal({
     entry,
     projectId,
-    projectBlueprints,
     parentChildBlueprintIds,
     onClose,
     onConverted,
 }: {
     entry: TreeNode;
     projectId: number;
-    projectBlueprints: SiblingBlueprint[];
     parentChildBlueprintIds: number[];
     onClose: () => void;
     onConverted: () => void;
 }) {
     const t = useT();
-    const [mode, setMode] = useState<"choose" | "create" | "link">("choose");
+    const [mode, setMode] = useState<"choose" | "link">("choose");
     const [converting, setConverting] = useState(false);
-    const [bpSearch, setBpSearch] = useState("");
 
     // Link mode
     const [linkSearch, setLinkSearch] = useState("");
@@ -77,26 +68,12 @@ export default function ConvertStubModal({
     } | null>(null);
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const availableBlueprints =
-        parentChildBlueprintIds.length > 0
-            ? projectBlueprints.filter((bp) =>
-                  parentChildBlueprintIds.includes(bp.id),
-              )
-            : projectBlueprints;
-
-    const filteredBps = bpSearch.trim()
-        ? availableBlueprints.filter((bp) =>
-              bp.name.toLowerCase().includes(bpSearch.toLowerCase()),
-          )
-        : availableBlueprints;
-
-    function handleCreateConvert(blueprintId: number) {
+    function handleCreateConvert() {
         setConverting(true);
         fetch(`/api/v1/entries/${entry.id}/convert`, {
             method: "PUT",
             headers: { ...csrfHeaders(), "Content-Type": "application/json" },
             credentials: "same-origin",
-            body: JSON.stringify({ blueprint_id: blueprintId }),
         })
             .then(() => {
                 setConverting(false);
@@ -205,7 +182,8 @@ export default function ConvertStubModal({
                     <div className="grid grid-cols-1 gap-3">
                         <button
                             type="button"
-                            onClick={() => setMode("create")}
+                            onClick={handleCreateConvert}
+                            disabled={converting}
                             className="alex-row flex items-center gap-4 p-4 text-left"
                             style={choiceCardStyle}
                         >
@@ -263,63 +241,6 @@ export default function ConvertStubModal({
                                 </p>
                             </div>
                         </button>
-                    </div>
-                </div>
-            ) : mode === "create" ? (
-                <div className="p-4">
-                    <p className="mb-3 text-xs" style={subtitle50}>
-                        {t("blueprints.tree.convert_stub.create.prompt")}
-                    </p>
-                    <input
-                        type="text"
-                        value={bpSearch}
-                        onChange={(e) => setBpSearch(e.target.value)}
-                        placeholder={t(
-                            "blueprints.tree.convert_stub.create.search_placeholder",
-                        )}
-                        className="mb-2 w-full px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                        style={inputStyle}
-                        autoFocus
-                    />
-                    <div
-                        className="max-h-[250px] overflow-y-auto"
-                        style={listShellStyle}
-                    >
-                        {filteredBps.map((bp, i) => {
-                            const isLast = i === filteredBps.length - 1;
-                            return (
-                                <button
-                                    key={bp.id}
-                                    type="button"
-                                    onClick={() => handleCreateConvert(bp.id)}
-                                    disabled={converting}
-                                    className="alex-row flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm"
-                                    style={isLast ? {} : rowBorderStyle}
-                                >
-                                    <i
-                                        className={`${bp.icon ? (bp.icon.includes(" ") ? bp.icon : `fa-solid ${bp.icon}`) : "fa-solid fa-file"} w-4 text-center text-xs`}
-                                        style={subtitle40}
-                                    />
-                                    <span>{bp.name}</span>
-                                    <span
-                                        className="ml-auto text-xs"
-                                        style={subtitle30}
-                                    >
-                                        {bp.classification}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                        {filteredBps.length === 0 && (
-                            <p
-                                className="px-3 py-3 text-center text-xs"
-                                style={subtitle40}
-                            >
-                                {t(
-                                    "blueprints.tree.convert_stub.create.no_matches",
-                                )}
-                            </p>
-                        )}
                     </div>
                 </div>
             ) : (

@@ -1716,7 +1716,6 @@ export default function TreeView({
                         <ConvertStubModal
                             entry={selected}
                             projectId={projectId}
-                            projectBlueprints={projectBlueprints}
                             parentChildBlueprintIds={parentBpIds}
                             onClose={() => setShowConvertModal(false)}
                             onConverted={() => {
