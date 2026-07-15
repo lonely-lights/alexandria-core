@@ -120,7 +120,8 @@ const warningIconStyle: CSSProperties = {
 };
 
 const emptyDropZoneStyle: CSSProperties = {
-    minHeight: "26px",
+    position: "relative",
+    minHeight: "30px",
     margin: "2px 0",
     border: "1px dashed color-mix(in srgb, var(--theme-brand-primary-500) 45%, transparent)",
     borderRadius: "var(--theme-radius-input)",
@@ -1829,8 +1830,13 @@ function SortableTree({
             handle: ".drag-handle",
             animation: 150,
             ghostClass: "opacity-30",
+            // Nested-lists recipe (SortableJS docs): shrink the sibling
+            // swap hitbox and float the drag ghost on <body> so inner
+            // child lists can win the dragover instead of the parent row.
+            fallbackOnBody: true,
+            swapThreshold: 0.65,
             // Lets items drop into empty child lists (the mid-drag zones)
-            emptyInsertThreshold: 10,
+            emptyInsertThreshold: 24,
             onStart: () => onDragStartRef.current(parentId),
             onMove: (evt) => {
                 // Spring-loading: report which row the drag is hovering so
@@ -1893,7 +1899,6 @@ function SortableTree({
     return (
         <div
             ref={containerRef}
-            className={isEmptyDropZone ? "flex items-center" : undefined}
             style={
                 isEmptyDropZone
                     ? {
@@ -1904,8 +1909,11 @@ function SortableTree({
             }
         >
             {isEmptyDropZone && (
+                /* Overlay label — absolutely positioned so the dragged row
+                   flows into the zone as a normal block child instead of
+                   squeezing in beside the text. */
                 <span
-                    className="pointer-events-none px-2 text-[10px]"
+                    className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-[10px]"
                     style={subtitle30}
                 >
                     {t("blueprints.tree.drop_inside")}
@@ -2004,7 +2012,7 @@ function TreeNodeItem({
                 savingEntryId={savingEntryId}
                 projectSlug={projectSlug}
             />
-            {isExpanded && (children.length > 0 || isMidDrag) && (
+            {isExpanded && children.length > 0 && (
                 <SortableTree
                     entries={children}
                     parentId={entry.id}
@@ -2025,6 +2033,37 @@ function TreeNodeItem({
                     onReorder={onReorder}
                     onReparent={onReparent}
                 />
+            )}
+            {rearrangeMode && children.length === 0 && (
+                /* Pre-mounted (hidden) drop zone for leaves: the Sortable
+                   instance must exist BEFORE a drag starts to be a valid
+                   target; spring-loading reveals it mid-drag. */
+                <div
+                    style={{
+                        display: isMidDrag && isExpanded ? undefined : "none",
+                    }}
+                >
+                    <SortableTree
+                        entries={[]}
+                        parentId={entry.id}
+                        depth={depth + 1}
+                        childrenMap={childrenMap}
+                        expandedIds={expandedIds}
+                        selectedId={selectedId}
+                        matchingIds={matchingIds}
+                        onToggle={onToggle}
+                        onSelect={onSelect}
+                        rearrangeMode={rearrangeMode}
+                        draggingParentId={draggingParentId}
+                        savingEntryId={savingEntryId}
+                        projectSlug={projectSlug}
+                        onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
+                        onDragHover={onDragHover}
+                        onReorder={onReorder}
+                        onReparent={onReparent}
+                    />
+                </div>
             )}
         </div>
     );
