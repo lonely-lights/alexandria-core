@@ -8,6 +8,7 @@ import type {
     SiblingBlueprint,
 } from "@alexandria/types/blueprints";
 import type { TreeNode } from "../../TreeView";
+import { DynamicFieldInput } from "@alexandria/pages/Entries/Sections/EntryForm";
 import EntryLinkSearch from "./EntryLinkSearch";
 import {
     closeBtnStyle,
@@ -93,6 +94,21 @@ export default function AddEntryModal({
     const [mode, setMode] = useState<"folder" | "create" | "link">("folder");
     const [showAllSearch, setShowAllSearch] = useState(false);
 
+    // Required blueprint fields surface on the Entry tab so a full entry
+    // can't be created without them (folders/stubs stay name-only).
+    const requiredFields = (blueprint.fields ?? []).filter(
+        (f) => f.is_required,
+    );
+    const [fieldValues, setFieldValues] = useState<Record<string, unknown>>({});
+    const isFieldFilled = (v: unknown) =>
+        v !== undefined &&
+        v !== null &&
+        v !== "" &&
+        !(Array.isArray(v) && v.length === 0);
+    const requiredFieldsFilled =
+        mode !== "create" ||
+        requiredFields.every((f) => isFieldFilled(fieldValues[f.name]));
+
     // Create state
     const [name, setName] = useState("");
     const [summary, setSummary] = useState("");
@@ -130,6 +146,7 @@ export default function AddEntryModal({
                 parent_id: parentId,
                 is_stub: mode === "folder",
                 summary: summary.trim() || undefined,
+                fields: mode === "create" ? fieldValues : undefined,
             }),
         })
             .then((r) => r.json())
@@ -320,6 +337,29 @@ export default function AddEntryModal({
                         />
                     </div>
 
+                    {mode === "create" &&
+                        requiredFields.map((f) => (
+                            <div key={f.name}>
+                                <label
+                                    className="mb-1 block text-xs font-medium"
+                                    style={subtitle60}
+                                >
+                                    {f.label}{" "}
+                                    <span className="opacity-60">*</span>
+                                </label>
+                                <DynamicFieldInput
+                                    field={{ ...f, id: f.id ?? 0 }}
+                                    value={fieldValues[f.name]}
+                                    onChange={(v) =>
+                                        setFieldValues((prev) => ({
+                                            ...prev,
+                                            [f.name]: v,
+                                        }))
+                                    }
+                                />
+                            </div>
+                        ))}
+
                     <div className="flex items-center gap-2 pt-2">
                         <ActionButton
                             icon={
@@ -341,7 +381,7 @@ export default function AddEntryModal({
                             }
                             onClick={handleCreate}
                             loading={saving}
-                            disabled={!name.trim()}
+                            disabled={!name.trim() || !requiredFieldsFilled}
                         />
                         <ActionButton
                             icon="fa-solid fa-xmark"

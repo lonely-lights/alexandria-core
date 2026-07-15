@@ -114,6 +114,7 @@ export default function EntryEdit() {
                     parentEntries={parentEntries}
                     entrySlug={entry.slug}
                     entryId={entry.id}
+                    isStub={entry.is_stub}
                     initialValues={{
                         name: entry.name,
                         slug: entry.slug,

@@ -4,7 +4,7 @@
 // kanban/graph/timeline panels). Re-export here so consumers
 // importing the public Blueprint shape get the same type without
 // having to reach into lib/views.
-import type { BlueprintViewEntry } from '../lib/views/types';
+import type { BlueprintViewEntry } from "../lib/views/types";
 export type { BlueprintViewEntry };
 
 export interface BlueprintField {
@@ -16,10 +16,18 @@ export interface BlueprintField {
     is_required: boolean;
     validation_rules: Record<string, unknown>;
     sort_order: number;
+    /** Present on entry_reference fields: picker candidates + mode. */
+    reference_config?: {
+        target_blueprint_slug: string | null;
+        target_blueprint_name: string | null;
+        selection_mode: "single" | "multiple";
+        entries: Array<{ id: number; name: string }>;
+    };
 }
 
 export interface InfoboxBlock {
-    type: 'hierarchy' | 'attribute' | 'relationships' | 'header' | 'mentioned_in';
+    type:
+        "hierarchy" | "attribute" | "relationships" | "header" | "mentioned_in";
     data: Record<string, unknown>;
 }
 
@@ -29,8 +37,8 @@ export interface BlueprintDetail {
     slug: string;
     icon: string;
     description: string | null;
-    classification: 'standard' | 'list' | 'structural' | 'relationship';
-    list_selection_mode: 'single' | 'multiple';
+    classification: "standard" | "list" | "structural" | "relationship";
+    list_selection_mode: "single" | "multiple";
     show_on_dashboard: boolean;
     is_linkable: boolean;
     is_hub: boolean;
@@ -72,7 +80,7 @@ export interface SiblingBlueprint {
 export interface AvailableColumn {
     key: string;
     label: string;
-    type: 'native' | 'field' | 'calculated';
+    type: "native" | "field" | "calculated";
     field_type?: string;
     sortable: boolean;
 }
@@ -85,7 +93,7 @@ export interface ViewConfig {
         columns: string[];
         sortable_columns: string[];
         sort_field: string;
-        sort_direction: 'asc' | 'desc';
+        sort_direction: "asc" | "desc";
         per_page: number;
     };
     is_personal: boolean;
@@ -102,8 +110,8 @@ export interface TimelineViewConfig {
     date_field: string | null;
     end_date_field: string | null;
     group_by: string | null;
-    orientation: 'horizontal' | 'vertical';
-    zoom: 'day' | 'month' | 'year' | 'decade' | 'century' | 'millennium';
+    orientation: "horizontal" | "vertical";
+    zoom: "day" | "month" | "year" | "decade" | "century" | "millennium";
     display_start_year: number | null;
     display_end_year: number | null;
 }

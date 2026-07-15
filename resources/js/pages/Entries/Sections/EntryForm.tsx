@@ -38,6 +38,8 @@ interface EntryFormProps {
     parentEntries: ParentEntry[];
     entrySlug?: string;
     entryId?: number;
+    /** Editing a stub: no entry page exists, cancel falls back to the blueprint. */
+    isStub?: boolean;
     initialValues?: {
         name: string;
         slug?: string | null;
@@ -212,6 +214,7 @@ export default function EntryForm({
     parentEntries,
     entrySlug,
     entryId,
+    isStub = false,
     initialValues,
     initialFieldValues,
 }: EntryFormProps) {
@@ -629,7 +632,11 @@ export default function EntryForm({
                             className="w-full justify-center"
                         />
                         <a
-                            href={`/p/${projectSlug}/${blueprintSlug}`}
+                            href={
+                                mode === "edit" && entrySlug && !isStub
+                                    ? `/p/${projectSlug}/${blueprintSlug}/${entrySlug}`
+                                    : `/p/${projectSlug}/${blueprintSlug}`
+                            }
                             className="alex-view-toggle-btn"
                             style={cancelLinkStyle}
                         >
@@ -956,7 +963,7 @@ const slugInputStyle: CSSProperties = {
     width: "100%",
 };
 
-function DynamicFieldInput({
+export function DynamicFieldInput({
     field,
     value,
     onChange,

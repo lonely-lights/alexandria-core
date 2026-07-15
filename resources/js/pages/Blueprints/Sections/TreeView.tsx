@@ -74,7 +74,7 @@ const addRootBtnStyle: CSSProperties = {
     background: "var(--theme-brand-primary-500)",
     color: "var(--theme-brand-primary-content)",
     borderRadius: "var(--theme-radius-button)",
-    opacity: 0.5,
+    opacity: 0.9,
     transition:
         "opacity var(--theme-motion-duration-fast) var(--theme-motion-easing-standard)",
 };
