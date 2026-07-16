@@ -228,3 +228,32 @@ it('extractStructuredArray returns an empty array when the JSON is malformed', f
 
     expect($result)->toBe([]);
 });
+
+it('extractStructuredArray decodes a double-encoded key value in the text fallback', function () {
+    // Under long-response pressure the model sometimes JSON-encodes the
+    // key's value as a STRING inside otherwise-valid JSON. This previously
+    // escaped as a string return → TypeError at the declared array type.
+    $inner = json_encode([['note_id' => 1, 'commands' => []]]);
+    $response = makeAgentResponse(text: json_encode(['notes' => $inner]));
+
+    $result = AgentResponseAdapter::extractStructuredArray($response, 'notes');
+
+    expect($result)->toBe([['note_id' => 1, 'commands' => []]]);
+});
+
+it('extractStructuredArray decodes a double-encoded key value in structured data', function () {
+    $inner = json_encode([['note_id' => 2, 'commands' => []]]);
+    $response = makeStructuredAgentResponse(['notes' => $inner]);
+
+    $result = AgentResponseAdapter::extractStructuredArray($response, 'notes');
+
+    expect($result)->toBe([['note_id' => 2, 'commands' => []]]);
+});
+
+it('extractStructuredArray returns empty for an undecodable string key value', function () {
+    $response = makeAgentResponse(text: json_encode(['notes' => 'truncated garbage...']));
+
+    $result = AgentResponseAdapter::extractStructuredArray($response, 'notes');
+
+    expect($result)->toBe([]);
+});

@@ -56,8 +56,8 @@ class AgentResponseAdapter
     {
         // Prefer SDK's parsed structured data
         if ($response instanceof StructuredAgentResponse) {
-            $data = $response[$key] ?? [];
-            if (is_array($data) && ! empty($data)) {
+            $data = self::coerceArray($response[$key] ?? []);
+            if ($data !== []) {
                 return $data;
             }
         }
@@ -72,7 +72,31 @@ class AgentResponseAdapter
         $parsed = json_decode($rawContent, true);
 
         if (is_array($parsed)) {
-            return $parsed[$key] ?? $parsed;
+            return self::coerceArray($parsed[$key] ?? $parsed);
+        }
+
+        return [];
+    }
+
+    /**
+     * Coerce a structured-output value to an array. Under long-response
+     * pressure the model sometimes DOUBLE-ENCODES the payload — the top-level
+     * JSON parses fine but the key's value arrives as a JSON string instead
+     * of an array. Decode that inner string; anything else non-array is a
+     * parse failure and returns empty (callers decide whether empty is an
+     * error — see the level-2 orchestrator's unparseable-response guard).
+     */
+    private static function coerceArray(mixed $value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
         }
 
         return [];
