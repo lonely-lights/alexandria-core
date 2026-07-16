@@ -97,6 +97,19 @@ class AgentResponseAdapter
             if (is_array($decoded)) {
                 return $decoded;
             }
+
+            // The double-encoded payload often carries single-escaped
+            // backslashes (class names like Alexandria\Core\…): after the
+            // outer decode they become INVALID JSON escapes (\C, \M) and the
+            // inner decode fails. Re-escape any backslash not starting a
+            // valid JSON escape, then retry.
+            $repaired = preg_replace('/\\\\(?!["\\\\\/bfnrtu])/', '\\\\\\\\', $value);
+            if (is_string($repaired)) {
+                $decoded = json_decode($repaired, true);
+                if (is_array($decoded)) {
+                    return $decoded;
+                }
+            }
         }
 
         return [];

@@ -250,6 +250,22 @@ it('extractStructuredArray decodes a double-encoded key value in structured data
     expect($result)->toBe([['note_id' => 2, 'commands' => []]]);
 });
 
+it('extractStructuredArray repairs invalid escapes in a double-encoded key value', function () {
+    // Real-world failure shape (Innovation batch 5): the model emitted
+    // {"notes": "[ ... \"model_class\": \"Alexandria\\Core\\...\" ... ]"} —
+    // after the outer decode the inner string holds single backslashes,
+    // which are invalid JSON escapes and killed the inner decode.
+    $inner = '[{"note_id": 643, "commands": [{"action_type": "create_entry", "payload": {"model_class": "Alexandria\\Core\\Models\\System\\Entry"}}]}]';
+    $response = makeAgentResponse(text: json_encode(['notes' => $inner]));
+
+    $result = AgentResponseAdapter::extractStructuredArray($response, 'notes');
+
+    expect($result)->toHaveCount(1)
+        ->and($result[0]['note_id'])->toBe(643)
+        ->and($result[0]['commands'][0]['payload']['model_class'])
+        ->toBe('Alexandria\Core\Models\System\Entry');
+});
+
 it('extractStructuredArray returns empty for an undecodable string key value', function () {
     $response = makeAgentResponse(text: json_encode(['notes' => 'truncated garbage...']));
 
