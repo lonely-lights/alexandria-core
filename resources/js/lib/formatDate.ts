@@ -26,6 +26,28 @@ function parseDateParts(value: string): [number, number, number] | null {
 }
 
 /**
+ * Parse a server timestamp into a Date.
+ *
+ * Naked space-form strings ("2026-07-15 23:09:46", with optional fractional
+ * seconds) are raw database timestamps — the app stores UTC, but JS parses
+ * timezone-less strings as LOCAL time, which skews every timestamp by the
+ * viewer's UTC offset (west-of-UTC viewers see recent items in the "future",
+ * which relative formatters clamp to "just now"). Normalize them to UTC.
+ *
+ * T-form strings without a zone ("2033-04-13T16:03:00") are left to the
+ * native parser — in-world dates from datetime-local inputs use that shape
+ * and are deliberately timezone-less. ISO strings with a zone (Z / +hh:mm)
+ * also pass through untouched.
+ */
+export function parseServerDate(value: string): Date {
+    const naked = value.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}(?:\.\d+)?)$/);
+    if (naked) {
+        return new Date(`${naked[1]}T${naked[2]}Z`);
+    }
+    return new Date(value);
+}
+
+/**
  * Get the user's date/time format preferences from Inertia shared props.
  */
 export function useDatePreferences(): { dateFormat: DateFormat; timeFormat: TimeFormat } {
@@ -78,7 +100,7 @@ export function formatDate(value: string | null | undefined, dateFormat: DateFor
         if (!parts) return value;
         [year, month, day] = parts;
     } else {
-        const d = new Date(value);
+        const d = parseServerDate(value);
         if (Number.isNaN(d.getTime())) return value;
         year = d.getFullYear();
         month = d.getMonth() + 1;
@@ -105,7 +127,7 @@ export function formatDate(value: string | null | undefined, dateFormat: DateFor
 export function formatTime(value: string | null | undefined, timeFormat: TimeFormat = '12h'): string {
     if (!value) return '';
 
-    const d = new Date(value);
+    const d = parseServerDate(value);
     if (Number.isNaN(d.getTime())) return '';
 
     const hours24 = d.getHours();
@@ -141,7 +163,7 @@ export function formatDateTime(
  */
 export function relativeDate(value: string | null | undefined): string {
     if (!value) return '';
-    const diff = Date.now() - new Date(value).getTime();
+    const diff = Date.now() - parseServerDate(value).getTime();
     const minutes = Math.floor(diff / 60_000);
     if (minutes < 1) return 'just now';
     if (minutes < 60) return `${minutes}m ago`;
@@ -149,7 +171,7 @@ export function relativeDate(value: string | null | undefined): string {
     if (hours < 24) return `${hours}h ago`;
     const days = Math.floor(hours / 24);
     if (days < 30) return `${days}d ago`;
-    return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return parseServerDate(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 /**

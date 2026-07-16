@@ -94,6 +94,17 @@ class EntryActionService
         $modelClass = $payload['model_class'];
         $attributes = $payload['attributes'];
 
+        // Payload-shape tolerance: the AI sometimes emits blueprint_id (or
+        // project_id) at the payload top level instead of inside attributes —
+        // both shapes read as valid to the model. Without this merge the
+        // entry is built with a null blueprint_id and generateUniqueSlug()
+        // crashes with a TypeError at execute time.
+        foreach (['blueprint_id', 'project_id'] as $contextKey) {
+            if (! isset($attributes[$contextKey]) && isset($payload[$contextKey])) {
+                $attributes[$contextKey] = $payload[$contextKey];
+            }
+        }
+
         // Special handling for relationship Blueprints
         if ($this->isRelationshipBlueprint($payload)) {
             $this->handleCreateRelationshipEntry($command, $tempIdMap);

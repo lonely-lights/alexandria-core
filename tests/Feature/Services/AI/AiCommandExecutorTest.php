@@ -68,6 +68,39 @@ it('executes a single approved create_entry, marks it executed, and stamps execu
         ->and(Entry::query()->where('name', 'Aragorn')->exists())->toBeTrue();
 });
 
+it('tolerates blueprint_id at the payload top level instead of inside attributes', function () {
+    $batchId = (string) Str::uuid();
+    $project = Project::factory()->create();
+    $blueprint = Blueprint::factory()->forProject($project)->create();
+
+    // The AI emits this shape intermittently — blueprint_id beside attributes,
+    // not inside. It must create the entry instead of crashing on a null
+    // blueprint_id in generateUniqueSlug().
+    $command = AiReviewCommand::factory()->forBatch($batchId)->approved()->create([
+        'action_type' => 'create_entry',
+        'payload' => [
+            'model_class' => Entry::class,
+            'blueprint_id' => $blueprint->id,
+            'temp_id' => 'top-level-shape',
+            'attributes' => [
+                'project_id' => $project->id,
+                'name' => 'Shape Tolerant Entry',
+            ],
+        ],
+    ]);
+
+    $result = (new AiCommandExecutor)->executeBatch($batchId);
+
+    expect($result)->toBe(['success' => 1, 'failed' => 0]);
+
+    $command->refresh();
+    expect($command->status)->toBe('executed')
+        ->and(Entry::query()
+            ->where('name', 'Shape Tolerant Entry')
+            ->where('blueprint_id', $blueprint->id)
+            ->exists())->toBeTrue();
+});
+
 // ---------------------------------------------------------------------------
 // executeBatch — mixed batch: create_entry + create_relationship
 // ---------------------------------------------------------------------------
