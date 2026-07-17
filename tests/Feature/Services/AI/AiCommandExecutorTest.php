@@ -672,3 +672,23 @@ it('dedup guard does not match an archived entry - a new entry is created', func
             ->where('name', 'Osgiliath')
             ->exists())->toBeTrue();
 });
+
+// ---------------------------------------------------------------------------
+// flag_observation — no-op acknowledgement
+// ---------------------------------------------------------------------------
+
+it('flag_observation executes as an acknowledged no-op', function () {
+    $batchId = (string) Str::uuid();
+
+    $command = AiReviewCommand::factory()->forBatch($batchId)->approved()->create([
+        'action_type' => 'flag_observation',
+        'payload' => ['note_id' => 1, 'entities' => [353], 'observation' => 'No pairing expresses detected/observed.'],
+    ]);
+
+    $result = (new AiCommandExecutor)->executeBatch($batchId);
+
+    expect($result)->toBe(['success' => 1, 'failed' => 0]);
+    $command->refresh();
+    expect($command->status)->toBe('executed')
+        ->and(Entry::query()->count())->toBe(0);
+});

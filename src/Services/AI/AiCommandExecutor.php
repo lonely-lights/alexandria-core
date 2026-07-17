@@ -142,6 +142,12 @@ class AiCommandExecutor
             // Relationship operations
             'attach_relationship' => $this->handleAttachRelationship($command),
             'create_relationship' => $this->handleCreateRelationship($command),
+            // Observations are acknowledgements, not mutations: the flag's
+            // content stays on the command row for the deferred enrichment
+            // pass (see one-shot spec, relationship tiering).
+            'flag_observation' => Log::info('AiCommandExecutor: flag_observation acknowledged', [
+                'command_id' => $command->id,
+            ]),
             default => throw new Exception("Unsupported action_type: $command->action_type"),
         };
     }
