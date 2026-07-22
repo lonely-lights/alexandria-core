@@ -1,4 +1,4 @@
-import { type CSSProperties, useState, useEffect, useCallback } from "react";
+import { type CSSProperties, type ReactNode, useState, useEffect, useCallback } from "react";
 import useT from "@alexandria/hooks/useT";
 import Modal from "@alexandria/components/ui/Modal";
 import ImageUploader from "./ImageUploader";
@@ -19,6 +19,11 @@ interface MediaSectionProps {
      * Implies showGallery=true.
      */
     compact?: boolean;
+    /**
+     * Consumer-owned replacement for the default page-image card. Used by
+     * richer products without copying the complete Entry page from core.
+     */
+    pageImageSlot?: ReactNode;
     onMediaChanged?: () => void;
 }
 
@@ -97,6 +102,7 @@ export default function MediaSection({
     modelId,
     showGallery = false,
     compact = false,
+    pageImageSlot,
     onMediaChanged,
 }: MediaSectionProps) {
     const t = useT();
@@ -339,7 +345,7 @@ export default function MediaSection({
             {/* Compact mode (sidebar): only the gallery tile shows here.
                 Page image + banner live inside the modal so the narrow
                 sidebar stays clean. Default mode renders everything inline. */}
-            {!compact && pageImageCard}
+            {!compact && (pageImageSlot ?? pageImageCard)}
             {!compact && bannerCard}
             {galleryButton}
 

@@ -24,6 +24,7 @@ import TreeView from '@alexandria/pages/Blueprints/Sections/TreeView';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import MediaSection from '@alexandria/components/media/MediaSection';
 import EntrySettingsModal from './Sections/modals/EntrySettingsModal';
+import { getEntryShowSlots } from './entryShowSlots';
 
 /* ── Tabs ── */
 
@@ -184,6 +185,7 @@ export default function EntryShow() {
     const t = useT();
     const props = usePage<EntryShowProps>().props;
     const { project, blueprint, entry, contentHtml, summaryHtml, dynamicProperties, relationships, relationshipBlueprints, connections, mentions, mentionedIn, appearances, history, infoboxBlocks, timelineEvents, timelineEpoch } = props;
+    const PageImageManager = getEntryShowSlots().pageImageManager;
 
     const [showStructureConfig, setShowStructureConfig] = useState(false);
     const [localStructureSettings, setLocalStructureSettings] = useState<{ children_label?: string; max_depth?: number; show_as?: 'tree' | 'list' }>(
@@ -422,7 +424,21 @@ export default function EntryShow() {
                 )}
 
                 {activeTab === 'media' && (
-                    <MediaSection modelType="entries" modelId={entry.id} showGallery={true} />
+                    <MediaSection
+                        modelType="entries"
+                        modelId={entry.id}
+                        showGallery={true}
+                        pageImageSlot={
+                            PageImageManager ? (
+                                <PageImageManager
+                                    project={project}
+                                    blueprint={blueprint}
+                                    entry={entry}
+                                    pageProps={props}
+                                />
+                            ) : undefined
+                        }
+                    />
                 )}
                 {activeTab === 'history' && (
                     <HistoryTab history={history} />
