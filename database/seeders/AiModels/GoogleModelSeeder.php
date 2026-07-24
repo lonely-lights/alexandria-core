@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
 /**
  * Google AI model catalog (Gemini, Imagen, Veo, Lyria, Gemma).
  *
- * Pricing snapshot: 2026-05-05 from https://ai.google.dev/gemini-api/docs/pricing.
+ * Pricing snapshot: 2026-07-24 from https://ai.google.dev/gemini-api/docs/pricing.
  * Future direction: pull from provider APIs where available — Google publishes
  * model metadata via the Gemini API, but pricing is not part of that surface.
  * For now, seed-as-snapshot is the simplest contract; refresh on each release.
@@ -37,6 +37,91 @@ class GoogleModelSeeder extends Seeder
     private function models(): array
     {
         return [
+            // Gemini 3.6 series — current Flash flagship (Jul 2026). No Pro
+            // tier at this version; 3.1 Pro remains the top reasoning model.
+            [
+                'model_id' => 'gemini-3.6-flash',
+                'display_name' => 'Gemini 3.6 Flash',
+                'category' => 'fast',
+                'context_window' => 1048576,
+                'input_price_per_million' => 1.50,
+                'output_price_per_million' => 7.50,
+                'supports_json_mode' => true,
+                'supports_vision' => true,
+                'is_flagship' => true,
+                'is_recommended' => true,
+                'is_active' => true,
+                'notes' => 'Current Flash flagship. Output 17% cheaper than 3.5 Flash at the same input price. Cached input: $0.15/MTok.',
+                'capabilities' => ['extended_thinking', 'vision', 'tool_use', 'agentic', 'search_grounding'],
+                'released_at' => '2026-07-21',
+            ],
+
+            // Gemini 3.5 series
+            [
+                'model_id' => 'gemini-3.5-flash',
+                'display_name' => 'Gemini 3.5 Flash',
+                'category' => 'fast',
+                'context_window' => 1048576,
+                'input_price_per_million' => 1.50,
+                'output_price_per_million' => 9.00,
+                'supports_json_mode' => true,
+                'supports_vision' => true,
+                'is_flagship' => false,
+                'is_recommended' => false,
+                'is_active' => true,
+                'notes' => 'Superseded by 3.6 Flash, which is cheaper on output at identical input pricing. Cached input: $0.15/MTok.',
+                'capabilities' => ['extended_thinking', 'vision', 'tool_use', 'search_grounding'],
+                'released_at' => '2026-06-01',
+            ],
+            [
+                'model_id' => 'gemini-3.5-flash-lite',
+                'display_name' => 'Gemini 3.5 Flash-Lite',
+                'category' => 'fast',
+                'context_window' => 1048576,
+                'input_price_per_million' => 0.30,
+                'output_price_per_million' => 2.50,
+                'supports_json_mode' => true,
+                'supports_vision' => true,
+                'is_flagship' => false,
+                'is_recommended' => true,
+                'is_active' => true,
+                'notes' => 'Cheapest current-generation tier. Cached input: $0.03/MTok.',
+                'capabilities' => ['vision', 'tool_use', 'search_grounding'],
+                'released_at' => '2026-06-01',
+            ],
+            [
+                'model_id' => 'gemini-3.5-live-translate-preview',
+                'display_name' => 'Gemini 3.5 Live Translate Preview',
+                'category' => 'audio',
+                'context_window' => 1048576,
+                'input_price_per_million' => null,
+                'output_price_per_million' => null,
+                'supports_json_mode' => false,
+                'supports_vision' => false,
+                'is_flagship' => false,
+                'is_recommended' => false,
+                'is_active' => true,
+                'notes' => 'Live speech translation. Priced per minute of audio: $3.50/min in, $21.00/min out. Watch for Prosetta.',
+                'capabilities' => ['audio', 'translation', 'realtime'],
+                'released_at' => '2026-06-01',
+            ],
+            [
+                'model_id' => 'gemini-omni-flash-preview',
+                'display_name' => 'Gemini Omni Flash Preview',
+                'category' => 'general',
+                'context_window' => 1048576,
+                'input_price_per_million' => 1.50,
+                'output_price_per_million' => 9.00,
+                'supports_json_mode' => true,
+                'supports_vision' => true,
+                'is_flagship' => false,
+                'is_recommended' => false,
+                'is_active' => true,
+                'notes' => 'Any-to-any multimodal. Video output billed at $17.50/MTok.',
+                'capabilities' => ['vision', 'audio', 'video', 'tool_use'],
+                'released_at' => '2026-06-01',
+            ],
+
             // Gemini 3.1 series — current flagship (Apr 2026)
             [
                 'model_id' => 'gemini-3.1-pro-preview',
@@ -228,7 +313,22 @@ class GoogleModelSeeder extends Seeder
                 'is_flagship' => false,
                 'is_recommended' => true,
                 'is_active' => true,
-                'notes' => 'Native image generation, speed-optimized.',
+                'notes' => 'Native image generation, speed-optimized. Google now lists this GA as `gemini-3.1-flash-image`; the -preview alias still resolves.',
+                'released_at' => '2026-03-15',
+            ],
+            [
+                'model_id' => 'gemini-3.1-flash-lite-image',
+                'display_name' => 'Gemini 3.1 Flash-Lite Image',
+                'category' => 'image',
+                'context_window' => null,
+                'input_price_per_million' => 0.25,
+                'output_price_per_million' => 30.00,
+                'supports_json_mode' => false,
+                'supports_vision' => true,
+                'is_flagship' => false,
+                'is_recommended' => false,
+                'is_active' => true,
+                'notes' => 'Half the cost of 3.1 Flash Image for bulk generation.',
                 'released_at' => '2026-03-15',
             ],
             [
