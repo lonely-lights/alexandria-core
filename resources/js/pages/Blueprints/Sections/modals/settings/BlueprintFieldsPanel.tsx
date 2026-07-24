@@ -327,6 +327,36 @@ export default function BlueprintFieldsPanel({
                                                     {t("common.required")}
                                                 </span>
                                             </label>
+                                            <label
+                                                className="flex cursor-pointer items-center gap-2"
+                                                title={t(
+                                                    "blueprints.bp_settings.fields.ai_sorting_hint",
+                                                )}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={
+                                                        field.include_in_ai_sorting !==
+                                                        false
+                                                    }
+                                                    onChange={(e) =>
+                                                        updateField(index, {
+                                                            include_in_ai_sorting:
+                                                                e.target
+                                                                    .checked,
+                                                        })
+                                                    }
+                                                    style={{
+                                                        accentColor:
+                                                            TOGGLE_ACCENT_COLOR,
+                                                    }}
+                                                />
+                                                <span className="text-xs">
+                                                    {t(
+                                                        "blueprints.bp_settings.fields.ai_sorting_label",
+                                                    )}
+                                                </span>
+                                            </label>
                                             <button
                                                 type="button"
                                                 onClick={() =>

@@ -477,6 +477,8 @@ return [
     'bp_settings.fields.type' => 'Type',
     'bp_settings.fields.help_text' => 'Help Text',
     'bp_settings.fields.help_placeholder' => 'Optional',
+    'bp_settings.fields.ai_sorting_label' => 'In sorting',
+    'bp_settings.fields.ai_sorting_hint' => 'Show this field to the AI sorter. Turn it off for fields sorting cannot fill from a note, so the schema it sees stays clean.',
     'bp_settings.fields.choose_list' => 'Choose List',
     'bp_settings.fields.choose_list_placeholder' => 'Pick a list…',
     'bp_settings.fields.relationship_blueprint' => 'Relationship Blueprint',
