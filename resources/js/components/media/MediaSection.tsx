@@ -1,4 +1,10 @@
-import { type CSSProperties, type ReactNode, useState, useEffect, useCallback } from "react";
+import {
+    type CSSProperties,
+    type ReactNode,
+    useState,
+    useEffect,
+    useCallback,
+} from "react";
 import useT from "@alexandria/hooks/useT";
 import Modal from "@alexandria/components/ui/Modal";
 import ImageUploader from "./ImageUploader";
@@ -219,7 +225,10 @@ export default function MediaSection({
                     </p>
                     {pageImage?.alt_text && (
                         <p className="mt-2 text-xs" style={helperFainterStyle}>
-                            {t("entries.media.alt_prefix").replace(":text", pageImage.alt_text)}
+                            {t("entries.media.alt_prefix").replace(
+                                ":text",
+                                pageImage.alt_text,
+                            )}
                         </p>
                     )}
                     {pageImage && (
@@ -268,7 +277,10 @@ export default function MediaSection({
                     />
                     {banner.alt_text && (
                         <p className="text-xs" style={helperFainterStyle}>
-                            {t("entries.media.alt_prefix").replace(":text", banner.alt_text)}
+                            {t("entries.media.alt_prefix").replace(
+                                ":text",
+                                banner.alt_text,
+                            )}
                         </p>
                     )}
                     <div className="flex gap-2">
@@ -311,6 +323,7 @@ export default function MediaSection({
     const galleryButton = galleryEnabled ? (
         <button
             type="button"
+            data-media-gallery-trigger
             onClick={() => setGalleryModalOpen(true)}
             className="alex-row flex w-full items-center gap-3 p-4 text-left"
             style={cardStyle}
@@ -322,7 +335,9 @@ export default function MediaSection({
                 <i className="fa-solid fa-images" style={accentStyle} />
             </div>
             <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold">{t("entries.media.gallery.title")}</h3>
+                <h3 className="text-sm font-semibold">
+                    {t("entries.media.gallery.title")}
+                </h3>
                 <p className="text-xs" style={helperStyle}>
                     {galleryImages.length === 0
                         ? t("entries.media.gallery.empty")
@@ -360,7 +375,7 @@ export default function MediaSection({
                     onClose={() => setGalleryModalOpen(false)}
                     maxWidth="max-w-6xl"
                 >
-                    <div className="p-6">
+                    <div className="min-h-0 overflow-y-auto p-6">
                         <div className="mb-5 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
                                 <div
@@ -373,7 +388,9 @@ export default function MediaSection({
                                     />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold">{t("entries.media.modal.title")}</h3>
+                                    <h3 className="text-lg font-bold">
+                                        {t("entries.media.modal.title")}
+                                    </h3>
                                     <p
                                         className="text-xs"
                                         style={helperFainterStyle}
@@ -382,7 +399,10 @@ export default function MediaSection({
                                             galleryImages.length === 1
                                                 ? "entries.media.modal.subtitle.singular"
                                                 : "entries.media.modal.subtitle.plural",
-                                        ).replace(":count", String(galleryImages.length))}
+                                        ).replace(
+                                            ":count",
+                                            String(galleryImages.length),
+                                        )}
                                     </p>
                                 </div>
                             </div>
@@ -416,7 +436,7 @@ export default function MediaSection({
                                     />
                                 </div>
                                 <div className="space-y-4">
-                                    {pageImageCard}
+                                    {pageImageSlot ?? pageImageCard}
                                     {bannerCard}
                                 </div>
                             </div>
@@ -458,10 +478,16 @@ export default function MediaSection({
                                     {t("entries.media.upload.title").replace(
                                         ":type",
                                         uploadCollection === "page_image"
-                                            ? t("entries.media.upload.types.page_image")
+                                            ? t(
+                                                  "entries.media.upload.types.page_image",
+                                              )
                                             : uploadCollection === "banner"
-                                              ? t("entries.media.upload.types.banner")
-                                              : t("entries.media.upload.types.gallery_image"),
+                                              ? t(
+                                                    "entries.media.upload.types.banner",
+                                                )
+                                              : t(
+                                                    "entries.media.upload.types.gallery_image",
+                                                ),
                                     )}
                                 </h3>
                                 <p

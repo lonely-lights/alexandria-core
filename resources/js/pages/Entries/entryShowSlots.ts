@@ -9,9 +9,35 @@ export interface EntryShowSlotContext {
     pageProps: EntryShowProps;
 }
 
+export interface EntryEditSlotContext {
+    project: {
+        id: number;
+        name: string;
+        slug: string;
+    };
+    blueprint: {
+        id: number;
+        name: string;
+        slug: string;
+        icon: string;
+        classification: string;
+    };
+    entry: {
+        id: number;
+        name: string;
+        slug: string;
+        can: {
+            update: boolean;
+        };
+    };
+    pageProps: Record<string, unknown>;
+}
+
 export interface EntryShowSlotRegistry {
     /** Replaces the default non-compact page-image card on the Media tab. */
     pageImageManager?: ComponentType<EntryShowSlotContext>;
+    /** Adds a richer page-image manager to the Entry edit form's Media card. */
+    editPageImageManager?: ComponentType<EntryEditSlotContext>;
 }
 
 let registeredSlots: EntryShowSlotRegistry = {};

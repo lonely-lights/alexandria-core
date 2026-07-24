@@ -17,8 +17,16 @@
  * and explicit close buttons.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
-import gsap from 'gsap';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    type RefObject,
+} from "react";
+import gsap from "gsap";
+
+const openPanelStack: symbol[] = [];
 
 export interface FloatingPanelAnimation {
     /** Panel enter — `gsap.fromTo(panel, from, to)` fires on open. */
@@ -49,6 +57,7 @@ export function useFloatingPanel(
     const backdropRef = useRef<HTMLDivElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const closingRef = useRef(false);
+    const panelIdRef = useRef(Symbol("floating-panel"));
 
     // Stash the animation spec in a ref so consumers don't have to
     // memoize the object — we only read it at open/close moments.
@@ -65,9 +74,24 @@ export function useFloatingPanel(
     useEffect(() => {
         if (!open) return;
 
+        const panelId = panelIdRef.current;
+        openPanelStack.push(panelId);
+
+        return () => {
+            const index = openPanelStack.lastIndexOf(panelId);
+
+            if (index !== -1) {
+                openPanelStack.splice(index, 1);
+            }
+        };
+    }, [open]);
+
+    useEffect(() => {
+        if (!open) return;
+
         const html = document.documentElement;
         const previousOverflow = html.style.overflow;
-        html.style.overflow = 'hidden';
+        html.style.overflow = "hidden";
 
         return () => {
             html.style.overflow = previousOverflow;
@@ -93,7 +117,7 @@ export function useFloatingPanel(
                 {
                     opacity: 1,
                     duration: backdropEnterDuration,
-                    ease: 'power2.out',
+                    ease: "power2.out",
                 },
             );
         }
@@ -117,7 +141,7 @@ export function useFloatingPanel(
                 {
                     opacity: 0,
                     duration: backdropExitDuration,
-                    ease: 'power2.in',
+                    ease: "power2.in",
                 },
                 0,
             );
@@ -129,12 +153,16 @@ export function useFloatingPanel(
         if (!open) return;
 
         function handleKey(e: KeyboardEvent) {
-            if (e.key === 'Escape') animateClose();
+            const isTopmost = openPanelStack.at(-1) === panelIdRef.current;
+
+            if (e.key === "Escape" && isTopmost) {
+                animateClose();
+            }
         }
 
-        document.addEventListener('keydown', handleKey);
+        document.addEventListener("keydown", handleKey);
 
-        return () => document.removeEventListener('keydown', handleKey);
+        return () => document.removeEventListener("keydown", handleKey);
     }, [open, animateClose]);
 
     return { backdropRef, panelRef, animateClose };

@@ -1,4 +1,10 @@
-import { useState, useEffect, useRef, type CSSProperties } from "react";
+import {
+    useState,
+    useEffect,
+    useRef,
+    type CSSProperties,
+    type ReactNode,
+} from "react";
 import { useForm } from "@inertiajs/react";
 import Sortable from "sortablejs";
 import useT from "@alexandria/hooks/useT";
@@ -48,6 +54,7 @@ interface EntryFormProps {
         parent_id: number | null;
     };
     initialFieldValues?: Record<string, unknown>;
+    pageImageSlot?: ReactNode;
 }
 
 /* ── Theme-token style recipes ──
@@ -217,6 +224,7 @@ export default function EntryForm({
     isStub = false,
     initialValues,
     initialFieldValues,
+    pageImageSlot,
 }: EntryFormProps) {
     const t = useT();
     const iconClass = blueprintIcon.includes(" ")
@@ -329,6 +337,7 @@ export default function EntryForm({
                                     <div className="flex-1">
                                         <input
                                             type="text"
+                                            data-entry-name-input
                                             value={form.data.name}
                                             onChange={(e) =>
                                                 form.setData(
@@ -437,7 +446,8 @@ export default function EntryForm({
                             field={field}
                             records={
                                 (form.data.fields[field.name] as
-                                    TemporalRecord[] | undefined) ?? []
+                                    | TemporalRecord[]
+                                    | undefined) ?? []
                             }
                             onChange={(records) =>
                                 updateField(field.name, records)
@@ -547,11 +557,12 @@ export default function EntryForm({
                                         {t("entries.form.media_heading")}
                                     </h3>
                                 </div>
-                                <div className="p-4">
+                                <div className="space-y-4 p-4">
                                     <MediaSection
                                         modelType="entries"
                                         modelId={entryId}
                                         compact
+                                        pageImageSlot={pageImageSlot}
                                     />
                                 </div>
                             </div>

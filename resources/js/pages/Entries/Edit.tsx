@@ -5,6 +5,7 @@ import AppLayout from "@alexandria/layouts/AppLayout";
 import IconTile from "@alexandria/components/ui/IconTile";
 import PageHeader from "@alexandria/components/layout/PageHeader";
 import EntryForm from "./Sections/EntryForm";
+import { getEntryShowSlots } from "./entryShowSlots";
 
 interface EditProps {
     project: { id: number; name: string; slug: string };
@@ -33,6 +34,9 @@ interface EditProps {
         content: string | null;
         is_stub: boolean;
         parent_id: number | null;
+        can: {
+            update: boolean;
+        };
     };
     fieldValues: Record<string, unknown>;
     parentEntries: Array<{ id: number; name: string; slug: string }>;
@@ -58,8 +62,9 @@ const stubBadgeStyle: CSSProperties = {
 
 export default function EntryEdit() {
     const t = useT();
-    const { project, blueprint, entry, fieldValues, parentEntries } =
-        usePage<EditProps>().props;
+    const props = usePage<EditProps>().props;
+    const { project, blueprint, entry, fieldValues, parentEntries } = props;
+    const { editPageImageManager: EditPageImageManager } = getEntryShowSlots();
     const iconClass = blueprint.icon.includes(" ")
         ? blueprint.icon
         : `fa-solid ${blueprint.icon}`;
@@ -123,6 +128,16 @@ export default function EntryEdit() {
                         parent_id: entry.parent_id,
                     }}
                     initialFieldValues={fieldValues}
+                    pageImageSlot={
+                        EditPageImageManager ? (
+                            <EditPageImageManager
+                                project={project}
+                                blueprint={blueprint}
+                                entry={entry}
+                                pageProps={props}
+                            />
+                        ) : undefined
+                    }
                 />
             </div>
         </AppLayout>
