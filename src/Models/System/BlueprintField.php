@@ -25,7 +25,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $description
  * @property string|null $default_value
  * @property bool $is_required
- * @property bool $include_in_ai_sorting
  * @property int $sort_order
  * @property array<string, mixed>|null $validation_rules
  * @property string|null $ai_instruction
@@ -65,7 +64,6 @@ class BlueprintField extends Model
         return [
             'validation_rules' => 'array',
             'is_required' => 'boolean',
-            'include_in_ai_sorting' => 'boolean',
         ];
     }
 

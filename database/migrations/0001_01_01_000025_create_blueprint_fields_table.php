@@ -51,9 +51,6 @@ return new class extends Migration
             $table->boolean('is_required')
                 ->default(false)
                 ->comment('Whether field must have a value');
-            $table->boolean('include_in_ai_sorting')
-                ->default(true)
-                ->comment('Whether the field appears in AI sorting prompts. Turn off for fields sorting cannot fill from a note (appearance, traits, beliefs) so the schema the model sees stays minimal');
             $table->integer('sort_order')
                 ->default(0)
                 ->comment('Display order in forms and views');

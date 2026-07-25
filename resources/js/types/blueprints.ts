@@ -14,8 +14,6 @@ export interface BlueprintField {
     type: string;
     description: string | null;
     is_required: boolean;
-    /** Off keeps the field out of AI sorting prompts. Absent means included. */
-    include_in_ai_sorting?: boolean;
     validation_rules: Record<string, unknown>;
     sort_order: number;
     /** Present on entry_reference fields: picker candidates + mode. */
