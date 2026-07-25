@@ -9,6 +9,7 @@ export interface WorkbenchStoredState {
     routingTarget?: { kind: string; id: number } | null;
     creationSlug?: string | null;
     batchSize?: number;
+    includeRelationships?: boolean;
     selectedNoteIds?: number[];
 }
 
@@ -21,13 +22,18 @@ export function readWorkbenchState(projectSlug: string): WorkbenchStoredState {
         const raw = localStorage.getItem(storageKey(projectSlug));
         if (!raw) return {};
         const parsed = JSON.parse(raw) as unknown;
-        return parsed && typeof parsed === 'object' ? (parsed as WorkbenchStoredState) : {};
+        return parsed && typeof parsed === "object"
+            ? (parsed as WorkbenchStoredState)
+            : {};
     } catch {
         return {};
     }
 }
 
-export function writeWorkbenchState(projectSlug: string, patch: WorkbenchStoredState): void {
+export function writeWorkbenchState(
+    projectSlug: string,
+    patch: WorkbenchStoredState,
+): void {
     try {
         const next = { ...readWorkbenchState(projectSlug), ...patch };
         localStorage.setItem(storageKey(projectSlug), JSON.stringify(next));

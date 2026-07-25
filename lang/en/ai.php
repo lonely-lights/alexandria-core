@@ -351,6 +351,8 @@ return [
     'workbench.creation.run.picker_placeholder' => 'Select a blueprint…',
     'workbench.creation.run.pending_count' => ':count pending notes',
     'workbench.creation.run.batch_size_label' => 'Batch size',
+    'workbench.creation.run.include_relationships_label' => 'Include relationships',
+    'workbench.creation.run.include_relationships_hint' => 'Off: routing and entry creation only, with a smaller prompt.',
     'workbench.creation.run.no_pending' => 'No pending notes for this blueprint.',
     'workbench.creation.run.loading_summary' => 'Loading blueprints…',
     'workbench.creation.run.preview_button' => 'Preview prompt',
