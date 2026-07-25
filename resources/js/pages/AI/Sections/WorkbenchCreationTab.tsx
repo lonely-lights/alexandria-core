@@ -10,7 +10,7 @@ import Select from "@alexandria/components/form/Select";
 import WorkbenchKeyLegend from "./WorkbenchKeyLegend";
 import WorkbenchPendingNotesPicker from "./WorkbenchPendingNotesPicker";
 import { readWorkbenchState, writeWorkbenchState } from "../workbenchState";
-import type { SharedProps } from "@alexandria/types/index";
+import type { SharedProps } from "@alexandria/types";
 import type {
     L2BlueprintSummary,
     L2BatchCompletedEvent,
