@@ -10,6 +10,7 @@ use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Services\Entries\EntryHistoryService;
 use Alexandria\Core\Traits\HasAlexandriaMedia;
 use Alexandria\Core\Traits\InjectsCommandContext;
+use Alexandria\Core\Traits\NormalizesLineEndings;
 use Alexandria\Core\Traits\Notable\HasNotes;
 use Alexandria\Core\Traits\System\HasDynamicAttributes;
 use Alexandria\Core\Traits\System\HasDynamicRelationships;
@@ -95,6 +96,7 @@ class Entry extends Model implements HasMedia
     use HasNotes;
     use InjectsCommandContext;
     use LogsActivity;
+    use NormalizesLineEndings;
     use SoftDeletes;
 
     /**
@@ -137,6 +139,16 @@ class Entry extends Model implements HasMedia
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName('project');
+    }
+
+    /**
+     * Prose fields kept on LF. See NormalizesLineEndings.
+     *
+     * @return array<int, string>
+     */
+    public function lineEndingFields(): array
+    {
+        return ['content', 'summary'];
     }
 
     protected function casts(): array

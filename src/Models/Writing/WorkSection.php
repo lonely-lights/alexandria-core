@@ -7,6 +7,7 @@ namespace Alexandria\Core\Models\Writing;
 use Alexandria\Core\Database\Factories\Writing\WorkSectionFactory;
 use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\System\Entry;
+use Alexandria\Core\Traits\NormalizesLineEndings;
 use Alexandria\Core\Traits\Notable\HasNotes;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -69,7 +70,18 @@ class WorkSection extends Model
 {
     use HasFactory;
     use HasNotes;
+    use NormalizesLineEndings;
     use SoftDeletes;
+
+    /**
+     * Prose fields kept on LF. See NormalizesLineEndings.
+     *
+     * @return array<int, string>
+     */
+    public function lineEndingFields(): array
+    {
+        return ['content', 'synopsis'];
+    }
 
     protected $guarded = ['id'];
 
