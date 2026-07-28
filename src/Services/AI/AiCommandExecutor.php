@@ -6,6 +6,8 @@ namespace Alexandria\Core\Services\AI;
 
 use Alexandria\Core\Exceptions\BatchExecutionException;
 use Alexandria\Core\Models\Notable\AiReviewCommand;
+use Alexandria\Core\Models\Notable\Note;
+use Alexandria\Core\Models\System\Blueprint;
 use Alexandria\Core\Services\AI\Actions\EntryActionService;
 use Alexandria\Core\Services\AI\Actions\NoteActionService;
 use Exception;
@@ -90,6 +92,25 @@ class AiCommandExecutor
     }
 
     /**
+     * The host app's note model. Typed to the core model so callers can reach
+     * its constants and scopes; a consumer's override must remain compatible.
+     *
+     * @return class-string<Note>
+     */
+    private function noteModel(): string
+    {
+        return config('alexandria.models.note');
+    }
+
+    /**
+     * @return class-string<Blueprint>
+     */
+    private function blueprintModel(): string
+    {
+        return config('alexandria.models.blueprint');
+    }
+
+    /**
      * Clear the "still needs sorting" marker from source notes the batch has
      * just sorted.
      *
@@ -112,8 +133,8 @@ class AiCommandExecutor
      */
     private function releaseDrainedNotes(string $batchId): void
     {
-        $noteClass = config('alexandria.models.note');
-        $blueprintClass = config('alexandria.models.blueprint');
+        $noteClass = $this->noteModel();
+        $blueprintClass = $this->blueprintModel();
 
         $commands = AiReviewCommand::query()
             ->where('batch_id', $batchId)
@@ -393,6 +414,8 @@ class AiCommandExecutor
      * explicit `temp_id:` prefix or matching a tempIdMap key exactly are
      * rewritten; other strings are ordinary metadata text (roles,
      * contribution labels) and pass through untouched.
+     *
+     * @throws Exception
      */
     private function resolveTempIdsInMetadata(array $metadata): array
     {
