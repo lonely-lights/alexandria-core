@@ -668,13 +668,16 @@ return [
     'settings.timeline.end_year' => 'End Year',
     'settings.timeline.year_auto' => 'Auto',
 
-    // Timeline activation
-    'settings.timeline_activation.title' => 'Timeline View',
-    'settings.timeline_activation.description' => 'Plot entries with date/datetime fields on a continuous time axis. Configure the date field, optional end date, lanes, and display window below.',
+    // Timeline activation — makes THIS blueprint's entries timeline items.
+    // Deliberately independent of timeline sources below; the titles have to
+    // carry that distinction, because both settings live under one menu and a
+    // blueprint can legitimately have either without the other.
+    'settings.timeline_activation.title' => 'Timeline View Of These Entries',
+    'settings.timeline_activation.description' => 'Plot this blueprint\'s own entries on a continuous time axis using their date fields, and let them appear as items on other blueprints\' entry timelines. Configure the date field, optional end date, lanes, and display window below.',
 
-    // Timeline sources
-    'settings.timeline_sources.title' => 'Timeline Sources',
-    'settings.timeline_sources.description' => 'Enable timeline blueprints to display their entries on this blueprint\'s pages. Set a reference point for elapsed time calculations.',
+    // Timeline sources — puts a timeline ON each entry page of this blueprint.
+    'settings.timeline_sources.title' => 'Timeline On Each Entry Page',
+    'settings.timeline_sources.description' => 'Show a timeline on each entry\'s page, built from connected entries of the blueprints below. This is separate from the setting above: an entry can display a timeline without being a timeline item itself. Set a reference point for elapsed time calculations.',
     'settings.timeline_sources.reference_field' => 'Reference Field',
     'settings.timeline_sources.field_placeholder' => 'Pick a field…',
     'settings.timeline_sources.reference_value' => 'Reference Value',
