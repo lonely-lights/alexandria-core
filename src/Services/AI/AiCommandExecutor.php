@@ -68,6 +68,8 @@ class AiCommandExecutor
             }
             DB::commit();
 
+            $this->releaseDrainedNotes($batchId);
+
             // TODO(deferred-relationships): post-execution pass to materialize ai_notes relationships using $this->tempIdMap.
 
         } catch (Throwable $e) {
@@ -85,6 +87,91 @@ class AiCommandExecutor
         }
 
         return $results;
+    }
+
+    /**
+     * Clear the "still needs sorting" marker from source notes the batch has
+     * just sorted.
+     *
+     * A copy_note deliberately leaves the original note where it is and makes
+     * a separate note on the destination — that is the whole point of copy,
+     * and nothing here changes it. What this removes is only the pivot marking
+     * the ORIGINAL as still awaiting sorting into the blueprint this batch was
+     * generated for. Once the note has been sorted there, that marker is a lie,
+     * and it is the sole reason the note keeps appearing in the blueprint's
+     * queue.
+     *
+     * The note keeps its project pivot and every OTHER blueprint's pivot, so a
+     * source routed to several blueprints still waits for its other passes.
+     *
+     * This lives here rather than in the HTTP controller because executeBatch()
+     * has four callers — the web app, the CLI sort command, the categorisation
+     * orchestrator, and the queued job — and only the first of them used to run
+     * it. Batches executed by any other route left every source note flagged
+     * forever.
+     */
+    private function releaseDrainedNotes(string $batchId): void
+    {
+        $noteClass = config('alexandria.models.note');
+        $blueprintClass = config('alexandria.models.blueprint');
+
+        $commands = AiReviewCommand::query()
+            ->where('batch_id', $batchId)
+            ->where('status', 'executed')
+            ->whereIn('action_type', ['copy_note', 'transfer_note'])
+            ->get();
+
+        foreach ($commands as $command) {
+            $context = is_array($command->context) ? $command->context : [];
+            $noteId = $context['note_id'] ?? null;
+            $slug = $context['blueprint_slug'] ?? null;
+
+            // The HTTP route used to supply the project, so plenty of commands
+            // carry no project_id in their context. The command row always has
+            // one; prefer the context and fall back to the column.
+            $projectId = $context['project_id'] ?? $command->project_id;
+
+            if (! $noteId || ! $slug || ! $projectId) {
+                continue;
+            }
+
+            $blueprintId = $blueprintClass::query()
+                ->where('project_id', $projectId)
+                ->where('slug', $slug)
+                ->value('id');
+
+            if (! $blueprintId) {
+                continue;
+            }
+
+            DB::table($noteClass::PIVOT_TABLE)
+                ->where('note_id', $noteId)
+                ->where('notable_type', $blueprintClass)
+                ->where('notable_id', $blueprintId)
+                ->where('processing_status', 'completed')
+                ->delete();
+
+            // Retire the drained slug from the source's routing suggestion too,
+            // or the note goes on offering "Sort into: <blueprint>" after the
+            // sort already happened.
+            $note = $noteClass::find($noteId);
+
+            if (! $note) {
+                continue;
+            }
+
+            $aiNotes = $note->ai_notes ?? [];
+            $routed = array_values(array_diff((array) ($aiNotes['routed_blueprints'] ?? []), [$slug]));
+
+            if ($routed === []) {
+                unset($aiNotes['routed_blueprints'], $aiNotes['routing_count'], $aiNotes['routing_confidence']);
+            } else {
+                $aiNotes['routed_blueprints'] = $routed;
+                $aiNotes['routing_count'] = count($routed);
+            }
+
+            $note->update(['ai_notes' => $aiNotes ?: null]);
+        }
     }
 
     /**
