@@ -1,10 +1,14 @@
-import { router } from '@inertiajs/react';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { router } from "@inertiajs/react";
+import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 
-import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
-import useT from '@alexandria/hooks/useT';
-import Button from '@alexandria/components/ui/Button';
-import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
+import Button from "@alexandria/components/ui/Button";
+import Modal, {
+    ModalHeader,
+    ModalFooter,
+} from "@alexandria/components/ui/Modal";
+import useT from "@alexandria/hooks/useT";
+import { csrfHeaders } from "@alexandria/lib/csrfHeaders";
 
 /**
  * StructurePickerModal — compendium-structure-tab (Task 11).
@@ -38,54 +42,69 @@ interface StructurePickerModalProps {
 /* ── Theme styles ── */
 
 const helpTextStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)',
+    color: "color-mix(in srgb, var(--theme-base-content) 55%, transparent)",
 };
 
 const emptyStateStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
 };
 
 const errorTextStyle: CSSProperties = {
-    color: 'var(--theme-status-error-stroke, #dc2626)',
+    color: "var(--theme-status-error-stroke, #dc2626)",
 };
 
 const skeletonRowStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-    borderRadius: 'var(--theme-radius-button)',
+    background: "color-mix(in srgb, var(--theme-base-content) 8%, transparent)",
+    borderRadius: "var(--theme-radius-button)",
 };
 
 const selectedRowStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)',
+    background:
+        "color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)",
 };
 
-export default function StructurePickerModal({ project, current, choices, onClose }: StructurePickerModalProps) {
+export default function StructurePickerModal({
+    project,
+    current,
+    choices,
+    onClose,
+}: StructurePickerModalProps) {
     const t = useT();
     const [selectedId, setSelectedId] = useState<number | null>(current);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        router.reload({ only: ['structureChoices'] });
+        router.reload({ only: ["structureChoices"] });
         // Fires once on open — `choices` starts undefined until this
         // partial reload resolves, matching Task 8's optional prop.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     async function submit(blueprintId: number | null) {
         setError(null);
         setSaving(true);
+
         try {
             const res = await fetch(`/works/${project.slug}/structure`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders() },
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    ...csrfHeaders(),
+                },
                 body: JSON.stringify({ blueprint_id: blueprintId }),
             });
+
             if (res.ok) {
                 onClose();
-                router.reload({ only: ['structureMeta', 'structure'] });
+                router.reload({ only: ["structureMeta", "structure"] });
             } else {
                 const data = await res.json().catch(() => null);
-                setError(data?.errors?.blueprint_id?.[0] ?? data?.message ?? t('writing.structure.link_failed'));
+                setError(
+                    data?.errors?.blueprint_id?.[0] ??
+                        data?.message ??
+                        t("writing.structure.link_failed"),
+                );
             }
         } finally {
             setSaving(false);
@@ -94,41 +113,68 @@ export default function StructurePickerModal({ project, current, choices, onClos
 
     return (
         <Modal open onClose={onClose} maxWidth="max-w-md">
-            <ModalHeader title={t('writing.structure.picker_title')} onClose={onClose} />
+            <ModalHeader
+                title={t("writing.structure.picker_title")}
+                onClose={onClose}
+            />
             <div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto px-6 py-4">
                 <p className="text-sm" style={helpTextStyle}>
-                    {t('writing.structure.picker_help')}
+                    {t("writing.structure.picker_help")}
                 </p>
 
                 {choices === undefined ? (
                     <div className="flex flex-col gap-2" aria-hidden="true">
                         {[0, 1, 2].map((i) => (
-                            <div key={i} className="h-10 animate-pulse" style={skeletonRowStyle} />
+                            <div
+                                key={i}
+                                className="h-10 animate-pulse"
+                                style={skeletonRowStyle}
+                            />
                         ))}
                     </div>
                 ) : choices.length === 0 ? (
-                    <p className="px-1 py-4 text-center text-sm italic" style={emptyStateStyle}>
-                        {t('writing.structure.picker_none')}
+                    <p
+                        className="px-1 py-4 text-center text-sm italic"
+                        style={emptyStateStyle}
+                    >
+                        {t("writing.structure.picker_none")}
                     </p>
                 ) : (
-                    <div role="radiogroup" aria-label={t('writing.structure.picker_title')} className="flex flex-col gap-1">
+                    <div
+                        role="radiogroup"
+                        aria-label={t("writing.structure.picker_title")}
+                        className="flex flex-col gap-1"
+                    >
                         {choices.map((choice) => (
                             <button
                                 key={choice.id}
                                 type="button"
                                 role="radio"
                                 aria-checked={selectedId === choice.id}
-                                className="alex-row flex items-center gap-2 px-3 py-2 text-left text-sm"
+                                className="alex-row alex-structure-picker-option flex items-center gap-2 px-3 py-2 text-left text-sm"
                                 style={{
-                                    borderRadius: 'var(--theme-radius-button)',
-                                    ...(selectedId === choice.id ? selectedRowStyle : undefined),
+                                    borderRadius: "var(--theme-radius-button)",
+                                    ...(selectedId === choice.id
+                                        ? selectedRowStyle
+                                        : undefined),
                                 }}
+                                data-structure-choice
                                 onClick={() => setSelectedId(choice.id)}
                             >
-                                <i className={choice.icon ?? 'fa-solid fa-sitemap'} aria-hidden="true" />
-                                <span className="min-w-0 flex-1 truncate font-medium">{choice.name}</span>
+                                <i
+                                    className={`alex-structure-picker-option-icon ${
+                                        choice.icon ?? "fa-solid fa-sitemap"
+                                    }`}
+                                    aria-hidden="true"
+                                />
+                                <span className="min-w-0 flex-1 truncate font-medium">
+                                    {choice.name}
+                                </span>
                                 {selectedId === choice.id && (
-                                    <i className="fa-solid fa-check text-xs" aria-hidden="true" />
+                                    <i
+                                        className="fa-solid fa-check text-xs"
+                                        aria-hidden="true"
+                                    />
                                 )}
                             </button>
                         ))}
@@ -143,19 +189,23 @@ export default function StructurePickerModal({ project, current, choices, onClos
             </div>
             <ModalFooter>
                 {current !== null && (
-                    <Button variant="ghost" disabled={saving} onClick={() => submit(null)}>
-                        {t('writing.structure.picker_clear')}
+                    <Button
+                        variant="ghost"
+                        disabled={saving}
+                        onClick={() => submit(null)}
+                    >
+                        {t("writing.structure.picker_clear")}
                     </Button>
                 )}
                 <Button variant="ghost" onClick={onClose} disabled={saving}>
-                    {t('writing.form.cancel')}
+                    {t("writing.form.cancel")}
                 </Button>
                 <Button
                     onClick={() => submit(selectedId)}
                     loading={saving}
                     disabled={choices === undefined || selectedId === current}
                 >
-                    {t('writing.structure.save')}
+                    {t("writing.structure.save")}
                 </Button>
             </ModalFooter>
         </Modal>

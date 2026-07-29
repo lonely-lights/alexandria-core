@@ -418,6 +418,50 @@ button:not(:disabled),
     );
 }
 
+/* Writing structure picker: a stronger themed hover/focus treatment
+   than the shared alex-row wash. */
+.alex-row.alex-structure-picker-option {
+    border: 1px solid transparent;
+    transition:
+        background-color var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease),
+        border-color var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease),
+        transform var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease),
+        box-shadow var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease);
+}
+.alex-row.alex-structure-picker-option:hover,
+.alex-row.alex-structure-picker-option:focus-visible {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 11%,
+        transparent
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 22%,
+        transparent
+    );
+    box-shadow: 0 0 0 2px
+        color-mix(in srgb, var(--theme-brand-primary-500) 8%, transparent);
+    outline: none;
+    transform: translateX(0.125rem);
+}
+.alex-structure-picker-option-icon {
+    transition:
+        color var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease),
+        transform var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease);
+}
+.alex-structure-picker-option:hover .alex-structure-picker-option-icon,
+.alex-structure-picker-option:focus-visible .alex-structure-picker-option-icon {
+    color: var(--theme-brand-primary-500);
+    transform: scale(1.1);
+}
+
 /* Graph sidebar idle row — :hover wash; active rows skip via
    data-active="true" (inline brand-primary already paints state). */
 .alex-graph-sidebar-btn {

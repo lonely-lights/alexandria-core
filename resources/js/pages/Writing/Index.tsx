@@ -1,9 +1,10 @@
 import { Deferred, useForm, usePage } from "@inertiajs/react";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 
-import useT from "@alexandria/hooks/useT";
-import useMediaQuery from "@alexandria/hooks/useMediaQuery";
-import AppLayout from "@alexandria/layouts/AppLayout";
+import Input from "@alexandria/components/form/Input";
+import Select from "@alexandria/components/form/Select";
+import Textarea from "@alexandria/components/form/Textarea";
 import PageHeader from "@alexandria/components/layout/PageHeader";
 import Button from "@alexandria/components/ui/Button";
 import IconTile from "@alexandria/components/ui/IconTile";
@@ -12,26 +13,26 @@ import Modal, {
     ModalFooter,
 } from "@alexandria/components/ui/Modal";
 import Tooltip from "@alexandria/components/ui/Tooltip";
-import Input from "@alexandria/components/form/Input";
-import Select from "@alexandria/components/form/Select";
-import Textarea from "@alexandria/components/form/Textarea";
+import useMediaQuery from "@alexandria/hooks/useMediaQuery";
+import useT from "@alexandria/hooks/useT";
+import AppLayout from "@alexandria/layouts/AppLayout";
 
-import StructureTree, { type StructurePayload } from "./Sections/StructureTree";
-import StructurePickerModal, {
-    type StructureChoice,
-} from "./Sections/StructurePickerModal";
-import WorkCard, { type WorkRow } from "./Sections/WorkCard";
-import WorkSettingsModal, {
-    type LengthPlanOption,
-} from "./Sections/WorkSettingsModal";
+import StructurePickerModal from "./Sections/StructurePickerModal";
+import type { StructureChoice } from "./Sections/StructurePickerModal";
+import StructureTree from "./Sections/StructureTree";
+import type { StructurePayload } from "./Sections/StructureTree";
+import WorkCard from "./Sections/WorkCard";
+import type { WorkRow } from "./Sections/WorkCard";
+import WorkSettingsModal from "./Sections/WorkSettingsModal";
+import type { LengthPlanOption } from "./Sections/WorkSettingsModal";
 
 /**
  * Writing dashboard → index — Stage 8g.1 (Plan 2 Task 5).
  *
- * Lists a project's works (newest-updated first, ordering comes from
- * the server) and hosts the create-work modal. Each row links into
- * the workspace at /works/{project}/{work}; create POSTs to
- * /works/{project} and the server redirects into the new workspace.
+ * Pairs a project's Compendium structure with its works in a
+ * golden-ratio dashboard, and hosts the create-work modal. Each work
+ * links into the workspace at /works/{project}/{work}; create POSTs
+ * to /works/{project} and the server redirects into the new workspace.
  */
 
 interface WritingIndexProps {
@@ -39,14 +40,17 @@ interface WritingIndexProps {
     works: WorkRow[];
     types: string[];
     lengthPlans: LengthPlanOption[];
-    structureMeta: { id: number; name: string; slug: string; icon: string | null } | null;
+    structureMeta: {
+        id: number;
+        name: string;
+        slug: string;
+        icon: string | null;
+    } | null;
     structure?: StructurePayload | null;
     structureChoices?: StructureChoice[];
     can: { create: boolean; manageStructure: boolean };
     [key: string]: unknown;
 }
-
-type IndexTab = "works" | "structure";
 
 /* ── Theme styles ── */
 
@@ -61,16 +65,46 @@ const emptyStateStyle: CSSProperties = {
     color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
 };
 
-const projectCountStyle: CSSProperties = {
+const mutedTextStyle: CSSProperties = {
     color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
 };
 
-const groupHeaderStyle: CSSProperties = {
-    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+const panelStyle: CSSProperties = {
+    background:
+        "linear-gradient(145deg, color-mix(in srgb, var(--theme-surface-card) 96%, var(--theme-brand-primary-500) 4%), var(--theme-surface-card))",
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    borderRadius: "var(--theme-radius-card)",
+    boxShadow: "0 18px 48px color-mix(in srgb, #000 9%, transparent)",
 };
 
-const activeTabStyle: CSSProperties = {
-    background: "var(--theme-base-300)",
+const panelHeaderStyle: CSSProperties = {
+    borderBottom:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)",
+};
+
+const panelIconStyle: CSSProperties = {
+    background:
+        "color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)",
+    color: "var(--theme-brand-primary-500)",
+    border: "1px solid color-mix(in srgb, var(--theme-brand-primary-500) 18%, transparent)",
+};
+
+const countBadgeStyle: CSSProperties = {
+    background: "color-mix(in srgb, var(--theme-base-content) 7%, transparent)",
+    color: "color-mix(in srgb, var(--theme-base-content) 62%, transparent)",
+};
+
+const structureEmptyStyle: CSSProperties = {
+    ...panelStyle,
+    background:
+        "radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--theme-brand-primary-500) 13%, transparent), transparent 34%), var(--theme-surface-card)",
+};
+
+const structureEmptyIconStyle: CSSProperties = {
+    background:
+        "color-mix(in srgb, var(--theme-brand-primary-500) 12%, transparent)",
+    color: "var(--theme-brand-primary-500)",
+    border: "1px solid color-mix(in srgb, var(--theme-brand-primary-500) 20%, transparent)",
 };
 
 export default function WritingIndex() {
@@ -93,29 +127,6 @@ export default function WritingIndex() {
     // hero row alongside the heading — same breakpoint AI Hub uses.
     const isMobileWriting = useMediaQuery("(max-width: 1023px)");
 
-    const tabStorageKey = `alexandria.writing.index-tab:${project.id}`;
-    const [tab, setTabState] = useState<IndexTab>(() =>
-        structureMeta !== null &&
-        typeof window !== "undefined" &&
-        window.localStorage.getItem(tabStorageKey) === "structure"
-            ? "structure"
-            : "works",
-    );
-    function setTab(next: IndexTab) {
-        setTabState(next);
-        window.localStorage.setItem(tabStorageKey, next);
-    }
-
-    // If the structure just got unlinked (e.g. from the picker modal)
-    // while the structure tab was active, fall back to Works — the
-    // tab bar no longer renders a "structure" button to click back to.
-    useEffect(() => {
-        if (structureMeta === null && tab === "structure") {
-            setTab("works");
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [structureMeta]);
-
     return (
         <AppLayout
             title={`${t("writing.index.title")} - ${project.name}`}
@@ -136,52 +147,6 @@ export default function WritingIndex() {
                         >
                             {t("writing.index.create")}
                         </Button>
-                    ) : undefined
-                }
-                tabs={
-                    structureMeta !== null ? (
-                        <>
-                            <button
-                                type="button"
-                                className="alex-btn alex-btn--ghost text-xs"
-                                style={tab === "works" ? activeTabStyle : undefined}
-                                onClick={() => setTab("works")}
-                            >
-                                {t("writing.index.tab_works")}
-                            </button>
-                            <button
-                                type="button"
-                                className="alex-btn alex-btn--ghost text-xs"
-                                style={tab === "structure" ? activeTabStyle : undefined}
-                                onClick={() => setTab("structure")}
-                            >
-                                <i
-                                    className={structureMeta.icon ?? "fa-solid fa-sitemap"}
-                                    aria-hidden="true"
-                                />
-                                {structureMeta.name}
-                            </button>
-                            {can.manageStructure && (
-                                <button
-                                    type="button"
-                                    className="alex-btn alex-btn--ghost text-xs"
-                                    title={t("writing.structure.picker_title")}
-                                    aria-label={t("writing.structure.picker_title")}
-                                    onClick={() => setPickerOpen(true)}
-                                >
-                                    <i className="fa-solid fa-gear" aria-hidden="true" />
-                                </button>
-                            )}
-                        </>
-                    ) : can.manageStructure ? (
-                        <button
-                            type="button"
-                            className="alex-btn alex-btn--ghost text-xs"
-                            onClick={() => setPickerOpen(true)}
-                        >
-                            <i className="fa-solid fa-link" aria-hidden="true" />
-                            {t("writing.index.link_structure")}
-                        </button>
                     ) : undefined
                 }
             >
@@ -219,139 +184,75 @@ export default function WritingIndex() {
                 </div>
             </PageHeader>
 
-            <div className="container mx-auto max-w-7xl px-4 py-8">
-                {tab === "works" ? (
-                    works.length === 0 ? (
-                        <div
-                            className="px-6 py-16 text-center text-sm italic"
-                            style={emptyStateStyle}
-                        >
-                            {t("writing.index.empty")}
-                        </div>
-                    ) : (
-                        /* Group works by franchise breadcrumb; named groups first, Standalone last */
-                        (() => {
-                            const groupMap = new Map<
-                                string | null,
-                                WorkRow[]
-                            >();
-                            for (const work of works) {
-                                const key = work.group ?? null;
-                                if (!groupMap.has(key)) groupMap.set(key, []);
-                                groupMap.get(key)!.push(work);
-                            }
-                            const groups = [...groupMap.entries()].sort(
-                                ([a], [b]) => {
-                                    if (a === null) return 1;
-                                    if (b === null) return -1;
-                                    return a.localeCompare(b);
-                                },
-                            );
-                            return (
-                                <div className="flex min-w-0 flex-col gap-8">
-                                    <section className="min-w-0">
-                                        <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                                            <h2
-                                                className="font-serif text-lg font-bold tracking-tight"
-                                                style={{
-                                                    color: "var(--theme-base-content)",
-                                                }}
-                                            >
-                                                {project.name}
-                                            </h2>
+            <div className="container mx-auto max-w-[94rem] px-4 py-6 sm:py-8">
+                <div
+                    className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.618fr)_minmax(19rem,1fr)] xl:gap-6"
+                    data-writing-dashboard-grid
+                >
+                    <section className="min-w-0" data-writing-structure-panel>
+                        {structureMeta !== null ? (
+                            <Deferred
+                                data="structure"
+                                fallback={
+                                    <div
+                                        className="animate-pulse overflow-hidden"
+                                        style={panelStyle}
+                                    >
+                                        <div
+                                            className="flex items-center gap-3 px-5 py-4"
+                                            style={panelHeaderStyle}
+                                        >
                                             <span
-                                                className="text-xs"
-                                                style={projectCountStyle}
-                                            >
-                                                {t(
-                                                    "writing.dashboard.work_count",
-                                                ).replace(
-                                                    ":count",
-                                                    works.length.toLocaleString(),
-                                                )}
-                                            </span>
+                                                className="h-10 w-10 rounded-xl"
+                                                style={panelIconStyle}
+                                            />
+                                            <div className="flex flex-col gap-2">
+                                                <span
+                                                    className="h-3 w-24 rounded-full"
+                                                    style={countBadgeStyle}
+                                                />
+                                                <span
+                                                    className="h-4 w-44 rounded-full"
+                                                    style={countBadgeStyle}
+                                                />
+                                            </div>
                                         </div>
-
-                                        {groups.map(
-                                            ([groupKey, groupWorks]) => (
-                                                <div
-                                                    key={
-                                                        groupKey ??
-                                                        "__standalone"
-                                                    }
-                                                    className="mb-5 last:mb-0"
-                                                >
-                                                    <h3
-                                                        className="mb-2 text-xs font-semibold uppercase tracking-wide"
-                                                        style={
-                                                            groupHeaderStyle
-                                                        }
-                                                    >
-                                                        {groupKey ??
-                                                            t(
-                                                                "writing.dashboard.ungrouped",
-                                                            )}
-                                                    </h3>
-                                                    <div className="grid gap-3 md:grid-cols-2">
-                                                        {groupWorks.map(
-                                                            (work) => (
-                                                                <WorkCard
-                                                                    key={
-                                                                        work.id
-                                                                    }
-                                                                    work={
-                                                                        work
-                                                                    }
-                                                                    projectSlug={
-                                                                        project.slug
-                                                                    }
-                                                                    t={t}
-                                                                    // can.create as the per-work gate proxy (v1) —
-                                                                    // index carries no per-work abilities yet.
-                                                                    onSettings={
-                                                                        can.create
-                                                                            ? () =>
-                                                                                  setSettingsWork(
-                                                                                      work,
-                                                                                  )
-                                                                            : undefined
-                                                                    }
-                                                                />
-                                                            ),
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ),
-                                        )}
-                                    </section>
-                                </div>
-                            );
-                        })()
-                    )
-                ) : (
-                    <Deferred
-                        data="structure"
-                        fallback={
-                            <div
-                                className="animate-pulse px-6 py-16 text-center text-sm"
-                                style={emptyStateStyle}
+                                        <div
+                                            className="px-6 py-20 text-center text-sm"
+                                            style={mutedTextStyle}
+                                        >
+                                            {t("writing.structure.loading")}
+                                        </div>
+                                    </div>
+                                }
                             >
-                                {t("writing.structure.loading")}
-                            </div>
-                        }
-                    >
-                        {structure ? (
-                            <StructureTree
-                                project={project}
-                                structure={structure}
-                                works={works}
-                                // can.create as the coarse work-edit gate proxy —
-                                // same proxy comment as the WorkCard settings gear above.
-                                canLink={can.create}
+                                {structure ? (
+                                    <StructureTree
+                                        project={project}
+                                        structure={structure}
+                                        works={works}
+                                        canLink={can.create}
+                                        canManage={can.manageStructure}
+                                        onConfigure={() => setPickerOpen(true)}
+                                    />
+                                ) : null}
+                            </Deferred>
+                        ) : (
+                            <StructureEmptyState
+                                canManage={can.manageStructure}
+                                onConfigure={() => setPickerOpen(true)}
                             />
-                        ) : null}
-                    </Deferred>
-                )}
+                        )}
+                    </section>
+
+                    <WritingSidebar
+                        project={project}
+                        works={works}
+                        structureMeta={structureMeta}
+                        canManageWorks={can.create}
+                        onSettings={setSettingsWork}
+                    />
+                </div>
             </div>
 
             {createOpen && (
@@ -385,6 +286,326 @@ export default function WritingIndex() {
                 />
             )}
         </AppLayout>
+    );
+}
+
+function StructureEmptyState({
+    canManage,
+    onConfigure,
+}: {
+    canManage: boolean;
+    onConfigure: () => void;
+}) {
+    const t = useT();
+
+    return (
+        <div
+            className="flex min-h-80 flex-col items-center justify-center overflow-hidden px-6 py-14 text-center xl:min-h-[34rem]"
+            style={structureEmptyStyle}
+        >
+            <span
+                className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-xl"
+                style={structureEmptyIconStyle}
+            >
+                <i className="fa-solid fa-sitemap" aria-hidden="true" />
+            </span>
+            <p
+                className="text-[0.6875rem] font-semibold uppercase tracking-[0.18em]"
+                style={mutedTextStyle}
+            >
+                {t("writing.structure.canvas_eyebrow")}
+            </p>
+            <h2 className="mt-2 max-w-md font-serif text-2xl font-bold tracking-tight">
+                {t("writing.structure.canvas_empty_title")}
+            </h2>
+            <p
+                className="mt-2 max-w-md text-sm leading-6"
+                style={mutedTextStyle}
+            >
+                {t("writing.structure.canvas_empty_help")}
+            </p>
+            {canManage && (
+                <Button
+                    className="mt-6"
+                    icon="fa-solid fa-link"
+                    iconPosition="before"
+                    onClick={onConfigure}
+                >
+                    {t("writing.index.link_structure")}
+                </Button>
+            )}
+        </div>
+    );
+}
+
+function WritingSidebar({
+    project,
+    works,
+    structureMeta,
+    canManageWorks,
+    onSettings,
+}: {
+    project: { name: string; slug: string };
+    works: WorkRow[];
+    structureMeta: WritingIndexProps["structureMeta"];
+    canManageWorks: boolean;
+    onSettings: (work: WorkRow) => void;
+}) {
+    const t = useT();
+    const sidebarRef = useRef<HTMLElement>(null);
+    const activeStructureId = structureMeta?.id ?? null;
+    const worksOnRight =
+        activeStructureId === null
+            ? works
+            : works.filter(
+                  (work) =>
+                      work.linked_entry?.blueprint_id !== activeStructureId,
+              );
+    const worksInActiveStructure =
+        activeStructureId === null ? null : works.length - worksOnRight.length;
+
+    useEffect(() => {
+        let animationFrame: number | null = null;
+
+        const updateAvailableHeight = () => {
+            if (animationFrame !== null) {
+                return;
+            }
+
+            animationFrame = window.requestAnimationFrame(() => {
+                animationFrame = null;
+
+                const sidebar = sidebarRef.current;
+
+                if (!sidebar) {
+                    return;
+                }
+
+                if (!window.matchMedia("(min-width: 1280px)").matches) {
+                    sidebar.style.removeProperty("max-height");
+
+                    return;
+                }
+
+                const viewportHeight =
+                    window.visualViewport?.height ?? window.innerHeight;
+                const viewportGap = 20;
+                const visibleTop = Math.max(
+                    viewportGap,
+                    sidebar.getBoundingClientRect().top,
+                );
+
+                sidebar.style.maxHeight = `${Math.max(
+                    0,
+                    viewportHeight - visibleTop - viewportGap,
+                )}px`;
+            });
+        };
+
+        updateAvailableHeight();
+        window.addEventListener("resize", updateAvailableHeight);
+        window.visualViewport?.addEventListener(
+            "resize",
+            updateAvailableHeight,
+        );
+        document.addEventListener("scroll", updateAvailableHeight, {
+            capture: true,
+            passive: true,
+        });
+
+        return () => {
+            if (animationFrame !== null) {
+                window.cancelAnimationFrame(animationFrame);
+            }
+
+            window.removeEventListener("resize", updateAvailableHeight);
+            window.visualViewport?.removeEventListener(
+                "resize",
+                updateAvailableHeight,
+            );
+            document.removeEventListener("scroll", updateAvailableHeight, true);
+        };
+    }, []);
+
+    return (
+        <aside
+            ref={sidebarRef}
+            className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-5"
+            data-writing-sidebar
+        >
+            <section
+                className="shrink-0 overflow-hidden"
+                style={panelStyle}
+                data-writing-stats-panel
+            >
+                <div
+                    className="flex items-center gap-3 px-4 py-3.5 sm:px-5"
+                    style={panelHeaderStyle}
+                >
+                    <span
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                        style={panelIconStyle}
+                    >
+                        <i
+                            className="fa-solid fa-chart-simple text-sm"
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                        <p
+                            className="truncate text-[0.625rem] font-semibold uppercase tracking-[0.17em]"
+                            style={mutedTextStyle}
+                        >
+                            {project.name}
+                        </p>
+                        <h2 className="font-serif text-lg font-bold tracking-tight">
+                            {t("writing.index.stats_title")}
+                        </h2>
+                    </div>
+                </div>
+                <dl className="grid grid-cols-3">
+                    {[
+                        {
+                            label: t("writing.index.stats_total"),
+                            value: works.length,
+                        },
+                        {
+                            label: t("writing.index.stats_in_structure"),
+                            value: worksInActiveStructure,
+                        },
+                        {
+                            label: t("writing.index.stats_available"),
+                            value: worksOnRight.length,
+                        },
+                    ].map((stat, index) => (
+                        <div
+                            key={stat.label}
+                            className="px-3 py-3 text-center"
+                            style={
+                                index === 0
+                                    ? undefined
+                                    : {
+                                          borderLeft:
+                                              "1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)",
+                                      }
+                            }
+                        >
+                            <dd
+                                className="font-serif text-xl font-bold leading-none"
+                                style={{
+                                    color:
+                                        index === 2 && worksOnRight.length > 0
+                                            ? "var(--theme-brand-accent-500)"
+                                            : "var(--theme-base-content)",
+                                }}
+                            >
+                                {stat.value === null
+                                    ? "—"
+                                    : stat.value.toLocaleString()}
+                            </dd>
+                            <dt
+                                className="mt-1 text-[0.625rem] font-semibold uppercase tracking-[0.12em]"
+                                style={mutedTextStyle}
+                            >
+                                {stat.label}
+                            </dt>
+                        </div>
+                    ))}
+                </dl>
+            </section>
+
+            <section
+                className="min-h-0 overflow-hidden xl:flex xl:flex-1 xl:flex-col"
+                style={panelStyle}
+                data-writing-works-panel
+            >
+                <div
+                    className="flex shrink-0 items-center gap-3 px-4 py-4 sm:px-5"
+                    style={panelHeaderStyle}
+                >
+                    <span
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                        style={panelIconStyle}
+                    >
+                        <i
+                            className="fa-solid fa-inbox text-sm"
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                        <p
+                            className="text-[0.625rem] font-semibold uppercase tracking-[0.17em]"
+                            style={mutedTextStyle}
+                        >
+                            {structureMeta === null
+                                ? t("writing.index.all_works_eyebrow")
+                                : t("writing.index.scoped_works_eyebrow")}
+                        </p>
+                        <div className="mt-0.5 flex items-center gap-2">
+                            <h2
+                                className="min-w-0 truncate font-serif text-lg font-bold tracking-tight"
+                                title={
+                                    structureMeta === null
+                                        ? undefined
+                                        : t(
+                                              "writing.index.scoped_works_title",
+                                          ).replace(
+                                              ":structure",
+                                              structureMeta.name,
+                                          )
+                                }
+                            >
+                                {structureMeta === null
+                                    ? t("writing.index.all_works_title")
+                                    : t(
+                                          "writing.index.scoped_works_title",
+                                      ).replace(
+                                          ":structure",
+                                          structureMeta.name,
+                                      )}
+                            </h2>
+                            <span
+                                className="rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold"
+                                style={countBadgeStyle}
+                            >
+                                {worksOnRight.length.toLocaleString()}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {worksOnRight.length === 0 ? (
+                    <div
+                        className="px-6 py-12 text-center text-sm italic"
+                        style={emptyStateStyle}
+                    >
+                        {structureMeta === null
+                            ? t("writing.index.empty")
+                            : t("writing.index.scoped_works_empty")}
+                    </div>
+                ) : (
+                    <div
+                        className="flex flex-col gap-2 p-3 sm:p-4 xl:min-h-0 xl:flex-1 xl:overscroll-contain xl:overflow-y-auto"
+                        data-writing-works-scroll
+                    >
+                        {worksOnRight.map((work) => (
+                            <WorkCard
+                                key={work.id}
+                                work={work}
+                                projectSlug={project.slug}
+                                t={t}
+                                compact
+                                onSettings={
+                                    canManageWorks
+                                        ? () => onSettings(work)
+                                        : undefined
+                                }
+                            />
+                        ))}
+                    </div>
+                )}
+            </section>
+        </aside>
     );
 }
 
@@ -443,6 +664,7 @@ function CreateWorkModal({
                             value={form.data.title}
                             onChange={(e) => {
                                 form.setData("title", e.target.value);
+
                                 if (form.errors.title) {
                                     form.clearErrors("title");
                                 }
@@ -466,6 +688,7 @@ function CreateWorkModal({
                             value={form.data.type}
                             onChange={(e) => {
                                 form.setData("type", e.target.value);
+
                                 if (form.errors.type) {
                                     form.clearErrors("type");
                                 }
