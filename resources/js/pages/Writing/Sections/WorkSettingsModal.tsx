@@ -251,18 +251,23 @@ export default function WorkSettingsModal({
             setEntryLinkError(undefined);
             setSavingLink(true);
 
-            const res = await fetch(`/works/${project.slug}/${work.slug}/entry-link`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders() },
-                body: JSON.stringify({ entry_id: nextEntryId }),
-            });
+            try {
+                const res = await fetch(`/works/${project.slug}/${work.slug}/entry-link`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders() },
+                    body: JSON.stringify({ entry_id: nextEntryId }),
+                });
 
-            setSavingLink(false);
-
-            if (!res.ok) {
-                const data = await res.json().catch(() => null);
-                setEntryLinkError(data?.errors?.entry_id?.[0] ?? data?.message ?? t('writing.structure.link_failed'));
+                if (!res.ok) {
+                    const data = await res.json().catch(() => null);
+                    setEntryLinkError(data?.errors?.entry_id?.[0] ?? data?.message ?? t('writing.structure.link_failed'));
+                    return;
+                }
+            } catch {
+                setEntryLinkError(t('writing.structure.link_failed'));
                 return;
+            } finally {
+                setSavingLink(false);
             }
         }
 
