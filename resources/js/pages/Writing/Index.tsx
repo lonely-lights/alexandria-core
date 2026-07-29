@@ -371,6 +371,7 @@ export default function WritingIndex() {
                     }}
                     types={types}
                     lengthPlans={lengthPlans}
+                    structureBlueprint={structureMeta}
                     onClose={() => setSettingsWork(null)}
                 />
             )}

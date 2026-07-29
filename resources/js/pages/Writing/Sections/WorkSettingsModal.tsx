@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import Button from '@alexandria/components/ui/Button';
 import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
@@ -9,6 +10,7 @@ import CheckboxField from '@alexandria/components/form/CheckboxField';
 import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
 import Textarea from '@alexandria/components/form/Textarea';
+import LinkedEntryField, { type LinkedEntryOption } from './LinkedEntryField';
 import {
     STRUCTURE_TEMPLATES,
     type StructureBeat,
@@ -56,6 +58,7 @@ export interface WorkSettingsWork {
     target_words: number | null;
     word_count: number;
     line_count?: number;
+    linked_entry?: LinkedEntryOption | null;
 }
 
 const WORK_STATUSES = ['concept', 'drafting', 'revising', 'complete'] as const;
@@ -81,12 +84,14 @@ export default function WorkSettingsModal({
     work,
     types,
     lengthPlans,
+    structureBlueprint = null,
     onClose,
 }: {
-    project: { slug: string };
+    project: { id: number; slug: string };
     work: WorkSettingsWork;
     types: string[];
     lengthPlans: LengthPlanOption[];
+    structureBlueprint?: { id: number; name: string } | null;
     onClose: () => void;
 }) {
     const t = useT();
@@ -160,6 +165,13 @@ export default function WorkSettingsModal({
     // beat is edited it retains its value across template switches.
     const [touchedBeats, setTouchedBeats] = useState<Record<number, boolean>>({});
 
+    // Linked entry lives outside Inertia's `form` — its own PUT (Task
+    // 6's works.entry_link) fires ahead of the settings save, only
+    // when the selection actually changed.
+    const [linkedEntry, setLinkedEntry] = useState<LinkedEntryOption | null>(work.linked_entry ?? null);
+    const [entryLinkError, setEntryLinkError] = useState<string | undefined>(undefined);
+    const [savingLink, setSavingLink] = useState(false);
+
     // Nested length_plan.* errors come back keyed by dot path, which
     // the typed errors bag doesn't know about.
     const allErrors = form.errors as Record<string, string | undefined>;
@@ -231,7 +243,29 @@ export default function WorkSettingsModal({
         setTouchedBeats((prev) => ({ ...prev, [index]: true }));
     }
 
-    function submit() {
+    async function submit() {
+        const nextEntryId = linkedEntry?.id ?? null;
+        const previousEntryId = work.linked_entry?.id ?? null;
+
+        if (nextEntryId !== previousEntryId) {
+            setEntryLinkError(undefined);
+            setSavingLink(true);
+
+            const res = await fetch(`/works/${project.slug}/${work.slug}/entry-link`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders() },
+                body: JSON.stringify({ entry_id: nextEntryId }),
+            });
+
+            setSavingLink(false);
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => null);
+                setEntryLinkError(data?.errors?.entry_id?.[0] ?? data?.message ?? t('writing.structure.link_failed'));
+                return;
+            }
+        }
+
         form.put(`/works/${project.slug}/${work.slug}`, {
             preserveScroll: true,
             onSuccess: onClose,
@@ -252,7 +286,7 @@ export default function WorkSettingsModal({
                 className="flex flex-1 flex-col overflow-hidden"
                 onSubmit={(e) => {
                     e.preventDefault();
-                    submit();
+                    void submit();
                 }}
             >
                 <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-5">
@@ -328,6 +362,15 @@ export default function WorkSettingsModal({
                                 rows={2}
                                 size="md"
                             />
+                            {structureBlueprint && (
+                                <LinkedEntryField
+                                    projectId={project.id}
+                                    blueprintId={structureBlueprint.id}
+                                    value={linkedEntry}
+                                    onChange={setLinkedEntry}
+                                    error={entryLinkError}
+                                />
+                            )}
                         </div>
 
                         {/* Right column: Length plan */}
@@ -511,7 +554,7 @@ export default function WorkSettingsModal({
                     <Button variant="ghost" onClick={onClose}>
                         {t('writing.form.cancel')}
                     </Button>
-                    <Button type="submit" loading={form.processing}>
+                    <Button type="submit" loading={form.processing || savingLink}>
                         {t('writing.settings.save')}
                     </Button>
                 </ModalFooter>

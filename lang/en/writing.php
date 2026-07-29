@@ -85,6 +85,9 @@ return [
     'settings.structure_col_beat' => 'Beat',
     'settings.structure_col_target' => 'Target %',
     'settings.structure_col_tolerance' => 'Tolerance %',
+    'settings.linked_entry' => 'Linked entry',
+    'settings.linked_entry_help' => 'The structure entry this work belongs to.',
+    'settings.linked_entry_none' => 'None',
 
     'structure.no_structure_linked' => 'Link a structure to this writing dashboard first.',
     'structure.entry_not_in_structure' => 'That entry is not part of the linked structure.',

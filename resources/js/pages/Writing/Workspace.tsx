@@ -107,7 +107,9 @@ interface WorkspaceProps {
         target_pages: number | null;
         page_estimate: number;
         length_plan: WorkLengthPlan | null;
+        linked_entry: { id: number; name: string } | null;
     };
+    structureBlueprint: { id: number; name: string } | null;
     sections: SectionNode[];
     currentSection: CurrentSection | null;
     pins: EntryCard[];
@@ -248,7 +250,7 @@ export default function Workspace() {
     const t = useT();
     const entitlements = useEntitlements();
     const pageProps = usePage<WorkspaceProps>().props;
-    const { project, work, sections, currentSection, pins, types, lengthPlans, can } = pageProps;
+    const { project, work, structureBlueprint, sections, currentSection, pins, types, lengthPlans, can } = pageProps;
 
     // WorkspaceProps uses `[key: string]: unknown` for the Inertia shared
     // bag, so `auth` is not strongly typed here — cast narrowly.
@@ -1062,6 +1064,7 @@ export default function Workspace() {
                     work={work}
                     types={types}
                     lengthPlans={lengthPlans}
+                    structureBlueprint={structureBlueprint}
                     onClose={() => setSettingsOpen(false)}
                 />
             )}
