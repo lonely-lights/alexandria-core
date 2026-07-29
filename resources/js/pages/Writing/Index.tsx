@@ -1,4 +1,4 @@
-import { useForm, usePage } from "@inertiajs/react";
+import { Deferred, useForm, usePage } from "@inertiajs/react";
 import { useState, type CSSProperties } from "react";
 
 import useT from "@alexandria/hooks/useT";
@@ -16,6 +16,7 @@ import Input from "@alexandria/components/form/Input";
 import Select from "@alexandria/components/form/Select";
 import Textarea from "@alexandria/components/form/Textarea";
 
+import StructureTree, { type StructurePayload } from "./Sections/StructureTree";
 import WorkCard, { type WorkRow } from "./Sections/WorkCard";
 import WorkSettingsModal, {
     type LengthPlanOption,
@@ -35,9 +36,13 @@ interface WritingIndexProps {
     works: WorkRow[];
     types: string[];
     lengthPlans: LengthPlanOption[];
-    can: { create: boolean };
+    structureMeta: { id: number; name: string; slug: string; icon: string | null } | null;
+    structure?: StructurePayload | null;
+    can: { create: boolean; manageStructure: boolean };
     [key: string]: unknown;
 }
+
+type IndexTab = "works" | "structure";
 
 /* ── Theme styles ── */
 
@@ -60,9 +65,13 @@ const groupHeaderStyle: CSSProperties = {
     color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
 };
 
+const activeTabStyle: CSSProperties = {
+    background: "var(--theme-base-300)",
+};
+
 export default function WritingIndex() {
     const t = useT();
-    const { project, works, types, lengthPlans, can } =
+    const { project, works, types, lengthPlans, structureMeta, structure, can } =
         usePage<WritingIndexProps>().props;
     const [createOpen, setCreateOpen] = useState(false);
     const [settingsWork, setSettingsWork] = useState<WorkRow | null>(null);
@@ -70,6 +79,19 @@ export default function WritingIndex() {
     // Smaller hero tile on mobile so it doesn't claim a quarter of the
     // hero row alongside the heading — same breakpoint AI Hub uses.
     const isMobileWriting = useMediaQuery("(max-width: 1023px)");
+
+    const tabStorageKey = `alexandria.writing.index-tab:${project.id}`;
+    const [tab, setTabState] = useState<IndexTab>(() =>
+        structureMeta !== null &&
+        typeof window !== "undefined" &&
+        window.localStorage.getItem(tabStorageKey) === "structure"
+            ? "structure"
+            : "works",
+    );
+    function setTab(next: IndexTab) {
+        setTabState(next);
+        window.localStorage.setItem(tabStorageKey, next);
+    }
 
     return (
         <AppLayout
@@ -91,6 +113,41 @@ export default function WritingIndex() {
                         >
                             {t("writing.index.create")}
                         </Button>
+                    ) : undefined
+                }
+                tabs={
+                    structureMeta !== null ? (
+                        <>
+                            <button
+                                type="button"
+                                className="alex-btn alex-btn--ghost text-xs"
+                                style={tab === "works" ? activeTabStyle : undefined}
+                                onClick={() => setTab("works")}
+                            >
+                                {t("writing.index.tab_works")}
+                            </button>
+                            <button
+                                type="button"
+                                className="alex-btn alex-btn--ghost text-xs"
+                                style={tab === "structure" ? activeTabStyle : undefined}
+                                onClick={() => setTab("structure")}
+                            >
+                                <i
+                                    className={structureMeta.icon ?? "fa-solid fa-sitemap"}
+                                    aria-hidden="true"
+                                />
+                                {structureMeta.name}
+                            </button>
+                        </>
+                    ) : can.manageStructure ? (
+                        <button
+                            type="button"
+                            className="alex-btn alex-btn--ghost text-xs"
+                            // Wired in Task 11 (structure picker)
+                        >
+                            <i className="fa-solid fa-link" aria-hidden="true" />
+                            {t("writing.index.link_structure")}
+                        </button>
                     ) : undefined
                 }
             >
@@ -129,96 +186,137 @@ export default function WritingIndex() {
             </PageHeader>
 
             <div className="container mx-auto max-w-7xl px-4 py-8">
-                {works.length === 0 ? (
-                    <div
-                        className="px-6 py-16 text-center text-sm italic"
-                        style={emptyStateStyle}
-                    >
-                        {t("writing.index.empty")}
-                    </div>
-                ) : (
-                    /* Group works by franchise breadcrumb; named groups first, Standalone last */
-                    (() => {
-                        const groupMap = new Map<string | null, WorkRow[]>();
-                        for (const work of works) {
-                            const key = work.group ?? null;
-                            if (!groupMap.has(key)) groupMap.set(key, []);
-                            groupMap.get(key)!.push(work);
-                        }
-                        const groups = [...groupMap.entries()].sort(
-                            ([a], [b]) => {
-                                if (a === null) return 1;
-                                if (b === null) return -1;
-                                return a.localeCompare(b);
-                            },
-                        );
-                        return (
-                            <div className="flex min-w-0 flex-col gap-8">
-                                <section className="min-w-0">
-                                    <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                                        <h2
-                                            className="font-serif text-lg font-bold tracking-tight"
-                                            style={{
-                                                color: "var(--theme-base-content)",
-                                            }}
-                                        >
-                                            {project.name}
-                                        </h2>
-                                        <span
-                                            className="text-xs"
-                                            style={projectCountStyle}
-                                        >
-                                            {t(
-                                                "writing.dashboard.work_count",
-                                            ).replace(
-                                                ":count",
-                                                works.length.toLocaleString(),
-                                            )}
-                                        </span>
-                                    </div>
-
-                                    {groups.map(([groupKey, groupWorks]) => (
-                                        <div
-                                            key={groupKey ?? "__standalone"}
-                                            className="mb-5 last:mb-0"
-                                        >
-                                            <h3
-                                                className="mb-2 text-xs font-semibold uppercase tracking-wide"
-                                                style={groupHeaderStyle}
+                {tab === "works" ? (
+                    works.length === 0 ? (
+                        <div
+                            className="px-6 py-16 text-center text-sm italic"
+                            style={emptyStateStyle}
+                        >
+                            {t("writing.index.empty")}
+                        </div>
+                    ) : (
+                        /* Group works by franchise breadcrumb; named groups first, Standalone last */
+                        (() => {
+                            const groupMap = new Map<
+                                string | null,
+                                WorkRow[]
+                            >();
+                            for (const work of works) {
+                                const key = work.group ?? null;
+                                if (!groupMap.has(key)) groupMap.set(key, []);
+                                groupMap.get(key)!.push(work);
+                            }
+                            const groups = [...groupMap.entries()].sort(
+                                ([a], [b]) => {
+                                    if (a === null) return 1;
+                                    if (b === null) return -1;
+                                    return a.localeCompare(b);
+                                },
+                            );
+                            return (
+                                <div className="flex min-w-0 flex-col gap-8">
+                                    <section className="min-w-0">
+                                        <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                                            <h2
+                                                className="font-serif text-lg font-bold tracking-tight"
+                                                style={{
+                                                    color: "var(--theme-base-content)",
+                                                }}
                                             >
-                                                {groupKey ??
-                                                    t(
-                                                        "writing.dashboard.ungrouped",
-                                                    )}
-                                            </h3>
-                                            <div className="grid gap-3 md:grid-cols-2">
-                                                {groupWorks.map((work) => (
-                                                    <WorkCard
-                                                        key={work.id}
-                                                        work={work}
-                                                        projectSlug={
-                                                            project.slug
-                                                        }
-                                                        t={t}
-                                                        // can.create as the per-work gate proxy (v1) —
-                                                        // index carries no per-work abilities yet.
-                                                        onSettings={
-                                                            can.create
-                                                                ? () =>
-                                                                      setSettingsWork(
-                                                                          work,
-                                                                      )
-                                                                : undefined
-                                                        }
-                                                    />
-                                                ))}
-                                            </div>
+                                                {project.name}
+                                            </h2>
+                                            <span
+                                                className="text-xs"
+                                                style={projectCountStyle}
+                                            >
+                                                {t(
+                                                    "writing.dashboard.work_count",
+                                                ).replace(
+                                                    ":count",
+                                                    works.length.toLocaleString(),
+                                                )}
+                                            </span>
                                         </div>
-                                    ))}
-                                </section>
+
+                                        {groups.map(
+                                            ([groupKey, groupWorks]) => (
+                                                <div
+                                                    key={
+                                                        groupKey ??
+                                                        "__standalone"
+                                                    }
+                                                    className="mb-5 last:mb-0"
+                                                >
+                                                    <h3
+                                                        className="mb-2 text-xs font-semibold uppercase tracking-wide"
+                                                        style={
+                                                            groupHeaderStyle
+                                                        }
+                                                    >
+                                                        {groupKey ??
+                                                            t(
+                                                                "writing.dashboard.ungrouped",
+                                                            )}
+                                                    </h3>
+                                                    <div className="grid gap-3 md:grid-cols-2">
+                                                        {groupWorks.map(
+                                                            (work) => (
+                                                                <WorkCard
+                                                                    key={
+                                                                        work.id
+                                                                    }
+                                                                    work={
+                                                                        work
+                                                                    }
+                                                                    projectSlug={
+                                                                        project.slug
+                                                                    }
+                                                                    t={t}
+                                                                    // can.create as the per-work gate proxy (v1) —
+                                                                    // index carries no per-work abilities yet.
+                                                                    onSettings={
+                                                                        can.create
+                                                                            ? () =>
+                                                                                  setSettingsWork(
+                                                                                      work,
+                                                                                  )
+                                                                            : undefined
+                                                                    }
+                                                                />
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ),
+                                        )}
+                                    </section>
+                                </div>
+                            );
+                        })()
+                    )
+                ) : (
+                    <Deferred
+                        data="structure"
+                        fallback={
+                            <div
+                                className="animate-pulse px-6 py-16 text-center text-sm"
+                                style={emptyStateStyle}
+                            >
+                                {t("writing.structure.loading")}
                             </div>
-                        );
-                    })()
+                        }
+                    >
+                        {structure ? (
+                            <StructureTree
+                                project={project}
+                                structure={structure}
+                                works={works}
+                                // can.create as the coarse work-edit gate proxy —
+                                // same proxy comment as the WorkCard settings gear above.
+                                canLink={can.create}
+                            />
+                        ) : null}
+                    </Deferred>
                 )}
             </div>
 

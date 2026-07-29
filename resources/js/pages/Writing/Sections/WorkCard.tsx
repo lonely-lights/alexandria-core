@@ -32,6 +32,9 @@ export interface WorkRow {
     updated_at: string | null;
     /** Franchise breadcrumb (root-first ancestor names joined with ' › '), null for standalone works. */
     group?: string | null;
+    /** Optional — the global Dashboard payload doesn't carry these. */
+    entry_id?: number | null;
+    linked_entry?: { id: number; name: string } | null;
 }
 
 /* ── Theme styles ── */

@@ -28,6 +28,8 @@ return [
     'index.words' => ':count words',
     'index.sections' => ':count sections',
     'index.updated' => 'Updated :date',
+    'index.tab_works' => 'Works',
+    'index.link_structure' => 'Link structure',
 
     'form.create_title' => 'Start a new work',
     'form.title' => 'Title',
@@ -88,6 +90,14 @@ return [
     'structure.entry_not_in_structure' => 'That entry is not part of the linked structure.',
     'structure.entry_already_linked' => 'Already linked to :work.',
     'structure.invalid_blueprint' => 'Pick a structural blueprint from this project.',
+    'structure.loading' => 'Loading structure…',
+    'structure.empty' => 'This structure has no entries yet.',
+    'structure.link_work' => 'Link work',
+    'structure.unlink' => 'Unlink',
+    'structure.unlink_confirm' => 'Unlink?',
+    'structure.link_failed' => 'Could not update the link.',
+    'structure.pick_work_title' => 'Link a work to :entry',
+    'structure.no_unlinked_works' => 'Every work is already linked.',
 
     'workspace.add_section' => 'Add section',
     'workspace.add_child' => 'Add inside',
