@@ -184,7 +184,7 @@ const saveBtnStyle: CSSProperties = {
 export default function EntryShow() {
     const t = useT();
     const props = usePage<EntryShowProps>().props;
-    const { project, blueprint, entry, contentHtml, summaryHtml, dynamicProperties, relationships, relationshipBlueprints, connections, mentions, mentionedIn, appearances, history, infoboxBlocks, timelineEvents, timelineEpoch } = props;
+    const { project, blueprint, entry, contentHtml, summaryHtml, dynamicProperties, relationships, relationshipBlueprints, connections, mentions, mentionedIn, appearances, writingWork, history, infoboxBlocks, timelineEvents, timelineEpoch } = props;
     const PageImageManager = getEntryShowSlots().pageImageManager;
 
     const [showStructureConfig, setShowStructureConfig] = useState(false);
@@ -228,7 +228,6 @@ export default function EntryShow() {
     const [deleteOpen, setDeleteOpen] = useState(false);
 
     const iconClass = blueprint.icon.includes(' ') ? blueprint.icon : `fa-solid ${blueprint.icon}`;
-    const writingWorkSlug = (entry.metadata?.writing as { work_slug?: string } | undefined)?.work_slug ?? null;
 
     // Sync hash
     useEffect(() => {
@@ -371,8 +370,8 @@ export default function EntryShow() {
                                 style={summaryStyle}
                             />
                         )}
-                        {writingWorkSlug && (
-                            <a href={`/works/${project.slug}/${writingWorkSlug}`} className="alex-writing-chip" style={writingChipStyle}>
+                        {writingWork && (
+                            <a href={`/works/${project.slug}/${writingWork.slug}`} className="alex-writing-chip" style={writingChipStyle}>
                                 <i className="fa-solid fa-feather" />
                                 {t('entries.show.open_in_writing')}
                             </a>

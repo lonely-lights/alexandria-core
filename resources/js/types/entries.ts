@@ -219,6 +219,8 @@ export interface EntryShowProps {
     mentionedIn: MentionEntry[];
     /** Writing-dashboard sections where this entry appears (8g.1 Plan 3) - host apps may omit. */
     appearances?: WorkAppearance[];
+    /** The Work (if any) that links to this entry via works.entry_id - host apps may omit. */
+    writingWork?: { title: string; slug: string } | null;
     history: HistoryRecord[];
     infoboxBlocks: InfoboxBlock[];
     timelineEvents: Array<{
