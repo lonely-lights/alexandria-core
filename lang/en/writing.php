@@ -98,6 +98,11 @@ return [
     'structure.link_failed' => 'Could not update the link.',
     'structure.pick_work_title' => 'Link a work to :entry',
     'structure.no_unlinked_works' => 'Every work is already linked.',
+    'structure.picker_title' => 'Link a structure',
+    'structure.picker_help' => 'Choose a structural blueprint to show as a tab on this writing dashboard.',
+    'structure.picker_none' => 'No structural blueprints in this project yet.',
+    'structure.picker_clear' => 'Unlink structure',
+    'structure.save' => 'Save',
 
     'workspace.add_section' => 'Add section',
     'workspace.add_child' => 'Add inside',

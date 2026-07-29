@@ -1,5 +1,5 @@
 import { Deferred, useForm, usePage } from "@inertiajs/react";
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import useT from "@alexandria/hooks/useT";
 import useMediaQuery from "@alexandria/hooks/useMediaQuery";
@@ -17,6 +17,9 @@ import Select from "@alexandria/components/form/Select";
 import Textarea from "@alexandria/components/form/Textarea";
 
 import StructureTree, { type StructurePayload } from "./Sections/StructureTree";
+import StructurePickerModal, {
+    type StructureChoice,
+} from "./Sections/StructurePickerModal";
 import WorkCard, { type WorkRow } from "./Sections/WorkCard";
 import WorkSettingsModal, {
     type LengthPlanOption,
@@ -38,6 +41,7 @@ interface WritingIndexProps {
     lengthPlans: LengthPlanOption[];
     structureMeta: { id: number; name: string; slug: string; icon: string | null } | null;
     structure?: StructurePayload | null;
+    structureChoices?: StructureChoice[];
     can: { create: boolean; manageStructure: boolean };
     [key: string]: unknown;
 }
@@ -71,10 +75,19 @@ const activeTabStyle: CSSProperties = {
 
 export default function WritingIndex() {
     const t = useT();
-    const { project, works, types, lengthPlans, structureMeta, structure, can } =
-        usePage<WritingIndexProps>().props;
+    const {
+        project,
+        works,
+        types,
+        lengthPlans,
+        structureMeta,
+        structure,
+        structureChoices,
+        can,
+    } = usePage<WritingIndexProps>().props;
     const [createOpen, setCreateOpen] = useState(false);
     const [settingsWork, setSettingsWork] = useState<WorkRow | null>(null);
+    const [pickerOpen, setPickerOpen] = useState(false);
 
     // Smaller hero tile on mobile so it doesn't claim a quarter of the
     // hero row alongside the heading — same breakpoint AI Hub uses.
@@ -92,6 +105,16 @@ export default function WritingIndex() {
         setTabState(next);
         window.localStorage.setItem(tabStorageKey, next);
     }
+
+    // If the structure just got unlinked (e.g. from the picker modal)
+    // while the structure tab was active, fall back to Works — the
+    // tab bar no longer renders a "structure" button to click back to.
+    useEffect(() => {
+        if (structureMeta === null && tab === "structure") {
+            setTab("works");
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [structureMeta]);
 
     return (
         <AppLayout
@@ -138,12 +161,23 @@ export default function WritingIndex() {
                                 />
                                 {structureMeta.name}
                             </button>
+                            {can.manageStructure && (
+                                <button
+                                    type="button"
+                                    className="alex-btn alex-btn--ghost text-xs"
+                                    title={t("writing.structure.picker_title")}
+                                    aria-label={t("writing.structure.picker_title")}
+                                    onClick={() => setPickerOpen(true)}
+                                >
+                                    <i className="fa-solid fa-gear" aria-hidden="true" />
+                                </button>
+                            )}
                         </>
                     ) : can.manageStructure ? (
                         <button
                             type="button"
                             className="alex-btn alex-btn--ghost text-xs"
-                            // Wired in Task 11 (structure picker)
+                            onClick={() => setPickerOpen(true)}
                         >
                             <i className="fa-solid fa-link" aria-hidden="true" />
                             {t("writing.index.link_structure")}
@@ -338,6 +372,15 @@ export default function WritingIndex() {
                     types={types}
                     lengthPlans={lengthPlans}
                     onClose={() => setSettingsWork(null)}
+                />
+            )}
+
+            {pickerOpen && (
+                <StructurePickerModal
+                    project={project}
+                    current={structureMeta?.id ?? null}
+                    choices={structureChoices}
+                    onClose={() => setPickerOpen(false)}
                 />
             )}
         </AppLayout>
