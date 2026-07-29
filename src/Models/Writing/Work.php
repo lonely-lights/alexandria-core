@@ -6,6 +6,7 @@ namespace Alexandria\Core\Models\Writing;
 
 use Alexandria\Core\Database\Factories\Writing\WorkFactory;
 use Alexandria\Core\Models\Framework\Project;
+use Alexandria\Core\Models\System\Entry;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,7 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property int $project_id
  * @property int $user_id
+ * @property int|null $entry_id
  * @property string $title
  * @property string $slug
  * @property string $type
@@ -113,6 +115,16 @@ class Work extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * The structure entry this work is linked to (e.g. its Compendium
+     * medium entry). Canonical direction: work -> entry; the entry side
+     * is derived by query.
+     */
+    public function entry(): BelongsTo
+    {
+        return $this->belongsTo(Entry::class);
     }
 
     public function user(): BelongsTo

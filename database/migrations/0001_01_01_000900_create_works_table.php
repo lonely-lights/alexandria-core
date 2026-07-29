@@ -14,6 +14,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained()->cascadeOnDelete();
             $table->unsignedBigInteger('user_id')->index();
+            // Canonical work -> structure-entry link (spec 2026-07-28).
+            // Nullable: unlinked works are normal. nullOnDelete: the work
+            // survives its entry. 1:1 among live works is enforced in the
+            // link endpoint, not here — works soft-delete, and a trashed
+            // work holding a DB-unique claim would block relinking.
+            $table->foreignId('entry_id')->nullable()->index()->constrained('entries')->nullOnDelete();
             $table->string('title');
             $table->string('slug');
             $table->string('type')->default('novel');
