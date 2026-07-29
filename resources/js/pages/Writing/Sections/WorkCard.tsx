@@ -39,6 +39,8 @@ export interface WorkRow {
         name: string;
         /** Present on project-dashboard rows for active-structure scoping. */
         blueprint_id?: number;
+        /** Archived entries leave the tree — their works count as unplaced. */
+        archived?: boolean;
     } | null;
 }
 

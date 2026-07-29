@@ -359,7 +359,11 @@ function WritingSidebar({
             ? works
             : works.filter(
                   (work) =>
-                      work.linked_entry?.blueprint_id !== activeStructureId,
+                      work.linked_entry?.blueprint_id !== activeStructureId ||
+                      // An archived entry has no tree node, so its work
+                      // must fall back to the rail or it vanishes from
+                      // both panels.
+                      work.linked_entry?.archived === true,
               );
     const worksInActiveStructure =
         activeStructureId === null ? null : works.length - worksOnRight.length;
