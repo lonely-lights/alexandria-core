@@ -6,7 +6,9 @@ namespace Alexandria\Core\Models\Writing;
 
 use Alexandria\Core\Database\Factories\Writing\WorkFactory;
 use Alexandria\Core\Models\Framework\Project;
+use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\System\Entry;
+use Alexandria\Core\Traits\Notable\HasNotes;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +25,10 @@ use Illuminate\Support\Str;
  * structure: they belong to exactly one project and hold a
  * user-controlled tree of WorkSections. word_count is a cached
  * rollup maintained by WorkSectionContentService.
+ *
+ * Notes attach to a work through the `notables` pivot (HasNotes), the
+ * same polymorphic seam WorkSection uses — a work-level note is the
+ * whole-manuscript counterpart to a section-level one.
  *
  * @property int $id
  * @property int $project_id
@@ -50,6 +56,7 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, WorkSection> $sections
  * @property-read Collection<int, WorkSection> $rootSections
  * @property-read Collection<int, WorkEntryPin> $pins
+ * @property-read Collection<int, Note> $notes
  * @property-read int|null $sections_count
  *
  * @method static WorkFactory factory($count = null, $state = [])
@@ -59,6 +66,7 @@ use Illuminate\Support\Str;
 class Work extends Model
 {
     use HasFactory;
+    use HasNotes;
     use SoftDeletes;
 
     public const string STATUS_CONCEPT = 'concept';
