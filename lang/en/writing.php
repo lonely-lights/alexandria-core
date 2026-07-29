@@ -84,6 +84,10 @@ return [
     'settings.structure_col_target' => 'Target %',
     'settings.structure_col_tolerance' => 'Tolerance %',
 
+    'structure.no_structure_linked' => 'Link a structure to this writing dashboard first.',
+    'structure.entry_not_in_structure' => 'That entry is not part of the linked structure.',
+    'structure.entry_already_linked' => 'Already linked to :work.',
+
     'workspace.add_section' => 'Add section',
     'workspace.add_child' => 'Add inside',
     'workspace.add_subsection' => 'Add subsection',
