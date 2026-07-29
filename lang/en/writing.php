@@ -87,6 +87,7 @@ return [
     'structure.no_structure_linked' => 'Link a structure to this writing dashboard first.',
     'structure.entry_not_in_structure' => 'That entry is not part of the linked structure.',
     'structure.entry_already_linked' => 'Already linked to :work.',
+    'structure.invalid_blueprint' => 'Pick a structural blueprint from this project.',
 
     'workspace.add_section' => 'Add section',
     'workspace.add_child' => 'Add inside',
