@@ -385,6 +385,7 @@ return [
     'switch.no_related' => 'No related contexts',
     'switch.no_results' => 'No matches',
     'switch.open_aria' => 'Switch notes context',
+    'switch.back_to_page' => "Show this page's notes",
 
     // ── NotebookFormModal (create/edit notebook) ────────────────────
     'notebook_form.create_title' => 'New Notebook',

@@ -372,6 +372,12 @@ export function openNotesDrawer(ctx: NotesContext) {
     window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: ctx }));
 }
 
+/* A user-initiated context switch outlives the drawer: reopening from any
+   trigger returns to the switched context until the page reloads, a
+   deep-link open (preSelectNoteId) targets a specific note, or the
+   project changes. Module-level on purpose — cleared by full page load. */
+let persistedSwitch: Pick<NotesContext, 'projectId' | 'contextType' | 'contextId' | 'contextLabel' | 'contextSlug'> | null = null;
+
 /* ── Drawer Component ── */
 
 export default function NotesDrawer() {
@@ -531,8 +537,34 @@ export default function NotesDrawer() {
         function handleOpen(e: Event) {
             const ctx = (e as CustomEvent<NotesContext>).detail;
             skipAnimationRef.current = ctx.skipAnimation === true;
-            setContext(ctx);
+
+            // `openedFrom` always tracks the PAGE's context, even when a
+            // persisted switch overrides what the drawer actually shows —
+            // it backs both the pinned switcher row and the flip-back
+            // button, which both mean "the context of this page".
             openedFromRef.current = ctx;
+
+            if (ctx.preSelectNoteId != null) {
+                // A deep link targets one specific note; it wins outright
+                // and ends any standing override.
+                persistedSwitch = null;
+                setContext(ctx);
+            } else if (persistedSwitch !== null && persistedSwitch.projectId === ctx.projectId) {
+                setContext({
+                    ...ctx,
+                    contextType: persistedSwitch.contextType,
+                    contextId: persistedSwitch.contextId,
+                    contextLabel: persistedSwitch.contextLabel,
+                    contextSlug: persistedSwitch.contextSlug,
+                    preSelectNoteId: undefined,
+                });
+            } else {
+                // No override, or we crossed into a different project —
+                // an override from another project is meaningless here.
+                persistedSwitch = null;
+                setContext(ctx);
+            }
+
             setOpen(true);
             setCurrentView('active');
             setSearch('');
@@ -702,16 +734,35 @@ export default function NotesDrawer() {
     /**
      * Re-scope the drawer in place — a full context switch, not a filter:
      * listing, creating, and attaching all follow the new scope via the
-     * existing context-keyed fetch effect. Ephemeral by design: closing
-     * the drawer forgets the switch (next open scopes to the page).
+     * existing context-keyed fetch effect. The switch outlives a
+     * close/reopen (see `persistedSwitch`) and resets on page load.
+     *
+     * @param options.persist Pass `false` when the switch is a return to
+     *        the page's own context — that ENDS the override rather than
+     *        recording a new one (see `returnToPageContext`).
      */
-    function switchContext(target: SwitchTarget) {
+    function switchContext(target: SwitchTarget, options?: { persist?: boolean }) {
         // The pinned Opened-from row renders even when it IS the current
         // context, so picking it must be a no-op — resetting search/view/
         // selection there would look like a random state wipe.
         if (context && target.type === context.contextType && target.id === context.contextId) {
             setShowContextSwitch(false);
             return;
+        }
+
+        // Record the override BEFORE the state update so a close/reopen
+        // lands back here. A null `context` means the drawer has nothing
+        // to switch from, so there is nothing worth persisting either.
+        if (options?.persist === false || context === null) {
+            persistedSwitch = null;
+        } else {
+            persistedSwitch = {
+                projectId: context.projectId,
+                contextType: target.type,
+                contextId: target.id,
+                contextLabel: target.label,
+                contextSlug: target.slug ?? undefined,
+            };
         }
 
         setContext((prev) => prev === null ? prev : {
@@ -729,6 +780,21 @@ export default function NotesDrawer() {
         exitSelectMode();
         hasInitialFetchedRef.current = false;
         setShowContextSwitch(false);
+    }
+
+    /**
+     * Flip the drawer back to the context the page opened it with. Passing
+     * `persist: false` clears the standing override instead of recording
+     * "page context" as a switch of its own.
+     */
+    function returnToPageContext() {
+        const from = openedFromRef.current;
+        if (!from) return;
+
+        switchContext(
+            { type: from.contextType, id: from.contextId, label: from.contextLabel, slug: from.contextSlug },
+            { persist: false },
+        );
     }
 
     function close() {
@@ -1109,19 +1175,37 @@ export default function NotesDrawer() {
                     shrinks the title + chrome so the 4 actions fit
                     alongside on a 375px viewport. */}
                 <div className={`flex flex-shrink-0 items-center justify-between ${isMobileDrawer ? 'gap-2 px-3 py-2' : 'px-4 py-3'}`} style={headerStyle}>
-                    <h3 className={`min-w-0 truncate font-bold ${isMobileDrawer ? 'text-base' : 'text-xl'}`}>
+                    <h3 className={`flex min-w-0 items-center gap-1.5 font-bold ${isMobileDrawer ? 'text-base' : 'text-xl'}`}>
                         {context && (
                             <button
                                 type="button"
                                 data-drawer-context-switch
                                 onClick={() => setShowContextSwitch(true)}
-                                className="inline-flex max-w-full items-center gap-1.5 truncate align-middle"
+                                className="inline-flex min-w-0 max-w-full items-center gap-1.5 truncate align-middle"
                                 aria-label={t('notes.switch.open_aria')}
                             >
                                 {!isMobileDrawer && <span>{t('notes.drawer.title.prefix')}</span>}
                                 <span className="truncate" style={{ color: 'var(--theme-brand-primary-500)' }}>{context.contextLabel}</span>
                                 <i className="fa-solid fa-chevron-down text-[10px]" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }} aria-hidden="true" />
                             </button>
+                        )}
+
+                        {/* Flip back to the page's own notes. Only rendered
+                            while a switch is actually in effect — otherwise
+                            it would be a visible no-op sitting in the header. */}
+                        {context && openedFromRef.current && (openedFromRef.current.contextType !== context.contextType || openedFromRef.current.contextId !== context.contextId) && (
+                            <Tooltip content={t('notes.switch.back_to_page')} placement="bottom">
+                                <button
+                                    type="button"
+                                    data-drawer-context-reset
+                                    onClick={returnToPageContext}
+                                    className="alex-btn inline-flex flex-shrink-0 items-center justify-center"
+                                    style={{ width: '1.75rem', height: '1.75rem', padding: 0, color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)' }}
+                                    aria-label={t('notes.switch.back_to_page')}
+                                >
+                                    <i className="fa-solid fa-location-crosshairs text-xs" aria-hidden="true" />
+                                </button>
+                            </Tooltip>
                         )}
                     </h3>
                     <div className={`flex items-center ${isMobileDrawer ? 'gap-1' : 'gap-2'}`}>
