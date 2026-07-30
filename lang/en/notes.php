@@ -389,6 +389,7 @@ return [
     'switch.recent' => 'Recent',
     'switch.recent_empty' => 'Nothing recent yet',
     'switch.recent_remove' => 'Remove from recent',
+    'switch.type_work' => 'Work',
 
     // ── NotebookFormModal (create/edit notebook) ────────────────────
     'notebook_form.create_title' => 'New Notebook',

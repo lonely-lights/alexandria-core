@@ -139,11 +139,21 @@ function byDepth(a: SwitchTarget, b: SwitchTarget): number {
 }
 
 function RowBody({ target, showPath }: { target: SwitchTarget; showPath?: boolean }) {
+    const t = useT();
+
     // In search results the ancestor path replaces the blueprint name — a
-    // hit reads as a place in the structure, not a loose title.
-    const sublabel = showPath && target.path?.length
+    // hit reads as a place in the structure, not a loose title. Works have
+    // no "where it lives" line of their own, so they name their kind
+    // instead: without it they're the one row type missing subtext, which
+    // reads as a rendering gap rather than a difference in kind. Purely a
+    // client-side fallback — a server-sent sublabel always wins.
+    const pathLabel = showPath && target.path?.length
         ? target.path.join(PATH_SEPARATOR)
-        : target.sublabel;
+        : null;
+
+    const sublabel = pathLabel
+        ?? target.sublabel
+        ?? (target.type === 'work' ? t('notes.switch.type_work') : null);
 
     return (
         <>
@@ -378,7 +388,7 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
                     {/* Right column — where you've been */}
                     <div
                         data-context-switch-recents
-                        className="min-w-0 shrink-0 overflow-y-auto border-t px-5 py-4 sm:w-64 sm:border-l sm:border-t-0"
+                        className="min-w-0 shrink-0 overflow-y-auto border-t px-5 py-4 sm:w-[42%] sm:border-l sm:border-t-0"
                         style={columnBorderStyle}
                     >
                         <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.recent')}</p>
