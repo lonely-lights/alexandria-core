@@ -77,10 +77,20 @@ const inputStyle: CSSProperties = {
     padding: '0.375rem 0.75rem',
 };
 
+/**
+ * Group lists need two things at once: rounded corners that clip the
+ * rows, and a working vertical scroll inside their capped height.
+ *
+ * The axes are split deliberately. A shorthand `overflow: hidden` here
+ * beats the Tailwind `overflow-y-auto` class on the same element —
+ * inline styles always win — so the lists clipped their overflow rows
+ * and pushed the scroll up to the column instead of scrolling in place.
+ */
 const listWrapperStyle: CSSProperties = {
     border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
     borderRadius: 'var(--theme-radius-card)',
-    overflow: 'hidden',
+    overflowX: 'hidden',
+    overflowY: 'auto',
 };
 
 const countChipStyle: CSSProperties = {
@@ -336,7 +346,7 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
 
                 <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
                     {/* Left column — where you are, where you can go */}
-                    <div className="min-w-0 flex-1 overflow-y-auto px-5 py-4">
+                    <div className="scrollbar-subtle min-w-0 flex-1 overflow-y-auto px-5 py-4">
                         {/* Pinned: the context the drawer originally opened with */}
                         <div className="mb-4">
                             <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.opened_from')}</p>
@@ -363,7 +373,7 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
                                 {resultRows.length === 0 && !loading ? (
                                     <p className="text-[11px]" style={microText}>{t('notes.switch.no_results')}</p>
                                 ) : (
-                                    <div className="max-h-48 overflow-y-auto" style={listWrapperStyle}>
+                                    <div className="scrollbar-subtle max-h-48 overflow-y-auto" style={listWrapperStyle}>
                                         {resultRows.map((row, idx) => (
                                             <ContextRow key={`${row.type}-${row.id}`} target={row} onPick={handlePick} isLast={idx === resultRows.length - 1} showPath />
                                         ))}
@@ -377,7 +387,7 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
                         {relatedRows.length === 0 && !loading ? (
                             <p className="text-[11px]" style={microText}>{t('notes.switch.no_related')}</p>
                         ) : (
-                            <div className="max-h-64 overflow-y-auto" style={listWrapperStyle}>
+                            <div className="scrollbar-subtle max-h-64 overflow-y-auto" style={listWrapperStyle}>
                                 {relatedRows.map((row, idx) => (
                                     <ContextRow key={`${row.type}-${row.id}`} target={row} onPick={handlePick} isLast={idx === relatedRows.length - 1} tree />
                                 ))}
@@ -388,14 +398,14 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
                     {/* Right column — where you've been */}
                     <div
                         data-context-switch-recents
-                        className="min-w-0 shrink-0 overflow-y-auto border-t px-5 py-4 sm:w-[42%] sm:border-l sm:border-t-0"
+                        className="scrollbar-subtle min-w-0 shrink-0 overflow-y-auto border-t px-5 py-4 sm:w-[42%] sm:border-l sm:border-t-0"
                         style={columnBorderStyle}
                     >
                         <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.recent')}</p>
                         {recents.length === 0 ? (
                             <p className="text-[11px]" style={microText}>{t('notes.switch.recent_empty')}</p>
                         ) : (
-                            <div style={listWrapperStyle}>
+                            <div className="scrollbar-subtle max-h-64 overflow-y-auto" style={listWrapperStyle}>
                                 {recents.map((row, idx) => (
                                     <RecentRow
                                         key={`${row.type}-${row.id}`}
