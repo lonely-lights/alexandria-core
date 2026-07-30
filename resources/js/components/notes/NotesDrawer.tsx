@@ -2048,10 +2048,11 @@ export default function NotesDrawer() {
                                 />
                                 <div>
                                     <span className="font-medium">{loc.name}</span>
-                                    {/* `capitalize` + the underscore swap renders
-                                        work_section as "Work Section"; every other
-                                        type is a single word and unaffected. */}
-                                    <span className="ml-2 text-xs capitalize" style={microText}>{loc.type.replace('_', ' ')}</span>
+                                    {/* Translated type label — same key family
+                                        NoteModal's location chips use, so the six
+                                        location types read identically in both
+                                        surfaces (and stay translatable). */}
+                                    <span className="ml-2 text-xs" style={microText}>{t(`notes.modal.label.${loc.type}`)}</span>
                                 </div>
                             </div>
                         ))}

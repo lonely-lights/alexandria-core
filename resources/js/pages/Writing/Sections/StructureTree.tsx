@@ -33,7 +33,15 @@ export interface StructureNode {
     id: number;
     name: string;
     slug: string;
+    /** Drives the row icon: stub (or folder, when it has children). */
     is_stub: boolean;
+    /**
+     * Server-side Entry::hasPage() — `!is_stub` AND the structure
+     * blueprint being linkable. Non-linkable blueprints (structural ones
+     * usually are) have no entry pages at all, so this is the gate for
+     * linking the row, not `is_stub`.
+     */
+    has_page: boolean;
     work: { id: number; title: string; slug: string } | null;
     children: StructureNode[];
 }
@@ -557,15 +565,11 @@ function StructureNodeRow({
                     aria-hidden="true"
                 />
 
-                {node.is_stub ? (
-                    <span
-                        className={nodeNameClass}
-                        data-structure-entry-name
-                        style={entryLinkStyle}
-                    >
-                        {node.name}
-                    </span>
-                ) : (
+                {/* `has_page`, not `!is_stub`: the entry page exists only
+                    when the owning blueprint is linkable too, so a live
+                    entry on a non-linkable structure blueprint stays plain
+                    text rather than linking to a route that has no page. */}
+                {node.has_page ? (
                     <a
                         href={`/p/${project.slug}/${blueprintSlug}/${node.slug}`}
                         className={`${nodeNameClass} hover:underline`}
@@ -575,6 +579,14 @@ function StructureNodeRow({
                     >
                         {node.name}
                     </a>
+                ) : (
+                    <span
+                        className={nodeNameClass}
+                        data-structure-entry-name
+                        style={entryLinkStyle}
+                    >
+                        {node.name}
+                    </span>
                 )}
 
                 {linkedWork !== null ? (

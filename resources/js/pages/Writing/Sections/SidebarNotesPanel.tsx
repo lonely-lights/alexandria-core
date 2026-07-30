@@ -70,7 +70,10 @@ async function fetchJson<T>(url: string, label: string): Promise<T> {
         throw new Error(`${label} fetch failed: ${response.status}`);
     }
 
-    return response.json() as Promise<T>;
+    // Awaited rather than returned raw: the parse settles inside this
+    // async function, so a malformed body rejects here (with this frame in
+    // the stack) instead of one level out at the call site.
+    return (await response.json()) as T;
 }
 
 function fetchSectionNotes(projectId: number, sectionId: number): Promise<Note[]> {
