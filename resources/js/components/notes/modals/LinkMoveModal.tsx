@@ -203,7 +203,7 @@ export default function LinkMoveModal({ open, onClose, projectId, noteId, noteId
                                             style={idx === filteredTargets.length - 1 ? undefined : { borderBottom: rowDivider }}
                                         >
                                             <i
-                                                className={`text-xs ${target.type === 'project' ? 'fa-solid fa-folder' : 'fa-solid fa-cube'}`}
+                                                className={`text-xs ${target.type === 'project' ? 'fa-solid fa-folder' : target.type === 'work' ? 'fa-solid fa-feather' : 'fa-solid fa-cube'}`}
                                                 style={microText}
                                             />
                                             <div>
