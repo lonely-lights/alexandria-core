@@ -55,6 +55,11 @@ const TYPE_ICONS: Record<SwitchContextType, string> = {
 const ROW_BASE_INDENT_REM = 1;
 /** Added per depth step for tree rows. */
 const ROW_INDENT_STEP_REM = 0.75;
+/** Deepest level that still earns an indent — see ContextRow. */
+const ROW_MAX_INDENT_STEPS = 6;
+
+/** Below this, typing is still ambiguous and a search costs more than it returns. */
+const MIN_SEARCH_LENGTH = 2;
 
 const PATH_SEPARATOR = ' › ';
 
@@ -176,9 +181,15 @@ function RowBody({ target, showPath }: { target: SwitchTarget; showPath?: boolea
  * sublabel instead (`showPath`), because a hit list indented by depth
  * reads as a broken list rather than a tree.
  */
-function ContextRow({ target, onPick, isLast, showPath, tree }: { target: SwitchTarget; onPick: (target: SwitchTarget) => void; isLast: boolean; showPath?: boolean; tree?: boolean }) {
+function ContextRow({ target, onPick, isLast, showPath, tree, showCount = true }: { target: SwitchTarget; onPick: (target: SwitchTarget) => void; isLast: boolean; showPath?: boolean; tree?: boolean; showCount?: boolean }) {
+    // Indent is capped: the live corpus nests entries 13 deep, which at
+    // 0.75rem a level would spend 148px of a ~350px column on whitespace
+    // and squeeze the label to nothing. Past the cap rows share a depth —
+    // the tree stops getting more precise, but it stays readable.
     const indentRem = tree
-        ? ROW_BASE_INDENT_REM + Math.max(0, target.depth ?? 0) * ROW_INDENT_STEP_REM
+        ? ROW_BASE_INDENT_REM
+            + Math.min(Math.max(0, target.depth ?? 0), ROW_MAX_INDENT_STEPS)
+                * ROW_INDENT_STEP_REM
         : ROW_BASE_INDENT_REM;
 
     return (
@@ -193,7 +204,9 @@ function ContextRow({ target, onPick, isLast, showPath, tree }: { target: Switch
             }}
         >
             <RowBody target={target} showPath={showPath} />
-            <span style={countChipStyle}>{target.note_count ?? 0}</span>
+            {showCount && (
+                <span data-context-switch-count style={countChipStyle}>{target.note_count ?? 0}</span>
+            )}
         </button>
     );
 }
@@ -242,7 +255,17 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
     const [q, setQ] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // One fetch per (open, debounced q) — family rides along on every
+    /**
+     * The query we'd actually send. A single character matches nearly
+     * everything, so the server would run five LIKE scans per keystroke
+     * to return noise — below the minimum we send no `q` at all and the
+     * request stays the plain family fetch. Deriving it here (rather
+     * than gating inside the effect) keeps it out of the dependency
+     * array too: typing "L" then "o" fires one request, not three.
+     */
+    const searchQuery = q.trim().length >= MIN_SEARCH_LENGTH ? q.trim() : '';
+
+    // One fetch per (open, debounced query) — family rides along on every
     // response, so the first fetch also fills the Related group.
     useEffect(() => {
         if (!open) return;
@@ -251,7 +274,7 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
             const params = new URLSearchParams({
                 context_type: current.type,
                 context_id: String(current.id),
-                ...(q.trim() ? { q: q.trim() } : {}),
+                ...(searchQuery ? { q: searchQuery } : {}),
             });
             fetch(`/api/v1/projects/${projectId}/note-contexts?${params}`, {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
@@ -264,9 +287,9 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
                 })
                 .catch(() => { setFamily([]); setResults([]); })
                 .finally(() => setLoading(false));
-        }, q ? 300 : 0);
+        }, searchQuery ? 300 : 0);
         return () => clearTimeout(timer);
-    }, [open, projectId, current.type, current.id, q]);
+    }, [open, projectId, current.type, current.id, searchQuery]);
 
     // Reset transient state whenever the modal reopens. `family` is cleared
     // too — after a context switch it holds the PREVIOUS context's rows, and
@@ -298,6 +321,22 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
     // current context would otherwise render a second row carrying an
     // identical `data-context-switch-row` value.
     const resultRows = results.filter((row) => !isPinnedOrCurrent(row));
+
+    /**
+     * The pinned row arrives as a bare {type, id, label} from the drawer,
+     * with no note count — and the family row that HAS the count is the
+     * one we filter out of Related. Borrow it back, so opening on an
+     * entry with 39 notes doesn't pin a chip reading 0 while those notes
+     * sit right behind the modal. With no family match there is no count
+     * to show: render no chip rather than a confident lie.
+     */
+    const openedFromInFamily = family.find(
+        (row) => row.type === openedFrom.type && row.id === openedFrom.id,
+    );
+
+    const pinnedRow: SwitchTarget = openedFromInFamily
+        ? { ...openedFrom, note_count: openedFromInFamily.note_count }
+        : openedFrom;
 
     /**
      * Every pick — from Related, from search, from recents, from the pinned
@@ -345,7 +384,12 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
                         <div className="mb-4">
                             <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.opened_from')}</p>
                             <div style={pinnedRowStyle}>
-                                <ContextRow target={openedFrom} onPick={handlePick} isLast />
+                                <ContextRow
+                                    target={pinnedRow}
+                                    onPick={handlePick}
+                                    isLast
+                                    showCount={openedFromInFamily !== undefined}
+                                />
                             </div>
                         </div>
 
@@ -360,8 +404,8 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
                             style={inputStyle}
                         />
 
-                        {/* Search results (only while typing) */}
-                        {q.trim() !== '' && (
+                        {/* Search results (only once the query is worth running) */}
+                        {searchQuery !== '' && (
                             <div className="mb-4">
                                 <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.results')}</p>
                                 {resultRows.length === 0 && !loading ? (
