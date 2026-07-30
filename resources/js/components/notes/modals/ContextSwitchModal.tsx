@@ -120,15 +120,25 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
         return () => clearTimeout(timer);
     }, [open, projectId, current.type, current.id, q]);
 
-    // Reset transient state whenever the modal reopens.
+    // Reset transient state whenever the modal reopens. `family` is cleared
+    // too — after a context switch it holds the PREVIOUS context's rows, and
+    // leaving them up until the new fetch lands renders stale, clickable
+    // destinations under the new context's heading.
     useEffect(() => {
-        if (open) { setQ(''); setResults([]); }
+        if (open) { setQ(''); setResults([]); setFamily([]); }
     }, [open]);
 
     // The current context is filtered out of Related, so the pinned row is
     // the only place it appears when the drawer is still on the context it
-    // opened with — always render it, equal or not.
-    const relatedRows = family.filter((row) => !(row.type === current.type && row.id === current.id));
+    // opened with — always render it, equal or not. `openedFrom` is filtered
+    // out for the same reason: it already has its own pinned row, and letting
+    // it through would render a second row with a duplicate
+    // `data-context-switch-row` value.
+    const relatedRows = family.filter(
+        (row) =>
+            !(row.type === current.type && row.id === current.id)
+            && !(row.type === openedFrom.type && row.id === openedFrom.id),
+    );
 
     return (
         <Modal open={open} onClose={onClose} maxWidth="max-w-md">
