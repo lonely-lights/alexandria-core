@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { openNotesDrawer } from '@alexandria/components/notes/NotesDrawer';
+import ContextSwitchModal, { type SwitchContextType, type SwitchTarget } from '@alexandria/components/notes/modals/ContextSwitchModal';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import type { Note } from '@alexandria/types/notes-dashboard';
 
@@ -24,6 +25,12 @@ import type { EntryCard } from './ReferencePanel';
  *
  * "Open notes" opens the NotesDrawer for the visible scope — the open
  * section in section mode, the work itself in whole-work mode.
+ *
+ * The header also carries the drawer's own context switcher. Picking any
+ * other context puts the panel in OVERRIDE mode: a flat list of that
+ * context's notes, from the same list endpoint the drawer uses. The
+ * override is component-local — no storage, no module state — so it
+ * lasts exactly as long as this workspace view does.
  */
 
 /* ── Types ── */
@@ -76,10 +83,11 @@ async function fetchJson<T>(url: string, label: string): Promise<T> {
     return (await response.json()) as T;
 }
 
-function fetchSectionNotes(projectId: number, sectionId: number): Promise<Note[]> {
+/** The drawer's own list endpoint — one flat page of a context's notes. */
+function fetchContextNotes(projectId: number, contextType: SwitchContextType, contextId: number): Promise<Note[]> {
     return fetchJson<Note[]>(
-        `/api/v1/projects/${projectId}/notes?context_type=work_section&context_id=${sectionId}&status=active`,
-        'Section notes',
+        `/api/v1/projects/${projectId}/notes?context_type=${contextType}&context_id=${contextId}&status=active`,
+        'Context notes',
     );
 }
 
@@ -133,6 +141,15 @@ const toggleBtnStyle: CSSProperties = {
     color: 'var(--theme-brand-primary-500)',
     fontWeight: 500,
 };
+
+/** The overridden context's name, standing in for the scope toggle. */
+const overrideLabelStyle: CSSProperties = {
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+    color: 'var(--theme-brand-primary-500)',
+};
+
+const iconBtnStyle: CSSProperties = { width: '1.5rem', height: '1.5rem', padding: 0 };
 
 const hintStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 35%, transparent)',
@@ -243,6 +260,8 @@ export default function SidebarNotesPanel({
     const [loading, setLoading] = useState(false);
     const [failed, setFailed] = useState(false);
     const [wholeWork, setWholeWork] = useState(false);
+    const [override, setOverride] = useState<{ type: SwitchContextType; id: number; label: string; slug?: string | null } | null>(null);
+    const [showSwitch, setShowSwitch] = useState(false);
 
     const cancelRef = useRef<() => void>(() => undefined);
 
@@ -256,12 +275,16 @@ export default function SidebarNotesPanel({
         let cancelled = false;
         let request: Promise<void>;
 
-        if (wholeWork) {
+        if (override !== null) {
+            request = fetchContextNotes(projectId, override.type, override.id).then((rows) => {
+                if (!cancelled) setNotes(rows);
+            });
+        } else if (wholeWork) {
             request = fetchWorkNotes(projectSlug, work.slug).then((data) => {
                 if (!cancelled) setPayload(data);
             });
         } else if (sectionId !== null) {
-            request = fetchSectionNotes(projectId, sectionId).then((rows) => {
+            request = fetchContextNotes(projectId, 'work_section', sectionId).then((rows) => {
                 if (!cancelled) setNotes(rows);
             });
         } else {
@@ -292,7 +315,7 @@ export default function SidebarNotesPanel({
         return () => {
             cancelled = true;
         };
-    }, [projectId, projectSlug, work.slug, currentSection?.id, wholeWork, sections]);
+    }, [projectId, projectSlug, work.slug, currentSection?.id, wholeWork, sections, override]);
 
     function openWorkScope(preSelectNoteId?: number) {
         openNotesDrawer({
@@ -332,7 +355,25 @@ export default function SidebarNotesPanel({
         });
     }
 
+    /** The overridden context, opened in the drawer at the same scope. */
+    function openOverrideScope(target: NonNullable<typeof override>, preSelectNoteId?: number) {
+        openNotesDrawer({
+            projectId,
+            projectSlug,
+            contextType: target.type,
+            contextId: target.id,
+            contextLabel: target.label,
+            contextSlug: target.slug ?? undefined,
+            preSelectNoteId,
+        });
+    }
+
     function handleOpenDrawer() {
+        if (override !== null) {
+            openOverrideScope(override);
+            return;
+        }
+
         if (!wholeWork && currentSection !== null) {
             openSectionScope(currentSection);
             return;
@@ -341,36 +382,92 @@ export default function SidebarNotesPanel({
         openWorkScope();
     }
 
-    const noSectionAndSectionScope = currentSection === null && !wholeWork;
+    /**
+     * Landing back on the work itself ENDS the override rather than
+     * recording one — same derived-clearing rule the drawer applies to
+     * its pinned row, so the pinned row and the flip button agree.
+     */
+    function handleSwitch(target: SwitchTarget) {
+        setOverride(
+            target.type === 'work' && target.id === work.id
+                ? null
+                : { type: target.type, id: target.id, label: target.label, slug: target.slug },
+        );
+        setShowSwitch(false);
+    }
+
+    const noSectionAndSectionScope = override === null && currentSection === null && !wholeWork;
     const sectionGroups = payload?.sections.filter((group) => group.notes.length > 0) ?? [];
     const linked = payload?.linked_entry ?? null;
     const payloadNoteCount = payload === null ? 0 : countPayloadNotes(payload);
     const showEmpty = !loading && !failed && !noSectionAndSectionScope && (
-        wholeWork
+        wholeWork && override === null
             // A zero-note work that IS linked renders the signpost group
             // instead of the centered empty line.
             ? payload !== null && payloadNoteCount === 0 && linked === null
             : notes.length === 0
     );
 
+    function emptyMessage(): string {
+        if (override !== null) {
+            return t('writing.panel.notes_empty_context');
+        }
+
+        return wholeWork
+            ? t('writing.panel.notes_empty_work')
+            : t('writing.panel.notes_empty');
+    }
+
     return (
         <div
             data-sidebar-notes-panel
             style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}
         >
-            {/* Header */}
+            {/* Header — the scope toggle steps aside while overridden: the
+                section/whole-work split is a property of THIS manuscript,
+                and the flip button is the way back to it. */}
             <div style={headerStyle}>
-                <span style={titleStyle}>{t('writing.panel.mode_notes')}</span>
-                <button
-                    type="button"
-                    style={toggleBtnStyle}
-                    onClick={() => setWholeWork((prev) => !prev)}
-                    aria-pressed={wholeWork}
-                >
-                    {wholeWork
-                        ? t('writing.panel.notes_this_section')
-                        : t('writing.panel.notes_whole_work')}
-                </button>
+                <span className="shrink-0" style={titleStyle}>{t('writing.panel.mode_notes')}</span>
+                <div className="flex min-w-0 items-center gap-1.5">
+                    {override === null ? (
+                        <button
+                            type="button"
+                            style={toggleBtnStyle}
+                            onClick={() => setWholeWork((prev) => !prev)}
+                            aria-pressed={wholeWork}
+                        >
+                            {wholeWork
+                                ? t('writing.panel.notes_this_section')
+                                : t('writing.panel.notes_whole_work')}
+                        </button>
+                    ) : (
+                        <>
+                            <span className="min-w-0 truncate" style={overrideLabelStyle} title={override.label}>
+                                {override.label}
+                            </span>
+                            <button
+                                type="button"
+                                data-panel-context-reset
+                                onClick={() => setOverride(null)}
+                                className="alex-btn inline-flex shrink-0 items-center justify-center"
+                                style={iconBtnStyle}
+                                aria-label={t('notes.switch.back_to_page')}
+                            >
+                                <i className="fa-solid fa-location-crosshairs text-[10px]" aria-hidden="true" />
+                            </button>
+                        </>
+                    )}
+                    <button
+                        type="button"
+                        data-panel-context-switch
+                        onClick={() => setShowSwitch(true)}
+                        className="alex-btn inline-flex shrink-0 items-center justify-center"
+                        style={iconBtnStyle}
+                        aria-label={t('notes.switch.open_aria')}
+                    >
+                        <i className="fa-solid fa-shuffle text-[10px]" aria-hidden="true" />
+                    </button>
+                </div>
             </div>
 
             {/* Note list */}
@@ -395,14 +492,23 @@ export default function SidebarNotesPanel({
 
                 {showEmpty && (
                     <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
-                        {wholeWork
-                            ? t('writing.panel.notes_empty_work')
-                            : t('writing.panel.notes_empty')}
+                        {emptyMessage()}
                     </p>
                 )}
 
+                {/* Override scope — a flat list of the switched-to context's
+                    notes, opened in the drawer at that same scope. */}
+                {override !== null && notes.map((note) => (
+                    <NoteRow
+                        key={note.id}
+                        note={note}
+                        t={t}
+                        onOpen={(target) => openOverrideScope(override, target.id)}
+                    />
+                ))}
+
                 {/* Section scope — a flat list of the open section's notes. */}
-                {!wholeWork && currentSection !== null && notes.map((note) => (
+                {override === null && !wholeWork && currentSection !== null && notes.map((note) => (
                     <NoteRow
                         key={note.id}
                         note={note}
@@ -421,7 +527,7 @@ export default function SidebarNotesPanel({
                     the single centered empty line above instead of an
                     all-empty skeleton; the linked-entry layer below stands
                     on its own so a link is always visible. */}
-                {wholeWork && payload !== null && payloadNoteCount > 0 && (
+                {override === null && wholeWork && payload !== null && payloadNoteCount > 0 && (
                     <>
                         <GroupHeading label={t('writing.panel.notes_work_group')} count={payload.work.length} />
                         {payload.work.length === 0 ? (
@@ -459,7 +565,7 @@ export default function SidebarNotesPanel({
                     with zero notes: the header's drawer button (and the zero-note
                     signpost) is the hand-off into the drawer's context switcher,
                     where the entry's ancestors are one click away. */}
-                {wholeWork && payload !== null && linked !== null && (
+                {override === null && wholeWork && payload !== null && linked !== null && (
                     <div>
                         <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-1">
                             <span className="min-w-0 truncate" style={groupHeadingStyle}>
@@ -519,6 +625,17 @@ export default function SidebarNotesPanel({
                 <i className="fa-solid fa-arrow-up-right-from-square text-[10px]" aria-hidden="true" />
                 {t('writing.panel.notes_open_drawer')}
             </button>
+
+            {/* The drawer's switcher, reused verbatim. The work is always the
+                pinned "opened from" row, so it doubles as the way back. */}
+            <ContextSwitchModal
+                open={showSwitch}
+                onClose={() => setShowSwitch(false)}
+                projectId={projectId}
+                current={override ?? { type: 'work', id: work.id, label: work.title }}
+                openedFrom={{ type: 'work', id: work.id, label: work.title, slug: work.slug }}
+                onSwitch={handleSwitch}
+            />
         </div>
     );
 }

@@ -254,6 +254,7 @@ return [
     'panel.notes_error' => 'Could not load notes.',
     'panel.notes_empty' => 'No notes for this section.',
     'panel.notes_empty_work' => 'No notes for this work.',
+    'panel.notes_empty_context' => 'No notes here yet.',
     'panel.notes_untitled' => 'Untitled note',
     'panel.notes_open_drawer' => 'Open notes',
     'panel.notes_whole_work' => 'Whole work',
