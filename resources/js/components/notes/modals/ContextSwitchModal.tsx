@@ -1,6 +1,13 @@
 import { useState, useEffect, type CSSProperties } from 'react';
 import Modal from '@alexandria/components/ui/Modal';
 import useT from '@alexandria/hooks/useT';
+import {
+    promoteRecent,
+    readRecents,
+    removeRecent,
+    writeRecents,
+    type RecentTarget,
+} from '@alexandria/components/notes/modals/contextSwitchRecents';
 
 export type SwitchContextType = 'project' | 'blueprint' | 'entry' | 'work_section' | 'work';
 
@@ -11,6 +18,14 @@ export interface SwitchTarget {
     sublabel?: string | null;
     slug?: string | null;
     note_count?: number;
+    /**
+     * Structure position, server-supplied for entry rows: 0 = root, each
+     * step down the parent chain adds one. Optional on purpose — rows
+     * without it render flat, exactly as they did before the tree pass.
+     */
+    depth?: number;
+    /** Ancestor names, root first — the breadcrumb behind `depth`. */
+    path?: string[];
 }
 
 interface ContextSwitchModalProps {
@@ -36,11 +51,22 @@ const TYPE_ICONS: Record<SwitchContextType, string> = {
     work_section: 'fa-solid fa-bookmark',
 };
 
+/** Row padding-left with no indent, in rem — matches the old `px-4`. */
+const ROW_BASE_INDENT_REM = 1;
+/** Added per depth step for tree rows. */
+const ROW_INDENT_STEP_REM = 0.75;
+
+const PATH_SEPARATOR = ' › ';
+
 const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
 const muteText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' };
 
 const sectionBorderStyle: CSSProperties = {
     borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+};
+
+const columnBorderStyle: CSSProperties = {
+    borderColor: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
 };
 
 const inputStyle: CSSProperties = {
@@ -74,22 +100,123 @@ const pinnedRowStyle: CSSProperties = {
 
 const rowDivider = '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)';
 
-function ContextRow({ target, onPick, isLast }: { target: SwitchTarget; onPick: (target: SwitchTarget) => void; isLast: boolean }) {
+/**
+ * Order entry rows as a structure instead of a flat list.
+ *
+ * Entry rows form a lineage (root → … → the context you're on) plus that
+ * context's children, so sorting by `depth` ascending reconstructs the
+ * tree top-down; the sort is stable, so siblings keep server order.
+ * Non-entry rows (works, sections) stay flat and hold their side of the
+ * group — before the entries if that's where the server put them, after
+ * otherwise.
+ *
+ * When NO row carries `depth` the list is returned untouched. That's the
+ * pre-server-fields path: identical markup, identical order, no jump.
+ */
+function orderStructureRows(rows: SwitchTarget[]): SwitchTarget[] {
+    if (!rows.some((row) => typeof row.depth === 'number')) {
+        return rows;
+    }
+
+    const entries = rows.filter((row) => row.type === 'entry');
+    const others = rows.filter((row) => row.type !== 'entry');
+
+    if (entries.length === 0 || others.length === 0) {
+        return [...entries, ...others].sort(byDepth);
+    }
+
+    const sortedEntries = [...entries].sort(byDepth);
+    const entriesLeadTheGroup = rows.findIndex((row) => row.type === 'entry')
+        < rows.findIndex((row) => row.type !== 'entry');
+
+    return entriesLeadTheGroup
+        ? [...sortedEntries, ...others]
+        : [...others, ...sortedEntries];
+}
+
+function byDepth(a: SwitchTarget, b: SwitchTarget): number {
+    return (a.depth ?? 0) - (b.depth ?? 0);
+}
+
+function RowBody({ target, showPath }: { target: SwitchTarget; showPath?: boolean }) {
+    // In search results the ancestor path replaces the blueprint name — a
+    // hit reads as a place in the structure, not a loose title.
+    const sublabel = showPath && target.path?.length
+        ? target.path.join(PATH_SEPARATOR)
+        : target.sublabel;
+
+    return (
+        <>
+            <i className={`${TYPE_ICONS[target.type]} text-xs`} style={microText} aria-hidden="true" />
+            <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{target.label}</span>
+                {sublabel && <span className="block truncate text-[10px]" style={microText}>{sublabel}</span>}
+            </span>
+        </>
+    );
+}
+
+/**
+ * `tree` opts a row into depth indentation. Only the Related group draws
+ * the structure; search results stay flat and wear their ancestry as the
+ * sublabel instead (`showPath`), because a hit list indented by depth
+ * reads as a broken list rather than a tree.
+ */
+function ContextRow({ target, onPick, isLast, showPath, tree }: { target: SwitchTarget; onPick: (target: SwitchTarget) => void; isLast: boolean; showPath?: boolean; tree?: boolean }) {
+    const indentRem = tree
+        ? ROW_BASE_INDENT_REM + Math.max(0, target.depth ?? 0) * ROW_INDENT_STEP_REM
+        : ROW_BASE_INDENT_REM;
+
     return (
         <button
             type="button"
             data-context-switch-row={`${target.type}-${target.id}`}
             onClick={() => onPick(target)}
-            className="alex-notes-tag-row flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm"
-            style={isLast ? undefined : { borderBottom: rowDivider }}
+            className="alex-notes-tag-row flex w-full items-center gap-3 py-2.5 pr-4 text-left text-sm"
+            style={{
+                paddingLeft: `${indentRem}rem`,
+                ...(isLast ? {} : { borderBottom: rowDivider }),
+            }}
         >
-            <i className={`${TYPE_ICONS[target.type]} text-xs`} style={microText} aria-hidden="true" />
-            <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">{target.label}</span>
-                {target.sublabel && <span className="block truncate text-[10px]" style={microText}>{target.sublabel}</span>}
-            </span>
+            <RowBody target={target} showPath={showPath} />
             <span style={countChipStyle}>{target.note_count ?? 0}</span>
         </button>
+    );
+}
+
+/**
+ * A recents row is two controls, not one — picking and forgetting are
+ * separate actions — so the dismiss button sits BESIDE the switch button
+ * rather than inside it (nested buttons are invalid HTML and swallow the
+ * inner click). Recents rows carry `data-recent-row`, not
+ * `data-context-switch-row`: recents legitimately repeat the pinned and
+ * current contexts, and reusing the switch attribute would resolve two
+ * elements for one selector under Playwright strict mode.
+ */
+function RecentRow({ target, onPick, onRemove, removeLabel, isLast }: { target: RecentTarget; onPick: (target: RecentTarget) => void; onRemove: (target: RecentTarget) => void; removeLabel: string; isLast: boolean }) {
+    return (
+        <div
+            className="flex items-center"
+            style={isLast ? undefined : { borderBottom: rowDivider }}
+        >
+            <button
+                type="button"
+                data-recent-row={`${target.type}-${target.id}`}
+                onClick={() => onPick(target)}
+                className="alex-notes-tag-row flex min-w-0 flex-1 items-center gap-3 py-2.5 pl-4 pr-2 text-left text-sm"
+            >
+                <RowBody target={target} />
+            </button>
+            <button
+                type="button"
+                data-recent-remove={`${target.type}-${target.id}`}
+                onClick={() => onRemove(target)}
+                aria-label={removeLabel}
+                className="alex-notes-modal-icon-btn mr-2 shrink-0"
+            >
+                <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
+            </button>
+        </div>
     );
 }
 
@@ -97,6 +224,7 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
     const t = useT();
     const [family, setFamily] = useState<SwitchTarget[]>([]);
     const [results, setResults] = useState<SwitchTarget[]>([]);
+    const [recents, setRecents] = useState<RecentTarget[]>([]);
     const [q, setQ] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -129,10 +257,16 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
     // Reset transient state whenever the modal reopens. `family` is cleared
     // too — after a context switch it holds the PREVIOUS context's rows, and
     // leaving them up until the new fetch lands renders stale, clickable
-    // destinations under the new context's heading.
+    // destinations under the new context's heading. Recents are re-read
+    // rather than cleared: another tab may have moved the list on.
     useEffect(() => {
-        if (open) { setQ(''); setResults([]); setFamily([]); }
-    }, [open]);
+        if (open) {
+            setQ('');
+            setResults([]);
+            setFamily([]);
+            setRecents(readRecents(projectId));
+        }
+    }, [open, projectId]);
 
     // The current context is filtered out of Related, so the pinned row is
     // the only place it appears when the drawer is still on the context it
@@ -144,15 +278,40 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
         (row.type === current.type && row.id === current.id)
         || (row.type === openedFrom.type && row.id === openedFrom.id);
 
-    const relatedRows = family.filter((row) => !isPinnedOrCurrent(row));
+    const relatedRows = orderStructureRows(family.filter((row) => !isPinnedOrCurrent(row)));
 
     // Search hits get the same treatment: a query matching the pinned or
     // current context would otherwise render a second row carrying an
     // identical `data-context-switch-row` value.
     const resultRows = results.filter((row) => !isPinnedOrCurrent(row));
 
+    /**
+     * Every pick — from Related, from search, from recents, from the pinned
+     * row — funnels through here, so recording recency once covers both
+     * "searched" and "navigated". Landing on the context you're already on
+     * is a no-op the parent swallows, and recording it would let a stuck
+     * click pump the list, so that case records nothing.
+     */
+    const handlePick = (target: SwitchTarget) => {
+        const isNoOp = target.type === current.type && target.id === current.id;
+
+        if (!isNoOp) {
+            const next = promoteRecent(recents, target);
+            setRecents(next);
+            writeRecents(projectId, next);
+        }
+
+        onSwitch(target);
+    };
+
+    const handleRemoveRecent = (target: RecentTarget) => {
+        const next = removeRecent(recents, target);
+        setRecents(next);
+        writeRecents(projectId, next);
+    };
+
     return (
-        <Modal open={open} onClose={onClose} maxWidth="max-w-md">
+        <Modal open={open} onClose={onClose} maxWidth="max-w-2xl">
             <div data-context-switch-modal className="flex max-h-[70vh] flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4" style={sectionBorderStyle}>
@@ -165,53 +324,81 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-5 py-4">
-                    {/* Pinned: the context the drawer originally opened with */}
-                    <div className="mb-4">
-                        <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.opened_from')}</p>
-                        <div style={pinnedRowStyle}>
-                            <ContextRow target={openedFrom} onPick={onSwitch} isLast />
+                <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+                    {/* Left column — where you are, where you can go */}
+                    <div className="min-w-0 flex-1 overflow-y-auto px-5 py-4">
+                        {/* Pinned: the context the drawer originally opened with */}
+                        <div className="mb-4">
+                            <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.opened_from')}</p>
+                            <div style={pinnedRowStyle}>
+                                <ContextRow target={openedFrom} onPick={handlePick} isLast />
+                            </div>
                         </div>
+
+                        {/* Search */}
+                        <input
+                            type="text"
+                            value={q}
+                            onChange={(e) => setQ(e.target.value)}
+                            placeholder={t('notes.switch.search')}
+                            autoFocus
+                            className="mb-3 h-9 w-full text-sm"
+                            style={inputStyle}
+                        />
+
+                        {/* Search results (only while typing) */}
+                        {q.trim() !== '' && (
+                            <div className="mb-4">
+                                <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.results')}</p>
+                                {resultRows.length === 0 && !loading ? (
+                                    <p className="text-[11px]" style={microText}>{t('notes.switch.no_results')}</p>
+                                ) : (
+                                    <div className="max-h-48 overflow-y-auto" style={listWrapperStyle}>
+                                        {resultRows.map((row, idx) => (
+                                            <ContextRow key={`${row.type}-${row.id}`} target={row} onPick={handlePick} isLast={idx === resultRows.length - 1} showPath />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Related family */}
+                        <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.related')}</p>
+                        {relatedRows.length === 0 && !loading ? (
+                            <p className="text-[11px]" style={microText}>{t('notes.switch.no_related')}</p>
+                        ) : (
+                            <div className="max-h-64 overflow-y-auto" style={listWrapperStyle}>
+                                {relatedRows.map((row, idx) => (
+                                    <ContextRow key={`${row.type}-${row.id}`} target={row} onPick={handlePick} isLast={idx === relatedRows.length - 1} tree />
+                                ))}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Search */}
-                    <input
-                        type="text"
-                        value={q}
-                        onChange={(e) => setQ(e.target.value)}
-                        placeholder={t('notes.switch.search')}
-                        autoFocus
-                        className="mb-3 h-9 w-full text-sm"
-                        style={inputStyle}
-                    />
-
-                    {/* Search results (only while typing) */}
-                    {q.trim() !== '' && (
-                        <div className="mb-4">
-                            <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.results')}</p>
-                            {resultRows.length === 0 && !loading ? (
-                                <p className="text-[11px]" style={microText}>{t('notes.switch.no_results')}</p>
-                            ) : (
-                                <div className="max-h-48 overflow-y-auto" style={listWrapperStyle}>
-                                    {resultRows.map((row, idx) => (
-                                        <ContextRow key={`${row.type}-${row.id}`} target={row} onPick={onSwitch} isLast={idx === resultRows.length - 1} />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Related family */}
-                    <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.related')}</p>
-                    {relatedRows.length === 0 && !loading ? (
-                        <p className="text-[11px]" style={microText}>{t('notes.switch.no_related')}</p>
-                    ) : (
-                        <div className="max-h-64 overflow-y-auto" style={listWrapperStyle}>
-                            {relatedRows.map((row, idx) => (
-                                <ContextRow key={`${row.type}-${row.id}`} target={row} onPick={onSwitch} isLast={idx === relatedRows.length - 1} />
-                            ))}
-                        </div>
-                    )}
+                    {/* Right column — where you've been */}
+                    <div
+                        data-context-switch-recents
+                        className="min-w-0 shrink-0 overflow-y-auto border-t px-5 py-4 sm:w-64 sm:border-l sm:border-t-0"
+                        style={columnBorderStyle}
+                    >
+                        <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.recent')}</p>
+                        {recents.length === 0 ? (
+                            <p className="text-[11px]" style={microText}>{t('notes.switch.recent_empty')}</p>
+                        ) : (
+                            <div style={listWrapperStyle}>
+                                {recents.map((row, idx) => (
+                                    <RecentRow
+                                        key={`${row.type}-${row.id}`}
+                                        target={row}
+                                        onPick={handlePick}
+                                        onRemove={handleRemoveRecent}
+                                        removeLabel={t('notes.switch.recent_remove')}
+                                        isLast={idx === recents.length - 1}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </Modal>
