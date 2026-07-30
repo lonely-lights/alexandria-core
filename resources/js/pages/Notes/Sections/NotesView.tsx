@@ -47,7 +47,7 @@ interface NotesViewProps {
     // Optional context scoping — when rendered inside the Notes drawer
     // for a blueprint or entry, these narrow the list to notes
     // attached to that specific notable instead of the whole project.
-    contextType?: 'project' | 'blueprint' | 'entry';
+    contextType?: 'project' | 'blueprint' | 'entry' | 'work_section' | 'work';
     contextId?: number;
 }
 
@@ -1072,12 +1072,18 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                     </div>
                                                 )}
                                                 {col === 'location' && (() => {
-                                                    // Location column renders only blueprint/entry attachments.
-                                                    // Notebook memberships live in their own column below so
-                                                    // users can toggle each independently. Project-type
-                                                    // locations are filtered because every note belongs to
-                                                    // the project by definition.
-                                                    const locs = (note.locations ?? []).filter((loc) => loc.type === 'blueprint' || loc.type === 'entry');
+                                                    // Location column renders blueprint/entry attachments plus
+                                                    // the writing ones (work / work_section). Notebook
+                                                    // memberships live in their own column below so users can
+                                                    // toggle each independently. Project-type locations are
+                                                    // filtered because every note belongs to the project by
+                                                    // definition.
+                                                    const locs = (note.locations ?? []).filter((loc) =>
+                                                        loc.type === 'blueprint'
+                                                        || loc.type === 'entry'
+                                                        || loc.type === 'work'
+                                                        || loc.type === 'work_section',
+                                                    );
                                                     const blueprintBadgeStyle: CSSProperties = {
                                                         background: 'color-mix(in srgb, var(--theme-brand-secondary-500) 20%, transparent)',
                                                         color: 'var(--theme-brand-secondary-500)',
@@ -1090,14 +1096,27 @@ export default function NotesView({ projectId, initialStatusFilter, initialQuick
                                                         border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
                                                         borderRadius: 'var(--theme-radius-badge)',
                                                     };
+                                                    // Writing locations ship no icon of their own — the
+                                                    // feather is the same mark the drawer's Locations
+                                                    // modal and the link modal use for work targets.
+                                                    const writingBadgeStyle: CSSProperties = {
+                                                        background: 'color-mix(in srgb, var(--theme-brand-primary-500) 14%, transparent)',
+                                                        color: 'var(--theme-brand-primary-500)',
+                                                        border: '1px solid color-mix(in srgb, var(--theme-brand-primary-500) 28%, transparent)',
+                                                        borderRadius: 'var(--theme-radius-badge)',
+                                                    };
                                                     const baseClass = 'inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 text-[11px] font-medium cursor-pointer';
                                                     return (
                                                         <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
                                                             {locs.map((loc, i) => {
-                                                                const style = loc.type === 'blueprint' ? blueprintBadgeStyle : entryBadgeStyle;
+                                                                const isWriting = loc.type === 'work' || loc.type === 'work_section';
+                                                                const style = loc.type === 'blueprint'
+                                                                    ? blueprintBadgeStyle
+                                                                    : isWriting ? writingBadgeStyle : entryBadgeStyle;
+                                                                const icon = loc.icon ?? (isWriting ? 'fa-solid fa-feather' : null);
                                                                 const content = (
                                                                     <>
-                                                                        {loc.icon && <i className={`${loc.icon} text-[10px]`} />}
+                                                                        {icon && <i className={`${icon} text-[10px]`} />}
                                                                         {loc.name}
                                                                     </>
                                                                 );

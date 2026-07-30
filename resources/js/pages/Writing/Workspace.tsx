@@ -343,7 +343,9 @@ export default function Workspace() {
     }, [work.id]);
 
     /** Open the notes drawer scoped to the current section; fall back to
-     *  project scope when no section is active (e.g., empty work). */
+     *  the work itself when no section is active (e.g., empty work) —
+     *  works hold notes directly, so the drawer stays inside the
+     *  manuscript instead of widening to the whole project. */
     const handleNotesClick = useCallback(() => {
         if (currentSection !== null) {
             openNotesDrawer({
@@ -357,12 +359,12 @@ export default function Workspace() {
             openNotesDrawer({
                 projectId: project.id,
                 projectSlug: project.slug,
-                contextType: 'project',
-                contextId: project.id,
-                contextLabel: project.name,
+                contextType: 'work',
+                contextId: work.id,
+                contextLabel: work.title,
             });
         }
-    }, [project.id, project.slug, project.name, currentSection]);
+    }, [project.id, project.slug, work.id, work.title, currentSection]);
 
     const toggleSceneLinksPanel = useCallback(() => {
         setPanelOpen((prev) => {
@@ -1002,6 +1004,7 @@ export default function Workspace() {
                                     <SidebarNotesPanel
                                         projectId={project.id}
                                         projectSlug={project.slug}
+                                        work={work}
                                         currentSection={currentSection}
                                         sections={sections}
                                     />

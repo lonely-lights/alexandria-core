@@ -49,7 +49,13 @@ const NOTEBOOK_COLOR_SWATCHES = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3
 export interface NotesContext {
     projectId: number;
     projectSlug: string;
-    contextType: 'project' | 'blueprint' | 'entry' | 'work_section';
+    /**
+     * `work` scopes the drawer to a manuscript itself (notes on the whole
+     * work), `work_section` to one of its sections. Both ride the same
+     * context_type/context_id contract as the other scopes — every fetch
+     * site passes the value straight through.
+     */
+    contextType: 'project' | 'blueprint' | 'entry' | 'work_section' | 'work';
     contextId: number;
     contextLabel: string;
     contextSlug?: string;

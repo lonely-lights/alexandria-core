@@ -26,7 +26,7 @@ interface NoteModalProps {
     /** Context for create mode — the notable this note attaches to.
      * Defaults to the project itself (the current Dashboard behavior).
      * Drawer-invoked create passes blueprint/entry for scoped notes. */
-    contextType?: 'project' | 'blueprint' | 'entry';
+    contextType?: 'project' | 'blueprint' | 'entry' | 'work_section' | 'work';
     contextId?: number;
 }
 

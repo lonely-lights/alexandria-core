@@ -2,6 +2,7 @@ import { router } from "@inertiajs/react";
 import { useState } from "react";
 import type { CSSProperties } from "react";
 
+import { openNotesDrawer } from "@alexandria/components/notes/NotesDrawer";
 import useMediaQuery from "@alexandria/hooks/useMediaQuery";
 import useT from "@alexandria/hooks/useT";
 import type { Translator } from "@alexandria/hooks/useT";
@@ -18,6 +19,8 @@ import type { WorkRow } from "./WorkCard";
  * structure canvas. Each node shows whichever work is canonically
  * linked to it (`works.entry_id`) or, when the viewer can edit works,
  * a hover-revealed "+ Link work" affordance that opens `LinkWorkModal`.
+ * A linked chip also carries a notes button that opens the NotesDrawer
+ * scoped to that work — the dashboard's pass-through to notes-on-works.
  *
  * No entry management here (no reorder/add/archive) — the blueprint
  * page keeps that job; this is "see the structure and link works to
@@ -135,6 +138,11 @@ const linkWorkButtonStyle: CSSProperties = {
 
 const unlinkButtonStyle: CSSProperties = {
     color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
+};
+
+/** Notes affordance beside a linked-work chip — reads as part of the chip. */
+const workNotesButtonStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-brand-primary-500) 75%, transparent)",
 };
 
 const childGuideStyle: CSSProperties = {
@@ -485,12 +493,22 @@ function StructureNodeRow({
         t,
     } = shared;
 
+    // Hoisted so the notes handler keeps its non-null narrowing inside
+    // the click closure.
+    const linkedWork = node.work;
     const hasChildren = node.children.length > 0;
     const isExpanded = expanded.has(node.id);
     const isConfirmingUnlink = confirmingUnlink === node.id;
     const nodeKind = structureNodeKind(node, hasChildren);
     const nodeIcon = structureNodeIcon(nodeKind);
     const nodeNameClass = `min-w-0 flex-1 truncate ${depth === 0 ? "font-semibold" : ""}`;
+    const workNotesLabel =
+        linkedWork === null
+            ? ""
+            : t("writing.structure.work_notes").replace(
+                  ":work",
+                  linkedWork.title,
+              );
 
     return (
         <div className="flex flex-col gap-0.5">
@@ -559,10 +577,10 @@ function StructureNodeRow({
                     </a>
                 )}
 
-                {node.work !== null ? (
+                {linkedWork !== null ? (
                     <span className="flex min-w-0 max-w-[48%] shrink-0 items-center gap-1">
                         <a
-                            href={`/works/${project.slug}/${node.work.slug}`}
+                            href={`/works/${project.slug}/${linkedWork.slug}`}
                             className="flex min-w-0 items-center"
                             data-linked-work-chip
                             style={workChipStyle}
@@ -571,8 +589,35 @@ function StructureNodeRow({
                                 className="fa-solid fa-feather mr-1.5 shrink-0 text-[10px]"
                                 aria-hidden="true"
                             />
-                            <span className="truncate">{node.work.title}</span>
+                            <span className="truncate">{linkedWork.title}</span>
                         </a>
+                        {/* Dashboard pass-through to the work's notes — same
+                            drawer scope the workspace opens, so notes on a
+                            manuscript are reachable without entering it.
+                            Height matches the unlink button so linked and
+                            unlinked rows stay the same height. */}
+                        <button
+                            type="button"
+                            className="flex h-5 w-5 shrink-0 items-center justify-center"
+                            data-work-notes-button
+                            style={workNotesButtonStyle}
+                            title={workNotesLabel}
+                            aria-label={workNotesLabel}
+                            onClick={() =>
+                                openNotesDrawer({
+                                    projectId: project.id,
+                                    projectSlug: project.slug,
+                                    contextType: "work",
+                                    contextId: linkedWork.id,
+                                    contextLabel: linkedWork.title,
+                                })
+                            }
+                        >
+                            <i
+                                className="fa-solid fa-note-sticky text-[10px]"
+                                aria-hidden="true"
+                            />
+                        </button>
                         {canLink &&
                             (isConfirmingUnlink ? (
                                 <button
