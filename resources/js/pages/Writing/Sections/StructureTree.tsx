@@ -30,6 +30,7 @@ export interface StructureNode {
     id: number;
     name: string;
     slug: string;
+    is_stub: boolean;
     work: { id: number; title: string; slug: string } | null;
     children: StructureNode[];
 }
@@ -94,14 +95,21 @@ const chevronStyle: CSSProperties = {
     color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
 };
 
-const leafDotStyle: CSSProperties = {
-    background:
-        "color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
-};
-
 const entryLinkStyle: CSSProperties = {
     color: "var(--theme-base-content)",
     textDecoration: "none",
+};
+
+const folderIconStyle: CSSProperties = {
+    color: "var(--theme-brand-secondary-500)",
+};
+
+const liveEntryIconStyle: CSSProperties = {
+    color: "var(--theme-status-success-stroke)",
+};
+
+const stubIconStyle: CSSProperties = {
+    color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
 };
 
 const workChipStyle: CSSProperties = {
@@ -416,6 +424,43 @@ interface TreeShared {
     t: Translator;
 }
 
+type StructureNodeKind = "folder" | "entry" | "stub";
+
+function structureNodeKind(
+    node: StructureNode,
+    hasChildren: boolean,
+): StructureNodeKind {
+    if (!node.is_stub) {
+        return "entry";
+    }
+
+    return hasChildren ? "folder" : "stub";
+}
+
+function structureNodeIcon(kind: StructureNodeKind): {
+    className: string;
+    style: CSSProperties;
+} {
+    if (kind === "folder") {
+        return {
+            className: "fa-solid fa-folder",
+            style: folderIconStyle,
+        };
+    }
+
+    if (kind === "entry") {
+        return {
+            className: "fa-solid fa-file",
+            style: liveEntryIconStyle,
+        };
+    }
+
+    return {
+        className: "fa-solid fa-file-circle-question",
+        style: stubIconStyle,
+    };
+}
+
 function StructureNodeRow({
     node,
     depth,
@@ -443,12 +488,16 @@ function StructureNodeRow({
     const hasChildren = node.children.length > 0;
     const isExpanded = expanded.has(node.id);
     const isConfirmingUnlink = confirmingUnlink === node.id;
+    const nodeKind = structureNodeKind(node, hasChildren);
+    const nodeIcon = structureNodeIcon(nodeKind);
+    const nodeNameClass = `min-w-0 flex-1 truncate ${depth === 0 ? "font-semibold" : ""}`;
 
     return (
         <div className="flex flex-col gap-0.5">
             <div
                 className="alex-row group flex min-h-9 items-center gap-1.5 px-2.5 py-1 text-sm"
                 data-structure-node-row
+                data-node-kind={nodeKind}
                 data-linked={node.work === null ? "false" : "true"}
                 style={{
                     borderRadius: "var(--theme-radius-button)",
@@ -458,7 +507,7 @@ function StructureNodeRow({
                             : undefined,
                 }}
             >
-                {/* Expand/collapse chevron (leaf nodes render a dot) */}
+                {/* Expand/collapse chevron */}
                 {hasChildren ? (
                     <button
                         type="button"
@@ -480,21 +529,35 @@ function StructureNodeRow({
                     <span
                         className="flex h-6 w-6 shrink-0 items-center justify-center"
                         aria-hidden="true"
-                    >
-                        <span
-                            className="h-1 w-1 rounded-full"
-                            style={leafDotStyle}
-                        />
-                    </span>
+                    />
                 )}
 
-                <a
-                    href={`/p/${project.slug}/${blueprintSlug}/${node.slug}`}
-                    className={`min-w-0 flex-1 truncate hover:underline ${depth === 0 ? "font-semibold" : ""}`}
-                    style={entryLinkStyle}
-                >
-                    {node.name}
-                </a>
+                <i
+                    className={`${nodeIcon.className} w-4 shrink-0 text-center text-xs`}
+                    data-structure-node-icon
+                    style={nodeIcon.style}
+                    aria-hidden="true"
+                />
+
+                {node.is_stub ? (
+                    <span
+                        className={nodeNameClass}
+                        data-structure-entry-name
+                        style={entryLinkStyle}
+                    >
+                        {node.name}
+                    </span>
+                ) : (
+                    <a
+                        href={`/p/${project.slug}/${blueprintSlug}/${node.slug}`}
+                        className={`${nodeNameClass} hover:underline`}
+                        data-structure-entry-link
+                        data-structure-entry-name
+                        style={entryLinkStyle}
+                    >
+                        {node.name}
+                    </a>
+                )}
 
                 {node.work !== null ? (
                     <span className="flex min-w-0 max-w-[48%] shrink-0 items-center gap-1">
