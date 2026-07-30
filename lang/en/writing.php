@@ -262,6 +262,8 @@ return [
     'panel.notes_work_group_empty' => 'No notes on this work yet.',
     'panel.notes_linked_group' => 'On :entry',
     'panel.notes_linked_hint' => 'Lives on the entry — open it there to edit or move it.',
+    'panel.notes_linked_open_drawer' => 'Open :entry in the notes drawer',
+    'panel.notes_linked_signpost' => 'No notes on :entry yet — open it in the notes drawer',
     'panel.notes_open_entry_aria' => 'Open :entry',
 
     'rail.label' => 'Project sections',

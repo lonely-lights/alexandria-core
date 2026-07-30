@@ -316,6 +316,22 @@ export default function SidebarNotesPanel({
         });
     }
 
+    /**
+     * Opens the drawer scoped to the entry the work is linked to. The
+     * drawer's context switcher takes it from there — the entry's
+     * ancestors (blueprint, project) are one click away.
+     */
+    function openLinkedEntryScope(entry: { id: number; name: string; slug: string }) {
+        openNotesDrawer({
+            projectId,
+            projectSlug,
+            contextType: 'entry',
+            contextId: entry.id,
+            contextLabel: entry.name,
+            contextSlug: entry.slug,
+        });
+    }
+
     function handleOpenDrawer() {
         if (!wholeWork && currentSection !== null) {
             openSectionScope(currentSection);
@@ -331,7 +347,9 @@ export default function SidebarNotesPanel({
     const payloadNoteCount = payload === null ? 0 : countPayloadNotes(payload);
     const showEmpty = !loading && !failed && !noSectionAndSectionScope && (
         wholeWork
-            ? payload !== null && payloadNoteCount === 0
+            // A zero-note work that IS linked renders the signpost group
+            // instead of the centered empty line.
+            ? payload !== null && payloadNoteCount === 0 && linked === null
             : notes.length === 0
     );
 
@@ -399,8 +417,10 @@ export default function SidebarNotesPanel({
                     empty SECTION groups are dropped, since the server sends
                     the full skeleton and a long manuscript would otherwise
                     bury the populated rows under dozens of empty headings.
-                    A work with nothing anywhere renders the single centered
-                    empty line above instead of an all-empty skeleton. */}
+                    A work with nothing anywhere and no linked entry renders
+                    the single centered empty line above instead of an
+                    all-empty skeleton; the linked-entry layer below stands
+                    on its own so a link is always visible. */}
                 {wholeWork && payload !== null && payloadNoteCount > 0 && (
                     <>
                         <GroupHeading label={t('writing.panel.notes_work_group')} count={payload.work.length} />
@@ -432,13 +452,45 @@ export default function SidebarNotesPanel({
                                 ))}
                             </div>
                         ))}
+                    </>
+                )}
 
-                        {linked !== null && linked.notes.length > 0 && (
-                            <div>
-                                <GroupHeading
-                                    label={t('writing.panel.notes_linked_group').replace(':entry', linked.entry.name)}
-                                    count={linked.notes.length}
-                                />
+                {/* Linked-entry group — renders whenever the work is linked, even
+                    with zero notes: the header's drawer button (and the zero-note
+                    signpost) is the hand-off into the drawer's context switcher,
+                    where the entry's ancestors are one click away. */}
+                {wholeWork && payload !== null && linked !== null && (
+                    <div>
+                        <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-1">
+                            <span className="min-w-0 truncate" style={groupHeadingStyle}>
+                                {t('writing.panel.notes_linked_group').replace(':entry', linked.entry.name)}
+                            </span>
+                            <span className="flex shrink-0 items-center gap-1.5">
+                                <span style={countChipStyle}>{linked.notes.length}</span>
+                                <button
+                                    type="button"
+                                    data-linked-entry-drawer-btn
+                                    onClick={() => openLinkedEntryScope(linked.entry)}
+                                    className="alex-btn inline-flex items-center justify-center"
+                                    style={{ width: '1.5rem', height: '1.5rem', padding: 0 }}
+                                    aria-label={t('writing.panel.notes_linked_open_drawer').replace(':entry', linked.entry.name)}
+                                >
+                                    <i className="fa-solid fa-arrow-up-right-from-square text-[10px]" aria-hidden="true" />
+                                </button>
+                            </span>
+                        </div>
+                        {linked.notes.length === 0 ? (
+                            <button
+                                type="button"
+                                data-linked-entry-signpost
+                                onClick={() => openLinkedEntryScope(linked.entry)}
+                                className="w-full px-3 pb-1 text-left text-xs"
+                                style={hintStyle}
+                            >
+                                {t('writing.panel.notes_linked_signpost').replace(':entry', linked.entry.name)}
+                            </button>
+                        ) : (
+                            <>
                                 <p className="px-3 pb-1 text-[10px]" style={hintStyle}>
                                     {t('writing.panel.notes_linked_hint')}
                                 </p>
@@ -451,9 +503,9 @@ export default function SidebarNotesPanel({
                                         t={t}
                                     />
                                 ))}
-                            </div>
+                            </>
                         )}
-                    </>
+                    </div>
                 )}
             </div>
 
