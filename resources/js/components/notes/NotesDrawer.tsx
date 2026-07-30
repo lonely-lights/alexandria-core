@@ -1859,8 +1859,8 @@ export default function NotesDrawer() {
                     projectId={context.projectId}
                     current={{ type: context.contextType, id: context.contextId, label: context.contextLabel }}
                     openedFrom={openedFromRef.current
-                        ? { type: openedFromRef.current.contextType, id: openedFromRef.current.contextId, label: openedFromRef.current.contextLabel }
-                        : { type: context.contextType, id: context.contextId, label: context.contextLabel }}
+                        ? { type: openedFromRef.current.contextType, id: openedFromRef.current.contextId, label: openedFromRef.current.contextLabel, slug: openedFromRef.current.contextSlug }
+                        : { type: context.contextType, id: context.contextId, label: context.contextLabel, slug: context.contextSlug }}
                     onSwitch={switchContext}
                 />
             )}

@@ -18,7 +18,13 @@ interface ContextSwitchModalProps {
     onClose: () => void;
     projectId: number;
     current: { type: SwitchContextType; id: number; label: string };
-    openedFrom: { type: SwitchContextType; id: number; label: string };
+    /**
+     * Carries `slug` so returning via the pinned row restores the slug the
+     * drawer opened with — `onSwitch` reads `target.slug`, and dropping it
+     * here leaves slug-dependent consumers (SortingHistoryModal's blueprint
+     * routing) building `/p/{project}/undefined/…` after a round trip.
+     */
+    openedFrom: { type: SwitchContextType; id: number; label: string; slug?: string | null };
     onSwitch: (target: SwitchTarget) => void;
 }
 
