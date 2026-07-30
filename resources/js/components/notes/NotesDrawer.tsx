@@ -736,12 +736,8 @@ export default function NotesDrawer() {
      * listing, creating, and attaching all follow the new scope via the
      * existing context-keyed fetch effect. The switch outlives a
      * close/reopen (see `persistedSwitch`) and resets on page load.
-     *
-     * @param options.persist Pass `false` when the switch is a return to
-     *        the page's own context — that ENDS the override rather than
-     *        recording a new one (see `returnToPageContext`).
      */
-    function switchContext(target: SwitchTarget, options?: { persist?: boolean }) {
+    function switchContext(target: SwitchTarget) {
         // The pinned Opened-from row renders even when it IS the current
         // context, so picking it must be a no-op — resetting search/view/
         // selection there would look like a random state wipe.
@@ -750,10 +746,23 @@ export default function NotesDrawer() {
             return;
         }
 
+        // An override exists only while the drawer shows something OTHER
+        // than the page's own context, so landing back ON that context —
+        // whether via the flip button or the modal's pinned "Opened from"
+        // row — ENDS the override rather than recording one. Deriving it
+        // here instead of trusting callers to pass a flag keeps both entry
+        // points honest: persisting "the page's context" as an override
+        // would follow the user to the NEXT page and pin the drawer to the
+        // page they left.
+        const from = openedFromRef.current;
+        const targetIsPageContext = from !== null
+            && target.type === from.contextType
+            && target.id === from.contextId;
+
         // Record the override BEFORE the state update so a close/reopen
         // lands back here. A null `context` means the drawer has nothing
         // to switch from, so there is nothing worth persisting either.
-        if (options?.persist === false || context === null) {
+        if (targetIsPageContext || context === null) {
             persistedSwitch = null;
         } else {
             persistedSwitch = {
@@ -783,18 +792,15 @@ export default function NotesDrawer() {
     }
 
     /**
-     * Flip the drawer back to the context the page opened it with. Passing
-     * `persist: false` clears the standing override instead of recording
-     * "page context" as a switch of its own.
+     * Flip the drawer back to the context the page opened it with.
+     * `switchContext` recognises that target as the page's own context and
+     * clears the standing override — no extra flag needed here.
      */
     function returnToPageContext() {
         const from = openedFromRef.current;
         if (!from) return;
 
-        switchContext(
-            { type: from.contextType, id: from.contextId, label: from.contextLabel, slug: from.contextSlug },
-            { persist: false },
-        );
+        switchContext({ type: from.contextType, id: from.contextId, label: from.contextLabel, slug: from.contextSlug });
     }
 
     function close() {
