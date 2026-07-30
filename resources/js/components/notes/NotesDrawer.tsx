@@ -2034,6 +2034,7 @@ export default function NotesDrawer() {
                                         loc.type === 'project' ? 'fa-solid fa-folder' :
                                         loc.type === 'blueprint' ? 'fa-solid fa-cube' :
                                         loc.type === 'notebook' ? 'fa-solid fa-book' :
+                                        loc.type === 'work' || loc.type === 'work_section' ? 'fa-solid fa-feather' :
                                         'fa-solid fa-file'
                                     }`}
                                     style={microText}
@@ -2041,7 +2042,10 @@ export default function NotesDrawer() {
                                 />
                                 <div>
                                     <span className="font-medium">{loc.name}</span>
-                                    <span className="ml-2 text-xs capitalize" style={microText}>{loc.type}</span>
+                                    {/* `capitalize` + the underscore swap renders
+                                        work_section as "Work Section"; every other
+                                        type is a single word and unaffected. */}
+                                    <span className="ml-2 text-xs capitalize" style={microText}>{loc.type.replace('_', ' ')}</span>
                                 </div>
                             </div>
                         ))}

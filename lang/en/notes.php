@@ -275,6 +275,8 @@ return [
     'modal.label.blueprint' => 'Blueprint',
     'modal.label.entry' => 'Entry',
     'modal.label.project' => 'Project',
+    'modal.label.work' => 'Work',
+    'modal.label.work_section' => 'Section',
     'modal.tag_remove_aria' => 'Remove tag :tag',
 
     // ── PromptPreviewModal (AI prompt debug viewer) ─────────────────

@@ -68,7 +68,11 @@ export interface NoteLinkPreview {
 }
 
 export interface NoteLocation {
-    type: 'project' | 'blueprint' | 'entry' | 'notebook';
+    /**
+     * `work` / `work_section` locations come from notes attached to a
+     * manuscript or one of its sections — see NotesDashboardController.
+     */
+    type: 'project' | 'blueprint' | 'entry' | 'notebook' | 'work' | 'work_section';
     id: number;
     name: string;
     slug?: string;
