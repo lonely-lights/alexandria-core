@@ -376,6 +376,16 @@ return [
     'link_move.entry.search' => 'Search entries (min 2 chars)…',
     'link_move.cancel' => 'Cancel',
 
+    // ── ContextSwitchModal (drawer header context switcher) ──────────
+    'switch.title' => 'Switch notes',
+    'switch.opened_from' => 'Opened from',
+    'switch.related' => 'Related',
+    'switch.results' => 'Search results',
+    'switch.search' => 'Search entries, works, blueprints…',
+    'switch.no_related' => 'No related contexts',
+    'switch.no_results' => 'No matches',
+    'switch.open_aria' => 'Switch notes context',
+
     // ── NotebookFormModal (create/edit notebook) ────────────────────
     'notebook_form.create_title' => 'New Notebook',
     'notebook_form.edit_title' => 'Edit Notebook',
