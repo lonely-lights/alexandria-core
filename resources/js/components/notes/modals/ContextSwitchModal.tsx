@@ -116,9 +116,13 @@ const rowDivider = '1px solid color-mix(in srgb, var(--theme-base-content) 5%, t
  * Entry rows form a lineage (root → … → the context you're on) plus that
  * context's children, so sorting by `depth` ascending reconstructs the
  * tree top-down; the sort is stable, so siblings keep server order.
- * Non-entry rows (works, sections) stay flat and hold their side of the
- * group — before the entries if that's where the server put them, after
- * otherwise.
+ *
+ * The block is hoisted to the TOP of the group for every context type,
+ * per the owner's ruling from the live modal: the structure is what you
+ * navigate by, so it leads, and the higher-level rows (the work, its
+ * ancestor and sibling sections) follow. Those non-entry rows keep their
+ * server-relative order among themselves — the client re-ranks entries
+ * against entries, never the server's ordering of everything else.
  *
  * When NO row carries `depth` the list is returned untouched. That's the
  * pre-server-fields path: identical markup, identical order, no jump.
@@ -128,20 +132,10 @@ function orderStructureRows(rows: SwitchTarget[]): SwitchTarget[] {
         return rows;
     }
 
-    const entries = rows.filter((row) => row.type === 'entry');
-    const others = rows.filter((row) => row.type !== 'entry');
-
-    if (entries.length === 0 || others.length === 0) {
-        return [...entries, ...others].sort(byDepth);
-    }
-
-    const sortedEntries = [...entries].sort(byDepth);
-    const entriesLeadTheGroup = rows.findIndex((row) => row.type === 'entry')
-        < rows.findIndex((row) => row.type !== 'entry');
-
-    return entriesLeadTheGroup
-        ? [...sortedEntries, ...others]
-        : [...others, ...sortedEntries];
+    return [
+        ...rows.filter((row) => row.type === 'entry').sort(byDepth),
+        ...rows.filter((row) => row.type !== 'entry'),
+    ];
 }
 
 function byDepth(a: SwitchTarget, b: SwitchTarget): number {

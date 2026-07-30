@@ -34,6 +34,11 @@ export function recentsStorageKey(projectId: number): string {
     return `alexandria:notes-switch-recents:${projectId}`;
 }
 
+/** Nullish or a string — anything else would render as a React child. */
+function isOptionalString(value: unknown): boolean {
+    return value == null || typeof value === 'string';
+}
+
 function isRecentTarget(value: unknown): value is RecentTarget {
     if (typeof value !== 'object' || value === null) {
         return false;
@@ -46,6 +51,13 @@ function isRecentTarget(value: unknown): value is RecentTarget {
         && VALID_TYPES.includes(row.type as SwitchContextType)
         && typeof row.id === 'number'
         && typeof row.label === 'string'
+        // A corrupted object here reaches JSX as `{sublabel}` and throws
+        // "Objects are not valid as a React child", taking the whole
+        // drawer down over a bad localStorage row.
+        && isOptionalString(row.sublabel)
+        // Same class of failure one step later: a non-string slug flows
+        // through onSwitch into URL building.
+        && isOptionalString(row.slug)
     );
 }
 
@@ -64,11 +76,36 @@ export function readRecents(projectId: number): RecentTarget[] {
         const parsed: unknown = JSON.parse(raw);
 
         return Array.isArray(parsed)
-            ? parsed.filter(isRecentTarget).slice(0, RECENTS_CAP)
+            ? dedupe(parsed.filter(isRecentTarget)).slice(0, RECENTS_CAP)
             : [];
     } catch {
         return [];
     }
+}
+
+/**
+ * Keep the first occurrence of each type+id.
+ *
+ * Our own writes can't produce a duplicate, but storage is shared with
+ * other tabs and hand-editable, and a repeat would surface twice over:
+ * duplicate React keys, and two elements behind one `data-recent-row`
+ * selector — the strict-mode failure the attribute split exists to
+ * prevent.
+ */
+function dedupe(rows: RecentTarget[]): RecentTarget[] {
+    const seen = new Set<string>();
+
+    return rows.filter((row) => {
+        const key = `${row.type}-${row.id}`;
+
+        if (seen.has(key)) {
+            return false;
+        }
+
+        seen.add(key);
+
+        return true;
+    });
 }
 
 export function writeRecents(projectId: number, rows: RecentTarget[]): void {
