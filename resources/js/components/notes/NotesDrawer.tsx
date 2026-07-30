@@ -21,6 +21,7 @@ import TagPickerModal from './modals/TagPickerModal';
 import NotebookSelectorModal, { type NotebookData } from './modals/NotebookSelectorModal';
 import HistoryModal, { type HistoryRecord } from './modals/HistoryModal';
 import LinkMoveModal from './modals/LinkMoveModal';
+import ContextSwitchModal, { type SwitchTarget } from './modals/ContextSwitchModal';
 import ImportModal from './modals/ImportModal';
 import PromptPreviewModal from './modals/PromptPreviewModal';
 import SortingHistoryModal from './modals/SortingHistoryModal';
@@ -407,6 +408,10 @@ export default function NotesDrawer() {
     const [modalMode, setModalMode] = useState<'view' | 'create' | null>(null);
     const [modalNote, setModalNote] = useState<Note | null>(null);
 
+    /* ── Context switcher (drawer header) ── */
+    const [showContextSwitch, setShowContextSwitch] = useState(false);
+    const openedFromRef = useRef<NotesContext | null>(null);
+
     /* ── AI title ── */
     const [generatingTitle, setGeneratingTitle] = useState(false);
 
@@ -527,6 +532,7 @@ export default function NotesDrawer() {
             const ctx = (e as CustomEvent<NotesContext>).detail;
             skipAnimationRef.current = ctx.skipAnimation === true;
             setContext(ctx);
+            openedFromRef.current = ctx;
             setOpen(true);
             setCurrentView('active');
             setSearch('');
@@ -691,6 +697,38 @@ export default function NotesDrawer() {
         } finally {
             setLoading(false);
         }
+    }
+
+    /**
+     * Re-scope the drawer in place — a full context switch, not a filter:
+     * listing, creating, and attaching all follow the new scope via the
+     * existing context-keyed fetch effect. Ephemeral by design: closing
+     * the drawer forgets the switch (next open scopes to the page).
+     */
+    function switchContext(target: SwitchTarget) {
+        // The pinned Opened-from row renders even when it IS the current
+        // context, so picking it must be a no-op — resetting search/view/
+        // selection there would look like a random state wipe.
+        if (context && target.type === context.contextType && target.id === context.contextId) {
+            setShowContextSwitch(false);
+            return;
+        }
+
+        setContext((prev) => prev === null ? prev : {
+            ...prev,
+            contextType: target.type,
+            contextId: target.id,
+            contextLabel: target.label,
+            contextSlug: target.slug ?? undefined,
+            preSelectNoteId: undefined,
+        });
+        setSelectedId(null);
+        setSearch('');
+        setCurrentView('active');
+        setActiveNotebookId(null);
+        exitSelectMode();
+        hasInitialFetchedRef.current = false;
+        setShowContextSwitch(false);
     }
 
     function close() {
@@ -1073,10 +1111,17 @@ export default function NotesDrawer() {
                 <div className={`flex flex-shrink-0 items-center justify-between ${isMobileDrawer ? 'gap-2 px-3 py-2' : 'px-4 py-3'}`} style={headerStyle}>
                     <h3 className={`min-w-0 truncate font-bold ${isMobileDrawer ? 'text-base' : 'text-xl'}`}>
                         {context && (
-                            <>
-                                {!isMobileDrawer && t('notes.drawer.title.prefix')}
-                                <span style={{ color: 'var(--theme-brand-primary-500)' }}>{context.contextLabel}</span>
-                            </>
+                            <button
+                                type="button"
+                                data-drawer-context-switch
+                                onClick={() => setShowContextSwitch(true)}
+                                className="inline-flex max-w-full items-center gap-1.5 truncate align-middle"
+                                aria-label={t('notes.switch.open_aria')}
+                            >
+                                {!isMobileDrawer && <span>{t('notes.drawer.title.prefix')}</span>}
+                                <span className="truncate" style={{ color: 'var(--theme-brand-primary-500)' }}>{context.contextLabel}</span>
+                                <i className="fa-solid fa-chevron-down text-[10px]" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }} aria-hidden="true" />
+                            </button>
                         )}
                     </h3>
                     <div className={`flex items-center ${isMobileDrawer ? 'gap-1' : 'gap-2'}`}>
@@ -1804,6 +1849,19 @@ export default function NotesDrawer() {
                     noteIds={bulkMoveIds}
                     action="move"
                     onComplete={() => { setBulkMoveIds(null); exitSelectMode(); void fetchNotes(); }}
+                />
+            )}
+
+            {context && (
+                <ContextSwitchModal
+                    open={showContextSwitch}
+                    onClose={() => setShowContextSwitch(false)}
+                    projectId={context.projectId}
+                    current={{ type: context.contextType, id: context.contextId, label: context.contextLabel }}
+                    openedFrom={openedFromRef.current
+                        ? { type: openedFromRef.current.contextType, id: openedFromRef.current.contextId, label: openedFromRef.current.contextLabel }
+                        : { type: context.contextType, id: context.contextId, label: context.contextLabel }}
+                    onSwitch={switchContext}
                 />
             )}
 

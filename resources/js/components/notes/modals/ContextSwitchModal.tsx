@@ -134,11 +134,16 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
     // out for the same reason: it already has its own pinned row, and letting
     // it through would render a second row with a duplicate
     // `data-context-switch-row` value.
-    const relatedRows = family.filter(
-        (row) =>
-            !(row.type === current.type && row.id === current.id)
-            && !(row.type === openedFrom.type && row.id === openedFrom.id),
-    );
+    const isPinnedOrCurrent = (row: SwitchTarget) =>
+        (row.type === current.type && row.id === current.id)
+        || (row.type === openedFrom.type && row.id === openedFrom.id);
+
+    const relatedRows = family.filter((row) => !isPinnedOrCurrent(row));
+
+    // Search hits get the same treatment: a query matching the pinned or
+    // current context would otherwise render a second row carrying an
+    // identical `data-context-switch-row` value.
+    const resultRows = results.filter((row) => !isPinnedOrCurrent(row));
 
     return (
         <Modal open={open} onClose={onClose} maxWidth="max-w-md">
@@ -178,12 +183,12 @@ export default function ContextSwitchModal({ open, onClose, projectId, current, 
                     {q.trim() !== '' && (
                         <div className="mb-4">
                             <p className="mb-1 text-xs font-semibold" style={muteText}>{t('notes.switch.results')}</p>
-                            {results.length === 0 && !loading ? (
+                            {resultRows.length === 0 && !loading ? (
                                 <p className="text-[11px]" style={microText}>{t('notes.switch.no_results')}</p>
                             ) : (
                                 <div className="max-h-48 overflow-y-auto" style={listWrapperStyle}>
-                                    {results.map((row, idx) => (
-                                        <ContextRow key={`${row.type}-${row.id}`} target={row} onPick={onSwitch} isLast={idx === results.length - 1} />
+                                    {resultRows.map((row, idx) => (
+                                        <ContextRow key={`${row.type}-${row.id}`} target={row} onPick={onSwitch} isLast={idx === resultRows.length - 1} />
                                     ))}
                                 </div>
                             )}
