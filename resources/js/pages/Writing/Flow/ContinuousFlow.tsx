@@ -15,6 +15,8 @@ import type { CurrentSection, SectionNode } from '../Workspace';
 import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
 import FlowSection from './FlowSection';
 import { flattenTree } from './flowModel';
+import { parseSceneFragment } from './flowUrl';
+import { useActiveScene, type ActiveSceneRef } from './useActiveScene';
 
 /**
  * The continuous manuscript view — spec 2026-08-08.
@@ -27,9 +29,11 @@ import { flattenTree } from './flowModel';
  *
  * The component owns the scrollport ref and a `hydrationVersion`
  * counter that bumps whenever the set of live rows changes — the
- * active-scene observer (Task 5) re-reads the DOM off that signal and
- * gets wired in at Task 6. Until then the initial section is treated
- * as the active one.
+ * active-scene observer (useActiveScene) re-reads the DOM off that
+ * signal. The observer answers in DOM terms (a section id and a scene
+ * index); this component turns that into the workspace's ActiveScene by
+ * looking the row up in the hydrated map, and stays quiet until the
+ * centered row actually holds content.
  */
 
 /** Slice of `work` the flow needs — the workspace's work prop is wider. */
@@ -85,6 +89,26 @@ const HYDRATION_BAND_PX = 1500;
  */
 const PLACEHOLDER_SELECTOR = '[data-flow-placeholder]';
 
+/** Scene heads inside a hydrated screenplay row — the deep-link targets. */
+const SLUGLINE_SELECTOR = 'p[data-element="slugline"]';
+
+/**
+ * Frames a `#scene-n` landing waits for its sluglines to exist.
+ *
+ * The landing section arrives hydrated, but its editor parses the
+ * content on mount, so the scene heads appear a frame or three after
+ * the wrapper does. Roughly a third of a second of retries, then the
+ * section head is a good enough answer.
+ */
+const SCENE_LANDING_FRAMES = 20;
+
+/** Read the scene the URL is pointing at, if any. Safe under SSR. */
+function initialSceneFragment(): number | null {
+    return typeof window === 'undefined'
+        ? null
+        : parseSceneFragment(window.location.hash);
+}
+
 export default function ContinuousFlow({
     project,
     work,
@@ -116,6 +140,12 @@ export default function ContinuousFlow({
     const inFlightRef = useRef<Set<number>>(new Set());
     const rafRef = useRef<number | null>(null);
     const aroundDoneRef = useRef<string | null>(null);
+
+    // Landing state. The scene comes off the URL at mount and is read
+    // once — the workspace rewrites the fragment as the reader scrolls,
+    // so re-reading it later would chase a moving target.
+    const landedRef = useRef(false);
+    const landingSceneRef = useRef<number | null>(initialSceneFragment());
 
     /**
      * Fetch a window of section content and merge it in.
@@ -331,21 +361,121 @@ export default function ContinuousFlow({
         };
     }, [scrollToSlugRef, fetchWindow]);
 
-    /* Active scene — Task 5's observer replaces this seam. Until then
-       the landing section is active, emitted once it holds content. */
-    const activeId = initialSection?.id ?? null;
-    const emittedRef = useRef<CurrentSection | null>(null);
+    /* Landing scroll — first mount only.
 
+       The flow renders the whole book, so without this the reader opens
+       a deep link and finds themselves at chapter one. The wrapper is
+       already in the DOM (placeholder or not), so one frame after the
+       first paint is enough to put it under the caret; a `#scene-n`
+       fragment then refines the target to the nth scene head, retrying
+       until the editor has parsed them into existence. */
     useEffect(() => {
-        const active = activeId !== null ? hydrated[activeId] : undefined;
+        const container = containerRef.current;
 
-        if (active === undefined || emittedRef.current === active) {
+        if (landedRef.current || container === null || initialSection === null) {
             return;
         }
 
-        emittedRef.current = active;
-        onActiveSceneChange({ section: active, sceneIndex: null });
-    }, [activeId, hydrated, onActiveSceneChange]);
+        landedRef.current = true;
+
+        const row = container.querySelector(
+            `[data-flow-section-id="${initialSection.id}"]`,
+        );
+
+        if (row === null) {
+            return;
+        }
+
+        const scene = landingSceneRef.current;
+        let frame: number | null = null;
+        let attempts = 0;
+
+        const land = () => {
+            frame = null;
+
+            if (attempts === 0) {
+                row.scrollIntoView({ block: 'start', behavior: 'auto' });
+            }
+
+            if (scene !== null && scene >= 2) {
+                const target = row.querySelectorAll(SLUGLINE_SELECTOR)[scene - 1];
+
+                if (target !== undefined) {
+                    target.scrollIntoView({ block: 'start', behavior: 'auto' });
+                } else if (attempts < SCENE_LANDING_FRAMES) {
+                    attempts += 1;
+                    frame = requestAnimationFrame(land);
+
+                    return;
+                }
+            }
+
+            // The landing moved the scrollport without firing a scroll
+            // event, so nothing else will notice the placeholders it
+            // just pulled into the load band.
+            scanViewport();
+        };
+
+        frame = requestAnimationFrame(land);
+
+        return () => {
+            if (frame !== null) {
+                cancelAnimationFrame(frame);
+            }
+        };
+    }, [initialSection, scanViewport]);
+
+    /* Where the reader is, in DOM terms. Seeded from the landing
+       section (and the URL's scene fragment) so the workspace chrome is
+       correct from the first paint rather than 600 ms into it. */
+    const [activeRef, setActiveRef] = useState<ActiveSceneRef | null>(() =>
+        initialSection === null
+            ? null
+            : {
+                  sectionId: initialSection.id,
+                  slug: initialSection.slug,
+                  sceneIndex: initialSceneFragment(),
+              },
+    );
+
+    // Always on: focus mode unmounts this component rather than
+    // disabling it, so there is no "mounted but idle" state to model.
+    useActiveScene({
+        containerRef,
+        enabled: true,
+        version: hydrationVersion,
+        onChange: setActiveRef,
+    });
+
+    const activeId = activeRef?.sectionId ?? null;
+
+    /* Promote the observer's DOM answer to the workspace's ActiveScene.
+       A row the reader has scrolled to but that hasn't hydrated yet has
+       no CurrentSection to hand over, so the chrome keeps pointing at
+       the last real one — and this effect re-runs when the content
+       lands, which is why it can't live inside the hook. */
+    const emittedRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (activeRef === null) {
+            return;
+        }
+
+        const section = hydrated[activeRef.sectionId];
+
+        if (section === undefined) {
+            return;
+        }
+
+        const signature = `${activeRef.sectionId}:${activeRef.sceneIndex}`;
+
+        if (emittedRef.current === signature) {
+            return;
+        }
+
+        emittedRef.current = signature;
+        onActiveSceneChange({ section, sceneIndex: activeRef.sceneIndex });
+    }, [activeRef, hydrated, onActiveSceneChange]);
 
     return (
         <div

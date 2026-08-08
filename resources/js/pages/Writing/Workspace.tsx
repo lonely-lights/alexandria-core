@@ -14,6 +14,10 @@ import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 
+import ContinuousFlow, { type ActiveScene } from './Flow/ContinuousFlow';
+import FlowToggle from './Flow/FlowToggle';
+import { flowUrl, parseSceneFragment } from './Flow/flowUrl';
+import { readViewMode, writeViewMode, type WorkspaceViewMode } from './Flow/viewMode';
 import AddSectionModal from './Sections/AddSectionModal';
 import ManuscriptEditor, {
     PRINT_LAYOUT_STORAGE_KEY,
@@ -329,6 +333,105 @@ export default function Workspace() {
         setEditorTick((tick) => tick + 1);
     }, []);
 
+    /* ── Continuous flow (spec 2026-08-08) ──
+       In continuous mode the whole work streams through one scrollport,
+       so "the current section" stops being the server-rendered prop and
+       becomes wherever the reader has scrolled to. `effectiveSection` is
+       that answer; in focus mode it IS `currentSection`, so every
+       consumer below reads the same name in both views. */
+    const [viewMode, setViewMode] = useState<WorkspaceViewMode>(() =>
+        readViewMode(work.id),
+    );
+    const [activeScene, setActiveScene] = useState<ActiveScene | null>(() =>
+        currentSection === null
+            ? null
+            : {
+                  section: currentSection,
+                  sceneIndex:
+                      typeof window === 'undefined'
+                          ? null
+                          : parseSceneFragment(window.location.hash),
+              },
+    );
+
+    const effectiveSection =
+        viewMode === 'continuous' ? (activeScene?.section ?? currentSection) : currentSection;
+
+    // Imperative scroll-to-section, filled in by ContinuousFlow so the
+    // Navigator can move the scrollport instead of navigating away.
+    const scrollToSlugRef = useRef<((slug: string) => void) | null>(null);
+
+    // One bridge per mounted editor. The ribbon binds to the active
+    // scene's, held in a ref so a bridge report never has to invalidate
+    // the callback the editors are subscribed through.
+    const bridgesRef = useRef(new Map<number, WritingEditorBridge | null>());
+    const activeSectionIdRef = useRef<number | null>(currentSection?.id ?? null);
+
+    const handleActiveSceneChange = useCallback(
+        (active: ActiveScene) => {
+            setActiveScene(active);
+            activeSectionIdRef.current = active.section.id;
+            bridgeRef.current = bridgesRef.current.get(active.section.id) ?? null;
+
+            // Scroll must never be a visit: an Inertia request per scene
+            // would re-render the desk out from under the reader. The
+            // existing state object rides along — nulling it would strip
+            // Inertia's page snapshot off this history entry and turn a
+            // later back-button press into a full reload.
+            window.history.replaceState(
+                window.history.state,
+                '',
+                flowUrl(project.slug, work.slug, active.section.slug, active.sceneIndex),
+            );
+        },
+        [project.slug, work.slug],
+    );
+
+    /** A null bridge means that editor just unmounted (scrolled out of the
+     *  hydrated window, or the view mode swapped underneath it). */
+    const handleBridgeChange = useCallback(
+        (sectionId: number, bridge: WritingEditorBridge | null) => {
+            bridgesRef.current.set(sectionId, bridge);
+
+            if (activeSectionIdRef.current === sectionId) {
+                bridgeRef.current = bridge;
+            }
+        },
+        [],
+    );
+
+    const switchViewMode = useCallback(
+        (next: WorkspaceViewMode) => {
+            if (next === viewMode) {
+                return;
+            }
+
+            writeViewMode(work.id, next);
+            setViewMode(next);
+
+            // Focus mode edits whatever the server rendered, so hand it
+            // the scene the reader was actually on before it takes over.
+            const slug = activeScene?.section.slug ?? currentSection?.slug ?? null;
+
+            if (next === 'continuous') {
+                // Whatever the flow last reported is a section from the
+                // PREVIOUS mount; focus mode may have navigated since.
+                // Drop it and let the remounting flow report afresh.
+                setActiveScene(null);
+                activeSectionIdRef.current = currentSection?.id ?? null;
+            }
+
+            if (next === 'focus' && slug !== null) {
+                router.visit(flowUrl(project.slug, work.slug, slug), {
+                    only: ['currentSection'],
+                    preserveState: true,
+                    preserveScroll: true,
+                });
+            }
+        },
+        [viewMode, work.id, activeScene, currentSection, project.slug, work.slug],
+    );
+
     const handleEntryLinkSelect = useCallback(() => {
         setPanelOpen(true);
         setPanelMode('linked');
@@ -347,13 +450,13 @@ export default function Workspace() {
      *  works hold notes directly, so the drawer stays inside the
      *  manuscript instead of widening to the whole project. */
     const handleNotesClick = useCallback(() => {
-        if (currentSection !== null) {
+        if (effectiveSection !== null) {
             openNotesDrawer({
                 projectId: project.id,
                 projectSlug: project.slug,
                 contextType: 'work_section',
-                contextId: currentSection.id,
-                contextLabel: currentSection.title,
+                contextId: effectiveSection.id,
+                contextLabel: effectiveSection.title,
             });
         } else {
             openNotesDrawer({
@@ -364,7 +467,7 @@ export default function Workspace() {
                 contextLabel: work.title,
             });
         }
-    }, [project.id, project.slug, work.id, work.title, currentSection]);
+    }, [project.id, project.slug, work.id, work.title, effectiveSection]);
 
     const toggleSceneLinksPanel = useCallback(() => {
         setPanelOpen((prev) => {
@@ -448,23 +551,23 @@ export default function Workspace() {
 
     useEffect(() => {
         setCurrentOutline(
-            currentSection?.format === 'prose'
-                ? extractSectionOutline(currentSection.content)
+            effectiveSection?.format === 'prose'
+                ? extractSectionOutline(effectiveSection.content)
                 : [],
         );
-        if (currentSection?.format !== 'screenplay') {
+        if (effectiveSection?.format !== 'screenplay') {
             setScreenplaySceneLinks([]);
             if (work.format !== 'screenplay' && linkedPanelTab === 'scene-links') {
                 setLinkedPanelTab('browse');
             }
         }
-    }, [currentSection?.id, currentSection?.content, currentSection?.format, linkedPanelTab, work.format]);
+    }, [effectiveSection?.id, effectiveSection?.content, effectiveSection?.format, linkedPanelTab, work.format]);
 
     /* Clear transient comment state when the active section changes. */
     useEffect(() => {
         setPendingCommentAnchor(null);
         setHighlightCommentId(null);
-    }, [currentSection?.id]);
+    }, [effectiveSection?.id]);
 
     useEffect(() => {
         const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -596,6 +699,14 @@ export default function Workspace() {
     }, []);
 
     function selectSection(slug: string) {
+        // In the flow the section is already on screen — jumping to it is
+        // a scroll, not a navigation.
+        if (viewMode === 'continuous' && scrollToSlugRef.current !== null) {
+            scrollToSlugRef.current(slug);
+
+            return;
+        }
+
         router.visit(`/works/${project.slug}/${work.slug}/${slug}`, {
             only: ['currentSection'],
             preserveState: true,
@@ -630,14 +741,14 @@ export default function Workspace() {
         const workSlug = work.slug;
 
         return {
-            format: (currentSection?.format ?? work.format) === 'screenplay' ? 'screenplay' : 'prose',
+            format: (effectiveSection?.format ?? work.format) === 'screenplay' ? 'screenplay' : 'prose',
             canUpdate: can.update,
             panelOpen,
             sceneLinksPanelOpen: panelOpen && panelMode === 'linked' && linkedPanelTab === 'scene-links',
             printLayout,
             paperColor,
             zoom,
-            hasSection: currentSection !== null,
+            hasSection: effectiveSection !== null,
             editorTick,
             // Lazy getter: the bridge lands via useImperativeHandle AFTER
             // this memo runs on mount, so actions/predicates must read the
@@ -656,16 +767,16 @@ export default function Workspace() {
                 openReports: () => router.visit(`/works/${projectSlug}/${workSlug}/reports`),
                 addSection: () => setAddTarget({ parentId: null }),
                 addInside: () => {
-                    if (currentSection !== null) {
-                        setAddTarget({ parentId: currentSection.id });
+                    if (effectiveSection !== null) {
+                        setAddTarget({ parentId: effectiveSection.id });
                     }
                 },
                 deleteSection: () => {
-                    if (currentSection === null) {
+                    if (effectiveSection === null) {
                         return;
                     }
 
-                    const node = findSectionNode(sections, currentSection.id);
+                    const node = findSectionNode(sections, effectiveSection.id);
 
                     if (node !== null) {
                         setDeleteTarget(node);
@@ -697,7 +808,7 @@ export default function Workspace() {
         printLayout,
         paperColor,
         zoom,
-        currentSection,
+        effectiveSection,
         sections,
         editorTick,
         togglePanel,
@@ -714,10 +825,11 @@ export default function Workspace() {
     // Navigator rows; the old SectionChrome footer read the autosave
     // hook directly, the bar assembles from the existing onCounts flow).
     const sectionWords =
-        currentSection !== null
-            ? (liveCounts[currentSection.id] ?? currentSection.word_count)
+        effectiveSection !== null
+            ? (liveCounts[effectiveSection.id] ?? effectiveSection.word_count)
             : 0;
-    const sectionPages = currentSection !== null ? (livePages[currentSection.id] ?? null) : null;
+    const sectionPages =
+        effectiveSection !== null ? (livePages[effectiveSection.id] ?? null) : null;
 
     return (
         // navbar={false}: the merged header — the ribbon's tab row IS
@@ -905,8 +1017,8 @@ export default function Workspace() {
                                 workSlug={work.slug}
                                 work={work}
                                 sections={sections}
-                                currentSection={currentSection}
-                                currentSlug={currentSection?.slug ?? null}
+                                currentSection={effectiveSection}
+                                currentSlug={effectiveSection?.slug ?? null}
                                 canUpdate={can.update}
                                 onSelect={selectSection}
                                 onRequestAdd={(parentId) => setAddTarget({ parentId })}
@@ -918,9 +1030,34 @@ export default function Workspace() {
                     </div>
 
                     {/* Editor pane — the frame itself never scrolls; the
-                        editor's content wrapper inside ManuscriptEditor does */}
-                    <section className="flex min-w-0 flex-1 flex-col overflow-hidden">
-                        {currentSection !== null ? (
+                        editor's content wrapper (focus mode) or the flow's
+                        own scrollport (continuous mode) does. The view
+                        toggle floats over whichever is mounted. */}
+                    <section className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+                        {sections.length > 0 && (
+                            <div className="absolute right-4 top-2 z-10">
+                                <FlowToggle mode={viewMode} onChange={switchViewMode} />
+                            </div>
+                        )}
+                        {viewMode === 'continuous' && sections.length > 0 ? (
+                            <ContinuousFlow
+                                project={project}
+                                work={work}
+                                sections={sections}
+                                initialSection={currentSection}
+                                canUpdate={can.update}
+                                printLayout={printLayout}
+                                onCounts={handleCounts}
+                                onActiveSceneChange={handleActiveSceneChange}
+                                onBridgeChange={handleBridgeChange}
+                                onEditorStateChange={handleEditorStateChange}
+                                onOutlineChange={setCurrentOutline}
+                                onSceneLinksChange={setScreenplaySceneLinks}
+                                onEntryLinkSelect={handleEntryLinkSelect}
+                                onAddComment={handleAddComment}
+                                scrollToSlugRef={scrollToSlugRef}
+                            />
+                        ) : currentSection !== null ? (
                             currentSection.format === 'screenplay' ? (
                                 <ScreenplayEditor
                                     key={currentSection.id}
@@ -989,7 +1126,7 @@ export default function Workspace() {
                                     <ReferencePanel
                                         project={project}
                                         work={work}
-                                        currentSection={currentSection}
+                                        currentSection={effectiveSection}
                                         pins={pins}
                                         canUpdate={can.update}
                                         saveSignal={saveSignal}
@@ -1005,7 +1142,7 @@ export default function Workspace() {
                                         projectId={project.id}
                                         projectSlug={project.slug}
                                         work={work}
-                                        currentSection={currentSection}
+                                        currentSection={effectiveSection}
                                         sections={sections}
                                     />
                                 )}
@@ -1013,7 +1150,7 @@ export default function Workspace() {
                                     <CommentRail
                                         workSlug={work.slug}
                                         projectSlug={project.slug}
-                                        sectionId={currentSection?.id ?? null}
+                                        sectionId={effectiveSection?.id ?? null}
                                         editorBridge={bridgeRef.current}
                                         editorTick={editorTick}
                                         currentUserId={currentUserId}
@@ -1030,7 +1167,7 @@ export default function Workspace() {
                                             key={m.id}
                                             project={project}
                                             work={work}
-                                            currentSection={currentSection}
+                                            currentSection={effectiveSection}
                                             editorBridge={bridgeRef.current}
                                             editorTick={editorTick}
                                             canUpdate={can.update}
@@ -1053,11 +1190,11 @@ export default function Workspace() {
                     project={project}
                     work={work}
                     workWords={workWords}
-                    hasSection={currentSection !== null}
+                    hasSection={effectiveSection !== null}
                     sectionWords={sectionWords}
-                    sectionTarget={currentSection?.target_words ?? null}
+                    sectionTarget={effectiveSection?.target_words ?? null}
                     sectionPages={sectionPages}
-                    sectionFormat={currentSection?.format ?? null}
+                    sectionFormat={effectiveSection?.format ?? null}
                 />
             </div>
 
