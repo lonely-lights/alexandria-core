@@ -48,6 +48,15 @@ export interface ManuscriptEditorProps {
      * ScreenplayEditor (its toolbar is already gone).
      */
     chrome?: 'full' | 'none';
+    /**
+     * Who owns the scroll. `'self'` (default) keeps today's behavior —
+     * the editor bounds itself to the pane and scrolls internally.
+     * `'parent'` renders the surface non-scrolling and content-tall so
+     * a stacked container (the continuous-flow scene stack) can own one
+     * scrollport across many sections; manuscript rulers are suppressed
+     * in that mode, page-break guides stay.
+     */
+    scrollMode?: 'self' | 'parent';
     /** Ribbon editor bridge — commands + capability queries (Ribbon Plan 2). */
     bridgeRef?: Ref<WritingEditorBridge>;
     /** Editor selection/content tick — the Workspace bumps `editorTick`. */
@@ -81,6 +90,7 @@ export default function ManuscriptEditor({
     onCounts,
     printLayout,
     chrome,
+    scrollMode = 'self',
     bridgeRef,
     onStateChange,
     onOutlineChange,
@@ -119,7 +129,10 @@ export default function ManuscriptEditor({
                 <RichTextEditor
                     key={section.id}
                     variant="manuscript"
-                    className="min-h-0 flex-1"
+                    /* In parent-scroll mode the surface must grow to
+                       content height — a bounded `flex-1` here would
+                       fight the stacked container that owns the scroll. */
+                    className={scrollMode === 'self' ? 'min-h-0 flex-1' : undefined}
                     value={content}
                     onChange={handleChange}
                     onImmediateChange={(wiki) => onOutlineChange?.(extractSectionOutline(wiki))}
@@ -130,13 +143,20 @@ export default function ManuscriptEditor({
                     maxLength={0}
                     printLayout={effectivePrintLayout}
                     chrome={chrome}
+                    scrollMode={scrollMode}
                     bridgeRef={bridgeRef}
                     onStateChange={onStateChange}
                     enableComments={enableComments}
                     onAddComment={onAddComment}
                 />
             ) : (
-                <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
+                <div
+                    className={
+                        scrollMode === 'self'
+                            ? 'writing-workspace-scroll min-h-0 flex-1 overflow-y-auto'
+                            : undefined
+                    }
+                >
                     <pre className="mx-auto w-full max-w-3xl px-6 pt-10 pb-[40vh] font-sans text-sm leading-relaxed whitespace-pre-wrap">
                         {content}
                     </pre>

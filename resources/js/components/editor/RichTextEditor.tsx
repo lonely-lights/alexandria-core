@@ -102,6 +102,18 @@ interface RichTextEditorProps {
      */
     chrome?: 'full' | 'none';
     /**
+     * Who owns the scroll (manuscript variant only; the card variant is
+     * always content-tall). `'self'` (default) keeps today's behavior:
+     * the editor bounds itself to its parent's height and scrolls its
+     * own content area. `'parent'` makes the editor non-scrolling and
+     * content-tall so a stacked container (the continuous-flow scene
+     * stack) can own a single scrollport across many sections. In
+     * parent mode the manuscript rulers are suppressed — a ruler
+     * repeated per section is visual noise — while the page-break
+     * guides keep rendering.
+     */
+    scrollMode?: 'self' | 'parent';
+    /**
      * Imperative ribbon bridge (Ribbon Plan 2) — formatting commands +
      * capability queries. Screenplay-only methods (`setElement`,
      * `currentElement`) are safe no-ops here.
@@ -276,6 +288,7 @@ export default function RichTextEditor({
     variant = 'card',
     printLayout = false,
     chrome = 'full',
+    scrollMode = 'self',
     bridgeRef,
     onStateChange,
     projectId,
@@ -581,6 +594,11 @@ export default function RichTextEditor({
     // chrome='none' is only meaningful for the manuscript surface — the
     // ribbon-driven workspace; card callers always keep their toolbar.
     const showToolbar = !isManuscript || chrome !== 'none';
+    // scrollMode='parent': a stacked container owns the scrollport, so
+    // every height class that assumes a bounded frame (h-full, flex-1
+    // + min-h-0, overflow-y-auto) drops out and the surface grows to
+    // content height instead.
+    const ownsScroll = scrollMode === 'self';
 
     // Manuscript mode: the scroll wrapper (.writing-workspace-scroll) is
     // wider than the prose measure and, via the flex height chain, taller
@@ -766,7 +784,7 @@ export default function RichTextEditor({
         <div
             className={
                 isManuscript
-                    ? `rte-manuscript ${printLayout ? 'rte-manuscript--print ' : ''}flex h-full min-h-0 flex-col ${className ?? ''}`
+                    ? `rte-manuscript ${printLayout ? 'rte-manuscript--print ' : ''}flex ${ownsScroll ? 'h-full min-h-0 ' : ''}flex-col ${className ?? ''}`
                     : `space-y-2 ${className ?? ''}`
             }
         >
@@ -793,7 +811,13 @@ export default function RichTextEditor({
             {/* Editor Container — card chrome, or a chrome-less flex
                 column that fills the remaining height in manuscript mode */}
             <div
-                className={isManuscript ? 'flex min-h-0 flex-1 flex-col' : 'relative transition-all'}
+                className={
+                    isManuscript
+                        ? ownsScroll
+                            ? 'flex min-h-0 flex-1 flex-col'
+                            : 'flex flex-col'
+                        : 'relative transition-all'
+                }
                 style={
                     isManuscript
                         ? undefined
@@ -948,8 +972,8 @@ export default function RichTextEditor({
                        prose measure + paddings live on .ProseMirror
                        itself (components/manuscript.css) so native
                        click-to-focus covers the whole surface. */
-                    <div className="flex min-h-0 flex-1 flex-col">
-                        {printLayout && (
+                    <div className={ownsScroll ? 'flex min-h-0 flex-1 flex-col' : 'flex flex-col'}>
+                        {printLayout && ownsScroll && (
                             <div className="flex shrink-0">
                                 <div
                                     className="hidden w-8 shrink-0 md:block"
@@ -961,15 +985,22 @@ export default function RichTextEditor({
                                 <ManuscriptRuler />
                             </div>
                         )}
-                        <div className="flex min-h-0 flex-1">
-                            {printLayout && <ManuscriptRuler orientation="vertical" />}
+                        <div className={ownsScroll ? 'flex min-h-0 flex-1' : 'flex'}>
+                            {printLayout && ownsScroll && <ManuscriptRuler orientation="vertical" />}
                             {/* Scroll container — overflow-y-auto here so the
                                 inner `relative` wrapper grows to full content
                                 height (not the clipped viewport), which lets
                                 the page-break guides' absolute inset-0 fill
-                                the correct content-tall area. */}
+                                the correct content-tall area. Under
+                                scrollMode='parent' it stops being a scrollport
+                                (a stacked ancestor owns that) and just stays a
+                                content-tall flex column. */}
                             <div
-                                className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto flex flex-col"
+                                className={
+                                    ownsScroll
+                                        ? 'writing-workspace-scroll min-h-0 flex-1 overflow-y-auto flex flex-col'
+                                        : 'flex flex-1 flex-col'
+                                }
                                 onMouseDown={handleGutterMouseDown}
                             >
                                 <div className="relative flex min-h-full flex-col">

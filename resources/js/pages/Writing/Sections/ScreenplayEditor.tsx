@@ -95,6 +95,12 @@ interface ScreenplaySurfaceProps {
     projectId: number;
     initialContent: string;
     printLayout: boolean;
+    /**
+     * Who owns the scroll. `'parent'` drops the internal scrollport (and
+     * the rulers) so a stacked container can scroll many sections as one
+     * continuous flow; `'self'` is today's bounded, self-scrolling pane.
+     */
+    scrollMode?: 'self' | 'parent';
     /** Ribbon editor bridge (Ribbon Plan 2) — element commands + queries. */
     bridgeRef?: Ref<WritingEditorBridge>;
     /** Fires when the selection's element changes — the Workspace bumps `editorTick`. */
@@ -117,6 +123,7 @@ function ScreenplaySurface({
     projectId,
     initialContent,
     printLayout,
+    scrollMode = 'self',
     bridgeRef,
     onStateChange,
     onSceneLinksChange,
@@ -454,9 +461,14 @@ function ScreenplaySurface({
 
     if (!editor) return null;
 
+    // scrollMode='parent': a stacked ancestor owns the scrollport, so the
+    // bounded-frame classes (flex-1 + min-h-0, overflow-y-auto) and the
+    // per-section rulers drop out and the sheet grows to content height.
+    const ownsScroll = scrollMode === 'self';
+
     return (
-        <div className="flex min-h-0 flex-1 flex-col">
-            {printLayout && (
+        <div className={ownsScroll ? 'flex min-h-0 flex-1 flex-col' : 'flex flex-col'}>
+            {printLayout && ownsScroll && (
                 <div className="flex shrink-0">
                     <div
                         className="hidden w-8 shrink-0 md:block"
@@ -470,11 +482,15 @@ function ScreenplaySurface({
             )}
 
             {/* The sheet: geometry from manuscript.css, element layout from screenplay.css. */}
-            <div className="flex min-h-0 flex-1">
-                {printLayout && <ManuscriptRuler orientation="vertical" />}
+            <div className={ownsScroll ? 'flex min-h-0 flex-1' : 'flex'}>
+                {printLayout && ownsScroll && <ManuscriptRuler orientation="vertical" />}
                 <EditorContent
                     editor={editor}
-                    className="tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto"
+                    className={
+                        ownsScroll
+                            ? 'tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto'
+                            : 'tiptap-editor flex-1'
+                    }
                     onClick={handleEntryLinkClick}
                     onMouseMove={handleEntryLinkMouseMove}
                     onMouseLeave={handleEntryLinkMouseLeave}
@@ -590,6 +606,7 @@ export default function ScreenplayEditor({
     canUpdate,
     onCounts,
     printLayout,
+    scrollMode = 'self',
     bridgeRef,
     onStateChange,
     onSceneLinksChange,
@@ -616,6 +633,7 @@ export default function ScreenplayEditor({
                     projectId={projectId}
                     initialContent={initialContent}
                     printLayout={effectivePrintLayout}
+                    scrollMode={scrollMode}
                     bridgeRef={bridgeRef}
                     onStateChange={onStateChange}
                     onSceneLinksChange={onSceneLinksChange}
@@ -628,7 +646,13 @@ export default function ScreenplayEditor({
                 /* Read-only: the parsed blocks as styled static markup
                    inside the sheet — no editor instance. The class
                    names reuse the desk/sheet/element CSS directly. */
-                <div className="tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
+                <div
+                    className={
+                        scrollMode === 'self'
+                            ? 'tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto'
+                            : 'tiptap-editor'
+                    }
+                >
                     <div className="ProseMirror">
                         {parseScreenplay(initialContent).map((block, index) => (
                             <p
