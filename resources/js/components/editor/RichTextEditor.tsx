@@ -16,7 +16,6 @@ import Button from '@alexandria/components/ui/Button';
 import useT from '@alexandria/hooks/useT';
 import type { WritingEditorBridge } from '@alexandria/pages/Writing/ribbon/writingRibbonContext';
 import PageBreakGuides from '@alexandria/pages/Writing/Sections/PageBreakGuides';
-import { LINES_PER_PAGE } from '@alexandria/pages/Writing/Sections/pageBreakMath';
 import { ProseTabKeymap } from './proseTabKeymap';
 import { CommentMark } from '@alexandria/editor/extensions/commentMark';
 import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
@@ -1009,7 +1008,7 @@ export default function RichTextEditor({
                                         className="tiptap-editor flex-1 flex flex-col"
                                     />
                                     {printLayout && (
-                                        <PageBreakGuides linesPerPage={LINES_PER_PAGE.prose} />
+                                        <PageBreakGuides />
                                     )}
                                 </div>
                             </div>

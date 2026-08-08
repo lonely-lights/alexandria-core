@@ -162,7 +162,7 @@ return [
     'workspace.pages' => '~:count pages',
     'workspace.pages_of_target' => '~:count of :target pages',
     'workspace.print_layout' => 'Print layout (Letter, 1in margins)',
-    'workspace.page_break_label' => 'p. :page',
+    'workspace.page_break_label' => 'Page :page',
     'workspace.page_estimate' => '~:pages p.',
     'workspace.page_estimate_title' => 'Estimated pages (deterministic estimate — real pagination arrives with export)',
     'workspace.saving' => 'Saving…',
