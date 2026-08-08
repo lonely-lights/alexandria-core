@@ -175,6 +175,15 @@ return [
     'workspace.keys_paren' => 'Typing ( at the start of a dialogue line starts a parenthetical.',
     'workspace.keys_elements' => 'Jump straight to an element, Final Draft numbering: 0 scene heading, 1 action, 2 character, 3 parenthetical, 4 dialogue, 5 transition.',
 
+    // Continuous flow (spec 2026-08-08)
+    'flow.begin_writing' => 'Begin writing…',
+    'flow.scene_break' => 'Scene break',
+    'flow.divider_aria' => ':title',
+    'flow.loading' => 'Loading…',
+    'flow.continuous' => 'Continuous',
+    'flow.focus' => 'Focus',
+    'flow.toggle_aria' => 'Switch manuscript view mode',
+
     'guidance.screenplay.title' => 'Screenplay structure',
     'guidance.screenplay.body' => 'A quick check against the default act-and-scene shape for a feature screenplay.',
     'guidance.stage_play.title' => 'Stage play structure',
