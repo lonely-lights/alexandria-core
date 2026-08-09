@@ -33,6 +33,13 @@
     --alex-writing-section-pane-bg: var(--theme-base-page);
     --alex-writing-section-row-hover-bg: color-mix(in srgb, var(--theme-base-content) 5%, transparent);
     --alex-writing-zoom: 1;
+    /* JS-driven values, declared here so the cascade (and tooling) has
+       a root definition: the Workspace inlines the font size from the
+       ribbon control, and applySheetMargins() writes the margins in
+       proportional px on the sheet itself. */
+    --alex-writing-font-size: 12pt;
+    --alex-page-margin-top: 3.5rem;
+    --alex-page-margin-bottom: 10rem;
 }
 
 .writing-workspace-shell[data-writing-paper-color="white"] .rte-manuscript .tiptap-editor .ProseMirror,

@@ -465,14 +465,14 @@ export default function Workspace() {
 
             // Focus mode edits whatever the server rendered, so hand it
             // the scene the reader was actually on before it takes over.
-            const slug = activeScene?.section.slug ?? currentSection?.slug ?? null;
+            const slug = activeSceneSlug ?? currentSectionSlug;
 
             if (next === 'continuous') {
                 // Whatever the flow last reported is a section from the
                 // PREVIOUS mount; focus mode may have navigated since.
                 // Drop it and let the remounting flow report afresh.
                 setActiveScene(null);
-                activeSectionIdRef.current = currentSection?.id ?? null;
+                activeSectionIdRef.current = currentSectionId;
             }
 
             if (next === 'focus' && slug !== null) {
@@ -504,13 +504,13 @@ export default function Workspace() {
      *  works hold notes directly, so the drawer stays inside the
      *  manuscript instead of widening to the whole project. */
     const handleNotesClick = useCallback(() => {
-        if (effectiveSection !== null) {
+        if (effectiveSectionId !== null) {
             openNotesDrawer({
                 projectId: project.id,
                 projectSlug: project.slug,
                 contextType: 'work_section',
-                contextId: effectiveSection.id,
-                contextLabel: effectiveSection.title,
+                contextId: effectiveSectionId,
+                contextLabel: effectiveSectionTitle ?? '',
             });
         } else {
             openNotesDrawer({
@@ -809,7 +809,7 @@ export default function Workspace() {
         const workSlug = work.slug;
 
         return {
-            format: (effectiveSection?.format ?? work.format) === 'screenplay' ? 'screenplay' : 'prose',
+            format: (effectiveSectionFormat ?? work.format) === 'screenplay' ? 'screenplay' : 'prose',
             canUpdate: can.update,
             panelOpen,
             sceneLinksPanelOpen: panelOpen && panelMode === 'linked' && linkedPanelTab === 'scene-links',
@@ -818,7 +818,7 @@ export default function Workspace() {
             paperColor,
             zoom,
             fontSize,
-            hasSection: effectiveSection !== null,
+            hasSection: effectiveSectionId !== null,
             editorTick,
             // Lazy getter: the bridge lands via useImperativeHandle AFTER
             // this memo runs on mount, so actions/predicates must read the
@@ -839,16 +839,16 @@ export default function Workspace() {
                 openReports: () => router.visit(`/works/${projectSlug}/${workSlug}/reports`),
                 addSection: () => setAddTarget({ parentId: null }),
                 addInside: () => {
-                    if (effectiveSection !== null) {
-                        setAddTarget({ parentId: effectiveSection.id });
+                    if (effectiveSectionId !== null) {
+                        setAddTarget({ parentId: effectiveSectionId });
                     }
                 },
                 deleteSection: () => {
-                    if (effectiveSection === null) {
+                    if (effectiveSectionId === null) {
                         return;
                     }
 
-                    const node = findSectionNode(sections, effectiveSection.id);
+                    const node = findSectionNode(sections, effectiveSectionId);
 
                     if (node !== null) {
                         setDeleteTarget(node);

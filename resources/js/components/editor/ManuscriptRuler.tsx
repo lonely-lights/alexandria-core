@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 
 import {
     MARGIN_X_EVENT,
@@ -150,7 +150,7 @@ function MarginHandles({
     stripRef,
 }: {
     marginXIn: number;
-    stripRef: React.RefObject<HTMLDivElement | null>;
+    stripRef: RefObject<HTMLDivElement | null>;
 }) {
     const draggingRef = useRef<'left' | 'right' | null>(null);
 
