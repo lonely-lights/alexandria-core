@@ -51,6 +51,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ * @property-read Entry|null $entry
  * @property-read Project $project
  * @property-read Model $user
  * @property-read Collection<int, WorkSection> $sections

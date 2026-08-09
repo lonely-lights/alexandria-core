@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
-import useT from '@alexandria/hooks/useT';
 import PickerDropdown from '@alexandria/components/ui/PickerDropdown';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 
-import { formatShortcutLabel } from '../shortcuts';
 import type { RibbonControl } from '../types';
+import { useRibbonControlMeta } from './useRibbonControlMeta';
 
 /**
  * Word-style combo box — spec 2026-08-08, owner round 5.
@@ -24,8 +23,6 @@ import type { RibbonControl } from '../types';
  * is just `control.onAction(ctx, raw)`. Range clamping and persistence
  * belong to whoever owns the preference.
  */
-
-const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 interface Props<Ctx> {
     control: RibbonControl<Ctx>;
@@ -57,16 +54,7 @@ const arrowStyle: CSSProperties = {
 };
 
 export default function RibbonCombo<Ctx>({ control, ctx }: Props<Ctx>) {
-    const t = useT();
-    const disabled = control.disabled?.(ctx) ?? false;
-    const options = (control.options?.(ctx) ?? []).map((option) => ({
-        value: option.value,
-        label: t(option.labelKey),
-    }));
-    const label = control.labelFn?.(ctx) ?? t(control.labelKey);
-    const tip = control.shortcut
-        ? `${label} - ${formatShortcutLabel(control.shortcut, isMac)}`
-        : label;
+    const { t, disabled, options, label, tip } = useRibbonControlMeta(control, ctx);
     const committed = control.value?.(ctx) ?? '';
 
     // What the field is showing while the writer types. Resynced from

@@ -472,7 +472,7 @@ export default function Workspace() {
                 });
             }
         },
-        [viewMode, work.id, activeScene, currentSection, project.slug, work.slug],
+        [viewMode, work.id, activeScene?.section.slug, currentSection?.id, currentSection?.slug, project.slug, work.slug],
     );
 
     const handleEntryLinkSelect = useCallback(() => {
@@ -510,7 +510,7 @@ export default function Workspace() {
                 contextLabel: work.title,
             });
         }
-    }, [project.id, project.slug, work.id, work.title, effectiveSection]);
+    }, [project.id, project.slug, work.id, work.title, effectiveSection?.id, effectiveSection?.title]);
 
     const toggleSceneLinksPanel = useCallback(() => {
         setPanelOpen((prev) => {
@@ -871,7 +871,8 @@ export default function Workspace() {
         paperColor,
         zoom,
         fontSize,
-        effectiveSection,
+        effectiveSection?.format,
+        effectiveSection?.id,
         sections,
         editorTick,
         togglePanel,
