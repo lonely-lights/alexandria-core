@@ -382,7 +382,10 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
        height too (pageBreakDecorations reads the computed padding), so
        a page holds exactly what fits BETWEEN its margins. */
     --alex-page-margin-top: 1in;
-    --alex-page-margin-bottom: 1.5in;
+    /* 1in, not the old 1.5in drafting tail: Word's default and the
+       Shunn manuscript standard are 1in on all four sides — which is
+       also exactly what the print-layout label promises. */
+    --alex-page-margin-bottom: 1in;
     min-height: 11in;
     margin-block: 1.5rem;
     padding: var(--alex-page-margin-top) var(--alex-sheet-pad-x) var(--alex-page-margin-bottom);
@@ -432,16 +435,21 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
 }
 
 /* Spans the band's full bled width, so the rule reaches the paper's
-   edges like the pages-mode band does. Subtle, but it has to actually
-   read as a divider — 20% was too close to invisible. */
+   edges like the pages-mode band does. Drawn with the sheet's OWN
+   border colour (inherited through the band), not the theme's ink:
+   this line sits on PAPER, and under a dark theme the theme ink is a
+   light colour that vanishes against a light sheet. The border colour
+   is what the paper-colour modes already repaint to suit each paper,
+   so the rule always reads as a page edge — same treatment as the
+   pages-mode hairlines. */
 .alex-page-break--tight::before {
     content: '';
     position: absolute;
     top: var(--alex-page-margin-bottom, 3rem);
     left: 0;
     right: 0;
-    height: 1px;
-    background: color-mix(in srgb, var(--theme-base-content) 28%, transparent);
+    border-top: 1px solid;
+    border-color: inherit;
 }
 
 /* Pages: the desk showing through the manuscript.
