@@ -4,8 +4,11 @@ import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';
 
 import type { PageDisplayMode } from '@alexandria/pages/Writing/pageDisplay';
 import {
+    bandSignature,
+    bandSignatureMode,
     computeBlockBreaks,
     letterPageHeight,
+    shouldDispatchBands,
 } from '@alexandria/pages/Writing/Sections/pageBreakMath';
 
 /**
@@ -180,19 +183,9 @@ export function measurePageBreaks({
         }
     });
 
-    const signature = `${mode}|${positions.join(',')}`;
+    const signature = bandSignature(mode, positions);
 
-    // Already showing exactly this.
-    if (signature === state.signature) {
-        return;
-    }
-
-    /* Two-cycle guard. Margin collapsing across a band is not perfectly
-       reversible for blocks that carry a margin-TOP (headings), so a
-       boundary can in principle flip between two stable answers. If the
-       candidate is the one we just came from, stop and keep what is on
-       screen rather than trade places forever. */
-    if (signature === state.previous) {
+    if (!shouldDispatchBands(signature, state)) {
         return;
     }
 
@@ -206,7 +199,14 @@ export function measurePageBreaks({
         ),
     );
 
-    commit(view, decorations, signature, state.signature);
+    /* A mode change resets the oscillation memory: the signature we are
+       leaving describes different chrome entirely, so keeping it as
+       "the one we just came from" would arm the guard against a
+       perfectly legitimate switch back. */
+    const modeChanged =
+        bandSignatureMode(signature) !== bandSignatureMode(state.signature);
+
+    commit(view, decorations, signature, modeChanged ? '' : state.signature);
 }
 
 /** Dispatch a decoration-only transaction, invisible to undo. */

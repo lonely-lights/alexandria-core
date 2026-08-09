@@ -79,3 +79,61 @@ export const LETTER_ASPECT = 11 / 8.5;
 export function letterPageHeight(contentWidthPx: number): number {
     return contentWidthPx > 0 ? contentWidthPx * LETTER_ASPECT : 0;
 }
+
+/* ── Band dispatch decisions ────────────────────────────────────────
+   The other pure, testable half of pagination: deciding whether a
+   freshly measured result is worth re-rendering. It lives here rather
+   than in the extension so it can be exercised without a ProseMirror
+   view — the mode-switch bug below is exactly the kind that hides in
+   code only a browser can reach. */
+
+/** What the rendered bands represent: `mode|pos,pos,…`. */
+export function bandSignature(mode: string, positions: number[]): string {
+    return `${mode}|${positions.join(',')}`;
+}
+
+/** The display mode a signature was produced for ('' when unknown). */
+export function bandSignatureMode(signature: string): string {
+    const separator = signature.indexOf('|');
+
+    return separator === -1 ? '' : signature.slice(0, separator);
+}
+
+export interface BandDispatchState {
+    /** Signature of the bands on screen now ('' before the first pass). */
+    signature: string;
+    /** The signature before that — the oscillation guard's memory. */
+    previous: string;
+}
+
+/**
+ * Should a newly measured result replace what is rendered?
+ *
+ * Three answers, in order:
+ *
+ *  1. identical to what is showing — no,
+ *  2. a different DISPLAY MODE — always yes. The reader asked for this;
+ *     it outranks every geometry heuristic. Skipping this check is what
+ *     made tight→pages→tight stick on 'pages': the return trip computes
+ *     the signature it had two steps ago, which the oscillation guard
+ *     below reads as a flap and swallows,
+ *  3. otherwise, no if it is the signature we just came FROM. Within one
+ *     mode that means the geometry is trading between two stable
+ *     answers (margin collapsing across a band is not perfectly
+ *     reversible for blocks carrying a margin-top), and honouring it
+ *     would loop forever.
+ */
+export function shouldDispatchBands(
+    candidate: string,
+    state: BandDispatchState,
+): boolean {
+    if (candidate === state.signature) {
+        return false;
+    }
+
+    if (bandSignatureMode(candidate) !== bandSignatureMode(state.signature)) {
+        return true;
+    }
+
+    return candidate !== state.previous;
+}

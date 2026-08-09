@@ -326,9 +326,15 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
    `.rte-screenplay .ProseMirror` in screenplay.css. */
 .rte-manuscript .tiptap-editor .ProseMirror {
     font-size: var(--alex-writing-font-size, 12pt);
+    /* The sheet's side padding, published as a variable because the
+       page-break bands have to bleed back across exactly this much to
+       reach the paper's edges. Each layout mode below re-declares it
+       alongside its own padding, so the two can never disagree — a
+       hand-matched copy is what left white strips down the sides. */
+    --alex-sheet-pad-x: 4rem;
     min-height: calc(100% - 3rem);
     margin-block: 1.5rem;
-    padding: 3.5rem 4rem 10rem;
+    padding: 3.5rem var(--alex-sheet-pad-x) 10rem;
     background: var(--theme-surface-card);
     border: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
     border-radius: var(--theme-radius-card);
@@ -345,9 +351,10 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
     }
 
     .rte-manuscript .tiptap-editor .ProseMirror {
+        --alex-sheet-pad-x: 1.25rem;
         min-height: calc(100% - 1.5rem);
         margin-block: 0.75rem;
-        padding: 2rem 1.25rem 6rem;
+        padding: 2rem var(--alex-sheet-pad-x) 6rem;
     }
 }
 
@@ -365,9 +372,10 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
 }
 
 .rte-manuscript--print .tiptap-editor .ProseMirror {
+    --alex-sheet-pad-x: 1in;
     min-height: 11in;
     margin-block: 1.5rem;
-    padding: 1in 1in 1.5in;
+    padding: 1in var(--alex-sheet-pad-x) 1.5in;
     border-radius: 0; /* crisp page corners in print layout */
 }
 
@@ -385,14 +393,21 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
      pages — the sheet visibly ends and the next begins, with a
              desk-coloured gap between them.
 
-   Both bleed across the sheet's side padding so the boundary reaches
-   the paper's edges; the negative margins below MUST track the
-   `padding` values on `.ProseMirror` above (4rem / 1.25rem / 1in). */
+   Both bleed back across the sheet's side padding so the boundary
+   reaches the paper's edges. That bleed reads `--alex-sheet-pad-x`
+   straight off the sheet it sits inside, rather than restating the
+   number per layout mode — hand-matched copies drifted and left white
+   strips down both sides. One declaration, every mode. */
 .alex-page-break {
     display: block;
     margin-block: 0;
-    margin-inline: -4rem; /* = the sheet's side padding */
+    margin-inline: calc(-1 * var(--alex-sheet-pad-x, 0px));
     user-select: none;
+    /* Forced inherit so the sheet's CURRENT border colour reaches the
+       band — the paper-colour modes repaint `.ProseMirror`'s border with
+       fixed hexes, and a hard-coded lookalike would drift from the real
+       paper edge the band is pretending to be. */
+    border-color: inherit;
 }
 
 /* Tight: 3rem of air, the rule, 3rem of air. */
@@ -402,35 +417,63 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
     height: 6rem;
 }
 
+/* `flex: 1` spans the band's full bled width, so the rule reaches the
+   paper's edges like the pages-mode band does. Subtle, but it has to
+   actually read as a divider — 20% was too close to invisible. */
 .alex-page-break--tight::before {
     content: '';
     flex: 1;
     height: 1px;
-    background: color-mix(in srgb, var(--theme-base-content) 20%, transparent);
+    background: color-mix(in srgb, var(--theme-base-content) 28%, transparent);
 }
 
-/* Pages: the desk showing through the manuscript. The inset shadows are
-   the two sheet edges the gap sits between — the page above ending, the
-   page below starting — echoing the sheet's own drop shadow. Square
-   corners on purpose: a word processor butts its pages square. */
+/* Pages: the desk showing through the manuscript.
+
+   The band OVER-bleeds past the sheet's padding. Matching the padding
+   exactly still left white slivers, because the sheet is one continuous
+   box: its 1px side border and its ~12px drop shadow live OUTSIDE the
+   padding box and carry straight on down through the gap. Nothing
+   painted only as wide as the padding can cover them. Over-bleeding
+   paints desk over desk beyond the paper, which is invisible, so the
+   extra costs nothing and the border and shadow both disappear under
+   it. `--theme-base-page` is the real desk: `.rte-manuscript
+   .tiptap-editor` above, and no paper-colour mode repaints it.
+
+   Square corners on purpose: a word processor butts its pages square. */
 .alex-page-break--pages {
+    --alex-band-overbleed: 2rem;
+    position: relative;
     height: 6rem;
+    margin-inline: calc(
+        -1 * var(--alex-sheet-pad-x, 0px) - var(--alex-band-overbleed)
+    );
     background: var(--theme-base-page);
-    border-top: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
-    border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
-    box-shadow:
-        inset 0 4px 8px -6px rgb(0 0 0 / 0.35),
-        inset 0 -4px 8px -6px rgb(0 0 0 / 0.35);
 }
 
-@media (max-width: 640px) {
-    .alex-page-break {
-        margin-inline: -1.25rem;
-    }
+/* The two sheet edges the gap sits between — the page above ending and
+   the page below starting, each casting into the gap. Inset by the
+   over-bleed so they are exactly as wide as the PAPER: run them the
+   full width of the band and they become hairlines floating out on bare
+   desk. */
+.alex-page-break--pages::before,
+.alex-page-break--pages::after {
+    content: '';
+    position: absolute;
+    left: var(--alex-band-overbleed);
+    right: var(--alex-band-overbleed);
+    border-color: inherit;
 }
 
-.rte-manuscript--print .tiptap-editor .ProseMirror .alex-page-break {
-    margin-inline: -1in;
+.alex-page-break--pages::before {
+    top: 0;
+    border-top: 1px solid;
+    box-shadow: 0 4px 8px -6px rgb(0 0 0 / 0.35);
+}
+
+.alex-page-break--pages::after {
+    bottom: 0;
+    border-bottom: 1px solid;
+    box-shadow: 0 -4px 8px -6px rgb(0 0 0 / 0.35);
 }
 
 /* ── Comment marks (Stage 11.5 Task 3) ──────────────────────────────────── */
