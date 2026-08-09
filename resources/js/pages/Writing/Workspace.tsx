@@ -427,6 +427,14 @@ export default function Workspace() {
             activeSectionIdRef.current = active.section.id;
             bridgeRef.current = bridgesRef.current.get(active.section.id) ?? null;
 
+            // A bridge swap IS a state change for every editorTick
+            // consumer: without this, tick-gated panels (craft's
+            // staleness gate, the comment rail's re-anchor pass) keep
+            // showing the outgoing section after a scroll-driven
+            // section change — scrolling produces no editor
+            // transaction, so nothing else bumps the tick.
+            handleEditorStateChange();
+
             // Scroll must never be a visit: an Inertia request per scene
             // would re-render the desk out from under the reader. The
             // existing state object rides along — nulling it would strip
@@ -438,7 +446,7 @@ export default function Workspace() {
                 flowUrl(project.slug, work.slug, active.section.slug, active.sceneIndex),
             );
         },
-        [project.slug, work.slug],
+        [project.slug, work.slug, handleEditorStateChange],
     );
 
     /** A null bridge means that editor just unmounted (scrolled out of the
