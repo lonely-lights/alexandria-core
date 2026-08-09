@@ -462,6 +462,78 @@ button:not(:disabled),
     transform: scale(1.1);
 }
 
+/* Continuous-flow "Begin writing…" invitation — spec 2026-08-08.
+   An empty section in the flow has nothing to render, so this button IS
+   the section until it holds text. It has to read as a control while
+   resting, not only under the cursor: the dashed frame gives it edges,
+   and the pen nib carries a brand-secondary tint so the eye reads
+   "interactive" before anything is hovered. Hover/focus reinforce that
+   reading rather than revealing it.
+
+   Lives here rather than inline because inline styles can't reach
+   :hover / :focus-visible / :active — same reason as the pickers above. */
+.alex-flow-begin {
+    border-color: color-mix(in srgb, var(--theme-base-content) 22%, transparent);
+    color: color-mix(in srgb, var(--theme-base-content) 55%, transparent);
+    transition:
+        background-color var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease),
+        border-color var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease),
+        color var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease),
+        box-shadow var(--theme-motion-duration-fast, 150ms)
+            var(--theme-motion-easing-standard, ease);
+}
+
+/* The resting affordance cue: quiet, but unmistakably not body text. */
+.alex-flow-begin-icon {
+    color: color-mix(in srgb, var(--theme-brand-secondary-500) 70%, transparent);
+    transition: color var(--theme-motion-duration-fast, 150ms)
+        var(--theme-motion-easing-standard, ease);
+}
+
+.alex-flow-begin:hover,
+.alex-flow-begin:focus-visible {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-brand-secondary-500) 7%,
+        transparent
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--theme-brand-secondary-500) 45%,
+        transparent
+    );
+    color: var(--theme-brand-secondary-500);
+}
+
+.alex-flow-begin:hover .alex-flow-begin-icon,
+.alex-flow-begin:focus-visible .alex-flow-begin-icon {
+    color: var(--theme-brand-secondary-500);
+}
+
+/* Keyboard cue on top of the warm state — the ring is what tells a
+   tabbing writer where they are; hover has the cursor for that. */
+.alex-flow-begin:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--theme-brand-secondary-500) 22%, transparent);
+}
+
+.alex-flow-begin:active {
+    background-color: color-mix(
+        in srgb,
+        var(--theme-brand-secondary-500) 12%,
+        transparent
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--theme-brand-secondary-500) 60%,
+        transparent
+    );
+}
+
 /* Graph sidebar idle row — :hover wash; active rows skip via
    data-active="true" (inline brand-primary already paints state). */
 .alex-graph-sidebar-btn {

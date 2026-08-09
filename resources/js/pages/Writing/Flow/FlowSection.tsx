@@ -52,6 +52,22 @@ const headingText: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 85%, transparent)',
 };
 
+/* Scene-break ornament: two hairlines fading out toward the margins so
+   the feather sits in the composition rather than on a ruled line. */
+const ORNAMENT_RULE_INK = 'color-mix(in srgb, var(--theme-base-content) 25%, transparent)';
+
+const ornamentRuleLeft: CSSProperties = {
+    background: `linear-gradient(to right, transparent, ${ORNAMENT_RULE_INK})`,
+};
+
+const ornamentRuleRight: CSSProperties = {
+    background: `linear-gradient(to left, transparent, ${ORNAMENT_RULE_INK})`,
+};
+
+const ornamentGlyph: CSSProperties = {
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+};
+
 export interface FlowSectionProps {
     row: FlatSection;
     /** null = not hydrated yet; the row renders its placeholder. */
@@ -161,10 +177,15 @@ export default function FlowSection({
                         aria-label={node.title}
                         title={node.title}
                         data-flow-divider=""
-                        className="alex-flow-ornament my-8 text-center tracking-[0.5em] opacity-60 select-none"
-                        style={mutedText}
+                        className="alex-flow-ornament mx-auto my-10 flex max-w-xs items-center gap-4 select-none"
                     >
-                        * * *
+                        <span className="h-px flex-1" style={ornamentRuleLeft} />
+                        <i
+                            className="fa-light fa-feather text-xs"
+                            aria-hidden="true"
+                            style={ornamentGlyph}
+                        />
+                        <span className="h-px flex-1" style={ornamentRuleRight} />
                     </div>
                 )
             )}
@@ -216,10 +237,15 @@ export default function FlowSection({
                     type="button"
                     data-flow-begin=""
                     onClick={() => setEngaged(true)}
-                    className="mx-auto block w-full max-w-3xl px-6 py-8 text-left text-sm italic"
-                    style={mutedText}
+                    className="alex-flow-begin mx-auto my-6 block w-full max-w-3xl cursor-pointer rounded-lg border border-dashed px-6 py-6"
                 >
-                    {t('writing.flow.begin_writing')}
+                    <span className="flex items-center justify-center gap-2.5 text-sm font-medium">
+                        <i
+                            className="fa-light fa-pen-nib alex-flow-begin-icon"
+                            aria-hidden="true"
+                        />
+                        <span>{t('writing.flow.begin_writing')}</span>
+                    </span>
                 </button>
                 )
             ) : (
