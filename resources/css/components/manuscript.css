@@ -373,9 +373,19 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
 
 .rte-manuscript--print .tiptap-editor .ProseMirror {
     --alex-sheet-pad-x: 1in;
+    /* The page's vertical margins, published for the page-break bands:
+       at every boundary the ending page owes its BOTTOM margin above
+       the break and the next page its TOP margin below it, and those
+       spaces must be the same ones this padding gives the first page's
+       top and the last page's bottom. Same single-source rule as
+       --alex-sheet-pad-x. The fitter subtracts these from the page
+       height too (pageBreakDecorations reads the computed padding), so
+       a page holds exactly what fits BETWEEN its margins. */
+    --alex-page-margin-top: 1in;
+    --alex-page-margin-bottom: 1.5in;
     min-height: 11in;
     margin-block: 1.5rem;
-    padding: 1in var(--alex-sheet-pad-x) 1.5in;
+    padding: var(--alex-page-margin-top) var(--alex-sheet-pad-x) var(--alex-page-margin-bottom);
     border-radius: 0; /* crisp page corners in print layout */
 }
 
@@ -410,19 +420,26 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
     border-color: inherit;
 }
 
-/* Tight: 3rem of air, the rule, 3rem of air. */
+/* Tight: the ending page's bottom margin of paper, the rule, then the
+   next page's top margin — the boundary is where it would really fall,
+   not a symmetric strip of air. The rule is therefore NOT centered:
+   1.5in above it, 1in below, matching the sheet's own first-page top
+   and last-page bottom. The 3rem fallbacks only matter if the bands
+   ever render outside print layout, where the margin vars are unset. */
 .alex-page-break--tight {
-    display: flex;
-    align-items: center;
-    height: 6rem;
+    position: relative;
+    height: calc(var(--alex-page-margin-bottom, 3rem) + var(--alex-page-margin-top, 3rem));
 }
 
-/* `flex: 1` spans the band's full bled width, so the rule reaches the
-   paper's edges like the pages-mode band does. Subtle, but it has to
-   actually read as a divider — 20% was too close to invisible. */
+/* Spans the band's full bled width, so the rule reaches the paper's
+   edges like the pages-mode band does. Subtle, but it has to actually
+   read as a divider — 20% was too close to invisible. */
 .alex-page-break--tight::before {
     content: '';
-    flex: 1;
+    position: absolute;
+    top: var(--alex-page-margin-bottom, 3rem);
+    left: 0;
+    right: 0;
     height: 1px;
     background: color-mix(in srgb, var(--theme-base-content) 28%, transparent);
 }
@@ -442,38 +459,53 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
    Square corners on purpose: a word processor butts its pages square. */
 .alex-page-break--pages {
     --alex-band-overbleed: 2rem;
+    --alex-band-gap: 3rem;
     position: relative;
-    height: 6rem;
+    /* Bottom margin of the ending page (paper), the desk gap, then the
+       top margin of the next page (paper). The band itself stays
+       TRANSPARENT so the sheet paints the two margin zones — they ARE
+       paper, and the sheet's side border rightly continues along them.
+       Only the gap strip below covers the border and shadow. */
+    height: calc(
+        var(--alex-page-margin-bottom, 3rem) + var(--alex-band-gap) +
+            var(--alex-page-margin-top, 3rem)
+    );
     margin-inline: calc(
         -1 * var(--alex-sheet-pad-x, 0px) - var(--alex-band-overbleed)
     );
+    background: transparent;
+}
+
+/* The desk strip — full bled width so it buries the sheet's side
+   border and drop shadow for the gap's height. */
+.alex-page-break--pages::before {
+    content: '';
+    position: absolute;
+    top: var(--alex-page-margin-bottom, 3rem);
+    left: 0;
+    right: 0;
+    height: var(--alex-band-gap);
     background: var(--theme-base-page);
 }
 
 /* The two sheet edges the gap sits between — the page above ending and
    the page below starting, each casting into the gap. Inset by the
    over-bleed so they are exactly as wide as the PAPER: run them the
-   full width of the band and they become hairlines floating out on bare
-   desk. */
-.alex-page-break--pages::before,
+   full width of the band and they become hairlines floating out on
+   bare desk. */
 .alex-page-break--pages::after {
     content: '';
     position: absolute;
+    top: var(--alex-page-margin-bottom, 3rem);
     left: var(--alex-band-overbleed);
     right: var(--alex-band-overbleed);
-    border-color: inherit;
-}
-
-.alex-page-break--pages::before {
-    top: 0;
+    height: var(--alex-band-gap);
     border-top: 1px solid;
-    box-shadow: 0 4px 8px -6px rgb(0 0 0 / 0.35);
-}
-
-.alex-page-break--pages::after {
-    bottom: 0;
     border-bottom: 1px solid;
-    box-shadow: 0 -4px 8px -6px rgb(0 0 0 / 0.35);
+    border-color: inherit;
+    box-shadow:
+        inset 0 4px 8px -6px rgb(0 0 0 / 0.35),
+        inset 0 -4px 8px -6px rgb(0 0 0 / 0.35);
 }
 
 /* ── Comment marks (Stage 11.5 Task 3) ──────────────────────────────────── */

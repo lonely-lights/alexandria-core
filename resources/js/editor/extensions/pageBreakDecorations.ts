@@ -128,7 +128,17 @@ export function measurePageBreaks({
         return;
     }
 
-    const pageHeight = letterPageHeight(dom.clientWidth);
+    /* A page holds what fits BETWEEN its margins, not a full sheet of
+       text: the sheet's own vertical padding IS the page margins (the
+       print rule derives both from --alex-page-margin-top/-bottom), and
+       every boundary band re-spends them — bottom margin above the
+       break, top margin below. Reading the computed padding keeps this
+       in lockstep with the CSS by construction. */
+    const sheetStyle = getComputedStyle(dom);
+    const pageHeight =
+        letterPageHeight(dom.clientWidth) -
+        (Number.parseFloat(sheetStyle.paddingTop) || 0) -
+        (Number.parseFloat(sheetStyle.paddingBottom) || 0);
 
     if (pageHeight <= 0) {
         return;
