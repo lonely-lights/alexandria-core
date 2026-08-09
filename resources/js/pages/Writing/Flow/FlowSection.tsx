@@ -193,6 +193,20 @@ export default function FlowSection({
                 )
             )}
 
+            {/* A scene with words shows its name above them — the
+                ornament alone left running text unattributed (owner
+                ruling). Leaves only: containers already print their
+                heading, and doubling it would read as a stutter. */}
+            {showEditor && !isContainer && (
+                <h3
+                    data-flow-section-title=""
+                    className="pt-2 pb-1 text-center text-sm font-semibold tracking-wide select-none"
+                    style={headingText}
+                >
+                    {node.title}
+                </h3>
+            )}
+
             {showEditor ? (
                 <div style={engaged && !hasText ? { minHeight: ENGAGED_MIN_HEIGHT_PX } : undefined}>
                     {format === 'screenplay' ? (
