@@ -366,6 +366,11 @@ export default function Workspace() {
     const effectiveSection =
         viewMode === 'continuous' ? (activeScene?.section ?? currentSection) : currentSection;
 
+    /* Focus mode is a reset to just-the-text: the Navigator layer and
+       the right rail render pushed back, without touching their stored
+       open/closed preferences — continuous restores them as they were. */
+    const chromeVisible = viewMode === 'continuous';
+
     // Imperative scroll-to-section, filled in by ContinuousFlow so the
     // Navigator can move the scrollport instead of navigating away.
     const scrollToSlugRef = useRef<((slug: string) => void) | null>(null);
@@ -1014,7 +1019,11 @@ export default function Workspace() {
                 </div>
 
                 <div className="writing-workspace-body relative flex min-h-0 flex-1">
-                    {/* Navigator */}
+                    {/* Navigator — pushed back entirely in focus mode:
+                        focus is "just the text" (owner ruling 2026-08-09).
+                        Stored open/closed preferences are untouched, so
+                        returning to continuous restores what was open. */}
+                    {chromeVisible && (
                     <div className="writing-workspace-structure-layer hidden md:block">
                         <button
                             type="button"
@@ -1060,6 +1069,7 @@ export default function Workspace() {
                             />
                         </nav>
                     </div>
+                    )}
 
                     {/* Editor pane — the frame itself never scrolls; the
                         editor's content wrapper (focus mode) or the flow's
@@ -1142,7 +1152,7 @@ export default function Workspace() {
                         Mode switcher (Linked items · Notes · Comments) sits at
                         the top; content below is keyed by panelMode. The xl:
                         responsive gate stays on top of the user toggle. */}
-                    {panelOpen && (
+                    {chromeVisible && panelOpen && (
                         <aside
                             className="hidden min-h-0 w-80 shrink-0 border-l xl:flex xl:flex-col"
                             style={{ borderColor: paneBorderColor }}

@@ -487,7 +487,11 @@ export default function ContinuousFlow({
             data-flow-version={hydrationVersion}
             className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto"
         >
-            <div className="mx-auto w-full max-w-[52rem] pb-[40vh]">
+            {/* No width cap here — each sheet (and the begin-writing CTA)
+                self-limits via .alex-sheet-footprint, the SAME footprint
+                focus mode uses, so the page is one size in both views
+                (owner ruling 2026-08-09). */}
+            <div className="w-full pb-[40vh]">
                 {flat.map((row, index) => (
                     <FlowSection
                         key={row.node.id}

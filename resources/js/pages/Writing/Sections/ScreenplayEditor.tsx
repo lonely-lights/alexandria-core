@@ -468,22 +468,13 @@ function ScreenplaySurface({
 
     return (
         <div className={ownsScroll ? 'flex min-h-0 flex-1 flex-col' : 'flex flex-col'}>
-            {printLayout && ownsScroll && (
-                <div className="flex shrink-0">
-                    <div
-                        className="hidden w-8 shrink-0 md:block"
-                        style={{
-                            background: 'var(--alex-manuscript-ruler-bg, color-mix(in srgb, var(--theme-base-content) 3%, transparent))',
-                            borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
-                        }}
-                    />
-                    <ManuscriptRuler />
-                </div>
-            )}
+            {/* No gutter spacer — the vertical ruler it aligned with is
+                retired; a spacer now would skew footprint centering. */}
+            {printLayout && ownsScroll && <ManuscriptRuler />}
 
             {/* The sheet: geometry from manuscript.css, element layout from screenplay.css. */}
             <div className={ownsScroll ? 'flex min-h-0 flex-1' : 'flex'}>
-                {printLayout && ownsScroll && <ManuscriptRuler orientation="vertical" />}
+                {/* Vertical ruler retired 2026-08-09 — see ManuscriptRuler. */}
                 <EditorContent
                     editor={editor}
                     className={

@@ -1034,20 +1034,14 @@ export default function RichTextEditor({
                        itself (components/manuscript.css) so native
                        click-to-focus covers the whole surface. */
                     <div className={ownsScroll ? 'flex min-h-0 flex-1 flex-col' : 'flex flex-col'}>
-                        {printLayout && ownsScroll && (
-                            <div className="flex shrink-0">
-                                <div
-                                    className="hidden w-8 shrink-0 md:block"
-                                    style={{
-                                        background: 'var(--alex-manuscript-ruler-bg, color-mix(in srgb, var(--theme-base-content) 3%, transparent))',
-                                        borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
-                                    }}
-                                />
-                                <ManuscriptRuler />
-                            </div>
-                        )}
+                        {/* No gutter spacer around the ruler: the old w-8
+                            block aligned it with the retired vertical
+                            ruler, and would now skew footprint centering. */}
+                        {printLayout && ownsScroll && <ManuscriptRuler />}
                         <div className={ownsScroll ? 'flex min-h-0 flex-1' : 'flex'}>
-                            {printLayout && ownsScroll && <ManuscriptRuler orientation="vertical" />}
+                            {/* Vertical ruler retired 2026-08-09: it measured
+                                literal inches down a many-page scroll —
+                                nothing real. Horizontal only, proportional. */}
                             {/* Scroll container — overflow-y-auto here so the
                                 inner `relative` wrapper grows to full content
                                 height (not the clipped viewport), which lets
