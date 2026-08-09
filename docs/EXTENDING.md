@@ -201,6 +201,28 @@ Register modes synchronously at package boot (a module-level call in the entry y
 
 The workspace persists the active mode to `localStorage` per work. If a user has mode `'craft'` persisted but opens the workspace without the `craft_suite` entitlement, `normalizePanelMode` silently falls back to `'linked'` — no stale or broken state.
 
+### Ribbon value controls: `'select'` and `'combo'`
+
+Custom ribbon tabs (registered through `registerRibbonTabs`) can declare two
+kinds of value control. `'select'` is the classic picker. `'combo'`
+(added 2026-08-09 for the manuscript font-size control) is a Word-style
+combo box: an editable value field plus a separate arrow button that alone
+opens the preset list. `onAction(ctx, raw)` receives typed values as well as
+picked presets — the HOST owns clamping/validation; the framework stays dumb.
+Both controls derive their disabled state, resolved option labels, and
+shortcut tooltip from the shared `useRibbonControlMeta` hook, so a third
+value control should consume it too. In the collapsed tab-menu rendering a
+combo degrades to its preset submenu.
+
+### The sheet footprint (`.alex-sheet-footprint`)
+
+Anything that must sit edge-aligned with the manuscript paper — the
+continuous flow's begin-writing CTA, the proportional ruler's strip — wears
+`.alex-sheet-footprint` (defined in `resources/css/components/manuscript.css`)
+instead of restating the sheet's width expression. Consumer surfaces that
+render inside the workspace and want paper alignment should do the same;
+duplicated width math is exactly how the sheet and its furniture drift apart.
+
 ---
 
 ## 8. What's *not* an extension point yet
