@@ -297,13 +297,24 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
     scrollbar-gutter: stable;
 }
 
+/* The page's horizontal FOOTPRINT, split out from its paint.
+   `.alex-sheet-footprint` lets anything that must sit edge-aligned with
+   the paper — the continuous flow's begin-writing CTA, which stands in
+   for a sheet that has no content yet — share one definition of how wide
+   a page is. Both selectors keep their own specificity, so the rules
+   below still layer over this exactly as they did. */
+.rte-manuscript .tiptap-editor .ProseMirror,
+.alex-sheet-footprint {
+    max-width: min(60rem, calc(100% - 3rem));
+    margin-inline: auto;
+}
+
 /* The page. min-height = wrapper height minus the vertical margins,
    so an empty section shows one full sheet with no scrollbar; long
    content scrolls the sheet within its slim desk gutters. */
 .rte-manuscript .tiptap-editor .ProseMirror {
     min-height: calc(100% - 3rem);
-    max-width: min(60rem, calc(100% - 3rem));
-    margin: 1.5rem auto;
+    margin-block: 1.5rem;
     padding: 3.5rem 4rem 10rem;
     background: var(--theme-surface-card);
     border: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
@@ -315,10 +326,14 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
 /* Tighter page margins on small screens — the sheet goes nearly
    edge-to-edge and keeps a slimmer interior. */
 @media (max-width: 640px) {
+    .rte-manuscript .tiptap-editor .ProseMirror,
+    .alex-sheet-footprint {
+        max-width: calc(100% - 1.5rem);
+    }
+
     .rte-manuscript .tiptap-editor .ProseMirror {
         min-height: calc(100% - 1.5rem);
-        max-width: calc(100% - 1.5rem);
-        margin: 0.75rem auto;
+        margin-block: 0.75rem;
         padding: 2rem 1.25rem 6rem;
     }
 }
@@ -330,11 +345,15 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
    preview (that arrives with export). Declared LAST so it out-orders
    the adaptive base rule and the small-screen override above at equal
    specificity. */
-.rte-manuscript--print .tiptap-editor .ProseMirror {
+.rte-manuscript--print .tiptap-editor .ProseMirror,
+.alex-sheet-footprint--print {
     width: 8.5in;
     max-width: none;
+}
+
+.rte-manuscript--print .tiptap-editor .ProseMirror {
     min-height: 11in;
-    margin: 1.5rem auto;
+    margin-block: 1.5rem;
     padding: 1in 1in 1.5in;
     border-radius: 0; /* crisp page corners in print layout */
 }
