@@ -80,6 +80,32 @@ export function letterPageHeight(contentWidthPx: number): number {
     return contentWidthPx > 0 ? contentWidthPx * LETTER_ASPECT : 0;
 }
 
+/** Word's default and the Shunn manuscript standard: 1in margins. */
+export const PAGE_MARGIN_IN = 1;
+
+/**
+ * One proportional page margin, in px, for a sheet rendered this wide.
+ *
+ * The sheet's rendered width IS "8.5 inches" — print layout no longer
+ * swaps in literal inch units (it is a ruler toggle only, owner ruling
+ * 2026-08-09) — so an inch of margin is width / 8.5 at any size.
+ */
+export function pageMarginHeight(contentWidthPx: number): number {
+    return contentWidthPx > 0 ? (contentWidthPx * PAGE_MARGIN_IN) / 8.5 : 0;
+}
+
+/**
+ * The text a page actually holds: Letter height minus the top and
+ * bottom margins. With 1in margins that is 9in of content on an 11in
+ * page — `letterPageHeight` minus two `pageMarginHeight`s, kept as its
+ * own function so the fitter states its intent in one call.
+ */
+export function pageContentHeight(contentWidthPx: number): number {
+    return contentWidthPx > 0
+        ? (contentWidthPx * (11 - 2 * PAGE_MARGIN_IN)) / 8.5
+        : 0;
+}
+
 /* ── Band dispatch decisions ────────────────────────────────────────
    The other pure, testable half of pagination: deciding whether a
    freshly measured result is worth re-rendering. It lives here rather

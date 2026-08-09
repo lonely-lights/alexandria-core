@@ -358,39 +358,16 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
     }
 }
 
-/* Print layout (`printLayout` prop → `.rte-manuscript--print`) — the
-   Word-style toggle: a true US Letter page (8.5in wide, 1in side
-   margins) under the pinned ruler rendered by ManuscriptRuler.tsx.
-   Width/margins representation only — no pagination or page-break
-   preview (that arrives with export). Declared LAST so it out-orders
-   the adaptive base rule and the small-screen override above at equal
-   specificity. */
-.rte-manuscript--print .tiptap-editor .ProseMirror,
-.alex-sheet-footprint--print {
-    width: 8.5in;
-    max-width: none;
-}
-
-.rte-manuscript--print .tiptap-editor .ProseMirror {
-    --alex-sheet-pad-x: 1in;
-    /* The page's vertical margins, published for the page-break bands:
-       at every boundary the ending page owes its BOTTOM margin above
-       the break and the next page its TOP margin below it, and those
-       spaces must be the same ones this padding gives the first page's
-       top and the last page's bottom. Same single-source rule as
-       --alex-sheet-pad-x. The fitter subtracts these from the page
-       height too (pageBreakDecorations reads the computed padding), so
-       a page holds exactly what fits BETWEEN its margins. */
-    --alex-page-margin-top: 1in;
-    /* 1in, not the old 1.5in drafting tail: Word's default and the
-       Shunn manuscript standard are 1in on all four sides — which is
-       also exactly what the print-layout label promises. */
-    --alex-page-margin-bottom: 1in;
-    min-height: 11in;
-    margin-block: 1.5rem;
-    padding: var(--alex-page-margin-top) var(--alex-sheet-pad-x) var(--alex-page-margin-bottom);
-    border-radius: 0; /* crisp page corners in print layout */
-}
+/* Print layout (`printLayout` prop → `.rte-manuscript--print`) is a
+   RULER toggle and nothing else — owner ruling, 2026-08-09. It used to
+   swap the sheet to a literal 8.5in width, which reflowed the whole
+   manuscript on toggle; the sheet now keeps ONE geometry everywhere,
+   and the page model is proportional instead: the sheet's rendered
+   width IS "8.5 inches", so the page-break bands and the fitter derive
+   margins (width / 8.5) and page content height (width × 9 / 8.5) from
+   it — Letter-true at any size, zero layout change on toggle. The
+   margin values reach the bands as inline custom properties set by
+   pageBreakDecorations.ts, which owns that arithmetic. */
 
 /* ── Page-break bands (spec 2026-08-08, owner round 4) ──────────────────── */
 

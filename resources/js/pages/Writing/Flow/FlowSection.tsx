@@ -244,7 +244,7 @@ export default function FlowSection({
                     /* The CTA stands in for a sheet that has no content
                        yet, so it takes the page's own footprint —
                        `my-6` is the sheet's 1.5rem block margin. */
-                    className={`alex-flow-begin alex-sheet-footprint${printLayout ? ' alex-sheet-footprint--print' : ''} my-6 block w-full cursor-pointer rounded-lg border border-dashed px-6 py-6`}
+                    className="alex-flow-begin alex-sheet-footprint my-6 block w-full cursor-pointer rounded-lg border border-dashed px-6 py-6"
                 >
                     <span className="flex items-center justify-center gap-2.5 text-sm font-medium">
                         <i

@@ -87,19 +87,19 @@ interface RichTextEditorProps {
      */
     variant?: 'card' | 'manuscript';
     /**
-     * Word-style print layout (manuscript variant only; ignored in
-     * card mode). When true the page renders at US Letter geometry
-     * (8.5in wide, 1in margins — see `.rte-manuscript--print` in
-     * components/manuscript.css) and a static ruler bar is pinned
-     * between the toolbar and the scrolling page. Also gates the
-     * page-break bands — paper boundaries only mean something once the
-     * page has geometry.
+     * The ruler toggle (manuscript variant only; ignored in card mode).
+     * When true a static ruler bar is pinned between the toolbar and
+     * the scrolling page. That is ALL it does — it used to swap the
+     * sheet to literal 8.5in geometry, which reflowed the manuscript on
+     * toggle (owner ruling 2026-08-09: a view toggle must not change
+     * layout). The page-break bands run regardless: the page model is
+     * proportional to the sheet's width.
      */
     printLayout?: boolean;
     /**
-     * How a page boundary is drawn in print layout: 'tight' keeps the
-     * text continuous behind a ruled margin band, 'pages' splits the
-     * sheet with a desk-coloured gap. Manuscript variant only.
+     * How a page boundary is drawn: 'tight' keeps the text continuous
+     * with a ruled margin band, 'pages' splits the sheet with a
+     * desk-coloured gap. Manuscript variant only.
      */
     pageDisplay?: PageDisplayMode;
     /**
@@ -417,7 +417,9 @@ export default function RichTextEditor({
 
         const view = editor.view;
         const run = () =>
-            measurePageBreaks({ view, mode: pageDisplay, enabled: printLayout });
+            // Always enabled for the manuscript surface: pagination is a
+            // property of the page model, not of the ruler toggle.
+            measurePageBreaks({ view, mode: pageDisplay, enabled: true });
 
         let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -446,7 +448,7 @@ export default function RichTextEditor({
             observer.disconnect();
             editor.off('update', schedule);
         };
-    }, [editor, isManuscript, printLayout, pageDisplay]);
+    }, [editor, isManuscript, pageDisplay]);
 
     // Subscribe to per-button active states via useEditorState. Tiptap
     // React 3.21+ defers parent re-renders on transactions for perf;

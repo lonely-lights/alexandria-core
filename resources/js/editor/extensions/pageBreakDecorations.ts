@@ -7,7 +7,8 @@ import {
     bandSignature,
     bandSignatureMode,
     computeBlockBreaks,
-    letterPageHeight,
+    pageContentHeight,
+    pageMarginHeight,
     shouldDispatchBands,
 } from '@alexandria/pages/Writing/Sections/pageBreakMath';
 
@@ -72,21 +73,35 @@ export const pageBreakPluginKey = new PluginKey<PageBreakState>(
  * `aria-hidden` keeps it out of the accessibility tree, where an
  * estimated page boundary is noise — the status bar carries the count.
  */
-function buildBand(mode: PageDisplayMode): HTMLElement {
+function buildBand(mode: PageDisplayMode, marginPx: number): HTMLElement {
     const band = document.createElement('div');
 
     band.setAttribute(PAGE_BREAK_ATTR, mode);
     band.setAttribute('aria-hidden', 'true');
     band.contentEditable = 'false';
     band.className = `alex-page-break alex-page-break--${mode}`;
+    applyBandMargins(band, marginPx);
 
     return band;
+}
+
+/**
+ * The proportional page margins, delivered as inline custom properties.
+ * CSS owns the band's structure; this arithmetic (width / 8.5) belongs
+ * with the fitter so the visual margins and the page math can never
+ * disagree. Re-applied to every live band on each measure pass, since a
+ * pure width change re-measures without re-dispatching decorations.
+ */
+function applyBandMargins(band: HTMLElement, marginPx: number): void {
+    band.style.setProperty('--alex-page-margin-top', `${marginPx}px`);
+    band.style.setProperty('--alex-page-margin-bottom', `${marginPx}px`);
 }
 
 export interface MeasurePageBreaksOptions {
     view: EditorView;
     mode: PageDisplayMode;
-    /** False outside print layout — the bands are a paper metaphor. */
+    /** Teardown switch: false clears every band (kept for future gating —
+     *  since the ruler-only ruling, callers pass true whenever mounted). */
     enabled: boolean;
 }
 
@@ -129,19 +144,23 @@ export function measurePageBreaks({
     }
 
     /* A page holds what fits BETWEEN its margins, not a full sheet of
-       text: the sheet's own vertical padding IS the page margins (the
-       print rule derives both from --alex-page-margin-top/-bottom), and
-       every boundary band re-spends them — bottom margin above the
-       break, top margin below. Reading the computed padding keeps this
-       in lockstep with the CSS by construction. */
-    const sheetStyle = getComputedStyle(dom);
-    const pageHeight =
-        letterPageHeight(dom.clientWidth) -
-        (Number.parseFloat(sheetStyle.paddingTop) || 0) -
-        (Number.parseFloat(sheetStyle.paddingBottom) || 0);
+       text. The sheet's rendered width IS "8.5 inches" (print layout is
+       a ruler toggle only — it never reshapes the sheet), so the page
+       model is proportional: 9in of content and two 1in margins, all
+       derived from the same width. Every boundary band re-spends the
+       margins — bottom margin above the break, top margin below. */
+    const marginPx = pageMarginHeight(dom.clientWidth);
+    const pageHeight = pageContentHeight(dom.clientWidth);
 
     if (pageHeight <= 0) {
         return;
+    }
+
+    /* Keep live bands' margins tracking the current width: a resize
+       that moves no break positions never re-dispatches decorations,
+       so the widgets on screen would otherwise keep stale margins. */
+    for (const band of dom.querySelectorAll<HTMLElement>(`[${PAGE_BREAK_ATTR}]`)) {
+        applyBandMargins(band, marginPx);
     }
 
     /* Split the rendered children into real blocks and our bands,
@@ -202,7 +221,7 @@ export function measurePageBreaks({
     const decorations = DecorationSet.create(
         view.state.doc,
         positions.map((pos) =>
-            Decoration.widget(pos, () => buildBand(mode), {
+            Decoration.widget(pos, () => buildBand(mode, marginPx), {
                 side: -1,
                 key: `page-break-${pos}-${mode}`,
             }),
