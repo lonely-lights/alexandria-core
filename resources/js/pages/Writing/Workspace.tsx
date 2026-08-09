@@ -400,6 +400,17 @@ export default function Workspace() {
        open/closed preferences — continuous restores them as they were. */
     const chromeVisible = viewMode === 'continuous';
 
+    /* Narrowed dependency values, extracted to plain identifiers so the
+       hook dep arrays stay simple expressions. These MUST stay in the
+       deps of anything reading effectiveSection: without them the notes
+       button and the ribbon keep tracking the scene the reader left. */
+    const effectiveSectionId = effectiveSection?.id ?? null;
+    const effectiveSectionTitle = effectiveSection?.title ?? null;
+    const effectiveSectionFormat = effectiveSection?.format ?? null;
+    const activeSceneSlug = activeScene?.section.slug ?? null;
+    const currentSectionId = currentSection?.id ?? null;
+    const currentSectionSlug = currentSection?.slug ?? null;
+
     // Imperative scroll-to-section, filled in by ContinuousFlow so the
     // Navigator can move the scrollport instead of navigating away.
     const scrollToSlugRef = useRef<((slug: string) => void) | null>(null);
@@ -472,7 +483,7 @@ export default function Workspace() {
                 });
             }
         },
-        [viewMode, work.id, activeScene?.section.slug, currentSection?.id, currentSection?.slug, project.slug, work.slug],
+        [viewMode, work.id, activeSceneSlug, currentSectionId, currentSectionSlug, project.slug, work.slug],
     );
 
     const handleEntryLinkSelect = useCallback(() => {
@@ -510,7 +521,7 @@ export default function Workspace() {
                 contextLabel: work.title,
             });
         }
-    }, [project.id, project.slug, work.id, work.title, effectiveSection?.id, effectiveSection?.title]);
+    }, [project.id, project.slug, work.id, work.title, effectiveSectionId, effectiveSectionTitle]);
 
     const toggleSceneLinksPanel = useCallback(() => {
         setPanelOpen((prev) => {
@@ -856,33 +867,7 @@ export default function Workspace() {
             },
             workStatus: work.status,
         };
-    }, [
-        project.slug,
-        work.slug,
-        work.format,
-        work.title,
-        work.status,
-        can.update,
-        panelOpen,
-        panelMode,
-        linkedPanelTab,
-        printLayout,
-        pageDisplay,
-        paperColor,
-        zoom,
-        fontSize,
-        effectiveSection?.format,
-        effectiveSection?.id,
-        sections,
-        editorTick,
-        togglePanel,
-        toggleSceneLinksPanel,
-        togglePrintLayout,
-        updatePageDisplay,
-        updatePaperColor,
-        updateZoom,
-        updateFontSize,
-    ]);
+    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, panelOpen, panelMode, linkedPanelTab, printLayout, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, togglePrintLayout, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize]);
 
     const workWords = liveWorkWords ?? work.word_count;
 

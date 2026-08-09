@@ -17,6 +17,7 @@ import {
     type ScreenplaySceneLink,
 } from '@alexandria/editor/screenplay/sceneLinks';
 import type { ScreenplayElement } from '@alexandria/editor/screenplay/types';
+import AddCommentBubble from '@alexandria/editor/extensions/AddCommentBubble';
 import { applySheetMargins } from '@alexandria/editor/extensions/pageBreakDecorations';
 import useT from '@alexandria/hooks/useT';
 
@@ -521,53 +522,13 @@ function ScreenplaySurface({
                 />
             )}
 
-            {/* Floating "Add comment" bubble — matches RichTextEditor pattern */}
-            {enableComments && commentSelectionRange !== null && (() => {
-                let top = 0;
-                let left = 0;
-                try {
-                    const fromCoords = editor.view.coordsAtPos(commentSelectionRange.from);
-                    const toCoords = editor.view.coordsAtPos(commentSelectionRange.to);
-                    top = Math.min(fromCoords.top, toCoords.top) - 38;
-                    left = (fromCoords.left + toCoords.right) / 2;
-                } catch {
-                    return null;
-                }
-                return (
-                    <button
-                        type="button"
-                        aria-label={t('writing.comments.add_comment')}
-                        onMouseDown={(e: MouseEvent) => {
-                            e.preventDefault();
-                            const { from, to } = commentSelectionRange;
-                            const anchorText = editor.state.doc.textBetween(from, to, ' ');
-                            onAddComment?.({ from, to, text: anchorText });
-                        }}
-                        style={{
-                            position: 'fixed',
-                            top,
-                            left,
-                            transform: 'translateX(-50%)',
-                            zIndex: 200,
-                            background: 'var(--theme-status-warning-stroke, #f59e0b)',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '999px',
-                            padding: '0.2rem 0.6rem',
-                            fontSize: '0.6875rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.25rem',
-                            boxShadow: '0 2px 8px rgb(0 0 0 / 0.18)',
-                        }}
-                    >
-                        <i className="fa-solid fa-comment-medical" style={{ fontSize: '0.625rem' }} aria-hidden="true" />
-                        {t('writing.comments.add_comment')}
-                    </button>
-                );
-            })()}
+            {enableComments && commentSelectionRange !== null && (
+                <AddCommentBubble
+                    editor={editor}
+                    range={commentSelectionRange}
+                    onAddComment={onAddComment}
+                />
+            )}
 
             {/* Keyboard-flow help — opened via bridge.openHelp() */}
             <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-lg">

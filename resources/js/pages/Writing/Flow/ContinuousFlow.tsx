@@ -4,7 +4,7 @@ import {
     useMemo,
     useRef,
     useState,
-    type MutableRefObject,
+    type RefObject,
 } from 'react';
 
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
@@ -74,7 +74,7 @@ export interface ContinuousFlowProps {
     onEntryLinkSelect: () => void;
     onAddComment: (anchor: { from: number; to: number; text: string }) => void;
     /** Imperative scroll-to-section, filled in for the Navigator. */
-    scrollToSlugRef: MutableRefObject<((slug: string) => void) | null>;
+    scrollToSlugRef: RefObject<((slug: string) => void) | null>;
 }
 
 /** Sections either side of the landing section fetched on mount. */
