@@ -23,6 +23,7 @@ import ManuscriptEditor, {
     PRINT_LAYOUT_STORAGE_KEY,
     readPrintLayoutPreference,
 } from './Sections/ManuscriptEditor';
+import { clampFontSize, readFontSize, writeFontSize } from './fontSize';
 import {
     normalizePageDisplay,
     readPageDisplay,
@@ -318,6 +319,7 @@ export default function Workspace() {
     const [pageDisplay, setPageDisplayState] = useState<PageDisplayMode>(readPageDisplay);
     const [paperColor, setPaperColor] = useState(readPaperColorPreference);
     const [zoom, setZoom] = useState(readZoomPreference);
+    const [fontSize, setFontSize] = useState(readFontSize);
     const [currentOutline, setCurrentOutline] = useState<SectionOutlineItem[]>(() =>
         currentSection?.format === 'prose' ? extractSectionOutline(currentSection.content) : [],
     );
@@ -701,6 +703,14 @@ export default function Workspace() {
         }
     }, []);
 
+    // The combo hands over whatever the writer typed, so the clamp to a
+    // legible range lives here rather than in the ribbon framework.
+    const updateFontSize = useCallback((value: string) => {
+        const next = clampFontSize(value);
+        setFontSize(next);
+        writeFontSize(next);
+    }, []);
+
     const updateZoom = useCallback((value: string) => {
         const next = ZOOM_VALUES.has(value) ? value : DEFAULT_ZOOM;
         setZoom(next);
@@ -762,6 +772,7 @@ export default function Workspace() {
             pageDisplay,
             paperColor,
             zoom,
+            fontSize,
             hasSection: effectiveSection !== null,
             editorTick,
             // Lazy getter: the bridge lands via useImperativeHandle AFTER
@@ -778,6 +789,7 @@ export default function Workspace() {
                 setPageDisplay: updatePageDisplay,
                 setPaperColor: updatePaperColor,
                 setZoom: updateZoom,
+                setFontSize: updateFontSize,
                 openSettings: () => setSettingsOpen(true),
                 openReports: () => router.visit(`/works/${projectSlug}/${workSlug}/reports`),
                 addSection: () => setAddTarget({ parentId: null }),
@@ -824,6 +836,7 @@ export default function Workspace() {
         pageDisplay,
         paperColor,
         zoom,
+        fontSize,
         effectiveSection,
         sections,
         editorTick,
@@ -833,6 +846,7 @@ export default function Workspace() {
         updatePageDisplay,
         updatePaperColor,
         updateZoom,
+        updateFontSize,
     ]);
 
     const workWords = liveWorkWords ?? work.word_count;
@@ -881,6 +895,7 @@ export default function Workspace() {
                     height: '100dvh',
                     overflow: 'hidden',
                     '--alex-writing-zoom': `${Number(zoom) / 100}`,
+                    '--alex-writing-font-size': `${fontSize}pt`,
                 } as CSSProperties}
             >
                 {/* Writing ribbon — the Docs-style split header. Left column:

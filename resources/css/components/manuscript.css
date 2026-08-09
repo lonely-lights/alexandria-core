@@ -311,8 +311,21 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
 
 /* The page. min-height = wrapper height minus the vertical margins,
    so an empty section shows one full sheet with no scrollbar; long
-   content scrolls the sheet within its slim desk gutters. */
+   content scrolls the sheet within its slim desk gutters.
+
+   font-size is the writer's base text size (Workspace sets
+   --alex-writing-font-size from the ribbon's Font size select). The
+   12pt fallback is both the manuscript convention and exactly 16px —
+   what the sheet inherited before this existed — so an unset variable
+   renders identically to the old behaviour. Leading needs no companion
+   rule: the inherited line-height is the unitless 1.5 from Tailwind's
+   base, so it scales with the size on its own.
+
+   Scoped to .rte-manuscript on purpose. Screenplay pages are 12pt
+   Courier by industry convention and are styled by
+   `.rte-screenplay .ProseMirror` in screenplay.css. */
 .rte-manuscript .tiptap-editor .ProseMirror {
+    font-size: var(--alex-writing-font-size, 12pt);
     min-height: calc(100% - 3rem);
     margin-block: 1.5rem;
     padding: 3.5rem 4rem 10rem;

@@ -20,6 +20,7 @@ import {
 import RibbonButton from './controls/RibbonButton';
 import RibbonToggle from './controls/RibbonToggle';
 import RibbonSelect from './controls/RibbonSelect';
+import RibbonCombo from './controls/RibbonCombo';
 import RibbonMenu from './controls/RibbonMenu';
 import type { RibbonControl, RibbonGates, RibbonMode, RibbonTab } from './types';
 
@@ -555,7 +556,11 @@ function RibbonTabMenu<Ctx>({
                     {group.gatedControls.map(({ control, verdict }) => {
                         const isLocked = verdict === 'locked';
 
-                        if (control.type === 'select') {
+                        /* A combo degrades to its preset submenu here: a
+                           collapsed menu row has nowhere to put an
+                           editable field, and offering the ladder beats
+                           rendering a row whose click means nothing. */
+                        if (control.type === 'select' || control.type === 'combo') {
                             const current = control.value?.(ctx);
                             const disabled = isLocked || (control.disabled?.(ctx) ?? false);
                             const open = openSelectId === control.id;
@@ -691,6 +696,8 @@ function renderControl<Ctx>(control: RibbonControl<Ctx>, ctx: Ctx) {
             return <RibbonToggle key={control.id} control={control} ctx={ctx} />;
         case 'select':
             return <RibbonSelect key={control.id} control={control} ctx={ctx} />;
+        case 'combo':
+            return <RibbonCombo key={control.id} control={control} ctx={ctx} />;
         case 'menu':
             return <RibbonMenu key={control.id} control={control} ctx={ctx} />;
         default:

@@ -2,6 +2,7 @@ import { ELEMENTS } from '@alexandria/editor/screenplay/formatSpec';
 import { registerRibbonTabs } from '@alexandria/ribbon/ribbonRegistry';
 import type { RibbonControl, RibbonTab } from '@alexandria/ribbon/types';
 
+import { FONT_SIZE_PRESETS } from '../fontSize';
 import type { WritingRibbonContext } from './writingRibbonContext';
 
 /**
@@ -200,6 +201,29 @@ const editTab: RibbonTab<Ctx> = {
                         }
 
                         ctx.editor?.setBlockStyle(value);
+                    },
+                },
+                {
+                    /* Base size for the whole manuscript, not the
+                       selection — wiki markup has no size syntax, so
+                       selection-level sizing waits for a format that
+                       can store it. Prose only: screenplay is 12pt
+                       Courier by industry convention. */
+                    id: 'font-size',
+                    type: 'combo',
+                    icon: 'fa-solid fa-text-size',
+                    labelKey: 'writing.ribbon.font_size',
+                    visible: (ctx) => ctx.format === 'prose',
+                    options: () =>
+                        FONT_SIZE_PRESETS.map((value) => ({
+                            value,
+                            labelKey: `writing.ribbon.font_size_${value}`,
+                        })),
+                    value: (ctx) => ctx.fontSize,
+                    onAction: (ctx, value) => {
+                        if (value !== undefined) {
+                            ctx.actions.setFontSize(value);
+                        }
                     },
                 },
                 {

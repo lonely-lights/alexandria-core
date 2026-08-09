@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useState,
     useEffect,
     useRef,
@@ -56,6 +57,24 @@ interface PickerDropdownProps<T extends string | number> {
     align?: "left" | "right";
     /** When true, the trigger fills its parent (display: flex; width: 100%). Menu width follows the trigger. */
     fullWidth?: boolean;
+    /**
+     * Optional custom trigger, replacing the default value+chevron
+     * button entirely. Everything below the trigger — portalled menu,
+     * flip-up positioning, outside-click / Escape / scroll dismissal,
+     * option rows — is reused as-is, which is the point: a caller that
+     * needs a different affordance (the ribbon's font-size combo box,
+     * where only the arrow opens the list) still gets the same popup.
+     *
+     * The caller MUST attach the supplied `ref` to whatever element the
+     * menu should anchor against and be measured by; that element also
+     * defines "inside" for outside-click dismissal.
+     */
+    trigger?: (api: {
+        open: boolean;
+        toggle: () => void;
+        close: () => void;
+        ref: (node: HTMLElement | null) => void;
+    }) => ReactNode;
 }
 
 export default function PickerDropdown<T extends string | number>({
@@ -71,11 +90,23 @@ export default function PickerDropdown<T extends string | number>({
     menuWidth,
     align = "left",
     fullWidth = false,
+    trigger,
 }: PickerDropdownProps<T>) {
     const [open, setOpen] = useState(false);
     const [triggerHovered, setTriggerHovered] = useState(false);
-    const triggerRef = useRef<HTMLButtonElement>(null);
+    // HTMLElement, not HTMLButtonElement: a custom trigger anchors the
+    // menu on whatever wrapper it likes. Everything this ref is used for
+    // — getBoundingClientRect, contains, focus — is on HTMLElement.
+    const triggerRef = useRef<HTMLElement | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+
+    // A callback ref rather than the ref object itself: the default
+    // trigger is a <button> and a custom one is whatever the caller
+    // likes, and a callback sidesteps having to name a Ref<T> type that
+    // both element kinds satisfy.
+    const setTriggerNode = useCallback((node: HTMLElement | null) => {
+        triggerRef.current = node;
+    }, []);
 
     const selectedOption = options.find((o) => o.value === value);
 
@@ -172,8 +203,16 @@ export default function PickerDropdown<T extends string | number>({
 
     return (
         <>
+            {trigger !== undefined ? (
+                trigger({
+                    open,
+                    toggle: () => setOpen((value) => !value),
+                    close: () => setOpen(false),
+                    ref: setTriggerNode,
+                })
+            ) : (
             <button
-                ref={triggerRef}
+                ref={setTriggerNode}
                 type="button"
                 onClick={() => setOpen(!open)}
                 onMouseEnter={() => setTriggerHovered(true)}
@@ -210,6 +249,7 @@ export default function PickerDropdown<T extends string | number>({
                     aria-hidden="true"
                 />
             </button>
+            )}
 
             {open &&
                 createPortal(

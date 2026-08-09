@@ -8,7 +8,13 @@
  * into the predicate/action callbacks.
  */
 
-export type RibbonControlType = 'button' | 'toggle' | 'select' | 'menu';
+/**
+ * 'combo' is a select with an editable value — the preset list is what
+ * the arrow offers, not the set of legal answers. `onAction` receives
+ * the raw typed string as well as picked preset values, so the host
+ * owns any range/format validation.
+ */
+export type RibbonControlType = 'button' | 'toggle' | 'select' | 'combo' | 'menu';
 
 /**
  * Permission/entitlement requirements for a ribbon control.

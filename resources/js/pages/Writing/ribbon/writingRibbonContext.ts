@@ -79,6 +79,8 @@ export interface WritingRibbonContext {
     pageDisplay: string;
     paperColor: string;
     zoom: string;
+    /** Base manuscript text size in points (prose only). */
+    fontSize: string;
     hasSection: boolean;
     /** bumped on editor selection/content changes so active/value states re-render */
     editorTick: number;
@@ -90,6 +92,7 @@ export interface WritingRibbonContext {
         setPageDisplay(value: string): void;
         setPaperColor(value: string): void;
         setZoom(value: string): void;
+        setFontSize(value: string): void;
         openSettings(): void;
         openReports(): void;
         addSection(): void;       // root-level (opens the existing AddSectionModal)
