@@ -17,6 +17,7 @@ import {
     type ScreenplaySceneLink,
 } from '@alexandria/editor/screenplay/sceneLinks';
 import type { ScreenplayElement } from '@alexandria/editor/screenplay/types';
+import { applySheetMargins } from '@alexandria/editor/extensions/pageBreakDecorations';
 import useT from '@alexandria/hooks/useT';
 
 import ManuscriptRuler from '@alexandria/components/editor/ManuscriptRuler';
@@ -101,6 +102,8 @@ interface ScreenplaySurfaceProps {
      * continuous flow; `'self'` is today's bounded, self-scrolling pane.
      */
     scrollMode?: 'self' | 'parent';
+    /** Side margin in proportional inches (ruler-draggable). */
+    marginXIn?: number;
     /** Ribbon editor bridge (Ribbon Plan 2) — element commands + queries. */
     bridgeRef?: Ref<WritingEditorBridge>;
     /** Fires when the selection's element changes — the Workspace bumps `editorTick`. */
@@ -124,6 +127,7 @@ function ScreenplaySurface({
     initialContent,
     printLayout,
     scrollMode = 'self',
+    marginXIn = 1,
     bridgeRef,
     onStateChange,
     onSceneLinksChange,
@@ -223,6 +227,25 @@ function ScreenplaySurface({
     useEffect(() => {
         onStateChangeRef.current?.();
     }, [currentElement]);
+
+    /* The screenplay sheet honors the same proportional margins as
+       prose. It has no pagination pass to write the sheet variables, so
+       a small observer does the same job here. */
+    useEffect(() => {
+        if (!editor) {
+            return;
+        }
+
+        const dom = editor.view.dom as HTMLElement;
+        const apply = () => applySheetMargins(dom, marginXIn);
+
+        apply();
+
+        const observer = new ResizeObserver(apply);
+        observer.observe(dom);
+
+        return () => observer.disconnect();
+    }, [editor, marginXIn]);
 
     // Comment selection state (Stage 11.5 Task 3) — mirrors
     // RichTextEditor's commentSelectionRange; must run before early return.
@@ -470,7 +493,7 @@ function ScreenplaySurface({
         <div className={ownsScroll ? 'flex min-h-0 flex-1 flex-col' : 'flex flex-col'}>
             {/* No gutter spacer — the vertical ruler it aligned with is
                 retired; a spacer now would skew footprint centering. */}
-            {printLayout && ownsScroll && <ManuscriptRuler />}
+            {printLayout && ownsScroll && <ManuscriptRuler marginXIn={marginXIn} />}
 
             {/* The sheet: geometry from manuscript.css, element layout from screenplay.css. */}
             <div className={ownsScroll ? 'flex min-h-0 flex-1' : 'flex'}>
@@ -597,6 +620,7 @@ export default function ScreenplayEditor({
     canUpdate,
     onCounts,
     printLayout,
+    marginXIn,
     scrollMode = 'self',
     bridgeRef,
     onStateChange,
@@ -624,6 +648,7 @@ export default function ScreenplayEditor({
                     projectId={projectId}
                     initialContent={initialContent}
                     printLayout={effectivePrintLayout}
+                    marginXIn={marginXIn}
                     scrollMode={scrollMode}
                     bridgeRef={bridgeRef}
                     onStateChange={onStateChange}

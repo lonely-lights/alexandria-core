@@ -49,6 +49,8 @@ export interface ManuscriptEditorProps {
      * standalone mounts fall back to the stored preference.
      */
     pageDisplay?: PageDisplayMode;
+    /** Side margin in proportional inches (ruler-draggable). */
+    marginXIn?: number;
     /**
      * Editor chrome forwarded to RichTextEditor — the Workspace passes
      * 'none' once the ribbon owns the controls (Task 3). Ignored by
@@ -97,6 +99,7 @@ export default function ManuscriptEditor({
     onCounts,
     printLayout,
     pageDisplay,
+    marginXIn,
     chrome,
     scrollMode = 'self',
     bridgeRef,
@@ -153,6 +156,7 @@ export default function ManuscriptEditor({
                     maxLength={0}
                     printLayout={effectivePrintLayout}
                     pageDisplay={effectivePageDisplay}
+                    marginXIn={marginXIn}
                     chrome={chrome}
                     scrollMode={scrollMode}
                     bridgeRef={bridgeRef}

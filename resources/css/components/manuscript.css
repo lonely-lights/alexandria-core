@@ -334,7 +334,11 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
     --alex-sheet-pad-x: 4rem;
     min-height: calc(100% - 3rem);
     margin-block: 1.5rem;
-    padding: 3.5rem var(--alex-sheet-pad-x) 10rem;
+    /* The rem values are the no-JS fallback only: pageBreakDecorations'
+       applySheetMargins() overwrites all three custom properties inline
+       with proportional inches (width / 8.5 per inch), so the text
+       honors the same margins the ruler and the page bands draw. */
+    padding: var(--alex-page-margin-top, 3.5rem) var(--alex-sheet-pad-x) var(--alex-page-margin-bottom, 10rem);
     background: var(--theme-surface-card);
     border: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
     border-radius: var(--theme-radius-card);
@@ -354,7 +358,7 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
         --alex-sheet-pad-x: 1.25rem;
         min-height: calc(100% - 1.5rem);
         margin-block: 0.75rem;
-        padding: 2rem var(--alex-sheet-pad-x) 6rem;
+        padding: var(--alex-page-margin-top, 2rem) var(--alex-sheet-pad-x) var(--alex-page-margin-bottom, 6rem);
     }
 }
 

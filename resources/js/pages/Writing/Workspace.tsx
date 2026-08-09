@@ -30,6 +30,13 @@ import {
     writePageDisplay,
     type PageDisplayMode,
 } from './pageDisplay';
+import {
+    MARGIN_X_EVENT,
+    normalizeMarginXIn,
+    readMarginXIn,
+    writeMarginXIn,
+    type MarginXEventDetail,
+} from './pageMargins';
 import Navigator from './Sections/Navigator';
 import CommentRail from './Sections/CommentRail';
 import PanelModeSwitcher from './Sections/PanelModeSwitcher';
@@ -320,6 +327,7 @@ export default function Workspace() {
     const [paperColor, setPaperColor] = useState(readPaperColorPreference);
     const [zoom, setZoom] = useState(readZoomPreference);
     const [fontSize, setFontSize] = useState(readFontSize);
+    const [marginXIn, setMarginXIn] = useState<number>(readMarginXIn);
     const [currentOutline, setCurrentOutline] = useState<SectionOutlineItem[]>(() =>
         currentSection?.format === 'prose' ? extractSectionOutline(currentSection.content) : [],
     );
@@ -365,6 +373,27 @@ export default function Workspace() {
 
     const effectiveSection =
         viewMode === 'continuous' ? (activeScene?.section ?? currentSection) : currentSection;
+
+    /* Margin drags arrive as window events from the ruler (six layers
+       below — an event beats threading a callback down through all of
+       them). Live drags update state only; the pointer-up commit
+       persists. */
+    useEffect(() => {
+        function handleMarginX(event: Event) {
+            const detail = (event as CustomEvent<MarginXEventDetail>).detail;
+            const next = normalizeMarginXIn(detail?.marginXIn);
+
+            setMarginXIn(next);
+
+            if (detail?.commit) {
+                writeMarginXIn(next);
+            }
+        }
+
+        window.addEventListener(MARGIN_X_EVENT, handleMarginX);
+
+        return () => window.removeEventListener(MARGIN_X_EVENT, handleMarginX);
+    }, []);
 
     /* Focus mode is a reset to just-the-text: the Navigator layer and
        the right rail render pushed back, without touching their stored
@@ -1090,6 +1119,7 @@ export default function Workspace() {
                                 canUpdate={can.update}
                                 printLayout={printLayout}
                                 pageDisplay={pageDisplay}
+                                marginXIn={marginXIn}
                                 onCounts={handleCounts}
                                 onActiveSceneChange={handleActiveSceneChange}
                                 onBridgeChange={handleBridgeChange}
@@ -1112,6 +1142,7 @@ export default function Workspace() {
                                     onCounts={handleCounts}
                                     chrome="none"
                                     printLayout={printLayout}
+                                    marginXIn={marginXIn}
                                     bridgeRef={bridgeRef}
                                     onStateChange={handleEditorStateChange}
                                     onOutlineChange={setCurrentOutline}
@@ -1131,6 +1162,7 @@ export default function Workspace() {
                                     chrome="none"
                                     printLayout={printLayout}
                                     pageDisplay={pageDisplay}
+                                    marginXIn={marginXIn}
                                     bridgeRef={bridgeRef}
                                     onStateChange={handleEditorStateChange}
                                     onOutlineChange={setCurrentOutline}

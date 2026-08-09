@@ -103,6 +103,33 @@ export interface MeasurePageBreaksOptions {
     /** Teardown switch: false clears every band (kept for future gating —
      *  since the ruler-only ruling, callers pass true whenever mounted). */
     enabled: boolean;
+    /** Side margin in proportional inches (draggable via the ruler). */
+    marginXIn?: number;
+}
+
+/**
+ * Write the sheet's REAL padding — the page margins, in proportional
+ * inches of its own width — as inline custom properties.
+ *
+ * This is what makes the text honor the margins the ruler and the
+ * bands advertise: the stylesheet's rem paddings are only the no-JS
+ * fallback, and this single writer keeps sheet, ruler, bands, and
+ * fitter derived from the same arithmetic. Also used by the screenplay
+ * surface, which has no pagination but the same paper.
+ */
+export function applySheetMargins(dom: HTMLElement, marginXIn: number): void {
+    const width = dom.clientWidth;
+
+    if (width <= 0) {
+        return;
+    }
+
+    const padX = (width * marginXIn) / 8.5;
+    const padY = pageMarginHeight(width);
+
+    dom.style.setProperty('--alex-sheet-pad-x', `${padX}px`);
+    dom.style.setProperty('--alex-page-margin-top', `${padY}px`);
+    dom.style.setProperty('--alex-page-margin-bottom', `${padY}px`);
 }
 
 /**
@@ -127,6 +154,7 @@ export function measurePageBreaks({
     view,
     mode,
     enabled,
+    marginXIn = 1,
 }: MeasurePageBreaksOptions): void {
     const state = pageBreakPluginKey.getState(view.state) ?? EMPTY_STATE;
     const dom = view.dom as HTMLElement;
@@ -149,6 +177,12 @@ export function measurePageBreaks({
        model is proportional: 9in of content and two 1in margins, all
        derived from the same width. Every boundary band re-spends the
        margins — bottom margin above the break, top margin below. */
+    /* The sheet's padding first: text reflows against the true margins
+       BEFORE this pass measures block heights, so the fitting below
+       sees the geometry the reader sees. Same-value writes are no-ops
+       to layout, so this doesn't thrash. */
+    applySheetMargins(dom, marginXIn);
+
     const marginPx = pageMarginHeight(dom.clientWidth);
     const pageHeight = pageContentHeight(dom.clientWidth);
 

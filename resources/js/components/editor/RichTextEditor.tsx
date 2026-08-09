@@ -102,6 +102,8 @@ interface RichTextEditorProps {
      * desk-coloured gap. Manuscript variant only.
      */
     pageDisplay?: PageDisplayMode;
+    /** Side margin in proportional inches (ruler-draggable). */
+    marginXIn?: number;
     /**
      * Toolbar chrome (meaningful for the manuscript variant only; card
      * mode always renders its toolbar). `'none'` drops the toolbar row
@@ -298,6 +300,7 @@ export default function RichTextEditor({
     variant = 'card',
     printLayout = false,
     pageDisplay = 'tight',
+    marginXIn = 1,
     chrome = 'full',
     scrollMode = 'self',
     bridgeRef,
@@ -419,7 +422,7 @@ export default function RichTextEditor({
         const run = () =>
             // Always enabled for the manuscript surface: pagination is a
             // property of the page model, not of the ruler toggle.
-            measurePageBreaks({ view, mode: pageDisplay, enabled: true });
+            measurePageBreaks({ view, mode: pageDisplay, enabled: true, marginXIn });
 
         let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -448,7 +451,7 @@ export default function RichTextEditor({
             observer.disconnect();
             editor.off('update', schedule);
         };
-    }, [editor, isManuscript, pageDisplay]);
+    }, [editor, isManuscript, pageDisplay, marginXIn]);
 
     // Subscribe to per-button active states via useEditorState. Tiptap
     // React 3.21+ defers parent re-renders on transactions for perf;
@@ -1037,7 +1040,7 @@ export default function RichTextEditor({
                         {/* No gutter spacer around the ruler: the old w-8
                             block aligned it with the retired vertical
                             ruler, and would now skew footprint centering. */}
-                        {printLayout && ownsScroll && <ManuscriptRuler />}
+                        {printLayout && ownsScroll && <ManuscriptRuler marginXIn={marginXIn} />}
                         <div className={ownsScroll ? 'flex min-h-0 flex-1' : 'flex'}>
                             {/* Vertical ruler retired 2026-08-09: it measured
                                 literal inches down a many-page scroll —

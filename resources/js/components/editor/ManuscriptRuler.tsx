@@ -1,4 +1,11 @@
-import type { CSSProperties } from 'react';
+import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+
+import {
+    MARGIN_X_EVENT,
+    MARGIN_X_MAX_IN,
+    MARGIN_X_MIN_IN,
+    type MarginXEventDetail,
+} from '@alexandria/pages/Writing/pageMargins';
 
 /**
  * Static manuscript ruler for print layout — PROPORTIONAL since the
@@ -25,9 +32,12 @@ import type { CSSProperties } from 'react';
 
 type TickDivision = 'whole' | 'half' | 'quarter' | 'eighth';
 
+interface ManuscriptRulerProps {
+    /** Side margin in proportional inches — the draggable value. */
+    marginXIn?: number;
+}
+
 const PAGE_WIDTH_IN = 8.5;
-const MARGIN_IN = 1;
-const CONTENT_WIDTH_IN = PAGE_WIDTH_IN - MARGIN_IN * 2;
 const EIGHTHS_PER_INCH = 8;
 const TOTAL_EIGHTHS = PAGE_WIDTH_IN * EIGHTHS_PER_INCH;
 
@@ -36,8 +46,14 @@ function eighthPercent(n: number): string {
     return `${(n / TOTAL_EIGHTHS) * 100}%`;
 }
 
-const MARGIN_PERCENT = `${(MARGIN_IN / PAGE_WIDTH_IN) * 100}%`;
-const RIGHT_MARGIN_START_PERCENT = `${((PAGE_WIDTH_IN - MARGIN_IN) / PAGE_WIDTH_IN) * 100}%`;
+function inchPercent(inches: number): string {
+    return `${(inches / PAGE_WIDTH_IN) * 100}%`;
+}
+
+/** Drags snap to the ruler's own resolution. */
+function snapToEighth(inches: number): number {
+    return Math.round(inches * EIGHTHS_PER_INCH) / EIGHTHS_PER_INCH;
+}
 
 const horizontalEighthSteps = Array.from(
     { length: TOTAL_EIGHTHS - 1 },
@@ -63,7 +79,6 @@ const horizontalMarginStyle: CSSProperties = {
     position: 'absolute',
     top: 0,
     height: '100%',
-    width: MARGIN_PERCENT,
     background: 'var(--alex-manuscript-ruler-margin-bg, color-mix(in srgb, var(--theme-base-content) 12%, transparent))',
 };
 
@@ -84,9 +99,9 @@ const horizontalLabelStyle: CSSProperties = {
 
 const markerColor = 'var(--alex-manuscript-ruler-marker, var(--theme-brand-primary-500))';
 
-function isHorizontalMargin(step: number): boolean {
-    return step < MARGIN_IN * EIGHTHS_PER_INCH ||
-        step > (PAGE_WIDTH_IN - MARGIN_IN) * EIGHTHS_PER_INCH;
+function isHorizontalMargin(step: number, marginXIn: number): boolean {
+    return step < marginXIn * EIGHTHS_PER_INCH ||
+        step > (PAGE_WIDTH_IN - marginXIn) * EIGHTHS_PER_INCH;
 }
 
 function tickDivision(step: number): TickDivision {
@@ -112,8 +127,9 @@ function tickSize(
     return sizes[tickDivision(step)];
 }
 
-function contentLabel(step: number): number | null {
-    const contentStep = step - MARGIN_IN * EIGHTHS_PER_INCH;
+function contentLabel(step: number, marginXIn: number): number | null {
+    // marginXIn snaps to eighths, so this stays integral.
+    const contentStep = step - Math.round(marginXIn * EIGHTHS_PER_INCH);
 
     if (contentStep <= 0 || contentStep % EIGHTHS_PER_INCH !== 0) {
         return null;
@@ -122,55 +138,116 @@ function contentLabel(step: number): number | null {
     return contentStep / EIGHTHS_PER_INCH;
 }
 
-function HorizontalIndentMarkers() {
+/**
+ * The draggable margin handles. Only MARGINS drag — the old first-line
+ * indent triangle is gone until the wiki format can store paragraph
+ * indents (same deferred class as selection-level font size). Drags
+ * snap to eighths and announce through the MARGIN_X_EVENT window event;
+ * the Workspace owns the value and threads it back down as a prop.
+ */
+function MarginHandles({
+    marginXIn,
+    stripRef,
+}: {
+    marginXIn: number;
+    stripRef: React.RefObject<HTMLDivElement | null>;
+}) {
+    const draggingRef = useRef<'left' | 'right' | null>(null);
+
+    const announce = (value: number, commit: boolean) => {
+        window.dispatchEvent(
+            new CustomEvent<MarginXEventDetail>(MARGIN_X_EVENT, {
+                detail: { marginXIn: value, commit },
+            }),
+        );
+    };
+
+    const valueFromPointer = (clientX: number, side: 'left' | 'right'): number => {
+        const rect = stripRef.current?.getBoundingClientRect();
+
+        if (rect === undefined || rect.width === 0) {
+            return marginXIn;
+        }
+
+        const inches = ((clientX - rect.left) / rect.width) * PAGE_WIDTH_IN;
+        const raw = side === 'left' ? inches : PAGE_WIDTH_IN - inches;
+
+        return Math.min(
+            MARGIN_X_MAX_IN,
+            Math.max(MARGIN_X_MIN_IN, snapToEighth(raw)),
+        );
+    };
+
+    const handleDown = (side: 'left' | 'right') => (event: ReactPointerEvent<HTMLSpanElement>) => {
+        draggingRef.current = side;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    };
+
+    const handleMove = (event: ReactPointerEvent<HTMLSpanElement>) => {
+        const side = draggingRef.current;
+
+        if (side === null) {
+            return;
+        }
+
+        announce(valueFromPointer(event.clientX, side), false);
+    };
+
+    const handleUp = (event: ReactPointerEvent<HTMLSpanElement>) => {
+        const side = draggingRef.current;
+
+        if (side === null) {
+            return;
+        }
+
+        draggingRef.current = null;
+        announce(valueFromPointer(event.clientX, side), true);
+    };
+
+    const grabStyle: CSSProperties = {
+        position: 'absolute',
+        bottom: '1px',
+        width: '10px',
+        height: '6px',
+        background: markerColor,
+        borderRadius: '1px',
+        transform: 'translateX(-50%)',
+        cursor: 'ew-resize',
+        touchAction: 'none',
+    };
+
     return (
         <>
             <span
-                className="alex-manuscript-ruler__first-line-marker"
-                style={{
-                    position: 'absolute',
-                    left: MARGIN_PERCENT,
-                    top: '2px',
-                    width: 0,
-                    height: 0,
-                    borderLeft: '5px solid transparent',
-                    borderRight: '5px solid transparent',
-                    borderTop: `6px solid ${markerColor}`,
-                    transform: 'translateX(-50%)',
+                className="alex-manuscript-ruler__margin-handle"
+                data-ruler-margin-handle="left"
+                style={{ ...grabStyle, left: inchPercent(marginXIn) }}
+                onPointerDown={handleDown('left')}
+                onPointerMove={handleMove}
+                onPointerUp={handleUp}
+                onPointerCancel={() => {
+                    draggingRef.current = null;
                 }}
             />
             <span
-                className="alex-manuscript-ruler__left-indent-marker"
-                style={{
-                    position: 'absolute',
-                    left: MARGIN_PERCENT,
-                    bottom: '2px',
-                    width: '10px',
-                    height: '4px',
-                    background: markerColor,
-                    borderRadius: '1px',
-                    transform: 'translateX(-50%)',
-                }}
-            />
-            <span
-                className="alex-manuscript-ruler__right-indent-marker"
-                style={{
-                    position: 'absolute',
-                    left: RIGHT_MARGIN_START_PERCENT,
-                    bottom: '2px',
-                    width: 0,
-                    height: 0,
-                    borderLeft: '5px solid transparent',
-                    borderRight: '5px solid transparent',
-                    borderBottom: `6px solid ${markerColor}`,
-                    transform: 'translateX(-50%)',
+                className="alex-manuscript-ruler__margin-handle"
+                data-ruler-margin-handle="right"
+                style={{ ...grabStyle, left: inchPercent(PAGE_WIDTH_IN - marginXIn) }}
+                onPointerDown={handleDown('right')}
+                onPointerMove={handleMove}
+                onPointerUp={handleUp}
+                onPointerCancel={() => {
+                    draggingRef.current = null;
                 }}
             />
         </>
     );
 }
 
-export default function ManuscriptRuler() {
+export default function ManuscriptRuler({ marginXIn = 1 }: ManuscriptRulerProps) {
+    const stripRef = useRef<HTMLDivElement | null>(null);
+
     return (
         <div
             aria-hidden="true"
@@ -183,16 +260,16 @@ export default function ManuscriptRuler() {
                 scrollbarGutter: 'stable',
             }}
         >
-            <div className="alex-sheet-footprint" style={horizontalStripStyle}>
-                <div style={{ ...horizontalMarginStyle, left: 0 }} />
-                <div style={{ ...horizontalMarginStyle, right: 0 }} />
+            <div ref={stripRef} className="alex-sheet-footprint" style={horizontalStripStyle}>
+                <div style={{ ...horizontalMarginStyle, left: 0, width: inchPercent(marginXIn) }} />
+                <div style={{ ...horizontalMarginStyle, right: 0, width: inchPercent(marginXIn) }} />
                 {horizontalEighthSteps.map((n) => (
                     <span
                         key={`tick-${n}`}
                         className="alex-manuscript-ruler__tick"
                         data-ruler-tick="horizontal"
                         data-ruler-division={tickDivision(n)}
-                        data-ruler-zone={isHorizontalMargin(n) ? 'margin' : 'content'}
+                        data-ruler-zone={isHorizontalMargin(n, marginXIn) ? 'margin' : 'content'}
                         style={{
                             ...horizontalTickStyle,
                             left: eighthPercent(n),
@@ -206,9 +283,10 @@ export default function ManuscriptRuler() {
                     />
                 ))}
                 {horizontalEighthSteps.map((n) => {
-                    const label = contentLabel(n);
+                    const label = contentLabel(n, marginXIn);
 
-                    return label === null || label >= CONTENT_WIDTH_IN ? null : (
+                    return label === null ||
+                        label >= PAGE_WIDTH_IN - marginXIn * 2 ? null : (
                         <span
                             key={`label-${n}`}
                             style={{ ...horizontalLabelStyle, left: eighthPercent(n) }}
@@ -217,7 +295,7 @@ export default function ManuscriptRuler() {
                         </span>
                     );
                 })}
-                <HorizontalIndentMarkers />
+                <MarginHandles marginXIn={marginXIn} stripRef={stripRef} />
             </div>
         </div>
     );

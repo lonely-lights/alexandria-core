@@ -61,6 +61,8 @@ export interface ContinuousFlowProps {
     canUpdate: boolean;
     printLayout: boolean;
     pageDisplay: PageDisplayMode;
+    /** Side margin in proportional inches (ruler-draggable). */
+    marginXIn: number;
     onCounts: SectionCountsCallback;
     onActiveSceneChange: (active: ActiveScene) => void;
     onBridgeChange: (sectionId: number, bridge: WritingEditorBridge | null) => void;
@@ -119,6 +121,7 @@ export default function ContinuousFlow({
     canUpdate,
     printLayout,
     pageDisplay,
+    marginXIn,
     onCounts,
     onActiveSceneChange,
     onBridgeChange,
@@ -506,6 +509,7 @@ export default function ContinuousFlow({
                         canUpdate={canUpdate}
                         printLayout={printLayout}
                         pageDisplay={pageDisplay}
+                        marginXIn={marginXIn}
                         onCounts={onCounts}
                         onBridgeChange={onBridgeChange}
                         onEditorStateChange={onEditorStateChange}

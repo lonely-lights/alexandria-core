@@ -85,6 +85,8 @@ export interface FlowSectionProps {
     canUpdate: boolean;
     printLayout: boolean;
     pageDisplay: PageDisplayMode;
+    /** Side margin in proportional inches (ruler-draggable). */
+    marginXIn: number;
     onCounts: SectionCountsCallback;
     onBridgeChange: (sectionId: number, bridge: WritingEditorBridge | null) => void;
     onEditorStateChange: () => void;
@@ -106,6 +108,7 @@ export default function FlowSection({
     canUpdate,
     printLayout,
     pageDisplay,
+    marginXIn,
     onCounts,
     onBridgeChange,
     onEditorStateChange,
@@ -219,6 +222,7 @@ export default function FlowSection({
                             onCounts={onCounts}
                             chrome="none"
                             printLayout={printLayout}
+                            marginXIn={marginXIn}
                             scrollMode="parent"
                             bridgeRef={bridgeRef}
                             onStateChange={handleStateChange}
@@ -238,6 +242,7 @@ export default function FlowSection({
                             chrome="none"
                             printLayout={printLayout}
                             pageDisplay={pageDisplay}
+                            marginXIn={marginXIn}
                             scrollMode="parent"
                             bridgeRef={bridgeRef}
                             onStateChange={handleStateChange}
