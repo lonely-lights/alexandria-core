@@ -475,6 +475,11 @@ button:not(:disabled),
 .alex-flow-begin {
     border-color: color-mix(in srgb, var(--theme-base-content) 22%, transparent);
     color: color-mix(in srgb, var(--theme-base-content) 55%, transparent);
+    /* Track the sheet under the zoom control. This belongs on the CTA
+       itself and NOT on .alex-sheet-footprint — that selector list
+       includes .ProseMirror, which already zooms, and doubling it would
+       square the scale factor. */
+    zoom: var(--alex-writing-zoom, 1);
     transition:
         background-color var(--theme-motion-duration-fast, 150ms)
             var(--theme-motion-easing-standard, ease),

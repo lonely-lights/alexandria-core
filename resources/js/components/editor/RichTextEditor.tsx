@@ -15,7 +15,11 @@ import Input from '@alexandria/components/form/Input';
 import Button from '@alexandria/components/ui/Button';
 import useT from '@alexandria/hooks/useT';
 import type { WritingEditorBridge } from '@alexandria/pages/Writing/ribbon/writingRibbonContext';
-import PageBreakGuides from '@alexandria/pages/Writing/Sections/PageBreakGuides';
+import type { PageDisplayMode } from '@alexandria/pages/Writing/pageDisplay';
+import {
+    PageBreakDecorations,
+    measurePageBreaks,
+} from '@alexandria/editor/extensions/pageBreakDecorations';
 import { ProseTabKeymap } from './proseTabKeymap';
 import { CommentMark } from '@alexandria/editor/extensions/commentMark';
 import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
@@ -87,10 +91,17 @@ interface RichTextEditorProps {
      * card mode). When true the page renders at US Letter geometry
      * (8.5in wide, 1in margins — see `.rte-manuscript--print` in
      * components/manuscript.css) and a static ruler bar is pinned
-     * between the toolbar and the scrolling page. Width/margins
-     * representation only — no pagination preview.
+     * between the toolbar and the scrolling page. Also gates the
+     * page-break bands — paper boundaries only mean something once the
+     * page has geometry.
      */
     printLayout?: boolean;
+    /**
+     * How a page boundary is drawn in print layout: 'tight' keeps the
+     * text continuous behind a ruled margin band, 'pages' splits the
+     * sheet with a desk-coloured gap. Manuscript variant only.
+     */
+    pageDisplay?: PageDisplayMode;
     /**
      * Toolbar chrome (meaningful for the manuscript variant only; card
      * mode always renders its toolbar). `'none'` drops the toolbar row
@@ -286,6 +297,7 @@ export default function RichTextEditor({
     className,
     variant = 'card',
     printLayout = false,
+    pageDisplay = 'tight',
     chrome = 'full',
     scrollMode = 'self',
     bridgeRef,
@@ -341,6 +353,8 @@ export default function RichTextEditor({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const isManuscript = variant === 'manuscript';
+
     const extensions = [
         StarterKit.configure({
             heading: tier !== 'free' ? { levels: [1, 2, 3] } : false,
@@ -356,6 +370,9 @@ export default function RichTextEditor({
         ...(enableMentions ? [createMentionExtension({ searchEndpoint: mentionSearchEndpoint })] : []),
         ProseTabKeymap,
         ...(enableComments ? [CommentMark] : []),
+        // Prose only — ScreenplayEditor runs its own editor and keeps
+        // its own pagination conventions.
+        ...(isManuscript ? [PageBreakDecorations] : []),
     ];
 
     const editor = useEditor({
@@ -386,6 +403,50 @@ export default function RichTextEditor({
             notifyStateChange();
         },
     });
+
+    /* Page-break bands. The measure pass reads layout, so it has to run
+       from out here rather than inside the plugin — and it has to run
+       AFTER the browser has laid out whatever just changed, hence the
+       debounce on edits. Resizes (pane, zoom, print-layout swap) come
+       through the observer. Mode and print-layout changes re-run it
+       immediately: the answer changes without the DOM moving. */
+    useEffect(() => {
+        if (editor === null || !isManuscript) {
+            return;
+        }
+
+        const view = editor.view;
+        const run = () =>
+            measurePageBreaks({ view, mode: pageDisplay, enabled: printLayout });
+
+        let timer: ReturnType<typeof setTimeout> | null = null;
+
+        const schedule = () => {
+            if (timer !== null) {
+                clearTimeout(timer);
+            }
+
+            timer = setTimeout(() => {
+                timer = null;
+                run();
+            }, 300);
+        };
+
+        run();
+
+        const observer = new ResizeObserver(schedule);
+        observer.observe(view.dom);
+        editor.on('update', schedule);
+
+        return () => {
+            if (timer !== null) {
+                clearTimeout(timer);
+            }
+
+            observer.disconnect();
+            editor.off('update', schedule);
+        };
+    }, [editor, isManuscript, printLayout, pageDisplay]);
 
     // Subscribe to per-button active states via useEditorState. Tiptap
     // React 3.21+ defers parent re-renders on transactions for perf;
@@ -589,7 +650,6 @@ export default function RichTextEditor({
         },
     }));
 
-    const isManuscript = variant === 'manuscript';
     // chrome='none' is only meaningful for the manuscript surface — the
     // ribbon-driven workspace; card callers always keep their toolbar.
     const showToolbar = !isManuscript || chrome !== 'none';
@@ -1002,14 +1062,16 @@ export default function RichTextEditor({
                                 }
                                 onMouseDown={handleGutterMouseDown}
                             >
+                                {/* Pagination lives INSIDE the document now
+                                    (page-break widget decorations), so this
+                                    wrapper no longer hosts an overlay — it
+                                    stays for the comment-anchor positioning
+                                    the editor does against it. */}
                                 <div className="relative flex min-h-full flex-col">
                                     <EditorContent
                                         editor={editor}
                                         className="tiptap-editor flex-1 flex flex-col"
                                     />
-                                    {printLayout && (
-                                        <PageBreakGuides />
-                                    )}
                                 </div>
                             </div>
                         </div>

@@ -23,6 +23,12 @@ import ManuscriptEditor, {
     PRINT_LAYOUT_STORAGE_KEY,
     readPrintLayoutPreference,
 } from './Sections/ManuscriptEditor';
+import {
+    normalizePageDisplay,
+    readPageDisplay,
+    writePageDisplay,
+    type PageDisplayMode,
+} from './pageDisplay';
 import Navigator from './Sections/Navigator';
 import CommentRail from './Sections/CommentRail';
 import PanelModeSwitcher from './Sections/PanelModeSwitcher';
@@ -309,6 +315,7 @@ export default function Workspace() {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [paperModalOpen, setPaperModalOpen] = useState(false);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
+    const [pageDisplay, setPageDisplayState] = useState<PageDisplayMode>(readPageDisplay);
     const [paperColor, setPaperColor] = useState(readPaperColorPreference);
     const [zoom, setZoom] = useState(readZoomPreference);
     const [currentOutline, setCurrentOutline] = useState<SectionOutlineItem[]>(() =>
@@ -676,6 +683,12 @@ export default function Workspace() {
         });
     }, []);
 
+    const updatePageDisplay = useCallback((value: string) => {
+        const next = normalizePageDisplay(value);
+        setPageDisplayState(next);
+        writePageDisplay(next);
+    }, []);
+
     const updatePaperColor = useCallback((value: string) => {
         const next = PAPER_COLOR_VALUES.has(value) ? value : DEFAULT_PAPER_COLOR;
         setPaperColor(next);
@@ -746,6 +759,7 @@ export default function Workspace() {
             panelOpen,
             sceneLinksPanelOpen: panelOpen && panelMode === 'linked' && linkedPanelTab === 'scene-links',
             printLayout,
+            pageDisplay,
             paperColor,
             zoom,
             hasSection: effectiveSection !== null,
@@ -761,6 +775,7 @@ export default function Workspace() {
                 togglePanel,
                 toggleSceneLinksPanel,
                 togglePrintLayout,
+                setPageDisplay: updatePageDisplay,
                 setPaperColor: updatePaperColor,
                 setZoom: updateZoom,
                 openSettings: () => setSettingsOpen(true),
@@ -806,6 +821,7 @@ export default function Workspace() {
         panelMode,
         linkedPanelTab,
         printLayout,
+        pageDisplay,
         paperColor,
         zoom,
         effectiveSection,
@@ -814,6 +830,7 @@ export default function Workspace() {
         togglePanel,
         toggleSceneLinksPanel,
         togglePrintLayout,
+        updatePageDisplay,
         updatePaperColor,
         updateZoom,
     ]);
@@ -1047,6 +1064,7 @@ export default function Workspace() {
                                 initialSection={currentSection}
                                 canUpdate={can.update}
                                 printLayout={printLayout}
+                                pageDisplay={pageDisplay}
                                 onCounts={handleCounts}
                                 onActiveSceneChange={handleActiveSceneChange}
                                 onBridgeChange={handleBridgeChange}
@@ -1087,6 +1105,7 @@ export default function Workspace() {
                                     onCounts={handleCounts}
                                     chrome="none"
                                     printLayout={printLayout}
+                                    pageDisplay={pageDisplay}
                                     bridgeRef={bridgeRef}
                                     onStateChange={handleEditorStateChange}
                                     onOutlineChange={setCurrentOutline}

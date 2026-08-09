@@ -75,6 +75,8 @@ export interface WritingRibbonContext {
     panelOpen: boolean;
     sceneLinksPanelOpen: boolean;
     printLayout: boolean;
+    /** How print layout draws a page boundary: 'tight' | 'pages'. */
+    pageDisplay: string;
     paperColor: string;
     zoom: string;
     hasSection: boolean;
@@ -85,6 +87,7 @@ export interface WritingRibbonContext {
         togglePanel(): void;
         toggleSceneLinksPanel(): void;
         togglePrintLayout(): void;
+        setPageDisplay(value: string): void;
         setPaperColor(value: string): void;
         setZoom(value: string): void;
         openSettings(): void;

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type Ref } from 'react';
 import RichTextEditor from '@alexandria/components/editor/RichTextEditor';
 
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
+import { readPageDisplay, type PageDisplayMode } from '../pageDisplay';
 import type { CurrentSection } from '../Workspace';
 import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
 import SectionChrome from './SectionChrome';
@@ -42,6 +43,12 @@ export interface ManuscriptEditorProps {
      * today's behavior.
      */
     printLayout?: boolean;
+    /**
+     * How a page boundary is drawn in print layout ('tight' | 'pages').
+     * Same ownership story as printLayout: the Workspace passes it,
+     * standalone mounts fall back to the stored preference.
+     */
+    pageDisplay?: PageDisplayMode;
     /**
      * Editor chrome forwarded to RichTextEditor — the Workspace passes
      * 'none' once the ribbon owns the controls (Task 3). Ignored by
@@ -89,6 +96,7 @@ export default function ManuscriptEditor({
     canUpdate,
     onCounts,
     printLayout,
+    pageDisplay,
     chrome,
     scrollMode = 'self',
     bridgeRef,
@@ -106,6 +114,8 @@ export default function ManuscriptEditor({
     // the editor self-sufficient until the Workspace passes the prop.
     const storedPrintLayout = useMemo(readPrintLayoutPreference, []);
     const effectivePrintLayout = printLayout ?? storedPrintLayout;
+    const storedPageDisplay = useMemo(readPageDisplay, []);
+    const effectivePageDisplay = pageDisplay ?? storedPageDisplay;
 
     function handleChange(wiki: string) {
         setContent(wiki);
@@ -142,6 +152,7 @@ export default function ManuscriptEditor({
                     projectId={projectId}
                     maxLength={0}
                     printLayout={effectivePrintLayout}
+                    pageDisplay={effectivePageDisplay}
                     chrome={chrome}
                     scrollMode={scrollMode}
                     bridgeRef={bridgeRef}

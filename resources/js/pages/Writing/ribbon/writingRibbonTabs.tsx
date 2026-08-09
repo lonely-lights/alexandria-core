@@ -23,6 +23,7 @@ const screenplayEditable = (ctx: Ctx): boolean => ctx.format === 'screenplay' &&
 const editable = (ctx: Ctx): boolean => ctx.canUpdate;
 const zoomOptions = ['75', '90', '100', '110', '125', '150'];
 const paperColorOptions = ['theme', 'white', 'ivory', 'cream', 'gray'];
+const pageDisplayOptions = ['tight', 'pages'];
 const proseStyleOptions = ['normal', 'title', 'subtitle', 'heading1', 'heading2', 'heading3', 'save-preset'];
 
 function markToggle(
@@ -300,6 +301,30 @@ const viewTab: RibbonTab<Ctx> = {
                     shortcut: 'Mod-Shift-L',
                     active: (ctx) => ctx.printLayout,
                     onAction: (ctx) => ctx.actions.togglePrintLayout(),
+                },
+                {
+                    /* Sits beside print layout because it only means
+                       anything inside it — the two describe one idea of
+                       "show me paper". */
+                    id: 'page-display',
+                    type: 'select',
+                    icon: 'fa-solid fa-file-lines',
+                    labelKey: 'writing.flow.page_display',
+                    // Prose only: the bands are a RichTextEditor
+                    // decoration, and ScreenplayEditor keeps its own
+                    // pagination conventions.
+                    visible: (ctx) => ctx.format === 'prose',
+                    options: () =>
+                        pageDisplayOptions.map((value) => ({
+                            value,
+                            labelKey: `writing.flow.page_display_${value}`,
+                        })),
+                    value: (ctx) => ctx.pageDisplay,
+                    onAction: (ctx, value) => {
+                        if (value !== undefined) {
+                            ctx.actions.setPageDisplay(value);
+                        }
+                    },
                 },
                 {
                     id: 'paper-color',

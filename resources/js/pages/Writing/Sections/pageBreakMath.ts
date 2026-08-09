@@ -1,18 +1,56 @@
 /**
- * Divider offsets (px from content top) for the print-layout pagination
- * preview — Stage 11 Slice 1. Pure geometry: one divider per full page
- * boundary strictly inside the content. Deterministic estimate only;
- * real pagination arrives with export.
+ * Pagination geometry for the print-layout manuscript — Stage 11 Slice 1,
+ * rebuilt at the 2026-08-08 flow checkpoint.
+ *
+ * Pages used to be drawn as an absolute overlay at fixed pixel offsets.
+ * They are now real widget decorations sitting BETWEEN blocks, which
+ * means the break has to land on a block boundary rather than wherever
+ * a page height happens to fall — text cannot be cut in half by
+ * something that occupies space in the flow.
+ *
+ * So the model is a greedy fill: walk the blocks, keep a running page
+ * height, and start a new page at the first block that would overflow.
+ * That is an approximation of Letter pagination, not a typesetting
+ * engine — no line-level breaking, no widow/orphan control. Real
+ * pagination arrives with export.
  */
-export function computePageBreaks(contentHeightPx: number, pageHeightPx: number): number[] {
-    if (contentHeightPx <= 0 || pageHeightPx <= 0) {
+
+/**
+ * Indices of the blocks that START a new page.
+ *
+ * Greedy: a block goes on the current page unless it would overflow AND
+ * the page already holds something. That second condition is what makes
+ * a block taller than a whole page take a page of its own instead of
+ * spinning — it can never be pushed forward to a page where it fits,
+ * because no such page exists.
+ *
+ * Index 0 is therefore never returned: the first block has nothing to
+ * be pushed off of.
+ */
+export function computeBlockBreaks(
+    blockHeights: number[],
+    pageHeightPx: number,
+): number[] {
+    if (pageHeightPx <= 0) {
         return [];
     }
 
     const breaks: number[] = [];
-    for (let y = pageHeightPx; y < contentHeightPx; y += pageHeightPx) {
-        breaks.push(y);
+    let used = 0;
+
+    for (let index = 0; index < blockHeights.length; index += 1) {
+        const height = blockHeights[index];
+
+        if (used > 0 && used + height > pageHeightPx) {
+            breaks.push(index);
+            used = height;
+
+            continue;
+        }
+
+        used += height;
     }
+
     return breaks;
 }
 
@@ -35,7 +73,7 @@ export const LETTER_ASPECT = 11 / 8.5;
  * roughly every half sheet, which reads as noise rather than as paper.
  *
  * Non-positive widths — an unmounted editor, or one inside a
- * `display: none` pane — yield 0, which `computePageBreaks` already
+ * `display: none` pane — yield 0, which `computeBlockBreaks` already
  * treats as "no pages".
  */
 export function letterPageHeight(contentWidthPx: number): number {

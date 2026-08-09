@@ -162,7 +162,6 @@ return [
     'workspace.pages' => '~:count pages',
     'workspace.pages_of_target' => '~:count of :target pages',
     'workspace.print_layout' => 'Print layout (Letter, 1in margins)',
-    'workspace.page_break_label' => 'Page :page',
     'workspace.page_estimate' => '~:pages p.',
     'workspace.page_estimate_title' => 'Estimated pages (deterministic estimate — real pagination arrives with export)',
     'workspace.saving' => 'Saving…',
@@ -183,6 +182,9 @@ return [
     'flow.continuous' => 'Continuous',
     'flow.focus' => 'Focus',
     'flow.toggle_aria' => 'Switch manuscript view mode',
+    'flow.page_display' => 'Page breaks',
+    'flow.page_display_tight' => 'Tight',
+    'flow.page_display_pages' => 'Pages',
 
     'guidance.screenplay.title' => 'Screenplay structure',
     'guidance.screenplay.body' => 'A quick check against the default act-and-scene shape for a feature screenplay.',

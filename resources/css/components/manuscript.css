@@ -358,6 +358,68 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
     border-radius: 0; /* crisp page corners in print layout */
 }
 
+/* ── Page-break bands (spec 2026-08-08, owner round 4) ──────────────────── */
+
+/* Widget decorations dropped between top-level blocks by
+   editor/extensions/pageBreakDecorations.ts. They are the pagination
+   display now — the old absolute overlay could draw a line but could
+   never push text apart, and a simulated margin has to occupy space.
+   Two modes, one element:
+
+     tight — the text stays continuous; a grey rule across the paper
+             with ~3rem of air either side, standing in for the bottom
+             and top margins of consecutive pages,
+     pages — the sheet visibly ends and the next begins, with a
+             desk-coloured gap between them.
+
+   Both bleed across the sheet's side padding so the boundary reaches
+   the paper's edges; the negative margins below MUST track the
+   `padding` values on `.ProseMirror` above (4rem / 1.25rem / 1in). */
+.alex-page-break {
+    display: block;
+    margin-block: 0;
+    margin-inline: -4rem; /* = the sheet's side padding */
+    user-select: none;
+}
+
+/* Tight: 3rem of air, the rule, 3rem of air. */
+.alex-page-break--tight {
+    display: flex;
+    align-items: center;
+    height: 6rem;
+}
+
+.alex-page-break--tight::before {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: color-mix(in srgb, var(--theme-base-content) 20%, transparent);
+}
+
+/* Pages: the desk showing through the manuscript. The inset shadows are
+   the two sheet edges the gap sits between — the page above ending, the
+   page below starting — echoing the sheet's own drop shadow. Square
+   corners on purpose: a word processor butts its pages square. */
+.alex-page-break--pages {
+    height: 6rem;
+    background: var(--theme-base-page);
+    border-top: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+    box-shadow:
+        inset 0 4px 8px -6px rgb(0 0 0 / 0.35),
+        inset 0 -4px 8px -6px rgb(0 0 0 / 0.35);
+}
+
+@media (max-width: 640px) {
+    .alex-page-break {
+        margin-inline: -1.25rem;
+    }
+}
+
+.rte-manuscript--print .tiptap-editor .ProseMirror .alex-page-break {
+    margin-inline: -1in;
+}
+
 /* ── Comment marks (Stage 11.5 Task 3) ──────────────────────────────────── */
 
 /* The TipTap CommentMark extension renders anchored spans as <mark

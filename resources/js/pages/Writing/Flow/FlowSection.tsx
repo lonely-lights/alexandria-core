@@ -5,6 +5,7 @@ import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLin
 
 import ManuscriptEditor from '../Sections/ManuscriptEditor';
 import ScreenplayEditor from '../Sections/ScreenplayEditor';
+import type { PageDisplayMode } from '../pageDisplay';
 import type { SectionOutlineItem } from '../Sections/sectionOutline';
 import type { SectionCountsCallback } from '../Sections/useSectionAutosave';
 import type { CurrentSection } from '../Workspace';
@@ -83,6 +84,7 @@ export interface FlowSectionProps {
     workFormat: string;
     canUpdate: boolean;
     printLayout: boolean;
+    pageDisplay: PageDisplayMode;
     onCounts: SectionCountsCallback;
     onBridgeChange: (sectionId: number, bridge: WritingEditorBridge | null) => void;
     onEditorStateChange: () => void;
@@ -103,6 +105,7 @@ export default function FlowSection({
     workFormat,
     canUpdate,
     printLayout,
+    pageDisplay,
     onCounts,
     onBridgeChange,
     onEditorStateChange,
@@ -220,6 +223,7 @@ export default function FlowSection({
                             onCounts={onCounts}
                             chrome="none"
                             printLayout={printLayout}
+                            pageDisplay={pageDisplay}
                             scrollMode="parent"
                             bridgeRef={bridgeRef}
                             onStateChange={handleStateChange}

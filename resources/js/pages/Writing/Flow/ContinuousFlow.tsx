@@ -9,6 +9,7 @@ import {
 
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 
+import type { PageDisplayMode } from '../pageDisplay';
 import type { SectionOutlineItem } from '../Sections/sectionOutline';
 import type { SectionCountsCallback } from '../Sections/useSectionAutosave';
 import type { CurrentSection, SectionNode } from '../Workspace';
@@ -59,6 +60,7 @@ export interface ContinuousFlowProps {
     initialSection: CurrentSection | null;
     canUpdate: boolean;
     printLayout: boolean;
+    pageDisplay: PageDisplayMode;
     onCounts: SectionCountsCallback;
     onActiveSceneChange: (active: ActiveScene) => void;
     onBridgeChange: (sectionId: number, bridge: WritingEditorBridge | null) => void;
@@ -116,6 +118,7 @@ export default function ContinuousFlow({
     initialSection,
     canUpdate,
     printLayout,
+    pageDisplay,
     onCounts,
     onActiveSceneChange,
     onBridgeChange,
@@ -498,6 +501,7 @@ export default function ContinuousFlow({
                         workFormat={work.format}
                         canUpdate={canUpdate}
                         printLayout={printLayout}
+                        pageDisplay={pageDisplay}
                         onCounts={onCounts}
                         onBridgeChange={onBridgeChange}
                         onEditorStateChange={onEditorStateChange}
