@@ -97,14 +97,16 @@ const PLACEHOLDER_SELECTOR = '[data-flow-placeholder]';
 const SLUGLINE_SELECTOR = 'p[data-element="slugline"]';
 
 /**
- * Frames a `#scene-n` landing waits for its sluglines to exist.
+ * How long a `#scene-n` landing waits for its sluglines to exist.
  *
  * The landing section arrives hydrated, but its editor parses the
- * content on mount, so the scene heads appear a frame or three after
- * the wrapper does. Roughly a third of a second of retries, then the
- * section head is a good enough answer.
+ * content on mount, and on a cold load Tiptap can take well over the
+ * ~333ms that a frame-counted budget allowed — the T8 smokes caught the
+ * landing losing that race about half the time and degrading to the
+ * section head. A wall-clock deadline is honest about what we're
+ * actually waiting for; past it, the section head is the answer.
  */
-const SCENE_LANDING_FRAMES = 20;
+const SCENE_LANDING_DEADLINE_MS = 4000;
 
 /** Read the scene the URL is pointing at, if any. Safe under SSR. */
 function initialSceneFragment(): number | null {
@@ -394,12 +396,14 @@ export default function ContinuousFlow({
 
         const scene = landingSceneRef.current;
         let frame: number | null = null;
-        let attempts = 0;
+        let firstPass = true;
+        const deadline = performance.now() + SCENE_LANDING_DEADLINE_MS;
 
         const land = () => {
             frame = null;
 
-            if (attempts === 0) {
+            if (firstPass) {
+                firstPass = false;
                 row.scrollIntoView({ block: 'start', behavior: 'auto' });
             }
 
@@ -408,8 +412,7 @@ export default function ContinuousFlow({
 
                 if (target !== undefined) {
                     target.scrollIntoView({ block: 'start', behavior: 'auto' });
-                } else if (attempts < SCENE_LANDING_FRAMES) {
-                    attempts += 1;
+                } else if (performance.now() < deadline) {
                     frame = requestAnimationFrame(land);
 
                     return;
