@@ -33,6 +33,15 @@ import { createPortal } from "react-dom";
 interface PickerDropdownOption<T extends string | number> {
     value: T;
     label: string;
+    /**
+     * Optional rendered label, used in place of `label` inside the
+     * trigger and the option row when present. `label` stays required —
+     * it remains the option's plain-text identity (fallback, titles,
+     * test queries), and an option without a node renders exactly as it
+     * always has. Reach for this only when the label needs markup a
+     * string can't carry, e.g. a colored marker on part of the text.
+     */
+    labelNode?: ReactNode;
 }
 
 interface PickerDropdownProps<T extends string | number> {
@@ -234,7 +243,11 @@ export default function PickerDropdown<T extends string | number>({
                         {triggerLabel}
                     </span>
                 )}
-                <span>{selectedOption?.label ?? String(value)}</span>
+                <span>
+                    {selectedOption?.labelNode ??
+                        selectedOption?.label ??
+                        String(value)}
+                </span>
                 <i
                     className="fa-solid fa-chevron-down absolute text-[10px] transition-transform"
                     style={{
@@ -320,7 +333,9 @@ function PickerDropdownRow<T extends string | number>({
             aria-selected={active}
             data-select-option={String(option.value)}
         >
-            <span className="truncate">{option.label}</span>
+            <span className="truncate">
+                {option.labelNode ?? option.label}
+            </span>
             {active && (
                 <i
                     className="fa-solid fa-check text-[10px]"
