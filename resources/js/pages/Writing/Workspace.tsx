@@ -432,8 +432,14 @@ export default function Workspace() {
             // staleness gate, the comment rail's re-anchor pass) keep
             // showing the outgoing section after a scroll-driven
             // section change — scrolling produces no editor
-            // transaction, so nothing else bumps the tick.
-            handleEditorStateChange();
+            // transaction, so nothing else bumps the tick. DEFERRED a
+            // frame on purpose: craft's gate arms itself with whatever
+            // tick accompanies the section-change render, so a
+            // synchronous bump is swallowed as the arming value — the
+            // release tick must arrive in a LATER render. The bridge is
+            // already correct here (bridgesRef swap above), so the
+            // deferred re-read analyzes the right section.
+            requestAnimationFrame(() => handleEditorStateChange());
 
             // Scroll must never be a visit: an Inertia request per scene
             // would re-render the desk out from under the reader. The
@@ -1239,6 +1245,16 @@ export default function Workspace() {
                                             work={work}
                                             currentSection={effectiveSection}
                                             editorBridge={bridgeRef.current}
+                                            bridgeSectionId={
+                                                viewMode === 'continuous'
+                                                    ? effectiveSectionId !== null &&
+                                                      bridgesRef.current.get(effectiveSectionId)
+                                                        ? effectiveSectionId
+                                                        : null
+                                                    : bridgeRef.current !== null
+                                                      ? currentSectionId
+                                                      : null
+                                            }
                                             editorTick={editorTick}
                                             canUpdate={can.update}
                                         />

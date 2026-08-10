@@ -22,6 +22,14 @@ export interface SidebarModeContext {
     work: { id: number; title: string; slug: string };
     currentSection: { id: number; title: string; slug: string } | null;
     editorBridge: WritingEditorBridge | null;
+    /**
+     * Which section `editorBridge` belongs to (null = no live bridge).
+     * The DETERMINISTIC staleness signal: compare against
+     * `currentSection.id` instead of racing editorTick arithmetic — any
+     * tick bumped BECAUSE of a section change coalesces into the
+     * section-change render and can never arrive "later" than it.
+     */
+    bridgeSectionId: number | null;
     editorTick: number;
     canUpdate: boolean;
 }
