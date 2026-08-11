@@ -38,6 +38,7 @@ interface RecentEntry {
     slug: string;
     summary: string | null;
     blueprint_name: string | null;
+    blueprint_slug: string | null;
     blueprint_icon: string | null;
     project_name: string | null;
     project_slug: string | null;
@@ -491,7 +492,7 @@ function RecentEntryRow({ entry, isLast }: { entry: RecentEntry; isLast: boolean
         <a
             href={pageUrl(
                 entry.project_slug,
-                entry.blueprint_name?.toLowerCase() ?? '',
+                entry.blueprint_slug ?? '',
                 entry.slug,
             )}
             className="alex-dash-recent-row flex items-center gap-3 px-4 py-3"

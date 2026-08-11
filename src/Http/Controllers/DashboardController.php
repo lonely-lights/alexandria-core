@@ -43,7 +43,7 @@ class DashboardController
 
         $recentEntries = Entry::query()
             ->whereIn('project_id', $projectIds)
-            ->with(['type:id,name,icon', 'project:id,name,slug'])
+            ->with(['type:id,name,slug,icon', 'project:id,name,slug'])
             ->latest('updated_at')
             ->limit(self::RECENT_FETCH_CEILING)
             ->get(['id', 'name', 'slug', 'summary', 'blueprint_id', 'project_id', 'updated_at']);
@@ -166,6 +166,10 @@ class DashboardController
                 'slug' => $entry->slug,
                 'summary' => $entry->summary,
                 'blueprint_name' => $entry->type?->name,
+                // The URL segment is the blueprint's own slug — lowercasing
+                // the display name is not equivalent once a blueprint is
+                // multi-word or carries a hand-edited slug.
+                'blueprint_slug' => $entry->type?->slug,
                 'blueprint_icon' => $entry->type?->icon,
                 'project_name' => $entry->project?->name,
                 'project_slug' => $entry->project?->slug,
