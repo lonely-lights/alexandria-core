@@ -8,6 +8,7 @@ import { useVisitedTabs } from '@alexandria/hooks/useVisitedTabs';
 import WorkbenchRoutingTab from './Sections/WorkbenchRoutingTab';
 import WorkbenchCreationTab from './Sections/WorkbenchCreationTab';
 import type { WorkbenchProps } from '@alexandria/types/workbench';
+import { aiUrl, projectUrl } from '@alexandria/lib/urls';
 
 export type WorkbenchLevel = 'routing' | 'creation';
 
@@ -78,8 +79,8 @@ export default function Workbench() {
                 <div className="shrink-0">
                     <PageHeader
                         breadcrumbs={[
-                            { label: project.name, href: `/p/${project.slug}` },
-                            { label: t('ai.dashboard.breadcrumb'), href: `/ai/${project.slug}` },
+                            { label: project.name, href: projectUrl(project.slug) },
+                            { label: t('ai.dashboard.breadcrumb'), href: aiUrl(project.slug) },
                             { label: t('ai.workbench.breadcrumb') },
                         ]}
                         tabs={TABS.map((tab) => (

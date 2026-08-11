@@ -9,6 +9,7 @@ import Modal, {
 } from "@alexandria/components/ui/Modal";
 import useT from "@alexandria/hooks/useT";
 import { csrfHeaders } from "@alexandria/lib/csrfHeaders";
+import { worksBase } from "@alexandria/lib/urls";
 
 /**
  * StructurePickerModal — compendium-structure-tab (Task 11).
@@ -85,7 +86,7 @@ export default function StructurePickerModal({
         setSaving(true);
 
         try {
-            const res = await fetch(`/works/${project.slug}/structure`, {
+            const res = await fetch(`${worksBase(project.slug)}/structure`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",

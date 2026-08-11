@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useFloatingPanel } from '@alexandria/hooks/useFloatingPanel';
 import type { L2PreviewResult } from '@alexandria/types/workbench';
+import { pageUrl } from '@alexandria/lib/urls';
 
 /* ── Theme styles ── */
 
@@ -202,7 +203,7 @@ export default function HoneDrawer({
                                             {t('ai.workbench.creation.hone.blueprint_desc_label')}
                                         </span>
                                         <a
-                                            href={`/p/${projectSlug}/blueprints/${sm.blueprint_slug}`}
+                                            href={pageUrl(projectSlug, sm.blueprint_slug)}
                                             className="text-xs"
                                             style={{ color: 'var(--theme-brand-primary-500)' }}
                                             target="_blank"
@@ -223,7 +224,7 @@ export default function HoneDrawer({
                                             {t('ai.workbench.creation.hone.field_schema_label')}
                                         </span>
                                         <a
-                                            href={`/p/${projectSlug}/blueprints/${sm.blueprint_slug}?tab=fields`}
+                                            href={`${pageUrl(projectSlug, sm.blueprint_slug)}?tab=fields`}
                                             className="text-xs"
                                             style={{ color: 'var(--theme-brand-primary-500)' }}
                                             target="_blank"
@@ -272,7 +273,7 @@ export default function HoneDrawer({
                                                         </span>
                                                     </div>
                                                     <a
-                                                        href={`/p/${projectSlug}/blueprints/${edge.blueprint_slug}`}
+                                                        href={pageUrl(projectSlug, edge.blueprint_slug)}
                                                         className="text-xs flex-shrink-0"
                                                         style={{ color: 'var(--theme-brand-primary-500)' }}
                                                         target="_blank"

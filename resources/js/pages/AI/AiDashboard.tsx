@@ -14,6 +14,7 @@ import UsageTab from './Sections/UsageTab';
 import ModelsTab from './Sections/ModelsTab';
 import SettingsTab from './Sections/SettingsTab';
 import type { AiDashboardProps } from '@alexandria/types/ai-dashboard';
+import { projectUrl } from '@alexandria/lib/urls';
 
 type Tab = 'dashboard' | 'commands' | 'usage' | 'models' | 'settings';
 
@@ -85,7 +86,7 @@ export default function AiDashboard() {
         <AppLayout title={t('ai.dashboard.breadcrumb')} immersive>
             <PageHeader
                 breadcrumbs={[
-                    { label: project.name, href: `/p/${project.slug}` },
+                    { label: project.name, href: projectUrl(project.slug) },
                     { label: t('ai.dashboard.breadcrumb') },
                 ]}
                 tabs={

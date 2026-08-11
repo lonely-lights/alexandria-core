@@ -8,6 +8,7 @@ import {
 } from 'react';
 
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
+import { worksBase } from '@alexandria/lib/urls';
 
 import type { PageDisplayMode } from '../pageDisplay';
 import type { SectionOutlineItem } from '../Sections/sectionOutline';
@@ -189,7 +190,7 @@ export default function ContinuousFlow({
             };
 
             fetch(
-                `/works/${project.slug}/${work.slug}/sections/content?${query.toString()}`,
+                `${worksBase(project.slug, work.slug)}/sections/content?${query.toString()}`,
                 {
                     credentials: 'same-origin',
                     headers: {

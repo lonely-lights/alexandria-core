@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react';
 import useT from '@alexandria/hooks/useT';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
+import { projectUrl, workUrl } from '@alexandria/lib/urls';
 
 import type { EntryCard } from './Sections/ReferencePanel';
 import CharactersReport from './Sections/Reports/CharactersReport';
@@ -109,8 +110,8 @@ export default function Reports() {
         <AppLayout title={`${t('writing.reports.title')} - ${work.title}`} immersive fabActions={null}>
             <PageHeader
                 breadcrumbs={[
-                    { label: project.name, href: `/p/${project.slug}` },
-                    { label: work.title, href: `/works/${project.slug}/${work.slug}` },
+                    { label: project.name, href: projectUrl(project.slug) },
+                    { label: work.title, href: workUrl(project.slug, work.slug) },
                     { label: t('writing.reports.title') },
                 ]}
             >

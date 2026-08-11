@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect, type CSSProperties } from 'react'
 import { router } from '@inertiajs/react';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import { fetchJson, FetchJsonError } from '@alexandria/lib/fetchJson';
+import { workbenchUrl } from '@alexandria/lib/urls';
 import useT from '@alexandria/hooks/useT';
 import WorkbenchKeyLegend from './WorkbenchKeyLegend';
 import { keepCursorInBand } from '../cursorScroll';
@@ -437,7 +438,7 @@ function TargetReview({
     function loadNotes(page = 1) {
         setNotesLoading(true);
         fetchJson(
-            `/ai/${projectSlug}/workbench/routed-notes?kind=${target.kind}&id=${target.id}&page=${page}`,
+            `${workbenchUrl(projectSlug)}/routed-notes?kind=${target.kind}&id=${target.id}&page=${page}`,
         )
             .then((data) => {
                 setNotesPage(data as RoutedNotesPage);
@@ -459,7 +460,7 @@ function TargetReview({
 
     async function updateFlag(noteId: number, flag: 'workbench' | null) {
         try {
-            await fetchJson(`/ai/${projectSlug}/workbench/notes/${noteId}/review-flag`, {
+            await fetchJson(`${workbenchUrl(projectSlug)}/notes/${noteId}/review-flag`, {
                 method: 'PATCH',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ flag }),
@@ -476,7 +477,7 @@ function TargetReview({
     async function doReRoute(noteId: number, dest: DestTarget) {
         setReRouteBusy(true);
         try {
-            await fetchJson(`/ai/${projectSlug}/workbench/notes/${noteId}/re-route`, {
+            await fetchJson(`${workbenchUrl(projectSlug)}/notes/${noteId}/re-route`, {
                 method: 'POST',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ to: { kind: dest.kind, id: dest.id } }),
@@ -519,7 +520,7 @@ function TargetReview({
         // cleared back to pending before the cursor advances.
         if (localFlags[cursorNote.id]) {
             const noteId = cursorNote.id;
-            void fetchJson(`/ai/${projectSlug}/workbench/notes/${noteId}/review-flag`, {
+            void fetchJson(`${workbenchUrl(projectSlug)}/notes/${noteId}/review-flag`, {
                 method: 'PATCH',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ flag: null }),
@@ -817,7 +818,7 @@ export default function WorkbenchRoutingTab({
         setBusyBp((prev) => ({ ...prev, [bp.id]: true }));
 
         try {
-            await fetchJson(`/ai/${projectSlug}/workbench/blueprints/${bp.slug}`, {
+            await fetchJson(`${workbenchUrl(projectSlug)}/blueprints/${bp.slug}`, {
                 method: 'PATCH',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ allow_ai_sorting: next }),
@@ -837,7 +838,7 @@ export default function WorkbenchRoutingTab({
         setBusyNb((prev) => ({ ...prev, [nb.id]: true }));
 
         try {
-            await fetchJson(`/ai/${projectSlug}/workbench/notebooks/${nb.slug}`, {
+            await fetchJson(`${workbenchUrl(projectSlug)}/notebooks/${nb.slug}`, {
                 method: 'PATCH',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ allow_ai_sort: next }),
@@ -872,7 +873,7 @@ export default function WorkbenchRoutingTab({
     async function saveDesc(slug: string, kind: RosterKind) {
         setSavingDesc(true);
         try {
-            await fetchJson(`/ai/${projectSlug}/workbench/${kind === 'blueprint' ? 'blueprints' : 'notebooks'}/${slug}/description`, {
+            await fetchJson(`${workbenchUrl(projectSlug)}/${kind === 'blueprint' ? 'blueprints' : 'notebooks'}/${slug}/description`, {
                 method: 'PATCH',
                 headers: csrfHeaders(),
                 body: JSON.stringify({ description: editText || null }),
@@ -895,7 +896,7 @@ export default function WorkbenchRoutingTab({
         setPromptModalOpen(true);
         setPromptLoading(true);
         try {
-            const data = await fetchJson(`/ai/${projectSlug}/workbench/l1-prompt`) as { prompt: string; token_estimate: number };
+            const data = await fetchJson(`${workbenchUrl(projectSlug)}/l1-prompt`) as { prompt: string; token_estimate: number };
             setPromptContent(data.prompt);
             setPromptTokens(data.token_estimate);
         } catch {

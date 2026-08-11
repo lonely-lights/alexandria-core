@@ -6,6 +6,7 @@ import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import IconTile from '@alexandria/components/ui/IconTile';
+import { workUrl, writingUrl } from '@alexandria/lib/urls';
 
 import WorkCard, { type WorkRow } from './Sections/WorkCard';
 
@@ -13,8 +14,8 @@ import WorkCard, { type WorkRow } from './Sections/WorkCard';
  * Global writing dashboard.
  *
  * /writing groups every reachable work under its project. Project headings
- * link into the project-scoped /writing/{project} surface, while work cards
- * still enter the editor workspace through /works/{project}/{work}.
+ * link into the project-scoped /p/{project}/writing surface, while work cards
+ * still enter the editor workspace through /p/{project}/works/{work}.
  */
 
 interface DashboardProject {
@@ -181,7 +182,7 @@ export default function WritingDashboard() {
                                 <section key={project.id} className="min-w-0">
                                     <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                                         <Link
-                                            href={`/writing/${project.slug}`}
+                                            href={writingUrl(project.slug)}
                                             className="alex-dash-row-title font-serif text-lg font-bold tracking-tight no-underline"
                                             style={{
                                                 color: 'var(--theme-base-content)',
@@ -267,7 +268,7 @@ export default function WritingDashboard() {
                                             {recentSections.map((section) => (
                                                 <Link
                                                     key={section.id}
-                                                    href={`/works/${section.project_slug}/${section.work_slug}/${section.slug}`}
+                                                    href={workUrl(section.project_slug, section.work_slug, section.slug)}
                                                     className="flex items-center justify-between px-3 py-2.5 no-underline transition-opacity hover:opacity-80"
                                                     style={
                                                         recentSectionRowStyle

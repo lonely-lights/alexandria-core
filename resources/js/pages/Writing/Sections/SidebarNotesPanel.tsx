@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { openNotesDrawer } from '@alexandria/components/notes/NotesDrawer';
 import ContextSwitchModal, { type SwitchContextType, type SwitchTarget } from '@alexandria/components/notes/modals/ContextSwitchModal';
 import useT, { type Translator } from '@alexandria/hooks/useT';
+import { worksBase } from '@alexandria/lib/urls';
 import type { Note } from '@alexandria/types/notes-dashboard';
 
 import type { CurrentSection, SectionNode } from '../Workspace';
@@ -92,7 +93,7 @@ function fetchContextNotes(projectId: number, contextType: SwitchContextType, co
 }
 
 function fetchWorkNotes(projectSlug: string, workSlug: string): Promise<WorkNotesPayload> {
-    return fetchJson<WorkNotesPayload>(`/works/${projectSlug}/${workSlug}/panel/notes`, 'Work notes');
+    return fetchJson<WorkNotesPayload>(`${worksBase(projectSlug, workSlug)}/panel/notes`, 'Work notes');
 }
 
 /* ── Helpers ── */

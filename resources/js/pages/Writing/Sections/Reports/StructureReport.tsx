@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import type { CSSProperties } from 'react';
 
 import type { Translator } from '@alexandria/hooks/useT';
+import { workUrl } from '@alexandria/lib/urls';
 
 import type { StructureReportRow } from '../../Reports';
 import ReportCard from './ReportCard';
@@ -77,7 +78,7 @@ export default function StructureReport({
                             }}
                         >
                             <Link
-                                href={`/works/${projectSlug}/${workSlug}/${row.slug}`}
+                                href={workUrl(projectSlug, workSlug, row.slug)}
                                 className="min-w-0 truncate font-medium hover:underline"
                                 style={row.has_content ? titleLinkStyle : containerTitleStyle}
                             >

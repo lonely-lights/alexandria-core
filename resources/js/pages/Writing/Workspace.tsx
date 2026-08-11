@@ -55,6 +55,7 @@ import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
 import { type PanelMode, readPanelMode, writePanelMode } from './panelMode';
 import { getSidebarModes, subscribeSidebarModes } from './sidebarModeRegistry';
 import { resolveGate } from '@alexandria/ribbon/ribbonGates';
+import { worksBase, workUrl } from '@alexandria/lib/urls';
 
 /**
  * Writing dashboard → workspace — Stage 8g.1 (ribbon-driven since
@@ -789,7 +790,7 @@ export default function Workspace() {
             return;
         }
 
-        router.visit(`/works/${project.slug}/${work.slug}/${slug}`, {
+        router.visit(workUrl(project.slug, work.slug, slug), {
             only: ['currentSection'],
             preserveState: true,
             preserveScroll: true,
@@ -808,7 +809,7 @@ export default function Workspace() {
             return;
         }
 
-        router.delete(`/works/${project.slug}/${work.slug}/sections/${deleteTarget.id}`, {
+        router.delete(`${worksBase(project.slug, work.slug)}/sections/${deleteTarget.id}`, {
             preserveScroll: true,
             onStart: () => setDeleting(true),
             onFinish: () => {
@@ -850,7 +851,7 @@ export default function Workspace() {
                 setZoom: updateZoom,
                 setFontSize: updateFontSize,
                 openSettings: () => setSettingsOpen(true),
-                openReports: () => router.visit(`/works/${projectSlug}/${workSlug}/reports`),
+                openReports: () => router.visit(`${worksBase(projectSlug, workSlug)}/reports`),
                 addSection: () => setAddTarget({ parentId: null }),
                 addInside: () => {
                     if (effectiveSectionId !== null) {
@@ -872,11 +873,11 @@ export default function Workspace() {
                 // type/length_plan `sometimes`) — the minimum valid payload.
                 setStatus: (value: string) =>
                     router.put(
-                        `/works/${projectSlug}/${workSlug}`,
+                        workUrl(projectSlug, workSlug),
                         { title: work.title, status: value },
                         { preserveScroll: true },
                     ),
-                goToIndex: () => router.visit(`/works/${projectSlug}`),
+                goToIndex: () => router.visit(worksBase(projectSlug)),
                 goToDashboard: () => router.visit('/writing'),
             },
             workStatus: work.status,

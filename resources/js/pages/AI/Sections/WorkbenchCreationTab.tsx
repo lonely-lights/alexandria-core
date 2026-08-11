@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { usePage } from "@inertiajs/react";
 import { csrfHeaders } from "@alexandria/lib/csrfHeaders";
 import { fetchJson } from "@alexandria/lib/fetchJson";
+import { workbenchUrl } from "@alexandria/lib/urls";
 import useT from "@alexandria/hooks/useT";
 import { useToastContext } from "@alexandria/components/ui/ToastProvider";
 import HoneDrawer from "./HoneDrawer";
@@ -545,7 +546,7 @@ export default function WorkbenchCreationTab({
        batches kicked off outside this browser) ── */
     useEffect(() => {
         setSummaryLoading(true);
-        fetchJson(`/ai/${projectSlug}/workbench/l2-summary`)
+        fetchJson(`${workbenchUrl(projectSlug)}/l2-summary`)
             .then((data) =>
                 setSummary(
                     (data as { blueprints: L2BlueprintSummary[] }).blueprints,
@@ -554,7 +555,7 @@ export default function WorkbenchCreationTab({
             .catch(() => {})
             .finally(() => setSummaryLoading(false));
 
-        fetchJson(`/ai/${projectSlug}/workbench/l2-batches`)
+        fetchJson(`${workbenchUrl(projectSlug)}/l2-batches`)
             .then((data) => {
                 const items =
                     (data as { batches: L2BatchListItem[] }).batches ?? [];
@@ -582,7 +583,7 @@ export default function WorkbenchCreationTab({
         }
         setPendingNotesLoading(true);
         fetchJson(
-            `/ai/${projectSlug}/workbench/l2-pending-notes?blueprint_slug=${encodeURIComponent(selectedSlug)}`,
+            `${workbenchUrl(projectSlug)}/l2-pending-notes?blueprint_slug=${encodeURIComponent(selectedSlug)}`,
         )
             .then((data) =>
                 setPendingNotes((data as { notes: L2PendingNote[] }).notes),
@@ -621,7 +622,7 @@ export default function WorkbenchCreationTab({
         setCursorIdx(0);
 
         const cmdUrl = `/api/v1/projects/${projectId}/ai/batches/${batchId}/commands`;
-        const notesUrl = `/ai/${projectSlug}/workbench/l2-batch/${batchId}/notes`;
+        const notesUrl = `${workbenchUrl(projectSlug)}/l2-batch/${batchId}/notes`;
 
         Promise.all([fetchJson(cmdUrl), fetchJson(notesUrl)])
             .then(([cmdsData, notesData]) => {
@@ -690,7 +691,7 @@ export default function WorkbenchCreationTab({
             // Processed notes just left the pending pool — refresh the
             // summary counts + the cherry-pick list.
             setSelectedNoteIds(new Set());
-            fetchJson(`/ai/${projectSlug}/workbench/l2-summary`)
+            fetchJson(`${workbenchUrl(projectSlug)}/l2-summary`)
                 .then((sd) =>
                     setSummary(
                         (sd as { blueprints: L2BlueprintSummary[] }).blueprints,
@@ -699,7 +700,7 @@ export default function WorkbenchCreationTab({
                 .catch(() => {});
             if (selectedSlug) {
                 fetchJson(
-                    `/ai/${projectSlug}/workbench/l2-pending-notes?blueprint_slug=${encodeURIComponent(selectedSlug)}`,
+                    `${workbenchUrl(projectSlug)}/l2-pending-notes?blueprint_slug=${encodeURIComponent(selectedSlug)}`,
                 )
                     .then((nd) =>
                         setPendingNotes(
@@ -855,7 +856,7 @@ export default function WorkbenchCreationTab({
         try {
             const noteIds = Array.from(selectedNoteIds);
             const data = await fetchJson(
-                `/ai/${projectSlug}/workbench/l2-preview-prompt`,
+                `${workbenchUrl(projectSlug)}/l2-preview-prompt`,
                 {
                     method: "POST",
                     headers: csrfHeaders(),
@@ -882,7 +883,7 @@ export default function WorkbenchCreationTab({
         try {
             const noteIds = Array.from(selectedNoteIds);
             const data = (await fetchJson(
-                `/ai/${projectSlug}/workbench/l2-run-batch`,
+                `${workbenchUrl(projectSlug)}/l2-run-batch`,
                 {
                     method: "POST",
                     headers: csrfHeaders(),

@@ -4,6 +4,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import type { Translator } from '@alexandria/hooks/useT';
 import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
+import { workUrl } from '@alexandria/lib/urls';
 
 import type { ActBreakdownRow, CharacterReportRow } from '../../Reports';
 import { blueprintIconClass } from '../EntryPickerModal';
@@ -234,7 +235,7 @@ export default function CharactersReport({
                                     <td className="px-2 py-2">
                                         {row.first_section !== null && (
                                             <Link
-                                                href={`/works/${projectSlug}/${workSlug}/${row.first_section.slug}`}
+                                                href={workUrl(projectSlug, workSlug, row.first_section.slug)}
                                                 className="hover:underline"
                                                 style={firstLinkStyle}
                                             >
@@ -246,7 +247,7 @@ export default function CharactersReport({
                                         {row.last_section !== null &&
                                             row.last_section.slug !== row.first_section?.slug && (
                                             <Link
-                                                href={`/works/${projectSlug}/${workSlug}/${row.last_section.slug}`}
+                                                href={workUrl(projectSlug, workSlug, row.last_section.slug)}
                                                 className="hover:underline"
                                                 style={lastLinkStyle}
                                             >

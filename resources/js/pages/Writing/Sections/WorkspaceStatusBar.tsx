@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import type { CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import { worksBase } from '@alexandria/lib/urls';
 
 import type { WorkLengthPlan } from './WorkSettingsModal';
 
@@ -158,7 +159,7 @@ export default function WorkspaceStatusBar({
             {/* Desktop line */}
             <div className="hidden h-full min-w-0 items-center gap-3 md:flex">
                 <Link
-                    href={`/works/${project.slug}`}
+                    href={worksBase(project.slug)}
                     className="alex-page-header-crumb-link shrink-0"
                 >
                     {project.name}
@@ -197,7 +198,7 @@ export default function WorkspaceStatusBar({
             {/* Mobile line — compact: back chevron, title, abbreviated words */}
             <div className="flex h-full min-w-0 items-center gap-2 md:hidden">
                 <Link
-                    href={`/works/${project.slug}`}
+                    href={worksBase(project.slug)}
                     className="alex-page-header-crumb-link shrink-0"
                     aria-label={t('writing.statusbar.back')}
                 >

@@ -4,6 +4,7 @@ import { useRef, useState, type CSSProperties } from 'react';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
+import { worksBase, workUrl } from '@alexandria/lib/urls';
 
 import type { CurrentSection, SectionNode } from '../Workspace';
 import MoveSectionModal from './MoveSectionModal';
@@ -234,7 +235,7 @@ export default function Navigator({
             setExpanded((prev) => new Set(prev).add(toParentId));
         }
         router.put(
-            `/works/${projectSlug}/${workSlug}/sections/${sectionId}/move`,
+            `${worksBase(projectSlug, workSlug)}/sections/${sectionId}/move`,
             { parent_id: toParentId, position },
             { preserveScroll: true, preserveState: true, only: ['sections'] },
         );
@@ -251,7 +252,7 @@ export default function Navigator({
         onAddChild: openAddChild,
         onDuplicate: (node) => {
             router.post(
-                `/works/${projectSlug}/${workSlug}/sections/${node.id}/duplicate`,
+                `${worksBase(projectSlug, workSlug)}/sections/${node.id}/duplicate`,
                 {},
                 {
                     preserveScroll: true,
@@ -445,7 +446,7 @@ function SiblingGroup({
                 next.splice(newIndex, 0, moved);
 
                 router.put(
-                    `/works/${shared.projectSlug}/${shared.workSlug}/sections/reorder`,
+                    `${worksBase(shared.projectSlug, shared.workSlug)}/sections/reorder`,
                     { parent_id: parentId, ids: next.map((sibling) => sibling.id) },
                     { preserveScroll: true, preserveState: true, only: ['sections'] },
                 );
@@ -486,7 +487,7 @@ function NavigatorRow({
     const hasChildren = node.children.length > 0;
     const isExpanded = expanded.has(node.id);
     const wordCount = liveCounts?.[node.id] ?? node.word_count;
-    const sectionUrl = `/works/${projectSlug}/${workSlug}/${node.slug}`;
+    const sectionUrl = workUrl(projectSlug, workSlug, node.slug);
     const outline = isSelected ? shared.currentOutline : [];
 
     function copyLink() {

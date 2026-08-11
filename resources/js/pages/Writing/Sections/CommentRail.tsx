@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import { worksBase } from '@alexandria/lib/urls';
 import type { WritingEditorBridge } from '@alexandria/pages/Writing/ribbon/writingRibbonContext';
 
 import {
@@ -214,7 +215,7 @@ export default function CommentRail({
         setLoading(true);
         setError(false);
 
-        fetch(`/works/${projectSlug}/${workSlug}/sections/${sectionId}/comments`, {
+        fetch(`${worksBase(projectSlug, workSlug)}/sections/${sectionId}/comments`, {
             credentials: 'same-origin',
             headers: {
                 Accept: 'application/json',
@@ -351,7 +352,7 @@ export default function CommentRail({
                 body.anchor_offset_hint = pendingAnchor.from;
             }
             const r = await fetch(
-                `/works/${projectSlug}/${workSlug}/sections/comments`,
+                `${worksBase(projectSlug, workSlug)}/sections/comments`,
                 {
                     method: 'POST',
                     credentials: 'same-origin',
@@ -381,7 +382,7 @@ export default function CommentRail({
     const handleResolve = useCallback(async (id: number) => {
         try {
             const r = await fetch(
-                `/works/${projectSlug}/${workSlug}/sections/comments/${id}/resolve`,
+                `${worksBase(projectSlug, workSlug)}/sections/comments/${id}/resolve`,
                 { method: 'POST', credentials: 'same-origin', headers: apiHeaders() },
             );
             if (!r.ok) return;
@@ -395,7 +396,7 @@ export default function CommentRail({
     const handleUnresolve = useCallback(async (id: number) => {
         try {
             const r = await fetch(
-                `/works/${projectSlug}/${workSlug}/sections/comments/${id}/unresolve`,
+                `${worksBase(projectSlug, workSlug)}/sections/comments/${id}/unresolve`,
                 { method: 'POST', credentials: 'same-origin', headers: apiHeaders() },
             );
             if (!r.ok) return;
@@ -409,7 +410,7 @@ export default function CommentRail({
     const handleEdit = useCallback(async (id: number, body: string) => {
         try {
             const r = await fetch(
-                `/works/${projectSlug}/${workSlug}/sections/comments/${id}`,
+                `${worksBase(projectSlug, workSlug)}/sections/comments/${id}`,
                 {
                     method: 'PATCH',
                     credentials: 'same-origin',
@@ -428,7 +429,7 @@ export default function CommentRail({
     const handleDelete = useCallback(async (id: number) => {
         try {
             const r = await fetch(
-                `/works/${projectSlug}/${workSlug}/sections/comments/${id}`,
+                `${worksBase(projectSlug, workSlug)}/sections/comments/${id}`,
                 { method: 'DELETE', credentials: 'same-origin', headers: apiHeaders() },
             );
             if (!r.ok) return;

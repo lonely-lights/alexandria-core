@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import { worksBase, workUrl } from '@alexandria/lib/urls';
 import Button from '@alexandria/components/ui/Button';
 import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
@@ -252,7 +253,7 @@ export default function WorkSettingsModal({
             setSavingLink(true);
 
             try {
-                const res = await fetch(`/works/${project.slug}/${work.slug}/entry-link`, {
+                const res = await fetch(`${worksBase(project.slug, work.slug)}/entry-link`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders() },
                     body: JSON.stringify({ entry_id: nextEntryId }),
@@ -271,7 +272,7 @@ export default function WorkSettingsModal({
             }
         }
 
-        form.put(`/works/${project.slug}/${work.slug}`, {
+        form.put(workUrl(project.slug, work.slug), {
             preserveScroll: true,
             onSuccess: onClose,
         });

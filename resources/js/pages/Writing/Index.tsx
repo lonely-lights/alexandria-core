@@ -16,6 +16,7 @@ import Tooltip from "@alexandria/components/ui/Tooltip";
 import useMediaQuery from "@alexandria/hooks/useMediaQuery";
 import useT from "@alexandria/hooks/useT";
 import AppLayout from "@alexandria/layouts/AppLayout";
+import { projectUrl, worksBase } from "@alexandria/lib/urls";
 
 import StructurePickerModal from "./Sections/StructurePickerModal";
 import type { StructureChoice } from "./Sections/StructurePickerModal";
@@ -135,7 +136,7 @@ export default function WritingIndex() {
         >
             <PageHeader
                 breadcrumbs={[
-                    { label: project.name, href: `/p/${project.slug}` },
+                    { label: project.name, href: projectUrl(project.slug) },
                     { label: t("writing.index.title") },
                 ]}
                 actions={
@@ -632,7 +633,7 @@ function CreateWorkModal({
     function submit() {
         // No onSuccess close — the server redirects straight into the
         // new workspace, so the modal unmounts with the page.
-        form.post(`/works/${projectSlug}`);
+        form.post(worksBase(projectSlug));
     }
 
     return (

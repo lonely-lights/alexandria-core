@@ -6,6 +6,7 @@ import Input from '@alexandria/components/form/Input';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
+import { pageUrl, worksBase } from '@alexandria/lib/urls';
 
 import type { CurrentSection } from '../Workspace';
 import { getWritingPanels, subscribeWritingPanels } from '../writingPanelRegistry';
@@ -151,7 +152,10 @@ function EntryRow({
     t: Translator;
 }) {
     const [peek, setPeek] = useState(false);
-    const url = card.url || `/p/${projectSlug}/${card.blueprint_slug}/${card.slug}`;
+    // `blueprint_slug` is nullable on the card type. The template literal
+    // this replaced stringified a null into the path, so the coercion is
+    // kept explicit rather than quietly changing where a null card points.
+    const url = card.url || pageUrl(projectSlug, String(card.blueprint_slug), card.slug);
 
     return (
         <div>
@@ -246,7 +250,7 @@ function BrowseTab({
 
     function pin(entryId: number) {
         router.post(
-            `/works/${project.slug}/${work.slug}/pins`,
+            `${worksBase(project.slug, work.slug)}/pins`,
             { entry_id: entryId },
             { preserveScroll: true },
         );
@@ -277,7 +281,7 @@ function BrowseTab({
                     results.map((row) => (
                         <EntryRow
                             key={row.id}
-                            card={{ ...row, url: `/p/${project.slug}/${row.blueprint_slug}/${row.slug}` }}
+                            card={{ ...row, url: pageUrl(project.slug, String(row.blueprint_slug), row.slug) }}
                             projectSlug={project.slug}
                             t={t}
                             action={
@@ -321,7 +325,7 @@ function PinsTab({
     t: Translator;
 }) {
     function unpin(entryId: number) {
-        router.delete(`/works/${project.slug}/${work.slug}/pins/${entryId}`, {
+        router.delete(`${worksBase(project.slug, work.slug)}/pins/${entryId}`, {
             preserveScroll: true,
         });
     }
@@ -406,7 +410,7 @@ function SectionTab({
 
         let cancelled = false;
 
-        fetch(`/works/${project.slug}/${work.slug}/panel/mentions/${sectionId}`, {
+        fetch(`${worksBase(project.slug, work.slug)}/panel/mentions/${sectionId}`, {
             credentials: 'same-origin',
             headers: {
                 Accept: 'application/json',
@@ -448,7 +452,7 @@ function SectionTab({
         // current title plus the one reference field leaves every other
         // section attribute untouched.
         router.put(
-            `/works/${project.slug}/${work.slug}/sections/${section.id}`,
+            `${worksBase(project.slug, work.slug)}/sections/${section.id}`,
             { title: section.title, [field]: value },
             {
                 preserveScroll: true,
@@ -587,7 +591,7 @@ function SectionTargetInput({
         // WorkSectionController::update validates `title` as required
         // and only touches keys present in the request.
         router.put(
-            `/works/${project.slug}/${work.slug}/sections/${currentSection.id}`,
+            `${worksBase(project.slug, work.slug)}/sections/${currentSection.id}`,
             { title: currentSection.title, target_words: next },
             {
                 preserveScroll: true,
@@ -723,7 +727,7 @@ function SceneLinkDrilldownModal({
         let cancelled = false;
         setLoading(true);
 
-        fetch(`/works/${project.slug}/${work.slug}/panel/scene-link/${link.slug}`, {
+        fetch(`${worksBase(project.slug, work.slug)}/panel/scene-link/${link.slug}`, {
             credentials: 'same-origin',
             headers: {
                 Accept: 'application/json',
@@ -826,7 +830,7 @@ function SceneLinksTab({
                 {links.map((link) => {
                     const url =
                         link.slug && link.blueprintSlug
-                            ? `/p/${project.slug}/${link.blueprintSlug}/${link.slug}`
+                            ? pageUrl(project.slug, link.blueprintSlug, link.slug)
                             : null;
                     const canDrill = link.slug !== null && link.slug !== '';
 

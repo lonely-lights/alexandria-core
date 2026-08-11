@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { worksBase } from '@alexandria/lib/urls';
+
 import type { CurrentSection } from '../Workspace';
 
 /**
@@ -100,7 +102,7 @@ export default function useSectionAutosave({
             setStatus('saving');
         }
 
-        fetch(`/works/${projectSlug}/${workSlug}/sections/${sectionId}/content`, {
+        fetch(`${worksBase(projectSlug, workSlug)}/sections/${sectionId}/content`, {
             method: 'PUT',
             credentials: 'same-origin',
             headers: {

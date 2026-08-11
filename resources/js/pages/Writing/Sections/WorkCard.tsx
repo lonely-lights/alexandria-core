@@ -2,6 +2,7 @@ import { Link } from "@inertiajs/react";
 import type { CSSProperties } from "react";
 
 import type { Translator } from "@alexandria/hooks/useT";
+import { workUrl } from "@alexandria/lib/urls";
 
 import type { WorkLengthPlan } from "./WorkSettingsModal";
 
@@ -120,7 +121,7 @@ export default function WorkCard({
 
     return (
         <Link
-            href={`/works/${projectSlug}/${work.slug}`}
+            href={workUrl(projectSlug, work.slug)}
             className="alex-dash-row group relative"
             style={{
                 ...workCardStyle,

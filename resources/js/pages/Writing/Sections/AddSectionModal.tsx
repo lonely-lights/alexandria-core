@@ -4,6 +4,7 @@ import useT from '@alexandria/hooks/useT';
 import Button from '@alexandria/components/ui/Button';
 import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
 import Input from '@alexandria/components/form/Input';
+import { worksBase } from '@alexandria/lib/urls';
 
 /**
  * Add-section modal — Stage 8g.1 (lifted out of Navigator in Ribbon
@@ -31,7 +32,7 @@ export default function AddSectionModal({
     });
 
     function submit() {
-        form.post(`/works/${projectSlug}/${workSlug}/sections`, {
+        form.post(`${worksBase(projectSlug, workSlug)}/sections`, {
             preserveScroll: true,
             onSuccess: () => {
                 form.reset();

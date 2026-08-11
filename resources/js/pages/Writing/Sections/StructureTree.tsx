@@ -7,6 +7,7 @@ import useMediaQuery from "@alexandria/hooks/useMediaQuery";
 import useT from "@alexandria/hooks/useT";
 import type { Translator } from "@alexandria/hooks/useT";
 import { csrfHeaders } from "@alexandria/lib/csrfHeaders";
+import { pageUrl, worksBase, workUrl } from "@alexandria/lib/urls";
 
 import LinkWorkModal from "./LinkWorkModal";
 import type { WorkRow } from "./WorkCard";
@@ -261,7 +262,7 @@ export default function StructureTree({
 
         try {
             const res = await fetch(
-                `/works/${project.slug}/${workSlug}/entry-link`,
+                `${worksBase(project.slug, workSlug)}/entry-link`,
                 {
                     method: "PUT",
                     headers: {
@@ -571,7 +572,7 @@ function StructureNodeRow({
                     text rather than linking to a route that has no page. */}
                 {node.has_page ? (
                     <a
-                        href={`/p/${project.slug}/${blueprintSlug}/${node.slug}`}
+                        href={pageUrl(project.slug, blueprintSlug, node.slug)}
                         className={`${nodeNameClass} hover:underline`}
                         data-structure-entry-link
                         data-structure-entry-name
@@ -592,7 +593,7 @@ function StructureNodeRow({
                 {linkedWork !== null ? (
                     <span className="flex min-w-0 max-w-[48%] shrink-0 items-center gap-1">
                         <a
-                            href={`/works/${project.slug}/${linkedWork.slug}`}
+                            href={workUrl(project.slug, linkedWork.slug)}
                             className="flex min-w-0 items-center"
                             data-linked-work-chip
                             style={workChipStyle}

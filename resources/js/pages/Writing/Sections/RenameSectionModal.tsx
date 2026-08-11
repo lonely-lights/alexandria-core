@@ -4,6 +4,7 @@ import Button from '@alexandria/components/ui/Button';
 import Input from '@alexandria/components/form/Input';
 import Modal, { ModalFooter, ModalHeader } from '@alexandria/components/ui/Modal';
 import useT from '@alexandria/hooks/useT';
+import { worksBase, workUrl } from '@alexandria/lib/urls';
 
 import type { SectionNode } from '../Workspace';
 
@@ -24,7 +25,7 @@ export default function RenameSectionModal({
     });
 
     function submit() {
-        form.put(`/works/${projectSlug}/${workSlug}/sections/${section.id}`, {
+        form.put(`${worksBase(projectSlug, workSlug)}/sections/${section.id}`, {
             preserveScroll: true,
             preserveState: true,
             only: ['sections', 'currentSection'],
@@ -42,7 +43,7 @@ export default function RenameSectionModal({
                     !window.location.pathname.endsWith(`/${fresh.slug}`)
                 ) {
                     router.replace({
-                        url: `/works/${projectSlug}/${workSlug}/${fresh.slug}`,
+                        url: workUrl(projectSlug, workSlug, fresh.slug),
                     });
                 }
 

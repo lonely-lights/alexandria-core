@@ -10,6 +10,8 @@
  * Pure string work — no router, no window — so Vitest covers it directly.
  */
 
+import { workUrl } from '@alexandria/lib/urls';
+
 /** Matches a one-based scene fragment and nothing else. */
 const SCENE_FRAGMENT = /^#scene-(\d+)$/;
 
@@ -25,7 +27,7 @@ export function flowUrl(
     sectionSlug: string,
     sceneIndex?: number | null,
 ): string {
-    const path = `/works/${projectSlug}/${workSlug}/${sectionSlug}`;
+    const path = workUrl(projectSlug, workSlug, sectionSlug);
 
     if (
         typeof sceneIndex === 'number' &&

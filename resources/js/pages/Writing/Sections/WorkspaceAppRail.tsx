@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import useT from '@alexandria/hooks/useT';
+import { aiBase, notesUrl, projectUrl, worksBase, writingUrl } from '@alexandria/lib/urls';
 
 interface WorkspaceAppRailProps {
     projectSlug: string;
@@ -24,49 +25,63 @@ export default function WorkspaceAppRail({ projectSlug, workSlug, onNotesClick }
     const { url } = usePage();
     const currentPath = url.split('?')[0] ?? url;
 
-    const items = useMemo<RailItem[]>(
-        () => [
+    const items = useMemo<RailItem[]>(() => {
+        const projectHome = projectUrl(projectSlug);
+        const worksHome = worksBase(projectSlug);
+        const notesHome = notesUrl(projectSlug);
+        const aiHome = aiBase(projectSlug);
+        const writingHome = writingUrl(projectSlug);
+        const reportsPath = `${worksBase(projectSlug, workSlug)}/reports`;
+
+        /** A path is "under" a base when it IS the base or a descendant of it. */
+        const under = (path: string, base: string) => path === base || path.startsWith(`${base}/`);
+
+        return [
             {
                 key: 'project',
-                href: `/p/${projectSlug}`,
+                href: projectHome,
                 icon: 'fa-solid fa-globe',
                 labelKey: 'writing.rail.project_home',
-                isActive: (path) => path === `/p/${projectSlug}` || path.startsWith(`/p/${projectSlug}/`),
+                // Every project surface now nests under /p/{project}, so the
+                // sibling rail destinations are subtracted back out — without
+                // this the project item would light up alongside them.
+                isActive: (path) =>
+                    under(path, projectHome) &&
+                    !under(path, worksHome) &&
+                    !under(path, notesHome) &&
+                    !under(path, aiHome) &&
+                    !under(path, writingHome),
             },
             {
                 key: 'writing',
-                href: `/works/${projectSlug}`,
+                href: worksHome,
                 icon: 'fa-solid fa-feather-pointed',
                 labelKey: 'writing.rail.writing',
-                isActive: (path) =>
-                    path === `/works/${projectSlug}` ||
-                    (path.startsWith(`/works/${projectSlug}/`) &&
-                        path !== `/works/${projectSlug}/${workSlug}/reports`),
+                isActive: (path) => under(path, worksHome) && path !== reportsPath,
             },
             {
                 key: 'notes',
-                href: `/notes/${projectSlug}`,
+                href: notesHome,
                 icon: 'fa-solid fa-note-sticky',
                 labelKey: 'writing.rail.notes',
-                isActive: (path) => path === `/notes/${projectSlug}` || path.startsWith(`/notes/${projectSlug}/`),
+                isActive: (path) => under(path, notesHome),
             },
             {
                 key: 'ai',
-                href: `/ai/${projectSlug}`,
+                href: aiHome,
                 icon: 'fa-solid fa-wand-magic-sparkles',
                 labelKey: 'writing.rail.ai',
-                isActive: (path) => path === `/ai/${projectSlug}` || path.startsWith(`/ai/${projectSlug}/`),
+                isActive: (path) => under(path, aiHome),
             },
             {
                 key: 'reports',
-                href: `/works/${projectSlug}/${workSlug}/reports`,
+                href: reportsPath,
                 icon: 'fa-solid fa-chart-simple',
                 labelKey: 'writing.rail.reports',
-                isActive: (path) => path === `/works/${projectSlug}/${workSlug}/reports`,
+                isActive: (path) => path === reportsPath,
             },
-        ],
-        [projectSlug, workSlug],
-    );
+        ];
+    }, [projectSlug, workSlug]);
 
     return (
         <aside
