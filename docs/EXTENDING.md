@@ -225,7 +225,90 @@ duplicated width math is exactly how the sheet and its furniture drift apart.
 
 ---
 
-## 8. What's *not* an extension point yet
+## 8. URL segments (the `urls` Inertia share)
+
+Every project-scoped surface lives under `/p/{project-slug}/…`, and the literal
+word after the slug — `pages`, `images`, `ai`, `notes`, `writing`, `works`,
+`capture` — is the host app's to name. A wiki-flavored consumer can serve
+`/p/atlas/wiki/character/mira`; a screenwriting one can serve
+`/p/atlas/scripts/…`. Route **names** never change, only paths.
+
+### The contract
+
+The host owns a segment map and hands it to core twice: once to Laravel (route
+prefixes) and once to the frontend (the `urls` Inertia share).
+
+```php
+// config/urls.php — the host's map. Each key defaults to its own name.
+return [
+    'segments' => [
+        'pages' => 'pages',
+        'images' => 'images',
+        'ai' => 'ai',
+        'notes' => 'notes',
+        'writing' => 'writing',
+        'works' => 'works',
+        'capture' => 'capture',
+    ],
+];
+```
+
+```php
+// routes/web.php — routes read the map, so the path moves and the name stays.
+Route::prefix(config('urls.segments.pages'))->group(function () {
+    Route::get('{blueprint:slug}/{entry:slug}', [EntryController::class, 'show'])
+        ->name('entries.show');
+});
+```
+
+```php
+// HandleInertiaRequests::share() — the same map, handed to the frontend.
+'urls' => config('urls.segments'),
+```
+
+```tsx
+// app.tsx setup() — install it into core's builders once at boot.
+import { configureUrls, type UrlSegments } from '@alexandria/lib/urls';
+
+configureUrls((props.initialPage.props as { urls?: Partial<UrlSegments> }).urls);
+```
+
+### Core's side: `lib/urls.ts`
+
+Core builds every project-scoped URL through `@alexandria/lib/urls` —
+`projectUrl`, `pagesBase`, `pageUrl`, `newBlueprintUrl`, `newEntryUrl`,
+`entryEditUrl`, `imagesUrl`, `newImageUrl`, `aiBase`, `aiUrl`, `workbenchUrl`,
+`notesUrl`, `writingUrl`, `worksBase`, `workUrl`, `captureUrl`, plus the two
+fixed-word helpers `recycleBinUrl` and `projectSearchUrl`. The module is
+deliberately Inertia-free: it holds a module-level segment map that
+`configureUrls()` installs, which keeps it unit-testable and usable from plain
+fetch helpers and event handlers as well as components.
+
+`configureUrls()` resets to the defaults before merging, so a **partial** map
+leaves untouched keys at their default word, and calling it with no argument
+restores a pristine state (which is what core's own tests do). An unconfigured
+host still builds valid URLs — every default is its own key.
+
+Two segments are **not** configurable: `recycle-bin` and `search`. They are
+fixed words under `/p/{slug}/`, and route registration order matters — literal
+segments must register before `{blueprint:slug}`-style bindings, or the literal
+gets swallowed as a slug.
+
+### Renaming a segment
+
+1. Edit the word in `config/urls.php`.
+2. `php artisan config:clear` — the route prefixes read cached config.
+3. `npm run build` — Wayfinder output and the bundled frontend both bake in the
+   old word until they are regenerated.
+
+Server and client are then in agreement by construction: both read the same
+map, and nothing in core hard-codes a segment word. Consumers should keep a
+test that asserts the config map and the registered routes still agree — the
+reference app does this in `tests/Feature/Routing/UrlSegmentAgreementTest.php`.
+
+---
+
+## 9. What's *not* an extension point yet
 
 The following are deliberately out of scope for `v0.1.0`. They'll likely become extension points in a later minor version, but for now consumers either copy + modify the relevant files into their own app or vendor-fork:
 
