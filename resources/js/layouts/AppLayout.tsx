@@ -7,6 +7,7 @@ import CommandPalette from '../components/search/CommandPalette';
 import NotesDrawer, { openNotesDrawer } from '../components/notes/NotesDrawer';
 import type { NotesContext } from '../components/notes/NotesDrawer';
 import { projectSearch } from '../lib/projectSearch';
+import { aiBase, notesUrl } from '../lib/urls';
 import { ToastProvider } from '../components/ui/ToastProvider';
 import Fab from '../components/ui/Fab';
 import Modal from '../components/ui/Modal';
@@ -73,7 +74,7 @@ function buildDefaultBottomNavTabs(
     onNotesClick?: () => void,
 ): BottomNavTab[] {
     const notesHref = currentProjectSlug
-        ? `/notes/${currentProjectSlug}`
+        ? notesUrl(currentProjectSlug)
         : '/dashboard';
 
     const notesTab: BottomNavTab = onNotesClick
@@ -410,17 +411,26 @@ export default function AppLayout({
         } as NotesContext;
     }
 
+    // Every project surface now lives under the project umbrella, so
+    // the dedicated Notes and AI pages can no longer be told apart by
+    // a top-level prefix — compare against the built surface roots for
+    // the current project instead.
+    const notesRoot = currentProject ? notesUrl(currentProject.slug) : null;
+    const aiRoot = currentProject ? aiBase(currentProject.slug) : null;
+    const isNotesOrAiPage =
+        (notesRoot !== null && url.startsWith(notesRoot))
+        || (aiRoot !== null && url.startsWith(aiRoot));
+
     // Auto-wire the navbar's Notes button only on project-scoped routes
-    // (/p/{slug}/...). On the dedicated Notes (/notes/{slug}) or AI
-    // (/ai/{slug}) surfaces, the drawer would be redundant — the page
-    // itself IS the notes / AI experience — so suppress the navbar
-    // toggle there. Default handler dispatches the global
-    // `alexandria:open-notes` event that NotesDrawer listens for —
-    // drawer state lives entirely inside the drawer, so the layout
-    // only has to fire the open signal with the current project context.
-    // Consumer can override with an explicit function, or pass null to
-    // suppress the button entirely.
-    const isProjectScope = url.startsWith('/p/');
+    // (/p/{slug}/...). On the dedicated Notes or AI surfaces, the
+    // drawer would be redundant — the page itself IS the notes / AI
+    // experience — so suppress the navbar toggle there. Default handler
+    // dispatches the global `alexandria:open-notes` event that
+    // NotesDrawer listens for — drawer state lives entirely inside the
+    // drawer, so the layout only has to fire the open signal with the
+    // current project context. Consumer can override with an explicit
+    // function, or pass null to suppress the button entirely.
+    const isProjectScope = url.startsWith('/p/') && !isNotesOrAiPage;
     const resolvedNotesToggle = onNotesToggle === null
         ? undefined
         : onNotesToggle ?? (currentProject && isProjectScope
@@ -529,15 +539,14 @@ export default function AppLayout({
     }, [user]);
 
     // Bottom-nav Notes handler — open the drawer scoped to the current
-    // page context. We gate on the non-redundant routes only: on
-    // `/notes/{slug}` or `/ai/{slug}` the drawer would duplicate the
-    // page itself, so the Notes tab falls back to its URL behaviour
-    // there. Anywhere else (entry / blueprint / project Show, or
-    // /dashboard, /profile, /settings with no currentProject), we open
-    // the drawer — using the persisted last-viewed project as the
-    // "active notes" fallback when nothing on the page provides one.
-    const isNotesOrAiPage =
-        url.startsWith('/notes/') || url.startsWith('/ai/');
+    // page context. We gate on the non-redundant routes only: on the
+    // project's notes or AI surface the drawer would duplicate the page
+    // itself (see `isNotesOrAiPage` above), so the Notes tab falls back
+    // to its URL behaviour there. Anywhere else (entry / blueprint /
+    // project Show, or /dashboard, /profile, /settings with no
+    // currentProject), we open the drawer — using the persisted
+    // last-viewed project as the "active notes" fallback when nothing
+    // on the page provides one.
     const bottomNavNotesClick = !isNotesOrAiPage
         ? () => {
               // Priority 1: live context from the current page

@@ -6,6 +6,7 @@ import AppLayout from '@alexandria/layouts/AppLayout';
 import StatsBar from '@alexandria/components/projects/StatsBar';
 import CommandPalette from '@alexandria/components/search/CommandPalette';
 import { projectSearch } from '@alexandria/lib/projectSearch';
+import { aiUrl, newBlueprintUrl } from '@alexandria/lib/urls';
 import DashboardTab from './Sections/DashboardTab';
 import ActivityTab from './Sections/ActivityTab';
 import SettingsTab from './Sections/SettingsTab';
@@ -254,7 +255,7 @@ export default function ProjectShow() {
         ...classificationMenuItems,
         ...viewModeMenuItems,
         { label: t('projects.show.menu.activity'), icon: 'fa-solid fa-clock-rotate-left', onClick: () => setActiveTab('activity') },
-        { label: t('projects.show.menu.ai_batches'), icon: 'fa-solid fa-brain', href: `/ai/${project.slug}#commands` },
+        { label: t('projects.show.menu.ai_batches'), icon: 'fa-solid fa-brain', href: `${aiUrl(project.slug)}#commands` },
         ...(project.can.update ? [
             { divider: true as const },
             { label: t('projects.show.menu.archive'), icon: 'fa-solid fa-box-archive', badge: stats.archived_count > 0 ? stats.archived_count : undefined, onClick: () => setActiveTab('archive') },
@@ -447,7 +448,7 @@ export default function ProjectShow() {
                                     <ActionButton
                                         icon="fa-solid fa-plus"
                                         label={t('projects.show.new_blueprint')}
-                                        href={`/p/${project.slug}/blueprints/create`}
+                                        href={newBlueprintUrl(project.slug)}
                                     />
                                 )}
                             </div>

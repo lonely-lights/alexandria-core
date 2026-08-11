@@ -9,6 +9,7 @@ import Select from "@alexandria/components/form/Select";
 import ReorderModeToggle from "@alexandria/components/ui/ReorderModeToggle";
 import TemporalFieldConfig from "@alexandria/components/form/TemporalFieldConfig";
 import { FIELD_TYPES } from "@alexandria/config/fieldTypes";
+import { pageUrl } from "@alexandria/lib/urls";
 import { useBlueprintFields } from "@alexandria/hooks/useBlueprintFields";
 import { useReorderMode } from "@alexandria/hooks/useReorderMode";
 import useT from "@alexandria/hooks/useT";
@@ -96,7 +97,7 @@ export default function BlueprintFieldsPanel({
     function handleSave() {
         setSaving(true);
         router.put(
-            `/p/${project.slug}/${blueprint.slug}`,
+            pageUrl(project.slug, blueprint.slug),
             {
                 name: blueprint.name,
                 description: blueprint.description ?? "",

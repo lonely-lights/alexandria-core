@@ -4,6 +4,7 @@ import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import ActionButton from '@alexandria/components/ui/ActionButton';
 import useT from '@alexandria/hooks/useT';
+import { projectUrl, recycleBinUrl } from '@alexandria/lib/urls';
 import type { RecycleBinProps, TrashedEntry } from '@alexandria/types/projects';
 
 /* ── Theme token styles ── */
@@ -122,7 +123,7 @@ export default function RecycleBin() {
 
     function handleRestore(entry: TrashedEntry) {
         router.post(
-            `/p/${project.slug}/recycle-bin/${entry.slug}/restore`,
+            `${recycleBinUrl(project.slug)}/${entry.slug}/restore`,
             {},
             { preserveScroll: true },
         );
@@ -130,7 +131,7 @@ export default function RecycleBin() {
 
     function handleRestoreSelected() {
         router.post(
-            `/p/${project.slug}/recycle-bin/restore`,
+            `${recycleBinUrl(project.slug)}/restore`,
             { ids: selectedIds },
             {
                 preserveScroll: true,
@@ -150,7 +151,7 @@ export default function RecycleBin() {
 
             <PageHeader
                 breadcrumbs={[
-                    { label: project.name, href: `/p/${project.slug}` },
+                    { label: project.name, href: projectUrl(project.slug) },
                     { label: t('nav.recycle_bin') },
                 ]}
             >

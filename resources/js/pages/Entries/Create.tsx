@@ -3,6 +3,7 @@ import useT from '@alexandria/hooks/useT';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import IconTile from '@alexandria/components/ui/IconTile';
 import PageHeader from '@alexandria/components/layout/PageHeader';
+import { pageUrl, projectUrl } from '@alexandria/lib/urls';
 import EntryForm from './Sections/EntryForm';
 
 interface CreateProps {
@@ -42,8 +43,8 @@ export default function EntryCreate() {
         <AppLayout title={`${createTitle} - ${project.name}`} immersive>
             <PageHeader
                 breadcrumbs={[
-                    { label: project.name, href: `/p/${project.slug}` },
-                    { label: blueprint.name, href: `/p/${project.slug}/${blueprint.slug}`, icon: blueprint.icon },
+                    { label: project.name, href: projectUrl(project.slug) },
+                    { label: blueprint.name, href: pageUrl(project.slug, blueprint.slug), icon: blueprint.icon },
                     { label: createTitle },
                 ]}
             >

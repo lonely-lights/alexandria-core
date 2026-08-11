@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import useT from '@alexandria/hooks/useT';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import { pageUrl } from '@alexandria/lib/urls';
 import { useBlueprintSettingsModal } from '@alexandria/lib/views/useBlueprintSettingsModal';
 import type { KanbanColumnData, KanbanConfig } from './types';
 import { useKanbanModel } from './useKanbanModel';
@@ -122,7 +123,7 @@ export default function KanbanView({
     }
 
     const entryHrefFor = (_cardId: number, slug: string) =>
-        `/p/${projectSlug}/${blueprintSlug}/${slug}`;
+        pageUrl(projectSlug, blueprintSlug, slug);
 
     // No field configured yet — surface a CTA to open settings.
     if (!config.group_field_name) {

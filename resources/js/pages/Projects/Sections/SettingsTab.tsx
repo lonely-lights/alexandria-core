@@ -5,6 +5,7 @@ import {
 } from "react";
 import { router } from "@inertiajs/react";
 import { useJsonFetch } from "@alexandria/lib/fetchJson";
+import { projectUrl } from "@alexandria/lib/urls";
 import { useEnterAnimation } from "@alexandria/hooks/useEnterAnimation";
 import ProjectDetailsSection from "./settings/ProjectDetailsSection";
 import AiHelpersSection from "./settings/AiHelpersSection";
@@ -288,7 +289,7 @@ function ProjectMediaSection({ project }: { project: ProjectDetail }) {
     async function toggleInheritDownward(next: boolean) {
         setInheritDownward(next);
         router.put(
-            `/p/${project.slug}/settings`,
+            `${projectUrl(project.slug)}/settings`,
             {
                 name: project.name,
                 logline: project.logline ?? "",

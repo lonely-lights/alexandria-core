@@ -1,6 +1,14 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState, type ReactNode } from 'react';
 import useT from '@alexandria/hooks/useT';
+import {
+    aiUrl,
+    notesUrl,
+    pageUrl,
+    projectUrl,
+    recycleBinUrl,
+    worksBase,
+} from '../../lib/urls';
 import type { SharedProps } from '../../types/index';
 import type { ProjectSummary } from '../../types/models';
 
@@ -74,7 +82,7 @@ export default function ProjectNavigation({
 
             {!isRouteProject && (
                 <GoToProjectCta
-                    href={`/p/${project.slug}`}
+                    href={projectUrl(project.slug)}
                     projectName={project.name}
                 />
             )}
@@ -100,7 +108,7 @@ export default function ProjectNavigation({
                 return (
                     <SidebarRow
                         key={bp.id}
-                        href={`/p/${project.slug}/${bp.slug}`}
+                        href={pageUrl(project.slug, bp.slug)}
                         icon={iconClass}
                         label={bp.plural_name}
                     />
@@ -110,17 +118,17 @@ export default function ProjectNavigation({
             <SectionDivider>{t('nav.section.ai_notes')}</SectionDivider>
 
             <SidebarRow
-                href={`/works/${project.slug}`}
+                href={worksBase(project.slug)}
                 icon="fa-solid fa-feather-pointed"
                 label={t('nav.writing')}
             />
             <SidebarRow
-                href={`/notes/${project.slug}`}
+                href={notesUrl(project.slug)}
                 icon="fa-solid fa-note-sticky"
                 label={t('nav.notes')}
             />
             <SidebarRow
-                href={`/notes/${project.slug}#notebooks`}
+                href={`${notesUrl(project.slug)}#notebooks`}
                 icon="fa-solid fa-book"
                 label={t('nav.notebooks')}
             />
@@ -145,23 +153,23 @@ export default function ProjectNavigation({
                 >
                     {/* Legacy path-style URLs (/queue, /batches, /models)
                         predate the tabbed AI dashboard and 404 — these
-                        surfaces are hash tabs on /ai/{slug} now. */}
+                        surfaces are hash tabs on the AI dashboard now. */}
                     <SidebarRow
-                        href={`/ai/${project.slug}`}
+                        href={aiUrl(project.slug)}
                         icon="fa-solid fa-route"
                         iconColor="var(--theme-status-warning-fill)"
                         label={t('nav.note_queue')}
                         size="sm"
                     />
                     <SidebarRow
-                        href={`/ai/${project.slug}#commands`}
+                        href={`${aiUrl(project.slug)}#commands`}
                         icon="fa-solid fa-terminal"
                         iconColor="var(--theme-brand-secondary-500)"
                         label={t('nav.commands')}
                         size="sm"
                     />
                     <SidebarRow
-                        href={`/ai/${project.slug}#models`}
+                        href={`${aiUrl(project.slug)}#models`}
                         icon="fa-solid fa-microchip"
                         iconColor="var(--theme-status-info-fill)"
                         label={t('nav.models')}
@@ -173,13 +181,13 @@ export default function ProjectNavigation({
             <SectionDivider>{t('nav.section.tools')}</SectionDivider>
 
             <SidebarRow
-                href={`/p/${project.slug}#archive`}
+                href={`${projectUrl(project.slug)}#archive`}
                 icon="fa-solid fa-box-archive"
                 label={t('nav.archive')}
                 trailing={<ArchiveCount projectId={project.id} />}
             />
             <SidebarRow
-                href={`/p/${project.slug}/recycle-bin`}
+                href={recycleBinUrl(project.slug)}
                 icon="fa-solid fa-trash-can"
                 label={t('nav.recycle_bin')}
             />
@@ -450,7 +458,7 @@ function ProjectSwitcher({
                                 return (
                                     <Link
                                         key={p.id}
-                                        href={`/p/${p.slug}`}
+                                        href={projectUrl(p.slug)}
                                         role="option"
                                         aria-selected={isCurrent}
                                         onClick={onClose}

@@ -6,6 +6,7 @@ import ThemePresetPicker from '@alexandria/components/theming/ThemePresetPicker'
 import TokenOverrideEditor from '@alexandria/components/theming/TokenOverrideEditor';
 import useT from '@alexandria/hooks/useT';
 import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
+import { projectUrl } from '@alexandria/lib/urls';
 import type { ProjectDetail } from '@alexandria/types/projects';
 
 /**
@@ -41,7 +42,7 @@ export default function ThemeSection({
 
     function applyPreset(slug: string | null) {
         router.patch(
-            `/p/${project.slug}/theme`,
+            `${projectUrl(project.slug)}/theme`,
             {
                 theme_preset_slug: slug,
                 theme_override: project.theme_override,
@@ -52,7 +53,7 @@ export default function ThemeSection({
 
     function saveOverride(next: ThemeOverridePatch | null) {
         router.patch(
-            `/p/${project.slug}/theme`,
+            `${projectUrl(project.slug)}/theme`,
             {
                 theme_preset_slug: project.theme_preset_slug,
                 theme_override: next as Record<string, unknown> | null,

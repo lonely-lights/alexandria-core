@@ -6,6 +6,7 @@ import Tooltip from '@alexandria/components/ui/Tooltip';
 import Modal from '@alexandria/components/ui/Modal';
 import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import { notesUrl } from '@alexandria/lib/urls';
 import { useDrawerHeight, type DrawerHeight } from '@alexandria/hooks/useDrawerHeight';
 import { useDrawerMode, type DrawerMode } from '@alexandria/hooks/useDrawerMode';
 import useMediaQuery from '@alexandria/hooks/useMediaQuery';
@@ -1140,8 +1141,12 @@ export default function NotesDrawer() {
                 const data = await res.json();
                 setShowEntryIntegration(false);
                 setIntegrationInstructions('');
-                if (data.review_url) {
-                    window.location.href = data.review_url;
+                // Review the generated commands in place — the drawer
+                // already owns CommandReviewModal, so there is nothing
+                // to navigate to (the old `review_url` never resolved).
+                if (typeof data.batch_id === 'string') {
+                    setCommandReviewBatchId(data.batch_id);
+                    setShowCommandReview(true);
                 }
             }
         } finally {
@@ -1275,7 +1280,7 @@ export default function NotesDrawer() {
                         </Tooltip>
                         <Tooltip content={t('notes.drawer.action.dashboard_aria')} placement="bottom">
                             <a
-                                href={`/notes/${context?.projectSlug ?? ''}`}
+                                href={notesUrl(context?.projectSlug ?? '')}
                                 className="alex-btn alex-btn--ghost inline-flex items-center"
                                 style={btnSm}
                                 aria-label={t('notes.drawer.action.dashboard_aria')}

@@ -2,6 +2,7 @@ import { useForm } from "@inertiajs/react";
 
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import useT from "@alexandria/hooks/useT";
+import { pageUrl } from "@alexandria/lib/urls";
 import type { BlueprintDetail } from "@alexandria/types/blueprints";
 
 import SettingsActivationToggle from "./SettingsActivationToggle";
@@ -42,7 +43,7 @@ export default function BlueprintBehaviorPanel({
     });
 
     function handleSave() {
-        form.put(`/p/${project.slug}/${blueprint.slug}`, {
+        form.put(pageUrl(project.slug, blueprint.slug), {
             onSuccess: () => onClose(),
         });
     }

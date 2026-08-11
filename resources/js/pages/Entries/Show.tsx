@@ -22,6 +22,12 @@ import HistoryTab from './Sections/HistoryTab';
 import TimelineTab from './Sections/TimelineTab';
 import TreeView from '@alexandria/pages/Blueprints/Sections/TreeView';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import {
+    entryEditUrl,
+    pageUrl,
+    projectUrl,
+    worksBase,
+} from '@alexandria/lib/urls';
 import MediaSection from '@alexandria/components/media/MediaSection';
 import EntrySettingsModal from './Sections/modals/EntrySettingsModal';
 import { getEntryShowSlots } from './entryShowSlots';
@@ -265,8 +271,8 @@ export default function EntryShow() {
             onClick: () => setActiveTab(item.key),
         })),
         ...(menuItems.length > 0 ? [{ divider: true as const }] : []),
-        ...(blueprint.show_tree_view ? [{ label: t('entries.show.menu.view_in_tree'), icon: 'fa-solid fa-sitemap', href: `/p/${project.slug}/${blueprint.slug}#tree` }] : []),
-        { label: t('entries.show.menu.all_plural').replace(':plural', blueprint.plural_name), icon: blueprint.icon, href: `/p/${project.slug}/${blueprint.slug}` },
+        ...(blueprint.show_tree_view ? [{ label: t('entries.show.menu.view_in_tree'), icon: 'fa-solid fa-sitemap', href: `${pageUrl(project.slug, blueprint.slug)}#tree` }] : []),
+        { label: t('entries.show.menu.all_plural').replace(':plural', blueprint.plural_name), icon: blueprint.icon, href: pageUrl(project.slug, blueprint.slug) },
         ...(entry.can.delete ? [
             { divider: true as const },
             { label: t('entries.show.delete_entry'), icon: 'fa-solid fa-trash', onClick: () => setDeleteOpen(true), danger: true as const },
@@ -277,8 +283,8 @@ export default function EntryShow() {
         <AppLayout title={`${entry.name} - ${project.name}`} immersive onSearchToggle={() => setSearchOpen(true)}>
             <PageHeader
                 breadcrumbs={[
-                    { label: project.name, href: `/p/${project.slug}` },
-                    { label: blueprint.name, href: `/p/${project.slug}/${blueprint.slug}`, icon: blueprint.icon },
+                    { label: project.name, href: projectUrl(project.slug) },
+                    { label: blueprint.name, href: pageUrl(project.slug, blueprint.slug), icon: blueprint.icon },
                     { label: entry.name },
                 ]}
                 actions={
@@ -296,7 +302,7 @@ export default function EntryShow() {
                             <ActionButton
                                 icon="fa-solid fa-pencil"
                                 label={t('entries.show.edit_entry')}
-                                href={`/p/${project.slug}/${blueprint.slug}/${entry.slug}/edit`}
+                                href={entryEditUrl(project.slug, blueprint.slug, entry.slug)}
                                 size="md"
                             />
                         )}
@@ -371,7 +377,7 @@ export default function EntryShow() {
                             />
                         )}
                         {writingWork && (
-                            <a href={`/works/${project.slug}/${writingWork.slug}`} className="alex-writing-chip" style={writingChipStyle}>
+                            <a href={worksBase(project.slug, writingWork.slug)} className="alex-writing-chip" style={writingChipStyle}>
                                 <i className="fa-solid fa-feather" />
                                 {t('entries.show.open_in_writing')}
                             </a>
@@ -562,7 +568,7 @@ export default function EntryShow() {
                 open={deleteOpen}
                 onClose={() => setDeleteOpen(false)}
                 onConfirm={() => {
-                    router.delete(`/p/${project.slug}/${blueprint.slug}/${entry.slug}`, {
+                    router.delete(pageUrl(project.slug, blueprint.slug, entry.slug), {
                         onSuccess: () => setDeleteOpen(false),
                     });
                 }}

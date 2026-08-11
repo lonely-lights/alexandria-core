@@ -9,6 +9,7 @@ import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import useT from '@alexandria/hooks/useT';
 import { useVisitedTabs } from '@alexandria/hooks/useVisitedTabs';
+import { projectUrl } from '@alexandria/lib/urls';
 import DashboardView from './Sections/DashboardView';
 import NotesView from './Sections/NotesView';
 import NotebooksView from './Sections/NotebooksView';
@@ -124,7 +125,7 @@ export default function NotesDashboard() {
         >
             <PageHeader
                 breadcrumbs={[
-                    { label: project.name, href: `/p/${project.slug}` },
+                    { label: project.name, href: projectUrl(project.slug) },
                     { label: t('notes.page.breadcrumb') },
                 ]}
                 actions={

@@ -56,20 +56,25 @@ export function projectUrl(project: string): string {
     return `/p/${slug(project)}`;
 }
 
+/** `/p/x/pages` — the content namespace root (blueprint store target). */
+export function pagesBase(project: string): string {
+    return `${projectUrl(project)}/${segments.pages}`;
+}
+
 /** `/p/x/pages/{blueprint}` — with `entry`, the entry show page. */
 export function pageUrl(
     project: string,
     blueprint: string,
     entry?: string,
 ): string {
-    const base = `${projectUrl(project)}/${segments.pages}/${slug(blueprint)}`;
+    const base = `${pagesBase(project)}/${slug(blueprint)}`;
 
     return entry === undefined ? base : `${base}/${slug(entry)}`;
 }
 
 /** `/p/x/pages/create` — the blueprint builder. */
 export function newBlueprintUrl(project: string): string {
-    return `${projectUrl(project)}/${segments.pages}/create`;
+    return `${pagesBase(project)}/create`;
 }
 
 /** `/p/x/pages/{blueprint}/create` — the entry composer. */

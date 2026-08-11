@@ -8,6 +8,7 @@ import {
 } from "react";
 import { stripWikiMarkup } from "@alexandria/lib/stripWikiMarkup";
 import { useDateFormatters } from "@alexandria/lib/formatDate";
+import { worksBase } from "@alexandria/lib/urls";
 import useT from "@alexandria/hooks/useT";
 import Tooltip from "@alexandria/components/ui/Tooltip";
 import EntryLink from "@alexandria/components/entries/EntryLink";
@@ -987,7 +988,7 @@ export default function EntriesTab({
                                                     {entry.writing_work_slug && (
                                                         <Tooltip content={t("entries.show.open_in_writing")}>
                                                             <a
-                                                                href={`/works/${project.slug}/${entry.writing_work_slug}`}
+                                                                href={worksBase(project.slug, entry.writing_work_slug)}
                                                                 title={t("entries.show.open_in_writing")}
                                                                 aria-label={t("entries.show.open_in_writing")}
                                                                 onClick={(e) => e.stopPropagation()}

@@ -5,6 +5,7 @@ import Input from "@alexandria/components/form/Input";
 import Textarea from "@alexandria/components/form/Textarea";
 import { classificationLabel } from "@alexandria/config/classifications";
 import useT from "@alexandria/hooks/useT";
+import { pageUrl } from "@alexandria/lib/urls";
 import type {
     BlueprintDetail,
     SiblingBlueprint,
@@ -61,7 +62,7 @@ export default function BlueprintMainPanel({
         : `fa-solid ${form.data.icon}`;
 
     function handleSave() {
-        form.put(`/p/${project.slug}/${blueprint.slug}`, {
+        form.put(pageUrl(project.slug, blueprint.slug), {
             onSuccess: () => onClose(),
         });
     }

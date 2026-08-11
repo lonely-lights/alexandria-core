@@ -8,6 +8,7 @@ import ThemePresetPicker, {
 import TokenOverrideEditor from '@alexandria/components/theming/TokenOverrideEditor';
 import useT from '@alexandria/hooks/useT';
 import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
+import { pageUrl } from '@alexandria/lib/urls';
 import type { EntryShowEntry } from '@alexandria/types/entries';
 
 /**
@@ -77,7 +78,7 @@ export default function EntryThemePanel({
 
     function applyPreset(slug: string | null) {
         router.patch(
-            `/p/${project.slug}/${blueprint.slug}/${entry.slug}/theme`,
+            `${pageUrl(project.slug, blueprint.slug, entry.slug)}/theme`,
             {
                 theme_preset_slug: slug,
                 theme_override: entry.theme_override,
@@ -88,7 +89,7 @@ export default function EntryThemePanel({
 
     function saveOverride(next: ThemeOverridePatch | null) {
         router.patch(
-            `/p/${project.slug}/${blueprint.slug}/${entry.slug}/theme`,
+            `${pageUrl(project.slug, blueprint.slug, entry.slug)}/theme`,
             {
                 theme_preset_slug: entry.theme_preset_slug ?? null,
                 theme_override: next as Record<string, unknown> | null,

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { router } from '@inertiajs/react';
 import Modal from '@alexandria/components/ui/Modal';
 import useT from '@alexandria/hooks/useT';
+import { pageUrl } from '@alexandria/lib/urls';
 
 interface SortedBlueprint {
     id: number;
@@ -186,7 +187,7 @@ export default function SortingHistoryModal({ open, onClose, projectId, projectS
                                                     onClick={() => {
                                                         sessionStorage.setItem('alexandria:open_note', String(record.note_id));
                                                         onClose();
-                                                        router.visit(`/p/${projectSlug}/${bp.slug}`);
+                                                        router.visit(pageUrl(projectSlug, bp.slug));
                                                     }}
                                                     className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium cursor-pointer"
                                                     style={linkBadgeStyle}
@@ -207,7 +208,7 @@ export default function SortingHistoryModal({ open, onClose, projectId, projectS
                                                         onClick={() => {
                                                             sessionStorage.setItem('alexandria:open_note', String(record.note_id));
                                                             onClose();
-                                                            router.visit(`/p/${projectSlug}/${blueprintSlug}/${entry.slug}`);
+                                                            router.visit(pageUrl(projectSlug, blueprintSlug ?? '', entry.slug));
                                                         }}
                                                         className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium cursor-pointer"
                                                         style={linkBadgeStyle}

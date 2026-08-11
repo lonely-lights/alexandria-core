@@ -4,6 +4,7 @@ import Sortable from "sortablejs";
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import Modal from "@alexandria/components/ui/Modal";
 import { useJsonFetch } from "@alexandria/lib/fetchJson";
+import { pageUrl } from "@alexandria/lib/urls";
 import { useReorderMode } from "@alexandria/hooks/useReorderMode";
 import ReorderModeToggle from "@alexandria/components/ui/ReorderModeToggle";
 import useT from "@alexandria/hooks/useT";
@@ -392,7 +393,7 @@ export default function InfoboxTab({
         setSaving(true);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         router.put(
-            `/p/${projectSlug}/${blueprintSlug}/infobox`,
+            `${pageUrl(projectSlug, blueprintSlug)}/infobox`,
             {
                 infobox_schema: blocks,
             } as any,

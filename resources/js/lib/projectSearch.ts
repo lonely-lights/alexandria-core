@@ -1,4 +1,5 @@
 import type { PaletteSearchResults } from '../types/navigation';
+import { projectSearchUrl } from './urls';
 
 /**
  * Returns a CommandPalette `onSearch` callback bound to a project's
@@ -16,7 +17,7 @@ export function projectSearch(
 ): (query: string) => Promise<PaletteSearchResults> {
     return async (query) => {
         const response = await fetch(
-            `/p/${projectSlug}/search?q=${encodeURIComponent(query)}`,
+            `${projectSearchUrl(projectSlug)}?q=${encodeURIComponent(query)}`,
             {
                 headers: {
                     Accept: 'application/json',

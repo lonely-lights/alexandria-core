@@ -11,6 +11,7 @@ import ActionButton from "@alexandria/components/ui/ActionButton";
 import Tooltip from "@alexandria/components/ui/Tooltip";
 import Input from "@alexandria/components/form/Input";
 import useT from "@alexandria/hooks/useT";
+import { pageUrl, worksBase } from "@alexandria/lib/urls";
 import ArchiveEntryModal from "@alexandria/components/entries/ArchiveEntryModal";
 import MentionAwareContent from "@alexandria/components/ui/MentionAwareContent";
 import { ColumnConfigModal } from "./modals/BlueprintSettingsModal";
@@ -337,7 +338,7 @@ export default function TreeView({
 
     function saveTreeDefault(entryId: number | null) {
         setDefaultEntryId(entryId);
-        void fetch(`/p/${project.slug}/${blueprint.slug}/tree-default`, {
+        void fetch(`${pageUrl(project.slug, blueprint.slug)}/tree-default`, {
             method: "PATCH",
             headers: csrfHeaders(),
             credentials: "same-origin",
@@ -801,7 +802,7 @@ export default function TreeView({
                 <div className="grid gap-2">
                     {activeTrueRoots.map((item) => {
                         const bpSlug = item.blueprint_slug ?? blueprint.slug;
-                        const url = `/p/${project.slug}/${bpSlug}/${item.slug}`;
+                        const url = pageUrl(project.slug, bpSlug, item.slug);
                         const iconClass = item.blueprint_slug
                             ? "fa-solid fa-cube"
                             : blueprint.icon?.includes(" ")
@@ -1195,7 +1196,11 @@ export default function TreeView({
                                                 )}
                                             >
                                                 <a
-                                                    href={`/p/${project.slug}/${selected.blueprint_slug ?? blueprint.slug}/${selected.slug}`}
+                                                    href={pageUrl(
+                                                        project.slug,
+                                                        selected.blueprint_slug ?? blueprint.slug,
+                                                        selected.slug,
+                                                    )}
                                                     className="transition-colors"
                                                     style={subtitle30}
                                                 >
@@ -2175,7 +2180,7 @@ function TreeNodeRow({
                 {entry.writing_work_slug && !rearrangeMode && (
                     <Tooltip content={t("entries.show.open_in_writing")}>
                         <a
-                            href={`/works/${projectSlug}/${entry.writing_work_slug}`}
+                            href={worksBase(projectSlug, entry.writing_work_slug)}
                             title={t("entries.show.open_in_writing")}
                             aria-label={t("entries.show.open_in_writing")}
                             onClick={(e) => e.stopPropagation()}

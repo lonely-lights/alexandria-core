@@ -6,6 +6,7 @@ import Select from "@alexandria/components/form/Select";
 import { FIELD_TYPES } from "@alexandria/config/fieldTypes";
 import { useBlueprintFields } from "@alexandria/hooks/useBlueprintFields";
 import useT from "@alexandria/hooks/useT";
+import { pageUrl } from "@alexandria/lib/urls";
 import TemporalFieldConfig from "@alexandria/components/form/TemporalFieldConfig";
 import type {
     BlueprintDetail,
@@ -155,7 +156,7 @@ export default function StructureTab({
     const handleSave = useCallback(() => {
         setSaving(true);
         router.put(
-            `/p/${project.slug}/${blueprint.slug}`,
+            pageUrl(project.slug, blueprint.slug),
             {
                 name: blueprint.name,
                 description: blueprint.description ?? "",

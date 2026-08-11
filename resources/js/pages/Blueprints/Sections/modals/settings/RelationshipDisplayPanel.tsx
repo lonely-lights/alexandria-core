@@ -3,6 +3,7 @@ import { router } from "@inertiajs/react";
 
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import useT from "@alexandria/hooks/useT";
+import { pageUrl } from "@alexandria/lib/urls";
 import type { BlueprintDetail } from "@alexandria/types/blueprints";
 
 import SubtitleBuilderModal from "./SubtitleBuilderModal";
@@ -73,7 +74,7 @@ export default function RelationshipDisplayPanel({
         };
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         router.put(
-            `/p/${project.slug}/${blueprint.slug}`,
+            pageUrl(project.slug, blueprint.slug),
             {
                 name: blueprint.name,
                 description: blueprint.description ?? "",

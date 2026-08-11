@@ -8,6 +8,7 @@ import ThemePresetPicker, {
 import TokenOverrideEditor from '@alexandria/components/theming/TokenOverrideEditor';
 import useT from '@alexandria/hooks/useT';
 import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
+import { pageUrl } from '@alexandria/lib/urls';
 import type { BlueprintDetail } from '@alexandria/types/blueprints';
 
 /**
@@ -64,7 +65,7 @@ export default function BlueprintThemePanel({
 
     function applyPreset(slug: string | null) {
         router.patch(
-            `/p/${project.slug}/${blueprint.slug}/theme`,
+            `${pageUrl(project.slug, blueprint.slug)}/theme`,
             {
                 theme_preset_slug: slug,
                 theme_override: blueprint.theme_override,
@@ -75,7 +76,7 @@ export default function BlueprintThemePanel({
 
     function saveOverride(next: ThemeOverridePatch | null) {
         router.patch(
-            `/p/${project.slug}/${blueprint.slug}/theme`,
+            `${pageUrl(project.slug, blueprint.slug)}/theme`,
             {
                 theme_preset_slug: blueprint.theme_preset_slug ?? null,
                 theme_override: next as Record<string, unknown> | null,

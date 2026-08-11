@@ -2,6 +2,7 @@ import { useForm } from "@inertiajs/react";
 import { type CSSProperties, type SyntheticEvent } from "react";
 import RichTextEditor from "@alexandria/components/editor/RichTextEditor";
 import useT from "@alexandria/hooks/useT";
+import { projectUrl } from "@alexandria/lib/urls";
 import type { AiInstruction, ProjectDetail } from "@alexandria/types/projects";
 
 interface ProjectDetailsSectionProps {
@@ -52,7 +53,7 @@ export default function ProjectDetailsSection({
 
     function handleSubmit(e: SyntheticEvent) {
         e.preventDefault();
-        form.put(`/p/${project.slug}/settings`);
+        form.put(`${projectUrl(project.slug)}/settings`);
     }
 
     return (

@@ -13,6 +13,7 @@ import ActionButton from "@alexandria/components/ui/ActionButton";
 import Modal from "@alexandria/components/ui/Modal";
 import StardateInput from "@alexandria/components/fields/StardateInput";
 import MediaSection from "@alexandria/components/media/MediaSection";
+import { pageUrl } from "@alexandria/lib/urls";
 import type {
     EntryFieldReferenceConfig,
     EntryFieldReferenceEntry,
@@ -260,7 +261,7 @@ export default function EntryForm({
         const params = new URLSearchParams({ base: base.trim() });
         if (entryId) params.set("exclude", String(entryId));
         fetch(
-            `/p/${projectSlug}/${blueprintSlug}/slug-preview?${params.toString()}`,
+            `${pageUrl(projectSlug, blueprintSlug)}/slug-preview?${params.toString()}`,
             {
                 headers: {
                     Accept: "application/json",
@@ -294,9 +295,9 @@ export default function EntryForm({
 
     function handleSubmit() {
         if (mode === "create") {
-            form.post(`/p/${projectSlug}/${blueprintSlug}`);
+            form.post(pageUrl(projectSlug, blueprintSlug));
         } else {
-            form.put(`/p/${projectSlug}/${blueprintSlug}/${entrySlug}`);
+            form.put(pageUrl(projectSlug, blueprintSlug, entrySlug));
         }
     }
 
@@ -645,8 +646,8 @@ export default function EntryForm({
                         <a
                             href={
                                 mode === "edit" && entrySlug && !isStub
-                                    ? `/p/${projectSlug}/${blueprintSlug}/${entrySlug}`
-                                    : `/p/${projectSlug}/${blueprintSlug}`
+                                    ? pageUrl(projectSlug, blueprintSlug, entrySlug)
+                                    : pageUrl(projectSlug, blueprintSlug)
                             }
                             className="alex-view-toggle-btn"
                             style={cancelLinkStyle}

@@ -3,6 +3,7 @@ import { type ReactNode } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 import AdminLayout from '@alexandria/layouts/AdminLayout';
+import { projectUrl } from '@alexandria/lib/urls';
 
 /**
  * Admin landing dashboard — Stage 8c.A.
@@ -107,7 +108,7 @@ export default function AdminDashboard() {
                         {props.recentProjects.map((p) => (
                             <li key={p.id} className="flex items-center justify-between py-2 text-sm">
                                 <Link
-                                    href={`/p/${p.slug}`}
+                                    href={projectUrl(p.slug)}
                                     className="min-w-0 flex-1 truncate font-medium text-zinc-900 hover:text-rose-700 dark:text-zinc-100 dark:hover:text-rose-300"
                                 >
                                     {p.name}

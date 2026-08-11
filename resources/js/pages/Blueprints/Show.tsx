@@ -48,6 +48,7 @@ import IconTile from "@alexandria/components/ui/IconTile";
 import PageHeader from "@alexandria/components/layout/PageHeader";
 import CommandPalette from "@alexandria/components/search/CommandPalette";
 import { projectSearch } from "@alexandria/lib/projectSearch";
+import { newEntryUrl, projectUrl } from "@alexandria/lib/urls";
 import BlueprintGridBg from "@alexandria/components/backgrounds/BlueprintGridBg";
 import ViewToggle from "@alexandria/lib/views/ViewToggle";
 import { useBlueprintViews } from "@alexandria/lib/views/useBlueprintViews";
@@ -184,7 +185,7 @@ export default function BlueprintShow() {
         <AppLayout title={`${blueprint.name} - ${project.name}`} immersive>
             <PageHeader
                 breadcrumbs={[
-                    { label: project.name, href: `/p/${project.slug}` },
+                    { label: project.name, href: projectUrl(project.slug) },
                     { label: blueprint.name },
                 ]}
                 actions={
@@ -195,7 +196,7 @@ export default function BlueprintShow() {
                                 ? t("blueprints.action.new_connection")
                                 : t("blueprints.action.new_entry")
                         }
-                        href={`/p/${project.slug}/${blueprint.slug}/create`}
+                        href={newEntryUrl(project.slug, blueprint.slug)}
                         size="md"
                     />
                 }

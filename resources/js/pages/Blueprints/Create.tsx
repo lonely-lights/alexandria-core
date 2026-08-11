@@ -8,6 +8,7 @@ import type { Translator } from "@alexandria/hooks/useT";
 import { useBlueprintFields } from "@alexandria/hooks/useBlueprintFields";
 import { useSortableReorder } from "@alexandria/hooks/useSortableReorder";
 import { FIELD_TYPES } from "@alexandria/config/fieldTypes";
+import { pagesBase, projectUrl } from "@alexandria/lib/urls";
 
 interface CreateProps {
     project: {
@@ -325,7 +326,7 @@ export default function BlueprintCreate() {
             })),
             ai_instructions: aiInstructions.trim() || undefined,
         }));
-        form.post(`/p/${project.slug}/blueprints`);
+        form.post(pagesBase(project.slug));
     }
 
     return (
@@ -345,7 +346,7 @@ export default function BlueprintCreate() {
                         style={helperStyle}
                     >
                         <a
-                            href={`/p/${project.slug}`}
+                            href={projectUrl(project.slug)}
                             className="hover:underline"
                             style={helperStyle}
                         >
@@ -1072,7 +1073,7 @@ export default function BlueprintCreate() {
                 {/* Actions */}
                 <div className="mt-6 flex items-center justify-between">
                     <a
-                        href={`/p/${project.slug}`}
+                        href={projectUrl(project.slug)}
                         className="alex-btn alex-btn--ghost inline-flex items-center gap-1 px-3 py-1 text-sm"
                         style={{ borderRadius: "var(--theme-radius-button)" }}
                     >

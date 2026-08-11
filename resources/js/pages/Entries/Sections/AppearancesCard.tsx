@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import type { CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import { workUrl } from '@alexandria/lib/urls';
 import type { WorkAppearance } from '@alexandria/types/entries';
 import {
     cardOuter,
@@ -66,7 +67,7 @@ export default function AppearancesCard({
                                         style={sectionIndex > 0 ? rowDivider : undefined}
                                     >
                                         <Link
-                                            href={`/works/${projectSlug}/${group.work.slug}/${section.slug}`}
+                                            href={workUrl(projectSlug, group.work.slug, section.slug)}
                                             className="min-w-0 flex-1 truncate text-sm font-medium hover:underline"
                                             style={sectionLinkStyle}
                                         >

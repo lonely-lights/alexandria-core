@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import useT from "@alexandria/hooks/useT";
+import { pageUrl } from "@alexandria/lib/urls";
 import type {
     BlueprintDetail,
     SiblingBlueprint,
@@ -88,7 +89,7 @@ export default function BlueprintRelationshipsPanel({
                 </div>
                 <div className="min-w-0 flex-1">
                     <a
-                        href={`/p/${projectSlug}/${rb.slug}`}
+                        href={pageUrl(projectSlug, rb.slug)}
                         className="text-sm font-medium hover:underline"
                         style={isActive ? undefined : helperStyle}
                     >

@@ -2,6 +2,7 @@ import { type CSSProperties, useState } from "react";
 import { router, usePage } from "@inertiajs/react";
 import useT from "@alexandria/hooks/useT";
 import { csrfHeaders } from "@alexandria/lib/csrfHeaders";
+import { pageUrl } from "@alexandria/lib/urls";
 import type {
     BlueprintDetail,
     SiblingBlueprint,
@@ -32,7 +33,7 @@ export function TreeActivationPanel({
         setEnabled(next);
         setSaving(true);
         router.put(
-            `/p/${project.slug}/${blueprint.slug}`,
+            pageUrl(project.slug, blueprint.slug),
             {
                 name: blueprint.name,
                 description: blueprint.description ?? "",
@@ -110,7 +111,7 @@ export function TreeChildrenBlueprintsPanel({
     function save(next: number[]) {
         setSelected(next);
         setSaving(true);
-        fetch(`/p/${project.slug}/${blueprint.slug}/child-blueprints`, {
+        fetch(`${pageUrl(project.slug, blueprint.slug)}/child-blueprints`, {
             method: "PATCH",
             headers: { ...csrfHeaders(), "Content-Type": "application/json" },
             credentials: "same-origin",

@@ -6,6 +6,7 @@ import PickerDropdown from '@alexandria/components/ui/PickerDropdown';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import useT from '@alexandria/hooks/useT';
+import { notesUrl, pageUrl, projectUrl } from '@alexandria/lib/urls';
 
 type ProjectViewMode = 'grid' | 'rows' | 'table';
 const PROJECT_VIEW_STORAGE_KEY = 'dashboard:project-view';
@@ -384,7 +385,7 @@ function StatTile({ label, value, icon, accent }: { label: string; value: number
 
 function ProjectCard({ project, t }: { project: DashboardProject; t: (k: string) => string }) {
     return (
-        <a href={`/p/${project.slug}`} className="alex-dash-card group block overflow-hidden">
+        <a href={projectUrl(project.slug)} className="alex-dash-card group block overflow-hidden">
             {/* Banner band — sized to the shorter side of the golden
                 ratio against the content body below (φ ≈ 1.618), so the
                 card reads as "small banner, larger content" instead of
@@ -488,7 +489,11 @@ function RecentEntryRow({ entry, isLast }: { entry: RecentEntry; isLast: boolean
 
     return (
         <a
-            href={`/p/${entry.project_slug}/${entry.blueprint_name?.toLowerCase()}/${entry.slug}`}
+            href={pageUrl(
+                entry.project_slug,
+                entry.blueprint_name?.toLowerCase() ?? '',
+                entry.slug,
+            )}
             className="alex-dash-recent-row flex items-center gap-3 px-4 py-3"
             style={{
                 borderBottom: isLast
@@ -579,7 +584,7 @@ function RecentNoteRow({
 
     return (
         <a
-            href={`/notes/${note.project_slug}`}
+            href={notesUrl(note.project_slug)}
             className="alex-dash-recent-row flex items-center gap-3 px-4 py-3"
             style={borderStyle}
         >
@@ -784,7 +789,7 @@ function ProjectRow({ project, t }: { project: DashboardProject; t: (k: string) 
 
     return (
         <a
-            href={`/p/${project.slug}`}
+            href={projectUrl(project.slug)}
             // Mobile: flex-row, auto height, inline image + text.
             // Desktop: flex-col with 6.5rem height (banner-on-top
             // layout). The `sm:flex-col` switches direction and the
@@ -983,7 +988,7 @@ function ProjectTable({ projects, t }: { projects: DashboardProject[]; t: (k: st
                                     ? 'none'
                                     : '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)',
                             }}
-                            onClick={() => { window.location.href = `/p/${project.slug}`; }}
+                            onClick={() => { window.location.href = projectUrl(project.slug); }}
                         >
                             <td className="px-3 py-3 sm:px-4">
                                 <div className="flex items-center gap-3">
@@ -1017,7 +1022,7 @@ function ProjectTable({ projects, t }: { projects: DashboardProject[]; t: (k: st
                                     )}
                                     <div className="min-w-0">
                                         <a
-                                            href={`/p/${project.slug}`}
+                                            href={projectUrl(project.slug)}
                                             onClick={(e) => e.stopPropagation()}
                                             className="alex-dash-table-title font-serif text-sm font-bold tracking-tight truncate block sm:text-base"
                                         >

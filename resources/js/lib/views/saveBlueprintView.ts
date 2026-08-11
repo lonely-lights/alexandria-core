@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import type { FormDataConvertible } from '@inertiajs/core';
 import type { BlueprintDetail } from '@alexandria/types/blueprints';
 import type { BlueprintViewEntry } from '@alexandria/lib/views/types';
+import { pageUrl } from '@alexandria/lib/urls';
 
 /**
  * Persist a single view entry by replacing (or appending) its slot in the
@@ -20,7 +21,7 @@ export function saveBlueprintView(
     const nextViews = [...otherViews, entry];
 
     router.put(
-        `/p/${project.slug}/${blueprint.slug}`,
+        pageUrl(project.slug, blueprint.slug),
         {
             name: blueprint.name,
             description: blueprint.description ?? '',

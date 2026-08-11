@@ -54,7 +54,7 @@ function tagToString(tag: unknown): string {
  * string first. Used to gate the all-tags list so a tag in
  * `selectedTags` is hidden from the "available" list even when the
  * `/tags` endpoint returns it with different casing/whitespace than
- * `/notes/dashboard-list` did.
+ * the notes dashboard-list endpoint did.
  */
 function normalizeTag(tag: unknown): string {
     return tagToString(tag).trim().toLowerCase();

@@ -2,6 +2,7 @@ import { type CSSProperties, useEffect, useState } from "react";
 import { router } from "@inertiajs/react";
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import useT from "@alexandria/hooks/useT";
+import { pageUrl } from "@alexandria/lib/urls";
 import type {
     BlueprintDetail,
     AvailableColumn,
@@ -346,7 +347,7 @@ export function TimelineActivationPanel({
         setEnabled(next);
         setSaving(true);
         router.put(
-            `/p/${project.slug}/${blueprint.slug}`,
+            pageUrl(project.slug, blueprint.slug),
             {
                 name: blueprint.name,
                 description: blueprint.description ?? "",
@@ -479,7 +480,7 @@ export function TimelineSourcesPanel({
             timeline_sources: sources,
         };
         router.put(
-            `/p/${project.slug}/${blueprint.slug}`,
+            pageUrl(project.slug, blueprint.slug),
             {
                 name: blueprint.name,
                 description: blueprint.description ?? "",

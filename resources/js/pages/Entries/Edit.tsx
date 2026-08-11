@@ -4,6 +4,7 @@ import useT from "@alexandria/hooks/useT";
 import AppLayout from "@alexandria/layouts/AppLayout";
 import IconTile from "@alexandria/components/ui/IconTile";
 import PageHeader from "@alexandria/components/layout/PageHeader";
+import { pageUrl, projectUrl } from "@alexandria/lib/urls";
 import EntryForm from "./Sections/EntryForm";
 import { getEntryShowSlots } from "./entryShowSlots";
 
@@ -77,17 +78,17 @@ export default function EntryEdit() {
         <AppLayout title={`${editTitle} - ${project.name}`} immersive>
             <PageHeader
                 breadcrumbs={[
-                    { label: project.name, href: `/p/${project.slug}` },
+                    { label: project.name, href: projectUrl(project.slug) },
                     {
                         label: blueprint.name,
-                        href: `/p/${project.slug}/${blueprint.slug}`,
+                        href: pageUrl(project.slug, blueprint.slug),
                         icon: blueprint.icon,
                     },
                     {
                         label: entry.name,
                         href: entry.is_stub
                             ? undefined
-                            : `/p/${project.slug}/${blueprint.slug}/${entry.slug}`,
+                            : pageUrl(project.slug, blueprint.slug, entry.slug),
                     },
                     { label: t("entries.form.edit.breadcrumb") },
                 ]}

@@ -11,6 +11,7 @@ import Modal, {
 } from "@alexandria/components/ui/Modal";
 import PickerDropdown from "@alexandria/components/ui/PickerDropdown";
 import useT, { type Translator } from "@alexandria/hooks/useT";
+import { projectUrl } from "@alexandria/lib/urls";
 import type {
     ProjectDetail,
     ProjectSettings,
@@ -188,7 +189,7 @@ export default function MembersSection({
         if (isAdmin && selectedListIds.length > 0) {
             payload.list_ids = selectedListIds;
         }
-        router.post(`/p/${project.slug}/members`, payload, {
+        router.post(`${projectUrl(project.slug)}/members`, payload, {
             onSuccess: () => {
                 setShowInvite(false);
                 resetInviteForm();
@@ -203,12 +204,12 @@ export default function MembersSection({
     }
 
     function handleRemove(userId: number) {
-        router.delete(`/p/${project.slug}/members/${userId}`);
+        router.delete(`${projectUrl(project.slug)}/members/${userId}`);
     }
 
     function handleUpdateRole(userId: number) {
         router.put(
-            `/p/${project.slug}/members/${userId}/roles`,
+            `${projectUrl(project.slug)}/members/${userId}/roles`,
             { role: editRole },
             { onSuccess: () => setEditingMember(null) },
         );

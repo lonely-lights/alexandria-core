@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { router } from '@inertiajs/react';
 import Modal from '@alexandria/components/ui/Modal';
 import useT from '@alexandria/hooks/useT';
+import { projectUrl } from '@alexandria/lib/urls';
 import type { ProjectDetail } from '@alexandria/types/projects';
 
 interface DangerZoneSectionProps {
@@ -81,7 +82,7 @@ export default function DangerZoneSection({ project }: DangerZoneSectionProps) {
 
     function handleDelete() {
         setDeleting(true);
-        router.delete(`/p/${project.slug}`, {
+        router.delete(projectUrl(project.slug), {
             data: { confirmation },
             onSuccess: () => { /* redirected by controller */ },
             onError: () => setDeleting(false),
