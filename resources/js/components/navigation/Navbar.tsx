@@ -335,14 +335,7 @@ export default function Navbar({
                             {/* User Button + Dropdown
                                 Wrapper is pinned to 72px (= navbar height) so
                                 the button beneath can fill 100% and its hover
-                                BG covers the navbar edge-to-edge. Going via an
-                                explicit wrapper height (rather than putting
-                                72px on the button directly) bypasses a quirk
-                                where the avatar's 80px overflow content can
-                                push the button's effective rendered height
-                                past 72px even with `height: 72px` set, leaving
-                                an ~8px strip of bare navbar bg below the
-                                hover highlight. */}
+                                BG covers the navbar edge-to-edge. */}
                             <div
                                 className="relative min-w-0"
                                 ref={dropdownRef}
@@ -362,131 +355,55 @@ export default function Navbar({
                                         // button.
                                         borderRadius: 0,
                                         // Fill the wrapper exactly (which is
-                                        // hard-pinned at 72px above). Going
-                                        // through the wrapper means we ignore
-                                        // any auto-sizing the button might do
-                                        // based on its 80px avatar content.
+                                        // hard-pinned at 72px above);
+                                        // items-center centers the fixed-size
+                                        // avatar and text column vertically.
                                         height: "100%",
-                                        // Nudge the content (avatar + text)
-                                        // down a few px from items-center's
-                                        // pure mathematical center — visually
-                                        // the chrome reads better with a
-                                        // slight bias toward the bottom.
+                                        // Optical nudge below pure center —
+                                        // dead-center reads slightly high in
+                                        // the navbar chrome (owner-tuned).
                                         paddingTop: "0.25rem",
                                     }}
                                 >
-                                    {/* Avatar overflows below the navbar's
-                                        bottom edge for a "hanging seal" feel
-                                        at the top of the page; once the user
-                                        scrolls, it shrinks to fit inside the
-                                        navbar (scale ≈ 0.667 → effective 48px,
-                                        the original within-navbar size) and
-                                        re-centers (translateY(0)). Both
-                                        transforms interpolate smoothly with a
-                                        single transition. */}
-                                    {/* Outer wrapper owns the LAYOUT box —
-                                        width transitions from 80 (unscrolled,
-                                        full ring outerSize) to 60 (scrolled).
-                                        Layout reflows: button gets narrower,
-                                        right-side flex group shrinks under
-                                        justify-end, Search/Notes icons shift
-                                        right to maintain their right-anchored
-                                        positioning. Inner wrapper owns the
-                                        VISUAL transform — scales the actual
-                                        avatar render to fit the new box.
-                                        Origin top-left so the scaled content
-                                        fills the outer wrapper exactly
-                                        (visual top-left stays at outer
-                                        top-left); translateY(0.625rem) when
-                                        unscrolled handles the hanging-seal
-                                        overflow below the navbar. */}
-                                    <span
-                                        className="shrink-0"
-                                        style={{
-                                            // Flex items default to
-                                            // min-width/min-height: auto, which
-                                            // resolves to min-content size
-                                            // when overflow is visible. Our
-                                            // content is AvatarWithRing's 80×80
-                                            // outer (with explicit
-                                            // minWidth/minHeight set on it),
-                                            // so this flex item silently
-                                            // floors at 80×80 and ignores the
-                                            // declared `width: 60` we want
-                                            // when scrolled. Forcing min-* to
-                                            // 0 lets the explicit sizes
-                                            // actually take effect.
-                                            display: "inline-block",
-                                            minWidth: 0,
-                                            minHeight: 0,
-                                            width: scrolled ? "60px" : "80px",
-                                            height: scrolled ? "60px" : "80px",
-                                            transition:
-                                                "width var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease), height var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)",
-                                        }}
-                                    >
-                                        <span
-                                            style={{
-                                                display: "inline-block",
-                                                transform: scrolled
-                                                    ? "translateY(-0.125rem) scale(0.75)"
-                                                    : "translateY(0.625rem) scale(1)",
-                                                transformOrigin: "0 0",
-                                                transition:
-                                                    "transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)",
-                                            }}
-                                        >
-                                            <AvatarWithRing
-                                                src={
-                                                    user.has_avatar &&
-                                                    user.avatar_thumb_url
-                                                        ? user.avatar_thumb_url
-                                                        : null
-                                                }
-                                                alt={user.name ?? "User"}
-                                                initials={(
-                                                    user.display_name ??
-                                                    user.name ??
-                                                    "U"
-                                                )
-                                                    .charAt(0)
-                                                    .toUpperCase()}
-                                                size={72}
-                                                ring={
-                                                    user.avatar_ring_slug ??
-                                                    "none"
-                                                }
-                                                ringSettings={
-                                                    user.avatar_ring_settings as never
-                                                }
-                                                ringThickness={4}
-                                            />
-                                        </span>
+                                    {/* Avatar sits at a fixed 60px outer
+                                        (54px avatar + 3px ring) inside the
+                                        72px navbar — no scroll-driven size
+                                        change. The old "hanging seal"
+                                        overflow-then-shrink treatment was
+                                        retired by owner request. */}
+                                    <span className="inline-block shrink-0">
+                                        <AvatarWithRing
+                                            src={
+                                                user.has_avatar &&
+                                                user.avatar_thumb_url
+                                                    ? user.avatar_thumb_url
+                                                    : null
+                                            }
+                                            alt={user.name ?? "User"}
+                                            initials={(
+                                                user.display_name ??
+                                                user.name ??
+                                                "U"
+                                            )
+                                                .charAt(0)
+                                                .toUpperCase()}
+                                            size={54}
+                                            ring={
+                                                user.avatar_ring_slug ??
+                                                "none"
+                                            }
+                                            ringSettings={
+                                                user.avatar_ring_settings as never
+                                            }
+                                            ringThickness={3}
+                                        />
                                     </span>
-                                    {/* Text + chevron drop HALF the avatar's
-                                        translateY (0.3125rem vs the avatar's
-                                        0.625rem) when unscrolled. The full
-                                        offset reads as too low relative to
-                                        the navbar; zero offset reads as too
-                                        high relative to the dropped avatar.
-                                        Half-drop sits visually between the
-                                        navbar's center and the avatar's
-                                        hanging position. */}
                                     {/* Text + chevron hidden on mobile —
                                         avatar alone is enough affordance for
                                         the user trigger on small viewports
                                         and saves horizontal space for the
                                         action buttons to the left. */}
-                                    <span
-                                        className="hidden min-w-0 flex-col items-start leading-none sm:flex"
-                                        style={{
-                                            transform: scrolled
-                                                ? "translateY(0)"
-                                                : "translateY(0.125rem)",
-                                            transition:
-                                                "transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)",
-                                        }}
-                                    >
+                                    <span className="hidden min-w-0 flex-col items-start leading-none sm:flex">
                                         <span className="truncate max-w-[180px]">
                                             {user.display_name ??
                                                 user.name ??
@@ -507,11 +424,6 @@ export default function Navbar({
                                         className="hidden h-5 w-5 flex-shrink-0 sm:block"
                                         style={{
                                             color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
-                                            transform: scrolled
-                                                ? "translateY(0)"
-                                                : "translateY(0.125rem)",
-                                            transition:
-                                                "transform var(--theme-motion-duration-interactive, 300ms) var(--theme-motion-easing-standard, ease)",
                                         }}
                                         xmlns="http://www.w3.org/2000/svg"
                                         fill="none"
@@ -527,22 +439,13 @@ export default function Navbar({
                                     </svg>
                                 </button>
 
-                                {/* Dropdown Menu — offset varies by scroll
-                                    state because the avatar hangs ~14px below
-                                    the navbar when unscrolled (translateY +
-                                    80px outer in a 72px button) and only the
-                                    larger gap clears the ring's visual bottom.
-                                    When scrolled, the avatar shrinks + sits
-                                    inside the navbar, so the menu can hug
-                                    the navbar's bottom edge. */}
+                                {/* Dropdown Menu — the avatar stays inside
+                                    the navbar now, so the menu hugs the
+                                    navbar's bottom edge at all times. */}
                                 {dropdownOpen && (
                                     <div
                                         className="absolute right-0 top-full z-50 w-56"
-                                        style={{
-                                            marginTop: scrolled
-                                                ? "0.5rem"
-                                                : "1.25rem",
-                                        }}
+                                        style={{ marginTop: "0.5rem" }}
                                     >
                                         <UserMenuPanel
                                             userMenuItems={userMenuItems}
