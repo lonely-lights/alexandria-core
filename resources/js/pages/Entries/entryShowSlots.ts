@@ -38,6 +38,18 @@ export interface EntryShowSlotRegistry {
     pageImageManager?: ComponentType<EntryShowSlotContext>;
     /** Adds a richer page-image manager to the Entry edit form's Media card. */
     editPageImageManager?: ComponentType<EntryEditSlotContext>;
+    /**
+     * App-side actions contributed to the entry header's action cluster,
+     * rendered ahead of core's own Entry settings / Edit entry buttons so the
+     * primary edit action keeps its established rightmost position.
+     *
+     * The two image-manager slots above are Media-tab only, so a consumer had
+     * no way to put a page-level action in the header at all. This slot
+     * renders inside the existing `PageHeader actions` row on every tab; the
+     * component decides for itself whether it applies to the entry it is
+     * handed (return `null` to render nothing).
+     */
+    headerActions?: ComponentType<EntryShowSlotContext>;
 }
 
 let registeredSlots: EntryShowSlotRegistry = {};

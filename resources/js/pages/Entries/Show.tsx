@@ -192,6 +192,7 @@ export default function EntryShow() {
     const props = usePage<EntryShowProps>().props;
     const { project, blueprint, entry, contentHtml, summaryHtml, dynamicProperties, relationships, relationshipBlueprints, connections, mentions, mentionedIn, appearances, writingWork, history, infoboxBlocks, timelineEvents, timelineEpoch } = props;
     const PageImageManager = getEntryShowSlots().pageImageManager;
+    const HeaderActions = getEntryShowSlots().headerActions;
 
     const [showStructureConfig, setShowStructureConfig] = useState(false);
     const [localStructureSettings, setLocalStructureSettings] = useState<{ children_label?: string; max_depth?: number; show_as?: 'tree' | 'list' }>(
@@ -289,6 +290,9 @@ export default function EntryShow() {
                 ]}
                 actions={
                     <div className="flex items-center gap-2">
+                        {HeaderActions && (
+                            <HeaderActions project={project} blueprint={blueprint} entry={entry} pageProps={props} />
+                        )}
                         {entry.can.update && (
                             <ActionButton
                                 icon="fa-solid fa-palette"
