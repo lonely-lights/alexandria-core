@@ -39,9 +39,13 @@ export interface EntryShowSlotRegistry {
     /** Adds a richer page-image manager to the Entry edit form's Media card. */
     editPageImageManager?: ComponentType<EntryEditSlotContext>;
     /**
-     * App-side actions contributed to the entry header's action cluster,
-     * rendered ahead of core's own Entry settings / Edit entry buttons so the
-     * primary edit action keeps its established rightmost position.
+     * App-side actions contributed to the entry header's action cluster.
+     * Kept in place for future header-level consumers (nothing core ships
+     * currently registers here — "Entry settings" moved into the 3-dot menu
+     * below, and "Train this look" moved to `menuActions`) — but the row
+     * still renders ahead of core's own Edit entry button so a future
+     * consumer's action doesn't disturb Edit entry's established rightmost
+     * position.
      *
      * The two image-manager slots above are Media-tab only, so a consumer had
      * no way to put a page-level action in the header at all. This slot
@@ -50,6 +54,23 @@ export interface EntryShowSlotRegistry {
      * handed (return `null` to render nothing).
      */
     headerActions?: ComponentType<EntryShowSlotContext>;
+    /**
+     * App-side actions contributed to the entry page's existing 3-dot
+     * ("More actions") dropdown menu. Rendered as a single group directly
+     * after core's own "Entry settings" item and before the divider that
+     * opens the tab-navigation section, so app items land beside the
+     * settings action they're most related to rather than getting buried
+     * near the danger zone at the bottom.
+     *
+     * The component is responsible for rendering its own row markup matching
+     * the dropdown's existing item styling (see `DropdownMenu`'s default
+     * item classes/tokens) — it is not converted into a `DropdownMenuItem`
+     * data object, so it stays free to use its own routing (e.g. an Inertia
+     * `<Link>`) instead of the `href`/`onClick` shape. As with the other
+     * slots, the component decides for itself whether it applies to the
+     * entry it is handed (return `null` to render nothing).
+     */
+    menuActions?: ComponentType<EntryShowSlotContext>;
 }
 
 let registeredSlots: EntryShowSlotRegistry = {};

@@ -16,7 +16,19 @@ interface DropdownMenuDivider {
     divider: true;
 }
 
-type DropdownMenuEntry = DropdownMenuItem | DropdownMenuDivider;
+/**
+ * Escape hatch for a consumer-owned row (e.g. an app-contributed
+ * `menuActions` slot component) that needs to render itself — an Inertia
+ * `<Link>` with its own routing, for instance — rather than describe itself
+ * as a `DropdownMenuItem` data object. The node is expected to already match
+ * the surrounding items' visual styling; the menu only wraps it enough to
+ * close on click.
+ */
+interface DropdownMenuCustom {
+    custom: ReactNode;
+}
+
+type DropdownMenuEntry = DropdownMenuItem | DropdownMenuDivider | DropdownMenuCustom;
 
 const MENU_TRANSITION_MS = 150;
 
@@ -291,8 +303,16 @@ export default function DropdownMenu({
                     style={menuStyle}
                 >
                     {items.map((item, i) => {
-                        if (item.divider) {
+                        if ('divider' in item && item.divider) {
                             return <div key={i} style={dividerStyle} />;
+                        }
+
+                        if ('custom' in item) {
+                            return (
+                                <div key={i} className="contents" onClick={() => setOpen(false)}>
+                                    {item.custom}
+                                </div>
+                            );
                         }
 
                         return (

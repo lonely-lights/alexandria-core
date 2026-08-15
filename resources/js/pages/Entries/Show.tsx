@@ -193,6 +193,7 @@ export default function EntryShow() {
     const { project, blueprint, entry, contentHtml, summaryHtml, dynamicProperties, relationships, relationshipBlueprints, connections, mentions, mentionedIn, appearances, writingWork, history, infoboxBlocks, timelineEvents, timelineEpoch } = props;
     const PageImageManager = getEntryShowSlots().pageImageManager;
     const HeaderActions = getEntryShowSlots().headerActions;
+    const MenuActions = getEntryShowSlots().menuActions;
 
     const [showStructureConfig, setShowStructureConfig] = useState(false);
     const [localStructureSettings, setLocalStructureSettings] = useState<{ children_label?: string; max_depth?: number; show_as?: 'tree' | 'list' }>(
@@ -263,8 +264,18 @@ export default function EntryShow() {
         menuItems.push({ key: 'history', label: t('entries.show.menu.history'), icon: 'fa-solid fa-clock-rotate-left' });
     }
 
-    // Build dropdown items: tab navigation + nav links + danger zone (delete)
+    // Entry settings + any app-contributed menuActions group together at the
+    // top of the dropdown, ahead of the tab-navigation section — see the
+    // menuActions JSDoc in entryShowSlots.ts for the position doctrine.
+    const settingsItems = [
+        ...(entry.can.update ? [{ label: t('entries.show.entry_settings'), icon: 'fa-solid fa-palette', onClick: () => setSettingsOpen(true) }] : []),
+        ...(MenuActions ? [{ custom: <MenuActions project={project} blueprint={blueprint} entry={entry} pageProps={props} /> }] : []),
+    ];
+
+    // Build dropdown items: settings/app actions + tab navigation + nav links + danger zone (delete)
     const dropdownItems = [
+        ...settingsItems,
+        ...(settingsItems.length > 0 ? [{ divider: true as const }] : []),
         ...menuItems.map((item) => ({
             label: item.label,
             icon: item.icon,
@@ -292,15 +303,6 @@ export default function EntryShow() {
                     <div className="flex items-center gap-2">
                         {HeaderActions && (
                             <HeaderActions project={project} blueprint={blueprint} entry={entry} pageProps={props} />
-                        )}
-                        {entry.can.update && (
-                            <ActionButton
-                                icon="fa-solid fa-palette"
-                                label={t('entries.show.entry_settings')}
-                                onClick={() => setSettingsOpen(true)}
-                                variant="ghost"
-                                size="md"
-                            />
                         )}
                         {entry.can.update && (
                             <ActionButton
