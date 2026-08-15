@@ -308,7 +308,57 @@ reference app does this in `tests/Feature/Routing/UrlSegmentAgreementTest.php`.
 
 ---
 
-## 9. What's *not* an extension point yet
+## 9. Registering a blueprint settings section
+
+The blueprint settings modal (`Blueprints/Sections/modals/BlueprintSettingsModal.tsx`) ships a left nav of built-in panels grouped under **General**, **Data**, and **Display**. A consumer app can append its own nav item + right-hand pane without forking the modal.
+
+This mirrors the two existing frontend registries — `registerEntryShowSlots` (`pages/Entries/entryShowSlots.ts`) and `registerSettingsSlots.extraNav / extraSections` (`pages/Settings/settingsCache.ts`) — same register/get/reset shape, same "the consumer calls it once at boot" lifecycle.
+
+### API
+
+```ts
+import {
+    registerBlueprintSettingsSlots,
+    type BlueprintSettingsSlotContext,
+} from '@alexandria/pages/Blueprints/Sections/modals/settings/blueprintSettingsSlots';
+
+registerBlueprintSettingsSlots({
+    extraSections: [
+        {
+            key: 'image-training', // must not collide with a built-in key
+            icon: 'fa-solid fa-clapperboard',
+            labelKey: 'images.workbench.template.nav', // resolved with useT()
+            navGroup: 'data', // 'general' | 'data' | 'display' (default 'data')
+            isAvailable: (blueprint) => blueprint.classification === 'standard',
+            component: ImageTrainingTemplateSection,
+        },
+    ],
+});
+```
+
+### Context
+
+The section component receives `{ blueprint, project, pageProps, onClose }`. `pageProps` is the host page's Inertia props verbatim, for sections whose own controller shared data; most sections are self-contained and fetch their own payload instead, so core never has to widen the blueprint page contract.
+
+### Design fidelity
+
+A registered section owns its whole right pane. Import the same primitives the built-ins use so the chrome matches exactly:
+
+```ts
+import PanelHeader from '@alexandria/pages/Blueprints/Sections/modals/settings/PanelHeader';
+import SettingsActivationToggle from '@alexandria/pages/Blueprints/Sections/modals/settings/SettingsActivationToggle';
+import { footerDividerStyle, helperStyle } from '@alexandria/pages/Blueprints/Sections/modals/settings/settingsPanelStyles';
+```
+
+The built-in shape is `<><PanelHeader …/><div className="flex-1 overflow-y-auto p-5">…</div><footer/></>`.
+
+### Collisions and gating
+
+Keys that match a built-in panel (`columns`, `main`, `settings`, `ai`, `theme`, `media`, `fields`, `relationships`, `infobox`, `display`, `timeline`, `kanban`, `tree`, `graph`) lose — the built-in renders and the registered section never does. `isAvailable` hides the nav item entirely for blueprints the section does not apply to.
+
+---
+
+## 10. What's *not* an extension point yet
 
 The following are deliberately out of scope for `v0.1.0`. They'll likely become extension points in a later minor version, but for now consumers either copy + modify the relevant files into their own app or vendor-fork:
 

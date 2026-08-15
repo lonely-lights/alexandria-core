@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePage } from "@inertiajs/react";
 import Modal from "@alexandria/components/ui/Modal";
 import MediaSection from "@alexandria/components/media/MediaSection";
 import useT from "@alexandria/hooks/useT";
@@ -31,6 +32,8 @@ import BlueprintRelationshipsPanel from "./settings/BlueprintRelationshipsPanel"
 import ColumnsPanel from "./settings/ColumnsPanel";
 import { NavGroup, NavItem } from "./settings/Nav";
 import PanelHeader from "./settings/PanelHeader";
+import { blueprintSettingsSectionsFor } from "./settings/blueprintSettingsSlots";
+import type { BlueprintSettingsSection } from "./settings/blueprintSettingsSlots";
 import RelationshipDisplayPanel from "./settings/RelationshipDisplayPanel";
 import FieldTypesHelp from "@alexandria/components/blueprints/FieldTypesHelp";
 import HelpModal from "@alexandria/components/ui/HelpModal";
@@ -42,6 +45,28 @@ import {
     rightPaneStyle,
     titleBarStyle,
 } from "./settings/settingsPanelStyles";
+
+/**
+ * Panel keys core owns. A consumer section registered under one of these
+ * never reaches the right pane — the built-in wins, as documented on
+ * `BlueprintSettingsSection.key`.
+ */
+const BUILT_IN_PANEL_KEYS = [
+    "columns",
+    "main",
+    "settings",
+    "ai",
+    "theme",
+    "media",
+    "fields",
+    "relationships",
+    "infobox",
+    "display",
+    "timeline",
+    "kanban",
+    "tree",
+    "graph",
+];
 
 /* ── Column Configuration Modal ── */
 
@@ -94,11 +119,13 @@ export function ColumnConfigModal({
     }>;
 }) {
     const t = useT();
+    const pageProps = usePage().props as unknown as Record<string, unknown>;
 
     // In-panel help modal state (Fields panel — field type reference)
     const [showFieldsHelp, setShowFieldsHelp] = useState(false);
 
-    // Menu state
+    // Menu state. A consumer-registered section contributes its own key, so
+    // the state is a plain string that happens to accept the built-in union.
     type MenuPanel =
         | "columns"
         | "main"
@@ -114,18 +141,38 @@ export function ColumnConfigModal({
         | "kanban"
         | "tree"
         | "graph";
-    const [activeMenu, setActiveMenu] = useState<MenuPanel>(
-        (initialMenu as MenuPanel) ?? "columns",
+    const [activeMenu, setActiveMenu] = useState<MenuPanel | string>(
+        initialMenu ?? "columns",
     );
     // Sync the active menu when the modal opens with a fresh initialMenu.
     useEffect(() => {
-        if (open && initialMenu) setActiveMenu(initialMenu as MenuPanel);
+        if (open && initialMenu) setActiveMenu(initialMenu);
     }, [open, initialMenu]);
 
-    const navProps = (menu: MenuPanel) => ({
+    const navProps = (menu: MenuPanel | string) => ({
         active: activeMenu === menu,
         onClick: () => setActiveMenu(menu),
     });
+
+    // Consumer-registered sections (see settings/blueprintSettingsSlots.ts).
+    const generalSections = blueprintSettingsSectionsFor(blueprint, "general");
+    const dataSections = blueprintSettingsSectionsFor(blueprint, "data");
+    const displaySections = blueprintSettingsSectionsFor(blueprint, "display");
+    const activeSection = BUILT_IN_PANEL_KEYS.includes(activeMenu)
+        ? null
+        : ([...generalSections, ...dataSections, ...displaySections].find(
+              (section) => section.key === activeMenu,
+          ) ?? null);
+
+    const renderSectionNav = (sections: BlueprintSettingsSection[]) =>
+        sections.map((section) => (
+            <NavItem
+                key={section.key}
+                {...navProps(section.key)}
+                icon={section.icon}
+                label={t(section.labelKey)}
+            />
+        ));
 
     return (
         <Modal open={open} onClose={onClose} maxWidth="max-w-5xl">
@@ -190,6 +237,7 @@ export function ColumnConfigModal({
                                             "blueprints.bp_settings.nav.theme",
                                         )}
                                     />
+                                    {renderSectionNav(generalSections)}
                                 </NavGroup>
 
                                 <NavGroup
@@ -236,6 +284,7 @@ export function ColumnConfigModal({
                                             "blueprints.bp_settings.nav.media",
                                         )}
                                     />
+                                    {renderSectionNav(dataSections)}
                                 </NavGroup>
                             </>
                         )}
@@ -293,6 +342,7 @@ export function ColumnConfigModal({
                                         />
                                     </>
                                 )}
+                            {renderSectionNav(displaySections)}
                         </NavGroup>
                     </nav>
 
@@ -301,6 +351,20 @@ export function ColumnConfigModal({
                         className="flex flex-1 flex-col overflow-hidden"
                         style={rightPaneStyle}
                     >
+                        {/* Consumer-registered section. Checked after the
+                            built-in keys below can no longer match (a
+                            colliding key loses to core's own panel), and
+                            renders its own PanelHeader so the title band
+                            matches the built-ins exactly. */}
+                        {activeSection && blueprint && project && (
+                            <activeSection.component
+                                blueprint={blueprint}
+                                project={project}
+                                pageProps={pageProps}
+                                onClose={onClose}
+                            />
+                        )}
+
                         {/* Columns panel */}
                         {activeMenu === "columns" && (
                             <ColumnsPanel
