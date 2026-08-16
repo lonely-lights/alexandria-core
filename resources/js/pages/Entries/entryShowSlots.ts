@@ -33,6 +33,56 @@ export interface EntryEditSlotContext {
     pageProps: Record<string, unknown>;
 }
 
+/**
+ * One whole tab contributed to the Entry show page by a consumer app.
+ *
+ * Position doctrine: registered tabs render in the entry page's tab bar
+ * AFTER core's own pinned tabs (Overview, Structure, Timeline,
+ * Connections) and BEFORE the 3-dot "More options" dropdown, so an app
+ * tab never displaces the established order of core's own chrome — the
+ * same fixed, documented seat the `menuActions` slot takes inside the
+ * dropdown.
+ *
+ * Self-gating doctrine: a tab that does not apply to the entry on screen
+ * must not appear at all, and gating is the consumer's job in both
+ * layers. `isAvailable` hides the BUTTON — core cannot know whether an
+ * app tab applies to a given blueprint, and unlike a `menuActions` row
+ * the button is core's markup, so returning null from the component
+ * cannot remove it. The component itself then returns `null` for
+ * anything it will not render, exactly like the `headerActions` /
+ * `menuActions` components do.
+ *
+ * Hash routing: `key` doubles as the URL hash the entry page writes
+ * while the tab is active (`#image-training`), joining the existing tab
+ * convention. It must not collide with a core tab key (`overview`,
+ * `structure`, `attributes`, `relationships`, `connections`, `mentions`,
+ * `mentioned_in`, `media`, `history`, `timeline`) — a collision loses,
+ * because the content switch renders core's own tabs first.
+ */
+export interface EntryTab {
+    /** Stable identity: React key, hash fragment, and active-tab value. */
+    key: string;
+    /**
+     * Translation key, resolved by core with the host app's `useT()`.
+     * Registration happens at boot, outside React, so the label travels
+     * as a key rather than as resolved text — same contract as
+     * `BlueprintSettingsSection.labelKey`.
+     */
+    label: string;
+    /** Font Awesome class string, e.g. `fa-solid fa-person-rays`. */
+    icon: string;
+    /**
+     * Return false to hide the tab button for this entry. Omitted means
+     * always shown.
+     */
+    isAvailable?: (context: EntryShowSlotContext) => boolean;
+    /**
+     * The tab body, rendered inside the page's existing content
+     * container. Receives the same context every other slot gets.
+     */
+    component: ComponentType<EntryShowSlotContext>;
+}
+
 export interface EntryShowSlotRegistry {
     /** Replaces the default non-compact page-image card on the Media tab. */
     pageImageManager?: ComponentType<EntryShowSlotContext>;
@@ -71,6 +121,18 @@ export interface EntryShowSlotRegistry {
      * entry it is handed (return `null` to render nothing).
      */
     menuActions?: ComponentType<EntryShowSlotContext>;
+    /**
+     * Whole tabs contributed to the Entry show page's tab bar and content
+     * switch. Rendered only when registered; see the `EntryTab` doc block
+     * above for the position, self-gating, and hash-routing doctrine.
+     *
+     * The fifth member of the registry family (pageImageManager,
+     * editPageImageManager, headerActions, menuActions, extraTabs) and
+     * the first that contributes page-level NAVIGATION rather than an
+     * action or a card — an app feature big enough to be its own view of
+     * the entry had nowhere to land before this.
+     */
+    extraTabs?: EntryTab[];
 }
 
 let registeredSlots: EntryShowSlotRegistry = {};

@@ -31,6 +31,7 @@ import {
 import MediaSection from '@alexandria/components/media/MediaSection';
 import EntrySettingsModal from './Sections/modals/EntrySettingsModal';
 import { getEntryShowSlots } from './entryShowSlots';
+import type { EntryShowSlotContext } from './entryShowSlots';
 
 /* ── Tabs ── */
 
@@ -195,6 +196,20 @@ export default function EntryShow() {
     const HeaderActions = getEntryShowSlots().headerActions;
     const MenuActions = getEntryShowSlots().menuActions;
 
+    // App-contributed tabs. The context is the one every other slot gets;
+    // `isAvailable` decides whether the BUTTON renders at all — see the
+    // EntryTab doc block in entryShowSlots.ts for the position and
+    // self-gating doctrine.
+    const slotContext: EntryShowSlotContext = {
+        project,
+        blueprint,
+        entry,
+        pageProps: props,
+    };
+    const extraTabs = (getEntryShowSlots().extraTabs ?? []).filter(
+        (tab) => tab.isAvailable?.(slotContext) ?? true,
+    );
+
     const [showStructureConfig, setShowStructureConfig] = useState(false);
     const [localStructureSettings, setLocalStructureSettings] = useState<{ children_label?: string; max_depth?: number; show_as?: 'tree' | 'list' }>(
         (entry.metadata?.structure_settings ?? {}) as { children_label?: string; max_depth?: number; show_as?: 'tree' | 'list' },
@@ -224,9 +239,23 @@ export default function EntryShow() {
         });
     }
 
-    const [activeTab, setActiveTab] = useState<Tab>(() => {
-        const hash = window.location.hash.slice(1) as Tab;
-        const validTabs: Tab[] = ['overview', 'structure', 'attributes', 'relationships', 'connections', 'mentions', 'mentioned_in', 'history', 'timeline'];
+    // Widened from `Tab` to `string`: a registered tab's key is a
+    // consumer's word, not a member of core's own union. Every existing
+    // comparison against a literal still narrows correctly.
+    const [activeTab, setActiveTab] = useState<string>(() => {
+        const hash = window.location.hash.slice(1);
+        const validTabs: string[] = [
+            'overview',
+            'structure',
+            'attributes',
+            'relationships',
+            'connections',
+            'mentions',
+            'mentioned_in',
+            'history',
+            'timeline',
+            ...extraTabs.map((tab) => tab.key),
+        ];
         return validTabs.includes(hash) ? hash : 'overview';
     });
     const [searchOpen, setSearchOpen] = useState(false);
@@ -354,6 +383,18 @@ export default function EntryShow() {
                                 <i className="fa-solid fa-share-nodes text-xs" /> {t('entries.show.tab.connections')}
                             </button>
                         )}
+                        {extraTabs.map((tab) => (
+                            <button
+                                key={tab.key}
+                                onClick={() => setActiveTab(tab.key)}
+                                className="alex-view-toggle-btn"
+                                data-entry-extra-tab={tab.key}
+                                data-active={activeTab === tab.key ? 'true' : 'false'}
+                                style={activeTab === tab.key ? tabBtnActiveStyle : tabBtnIdleStyle}
+                            >
+                                <i className={`${tab.icon} text-xs`} /> {t(tab.label)}
+                            </button>
+                        ))}
                         {dropdownItems.length > 0 && (
                             <DropdownMenu items={dropdownItems} />
                         )}
@@ -551,6 +592,23 @@ export default function EntryShow() {
                 {activeTab === 'timeline' && (
                     <TimelineTab events={timelineEvents} epoch={timelineEpoch} />
                 )}
+                {extraTabs.map((tab) => {
+                    if (activeTab !== tab.key) {
+                        return null;
+                    }
+
+                    const TabBody = tab.component;
+
+                    return (
+                        <TabBody
+                            key={tab.key}
+                            project={project}
+                            blueprint={blueprint}
+                            entry={entry}
+                            pageProps={props}
+                        />
+                    );
+                })}
             </div>
 
             {/* Command Palette */}

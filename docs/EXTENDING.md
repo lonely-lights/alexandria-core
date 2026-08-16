@@ -358,7 +358,53 @@ Keys that match a built-in panel (`columns`, `main`, `settings`, `ai`, `theme`, 
 
 ---
 
-## 10. What's *not* an extension point yet
+## 10. Registering an entry page tab
+
+The entry show page (`pages/Entries/Show.tsx`) pins its own tabs — Overview, Structure, Timeline, Connections — and buries the rest in the 3-dot "More options" dropdown. A consumer app can contribute a whole tab of its own: a button in that bar and a body in the content switch, hash-routed like every built-in tab.
+
+This is the fifth member of the entry-page registry family (`pageImageManager`, `editPageImageManager`, `headerActions`, `menuActions`, `extraTabs`) and the first that contributes page-level *navigation* rather than an action or a card.
+
+### API
+
+```ts
+import { registerEntryShowSlots } from '@alexandria/pages/Entries/entryShowSlots';
+import type { EntryShowSlotContext } from '@alexandria/pages/Entries/entryShowSlots';
+
+registerEntryShowSlots({
+    extraTabs: [
+        {
+            key: 'image-training', // hash fragment + React key
+            label: 'images.workbench.entry_tab.label', // resolved with useT()
+            icon: 'fa-solid fa-person-rays',
+            isAvailable: ({ blueprint }) => blueprint.slug === 'character',
+            component: ImageTrainingTab,
+        },
+    ],
+});
+```
+
+### Position
+
+Registered tabs render AFTER core's own pinned tabs and BEFORE the 3-dot dropdown, so an app tab never displaces the established order of core's chrome.
+
+### Self-gating
+
+Two layers, both the consumer's:
+
+- `isAvailable(context)` hides the **button**. Core cannot know whether an app tab applies to a given blueprint, and unlike a `menuActions` row the button is core's own markup — returning null from the component cannot remove it. Omitted means always shown.
+- The **component** returns `null` for anything it will not render, exactly like `headerActions` / `menuActions` components do.
+
+### Hash routing
+
+`key` is the URL hash written while the tab is active (`#image-training`) and the value accepted from the hash on load. It must not collide with a core tab key (`overview`, `structure`, `attributes`, `relationships`, `connections`, `mentions`, `mentioned_in`, `media`, `history`, `timeline`) — a collision loses, because the content switch renders core's own tabs first.
+
+### Context
+
+The component receives the same `EntryShowSlotContext` every other entry slot gets: `{ project, blueprint, entry, pageProps }`. `pageProps` is the entry page's Inertia props verbatim. A tab whose data core does not ship fetches its own payload from a consumer-owned endpoint rather than expecting core to widen the entry page contract.
+
+---
+
+## 11. What's *not* an extension point yet
 
 The following are deliberately out of scope for `v0.1.0`. They'll likely become extension points in a later minor version, but for now consumers either copy + modify the relevant files into their own app or vendor-fork:
 
