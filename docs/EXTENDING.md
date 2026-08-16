@@ -400,6 +400,8 @@ Two layers, both the consumer's:
 
 Because the page reads the hash back as well as writing it, `window.location.hash = 'image-training'` from anywhere on the entry page activates the tab, and the browser's back/forward buttons move between tabs.
 
+A hash that names no tab is left alone: the page keeps whatever tab is open rather than falling back to Overview, so an in-page anchor or a placeholder link elsewhere on the entry page cannot knock the reader off the tab they are on. An EMPTY hash is still Overview — that is the hash the page itself writes for Overview, and reading it back is what makes Back out of a tab work.
+
 ### Tabs with no button: `hideFromTabBar`
 
 Set `hideFromTabBar: true` and the tab contributes no button to the bar at all — not even while it is the active tab. Everything else is unchanged: the hash still routes to it, and the content switch still renders its component.

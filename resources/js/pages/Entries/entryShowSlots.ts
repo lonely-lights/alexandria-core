@@ -104,6 +104,32 @@ export interface EntryTab {
     component: ComponentType<EntryShowSlotContext>;
 }
 
+/**
+ * Which tab a URL hash names, or `null` when the hash is not this page's
+ * to answer.
+ *
+ * An EMPTY hash means Overview. That is exactly what the page writes
+ * when Overview activates, so reading it back is what makes the
+ * browser's Back button walk out of a tab and land on Overview again.
+ *
+ * A hash naming a known tab — one of core's own keys, or a registered
+ * tab's `key` — means that tab.
+ *
+ * Anything else is NOT a tab instruction, and the caller must leave the
+ * active tab exactly where it is. A page carries other people's
+ * fragments: an `href="#section"` anchor into prose, a placeholder link
+ * in a sidebar, a third-party widget's own hash. Reading those as "no
+ * tab named, so fall back to Overview" would yank the reader off the tab
+ * they were on the moment one of them was clicked.
+ */
+export function resolveTabFromHash(hash: string, validTabs: string[]): string | null {
+    if (hash === "") {
+        return "overview";
+    }
+
+    return validTabs.includes(hash) ? hash : null;
+}
+
 export interface EntryShowSlotRegistry {
     /** Replaces the default non-compact page-image card on the Media tab. */
     pageImageManager?: ComponentType<EntryShowSlotContext>;

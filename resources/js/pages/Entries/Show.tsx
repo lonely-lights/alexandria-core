@@ -30,7 +30,7 @@ import {
 } from '@alexandria/lib/urls';
 import MediaSection from '@alexandria/components/media/MediaSection';
 import EntrySettingsModal from './Sections/modals/EntrySettingsModal';
-import { getEntryShowSlots } from './entryShowSlots';
+import { getEntryShowSlots, resolveTabFromHash } from './entryShowSlots';
 import type { EntryShowSlotContext } from './entryShowSlots';
 
 /* ── Tabs ── */
@@ -271,10 +271,9 @@ export default function EntryShow() {
     const validTabsRef = useRef(validTabs);
     validTabsRef.current = validTabs;
 
-    const [activeTab, setActiveTab] = useState<string>(() => {
-        const hash = window.location.hash.slice(1);
-        return validTabs.includes(hash) ? hash : 'overview';
-    });
+    const [activeTab, setActiveTab] = useState<string>(
+        () => resolveTabFromHash(window.location.hash.slice(1), validTabs) ?? 'overview',
+    );
     const [searchOpen, setSearchOpen] = useState(false);
     // Stage 8b M3 — Entry settings modal (theme override panel).
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -294,11 +293,17 @@ export default function EntryShow() {
     // the tab they name. It is also the only door a registered tab with
     // `hideFromTabBar` has — that tab contributes no button, so its
     // consumer's own affordance navigates to the hash and arrives here.
+    //
+    // A hash that names no tab is somebody else's fragment and leaves the
+    // active tab alone — see resolveTabFromHash for why that is not the
+    // same thing as an empty hash.
     useEffect(() => {
         function activateFromHash() {
-            const hash = window.location.hash.slice(1);
+            const named = resolveTabFromHash(window.location.hash.slice(1), validTabsRef.current);
 
-            setActiveTab(validTabsRef.current.includes(hash) ? hash : 'overview');
+            if (named !== null) {
+                setActiveTab(named);
+            }
         }
 
         window.addEventListener('hashchange', activateFromHash);
