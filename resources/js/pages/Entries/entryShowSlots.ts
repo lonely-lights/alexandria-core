@@ -57,7 +57,18 @@ export interface EntryEditSlotContext {
  * convention. It must not collide with a core tab key (`overview`,
  * `structure`, `attributes`, `relationships`, `connections`, `mentions`,
  * `mentioned_in`, `media`, `history`, `timeline`) — a collision loses,
- * because the content switch renders core's own tabs first.
+ * because the content switch renders core's own tabs first. The page
+ * both writes the hash when a tab activates and listens for a hash it
+ * did not write, so navigating to `#<key>` from anywhere — a link, a
+ * consumer's own menu row, the browser's history buttons — activates
+ * the tab.
+ *
+ * Bar-less tabs: `hideFromTabBar` keeps the whole surface but drops the
+ * button, for a feature whose door belongs somewhere else (a
+ * `menuActions` row, a card's link). Everything else is unchanged — the
+ * hash still routes to it and the content switch still renders it — so
+ * the consumer's own affordance navigates to `#<key>` and the tab
+ * appears with no pill ever lighting up in the bar.
  */
 export interface EntryTab {
     /** Stable identity: React key, hash fragment, and active-tab value. */
@@ -76,6 +87,16 @@ export interface EntryTab {
      * always shown.
      */
     isAvailable?: (context: EntryShowSlotContext) => boolean;
+    /**
+     * Render no button in the tab bar at all — not even while the tab is
+     * the active one. The tab still exists in every other respect: the
+     * hash routes to it and the content switch renders it. Use this when
+     * the feature's door lives elsewhere (a `menuActions` row, a link
+     * from a card) and a second, permanently-visible entrance in core's
+     * chrome would be noise. Omitted means the button renders, gated by
+     * `isAvailable`.
+     */
+    hideFromTabBar?: boolean;
     /**
      * The tab body, rendered inside the page's existing content
      * container. Receives the same context every other slot gets.

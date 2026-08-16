@@ -396,7 +396,36 @@ Two layers, both the consumer's:
 
 ### Hash routing
 
-`key` is the URL hash written while the tab is active (`#image-training`) and the value accepted from the hash on load. It must not collide with a core tab key (`overview`, `structure`, `attributes`, `relationships`, `connections`, `mentions`, `mentioned_in`, `media`, `history`, `timeline`) — a collision loses, because the content switch renders core's own tabs first.
+`key` is the URL hash written while the tab is active (`#image-training`) and the value accepted from the hash — on load, and on every later `hashchange`. It must not collide with a core tab key (`overview`, `structure`, `attributes`, `relationships`, `connections`, `mentions`, `mentioned_in`, `media`, `history`, `timeline`) — a collision loses, because the content switch renders core's own tabs first.
+
+Because the page reads the hash back as well as writing it, `window.location.hash = 'image-training'` from anywhere on the entry page activates the tab, and the browser's back/forward buttons move between tabs.
+
+### Tabs with no button: `hideFromTabBar`
+
+Set `hideFromTabBar: true` and the tab contributes no button to the bar at all — not even while it is the active tab. Everything else is unchanged: the hash still routes to it, and the content switch still renders its component.
+
+```ts
+registerEntryShowSlots({
+    extraTabs: [
+        {
+            key: 'image-training',
+            label: 'images.workbench.entry_tab.label',
+            icon: 'fa-solid fa-person-rays',
+            isAvailable: ({ blueprint }) => blueprint.slug === 'character',
+            hideFromTabBar: true,
+            component: ImageTrainingTab,
+        },
+    ],
+});
+```
+
+Use it when the feature already has a door somewhere better — a `menuActions` row, a link on a card — and a second, permanently-visible entrance in core's chrome would only be noise. The consumer's own affordance then does the navigating:
+
+```tsx
+<button onClick={() => (window.location.hash = 'image-training')}>…</button>
+```
+
+`label` and `icon` are still required, and still worth setting honestly: they are what a future surface (a jump list, a command palette entry) would show, and `label` is the string a test asserts is absent from the bar.
 
 ### Context
 

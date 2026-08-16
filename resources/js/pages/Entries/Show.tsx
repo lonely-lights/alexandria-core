@@ -37,6 +37,27 @@ import type { EntryShowSlotContext } from './entryShowSlots';
 
 type Tab = 'overview' | 'structure' | 'attributes' | 'relationships' | 'connections' | 'mentions' | 'mentioned_in' | 'media' | 'history' | 'timeline';
 
+/**
+ * Core's own hash-routable tab keys; a registered tab's key joins them.
+ * Every value `setActiveTab` can be given must be here, because the hash
+ * is now read back as well as written — a key missing from this list is a
+ * tab the page would bounce off to Overview the moment its own hash sync
+ * fired. (`media` was missing from the old inline list, which only went
+ * unnoticed because nothing read the hash after load.)
+ */
+const CORE_TAB_KEYS: string[] = [
+    'overview',
+    'structure',
+    'attributes',
+    'relationships',
+    'connections',
+    'mentions',
+    'mentioned_in',
+    'media',
+    'history',
+    'timeline',
+];
+
 /* ── Theme-token style recipes ──
    Tab buttons + structure-settings popover repaint from --theme-*
    tokens so preset swaps reach this chrome alongside the rest. */
@@ -197,7 +218,9 @@ export default function EntryShow() {
     const MenuActions = getEntryShowSlots().menuActions;
 
     // App-contributed tabs. The context is the one every other slot gets;
-    // `isAvailable` decides whether the BUTTON renders at all — see the
+    // `isAvailable` decides whether the tab exists here at all, and
+    // `hideFromTabBar` (applied where the buttons render, not here) drops
+    // the button while keeping the hash route and the body — see the
     // EntryTab doc block in entryShowSlots.ts for the position and
     // self-gating doctrine.
     const slotContext: EntryShowSlotContext = {
@@ -242,20 +265,14 @@ export default function EntryShow() {
     // Widened from `Tab` to `string`: a registered tab's key is a
     // consumer's word, not a member of core's own union. Every existing
     // comparison against a literal still narrows correctly.
+    const validTabs: string[] = [...CORE_TAB_KEYS, ...extraTabs.map((tab) => tab.key)];
+    // Read by the hashchange listener below, which is registered once and
+    // must not go stale when a registration changes the key list.
+    const validTabsRef = useRef(validTabs);
+    validTabsRef.current = validTabs;
+
     const [activeTab, setActiveTab] = useState<string>(() => {
         const hash = window.location.hash.slice(1);
-        const validTabs: string[] = [
-            'overview',
-            'structure',
-            'attributes',
-            'relationships',
-            'connections',
-            'mentions',
-            'mentioned_in',
-            'history',
-            'timeline',
-            ...extraTabs.map((tab) => tab.key),
-        ];
         return validTabs.includes(hash) ? hash : 'overview';
     });
     const [searchOpen, setSearchOpen] = useState(false);
@@ -270,6 +287,24 @@ export default function EntryShow() {
     useEffect(() => {
         window.location.hash = activeTab === 'overview' ? '' : `#${activeTab}`;
     }, [activeTab]);
+
+    // ...and read it back. The effect above writes the hash when a tab
+    // activates; this listens for a hash this page did not write, so the
+    // browser's history buttons and any in-page link to `#<key>` land on
+    // the tab they name. It is also the only door a registered tab with
+    // `hideFromTabBar` has — that tab contributes no button, so its
+    // consumer's own affordance navigates to the hash and arrives here.
+    useEffect(() => {
+        function activateFromHash() {
+            const hash = window.location.hash.slice(1);
+
+            setActiveTab(validTabsRef.current.includes(hash) ? hash : 'overview');
+        }
+
+        window.addEventListener('hashchange', activateFromHash);
+
+        return () => window.removeEventListener('hashchange', activateFromHash);
+    }, []);
 
     useCmdK(useCallback(() => setSearchOpen(true), []));
 
@@ -383,7 +418,7 @@ export default function EntryShow() {
                                 <i className="fa-solid fa-share-nodes text-xs" /> {t('entries.show.tab.connections')}
                             </button>
                         )}
-                        {extraTabs.map((tab) => (
+                        {extraTabs.filter((tab) => !tab.hideFromTabBar).map((tab) => (
                             <button
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key)}
