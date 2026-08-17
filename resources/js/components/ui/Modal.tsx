@@ -83,14 +83,30 @@ export default function Modal({
 export function ModalHeader({
     title,
     onClose,
+    tone = 'default',
 }: {
-    title: string;
+    /** Plain text, or rich content (e.g. a name plus a badge). */
+    title: ReactNode;
     onClose: () => void;
+    /**
+     * 'default' is the plain bordered bar; 'secondary' tints the bar with
+     * the theme's secondary hue for headers that want to stand out.
+     */
+    tone?: 'default' | 'secondary';
 }) {
     return (
         <div
             className="flex items-center justify-between px-6 py-4"
-            style={{ borderBottom: '1px solid var(--theme-base-400)' }}
+            style={{
+                borderBottom:
+                    tone === 'secondary'
+                        ? '1px solid color-mix(in srgb, var(--theme-brand-secondary-500) 30%, transparent)'
+                        : '1px solid var(--theme-base-400)',
+                background:
+                    tone === 'secondary'
+                        ? 'color-mix(in srgb, var(--theme-brand-secondary-500) 16%, transparent)'
+                        : undefined,
+            }}
         >
             <h3
                 className="text-lg font-bold"
