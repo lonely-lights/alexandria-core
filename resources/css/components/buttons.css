@@ -140,7 +140,11 @@
 }
 
 .alex-btn--accent:hover:not(:disabled) {
-    background: var(--theme-brand-accent-600);
+    /* A gentle lift, not a palette step down — accent-600 lands a whole
+       shade darker and reads as the button dimming under the cursor
+       (owner ruling, 2026-08-20, the Generate All confirm). Mixing
+       toward white keeps the hover direction "brighter" on every preset. */
+    background: color-mix(in srgb, var(--theme-brand-accent-500) 85%, white);
 }
 
 .alex-btn--danger:hover:not(:disabled) {
