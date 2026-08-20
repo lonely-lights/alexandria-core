@@ -77,6 +77,7 @@ return [
     'show.delete.title' => 'Delete Entry?',
     'show.delete.message' => 'Delete ":name"? It will be removed from this project.',
     'show.delete.confirm' => 'Delete',
+    'show.delete.failed' => 'This entry could not be deleted.',
 
     // ── Entry Settings modal (Stage 8b M3) ──
     'entry_settings.title' => 'Entry Settings —',

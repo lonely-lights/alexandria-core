@@ -6,6 +6,7 @@ import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import CommandPalette from '@alexandria/components/search/CommandPalette';
 import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
+import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 import { projectSearch } from '@alexandria/lib/projectSearch';
 import MentionAwareContent from '@alexandria/components/ui/MentionAwareContent';
 import ActionButton from '@alexandria/components/ui/ActionButton';
@@ -206,6 +207,55 @@ const saveBtnStyle: CSSProperties = {
     background: 'var(--theme-brand-primary-500)',
     color: 'var(--theme-brand-primary-content)',
 };
+
+/* ── Delete confirm ──
+   Its own component so useToastContext resolves: rendered inside
+   AppLayout's ToastProvider, unlike the page body above it. The host app
+   may refuse the delete (an entry still anchoring other data) — the
+   refusal's reason lands as a toast instead of the confirm hanging
+   silently. */
+
+function DeleteEntryConfirm({
+    open,
+    onClose,
+    entryName,
+    deleteUrl,
+    t,
+}: {
+    open: boolean;
+    onClose: () => void;
+    entryName: string;
+    deleteUrl: string;
+    t: (key: string) => string;
+}) {
+    const toast = useToastContext();
+
+    return (
+        <ConfirmModal
+            open={open}
+            onClose={onClose}
+            onConfirm={() => {
+                router.delete(deleteUrl, {
+                    onSuccess: onClose,
+                    onError: (errors) => {
+                        onClose();
+                        const reason = Object.values(errors)[0];
+                        toast.show(
+                            typeof reason === 'string' && reason !== ''
+                                ? reason
+                                : t('entries.show.delete.failed'),
+                            { type: 'danger', duration: 8000 },
+                        );
+                    },
+                });
+            }}
+            title={t('entries.show.delete.title')}
+            message={t('entries.show.delete.message').replace(':name', entryName)}
+            confirmLabel={t('entries.show.delete.confirm')}
+            variant="danger"
+        />
+    );
+}
 
 /* ── Page ── */
 
@@ -668,18 +718,12 @@ export default function EntryShow() {
             />
 
             {/* Delete confirmation — dropdown danger item → confirm → entries.destroy. */}
-            <ConfirmModal
+            <DeleteEntryConfirm
                 open={deleteOpen}
                 onClose={() => setDeleteOpen(false)}
-                onConfirm={() => {
-                    router.delete(pageUrl(project.slug, blueprint.slug, entry.slug), {
-                        onSuccess: () => setDeleteOpen(false),
-                    });
-                }}
-                title={t('entries.show.delete.title')}
-                message={t('entries.show.delete.message').replace(':name', entry.name)}
-                confirmLabel={t('entries.show.delete.confirm')}
-                variant="danger"
+                entryName={entry.name}
+                deleteUrl={pageUrl(project.slug, blueprint.slug, entry.slug)}
+                t={t}
             />
         </AppLayout>
     );
