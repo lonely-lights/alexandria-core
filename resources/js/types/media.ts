@@ -1,6 +1,12 @@
 export interface MediaItem {
     id: number;
     collection: 'page_image' | 'banner' | 'gallery';
+    /** 'generated' marks an Image Studio render surfaced read-only in the
+     *  gallery via the likeness link (2026-08-23). */
+    source?: 'generated';
+    /** The GeneratedImage id behind a 'generated' item (for its gated
+     *  file URL). */
+    render_id?: number;
     file_name: string;
     mime_type: string;
     size: number;

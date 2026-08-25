@@ -115,6 +115,9 @@ export interface EntryShowEntry {
     has_children: boolean;
     children_count: number;
     thumbnail_url: string | null;
+    /** The entry's OWN page image (null when inherited from
+     *  blueprint/project) — shown in the infobox at its real ratio. */
+    own_photo: { url: string; width: number; height: number } | null;
     created_at: string | null;
     updated_at: string | null;
     can: {

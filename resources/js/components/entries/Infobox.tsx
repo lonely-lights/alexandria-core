@@ -16,6 +16,10 @@ import type {
 interface InfoboxProps {
     blocks: InfoboxBlock[];
     entryName: string;
+    /** The entry's own page image (null when inherited/none). Shown
+     *  below the name at its real ratio, capped so it never dominates
+     *  the panel. */
+    photo?: { url: string; width: number; height: number } | null;
 }
 
 /* ── Theme tokens ──
@@ -36,7 +40,7 @@ const PILL_STYLE: CSSProperties = {
 
 /* ── Component ── */
 
-export default function Infobox({ blocks, entryName }: InfoboxProps) {
+export default function Infobox({ blocks, entryName, photo }: InfoboxProps) {
     if (blocks.length === 0) {
         return null;
     }
@@ -62,10 +66,24 @@ export default function Infobox({ blocks, entryName }: InfoboxProps) {
         <div className="paper-board" style={wrapperStyle}>
             <div className="overflow-hidden" style={panelStyle}>
                 {/* Entry name */}
-                <div className="px-4 py-4 text-center" style={headerStyle}>
+                <div className="px-4 pt-4 pb-3 text-center" style={headerStyle}>
                     <h2 className="text-lg font-bold tracking-tight">
                         {entryName}
                     </h2>
+
+                    {/* The entry's own photo, at its real ratio. w-auto +
+                        max-h keep it thumbnailed and never excessive: a
+                        landscape fills the width, a tall portrait caps its
+                        height and centers. */}
+                    {photo && (
+                        <img
+                            src={photo.url}
+                            alt={entryName}
+                            width={photo.width}
+                            height={photo.height}
+                            className="mx-auto mt-3 block h-auto max-h-72 w-auto max-w-full rounded-lg shadow-sm"
+                        />
+                    )}
                 </div>
 
                 {/* Blocks */}

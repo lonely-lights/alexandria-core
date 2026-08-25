@@ -49,7 +49,11 @@ export default function OverviewTab({ contentHtml, entry, infoboxBlocks }: Overv
                     own styling is preserved. */}
                 {hasInfobox && (
                     <div className="float-right mb-6 ml-8 hidden w-[30%] md:block">
-                        <Infobox blocks={infoboxBlocks} entryName={entry.name} />
+                        <Infobox
+                            blocks={infoboxBlocks}
+                            entryName={entry.name}
+                            photo={entry.own_photo}
+                        />
                     </div>
                 )}
 

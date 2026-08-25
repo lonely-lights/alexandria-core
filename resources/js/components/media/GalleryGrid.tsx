@@ -8,6 +8,9 @@ interface GalleryImage {
     conversions: Record<string, string>;
     alt_text: string | null;
     caption: string | null;
+    /** An Image Studio render surfaced read-only in the gallery
+     *  (likeness link, 2026-08-23) — managed in the studio, not here. */
+    source?: 'generated';
 }
 
 interface GalleryGridProps {
@@ -187,54 +190,70 @@ export default function GalleryGrid({ images, modelType, modelId, onChanged }: G
                                 className="h-full w-full object-cover"
                             />
 
-                            {/* Hover overlay */}
-                            <div
-                                className="opacity-0 transition-opacity group-hover:opacity-100"
-                                style={overlayStyle}
-                            >
-                                <button
-                                    type="button"
-                                    className="alex-gallery-overlay-btn"
-                                    style={overlayBtnBase}
-                                    disabled={isPromotingPage}
-                                    onClick={() => handlePromote(image, 'page_image')}
-                                    title="Use this image as the entry's page image"
+                            {/* Hover overlay. A generated render is a
+                                read-only reference here (managed in the
+                                Image Studio), so it carries a Studio badge
+                                instead of the promote/edit/delete controls. */}
+                            {image.source === 'generated' ? (
+                                <span
+                                    className="absolute top-2 left-2 rounded-full px-2 py-1 text-[10px] font-bold tracking-wide uppercase"
+                                    style={{
+                                        background:
+                                            'color-mix(in srgb, var(--theme-base-100) 88%, transparent)',
+                                        color: 'var(--theme-base-content)',
+                                    }}
                                 >
-                                    {isPromotingPage
-                                        ? <i className="fa-solid fa-circle-notch fa-spin" style={spinnerStyle} />
-                                        : 'Use as page'}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="alex-gallery-overlay-btn"
-                                    style={overlayBtnBase}
-                                    disabled={isPromotingBanner}
-                                    onClick={() => handlePromote(image, 'banner')}
-                                    title="Use this image as the entry's banner"
+                                    Studio
+                                </span>
+                            ) : (
+                                <div
+                                    className="opacity-0 transition-opacity group-hover:opacity-100"
+                                    style={overlayStyle}
                                 >
-                                    {isPromotingBanner
-                                        ? <i className="fa-solid fa-circle-notch fa-spin" style={spinnerStyle} />
-                                        : 'Use as banner'}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="alex-gallery-overlay-btn"
-                                    style={overlayBtnBase}
-                                    onClick={() => setEditingId(isEditing ? null : image.id)}
-                                >
-                                    Edit
-                                </button>
-                                <button
-                                    type="button"
-                                    style={overlayBtnDangerStyle}
-                                    disabled={isDeleting}
-                                    onClick={() => handleDelete(image)}
-                                >
-                                    {isDeleting
-                                        ? <i className="fa-solid fa-circle-notch fa-spin" style={spinnerStyle} />
-                                        : 'Delete'}
-                                </button>
-                            </div>
+                                    <button
+                                        type="button"
+                                        className="alex-gallery-overlay-btn"
+                                        style={overlayBtnBase}
+                                        disabled={isPromotingPage}
+                                        onClick={() => handlePromote(image, 'page_image')}
+                                        title="Use this image as the entry's page image"
+                                    >
+                                        {isPromotingPage
+                                            ? <i className="fa-solid fa-circle-notch fa-spin" style={spinnerStyle} />
+                                            : 'Use as page'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="alex-gallery-overlay-btn"
+                                        style={overlayBtnBase}
+                                        disabled={isPromotingBanner}
+                                        onClick={() => handlePromote(image, 'banner')}
+                                        title="Use this image as the entry's banner"
+                                    >
+                                        {isPromotingBanner
+                                            ? <i className="fa-solid fa-circle-notch fa-spin" style={spinnerStyle} />
+                                            : 'Use as banner'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="alex-gallery-overlay-btn"
+                                        style={overlayBtnBase}
+                                        onClick={() => setEditingId(isEditing ? null : image.id)}
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        style={overlayBtnDangerStyle}
+                                        disabled={isDeleting}
+                                        onClick={() => handleDelete(image)}
+                                    >
+                                        {isDeleting
+                                            ? <i className="fa-solid fa-circle-notch fa-spin" style={spinnerStyle} />
+                                            : 'Delete'}
+                                    </button>
+                                </div>
+                            )}
 
                             {/* Alt text overlay at bottom */}
                             {image.alt_text && (
