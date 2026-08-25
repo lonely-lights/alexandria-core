@@ -196,11 +196,15 @@ export default function FlowSection({
                 )
             )}
 
-            {/* A scene with words shows its name above them — the
-                ornament alone left running text unattributed (owner
-                ruling). Leaves only: containers already print their
-                heading, and doubling it would read as a stutter. */}
-            {showEditor && !isContainer && (
+            {/* A scene shows its name above it — the ornament alone left
+                the sheet unattributed (owner ruling). This holds even for
+                an empty, unwritten section (owner ruling 2026-08-20): the
+                title stays over the "Begin writing…" ghost so the writer
+                still knows which section it is. Leaves only — containers
+                already print their heading, and doubling it would stutter.
+                Read-only viewers still get nothing over an empty section
+                (no ghost, nothing to attribute). */}
+            {!isContainer && section !== null && (showEditor || canUpdate) && (
                 <h3
                     data-flow-section-title=""
                     className="pt-2 pb-1 text-center text-sm font-semibold tracking-wide select-none"

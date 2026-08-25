@@ -310,9 +310,19 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
    for a sheet that has no content yet — share one definition of how wide
    a page is. Both selectors keep their own specificity, so the rules
    below still layer over this exactly as they did. */
+/* Full-bleed sheet — owner ruling 2026-08-20: the page always fills the
+   pane (minus a slim desk gutter) and reflows with the rail opening or
+   closing. No fixed reading-measure cap; pagination stays Letter-true
+   because the page-break math is proportional to the sheet's rendered
+   width (see the print-layout note below). */
 .rte-manuscript .tiptap-editor .ProseMirror,
 .alex-sheet-footprint {
-    max-width: min(60rem, calc(100% - 3rem));
+    /* Definite width (not just max-width): the active section's editor is
+       a direct flex child, where `margin-inline: auto` would otherwise
+       shrink a short sheet to its content instead of filling the pane. A
+       set width fills every time and margin-auto still centers the gutter. */
+    width: calc(100% - 3rem);
+    max-width: calc(100% - 3rem);
     margin-inline: auto;
 }
 
@@ -358,6 +368,7 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
 @media (max-width: 640px) {
     .rte-manuscript .tiptap-editor .ProseMirror,
     .alex-sheet-footprint {
+        width: calc(100% - 1.5rem);
         max-width: calc(100% - 1.5rem);
     }
 

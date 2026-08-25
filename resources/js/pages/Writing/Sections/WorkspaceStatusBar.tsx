@@ -78,6 +78,28 @@ const metaTextStyle: CSSProperties = {
     color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
 };
 
+/* ── Shared mini progress bar (work tracker + per-section tracker) ── */
+
+function MiniProgressBar({ ratio, widthClass = 'w-32' }: { ratio: number; widthClass?: string }) {
+    return (
+        <div
+            aria-hidden="true"
+            className={`h-1 ${widthClass} shrink-0 overflow-hidden rounded-full`}
+            style={{
+                background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+            }}
+        >
+            <div
+                className="h-full rounded-full"
+                style={{
+                    width: `${Math.min(100, ratio * 100)}%`,
+                    background: 'var(--theme-brand-primary-500)',
+                }}
+            />
+        </div>
+    );
+}
+
 /* ── Work progress (the old ribbon trailing cluster's bar + counts) ── */
 
 function WorkProgress({ work, workWords }: { work: StatusBarWork; workWords: number }) {
@@ -110,23 +132,7 @@ function WorkProgress({ work, workWords }: { work: StatusBarWork; workWords: num
 
     return (
         <>
-            {progressRatio !== null && (
-                <div
-                    aria-hidden="true"
-                    className="h-1 w-32 shrink-0 overflow-hidden rounded-full"
-                    style={{
-                        background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
-                    }}
-                >
-                    <div
-                        className="h-full rounded-full"
-                        style={{
-                            width: `${Math.min(100, progressRatio * 100)}%`,
-                            background: 'var(--theme-brand-primary-500)',
-                        }}
-                    />
-                </div>
-            )}
+            {progressRatio !== null && <MiniProgressBar ratio={progressRatio} />}
             <span className="shrink-0 tabular-nums" style={metaTextStyle}>
                 {countLabel}
             </span>
@@ -148,11 +154,19 @@ export default function WorkspaceStatusBar({
 }: WorkspaceStatusBarProps) {
     const t = useT();
 
-    // The exact strings SectionChrome's footer used.
+    // Labeled "Section: …" so the current-section count reads distinctly
+    // from the work total that sits beside it in the bar.
     const sectionWordsLabel =
         sectionTarget !== null
-            ? `${t('writing.workspace.words').replace(':count', sectionWords.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', sectionTarget.toLocaleString())}`
-            : t('writing.workspace.words').replace(':count', sectionWords.toLocaleString());
+            ? t('writing.workspace.section_words_of_target')
+                  .replace(':count', sectionWords.toLocaleString())
+                  .replace(':target', sectionTarget.toLocaleString())
+            : t('writing.workspace.section_words').replace(':count', sectionWords.toLocaleString());
+
+    // A per-section tracker bar that mirrors the work tracker — only when
+    // the section carries its own word target.
+    const sectionRatio =
+        sectionTarget !== null && sectionTarget > 0 ? sectionWords / sectionTarget : null;
 
     return (
         <div className="h-8 shrink-0 px-4 text-xs" style={barStyle}>
@@ -173,6 +187,9 @@ export default function WorkspaceStatusBar({
                 <div className="flex-1" />
                 {hasSection && (
                     <>
+                        {sectionRatio !== null && (
+                            <MiniProgressBar ratio={sectionRatio} widthClass="w-20" />
+                        )}
                         <span className="shrink-0 tabular-nums" style={metaTextStyle}>
                             {sectionWordsLabel}
                             {sectionFormat === 'screenplay' && sectionPages !== null && sectionWords > 0 && (

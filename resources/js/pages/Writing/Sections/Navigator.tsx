@@ -628,6 +628,7 @@ function NavigatorRow({
                     <span
                         className="shrink-0 text-[11px] tabular-nums"
                         style={wordCountStyle}
+                        title={t('writing.workspace.words').replace(':count', wordCount.toLocaleString())}
                     >
                         {wordCount.toLocaleString()}
                     </span>
