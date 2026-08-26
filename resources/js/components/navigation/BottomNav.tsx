@@ -34,10 +34,12 @@ export default function BottomNav({ tabs }: BottomNavProps) {
                     // treat that strip as system chrome, so it gets its own
                     // pure-black underlay below and the bar itself stays a
                     // compact row with a light symmetric pad.
+                    // The vertical breathing room lives INSIDE each Tab
+                    // (py-1.5), not here: padding on the shell left a gap
+                    // above/below the active tab's highlight fill, which
+                    // should span the bar's full height (owner, 2026-08-26).
                     bottom: "env(safe-area-inset-bottom, 0px)",
-                    minHeight: "4rem",
-                    paddingTop: "0.375rem",
-                    paddingBottom: "0.375rem",
+                    minHeight: "4.75rem",
                     // base-chrome is the elevated-chrome surface (darker than
                     // page in light mode, lighter in dark) — same role as
                     // the top navbar. The base ramp flips direction per mode
@@ -95,7 +97,7 @@ function Tab({ tab, active }: TabProps) {
     const backgroundVar = active ? ACTIVE_BG : "transparent";
 
     const className =
-        "flex flex-1 flex-col items-center justify-center gap-1 text-center no-underline transition-colors";
+        "flex flex-1 flex-col items-center justify-center gap-1 py-1.5 text-center no-underline transition-colors";
 
     const inner = (
         <>
