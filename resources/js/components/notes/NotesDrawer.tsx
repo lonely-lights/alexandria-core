@@ -143,6 +143,9 @@ const bodyText: CSSProperties = {
 
 const drawerBgStyle: CSSProperties = {
     background: "var(--theme-base-100)",
+    // With viewport-fit=cover the page extends under the home indicator;
+    // the sheet's bottom rows must clear it (0 on notch-less devices).
+    paddingBottom: "env(safe-area-inset-bottom)",
 };
 
 const headerStyle: CSSProperties = {
