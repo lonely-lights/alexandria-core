@@ -24,41 +24,47 @@ export default function BottomNav({ tabs }: BottomNavProps) {
     const url = usePage().url;
 
     return (
-        <nav
-            aria-label="Primary mobile navigation"
-            className="fixed inset-x-0 bottom-0 z-40 flex items-stretch lg:hidden"
-            style={{
-                // `min-height` (not fixed `height`) so the nav grows by
-                // the safe-area allowance on iPhones with a home
-                // indicator — a fixed height would let the padding eat
-                // INTO the icon row. The bottom takes PARTIAL credit for
-                // env(safe-area-inset-bottom) (full ~34px read as dead
-                // space once the 5-tab layout cleared the curved corners
-                // — owner tuning, 2026-08-26), floored so notch-less
-                // devices still get a whisper of padding; the row gains
-                // a small symmetric pad in exchange.
-                minHeight:
-                    "calc(4rem + 0.5rem + max(0.5rem, calc(env(safe-area-inset-bottom) - 0.875rem)))",
-                paddingTop: "0.5rem",
-                paddingBottom:
-                    "max(0.5rem, calc(env(safe-area-inset-bottom) - 0.875rem))",
-                // base-chrome is the elevated-chrome surface (darker than
-                // page in light mode, lighter in dark) — same role as
-                // the top navbar. Near-solid (not 88%): the safe-area strip
-                // sits below the page's content, where translucency showed
-                // raw black and made the inset read as a separate dead band
-                // instead of one continuous bar (owner, 2026-08-26).
-                background:
-                    "color-mix(in srgb, var(--theme-base-chrome) 97%, transparent)",
-                borderTop: "1px solid var(--theme-base-400)",
-                backdropFilter: "blur(14px)",
-                WebkitBackdropFilter: "blur(14px)",
-            }}
-        >
-            {tabs.map((tab) => (
-                <Tab key={tab.id} tab={tab} active={isActive(tab, url)} />
-            ))}
-        </nav>
+        <>
+            <nav
+                aria-label="Primary mobile navigation"
+                className="fixed inset-x-0 z-40 flex items-stretch lg:hidden"
+                style={{
+                    // The bar sits ABOVE the home-indicator zone rather than
+                    // absorbing it (owner ruling, 2026-08-26): native apps
+                    // treat that strip as system chrome, so it gets its own
+                    // pure-black underlay below and the bar itself stays a
+                    // compact row with a light symmetric pad.
+                    bottom: "env(safe-area-inset-bottom, 0px)",
+                    minHeight: "4rem",
+                    paddingTop: "0.375rem",
+                    paddingBottom: "0.375rem",
+                    // base-chrome is the elevated-chrome surface (darker than
+                    // page in light mode, lighter in dark) — same role as
+                    // the top navbar. The base ramp flips direction per mode
+                    // so navbars + footers read correctly in both.
+                    background:
+                        "color-mix(in srgb, var(--theme-base-chrome) 88%, transparent)",
+                    borderTop: "1px solid var(--theme-base-400)",
+                    backdropFilter: "blur(14px)",
+                    WebkitBackdropFilter: "blur(14px)",
+                }}
+            >
+                {tabs.map((tab) => (
+                    <Tab key={tab.id} tab={tab} active={isActive(tab, url)} />
+                ))}
+            </nav>
+            {/* The home-indicator strip: deliberately pure black, exactly
+                the safe-area tall — the "white bar" zone every native app
+                cedes to the system. Height 0 on notch-less devices. */}
+            <div
+                aria-hidden="true"
+                className="fixed inset-x-0 bottom-0 z-40 lg:hidden"
+                style={{
+                    height: "env(safe-area-inset-bottom, 0px)",
+                    background: "#000",
+                }}
+            />
+        </>
     );
 }
 
