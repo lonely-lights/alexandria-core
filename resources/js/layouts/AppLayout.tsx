@@ -125,12 +125,9 @@ function buildDefaultBottomNavTabs(
             },
         },
         notesTab,
-        {
-            id: "profile",
-            label: "Profile",
-            href: "/profile",
-            icon: "fa-solid fa-user",
-        },
+        // No Profile slot (owner ruling, phone walkthrough 2026-08-26):
+        // the navbar avatar already reaches it, and five tabs breathe —
+        // six pushed the end slots into the screen's curved corners.
         {
             // Settings on mobile is a drawer, not a route — dispatching
             // the toggle event opens the globally-mounted SettingsDrawer
