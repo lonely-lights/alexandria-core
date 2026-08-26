@@ -1,6 +1,6 @@
-import { Link, usePage } from '@inertiajs/react';
-import type { ReactNode } from 'react';
-import type { BottomNavTab } from '../../types/navigation';
+import { Link, usePage } from "@inertiajs/react";
+import type { ReactNode } from "react";
+import type { BottomNavTab } from "../../types/navigation";
 
 interface BottomNavProps {
     /**
@@ -29,23 +29,28 @@ export default function BottomNav({ tabs }: BottomNavProps) {
             className="fixed inset-x-0 bottom-0 z-40 flex items-stretch lg:hidden"
             style={{
                 // `min-height` (not fixed `height`) so the nav grows by
-                // env(safe-area-inset-bottom) on iPhones with a home
-                // indicator. With a fixed 4rem height the safe-area
-                // padding would eat INTO the 64px icon row, leaving
-                // ~30px of usable space on devices with a ~34px
-                // indicator. min-height keeps the 4rem icon area
-                // intact and the safe-area inset adds extra below it.
-                minHeight: 'calc(4rem + env(safe-area-inset-bottom))',
-                paddingBottom: 'env(safe-area-inset-bottom)',
+                // the safe-area allowance on iPhones with a home
+                // indicator — a fixed height would let the padding eat
+                // INTO the icon row. The bottom takes PARTIAL credit for
+                // env(safe-area-inset-bottom) (full ~34px read as dead
+                // space once the 5-tab layout cleared the curved corners
+                // — owner tuning, 2026-08-26), floored so notch-less
+                // devices still get a whisper of padding; the row gains
+                // a small symmetric pad in exchange.
+                minHeight:
+                    "calc(4rem + 0.375rem + max(0.375rem, calc(env(safe-area-inset-bottom) - 0.75rem)))",
+                paddingTop: "0.375rem",
+                paddingBottom:
+                    "max(0.375rem, calc(env(safe-area-inset-bottom) - 0.75rem))",
                 // base-chrome is the elevated-chrome surface (darker than
                 // page in light mode, lighter in dark) — same role as
                 // the top navbar. The base ramp flips direction per mode
                 // so navbars + footers read correctly in both.
                 background:
-                    'color-mix(in srgb, var(--theme-base-chrome) 88%, transparent)',
-                borderTop: '1px solid var(--theme-base-400)',
-                backdropFilter: 'blur(14px)',
-                WebkitBackdropFilter: 'blur(14px)',
+                    "color-mix(in srgb, var(--theme-base-chrome) 88%, transparent)",
+                borderTop: "1px solid var(--theme-base-400)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
             }}
         >
             {tabs.map((tab) => (
@@ -56,7 +61,7 @@ export default function BottomNav({ tabs }: BottomNavProps) {
 }
 
 function isActive(tab: BottomNavTab, url: string): boolean {
-    if (tab.href === '#' || tab.href === '') {
+    if (tab.href === "#" || tab.href === "") {
         return false;
     }
     return url === tab.href || url.startsWith(`${tab.href}/`);
@@ -71,29 +76,29 @@ interface TabProps {
 // resolved by the emitter so callers don't need light-dark() / a CSS
 // feature gate. In light mode the aliases point at -100/-700; in dark
 // at -800/-200. Same numeric stop = same semantic role across modes.
-const ACTIVE_COLOR = 'var(--theme-brand-primary-highlight-fg)';
-const ACTIVE_BG = 'var(--theme-brand-primary-highlight-bg)';
+const ACTIVE_COLOR = "var(--theme-brand-primary-highlight-fg)";
+const ACTIVE_BG = "var(--theme-brand-primary-highlight-bg)";
 
 function Tab({ tab, active }: TabProps) {
     const colorVar = active
         ? ACTIVE_COLOR
-        : 'color-mix(in srgb, var(--theme-surface-on-page) 65%, transparent)';
+        : "color-mix(in srgb, var(--theme-surface-on-page) 65%, transparent)";
 
-    const backgroundVar = active ? ACTIVE_BG : 'transparent';
+    const backgroundVar = active ? ACTIVE_BG : "transparent";
 
     const className =
-        'flex flex-1 flex-col items-center justify-center gap-1 text-center no-underline transition-colors';
+        "flex flex-1 flex-col items-center justify-center gap-1 text-center no-underline transition-colors";
 
     const inner = (
         <>
             <span className="relative inline-flex items-center justify-center">
                 {renderIcon(tab.icon)}
-                {tab.badge != null && tab.badge !== '' && (
+                {tab.badge != null && tab.badge !== "" && (
                     <span
                         className="absolute -right-2 -top-1 inline-flex min-w-4 items-center justify-center rounded-full px-1 text-[0.625rem] leading-none"
                         style={{
-                            background: 'var(--theme-brand-primary-500)',
-                            color: 'var(--theme-brand-primary-on)',
+                            background: "var(--theme-brand-primary-500)",
+                            color: "var(--theme-brand-primary-on)",
                         }}
                     >
                         {tab.badge}
@@ -113,7 +118,7 @@ function Tab({ tab, active }: TabProps) {
 
     // Action-only tabs (href '#') render as buttons. Useful for tabs that
     // open modals / sheets rather than navigating.
-    if (tab.href === '#' || tab.href === '') {
+    if (tab.href === "#" || tab.href === "") {
         return (
             <button
                 type="button"
@@ -133,7 +138,7 @@ function Tab({ tab, active }: TabProps) {
         <Link
             href={tab.href}
             aria-label={tab.label}
-            aria-current={active ? 'page' : undefined}
+            aria-current={active ? "page" : undefined}
             className={className}
             style={baseStyle}
             onClick={
@@ -152,8 +157,8 @@ function Tab({ tab, active }: TabProps) {
 
 function renderIcon(icon: string | ReactNode | undefined): ReactNode {
     if (icon == null) return null;
-    if (typeof icon === 'string') {
-        const cls = icon.includes(' ') ? icon : `fa-solid ${icon}`;
+    if (typeof icon === "string") {
+        const cls = icon.includes(" ") ? icon : `fa-solid ${icon}`;
         return <i className={`${cls} text-base`} aria-hidden="true" />;
     }
     return icon;
