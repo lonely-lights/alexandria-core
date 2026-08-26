@@ -99,18 +99,15 @@ function buildDefaultBottomNavTabs(
               icon: "fa-solid fa-note-sticky",
           };
 
+    // Order (owner, 2026-08-26): Notes leads — capture is the phone's
+    // primary job — Search anchors the middle, Settings closes.
     return [
+        notesTab,
         {
             id: "dashboard",
             label: "Dashboard",
             href: "/dashboard",
             icon: "fa-solid fa-house",
-        },
-        {
-            id: "writing",
-            label: "Writing",
-            href: "/writing",
-            icon: "fa-solid fa-feather",
         },
         {
             id: "search",
@@ -124,7 +121,12 @@ function buildDefaultBottomNavTabs(
                 );
             },
         },
-        notesTab,
+        {
+            id: "writing",
+            label: "Writing",
+            href: "/writing",
+            icon: "fa-solid fa-feather",
+        },
         // No Profile slot (owner ruling, phone walkthrough 2026-08-26):
         // the navbar avatar already reaches it, and five tabs breathe —
         // six pushed the end slots into the screen's curved corners.

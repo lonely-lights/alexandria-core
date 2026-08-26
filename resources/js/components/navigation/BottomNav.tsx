@@ -38,10 +38,10 @@ export default function BottomNav({ tabs }: BottomNavProps) {
                     // (py-1.5), not here: padding on the shell left a gap
                     // above/below the active tab's highlight fill, which
                     // should span the bar's full height (owner, 2026-08-26).
-                    // Half the inset (owner tuning, 2026-08-26): the full
-                    // ~34px strip read too tall; half still floats the
-                    // indicator on black without wasting the height.
-                    bottom: "calc(env(safe-area-inset-bottom, 0px) / 2)",
+                    // No indicator strip (owner tuning, 2026-08-26, after
+                    // trying full and half): the bar sits flush and the
+                    // home indicator floats over its surface.
+                    bottom: "0",
                     minHeight: "4.75rem",
                     // base-chrome is the elevated-chrome surface (darker than
                     // page in light mode, lighter in dark) — same role as
@@ -58,17 +58,6 @@ export default function BottomNav({ tabs }: BottomNavProps) {
                     <Tab key={tab.id} tab={tab} active={isActive(tab, url)} />
                 ))}
             </nav>
-            {/* The home-indicator strip: deliberately pure black, exactly
-                the safe-area tall — the "white bar" zone every native app
-                cedes to the system. Height 0 on notch-less devices. */}
-            <div
-                aria-hidden="true"
-                className="fixed inset-x-0 bottom-0 z-40 lg:hidden"
-                style={{
-                    height: "calc(env(safe-area-inset-bottom, 0px) / 2)",
-                    background: "#000",
-                }}
-            />
         </>
     );
 }
