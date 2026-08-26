@@ -132,6 +132,12 @@ export default function Tooltip({
     const hover = useHover(context, {
         delay: { open: delay, close: 50 },
         enabled: !disabled && !isControlled,
+        // A tooltip is a HOVER affordance; touch has no hover. Without
+        // this, a tap "hovers" the trigger and the bubble lingers over
+        // whatever the tap opened (navbar tooltips over the notes drawer,
+        // phone walkthrough 2026-08-26). Controlled tooltips are exempt —
+        // their callers decide visibility explicitly.
+        mouseOnly: true,
     });
     const dismiss = useDismiss(context, { enabled: !isControlled });
     const role = useRole(context, { role: 'tooltip' });
