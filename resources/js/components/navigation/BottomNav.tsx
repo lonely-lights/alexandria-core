@@ -38,16 +38,18 @@ export default function BottomNav({ tabs }: BottomNavProps) {
                 // devices still get a whisper of padding; the row gains
                 // a small symmetric pad in exchange.
                 minHeight:
-                    "calc(4rem + 0.375rem + max(0.375rem, calc(env(safe-area-inset-bottom) - 0.75rem)))",
-                paddingTop: "0.375rem",
+                    "calc(4rem + 0.5rem + max(0.5rem, calc(env(safe-area-inset-bottom) - 0.875rem)))",
+                paddingTop: "0.5rem",
                 paddingBottom:
-                    "max(0.375rem, calc(env(safe-area-inset-bottom) - 0.75rem))",
+                    "max(0.5rem, calc(env(safe-area-inset-bottom) - 0.875rem))",
                 // base-chrome is the elevated-chrome surface (darker than
                 // page in light mode, lighter in dark) — same role as
-                // the top navbar. The base ramp flips direction per mode
-                // so navbars + footers read correctly in both.
+                // the top navbar. Near-solid (not 88%): the safe-area strip
+                // sits below the page's content, where translucency showed
+                // raw black and made the inset read as a separate dead band
+                // instead of one continuous bar (owner, 2026-08-26).
                 background:
-                    "color-mix(in srgb, var(--theme-base-chrome) 88%, transparent)",
+                    "color-mix(in srgb, var(--theme-base-chrome) 97%, transparent)",
                 borderTop: "1px solid var(--theme-base-400)",
                 backdropFilter: "blur(14px)",
                 WebkitBackdropFilter: "blur(14px)",
