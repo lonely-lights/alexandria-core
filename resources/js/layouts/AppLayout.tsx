@@ -1,44 +1,48 @@
-import { Head, usePage } from '@inertiajs/react';
-import { useState, useEffect, type ReactNode } from 'react';
-import Navbar from '../components/navigation/Navbar';
-import Sidebar from '../components/navigation/Sidebar';
-import BottomNav from '../components/navigation/BottomNav';
-import CommandPalette from '../components/search/CommandPalette';
-import NotesDrawer, { openNotesDrawer } from '../components/notes/NotesDrawer';
-import type { NotesContext } from '../components/notes/NotesDrawer';
-import { projectSearch } from '../lib/projectSearch';
-import { aiBase, notesUrl } from '../lib/urls';
-import { ToastProvider } from '../components/ui/ToastProvider';
-import Fab from '../components/ui/Fab';
-import Modal from '../components/ui/Modal';
-import SettingsDrawer from '../pages/Settings/SettingsDrawer';
-import { preloadSettings, getSettingsSlots } from '../pages/Settings/settingsCache';
-import type { BottomNavTab, UserMenuItem } from '../types/navigation';
-import type { SharedProps } from '../types/index';
+import { Head, router, usePage } from "@inertiajs/react";
+import { useState, useEffect, type ReactNode } from "react";
+import Navbar from "../components/navigation/Navbar";
+import Sidebar from "../components/navigation/Sidebar";
+import BottomNav from "../components/navigation/BottomNav";
+import CommandPalette from "../components/search/CommandPalette";
+import NotesDrawer, { openNotesDrawer } from "../components/notes/NotesDrawer";
+import type { NotesContext } from "../components/notes/NotesDrawer";
+import { projectSearch } from "../lib/projectSearch";
+import { aiBase, notesUrl, pagesBase, writingUrl } from "../lib/urls";
+import { ToastProvider } from "../components/ui/ToastProvider";
+import Fab from "../components/ui/Fab";
+import Modal from "../components/ui/Modal";
+import SettingsDrawer from "../pages/Settings/SettingsDrawer";
+import {
+    preloadSettings,
+    getSettingsSlots,
+} from "../pages/Settings/settingsCache";
+import type { BottomNavTab, UserMenuItem } from "../types/navigation";
+import type { SharedProps } from "../types/index";
 
 /** Event the bottom-nav Settings tab dispatches to open the drawer.
  *  Any caller can `window.dispatchEvent(new CustomEvent(...))` to open
  *  it from outside the React tree. */
-export const SETTINGS_DRAWER_TOGGLE_EVENT = 'alexandria-core:settings-drawer-toggle';
+export const SETTINGS_DRAWER_TOGGLE_EVENT =
+    "alexandria-core:settings-drawer-toggle";
 
 /** Toggles the slide-in Sidebar from outside the React tree — the
  *  same drawer the navbar hamburger opens. Navbar-less surfaces (the
  *  writing workspace's merged ribbon header) dispatch this from their
  *  own trigger (the logo mark) so the sidebar stays reachable. */
-export const SIDEBAR_TOGGLE_EVENT = 'alexandria-core:sidebar-toggle';
+export const SIDEBAR_TOGGLE_EVENT = "alexandria-core:sidebar-toggle";
 
 /** Fired after the drawer's slide-down animation completes. The
  *  /settings page listens for this to `router.back()` when the user
  *  closes the drawer (so they don't land on an empty /settings shell). */
-export const SETTINGS_DRAWER_CLOSED_EVENT = 'alexandria-core:settings-drawer-closed';
+export const SETTINGS_DRAWER_CLOSED_EVENT =
+    "alexandria-core:settings-drawer-closed";
 
 /**
- * Default actions surfaced by the global add-new FAB. Stub onClick
- * handlers for now — Stage 7g+ wires real flows (notes / free writing /
- * entry creation) into these slots. The FAB is project-scoped: it only
- * renders when there's a `currentProject` in shared props, and the
- * actions implicitly target that project (matching the sidebar's
- * scope). Override the default set per-page via the `fabActions` prop.
+ * One action surfaced by the global add-new FAB. The FAB is
+ * project-scoped: it only renders when there's a `currentProject` in
+ * shared props, and the actions implicitly target that project
+ * (matching the sidebar's scope). Override the default set per-page
+ * via the `fabActions` prop.
  */
 interface FabAction {
     label: string;
@@ -75,57 +79,57 @@ function buildDefaultBottomNavTabs(
 ): BottomNavTab[] {
     const notesHref = currentProjectSlug
         ? notesUrl(currentProjectSlug)
-        : '/dashboard';
+        : "/dashboard";
 
     const notesTab: BottomNavTab = onNotesClick
         ? {
-              id: 'notes',
-              label: 'Notes',
-              href: '#',
-              icon: 'fa-solid fa-note-sticky',
+              id: "notes",
+              label: "Notes",
+              href: "#",
+              icon: "fa-solid fa-note-sticky",
               onClick: (event) => {
                   event.preventDefault();
                   onNotesClick();
               },
           }
         : {
-              id: 'notes',
-              label: 'Notes',
+              id: "notes",
+              label: "Notes",
               href: notesHref,
-              icon: 'fa-solid fa-note-sticky',
+              icon: "fa-solid fa-note-sticky",
           };
 
     return [
         {
-            id: 'dashboard',
-            label: 'Dashboard',
-            href: '/dashboard',
-            icon: 'fa-solid fa-house',
+            id: "dashboard",
+            label: "Dashboard",
+            href: "/dashboard",
+            icon: "fa-solid fa-house",
         },
         {
-            id: 'writing',
-            label: 'Writing',
-            href: '/writing',
-            icon: 'fa-solid fa-feather',
+            id: "writing",
+            label: "Writing",
+            href: "/writing",
+            icon: "fa-solid fa-feather",
         },
         {
-            id: 'search',
-            label: 'Search',
-            href: '#',
-            icon: 'fa-solid fa-magnifying-glass',
+            id: "search",
+            label: "Search",
+            href: "#",
+            icon: "fa-solid fa-magnifying-glass",
             onClick: (event) => {
                 event.preventDefault();
                 window.dispatchEvent(
-                    new CustomEvent('alexandria-core:command-palette-toggle'),
+                    new CustomEvent("alexandria-core:command-palette-toggle"),
                 );
             },
         },
         notesTab,
         {
-            id: 'profile',
-            label: 'Profile',
-            href: '/profile',
-            icon: 'fa-solid fa-user',
+            id: "profile",
+            label: "Profile",
+            href: "/profile",
+            icon: "fa-solid fa-user",
         },
         {
             // Settings on mobile is a drawer, not a route — dispatching
@@ -133,44 +137,26 @@ function buildDefaultBottomNavTabs(
             // over whatever page the user is on. Avoids the /settings
             // page-load latency on every tap; underlying page state
             // (scroll, open modals, draft notes) survives.
-            id: 'settings',
-            label: 'Settings',
-            href: '#',
-            icon: 'fa-solid fa-gear',
+            id: "settings",
+            label: "Settings",
+            href: "#",
+            icon: "fa-solid fa-gear",
             onClick: (event) => {
                 event.preventDefault();
-                window.dispatchEvent(new CustomEvent(SETTINGS_DRAWER_TOGGLE_EVENT));
+                window.dispatchEvent(
+                    new CustomEvent(SETTINGS_DRAWER_TOGGLE_EVENT),
+                );
             },
         },
     ];
 }
 
-const DEFAULT_FAB_ACTIONS: FabAction[] = [
-    {
-        label: 'New note',
-        description: 'Capture an idea — the AI will sort it later.',
-        icon: 'fa-solid fa-note-sticky',
-        onClick: () => {
-            /* TODO: wire to NotesDrawer open with empty draft, scoped to currentProject */
-        },
-    },
-    {
-        label: 'Free writing',
-        description: 'Open a blank page and write without structure.',
-        icon: 'fa-solid fa-pen-nib',
-        onClick: () => {
-            /* TODO: wire to free-writing surface (Stage 7g), scoped to currentProject */
-        },
-    },
-    {
-        label: 'New entry',
-        description: 'Create a character, location, event, or anything.',
-        icon: 'fa-solid fa-circle-plus',
-        onClick: () => {
-            /* TODO: wire to blueprint picker → entry create within currentProject */
-        },
-    },
-];
+// The default FAB action set is built INSIDE the component (see
+// resolvedFabActions): the handlers need the live page context —
+// buildNotesContext() for the drawer scope, currentProject for the
+// navigation targets — which a module-level const could never reach.
+// That reach problem is why these shipped as silent TODOs from Stage 7
+// until the first phone walkthrough found the dead menu (2026-08-26).
 
 interface AppLayoutProps {
     /** The page content. */
@@ -295,10 +281,10 @@ export default function AppLayout({
 
     sidebarBody,
     sidebarLogo,
-    sidebarBrand = 'Alexandria',
-    sidebarUserLink = '/settings',
+    sidebarBrand = "Alexandria",
+    sidebarUserLink = "/settings",
 
-    navbarBrand = 'Alexandria',
+    navbarBrand = "Alexandria",
     navbarBrandSlot,
     userMenuItems,
     userMenuFooter,
@@ -328,25 +314,37 @@ export default function AppLayout({
     // target for the bottom-nav Notes button. localStorage keeps it
     // alive across sessions so a returning user on /dashboard still
     // gets a sensible drawer scope.
-    const LAST_PROJECT_KEY = 'alexandria:last-project';
+    const LAST_PROJECT_KEY = "alexandria:last-project";
     useEffect(() => {
         if (!currentProject) return;
         try {
             localStorage.setItem(
                 LAST_PROJECT_KEY,
-                JSON.stringify({ id: currentProject.id, slug: currentProject.slug, name: currentProject.name }),
+                JSON.stringify({
+                    id: currentProject.id,
+                    slug: currentProject.slug,
+                    name: currentProject.name,
+                }),
             );
         } catch {
             // localStorage disabled / quota — silently skip.
         }
     }, [currentProject?.id, currentProject?.slug, currentProject?.name]);
 
-    function loadLastProject(): { id: number; slug: string; name: string } | null {
+    function loadLastProject(): {
+        id: number;
+        slug: string;
+        name: string;
+    } | null {
         try {
             const raw = localStorage.getItem(LAST_PROJECT_KEY);
             if (!raw) return null;
             const parsed = JSON.parse(raw);
-            if (typeof parsed?.id === 'number' && typeof parsed?.slug === 'string' && typeof parsed?.name === 'string') {
+            if (
+                typeof parsed?.id === "number" &&
+                typeof parsed?.slug === "string" &&
+                typeof parsed?.name === "string"
+            ) {
                 return parsed;
             }
         } catch {
@@ -362,8 +360,45 @@ export default function AppLayout({
     // actions inside the modal always have an implicit project target
     // (matching the sidebar's scope). On routes without a project
     // (dashboard, settings, profile, etc.) the FAB stays hidden.
+    // Default actions target the live context: New note opens the drawer
+    // scoped exactly like the notes toggle; the other two navigate into
+    // the current project's real surfaces. buildNotesContext is declared
+    // below — function declarations hoist, and these closures only run
+    // on click, long after mount.
+    const defaultFabActions: FabAction[] = [
+        {
+            label: "New note",
+            description: "Capture an idea — the AI will sort it later.",
+            icon: "fa-solid fa-note-sticky",
+            onClick: () => {
+                const ctx = buildNotesContext();
+                if (ctx) openNotesDrawer(ctx);
+            },
+        },
+        {
+            label: "Free writing",
+            description: "Open a blank page and write without structure.",
+            icon: "fa-solid fa-pen-nib",
+            onClick: () => {
+                if (currentProject)
+                    router.visit(writingUrl(currentProject.slug));
+            },
+        },
+        {
+            label: "New entry",
+            description: "Create a character, location, event, or anything.",
+            icon: "fa-solid fa-circle-plus",
+            onClick: () => {
+                // blueprints.create — the blueprint picker that leads into
+                // entry creation for the picked type.
+                if (currentProject)
+                    router.visit(`${pagesBase(currentProject.slug)}/create`);
+            },
+        },
+    ];
+
     const resolvedFabActions: FabAction[] | null =
-        fabActions === null ? null : (fabActions ?? DEFAULT_FAB_ACTIONS);
+        fabActions === null ? null : (fabActions ?? defaultFabActions);
     const showFab = !!user && resolvedFabActions !== null && !!currentProject;
 
     // Inertia ships the page's bound blueprint/entry as shared props on
@@ -371,13 +406,13 @@ export default function AppLayout({
     // notable. Without these, /p/{project}/{blueprint} pages would still
     // see all project notes — exact bug we hit before this lift.
     const pageBlueprint = (pageProps as Record<string, unknown>).blueprint as
-        | { id: number; name: string; slug: string }
-        | undefined;
+        { id: number; name: string; slug: string } | undefined;
     const pageEntry = (pageProps as Record<string, unknown>).entry as
-        | { id: number; name: string; slug: string }
-        | undefined;
+        { id: number; name: string; slug: string } | undefined;
 
-    function buildNotesContext(extra: Partial<NotesContext> = {}): NotesContext | null {
+    function buildNotesContext(
+        extra: Partial<NotesContext> = {},
+    ): NotesContext | null {
         if (!currentProject) return null;
         const base = {
             projectId: currentProject.id,
@@ -387,7 +422,7 @@ export default function AppLayout({
         if (pageEntry?.id) {
             return {
                 ...base,
-                contextType: 'entry',
+                contextType: "entry",
                 contextId: pageEntry.id,
                 contextLabel: pageEntry.name,
                 contextSlug: pageEntry.slug,
@@ -396,7 +431,7 @@ export default function AppLayout({
         if (pageBlueprint?.id) {
             return {
                 ...base,
-                contextType: 'blueprint',
+                contextType: "blueprint",
                 contextId: pageBlueprint.id,
                 contextLabel: pageBlueprint.name,
                 contextSlug: pageBlueprint.slug,
@@ -404,7 +439,7 @@ export default function AppLayout({
         }
         return {
             ...base,
-            contextType: 'project',
+            contextType: "project",
             contextId: currentProject.id,
             contextLabel: currentProject.name,
             contextSlug: currentProject.slug,
@@ -418,8 +453,8 @@ export default function AppLayout({
     const notesRoot = currentProject ? notesUrl(currentProject.slug) : null;
     const aiRoot = currentProject ? aiBase(currentProject.slug) : null;
     const isNotesOrAiPage =
-        (notesRoot !== null && url.startsWith(notesRoot))
-        || (aiRoot !== null && url.startsWith(aiRoot));
+        (notesRoot !== null && url.startsWith(notesRoot)) ||
+        (aiRoot !== null && url.startsWith(aiRoot));
 
     // Auto-wire the navbar's Notes button only on project-scoped routes
     // (/p/{slug}/...). On the dedicated Notes or AI surfaces, the
@@ -430,15 +465,17 @@ export default function AppLayout({
     // drawer, so the layout only has to fire the open signal with the
     // current project context. Consumer can override with an explicit
     // function, or pass null to suppress the button entirely.
-    const isProjectScope = url.startsWith('/p/') && !isNotesOrAiPage;
-    const resolvedNotesToggle = onNotesToggle === null
-        ? undefined
-        : onNotesToggle ?? (currentProject && isProjectScope
-            ? () => {
-                const ctx = buildNotesContext();
-                if (ctx) openNotesDrawer(ctx);
-            }
-            : undefined);
+    const isProjectScope = url.startsWith("/p/") && !isNotesOrAiPage;
+    const resolvedNotesToggle =
+        onNotesToggle === null
+            ? undefined
+            : (onNotesToggle ??
+              (currentProject && isProjectScope
+                  ? () => {
+                        const ctx = buildNotesContext();
+                        if (ctx) openNotesDrawer(ctx);
+                    }
+                  : undefined));
 
     // Auto-open the notes drawer when arriving via Sorting History.
     // The chip stashes the note id in sessionStorage before navigating;
@@ -446,14 +483,17 @@ export default function AppLayout({
     // shared props in hand so the drawer scopes to the right notable
     // and pre-selects the note row.
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const stored = sessionStorage.getItem('alexandria:open_note');
+        if (typeof window === "undefined") return;
+        const stored = sessionStorage.getItem("alexandria:open_note");
         if (!stored || !currentProject?.id) return;
-        sessionStorage.removeItem('alexandria:open_note');
+        sessionStorage.removeItem("alexandria:open_note");
         const noteId = parseInt(stored, 10);
         if (Number.isNaN(noteId)) return;
         const t = setTimeout(() => {
-            const ctx = buildNotesContext({ preSelectNoteId: noteId, skipAnimation: true });
+            const ctx = buildNotesContext({
+                preSelectNoteId: noteId,
+                skipAnimation: true,
+            });
             if (ctx) openNotesDrawer(ctx);
         }, 100);
         return () => clearTimeout(t);
@@ -461,7 +501,7 @@ export default function AppLayout({
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
+            if (e.key === "Escape") {
                 setSidebarOpen(false);
             }
         };
@@ -469,11 +509,11 @@ export default function AppLayout({
         // `sidebarOpen` directly would close over the initial value.
         const toggleSidebar = () => setSidebarOpen((open) => !open);
 
-        document.addEventListener('keydown', handleEscape);
+        document.addEventListener("keydown", handleEscape);
         window.addEventListener(SIDEBAR_TOGGLE_EVENT, toggleSidebar);
 
         return () => {
-            document.removeEventListener('keydown', handleEscape);
+            document.removeEventListener("keydown", handleEscape);
             window.removeEventListener(SIDEBAR_TOGGLE_EVENT, toggleSidebar);
         };
     }, []);
@@ -485,18 +525,21 @@ export default function AppLayout({
     useEffect(() => {
         const open = () => setPaletteOpen(true);
         const handleKey = (e: KeyboardEvent) => {
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
                 e.preventDefault();
                 setPaletteOpen(true);
             }
         };
 
-        window.addEventListener('alexandria-core:command-palette-toggle', open);
-        window.addEventListener('keydown', handleKey);
+        window.addEventListener("alexandria-core:command-palette-toggle", open);
+        window.addEventListener("keydown", handleKey);
 
         return () => {
-            window.removeEventListener('alexandria-core:command-palette-toggle', open);
-            window.removeEventListener('keydown', handleKey);
+            window.removeEventListener(
+                "alexandria-core:command-palette-toggle",
+                open,
+            );
+            window.removeEventListener("keydown", handleKey);
         };
     }, []);
 
@@ -510,7 +553,11 @@ export default function AppLayout({
             setSettingsDrawerOpen(true);
         }
         window.addEventListener(SETTINGS_DRAWER_TOGGLE_EVENT, openDrawer);
-        return () => window.removeEventListener(SETTINGS_DRAWER_TOGGLE_EVENT, openDrawer);
+        return () =>
+            window.removeEventListener(
+                SETTINGS_DRAWER_TOGGLE_EVENT,
+                openDrawer,
+            );
     }, []);
 
     useEffect(() => {
@@ -521,8 +568,9 @@ export default function AppLayout({
         // browsers that don't expose it — Safari pre-17 mostly.
         type IdleRequest = (cb: () => void) => number;
         const idle =
-            (window as unknown as { requestIdleCallback?: IdleRequest }).requestIdleCallback
-            ?? ((cb: () => void) => window.setTimeout(cb, 150));
+            (window as unknown as { requestIdleCallback?: IdleRequest })
+                .requestIdleCallback ??
+            ((cb: () => void) => window.setTimeout(cb, 150));
         const handle = idle(() => {
             void preloadSettings().catch(() => {
                 // Cache module already logs failures; nothing else to
@@ -532,8 +580,8 @@ export default function AppLayout({
         return () => {
             type CancelIdle = (handle: number) => void;
             const cancel =
-                (window as unknown as { cancelIdleCallback?: CancelIdle }).cancelIdleCallback
-                ?? window.clearTimeout;
+                (window as unknown as { cancelIdleCallback?: CancelIdle })
+                    .cancelIdleCallback ?? window.clearTimeout;
             cancel(handle);
         };
     }, [user]);
@@ -563,7 +611,7 @@ export default function AppLayout({
                   openNotesDrawer({
                       projectId: last.id,
                       projectSlug: last.slug,
-                      contextType: 'project',
+                      contextType: "project",
                       contextId: last.id,
                       contextLabel: last.name,
                       contextSlug: last.slug,
@@ -628,17 +676,19 @@ export default function AppLayout({
             <main
                 data-theme-target="content"
                 className={[
-                    immersive ? '' : 'pt-20',
+                    immersive ? "" : "pt-20",
                     // pb-[calc(5rem+env(safe-area-inset-bottom))] gives the
                     // bottom nav full clearance on iPhones with a home
                     // indicator (the nav's own min-height + safe-area
                     // padding can grow to ~98px there; a flat pb-20 leaves
                     // the last ~18px of content tucked under the nav).
                     // lg:pb-0 keeps desktop unchanged.
-                    showBottomNav ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0' : '',
+                    showBottomNav
+                        ? "pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0"
+                        : "",
                 ]
                     .filter(Boolean)
-                    .join(' ')}
+                    .join(" ")}
             >
                 {children}
             </main>
@@ -678,20 +728,25 @@ export default function AppLayout({
                 Data flows through the module-level cache in
                 settingsCache.ts — preloaded in idle time above, fetched
                 on first open otherwise. */}
-            {user && (() => {
-                const slots = getSettingsSlots();
-                return (
-                    <SettingsDrawer
-                        open={settingsDrawerOpen}
-                        onClose={() => {
-                            setSettingsDrawerOpen(false);
-                            window.dispatchEvent(new CustomEvent(SETTINGS_DRAWER_CLOSED_EVENT));
-                        }}
-                        accountManagementSlot={slots.accountManagementSlot}
-                        applyViewPreferences={slots.applyViewPreferences}
-                    />
-                );
-            })()}
+            {user &&
+                (() => {
+                    const slots = getSettingsSlots();
+                    return (
+                        <SettingsDrawer
+                            open={settingsDrawerOpen}
+                            onClose={() => {
+                                setSettingsDrawerOpen(false);
+                                window.dispatchEvent(
+                                    new CustomEvent(
+                                        SETTINGS_DRAWER_CLOSED_EVENT,
+                                    ),
+                                );
+                            }}
+                            accountManagementSlot={slots.accountManagementSlot}
+                            applyViewPreferences={slots.applyViewPreferences}
+                        />
+                    );
+                })()}
 
             {/* Global add-new FAB. Authenticated only (see `showFab`
                 above). Opens a small modal with the resolved action
@@ -699,10 +754,7 @@ export default function AppLayout({
                 the `fabActions` prop or pass `null` to hide. */}
             {showFab && (
                 <>
-                    <Fab
-                        label="Add new"
-                        onClick={() => setAddNewOpen(true)}
-                    />
+                    <Fab label="Add new" onClick={() => setAddNewOpen(true)} />
                     <Modal
                         open={addNewOpen}
                         onClose={() => setAddNewOpen(false)}
@@ -714,22 +766,29 @@ export default function AppLayout({
                             standalone "Add new" title is redundant. */}
                         <div
                             className="flex items-center justify-between px-6 py-4"
-                            style={{ borderBottom: '1px solid var(--theme-base-400)' }}
+                            style={{
+                                borderBottom: "1px solid var(--theme-base-400)",
+                            }}
                         >
                             <h3
                                 className="flex items-center gap-2 text-base font-semibold"
                                 style={{
-                                    fontFamily: 'var(--theme-typography-heading-family)',
+                                    fontFamily:
+                                        "var(--theme-typography-heading-family)",
                                 }}
                             >
                                 <span
                                     style={{
-                                        color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
+                                        color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
                                     }}
                                 >
                                     Add to:
                                 </span>
-                                <span style={{ color: 'var(--theme-base-content)' }}>
+                                <span
+                                    style={{
+                                        color: "var(--theme-base-content)",
+                                    }}
+                                >
                                     {currentProject!.name}
                                 </span>
                             </h3>
@@ -738,9 +797,12 @@ export default function AppLayout({
                                 onClick={() => setAddNewOpen(false)}
                                 aria-label="Close"
                                 className="alex-modal-close inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-                                style={{ color: 'var(--theme-base-content)' }}
+                                style={{ color: "var(--theme-base-content)" }}
                             >
-                                <i className="fa-solid fa-xmark" aria-hidden="true" />
+                                <i
+                                    className="fa-solid fa-xmark"
+                                    aria-hidden="true"
+                                />
                             </button>
                         </div>
                         <ul className="m-0 flex list-none flex-col p-0">
@@ -754,12 +816,12 @@ export default function AppLayout({
                                         }}
                                         className="alex-add-new-card flex w-full items-start gap-3 px-6 py-4 text-left transition-colors"
                                         style={{
-                                            color: 'var(--theme-base-content)',
+                                            color: "var(--theme-base-content)",
                                             borderBottom:
                                                 idx ===
                                                 resolvedFabActions!.length - 1
-                                                    ? 'none'
-                                                    : '1px solid var(--theme-base-400)',
+                                                    ? "none"
+                                                    : "1px solid var(--theme-base-400)",
                                         }}
                                     >
                                         <span
@@ -767,8 +829,8 @@ export default function AppLayout({
                                             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
                                             style={{
                                                 background:
-                                                    'var(--theme-brand-primary-highlight-bg)',
-                                                color: 'var(--theme-brand-primary-highlight-fg)',
+                                                    "var(--theme-brand-primary-highlight-bg)",
+                                                color: "var(--theme-brand-primary-highlight-fg)",
                                             }}
                                         >
                                             <i className={action.icon} />
@@ -780,7 +842,7 @@ export default function AppLayout({
                                             <span
                                                 className="text-xs"
                                                 style={{
-                                                    color: 'color-mix(in srgb, var(--theme-base-content) 65%, transparent)',
+                                                    color: "color-mix(in srgb, var(--theme-base-content) 65%, transparent)",
                                                 }}
                                             >
                                                 {action.description}
