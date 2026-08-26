@@ -38,7 +38,10 @@ export default function BottomNav({ tabs }: BottomNavProps) {
                     // (py-1.5), not here: padding on the shell left a gap
                     // above/below the active tab's highlight fill, which
                     // should span the bar's full height (owner, 2026-08-26).
-                    bottom: "env(safe-area-inset-bottom, 0px)",
+                    // Half the inset (owner tuning, 2026-08-26): the full
+                    // ~34px strip read too tall; half still floats the
+                    // indicator on black without wasting the height.
+                    bottom: "calc(env(safe-area-inset-bottom, 0px) / 2)",
                     minHeight: "4.75rem",
                     // base-chrome is the elevated-chrome surface (darker than
                     // page in light mode, lighter in dark) — same role as
@@ -62,7 +65,7 @@ export default function BottomNav({ tabs }: BottomNavProps) {
                 aria-hidden="true"
                 className="fixed inset-x-0 bottom-0 z-40 lg:hidden"
                 style={{
-                    height: "env(safe-area-inset-bottom, 0px)",
+                    height: "calc(env(safe-area-inset-bottom, 0px) / 2)",
                     background: "#000",
                 }}
             />
