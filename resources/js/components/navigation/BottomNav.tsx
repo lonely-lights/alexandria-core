@@ -30,9 +30,21 @@ export default function BottomNav({ tabs }: BottomNavProps) {
     const [dimmed, setDimmed] = useState(false);
 
     useEffect(() => {
-        const onScroll = () => setDimmed(true);
+        let idleTimer: ReturnType<typeof setTimeout> | undefined;
+
+        // Dim while scrolling; a 250ms quiet gap counts as "stopped" and
+        // relights the pill (owner tuning, 2026-08-26).
+        const onScroll = () => {
+            setDimmed(true);
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => setDimmed(false), 250);
+        };
+
         window.addEventListener("scroll", onScroll, { passive: true });
-        return () => window.removeEventListener("scroll", onScroll);
+        return () => {
+            clearTimeout(idleTimer);
+            window.removeEventListener("scroll", onScroll);
+        };
     }, []);
 
     return (
@@ -61,8 +73,8 @@ export default function BottomNav({ tabs }: BottomNavProps) {
                         "color-mix(in srgb, var(--theme-base-chrome) 96%, transparent)",
                     border: "1px solid var(--theme-base-400)",
                     boxShadow: "0 10px 28px rgba(0, 0, 0, 0.38)",
-                    opacity: dimmed ? 0.6 : 1,
-                    transition: "opacity 220ms ease",
+                    opacity: dimmed ? 0.4 : 1,
+                    transition: "opacity 300ms ease",
                     backdropFilter: "blur(14px)",
                     WebkitBackdropFilter: "blur(14px)",
                 }}
