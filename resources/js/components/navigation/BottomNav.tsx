@@ -1,4 +1,5 @@
 import { Link, usePage } from "@inertiajs/react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { BottomNavTab } from "../../types/navigation";
 
@@ -23,10 +24,24 @@ interface BottomNavProps {
 export default function BottomNav({ tabs }: BottomNavProps) {
     const url = usePage().url;
 
+    // Scroll-aware fade (owner, 2026-08-26): scrolling dims the pill to
+    // 60% opacity so content leads; touching/entering the pill lights it
+    // back up. Passive listener — never blocks the scroll.
+    const [dimmed, setDimmed] = useState(false);
+
+    useEffect(() => {
+        const onScroll = () => setDimmed(true);
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
+
     return (
         <>
             <nav
                 aria-label="Primary mobile navigation"
+                onPointerDown={() => setDimmed(false)}
+                onPointerEnter={() => setDimmed(false)}
+                onTouchStart={() => setDimmed(false)}
                 className="fixed inset-x-4 z-40 flex items-stretch gap-1 lg:hidden"
                 style={{
                     // Floating pill (owner direction, 2026-08-26, settled
@@ -46,6 +61,8 @@ export default function BottomNav({ tabs }: BottomNavProps) {
                         "color-mix(in srgb, var(--theme-base-chrome) 96%, transparent)",
                     border: "1px solid var(--theme-base-400)",
                     boxShadow: "0 10px 28px rgba(0, 0, 0, 0.38)",
+                    opacity: dimmed ? 0.6 : 1,
+                    transition: "opacity 220ms ease",
                     backdropFilter: "blur(14px)",
                     WebkitBackdropFilter: "blur(14px)",
                 }}

@@ -81,23 +81,18 @@ function buildDefaultBottomNavTabs(
         ? notesUrl(currentProjectSlug)
         : "/dashboard";
 
-    const notesTab: BottomNavTab = onNotesClick
-        ? {
-              id: "notes",
-              label: "Notes",
-              href: "#",
-              icon: "fa-solid fa-note-sticky",
-              onClick: (event) => {
-                  event.preventDefault();
-                  onNotesClick();
-              },
-          }
-        : {
-              id: "notes",
-              label: "Notes",
-              href: notesHref,
-              icon: "fa-solid fa-note-sticky",
-          };
+    // The bottom tab NAVIGATES to the notes dashboard (owner ruling,
+    // 2026-08-26) — the drawer stays the navbar Notes button's job.
+    // onNotesClick is deliberately unused here now; kept in the signature
+    // for the callers that still pass it.
+    void onNotesClick;
+
+    const notesTab: BottomNavTab = {
+        id: "notes",
+        label: "Notes",
+        href: notesHref,
+        icon: "fa-solid fa-note-sticky",
+    };
 
     // Order (owner, 2026-08-26): Notes leads — capture is the phone's
     // primary job — Search anchors the middle, Settings closes.

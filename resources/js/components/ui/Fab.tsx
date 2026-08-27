@@ -1,6 +1,9 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-interface FabProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
+interface FabProps extends Omit<
+    ButtonHTMLAttributes<HTMLButtonElement>,
+    "children"
+> {
     /** Visible label for assistive tech (FAB shows only an icon). */
     label: string;
     /** Icon content. FontAwesome class string OR ReactNode. */
@@ -18,8 +21,8 @@ interface FabProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'childr
  */
 export default function Fab({
     label,
-    icon = 'fa-solid fa-plus',
-    className = '',
+    icon = "fa-solid fa-plus",
+    className = "",
     ...rest
 }: FabProps) {
     return (
@@ -28,28 +31,30 @@ export default function Fab({
             aria-label={label}
             className={`alex-fab ${className}`.trim()}
             style={{
-                position: 'fixed',
-                right: '1.25rem',
-                bottom: 'calc(env(safe-area-inset-bottom) + 4.75rem)',
-                width: '3.5rem',
-                height: '3.5rem',
-                borderRadius: '999px',
-                background: 'var(--theme-brand-primary-500)',
-                color: 'var(--theme-brand-primary-content)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.5rem',
-                border: 'none',
-                cursor: 'pointer',
+                position: "fixed",
+                right: "1.25rem",
+                bottom: "calc(env(safe-area-inset-bottom) + 4.75rem)",
+                // 33% smaller than the original 3.5rem (owner, 2026-08-26)
+                // — the full-size disc crowded the floating pill nav.
+                width: "2.375rem",
+                height: "2.375rem",
+                borderRadius: "999px",
+                background: "var(--theme-brand-primary-500)",
+                color: "var(--theme-brand-primary-content)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1rem",
+                border: "none",
+                cursor: "pointer",
                 zIndex: 50,
                 // Brand-tinted glow + lifted dark shadow stacked. Glow keeps
                 // the FAB visible against any base bg in either mode; the
                 // dark shadow gives it weight on light pages.
                 boxShadow:
-                    '0 0 0 1px color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent), 0 8px 24px color-mix(in srgb, var(--theme-brand-primary-500) 40%, transparent), 0 4px 10px rgba(0, 0, 0, 0.25)',
+                    "0 0 0 1px color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent), 0 8px 24px color-mix(in srgb, var(--theme-brand-primary-500) 40%, transparent), 0 4px 10px rgba(0, 0, 0, 0.25)",
                 transition:
-                    'transform var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), box-shadow var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), background var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard)',
+                    "transform var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), box-shadow var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard), background var(--theme-motion-duration-interactive) var(--theme-motion-easing-standard)",
             }}
             {...rest}
         >
@@ -60,8 +65,8 @@ export default function Fab({
 
 function renderIcon(icon: string | ReactNode | undefined): ReactNode {
     if (icon == null) return null;
-    if (typeof icon === 'string') {
-        const cls = icon.includes(' ') ? icon : `fa-solid ${icon}`;
+    if (typeof icon === "string") {
+        const cls = icon.includes(" ") ? icon : `fa-solid ${icon}`;
         return <i className={cls} aria-hidden="true" />;
     }
     return icon;
