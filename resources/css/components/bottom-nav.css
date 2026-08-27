@@ -7,15 +7,16 @@
  * distinguished by the top accent bar.
  */
 
-nav[aria-label='Primary mobile navigation'] a,
-nav[aria-label='Primary mobile navigation'] button {
+nav[aria-label="Primary mobile navigation"] a,
+nav[aria-label="Primary mobile navigation"] button {
     position: relative;
     -webkit-tap-highlight-color: transparent;
     /* 300ms colour fade overrides Tailwind's `transition-colors` 150ms
      * default on the inner className so hover/active state changes ease
      * in instead of snapping. Matched to the active-bar duration below
      * so both indicators land in lockstep. */
-    transition: background-color var(--theme-motion-duration-interactive)
+    transition:
+        background-color var(--theme-motion-duration-interactive)
             var(--theme-motion-easing-standard),
         color var(--theme-motion-duration-interactive)
             var(--theme-motion-easing-standard);
@@ -25,48 +26,24 @@ nav[aria-label='Primary mobile navigation'] button {
  * emitter pre-resolves per mode (light: -100 bg / -700 fg, dark: -800
  * bg / -200 fg). One var ref per pseudo-class instead of inline
  * light-dark() that gates on Safari 17.5+. */
-nav[aria-label='Primary mobile navigation'] a:hover,
-nav[aria-label='Primary mobile navigation'] button:hover,
-nav[aria-label='Primary mobile navigation'] a:focus-visible,
-nav[aria-label='Primary mobile navigation'] button:focus-visible {
+nav[aria-label="Primary mobile navigation"] a:hover,
+nav[aria-label="Primary mobile navigation"] button:hover,
+nav[aria-label="Primary mobile navigation"] a:focus-visible,
+nav[aria-label="Primary mobile navigation"] button:focus-visible {
     color: var(--theme-brand-primary-highlight-fg) !important;
     background: var(--theme-brand-primary-highlight-bg) !important;
 }
 
-nav[aria-label='Primary mobile navigation'] a:focus-visible,
-nav[aria-label='Primary mobile navigation'] button:focus-visible {
+nav[aria-label="Primary mobile navigation"] a:focus-visible,
+nav[aria-label="Primary mobile navigation"] button:focus-visible {
     outline: 2px solid var(--theme-brand-primary-500);
     outline-offset: -4px;
 }
 
-/* Active tab indicator: a 2px brand bar across the full top edge of
- * the tab cell. Rendered on every tab (not just the active one) so the
- * transform transition has somewhere to start from when the active tab
- * changes — `scaleX(0)` keeps it invisibly collapsed at the cell's
- * centerline, then `scaleX(1)` grows it edge-to-edge over 300ms when
- * the tab's `aria-current` flips to 'page'. */
-nav[aria-label='Primary mobile navigation'] a::before,
-nav[aria-label='Primary mobile navigation'] button::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--theme-brand-primary-500);
-    transform: scaleX(0);
-    transform-origin: center;
-    transition: transform var(--theme-motion-duration-interactive)
-        var(--theme-motion-easing-standard);
-}
-
-nav[aria-label='Primary mobile navigation'] a[aria-current='page']::before,
-nav[aria-label='Primary mobile navigation'] a:hover::before,
-nav[aria-label='Primary mobile navigation'] button:hover::before,
-nav[aria-label='Primary mobile navigation'] a:focus-visible::before,
-nav[aria-label='Primary mobile navigation'] button:focus-visible::before {
-    transform: scaleX(1);
-}
+/* The old 2px top-edge active-indicator bar is gone (owner, 2026-08-26):
+ * on the floating-pill nav each tab's rounded highlight IS the active
+ * indicator, and the bar rendered as a stray line poking above the
+ * active pill's curve. */
 
 /* Modal close-button hover */
 .alex-modal-close:hover {
@@ -87,8 +64,10 @@ nav[aria-label='Primary mobile navigation'] button:focus-visible::before {
 .alex-fab:hover {
     transform: translateY(-2px);
     box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--theme-brand-primary-500) 40%, transparent),
-        0 14px 32px color-mix(in srgb, var(--theme-brand-primary-500) 55%, transparent),
+        0 0 0 1px
+            color-mix(in srgb, var(--theme-brand-primary-500) 40%, transparent),
+        0 14px 32px
+            color-mix(in srgb, var(--theme-brand-primary-500) 55%, transparent),
         0 6px 14px rgba(0, 0, 0, 0.3);
 }
 
@@ -114,11 +93,7 @@ nav[aria-label='Primary mobile navigation'] button:focus-visible::before {
  * tappable. Soft tint of the base-content color so it lifts subtly
  * against the chrome bg in either mode. */
 .alex-sidebar-user:hover {
-    background: color-mix(
-        in srgb,
-        var(--theme-base-content) 8%,
-        transparent
-    );
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
 }
 
 /* User-menu dropdown rows — hover lifts via the same soft tint pattern.
@@ -131,11 +106,7 @@ nav[aria-label='Primary mobile navigation'] button:focus-visible::before {
 
 .alex-user-menu a:hover,
 .alex-user-menu button:hover {
-    background: color-mix(
-        in srgb,
-        var(--theme-base-content) 8%,
-        transparent
-    );
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
 }
 
 /* Destructive menu rows (logout, delete, etc.) — hover paints with the
@@ -246,7 +217,7 @@ nav[aria-label='Primary mobile navigation'] button:focus-visible::before {
 /* Appearance picker (light/dark/system segmented control) — only the
  * unselected buttons get a hover treatment. Selected button has its
  * own brand-fill style inline that should not change on hover. */
-.alex-appearance-picker .alex-appearance-btn[aria-pressed='false']:hover {
+.alex-appearance-picker .alex-appearance-btn[aria-pressed="false"]:hover {
     background: color-mix(
         in srgb,
         var(--theme-base-content) 6%,
@@ -271,33 +242,21 @@ nav[aria-label='Primary mobile navigation'] button:focus-visible::before {
  * Soft base-content tint matches the family of clickable rows
  * elsewhere (sidebar items, dropdown rows, settings rows). */
 .alex-add-new-card:hover {
-    background: color-mix(
-        in srgb,
-        var(--theme-base-content) 6%,
-        transparent
-    );
+    background: color-mix(in srgb, var(--theme-base-content) 6%, transparent);
 }
 
 /* Settings sheet — drilldown row hover. Subtle base-content tint so the
  * row reads as tappable without competing with the brand-coloured icon. */
 .alex-settings-row:hover {
-    background: color-mix(
-        in srgb,
-        var(--theme-base-content) 6%,
-        transparent
-    );
+    background: color-mix(in srgb, var(--theme-base-content) 6%, transparent);
 }
 
 /* Sidebar nav rows — non-active rows lift via the same soft tint pattern.
  * Active rows already carry their own brand-coloured bg inline, so the
  * `:not([aria-current='page'])` guard prevents the tint from washing
  * out the highlight. */
-.alex-sidebar-row:not([aria-current='page']):hover {
-    background: color-mix(
-        in srgb,
-        var(--theme-base-content) 8%,
-        transparent
-    );
+.alex-sidebar-row:not([aria-current="page"]):hover {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
 }
 
 /* Settings rail nav — left-rail rows in <SettingsBody>. Active rows get
@@ -306,11 +265,7 @@ nav[aria-label='Primary mobile navigation'] button:focus-visible::before {
  * hover. The `--active` modifier short-circuits the hover rule so the
  * active row keeps its brand fill regardless of pointer state. */
 .alex-settings-nav-row:not(.alex-settings-nav-row--active):hover {
-    background: color-mix(
-        in srgb,
-        var(--theme-base-content) 8%,
-        transparent
-    );
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
 }
 
 .alex-settings-nav-row--active {
@@ -368,11 +323,7 @@ nav[aria-label='Primary mobile navigation'] button:focus-visible::before {
  * stronger fill so the hover tint reads as a subtle deepening rather
  * than a flicker. */
 .alex-ring-option:hover {
-    background: color-mix(
-        in srgb,
-        var(--theme-base-content) 6%,
-        transparent
-    );
+    background: color-mix(in srgb, var(--theme-base-content) 6%, transparent);
 }
 
 .alex-ring-option:focus-visible {
@@ -400,16 +351,12 @@ nav[aria-label='Primary mobile navigation'] button:focus-visible::before {
 /* Project switcher dropdown items — non-current rows tint on hover;
  * current row keeps its brand-coloured fg so the checkmark + name
  * stay highlighted. */
-.alex-project-switcher-item[aria-selected='false']:hover {
-    background: color-mix(
-        in srgb,
-        var(--theme-base-content) 8%,
-        transparent
-    );
+.alex-project-switcher-item[aria-selected="false"]:hover {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
     color: var(--theme-base-content) !important;
 }
 
-.alex-project-switcher-item[aria-selected='true']:hover {
+.alex-project-switcher-item[aria-selected="true"]:hover {
     background: color-mix(
         in srgb,
         var(--theme-brand-primary-500) 10%,

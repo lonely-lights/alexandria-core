@@ -34,7 +34,7 @@ export default function BottomNav({ tabs }: BottomNavProps) {
                     // reference): inset from the sides, riding above the
                     // home-indicator zone, fully rounded, each tab's
                     // highlight its own pill inside the capsule.
-                    bottom: "calc(env(safe-area-inset-bottom, 0px) + 0.625rem)",
+                    bottom: "calc(env(safe-area-inset-bottom, 0px) / 2 + 0.3125rem)",
                     minHeight: "3.875rem",
                     padding: "0.375rem",
                     borderRadius: "999px",
@@ -112,7 +112,16 @@ function Tab({ tab, active }: TabProps) {
         </>
     );
 
-    const baseStyle = { color: colorVar, background: backgroundVar };
+    // The active pill wears a brand border ring as its indicator (owner,
+    // 2026-08-26 — replaces the old 2px top-edge bar). Transparent border
+    // on the rest so activation never shifts layout.
+    const baseStyle = {
+        color: colorVar,
+        background: backgroundVar,
+        border: active
+            ? "1px solid color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent)"
+            : "1px solid transparent",
+    };
 
     // Action-only tabs (href '#') render as buttons. Useful for tabs that
     // open modals / sheets rather than navigating.
