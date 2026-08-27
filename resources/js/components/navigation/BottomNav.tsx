@@ -27,29 +27,25 @@ export default function BottomNav({ tabs }: BottomNavProps) {
         <>
             <nav
                 aria-label="Primary mobile navigation"
-                className="fixed inset-x-0 z-40 flex items-stretch lg:hidden"
+                className="fixed inset-x-4 z-40 flex items-stretch gap-1 lg:hidden"
                 style={{
-                    // The bar sits ABOVE the home-indicator zone rather than
-                    // absorbing it (owner ruling, 2026-08-26): native apps
-                    // treat that strip as system chrome, so it gets its own
-                    // pure-black underlay below and the bar itself stays a
-                    // compact row with a light symmetric pad.
-                    // The vertical breathing room lives INSIDE each Tab
-                    // (py-1.5), not here: padding on the shell left a gap
-                    // above/below the active tab's highlight fill, which
-                    // should span the bar's full height (owner, 2026-08-26).
-                    // No indicator strip (owner tuning, 2026-08-26, after
-                    // trying full and half): the bar sits flush and the
-                    // home indicator floats over its surface.
-                    bottom: "0",
-                    minHeight: "4.75rem",
+                    // Floating pill (owner direction, 2026-08-26, settled
+                    // after the edge-to-edge experiments — Reddit-app
+                    // reference): inset from the sides, riding above the
+                    // home-indicator zone, fully rounded, each tab's
+                    // highlight its own pill inside the capsule.
+                    bottom: "calc(env(safe-area-inset-bottom, 0px) + 0.625rem)",
+                    minHeight: "3.875rem",
+                    padding: "0.375rem",
+                    borderRadius: "999px",
                     // base-chrome is the elevated-chrome surface (darker than
                     // page in light mode, lighter in dark) — same role as
-                    // the top navbar. The base ramp flips direction per mode
-                    // so navbars + footers read correctly in both.
+                    // the top navbar. Near-solid so content scrolling under
+                    // the float reads as depth, not bleed-through.
                     background:
-                        "color-mix(in srgb, var(--theme-base-chrome) 88%, transparent)",
-                    borderTop: "1px solid var(--theme-base-400)",
+                        "color-mix(in srgb, var(--theme-base-chrome) 96%, transparent)",
+                    border: "1px solid var(--theme-base-400)",
+                    boxShadow: "0 10px 28px rgba(0, 0, 0, 0.38)",
                     backdropFilter: "blur(14px)",
                     WebkitBackdropFilter: "blur(14px)",
                 }}
@@ -89,7 +85,7 @@ function Tab({ tab, active }: TabProps) {
     const backgroundVar = active ? ACTIVE_BG : "transparent";
 
     const className =
-        "flex flex-1 flex-col items-center justify-center gap-1 py-1.5 text-center no-underline transition-colors";
+        "flex flex-1 flex-col items-center justify-center gap-0.5 rounded-full py-1 text-center no-underline transition-colors";
 
     const inner = (
         <>
