@@ -23,6 +23,7 @@ import ManuscriptEditor, {
     PRINT_LAYOUT_STORAGE_KEY,
     readPrintLayoutPreference,
 } from './Sections/ManuscriptEditor';
+import BoardView from './Board/BoardView';
 import OutlineSidebar from './Outline/OutlineSidebar';
 import OutlineView from './Outline/OutlineView';
 import type { OutlineBeat } from './Outline/outlineTypes';
@@ -497,20 +498,22 @@ export default function Workspace() {
                 activeSectionIdRef.current = currentSectionId;
             }
 
-            // Outline edits (add/rename/reparent/delete sections) save
-            // through their own plain fetch, not an Inertia visit — the
-            // server-rendered `sections` tree the Navigator/other views
-            // read never hears about them. Leaving outline mode is the
+            // Outline AND board edits (add/rename/reparent/delete
+            // sections, drag reorder) save through their own plain
+            // fetch, not an Inertia visit — the server-rendered
+            // `sections` tree the Navigator/other views read never
+            // hears about them. Leaving either structural view is the
             // one moment that MUST catch it up.
-            const leavingOutline = viewMode === 'outline' && next !== 'outline';
+            const leavingStructuralView =
+                (viewMode === 'outline' || viewMode === 'board') && next !== 'outline' && next !== 'board';
 
             if (next === 'focus' && slug !== null) {
                 router.visit(flowUrl(project.slug, work.slug, slug), {
-                    only: leavingOutline ? ['currentSection', 'sections'] : ['currentSection'],
+                    only: leavingStructuralView ? ['currentSection', 'sections'] : ['currentSection'],
                     preserveState: true,
                     preserveScroll: true,
                 });
-            } else if (leavingOutline) {
+            } else if (leavingStructuralView) {
                 router.reload({ only: ['sections', 'currentSection'] });
             }
         },
@@ -1079,13 +1082,14 @@ export default function Workspace() {
                 <div className="writing-workspace-body relative flex min-h-0 flex-1">
                     {/* Navigator — pushed back entirely in focus mode:
                         focus is "just the text" (owner ruling 2026-08-09).
-                        Also absent in outline mode: the outline pane IS
-                        the section tree at full width, so the floating
-                        Sections layer would only duplicate it and collide
-                        with the wider layout (owner, 2026-08-28). Stored
-                        open/closed preferences are untouched either way,
-                        so returning to continuous restores what was open. */}
-                    {chromeVisible && viewMode !== 'outline' && (
+                        Also absent in outline and board mode: each of
+                        those panes IS the section map at full width, so
+                        the floating Sections layer would only duplicate
+                        it and collide with the wider layout (owner,
+                        2026-08-28). Stored open/closed preferences are
+                        untouched either way, so returning to continuous
+                        restores what was open. */}
+                    {chromeVisible && viewMode !== 'outline' && viewMode !== 'board' && (
                     <div className="writing-workspace-structure-layer hidden md:block">
                         <button
                             type="button"
@@ -1145,6 +1149,13 @@ export default function Workspace() {
                         )}
                         {viewMode === 'outline' ? (
                             <OutlineView
+                                projectSlug={project.slug}
+                                workSlug={work.slug}
+                                canUpdate={can.update}
+                                onNavigate={selectSection}
+                            />
+                        ) : viewMode === 'board' ? (
+                            <BoardView
                                 projectSlug={project.slug}
                                 workSlug={work.slug}
                                 canUpdate={can.update}

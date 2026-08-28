@@ -188,6 +188,7 @@ return [
     'flow.page_display_tight' => 'Tight',
     'flow.page_display_pages' => 'Pages',
     'flow.outline' => 'Outline',
+    'flow.board' => 'Board',
 
     // Outline view (Stage — outline mode, Task 5)
     'outline.title' => 'Outline',
@@ -229,6 +230,12 @@ return [
     'board.stakes_label' => 'Stakes',
     'board.tone_placeholder' => 'Tone',
     'board.open_scene' => 'Open scene',
+
+    // Beat Board view (spec 2026-08-28 Beat Board, Task 4)
+    'board.title' => 'Board',
+    'board.empty' => 'No scenes yet.',
+    'board.untitled_column' => 'Scenes',
+    'board.column_count' => ':count scenes',
 
     'guidance.screenplay.title' => 'Screenplay structure',
     'guidance.screenplay.body' => 'A quick check against the default act-and-scene shape for a feature screenplay.',
@@ -437,6 +444,7 @@ return [
     'ribbon.paper_cream' => 'Cream',
     'ribbon.paper_gray' => 'Soft gray',
     'ribbon.outline_view' => 'Outline view',
+    'ribbon.board_view' => 'Board view',
     'ribbon.show_plan' => 'Show plan',
     'ribbon.panel' => 'Reference panel',
     'ribbon.code_view' => 'Code view',

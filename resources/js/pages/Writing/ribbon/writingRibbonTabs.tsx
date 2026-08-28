@@ -336,6 +336,15 @@ const viewTab: RibbonTab<Ctx> = {
                         ctx.actions.setViewMode(ctx.viewMode === 'outline' ? 'continuous' : 'outline'),
                 },
                 {
+                    id: 'board-view',
+                    type: 'toggle',
+                    icon: 'fa-solid fa-table-columns',
+                    labelKey: 'writing.ribbon.board_view',
+                    active: (ctx) => ctx.viewMode === 'board',
+                    onAction: (ctx) =>
+                        ctx.actions.setViewMode(ctx.viewMode === 'board' ? 'continuous' : 'board'),
+                },
+                {
                     id: 'show-plan',
                     type: 'toggle',
                     icon: 'fa-solid fa-list-check',

@@ -7,15 +7,16 @@ import type { WorkspaceViewMode } from './viewMode';
 /**
  * Manuscript view switcher — spec 2026-08-08
  * continuous-manuscript-scene-flow; widened 2026-08-28 outline-mode
- * Task 5 to a third segment.
+ * Task 5 to a third segment; widened again 2026-08-28 Beat Board
+ * Task 4 to a fourth.
  *
- * Three words in a segmented pill, floated over the top-right of the
+ * Four words in a segmented pill, floated over the top-right of the
  * editor pane: 'Continuous' streams the whole work through one
  * scrollport, 'Focus' keeps the one-section-at-a-time editor,
- * 'Outline' swaps in the full-pane structural outline. It is
- * deliberately a pill rather than another ribbon icon — the choice
- * changes what the whole desk *is*, so it belongs on the desk, not
- * buried in a tab.
+ * 'Outline' swaps in the full-pane structural outline, 'Board' swaps
+ * in the spatial index-card Beat Board. It is deliberately a pill
+ * rather than another ribbon icon — the choice changes what the whole
+ * desk *is*, so it belongs on the desk, not buried in a tab.
  *
  * Colours follow the right rail's PanelModeSwitcher idiom (a
  * brand-secondary wash on the live segment) so the two switchers in the
@@ -45,6 +46,7 @@ const SEGMENTS: Array<{ id: WorkspaceViewMode; labelKey: string }> = [
     { id: 'continuous', labelKey: 'writing.flow.continuous' },
     { id: 'focus', labelKey: 'writing.flow.focus' },
     { id: 'outline', labelKey: 'writing.flow.outline' },
+    { id: 'board', labelKey: 'writing.flow.board' },
 ];
 
 export interface FlowToggleProps {
@@ -75,6 +77,7 @@ export default function FlowToggle({ mode, onChange }: FlowToggleProps) {
                         data-flow-toggle-continuous={id === 'continuous' ? '' : undefined}
                         data-flow-toggle-focus={id === 'focus' ? '' : undefined}
                         data-flow-toggle-outline={id === 'outline' ? '' : undefined}
+                        data-flow-toggle-board={id === 'board' ? '' : undefined}
                         className="cursor-pointer px-2.5 py-1 text-xs font-semibold transition-colors"
                         style={isActive ? activeSegmentStyle : idleSegmentStyle}
                     >
