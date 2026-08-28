@@ -84,11 +84,17 @@ export default function useSectionAutosave({
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingRef = useRef(false);
+    // Unsaved-work flag half two: a PUT in flight. `pendingRef` covers
+    // the debounce window; together they answer "would a refresh right
+    // now lose anything?" for the unload guard (owner, 2026-08-28 —
+    // same layering as the outline view's useOutlineSync).
+    const savingRef = useRef(false);
     const latestContentRef = useRef(section.content ?? '');
     const sectionIdRef = useRef(section.id);
 
-    function fireSave(sectionId: number, serialized: string) {
+    function fireSave(sectionId: number, serialized: string, keepalive = false) {
         pendingRef.current = false;
+        savingRef.current = true;
 
         // A save (idle-debounce, max-pending flush, or section-switch
         // flush) resets the max-pending window — it restarts on the
@@ -112,6 +118,9 @@ export default function useSectionAutosave({
                 'X-CSRF-TOKEN': getCsrfToken(),
             },
             body: JSON.stringify({ content: serialized }),
+            // The page-teardown path needs the request to outlive the
+            // document (refresh/close mid-debounce).
+            keepalive,
         })
             .then((response) =>
                 response.ok
@@ -133,10 +142,17 @@ export default function useSectionAutosave({
             })
             .catch(() => {
                 // Content refs are untouched — the next keystroke
-                // reschedules the save, retrying naturally.
+                // reschedules the save, retrying naturally. The edit
+                // never reached the server, so re-raise the unsaved
+                // flag for the unload guard (current section only —
+                // a switched-away section's refs have moved on).
                 if (sectionIdRef.current === sectionId) {
+                    pendingRef.current = true;
                     setStatus('error');
                 }
+            })
+            .finally(() => {
+                savingRef.current = false;
             });
     }
 
@@ -201,6 +217,50 @@ export default function useSectionAutosave({
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [section.id]);
+
+    // Unsaved-work unload guard + refresh net (owner, 2026-08-28 —
+    // mirrors useOutlineSync). beforeunload: a hard refresh/close with
+    // unsaved prose pauses on the browser's leave-site dialog while a
+    // flush races behind it; staying lets the save land. pagehide: the
+    // final net — fire the pending save with keepalive so it outlives
+    // the document. Mount-once: every value read is a ref. SPA
+    // navigation never triggers either path.
+    useEffect(() => {
+        const flushPending = (keepalive: boolean) => {
+            if (timerRef.current !== null) {
+                clearTimeout(timerRef.current);
+                timerRef.current = null;
+            }
+
+            fireSave(sectionIdRef.current, latestContentRef.current, keepalive);
+        };
+
+        const onBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (pendingRef.current || savingRef.current) {
+                if (pendingRef.current) {
+                    flushPending(false);
+                }
+
+                event.preventDefault();
+                event.returnValue = '';
+            }
+        };
+
+        const onPageHide = () => {
+            if (pendingRef.current) {
+                flushPending(true);
+            }
+        };
+
+        window.addEventListener('beforeunload', onBeforeUnload);
+        window.addEventListener('pagehide', onPageHide);
+
+        return () => {
+            window.removeEventListener('beforeunload', onBeforeUnload);
+            window.removeEventListener('pagehide', onPageHide);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Snapshot keyed on section id, NOT on content: autosave responses
     // never rewrite the prop mid-edit, but a partial reload that
