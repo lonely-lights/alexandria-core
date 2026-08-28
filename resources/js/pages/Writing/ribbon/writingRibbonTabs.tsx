@@ -327,6 +327,15 @@ const viewTab: RibbonTab<Ctx> = {
                     onAction: (ctx) => ctx.actions.togglePrintLayout(),
                 },
                 {
+                    id: 'outline-view',
+                    type: 'toggle',
+                    icon: 'fa-solid fa-list-tree',
+                    labelKey: 'writing.ribbon.outline_view',
+                    active: (ctx) => ctx.viewMode === 'outline',
+                    onAction: (ctx) =>
+                        ctx.actions.setViewMode(ctx.viewMode === 'outline' ? 'continuous' : 'outline'),
+                },
+                {
                     /* Sits beside print layout because it only means
                        anything inside it — the two describe one idea of
                        "show me paper". */

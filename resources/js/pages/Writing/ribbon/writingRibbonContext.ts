@@ -6,6 +6,8 @@
  * bridge.
  */
 
+import type { WorkspaceViewMode } from '../Flow/viewMode';
+
 /** Commands both editors expose to the ribbon (via ref). All methods
  *  must be safe to call when unsupported — no-op + reflect via the
  *  capability queries so controls disable instead of breaking. */
@@ -74,6 +76,8 @@ export interface WritingRibbonContext {
     canUpdate: boolean;
     panelOpen: boolean;
     sceneLinksPanelOpen: boolean;
+    /** 'continuous' | 'focus' | 'outline' — see `Flow/viewMode.ts`. */
+    viewMode: WorkspaceViewMode;
     printLayout: boolean;
     /** How print layout draws a page boundary: 'tight' | 'pages'. */
     pageDisplay: string;
@@ -88,6 +92,7 @@ export interface WritingRibbonContext {
     actions: {
         togglePanel(): void;
         toggleSceneLinksPanel(): void;
+        setViewMode(mode: WorkspaceViewMode): void;
         togglePrintLayout(): void;
         setPageDisplay(value: string): void;
         setPaperColor(value: string): void;

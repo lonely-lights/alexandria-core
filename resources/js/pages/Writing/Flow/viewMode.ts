@@ -1,10 +1,12 @@
 /**
  * Workspace view-mode persistence — spec 2026-08-08
- * continuous-manuscript-scene-flow.
+ * continuous-manuscript-scene-flow; widened 2026-08-28 outline-mode
+ * Task 5 to add a third mode.
  *
  * Per-work client-side storage for the manuscript view switcher:
  * 'continuous' streams every section in one scroll, 'focus' keeps the
- * one-section-at-a-time editor. Key per work:
+ * one-section-at-a-time editor, 'outline' swaps the editor pane for the
+ * full-pane structural outline (`OutlineView`). Key per work:
  * `alexandria.writing.view-mode:<workId>`.
  *
  * Mirrors `pages/Writing/panelMode.ts` — a pure module so Vitest can test
@@ -13,10 +15,10 @@
  * degrade to the default instead of throwing.
  */
 
-/** The two manuscript view modes. */
-export type WorkspaceViewMode = 'continuous' | 'focus';
+/** The three manuscript view modes. */
+export type WorkspaceViewMode = 'continuous' | 'focus' | 'outline';
 
-const MODES = new Set<string>(['continuous', 'focus'] as const);
+const MODES = new Set<string>(['continuous', 'focus', 'outline'] as const);
 const KEY_PREFIX = 'alexandria.writing.view-mode';
 const DEFAULT_MODE: WorkspaceViewMode = 'continuous';
 

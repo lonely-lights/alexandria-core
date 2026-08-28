@@ -23,6 +23,7 @@ import ManuscriptEditor, {
     PRINT_LAYOUT_STORAGE_KEY,
     readPrintLayoutPreference,
 } from './Sections/ManuscriptEditor';
+import OutlineView from './Outline/OutlineView';
 import { clampFontSize, readFontSize, writeFontSize } from './fontSize';
 import {
     normalizePageDisplay,
@@ -398,8 +399,9 @@ export default function Workspace() {
 
     /* Focus mode is a reset to just-the-text: the Navigator layer and
        the right rail render pushed back, without touching their stored
-       open/closed preferences — continuous restores them as they were. */
-    const chromeVisible = viewMode === 'continuous';
+       open/closed preferences — continuous (and outline) restore them
+       as they were. */
+    const chromeVisible = viewMode !== 'focus';
 
     /* Narrowed dependency values, extracted to plain identifiers so the
        hook dep arrays stay simple expressions. These MUST stay in the
@@ -490,12 +492,21 @@ export default function Workspace() {
                 activeSectionIdRef.current = currentSectionId;
             }
 
+            // Outline edits (add/rename/reparent/delete sections) save
+            // through their own plain fetch, not an Inertia visit — the
+            // server-rendered `sections` tree the Navigator/other views
+            // read never hears about them. Leaving outline mode is the
+            // one moment that MUST catch it up.
+            const leavingOutline = viewMode === 'outline' && next !== 'outline';
+
             if (next === 'focus' && slug !== null) {
                 router.visit(flowUrl(project.slug, work.slug, slug), {
-                    only: ['currentSection'],
+                    only: leavingOutline ? ['currentSection', 'sections'] : ['currentSection'],
                     preserveState: true,
                     preserveScroll: true,
                 });
+            } else if (leavingOutline) {
+                router.reload({ only: ['sections', 'currentSection'] });
             }
         },
         [viewMode, work.id, activeSceneSlug, currentSectionId, currentSectionSlug, project.slug, work.slug],
@@ -828,6 +839,7 @@ export default function Workspace() {
             canUpdate: can.update,
             panelOpen,
             sceneLinksPanelOpen: panelOpen && panelMode === 'linked' && linkedPanelTab === 'scene-links',
+            viewMode,
             printLayout,
             pageDisplay,
             paperColor,
@@ -845,6 +857,7 @@ export default function Workspace() {
             actions: {
                 togglePanel,
                 toggleSceneLinksPanel,
+                setViewMode: switchViewMode,
                 togglePrintLayout,
                 setPageDisplay: updatePageDisplay,
                 setPaperColor: updatePaperColor,
@@ -882,7 +895,7 @@ export default function Workspace() {
             },
             workStatus: work.status,
         };
-    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, panelOpen, panelMode, linkedPanelTab, printLayout, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, togglePrintLayout, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize]);
+    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize]);
 
     const workWords = liveWorkWords ?? work.word_count;
 
@@ -1111,7 +1124,14 @@ export default function Workspace() {
                                 <FlowToggle mode={viewMode} onChange={switchViewMode} />
                             </div>
                         )}
-                        {viewMode === 'continuous' && sections.length > 0 ? (
+                        {viewMode === 'outline' ? (
+                            <OutlineView
+                                projectSlug={project.slug}
+                                workSlug={work.slug}
+                                canUpdate={can.update}
+                                onNavigate={selectSection}
+                            />
+                        ) : viewMode === 'continuous' && sections.length > 0 ? (
                             <ContinuousFlow
                                 project={project}
                                 work={work}
