@@ -1079,9 +1079,13 @@ export default function Workspace() {
                 <div className="writing-workspace-body relative flex min-h-0 flex-1">
                     {/* Navigator — pushed back entirely in focus mode:
                         focus is "just the text" (owner ruling 2026-08-09).
-                        Stored open/closed preferences are untouched, so
-                        returning to continuous restores what was open. */}
-                    {chromeVisible && (
+                        Also absent in outline mode: the outline pane IS
+                        the section tree at full width, so the floating
+                        Sections layer would only duplicate it and collide
+                        with the wider layout (owner, 2026-08-28). Stored
+                        open/closed preferences are untouched either way,
+                        so returning to continuous restores what was open. */}
+                    {chromeVisible && viewMode !== 'outline' && (
                     <div className="writing-workspace-structure-layer hidden md:block">
                         <button
                             type="button"
