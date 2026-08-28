@@ -25,6 +25,14 @@ export function rowsFromProjection(projection: OutlineProjection): OutlineRow[] 
         slug: row.slug,
         synopsis: row.synopsis,
         beats: row.beats,
+        beatType: row.beat_type,
+        goal: row.goal,
+        conflict: row.conflict,
+        stakes: row.stakes,
+        mood: row.mood,
+        tone: row.tone,
+        wordCount: row.word_count,
+        status: row.status,
     }));
 }
 

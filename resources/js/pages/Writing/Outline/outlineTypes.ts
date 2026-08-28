@@ -40,6 +40,21 @@ export interface OutlineRow {
     slug: string | null;
     synopsis: string | null;
     beats: OutlineBeat[];
+    /**
+     * Beat Board craft fields — optional, client-side only. Populated
+     * from the server's snake_case projection fields (see
+     * `rowsFromProjection`) but never round-tripped back through
+     * `buildOutlinePayload`; the outline PUT endpoint doesn't accept
+     * them.
+     */
+    beatType?: string | null;
+    goal?: string | null;
+    conflict?: string | null;
+    stakes?: string | null;
+    mood?: string | null;
+    tone?: string | null;
+    wordCount?: number;
+    status?: string | null;
 }
 
 /** One row as the server represents it — always has a real `sectionId`. */
@@ -52,6 +67,21 @@ export interface ServerOutlineRow {
     slug: string;
     synopsis: string | null;
     beats: OutlineBeat[];
+    /**
+     * Beat Board craft fields — see `OutlineRow`. Unlike the rest of
+     * this interface, the server projection carries these as
+     * snake_case keys (added by Task 1 without going through the
+     * existing camelCase resource transform); `rowsFromProjection`
+     * maps them onto `OutlineRow`'s camelCase equivalents.
+     */
+    beat_type?: string | null;
+    goal?: string | null;
+    conflict?: string | null;
+    stakes?: string | null;
+    mood?: string | null;
+    tone?: string | null;
+    word_count?: number;
+    status?: string | null;
 }
 
 /** The GET /{work}/outline response body. */
