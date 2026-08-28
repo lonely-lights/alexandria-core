@@ -199,7 +199,9 @@ const keepBtnStyle: CSSProperties = {
 
 const beatsWrapStyle: CSSProperties = {
     marginTop: '0.125rem',
-    marginLeft: '1.75rem',
+    // 1.75rem to sit under the title + 1.125rem for the collapse
+    // chevron/spacer column the row line now carries before it.
+    marginLeft: '2.875rem',
 };
 
 const beatRowStyle: CSSProperties = {
@@ -275,10 +277,11 @@ function blockedFor(row: OutlineRow, blocked: BlockedOutlineRow[]): BlockedOutli
 
 export default function OutlineView({ projectSlug, workSlug, canUpdate }: OutlineViewProps) {
     const t = useT();
-    const { rows, setRows, deleteRow, forceDelete, status, blocked, reload } = useOutlineSync({
-        projectSlug,
-        workSlug,
-    });
+    const { rows, setRows, deleteRow, forceDelete, flush, status, blocked, reload } =
+        useOutlineSync({
+            projectSlug,
+            workSlug,
+        });
 
     const inputRefs = useRef(new Map<string, HTMLInputElement>());
     const pendingFocusRef = useRef<string | null>(null);
@@ -386,6 +389,9 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
         if (event.key === 'Enter') {
             event.preventDefault();
             dispatch({ type: 'enter', key: row.key });
+            // Enter is a natural commit point — don't leave the new
+            // line's predecessors sitting in the debounce window.
+            flush();
             return;
         }
 
@@ -442,6 +448,7 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
         if (event.key === 'Enter') {
             event.preventDefault();
             dispatch({ type: 'enter', key: beatKey(row.key, beat.id) });
+            flush();
             return;
         }
 
@@ -575,6 +582,7 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
                                     }
                                     onKeyDown={(event) => handleKeyDown(event, row)}
                                     onPaste={(event) => handlePaste(event, row)}
+                                    onBlur={() => flush()}
                                 />
                                 <input
                                     type="text"
@@ -591,6 +599,7 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
                                         })
                                     }
                                     onKeyDown={(event) => handleKeyDown(event, row)}
+                                    onBlur={() => flush()}
                                 />
                                 {canUpdate && (
                                     <button
@@ -676,6 +685,7 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
                                                     })
                                                 }
                                                 onKeyDown={(event) => handleBeatInputKeyDown(event, row, beat)}
+                                                onBlur={() => flush()}
                                             />
                                             {canUpdate && (
                                                 <button

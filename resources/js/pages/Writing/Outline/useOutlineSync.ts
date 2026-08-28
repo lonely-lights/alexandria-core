@@ -60,6 +60,9 @@ export interface UseOutlineSyncResult {
     setRows: (updater: OutlineRow[] | ((rows: OutlineRow[]) => OutlineRow[])) => void;
     deleteRow: (key: string) => void;
     forceDelete: (key: string) => void;
+    /** Fire any pending debounced save immediately — wired to Enter and
+     *  input blur so quick captures survive an instant refresh. */
+    flush: () => void;
     status: OutlineSyncStatus;
     blocked: BlockedOutlineRow[];
     reload: () => void;
@@ -151,7 +154,20 @@ export default function useOutlineSync({
         }, SAVE_DELAY_MS);
     }
 
-    function fireSave() {
+    function flush() {
+        if (!pendingRef.current) {
+            return;
+        }
+
+        if (timerRef.current !== null) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+
+        fireSave();
+    }
+
+    function fireSave(keepalive = false) {
         pendingRef.current = false;
         setStatus('saving');
 
@@ -167,6 +183,9 @@ export default function useOutlineSync({
             credentials: 'same-origin',
             headers: apiHeaders(true),
             body: JSON.stringify(payload),
+            // The page-teardown path (refresh/close mid-debounce) needs
+            // the request to outlive the document.
+            keepalive,
         })
             .then(async (response) => {
                 if (response.status === 409) {
@@ -309,7 +328,23 @@ export default function useOutlineSync({
     useEffect(() => {
         load();
 
+        // Refresh/close mid-debounce must not eat quick captures: fire
+        // the pending save with keepalive so it outlives the document.
+        const onPageHide = () => {
+            if (pendingRef.current) {
+                if (timerRef.current !== null) {
+                    clearTimeout(timerRef.current);
+                    timerRef.current = null;
+                }
+
+                fireSave(true);
+            }
+        };
+        window.addEventListener('pagehide', onPageHide);
+
         return () => {
+            window.removeEventListener('pagehide', onPageHide);
+
             if (timerRef.current !== null) {
                 clearTimeout(timerRef.current);
                 timerRef.current = null;
@@ -322,5 +357,5 @@ export default function useOutlineSync({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url]);
 
-    return { rows, setRows, deleteRow, forceDelete, status, blocked, reload: load };
+    return { rows, setRows, deleteRow, forceDelete, flush, status, blocked, reload: load };
 }
