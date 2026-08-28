@@ -108,6 +108,10 @@ export default function useOutlineSync({
     const forceRef = useRef<Set<number>>(new Set());
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingRef = useRef(false);
+    // Raised the instant an edit exists that the server hasn't
+    // confirmed — pending debounce OR an in-flight PUT. This is the
+    // "unsaved work" flag the beforeunload guard reads.
+    const savingRef = useRef(false);
 
     function fetchProjection(): Promise<OutlineProjection> {
         return fetch(url, { credentials: 'same-origin', headers: apiHeaders() }).then((response) =>
@@ -169,6 +173,7 @@ export default function useOutlineSync({
 
     function fireSave(keepalive = false) {
         pendingRef.current = false;
+        savingRef.current = true;
         setStatus('saving');
 
         const payload = buildOutlinePayload(
@@ -261,7 +266,16 @@ export default function useOutlineSync({
 
                 setStatus('saved');
             })
-            .catch(() => setStatus('error'));
+            .catch(() => {
+                // The edit never reached the server — it is still
+                // unsaved work: re-raise the flag so the unload guard
+                // and the next flush both cover it.
+                pendingRef.current = true;
+                setStatus('error');
+            })
+            .finally(() => {
+                savingRef.current = false;
+            });
     }
 
     function scheduleSave() {
@@ -342,7 +356,24 @@ export default function useOutlineSync({
         };
         window.addEventListener('pagehide', onPageHide);
 
+        // Unsaved-work guard (owner, 2026-08-28): typing raises the
+        // flag; a refresh/close attempt while it's up pauses on the
+        // browser's leave-site dialog (custom copy isn't allowed by
+        // modern browsers — the pause is the point) while the flush
+        // races the save behind it. Staying on the page lets the
+        // status chip flip to "Saved" as the all-clear. SPA (Inertia)
+        // navigation never triggers this — only hard unloads.
+        const onBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (pendingRef.current || savingRef.current) {
+                flush();
+                event.preventDefault();
+                event.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', onBeforeUnload);
+
         return () => {
+            window.removeEventListener('beforeunload', onBeforeUnload);
             window.removeEventListener('pagehide', onPageHide);
 
             if (timerRef.current !== null) {
