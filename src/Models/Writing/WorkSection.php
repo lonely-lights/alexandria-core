@@ -85,6 +85,14 @@ class WorkSection extends Model
 
     protected $guarded = ['id'];
 
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'beats' => 'array',
+        ];
+    }
+
     protected static function booted(): void
     {
         static::creating(function (self $section) {

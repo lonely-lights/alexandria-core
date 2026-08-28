@@ -21,6 +21,7 @@ return new class extends Migration
             $table->longText('content')->nullable();
             $table->string('format')->nullable();
             $table->text('synopsis')->nullable();
+            $table->jsonb('beats')->nullable();
             $table->string('status')->nullable();
             $table->string('beat_type')->nullable();
             $table->text('goal')->nullable();
