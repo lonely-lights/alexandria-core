@@ -30,6 +30,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { worksBase } from '@alexandria/lib/urls';
 
+import { outlineApiHeaders as apiHeaders } from './outlineApi';
 import { outlineReducer } from './outlineReducer';
 import { buildOutlinePayload, reconcileTempIds, rowsFromProjection } from './outlinePayload';
 import type { OutlineProjection, OutlineRow } from './outlineTypes';
@@ -70,24 +71,6 @@ export interface UseOutlineSyncResult {
 
 /** Idle debounce before an edit is flushed to the server. */
 const SAVE_DELAY_MS = 800;
-
-function csrfToken(): string {
-    return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
-}
-
-function apiHeaders(withBody = false): HeadersInit {
-    const headers: Record<string, string> = {
-        Accept: 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-TOKEN': csrfToken(),
-    };
-
-    if (withBody) {
-        headers['Content-Type'] = 'application/json';
-    }
-
-    return headers;
-}
 
 export default function useOutlineSync({
     projectSlug,

@@ -8,7 +8,6 @@ import {
 } from 'react';
 
 import useT from '@alexandria/hooks/useT';
-import { worksBase } from '@alexandria/lib/urls';
 
 import { beatKey, outlineReducer, type OutlineAction } from './outlineReducer';
 import {
@@ -17,6 +16,7 @@ import {
     visibleOutlineRows,
     writeCollapsedKeys,
 } from './outlineCollapse';
+import { patchBeatDone } from './outlineApi';
 import { parseOutlinePaste } from './parseOutlinePaste';
 import useOutlineSync, { type BlockedOutlineRow } from './useOutlineSync';
 import type { OutlineBeat, OutlineRow } from './outlineTypes';
@@ -253,24 +253,6 @@ const addFirstBtnStyle: CSSProperties = {
     cursor: 'pointer',
 };
 
-function csrfToken(): string {
-    return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
-}
-
-function apiHeaders(withBody = false): HeadersInit {
-    const headers: Record<string, string> = {
-        Accept: 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-TOKEN': csrfToken(),
-    };
-
-    if (withBody) {
-        headers['Content-Type'] = 'application/json';
-    }
-
-    return headers;
-}
-
 function blockedFor(row: OutlineRow, blocked: BlockedOutlineRow[]): BlockedOutlineRow | undefined {
     return row.sectionId === null ? undefined : blocked.find((b) => b.sectionId === row.sectionId);
 }
@@ -359,25 +341,10 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
             return;
         }
 
-        try {
-            const response = await fetch(
-                `${worksBase(projectSlug, workSlug)}/sections/${row.sectionId}/beats/${beat.id}`,
-                {
-                    method: 'PATCH',
-                    credentials: 'same-origin',
-                    headers: apiHeaders(true),
-                    body: JSON.stringify({ done: !beat.done }),
-                },
-            );
+        const beats = await patchBeatDone(projectSlug, workSlug, row.sectionId, beat.id, !beat.done);
 
-            if (!response.ok) {
-                return;
-            }
-
-            const body = (await response.json()) as { beats: OutlineBeat[] };
-            setRows((prev) => prev.map((r) => (r.key === row.key ? { ...r, beats: body.beats } : r)));
-        } catch {
-            // Silent — the checkbox simply doesn't flip; the next click retries.
+        if (beats !== null) {
+            setRows((prev) => prev.map((r) => (r.key === row.key ? { ...r, beats } : r)));
         }
     }
 

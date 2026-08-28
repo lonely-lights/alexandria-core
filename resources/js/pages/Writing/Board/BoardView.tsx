@@ -6,10 +6,10 @@ import {
 } from 'react';
 
 import useT from '@alexandria/hooks/useT';
-import { worksBase } from '@alexandria/lib/urls';
 
 import { applyCardDrop, buildBoardColumns, type BoardColumn } from './boardModel';
 import BoardCard from './BoardCard';
+import { patchBeatDone } from '../Outline/outlineApi';
 import { moodAccent } from './moodPalette';
 import useOutlineSync from '../Outline/useOutlineSync';
 import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
@@ -179,24 +179,6 @@ const emptyStateStyle: CSSProperties = {
     flex: 1,
 };
 
-function csrfToken(): string {
-    return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
-}
-
-function apiHeaders(withBody = false): HeadersInit {
-    const headers: Record<string, string> = {
-        Accept: 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-TOKEN': csrfToken(),
-    };
-
-    if (withBody) {
-        headers['Content-Type'] = 'application/json';
-    }
-
-    return headers;
-}
-
 export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate }: BoardViewProps) {
     const t = useT();
     const { rows, setRows, flush, status } = useOutlineSync({ projectSlug, workSlug });
@@ -215,25 +197,10 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
             return;
         }
 
-        try {
-            const response = await fetch(
-                `${worksBase(projectSlug, workSlug)}/sections/${row.sectionId}/beats/${beat.id}`,
-                {
-                    method: 'PATCH',
-                    credentials: 'same-origin',
-                    headers: apiHeaders(true),
-                    body: JSON.stringify({ done: !beat.done }),
-                },
-            );
+        const beats = await patchBeatDone(projectSlug, workSlug, row.sectionId, beat.id, !beat.done);
 
-            if (!response.ok) {
-                return;
-            }
-
-            const body = (await response.json()) as { beats: OutlineBeat[] };
-            setRows((prev) => prev.map((r) => (r.key === row.key ? { ...r, beats: body.beats } : r)));
-        } catch {
-            // Silent — the checkbox simply doesn't flip; the next click retries.
+        if (beats !== null) {
+            setRows((prev) => prev.map((r) => (r.key === row.key ? { ...r, beats } : r)));
         }
     }
 
