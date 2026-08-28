@@ -21,7 +21,7 @@ Outline-first authoring bound to the real `WorkSection` tree: a full-pane Outlin
 - **Alpha migration policy applies:** edit the existing `work_sections` create-migration in place (no new migration file) AND apply `ALTER TABLE work_sections ADD COLUMN beats jsonb NULL` manually to the live app database via tinker. Testbench/CI environments rebuild from the edited migration automatically.
 - Beat `done` lives inside the JSON. No changes to `status`, word counts, or the Navigator (beats are not sections).
 
-## API (core, alongside the existing writing endpoints; same auth/policy as section editing — `WorkPolicy` update ability)
+## API (**app-side** — writing routes/controllers live in `alexandria-app` (`routes/web.php` works group, `app/Http/Controllers/Writing/`); core ships the frontend, model cast, and migration. Authorization via route middleware `can:view,work` / `can:update,work`, matching the existing section endpoints)
 
 ### `GET /works/{work}/outline`
 Returns the outline projection: flat, depth-annotated, position-ordered rows.
