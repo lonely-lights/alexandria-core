@@ -218,6 +218,18 @@ return [
     'plan.synopsis_placeholder' => 'Add a synopsis…',
     'plan.done_line' => ':count beats done',
 
+    // Beat Board scene card (spec 2026-08-28 Beat Board, Task 3)
+    'board.title_placeholder' => 'Untitled',
+    'board.synopsis_placeholder' => 'Add a synopsis…',
+    'board.beat_placeholder' => 'Beat…',
+    'board.craft_toggle' => 'Craft',
+    'board.beat_type_placeholder' => 'Beat type',
+    'board.goal_label' => 'Goal',
+    'board.conflict_label' => 'Conflict',
+    'board.stakes_label' => 'Stakes',
+    'board.tone_placeholder' => 'Tone',
+    'board.open_scene' => 'Open scene',
+
     'guidance.screenplay.title' => 'Screenplay structure',
     'guidance.screenplay.body' => 'A quick check against the default act-and-scene shape for a feature screenplay.',
     'guidance.stage_play.title' => 'Stage play structure',
