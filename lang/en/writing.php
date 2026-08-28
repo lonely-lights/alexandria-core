@@ -196,6 +196,8 @@ return [
     'outline.title_placeholder' => 'Untitled',
     'outline.synopsis_placeholder' => 'Add a synopsis…',
     'outline.beat_placeholder' => 'Beat…',
+    'outline.collapse' => 'Collapse',
+    'outline.expand' => 'Expand',
     'outline.delete_row' => 'Delete',
     'outline.delete_beat' => 'Remove beat',
     'outline.beat_conversion_blocked' => "This section is already saved — it can't fold into a beat.",

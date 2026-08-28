@@ -11,6 +11,12 @@ import useT from '@alexandria/hooks/useT';
 import { worksBase } from '@alexandria/lib/urls';
 
 import { beatKey, outlineReducer, type OutlineAction } from './outlineReducer';
+import {
+    readCollapsedKeys,
+    rowHasNested,
+    visibleOutlineRows,
+    writeCollapsedKeys,
+} from './outlineCollapse';
 import { parseOutlinePaste } from './parseOutlinePaste';
 import useOutlineSync, { type BlockedOutlineRow } from './useOutlineSync';
 import type { OutlineBeat, OutlineRow } from './outlineTypes';
@@ -122,6 +128,24 @@ const synopsisInputStyle: CSSProperties = {
     padding: '0.125rem 0',
     flex: '1 1 60%',
     minWidth: '4rem',
+};
+
+/** Chevron on any row with something nested; the spacer twin keeps
+ *  chevron-less rows aligned. */
+const collapseBtnStyle: CSSProperties = {
+    width: '1.125rem',
+    flexShrink: 0,
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)',
+    fontSize: '0.6875rem',
+};
+
+const collapseSpacerStyle: CSSProperties = {
+    width: '1.125rem',
+    flexShrink: 0,
 };
 
 const iconBtnStyle: CSSProperties = {
@@ -259,6 +283,25 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
     const inputRefs = useRef(new Map<string, HTMLInputElement>());
     const pendingFocusRef = useRef<string | null>(null);
     const [blockedHintKey, setBlockedHintKey] = useState<string | null>(null);
+    const [collapsedKeys, setCollapsedKeys] = useState<Set<string>>(() =>
+        readCollapsedKeys(workSlug),
+    );
+
+    function toggleCollapsed(key: string) {
+        setCollapsedKeys((prev) => {
+            const next = new Set(prev);
+
+            if (next.has(key)) {
+                next.delete(key);
+            } else {
+                next.add(key);
+            }
+
+            writeCollapsedKeys(workSlug, next);
+
+            return next;
+        });
+    }
 
     useEffect(() => {
         if (pendingFocusRef.current === null) {
@@ -480,12 +523,34 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
                     )}
                 </div>
             ) : (
-                rows.map((row) => {
+                visibleOutlineRows(rows, collapsedKeys).map((row) => {
                     const blockedEntry = blockedFor(row, blocked);
+                    const hasNested = rowHasNested(rows, rows.indexOf(row));
+                    const isCollapsed = collapsedKeys.has(row.key);
 
                     return (
                         <div key={row.key} style={{ ...rowStyle, paddingLeft: `${row.depth * 1.5}rem` }}>
                             <div style={rowLineStyle}>
+                                {hasNested ? (
+                                    <button
+                                        type="button"
+                                        style={collapseBtnStyle}
+                                        aria-expanded={!isCollapsed}
+                                        aria-label={
+                                            isCollapsed
+                                                ? t('writing.outline.expand')
+                                                : t('writing.outline.collapse')
+                                        }
+                                        onClick={() => toggleCollapsed(row.key)}
+                                    >
+                                        <i
+                                            className={`fa-solid ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'}`}
+                                            aria-hidden="true"
+                                        />
+                                    </button>
+                                ) : (
+                                    <span style={collapseSpacerStyle} aria-hidden="true" />
+                                )}
                                 {row.label !== '' && <span style={labelChipStyle}>{row.label}</span>}
                                 <input
                                     ref={(el) => {
@@ -564,7 +629,7 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
                                 </div>
                             )}
 
-                            {row.beats.length > 0 && (
+                            {row.beats.length > 0 && !isCollapsed && (
                                 <div style={beatsWrapStyle}>
                                     {row.beats.map((beat) => (
                                         <div key={beat.id} style={beatRowStyle}>
