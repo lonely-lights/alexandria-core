@@ -1,6 +1,6 @@
 # Beat Board — Design
 
-**Status:** DRAFT — awaiting owner ratification (direction ratified in the 2026-08-28 outline walkthrough: "Let's work towards a true Beat Board").
+**Status:** RATIFIED 2026-08-28 (owner: "Please begin!" — the three open items accepted as specced: act columns, craft disclosure, fixed 8-swatch mood palette).
 **Repos:** `alexandria-core` (all frontend + one projection addition consumed from the app controller), `alexandria-app` (controller field addition + tests).
 **Branch:** `feat/beat-board` (both repos).
 **Foundation:** builds entirely on the shipped Outline Mode machinery — the outline projection (GET), the transactional bulk `PUT /works/{work}/outline`, the beat PATCH, and `works.sections.update`. **No new endpoints, no migrations** (the craft fields `goal/conflict/stakes/mood/tone/beat_type` have lived on `work_sections` since the planning layer; this feature finally surfaces them).
