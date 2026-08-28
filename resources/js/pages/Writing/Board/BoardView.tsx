@@ -34,6 +34,15 @@ import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
  * `onKeyDown` for the Alt-↑/↓ fallback — BoardCard spreads the whole prop
  * bag onto its outer div, so a keydown on the nested title input still
  * bubbles up to it).
+ *
+ * Drop targets: gaps (before/after a card, precise), a card's own body
+ * (resolved to before/after by vertical midpoint — `cardMidpointTarget`
+ * reuses the neighboring gap's identity so its indicator lights up, no
+ * separate highlight styling needed), and the column body as a coarse
+ * append-at-end fallback for drops that land in empty space. Every
+ * `applyDrop` call — mouse or Alt-↑/↓ — flushes immediately: a drop is a
+ * deliberate commit gesture, not a fast-typing edit that should ride the
+ * debounce.
  */
 
 export interface BoardViewProps {
@@ -190,7 +199,7 @@ function apiHeaders(withBody = false): HeadersInit {
 
 export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate }: BoardViewProps) {
     const t = useT();
-    const { rows, setRows, status } = useOutlineSync({ projectSlug, workSlug });
+    const { rows, setRows, flush, status } = useOutlineSync({ projectSlug, workSlug });
 
     const [draggingKey, setDraggingKey] = useState<string | null>(null);
     const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
@@ -231,11 +240,9 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
     /** Shared by drag-drop and the keyboard fallback: a same-position drop
      *  (the card's own leading gap) is a no-op that would otherwise splice
      *  the row in before itself and land it at the wrong end of the array.
-     *  `setRows` alone is enough to persist — its debounce/flush-on-unload/
-     *  conflict handling all ride along from `useOutlineSync`, same as the
-     *  brief's "debounced bulk save + guards ride free" framing; unlike
-     *  `OutlineView`'s Enter key, a drop isn't a fast-typing commit point
-     *  that needs to bypass the debounce. */
+     *  A drop — mouse or Alt-arrow — is a deliberate commit gesture exactly
+     *  like Enter in the outline view, so `flush()` follows `setRows`
+     *  immediately rather than waiting on the 800ms debounce. */
     function applyDrop(cardKey: string, targetColumnKey: string, beforeCardKey: string | null) {
         if (!canUpdate || cardKey === beforeCardKey) {
             return;
@@ -245,6 +252,7 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
 
         if (next !== rows) {
             setRows(next);
+            flush();
         }
     }
 
@@ -304,6 +312,62 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
 
         if (cardKey !== null && cardKey !== '') {
             applyDrop(cardKey, columnKey, null);
+        }
+
+        handleDragEnd();
+    }
+
+    /** Resolve a card-body hover to an insertion point by vertical midpoint:
+     *  the top half targets "before this card" (the same identity as this
+     *  card's own leading gap), the bottom half targets "before the next
+     *  card" (the same identity as the next card's leading gap, or the
+     *  column's trailing gap when this is the last card). Reusing those
+     *  existing gap identities means the drop indicator that lights up is
+     *  literally the neighboring gap — no separate highlight styling
+     *  needed for the card-body path. */
+    function cardMidpointTarget(
+        event: DragEvent<HTMLDivElement>,
+        column: BoardColumn,
+        cardIndex: number,
+    ): DropTarget {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const midpointY = rect.top + rect.height / 2;
+
+        if (event.clientY < midpointY) {
+            return { columnKey: column.key, beforeCardKey: column.cards[cardIndex].row.key };
+        }
+
+        const next = column.cards[cardIndex + 1];
+        return { columnKey: column.key, beforeCardKey: next ? next.row.key : null };
+    }
+
+    function handleCardDragOver(event: DragEvent<HTMLDivElement>, column: BoardColumn, cardIndex: number) {
+        // A card can't be its own drop target — self-hover during a drag
+        // (a slight tremor over the dragged card itself) shouldn't light
+        // up an indicator or claim the event from whatever's underneath.
+        if (!canUpdate || draggingKey === null || column.cards[cardIndex].row.key === draggingKey) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = 'move';
+        setDropTarget(cardMidpointTarget(event, column, cardIndex));
+    }
+
+    function handleCardDrop(event: DragEvent<HTMLDivElement>, column: BoardColumn, cardIndex: number) {
+        if (column.cards[cardIndex].row.key === draggingKey) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const target = cardMidpointTarget(event, column, cardIndex);
+        const cardKey = event.dataTransfer.getData('text/plain') || draggingKey;
+
+        if (cardKey !== null && cardKey !== '') {
+            applyDrop(cardKey, target.columnKey, target.beforeCardKey);
         }
 
         handleDragEnd();
@@ -407,7 +471,11 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
                                             <div style={dividerStyle}>{cardModel.dividerTitle}</div>
                                         )}
 
-                                        <div style={cardWrapStyle(draggingKey === cardModel.row.key)}>
+                                        <div
+                                            style={cardWrapStyle(draggingKey === cardModel.row.key)}
+                                            onDragOver={(event) => handleCardDragOver(event, column, cardIndex)}
+                                            onDrop={(event) => handleCardDrop(event, column, cardIndex)}
+                                        >
                                             <BoardCard
                                                 card={cardModel}
                                                 projectSlug={projectSlug}
