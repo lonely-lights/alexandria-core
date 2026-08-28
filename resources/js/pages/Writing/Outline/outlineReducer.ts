@@ -28,12 +28,19 @@ export type OutlineAction =
     | { type: 'edit'; key: string; title: string; synopsis: string | null }
     | { type: 'paste'; anchorKey: string; lines: ParsedOutlineLine[] }
     | { type: 'toggle-beat'; key: string; beatId: string }
+    | { type: 'edit-beat'; key: string; beatId: string; text: string }
     | { type: 'delete'; key: string };
 
 export interface OutlineReducerResult {
     rows: OutlineRow[];
     /** The key of a row that refused a beat conversion, else null. */
     blockedHint: string | null;
+    /** A key (row key or synthetic beat key) the view should focus after
+     *  applying this result — set when an action creates or converts the
+     *  element the writer's cursor logically moves into (Tab folding a
+     *  row into a beat, Enter minting the next beat). Null when the
+     *  view's own created-row diff suffices. */
+    focusKey: string | null;
 }
 
 const BEAT_KEY_SEP = '::beat::';
@@ -53,12 +60,12 @@ function parseBeatKey(key: string): { rowKey: string; beatId: string } | null {
     return { rowKey: key.slice(0, idx), beatId: key.slice(idx + BEAT_KEY_SEP.length) };
 }
 
-function ok(rows: OutlineRow[]): OutlineReducerResult {
-    return { rows, blockedHint: null };
+function ok(rows: OutlineRow[], focusKey: string | null = null): OutlineReducerResult {
+    return { rows, blockedHint: null, focusKey };
 }
 
 function blockedResult(rows: OutlineRow[], key: string): OutlineReducerResult {
-    return { rows, blockedHint: key };
+    return { rows, blockedHint: key, focusKey: null };
 }
 
 function deepestDepth(rows: OutlineRow[]): number {
@@ -87,6 +94,36 @@ function beatTextFrom(title: string, synopsis: string | null): string {
 }
 
 function enter(rows: OutlineRow[], key: string): OutlineReducerResult {
+    const beatRef = parseBeatKey(key);
+
+    if (beatRef !== null) {
+        // Enter inside a beat: mint the next (empty) beat right after it.
+        const parentIdx = rows.findIndex((row) => row.key === beatRef.rowKey);
+
+        if (parentIdx === -1) {
+            return ok(rows);
+        }
+
+        const parent = rows[parentIdx];
+        const beatIdx = parent.beats.findIndex((b) => b.id === beatRef.beatId);
+
+        if (beatIdx === -1) {
+            return ok(rows);
+        }
+
+        const newBeat: OutlineBeat = { id: `b-${crypto.randomUUID()}`, text: '', done: false };
+        const beats = [
+            ...parent.beats.slice(0, beatIdx + 1),
+            newBeat,
+            ...parent.beats.slice(beatIdx + 1),
+        ];
+
+        return ok(
+            rows.map((r, i) => (i === parentIdx ? { ...r, beats } : r)),
+            beatKey(parent.key, newBeat.id),
+        );
+    }
+
     const idx = rows.findIndex((row) => row.key === key);
 
     if (idx === -1) {
@@ -156,6 +193,7 @@ function indent(rows: OutlineRow[], key: string): OutlineReducerResult {
             withoutRow.map((r) =>
                 r.key === target.key ? { ...r, beats: [...r.beats, beat] } : r,
             ),
+            beatKey(target.key, beat.id),
         );
     }
 
@@ -297,16 +335,41 @@ function toggleBeat(rows: OutlineRow[], key: string, beatId: string): OutlineRed
     );
 }
 
+function editBeat(
+    rows: OutlineRow[],
+    key: string,
+    beatId: string,
+    text: string,
+): OutlineReducerResult {
+    return ok(
+        rows.map((row) =>
+            row.key === key
+                ? { ...row, beats: row.beats.map((b) => (b.id === beatId ? { ...b, text } : b)) }
+                : row,
+        ),
+    );
+}
+
 function deleteAction(rows: OutlineRow[], key: string): OutlineReducerResult {
     const beatRef = parseBeatKey(key);
 
     if (beatRef !== null) {
+        const parent = rows.find((row) => row.key === beatRef.rowKey);
+        const beatIdx = parent?.beats.findIndex((b) => b.id === beatRef.beatId) ?? -1;
+        // Cursor retreats to the previous beat, or the row's title when
+        // the first beat is deleted.
+        const focusKey =
+            parent !== undefined && beatIdx > 0
+                ? beatKey(parent.key, parent.beats[beatIdx - 1].id)
+                : (parent?.key ?? null);
+
         return ok(
             rows.map((row) =>
                 row.key === beatRef.rowKey
                     ? { ...row, beats: row.beats.filter((b) => b.id !== beatRef.beatId) }
                     : row,
             ),
+            focusKey,
         );
     }
 
@@ -431,6 +494,8 @@ export function outlineReducer(rows: OutlineRow[], action: OutlineAction): Outli
             return paste(rows, action.anchorKey, action.lines);
         case 'toggle-beat':
             return toggleBeat(rows, action.key, action.beatId);
+        case 'edit-beat':
+            return editBeat(rows, action.key, action.beatId, action.text);
         case 'delete':
             return deleteAction(rows, action.key);
         default:

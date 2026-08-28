@@ -291,11 +291,18 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
         }
 
         if (result.rows !== before) {
-            const beforeKeys = new Set(before.map((row) => row.key));
-            const created = result.rows.find((row) => !beforeKeys.has(row.key));
+            if (result.focusKey !== null) {
+                // The reducer knows exactly where the cursor moves next
+                // (beat conversions/insertions) — trust it over the
+                // created-row diff.
+                pendingFocusRef.current = result.focusKey;
+            } else {
+                const beforeKeys = new Set(before.map((row) => row.key));
+                const created = result.rows.find((row) => !beforeKeys.has(row.key));
 
-            if (created !== undefined) {
-                pendingFocusRef.current = created.key;
+                if (created !== undefined) {
+                    pendingFocusRef.current = created.key;
+                }
             }
 
             setRows(result.rows);
@@ -379,6 +386,40 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
         if (event.key === 'Tab' && event.shiftKey) {
             event.preventDefault();
             dispatch({ type: 'outdent', key: beatKey(row.key, beat.id) });
+        }
+    }
+
+    function handleBeatInputKeyDown(
+        event: KeyboardEvent<HTMLInputElement>,
+        row: OutlineRow,
+        beat: OutlineBeat,
+    ) {
+        if (!canUpdate) {
+            return;
+        }
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            dispatch({ type: 'enter', key: beatKey(row.key, beat.id) });
+            return;
+        }
+
+        if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            dispatch({ type: 'outdent', key: beatKey(row.key, beat.id) });
+            return;
+        }
+
+        if (event.key === 'Tab') {
+            // Beats are the deepest tier — swallow Tab so focus doesn't
+            // wander off mid-outline.
+            event.preventDefault();
+            return;
+        }
+
+        if (event.key === 'Backspace' && beat.text === '') {
+            event.preventDefault();
+            dispatch({ type: 'delete', key: beatKey(row.key, beat.id) });
         }
     }
 
@@ -540,7 +581,40 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
                                                 onClick={() => toggleBeat(row, beat)}
                                                 onKeyDown={(event) => handleBeatKeyDown(event, row, beat)}
                                             />
-                                            <span style={beatTextStyle(beat.done)}>{beat.text}</span>
+                                            <input
+                                                type="text"
+                                                value={beat.text}
+                                                readOnly={!canUpdate}
+                                                placeholder={t('writing.outline.beat_placeholder')}
+                                                aria-label={t('writing.outline.beat_placeholder')}
+                                                ref={(el) => {
+                                                    const k = beatKey(row.key, beat.id);
+                                                    if (el) {
+                                                        inputRefs.current.set(k, el);
+                                                    } else {
+                                                        inputRefs.current.delete(k);
+                                                    }
+                                                }}
+                                                style={{
+                                                    ...beatTextStyle(beat.done),
+                                                    flex: 1,
+                                                    minWidth: 0,
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    outline: 'none',
+                                                    font: 'inherit',
+                                                    padding: 0,
+                                                }}
+                                                onChange={(event) =>
+                                                    dispatch({
+                                                        type: 'edit-beat',
+                                                        key: row.key,
+                                                        beatId: beat.id,
+                                                        text: event.target.value,
+                                                    })
+                                                }
+                                                onKeyDown={(event) => handleBeatInputKeyDown(event, row, beat)}
+                                            />
                                             {canUpdate && (
                                                 <button
                                                     type="button"
