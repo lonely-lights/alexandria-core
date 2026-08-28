@@ -1,5 +1,5 @@
 /**
- * Beat Board domain model — spec 2026-08-28 Beat Board Task 2.
+ * Kanban board (né Beat Board) domain model — spec 2026-08-28 Kanban board (né Beat Board) Task 2.
  *
  * The board view groups the same flat `OutlineRow[]` tree the outline
  * view edits into columns and cards: each depth-0 row (an act, or a
@@ -17,16 +17,16 @@
 
 import type { OutlineRow } from '../Outline/outlineTypes';
 
-export interface BoardCardModel {
+export interface KanbanCardModel {
     row: OutlineRow;
     dividerTitle: string | null;
 }
 
-export interface BoardColumn {
+export interface KanbanColumn {
     key: string;
     title: string;
     containerRow: OutlineRow | null;
-    cards: BoardCardModel[];
+    cards: KanbanCardModel[];
 }
 
 export interface CardDrop {
@@ -85,7 +85,7 @@ function buildCardModels(
     rows: OutlineRow[],
     containerRow: OutlineRow | null,
     cards: OutlineRow[],
-): BoardCardModel[] {
+): KanbanCardModel[] {
     const rowsByKey = new Map(rows.map((r) => [r.key, r]));
     const rootKey = containerRow?.key ?? null;
 
@@ -112,12 +112,12 @@ function buildCardModels(
  * `{ key: 'root', title: '' }` column that appears first whenever it
  * has any cards.
  */
-export function buildBoardColumns(rows: OutlineRow[]): BoardColumn[] {
+export function buildKanbanColumns(rows: OutlineRow[]): KanbanColumn[] {
     const depthZeroRows = rows.filter((r) => r.depth === 0);
     const rootLeaves = depthZeroRows.filter((r) => isLeaf(rows, r.key));
     const containers = depthZeroRows.filter((r) => !isLeaf(rows, r.key));
 
-    const columns: BoardColumn[] = [];
+    const columns: KanbanColumn[] = [];
 
     if (rootLeaves.length > 0) {
         columns.push({

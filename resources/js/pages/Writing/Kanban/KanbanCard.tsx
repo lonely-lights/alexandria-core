@@ -10,14 +10,14 @@ import {
 import useT from '@alexandria/hooks/useT';
 import { worksBase } from '@alexandria/lib/urls';
 
-import type { BoardCardModel } from './boardModel';
+import type { KanbanCardModel } from './kanbanModel';
 import type { MoodAccent } from './moodPalette';
 import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
 
 /**
- * BoardCard — one scene index card, spec 2026-08-28 Beat Board Task 3.
+ * KanbanCard — one scene index card, spec 2026-08-28 Kanban board (né Beat Board) Task 3.
  *
- * The front face of a Beat Board card: title/synopsis/beats mirror the
+ * The front face of a Kanban board (né Beat Board) card: title/synopsis/beats mirror the
  * Outline view's row, plus a collapsed-by-default "Craft" disclosure
  * for the dormant planning fields (beat type, goal, conflict, stakes,
  * tone). Every editable field is fully controlled by `card.row` (the
@@ -40,7 +40,7 @@ import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
  *   matching the ledgered save-layering split.
  *
  * `card.dividerTitle` is intentionally unused here — the chapter
- * divider row above a card is BoardView's responsibility (Task 4), not
+ * divider row above a card is KanbanView's responsibility (Task 4), not
  * this component's.
  *
  * Only a persisted row (`sectionId !== null`) can save craft fields or
@@ -48,8 +48,8 @@ import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
  * persisted in practice, but the guards stay defensive per the ledger.
  */
 
-export interface BoardCardProps {
-    card: BoardCardModel;
+export interface KanbanCardProps {
+    card: KanbanCardModel;
     projectSlug: string;
     workSlug: string;
     canUpdate: boolean;
@@ -295,7 +295,7 @@ const statusBadgeStyle: CSSProperties = {
     lineHeight: 1.6,
 };
 
-export default function BoardCard({
+export default function KanbanCard({
     card,
     projectSlug,
     workSlug,
@@ -305,7 +305,7 @@ export default function BoardCard({
     onBeatToggle,
     onOpen,
     dragHandleProps,
-}: BoardCardProps) {
+}: KanbanCardProps) {
     const t = useT();
     const { row } = card;
 
@@ -422,7 +422,7 @@ export default function BoardCard({
             <button
                 type="button"
                 style={openBtnStyle}
-                aria-label={t('writing.board.open_scene')}
+                aria-label={t('writing.kanban.open_scene')}
                 onClick={handleOpen}
                 disabled={row.slug === null}
             >
@@ -440,7 +440,7 @@ export default function BoardCard({
                     type="text"
                     value={row.title}
                     disabled={!canUpdate}
-                    placeholder={t('writing.board.title_placeholder')}
+                    placeholder={t('writing.kanban.title_placeholder')}
                     style={titleInputStyle}
                     onChange={(event) =>
                         onRowEdit(row.key, { title: event.target.value })
@@ -452,7 +452,7 @@ export default function BoardCard({
             <textarea
                 value={row.synopsis ?? ''}
                 disabled={!canUpdate}
-                placeholder={t('writing.board.synopsis_placeholder')}
+                placeholder={t('writing.kanban.synopsis_placeholder')}
                 style={synopsisStyle(synopsisExpanded)}
                 rows={synopsisExpanded ? 4 : 2}
                 onFocus={() => setSynopsisExpanded(true)}
@@ -472,7 +472,7 @@ export default function BoardCard({
                                 aria-checked={beat.done}
                                 aria-label={
                                     beat.text ||
-                                    t('writing.board.beat_placeholder')
+                                    t('writing.kanban.beat_placeholder')
                                 }
                                 disabled={!canUpdate}
                                 style={beatCheckStyle(beat.done, canUpdate)}
@@ -483,9 +483,9 @@ export default function BoardCard({
                                 value={beat.text}
                                 readOnly={!canUpdate}
                                 placeholder={t(
-                                    'writing.board.beat_placeholder',
+                                    'writing.kanban.beat_placeholder',
                                 )}
-                                aria-label={t('writing.board.beat_placeholder')}
+                                aria-label={t('writing.kanban.beat_placeholder')}
                                 style={beatTextStyle(beat.done)}
                                 onChange={(event) =>
                                     handleBeatTextChange(
@@ -513,7 +513,7 @@ export default function BoardCard({
                     style={craftChevronStyle(craftOpen)}
                     aria-hidden="true"
                 />
-                {t('writing.board.craft_toggle')}
+                {t('writing.kanban.craft_toggle')}
             </button>
 
             {craftOpen && (
@@ -522,7 +522,7 @@ export default function BoardCard({
                         type="text"
                         value={row.beatType ?? ''}
                         disabled={!canUpdate}
-                        placeholder={t('writing.board.beat_type_placeholder')}
+                        placeholder={t('writing.kanban.beat_type_placeholder')}
                         style={beatTypeChipInputStyle}
                         onChange={(event) =>
                             onRowEdit(row.key, { beatType: event.target.value })
@@ -532,7 +532,7 @@ export default function BoardCard({
 
                     <div style={craftFieldStyle}>
                         <span style={craftFieldLabelStyle}>
-                            {t('writing.board.goal_label')}
+                            {t('writing.kanban.goal_label')}
                         </span>
                         <textarea
                             value={row.goal ?? ''}
@@ -547,7 +547,7 @@ export default function BoardCard({
 
                     <div style={craftFieldStyle}>
                         <span style={craftFieldLabelStyle}>
-                            {t('writing.board.conflict_label')}
+                            {t('writing.kanban.conflict_label')}
                         </span>
                         <textarea
                             value={row.conflict ?? ''}
@@ -564,7 +564,7 @@ export default function BoardCard({
 
                     <div style={craftFieldStyle}>
                         <span style={craftFieldLabelStyle}>
-                            {t('writing.board.stakes_label')}
+                            {t('writing.kanban.stakes_label')}
                         </span>
                         <textarea
                             value={row.stakes ?? ''}
@@ -583,7 +583,7 @@ export default function BoardCard({
                         type="text"
                         value={row.tone ?? ''}
                         disabled={!canUpdate}
-                        placeholder={t('writing.board.tone_placeholder')}
+                        placeholder={t('writing.kanban.tone_placeholder')}
                         style={toneInputStyle}
                         onChange={(event) =>
                             onRowEdit(row.key, { tone: event.target.value })

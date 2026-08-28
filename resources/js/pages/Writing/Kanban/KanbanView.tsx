@@ -7,18 +7,18 @@ import {
 
 import useT from '@alexandria/hooks/useT';
 
-import { applyCardDrop, buildBoardColumns, type BoardColumn } from './boardModel';
-import BoardCard from './BoardCard';
+import { applyCardDrop, buildKanbanColumns, type KanbanColumn } from './kanbanModel';
+import KanbanCard from './KanbanCard';
 import { patchBeatDone } from '../Outline/outlineApi';
 import { moodAccent } from './moodPalette';
 import useOutlineSync from '../Outline/useOutlineSync';
 import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
 
 /**
- * Beat Board — full-pane columns view, spec 2026-08-28 Beat Board Task 4.
+ * Kanban board (né Beat Board) — full-pane columns view, spec 2026-08-28 Kanban board (né Beat Board) Task 4.
  *
  * The spatial sibling to `OutlineView`: the same flat `OutlineRow[]` tree,
- * grouped into act columns of scene cards via `buildBoardColumns`. Every
+ * grouped into act columns of scene cards via `buildKanbanColumns`. Every
  * structural change (drag reorder/reparent, keyboard reorder) goes through
  * `applyCardDrop` → `setRows` — this component never talks to the bulk
  * outline PUT directly, exactly like `OutlineView`. Field/beat edits patch
@@ -29,9 +29,9 @@ import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
  *
  * Two obligations carried from Task 3's ledger, both discharged here:
  * `onBeatToggle` implements the real beats PATCH (`OutlineView.toggleBeat`,
- * copied verbatim minus its already-guarded-in-BoardCard null-section
+ * copied verbatim minus its already-guarded-in-KanbanCard null-section
  * branch), and `dragHandleProps` supplies `draggable` + `onDragStart` (plus
- * `onKeyDown` for the Alt-↑/↓ fallback — BoardCard spreads the whole prop
+ * `onKeyDown` for the Alt-↑/↓ fallback — KanbanCard spreads the whole prop
  * bag onto its outer div, so a keydown on the nested title input still
  * bubbles up to it).
  *
@@ -45,7 +45,7 @@ import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
  * debounce.
  */
 
-export interface BoardViewProps {
+export interface KanbanViewProps {
     projectSlug: string;
     workSlug: string;
     canUpdate: boolean;
@@ -179,14 +179,14 @@ const emptyStateStyle: CSSProperties = {
     flex: 1,
 };
 
-export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate }: BoardViewProps) {
+export default function KanbanView({ projectSlug, workSlug, canUpdate, onNavigate }: KanbanViewProps) {
     const t = useT();
     const { rows, setRows, flush, status } = useOutlineSync({ projectSlug, workSlug });
 
     const [draggingKey, setDraggingKey] = useState<string | null>(null);
     const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
 
-    const columns = buildBoardColumns(rows);
+    const columns = buildKanbanColumns(rows);
 
     function handleRowEdit(key: string, patch: Partial<OutlineRow>) {
         setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -294,7 +294,7 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
      *  needed for the card-body path. */
     function cardMidpointTarget(
         event: DragEvent<HTMLDivElement>,
-        column: BoardColumn,
+        column: KanbanColumn,
         cardIndex: number,
     ): DropTarget {
         const rect = event.currentTarget.getBoundingClientRect();
@@ -308,7 +308,7 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
         return { columnKey: column.key, beforeCardKey: next ? next.row.key : null };
     }
 
-    function handleCardDragOver(event: DragEvent<HTMLDivElement>, column: BoardColumn, cardIndex: number) {
+    function handleCardDragOver(event: DragEvent<HTMLDivElement>, column: KanbanColumn, cardIndex: number) {
         // A card can't be its own drop target — self-hover during a drag
         // (a slight tremor over the dragged card itself) shouldn't light
         // up an indicator or claim the event from whatever's underneath.
@@ -322,7 +322,7 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
         setDropTarget(cardMidpointTarget(event, column, cardIndex));
     }
 
-    function handleCardDrop(event: DragEvent<HTMLDivElement>, column: BoardColumn, cardIndex: number) {
+    function handleCardDrop(event: DragEvent<HTMLDivElement>, column: KanbanColumn, cardIndex: number) {
         if (column.cards[cardIndex].row.key === draggingKey) {
             return;
         }
@@ -342,9 +342,9 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
 
     /** Alt-↑/↓ on a focused card title: swap with the previous/next sibling
      *  card in the same column. Bound via `dragHandleProps.onKeyDown` on the
-     *  card's outer div, so a keydown inside BoardCard's nested title input
+     *  card's outer div, so a keydown inside KanbanCard's nested title input
      *  bubbles up and reaches it. */
-    function handleCardKeyDown(event: KeyboardEvent<HTMLDivElement>, column: BoardColumn, cardIndex: number) {
+    function handleCardKeyDown(event: KeyboardEvent<HTMLDivElement>, column: KanbanColumn, cardIndex: number) {
         if (!canUpdate || !event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) {
             return;
         }
@@ -380,10 +380,10 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
     }
 
     return (
-        <div style={paneStyle} data-board-view="">
+        <div style={paneStyle} data-kanban-view="">
             <div style={headerRowStyle}>
                 <h2 className="text-sm font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                    {t('writing.board.title')}
+                    {t('writing.kanban.title')}
                 </h2>
                 {status === 'saving' && <span style={statusChipStyle}>{t('writing.workspace.saving')}</span>}
                 {status === 'saved' && <span style={statusChipStyle}>{t('writing.workspace.saved')}</span>}
@@ -394,17 +394,17 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
             </div>
 
             {columns.length === 0 ? (
-                <div style={emptyStateStyle}>{t('writing.board.empty')}</div>
+                <div style={emptyStateStyle}>{t('writing.kanban.empty')}</div>
             ) : (
                 <div style={boardScrollStyle}>
                     {columns.map((column) => (
                         <div key={column.key} style={columnStyle} data-board-column={column.key}>
                             <div style={columnHeaderStyle}>
                                 <span style={columnTitleStyle}>
-                                    {column.title !== '' ? column.title : t('writing.board.untitled_column')}
+                                    {column.title !== '' ? column.title : t('writing.kanban.untitled_column')}
                                 </span>
                                 <span style={columnCountStyle}>
-                                    {t('writing.board.column_count').replace(
+                                    {t('writing.kanban.column_count').replace(
                                         ':count',
                                         String(column.cards.length),
                                     )}
@@ -443,7 +443,7 @@ export default function BoardView({ projectSlug, workSlug, canUpdate, onNavigate
                                             onDragOver={(event) => handleCardDragOver(event, column, cardIndex)}
                                             onDrop={(event) => handleCardDrop(event, column, cardIndex)}
                                         >
-                                            <BoardCard
+                                            <KanbanCard
                                                 card={cardModel}
                                                 projectSlug={projectSlug}
                                                 workSlug={workSlug}

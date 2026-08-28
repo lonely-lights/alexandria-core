@@ -76,7 +76,7 @@ export interface WritingRibbonContext {
     canUpdate: boolean;
     panelOpen: boolean;
     sceneLinksPanelOpen: boolean;
-    /** 'continuous' | 'focus' | 'outline' | 'board' — see `Flow/viewMode.ts`. */
+    /** 'continuous' | 'focus' | 'outline' | 'kanban' — see `Flow/viewMode.ts`. */
     viewMode: WorkspaceViewMode;
     printLayout: boolean;
     /** Ghost layer visibility (outline-mode Task 6) — synopsis + beat

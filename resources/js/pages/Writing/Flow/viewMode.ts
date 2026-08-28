@@ -7,8 +7,8 @@
  * Per-work client-side storage for the manuscript view switcher:
  * 'continuous' streams every section in one scroll, 'focus' keeps the
  * one-section-at-a-time editor, 'outline' swaps the editor pane for the
- * full-pane structural outline (`OutlineView`), 'board' swaps it for the
- * spatial index-card Beat Board (`BoardView`). Key per work:
+ * full-pane structural outline (`OutlineView`), 'kanban' swaps it for the
+ * spatial index-card Beat Board (`KanbanView`). Key per work:
  * `alexandria.writing.view-mode:<workId>`.
  *
  * Mirrors `pages/Writing/panelMode.ts` — a pure module so Vitest can test
@@ -18,9 +18,9 @@
  */
 
 /** The four manuscript view modes. */
-export type WorkspaceViewMode = 'continuous' | 'focus' | 'outline' | 'board';
+export type WorkspaceViewMode = 'continuous' | 'focus' | 'outline' | 'kanban';
 
-const MODES = new Set<string>(['continuous', 'focus', 'outline', 'board'] as const);
+const MODES = new Set<string>(['continuous', 'focus', 'outline', 'kanban'] as const);
 const KEY_PREFIX = 'alexandria.writing.view-mode';
 const DEFAULT_MODE: WorkspaceViewMode = 'continuous';
 

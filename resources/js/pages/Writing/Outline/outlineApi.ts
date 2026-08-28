@@ -1,7 +1,7 @@
 /**
  * Shared fetch plumbing for the outline/board surfaces — extracted
  * 2026-08-28 (owner code review: the csrf/header helpers and the beat
- * PATCH lived as three copies across OutlineView, BoardView, and
+ * PATCH lived as three copies across OutlineView, KanbanView, and
  * useOutlineSync).
  */
 

@@ -23,7 +23,7 @@ import ManuscriptEditor, {
     PRINT_LAYOUT_STORAGE_KEY,
     readPrintLayoutPreference,
 } from './Sections/ManuscriptEditor';
-import BoardView from './Board/BoardView';
+import KanbanView from './Kanban/KanbanView';
 import OutlineSidebar from './Outline/OutlineSidebar';
 import OutlineView from './Outline/OutlineView';
 import type { OutlineBeat } from './Outline/outlineTypes';
@@ -505,7 +505,7 @@ export default function Workspace() {
             // hears about them. Leaving either structural view is the
             // one moment that MUST catch it up.
             const leavingStructuralView =
-                (viewMode === 'outline' || viewMode === 'board') && next !== 'outline' && next !== 'board';
+                (viewMode === 'outline' || viewMode === 'kanban') && next !== 'outline' && next !== 'kanban';
 
             if (next === 'focus' && slug !== null) {
                 router.visit(flowUrl(project.slug, work.slug, slug), {
@@ -1089,7 +1089,7 @@ export default function Workspace() {
                         2026-08-28). Stored open/closed preferences are
                         untouched either way, so returning to continuous
                         restores what was open. */}
-                    {chromeVisible && viewMode !== 'outline' && viewMode !== 'board' && (
+                    {chromeVisible && viewMode !== 'outline' && viewMode !== 'kanban' && (
                     <div className="writing-workspace-structure-layer hidden md:block">
                         <button
                             type="button"
@@ -1154,8 +1154,8 @@ export default function Workspace() {
                                 canUpdate={can.update}
                                 onNavigate={selectSection}
                             />
-                        ) : viewMode === 'board' ? (
-                            <BoardView
+                        ) : viewMode === 'kanban' ? (
+                            <KanbanView
                                 projectSlug={project.slug}
                                 workSlug={work.slug}
                                 canUpdate={can.update}

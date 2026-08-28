@@ -46,7 +46,7 @@ const SEGMENTS: Array<{ id: WorkspaceViewMode; labelKey: string }> = [
     { id: 'continuous', labelKey: 'writing.flow.continuous' },
     { id: 'focus', labelKey: 'writing.flow.focus' },
     { id: 'outline', labelKey: 'writing.flow.outline' },
-    { id: 'board', labelKey: 'writing.flow.board' },
+    { id: 'kanban', labelKey: 'writing.flow.kanban' },
 ];
 
 export interface FlowToggleProps {
@@ -77,7 +77,7 @@ export default function FlowToggle({ mode, onChange }: FlowToggleProps) {
                         data-flow-toggle-continuous={id === 'continuous' ? '' : undefined}
                         data-flow-toggle-focus={id === 'focus' ? '' : undefined}
                         data-flow-toggle-outline={id === 'outline' ? '' : undefined}
-                        data-flow-toggle-board={id === 'board' ? '' : undefined}
+                        data-flow-toggle-kanban={id === 'kanban' ? '' : undefined}
                         className="cursor-pointer px-2.5 py-1 text-xs font-semibold transition-colors"
                         style={isActive ? activeSegmentStyle : idleSegmentStyle}
                     >

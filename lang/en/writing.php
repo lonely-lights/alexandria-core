@@ -188,7 +188,7 @@ return [
     'flow.page_display_tight' => 'Tight',
     'flow.page_display_pages' => 'Pages',
     'flow.outline' => 'Outline',
-    'flow.board' => 'Board',
+    'flow.kanban' => 'Kanban',
 
     // Outline view (Stage — outline mode, Task 5)
     'outline.title' => 'Outline',
@@ -219,23 +219,23 @@ return [
     'plan.synopsis_placeholder' => 'Add a synopsis…',
     'plan.done_line' => ':count beats done',
 
-    // Beat Board scene card (spec 2026-08-28 Beat Board, Task 3)
-    'board.title_placeholder' => 'Untitled',
-    'board.synopsis_placeholder' => 'Add a synopsis…',
-    'board.beat_placeholder' => 'Beat…',
-    'board.craft_toggle' => 'Craft',
-    'board.beat_type_placeholder' => 'Beat type',
-    'board.goal_label' => 'Goal',
-    'board.conflict_label' => 'Conflict',
-    'board.stakes_label' => 'Stakes',
-    'board.tone_placeholder' => 'Tone',
-    'board.open_scene' => 'Open scene',
+    // Kanban board scene card (spec 2026-08-28 beat-board, renamed Kanban 2026-08-28)
+    'kanban.title_placeholder' => 'Untitled',
+    'kanban.synopsis_placeholder' => 'Add a synopsis…',
+    'kanban.beat_placeholder' => 'Beat…',
+    'kanban.craft_toggle' => 'Craft',
+    'kanban.beat_type_placeholder' => 'Beat type',
+    'kanban.goal_label' => 'Goal',
+    'kanban.conflict_label' => 'Conflict',
+    'kanban.stakes_label' => 'Stakes',
+    'kanban.tone_placeholder' => 'Tone',
+    'kanban.open_scene' => 'Open scene',
 
-    // Beat Board view (spec 2026-08-28 Beat Board, Task 4)
-    'board.title' => 'Board',
-    'board.empty' => 'No scenes yet.',
-    'board.untitled_column' => 'Scenes',
-    'board.column_count' => ':count scenes',
+    // Kanban board view (spec 2026-08-28 beat-board, renamed Kanban 2026-08-28)
+    'kanban.title' => 'Kanban',
+    'kanban.empty' => 'No scenes yet.',
+    'kanban.untitled_column' => 'Scenes',
+    'kanban.column_count' => ':count scenes',
 
     'guidance.screenplay.title' => 'Screenplay structure',
     'guidance.screenplay.body' => 'A quick check against the default act-and-scene shape for a feature screenplay.',
@@ -444,7 +444,7 @@ return [
     'ribbon.paper_cream' => 'Cream',
     'ribbon.paper_gray' => 'Soft gray',
     'ribbon.outline_view' => 'Outline view',
-    'ribbon.board_view' => 'Board view',
+    'ribbon.kanban_view' => 'Kanban view',
     'ribbon.show_plan' => 'Show plan',
     'ribbon.panel' => 'Reference panel',
     'ribbon.code_view' => 'Code view',

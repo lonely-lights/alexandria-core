@@ -1,5 +1,5 @@
 /**
- * Beat Board mood palette — spec 2026-08-28 Beat Board Task 2.
+ * Kanban board (né Beat Board) mood palette — spec 2026-08-28 Kanban board (né Beat Board) Task 2.
  *
  * Maps a scene's free-text `mood` field onto a small, fixed set of
  * accent colors for the board's card borders/washes. Matching is

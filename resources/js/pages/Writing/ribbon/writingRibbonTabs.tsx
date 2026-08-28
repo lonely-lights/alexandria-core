@@ -336,13 +336,13 @@ const viewTab: RibbonTab<Ctx> = {
                         ctx.actions.setViewMode(ctx.viewMode === 'outline' ? 'continuous' : 'outline'),
                 },
                 {
-                    id: 'board-view',
+                    id: 'kanban-view',
                     type: 'toggle',
                     icon: 'fa-solid fa-table-columns',
-                    labelKey: 'writing.ribbon.board_view',
-                    active: (ctx) => ctx.viewMode === 'board',
+                    labelKey: 'writing.ribbon.kanban_view',
+                    active: (ctx) => ctx.viewMode === 'kanban',
                     onAction: (ctx) =>
-                        ctx.actions.setViewMode(ctx.viewMode === 'board' ? 'continuous' : 'board'),
+                        ctx.actions.setViewMode(ctx.viewMode === 'kanban' ? 'continuous' : 'kanban'),
                 },
                 {
                     id: 'show-plan',
