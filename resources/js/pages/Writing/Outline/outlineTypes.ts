@@ -35,6 +35,9 @@ export interface OutlineRow {
     depth: number;
     label: string;
     title: string;
+    /** The section's slug, for navigation — `null` for a not-yet-saved
+     *  row (the server assigns the slug on create). */
+    slug: string | null;
     synopsis: string | null;
     beats: OutlineBeat[];
 }
@@ -46,6 +49,7 @@ export interface ServerOutlineRow {
     depth: number;
     label: string;
     title: string;
+    slug: string;
     synopsis: string | null;
     beats: OutlineBeat[];
 }

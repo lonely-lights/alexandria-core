@@ -23,6 +23,7 @@ import ManuscriptEditor, {
     PRINT_LAYOUT_STORAGE_KEY,
     readPrintLayoutPreference,
 } from './Sections/ManuscriptEditor';
+import OutlineSidebar from './Outline/OutlineSidebar';
 import OutlineView from './Outline/OutlineView';
 import type { OutlineBeat } from './Outline/outlineTypes';
 import { readShowPlan, writeShowPlan } from './Outline/planPrefs';
@@ -1258,6 +1259,15 @@ export default function Workspace() {
                                         work={work}
                                         currentSection={effectiveSection}
                                         sections={sections}
+                                    />
+                                )}
+                                {panelMode === 'outline' && (
+                                    <OutlineSidebar
+                                        projectSlug={project.slug}
+                                        workSlug={work.slug}
+                                        currentSectionId={effectiveSectionId}
+                                        canUpdate={can.update}
+                                        onNavigate={selectSection}
                                     />
                                 )}
                                 {panelMode === 'comments' && (

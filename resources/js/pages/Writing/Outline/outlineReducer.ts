@@ -104,6 +104,7 @@ function enter(rows: OutlineRow[], key: string): OutlineReducerResult {
         depth: row.depth,
         label: row.label,
         title: '',
+        slug: null,
         synopsis: null,
         beats: [],
     };
@@ -202,6 +203,7 @@ function outdent(rows: OutlineRow[], key: string): OutlineReducerResult {
             depth: parent.depth + 1,
             label: 'Scene',
             title: beat.text,
+            slug: null,
             synopsis: null,
             beats: [],
         };
@@ -385,6 +387,7 @@ function paste(
             depth: anchor.depth + 1 + line.depth,
             label: 'Scene',
             title: line.title,
+            slug: null,
             synopsis: line.synopsis,
             beats: [],
         });

@@ -206,6 +206,11 @@ return [
     'outline.keep_row' => 'Keep',
     'outline.status_conflict' => 'Updated elsewhere — merged your edits',
 
+    // Sidebar outline mode (Stage — outline mode, Task 7)
+    'outline.sidebar_label' => 'Outline',
+    'outline.sidebar_loading' => 'Loading outline…',
+    'outline.sidebar_error' => 'Could not load the outline.',
+
     // Ghost layer plan block (Stage — outline mode, Task 6)
     'plan.synopsis_placeholder' => 'Add a synopsis…',
     'plan.done_line' => ':count beats done',

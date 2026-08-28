@@ -22,6 +22,7 @@ export function rowsFromProjection(projection: OutlineProjection): OutlineRow[] 
         depth: row.depth,
         label: row.label,
         title: row.title,
+        slug: row.slug,
         synopsis: row.synopsis,
         beats: row.beats,
     }));

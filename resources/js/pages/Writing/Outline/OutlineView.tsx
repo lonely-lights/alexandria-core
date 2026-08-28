@@ -409,6 +409,7 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
                 depth: 0,
                 label: 'Act',
                 title: '',
+                slug: null,
                 synopsis: null,
                 beats: [],
             },

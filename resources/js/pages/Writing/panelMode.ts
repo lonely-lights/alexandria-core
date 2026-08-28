@@ -1,22 +1,23 @@
 /**
- * Panel mode persistence helpers — Stage 11.5 Task 4; extended Stage 12a.
+ * Panel mode persistence helpers — Stage 11.5 Task 4; extended Stage 12a;
+ * extended outline-mode Task 7.
  *
  * Per-work client-side storage for the right-rail mode switcher
- * (Linked items · Notes · Comments + package-registered modes). Key per
- * work: `alexandria.writing.panel-mode:<workId>`.
+ * (Linked items · Notes · Comments · Outline + package-registered modes).
+ * Key per work: `alexandria.writing.panel-mode:<workId>`.
  *
  * Designed as a pure module so Vitest can test the helpers without
  * a DOM or React runtime (localStorage tests use happy-dom opt-in).
  */
 
 /**
- * The three built-in modes plus any id registered via sidebarModeRegistry.
+ * The four built-in modes plus any id registered via sidebarModeRegistry.
  * The `(string & {})` tail preserves autocomplete for the literals while
  * accepting arbitrary registered ids.
  */
-export type PanelMode = 'linked' | 'notes' | 'comments' | (string & {});
+export type PanelMode = 'linked' | 'notes' | 'comments' | 'outline' | (string & {});
 
-const BUILT_IN_MODES = new Set<string>(['linked', 'notes', 'comments'] as const);
+const BUILT_IN_MODES = new Set<string>(['linked', 'notes', 'comments', 'outline'] as const);
 const KEY_PREFIX = 'alexandria.writing.panel-mode';
 
 /** Build the localStorage key for a given work id. */
@@ -27,7 +28,7 @@ export function panelModeKey(workId: number): string {
 /**
  * Coerce a raw stored string to a valid PanelMode.
  *
- * Built-in modes ('linked' | 'notes' | 'comments') are always accepted.
+ * Built-in modes ('linked' | 'notes' | 'comments' | 'outline') are always accepted.
  * A registered mode id is accepted only when it appears in allowedIds —
  * the caller supplies the ids whose gate currently resolves to 'visible'.
  * Unknown ids and ids absent from allowedIds (i.e. locked or hidden modes)

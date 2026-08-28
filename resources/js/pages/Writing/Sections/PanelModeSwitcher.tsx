@@ -10,12 +10,14 @@ import type { PanelMode } from '../panelMode';
 import { getSidebarModes, subscribeSidebarModes } from '../sidebarModeRegistry';
 
 /**
- * Right-rail mode switcher — Stage 11.5 Task 4; extended Stage 12a Task 2.
+ * Right-rail mode switcher — Stage 11.5 Task 4; extended Stage 12a Task 2;
+ * extended outline-mode Task 7.
  *
- * Three built-in icon buttons (Linked items · Notes · Comments) followed by
- * any modes registered via sidebarModeRegistry. Registered modes are
- * entitlement-gated via resolveGate: 'hidden' → omit, 'locked' → disabled
- * button + fa-lock badge + locked-hint title, 'visible' → normal button.
+ * Four built-in icon buttons (Linked items · Notes · Comments · Outline)
+ * followed by any modes registered via sidebarModeRegistry. Registered
+ * modes are entitlement-gated via resolveGate: 'hidden' → omit, 'locked'
+ * → disabled button + fa-lock badge + locked-hint title, 'visible' →
+ * normal button.
  */
 
 interface PanelModeSwitcherProps {
@@ -46,6 +48,7 @@ const MODES: Array<{ id: PanelMode; icon: string; labelKey: string }> = [
     { id: 'linked', icon: 'fa-solid fa-link', labelKey: 'writing.panel.mode_linked' },
     { id: 'notes', icon: 'fa-solid fa-note-sticky', labelKey: 'writing.panel.mode_notes' },
     { id: 'comments', icon: 'fa-solid fa-comment-dots', labelKey: 'writing.panel.mode_comments' },
+    { id: 'outline', icon: 'fa-solid fa-list-tree', labelKey: 'writing.outline.sidebar_label' },
 ];
 
 export default function PanelModeSwitcher({ mode, onChange, can = {} }: PanelModeSwitcherProps) {
