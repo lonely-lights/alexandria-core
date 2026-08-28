@@ -79,6 +79,9 @@ export interface WritingRibbonContext {
     /** 'continuous' | 'focus' | 'outline' — see `Flow/viewMode.ts`. */
     viewMode: WorkspaceViewMode;
     printLayout: boolean;
+    /** Ghost layer visibility (outline-mode Task 6) — synopsis + beat
+     *  checklist shown atop each section. */
+    showPlan: boolean;
     /** How print layout draws a page boundary: 'tight' | 'pages'. */
     pageDisplay: string;
     paperColor: string;
@@ -94,6 +97,7 @@ export interface WritingRibbonContext {
         toggleSceneLinksPanel(): void;
         setViewMode(mode: WorkspaceViewMode): void;
         togglePrintLayout(): void;
+        toggleShowPlan(): void;
         setPageDisplay(value: string): void;
         setPaperColor(value: string): void;
         setZoom(value: string): void;

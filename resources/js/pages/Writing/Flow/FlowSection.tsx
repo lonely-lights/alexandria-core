@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import useT from '@alexandria/hooks/useT';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 
+import PlanBlock from '../Outline/PlanBlock';
 import ManuscriptEditor from '../Sections/ManuscriptEditor';
 import ScreenplayEditor from '../Sections/ScreenplayEditor';
 import type { PageDisplayMode } from '../pageDisplay';
@@ -84,6 +85,10 @@ export interface FlowSectionProps {
     workFormat: string;
     canUpdate: boolean;
     printLayout: boolean;
+    /** Ghost layer visibility (outline-mode Task 6) — mirrors printLayout's
+     *  ownership: the Workspace owns the preference, ContinuousFlow just
+     *  forwards it to every row. */
+    showPlan: boolean;
     pageDisplay: PageDisplayMode;
     /** Side margin in proportional inches (ruler-draggable). */
     marginXIn: number;
@@ -107,6 +112,7 @@ export default function FlowSection({
     workFormat,
     canUpdate,
     printLayout,
+    showPlan,
     pageDisplay,
     marginXIn,
     onCounts,
@@ -212,6 +218,15 @@ export default function FlowSection({
                 >
                     {node.title}
                 </h3>
+            )}
+
+            {showPlan && section !== null && (
+                <PlanBlock
+                    section={section}
+                    projectSlug={projectSlug}
+                    workSlug={workSlug}
+                    canUpdate={canUpdate}
+                />
             )}
 
             {showEditor ? (

@@ -336,6 +336,14 @@ const viewTab: RibbonTab<Ctx> = {
                         ctx.actions.setViewMode(ctx.viewMode === 'outline' ? 'continuous' : 'outline'),
                 },
                 {
+                    id: 'show-plan',
+                    type: 'toggle',
+                    icon: 'fa-solid fa-list-check',
+                    labelKey: 'writing.ribbon.show_plan',
+                    active: (ctx) => ctx.showPlan,
+                    onAction: (ctx) => ctx.actions.toggleShowPlan(),
+                },
+                {
                     /* Sits beside print layout because it only means
                        anything inside it — the two describe one idea of
                        "show me paper". */

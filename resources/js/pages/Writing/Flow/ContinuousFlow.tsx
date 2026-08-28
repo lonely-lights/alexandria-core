@@ -61,6 +61,8 @@ export interface ContinuousFlowProps {
     initialSection: CurrentSection | null;
     canUpdate: boolean;
     printLayout: boolean;
+    /** Ghost layer visibility (outline-mode Task 6) — forwarded to every row. */
+    showPlan: boolean;
     pageDisplay: PageDisplayMode;
     /** Side margin in proportional inches (ruler-draggable). */
     marginXIn: number;
@@ -123,6 +125,7 @@ export default function ContinuousFlow({
     initialSection,
     canUpdate,
     printLayout,
+    showPlan,
     pageDisplay,
     marginXIn,
     onCounts,
@@ -512,6 +515,7 @@ export default function ContinuousFlow({
                         workFormat={work.format}
                         canUpdate={canUpdate}
                         printLayout={printLayout}
+                        showPlan={showPlan}
                         pageDisplay={pageDisplay}
                         marginXIn={marginXIn}
                         onCounts={onCounts}

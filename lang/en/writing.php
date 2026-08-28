@@ -206,6 +206,10 @@ return [
     'outline.keep_row' => 'Keep',
     'outline.status_conflict' => 'Updated elsewhere — merged your edits',
 
+    // Ghost layer plan block (Stage — outline mode, Task 6)
+    'plan.synopsis_placeholder' => 'Add a synopsis…',
+    'plan.done_line' => ':count beats done',
+
     'guidance.screenplay.title' => 'Screenplay structure',
     'guidance.screenplay.body' => 'A quick check against the default act-and-scene shape for a feature screenplay.',
     'guidance.stage_play.title' => 'Stage play structure',
@@ -413,6 +417,7 @@ return [
     'ribbon.paper_cream' => 'Cream',
     'ribbon.paper_gray' => 'Soft gray',
     'ribbon.outline_view' => 'Outline view',
+    'ribbon.show_plan' => 'Show plan',
     'ribbon.panel' => 'Reference panel',
     'ribbon.code_view' => 'Code view',
     'ribbon.editor_help' => 'Formatting help',

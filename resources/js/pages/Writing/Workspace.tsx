@@ -24,6 +24,8 @@ import ManuscriptEditor, {
     readPrintLayoutPreference,
 } from './Sections/ManuscriptEditor';
 import OutlineView from './Outline/OutlineView';
+import type { OutlineBeat } from './Outline/outlineTypes';
+import { readShowPlan, writeShowPlan } from './Outline/planPrefs';
 import { clampFontSize, readFontSize, writeFontSize } from './fontSize';
 import {
     normalizePageDisplay,
@@ -109,6 +111,7 @@ export interface CurrentSection {
     target_words: number | null;
     pov_entry_id: number | null;
     setting_entry_id: number | null;
+    beats: OutlineBeat[];
 }
 
 interface WorkspaceProps {
@@ -325,6 +328,7 @@ export default function Workspace() {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [paperModalOpen, setPaperModalOpen] = useState(false);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
+    const [showPlan, setShowPlan] = useState(readShowPlan);
     const [pageDisplay, setPageDisplayState] = useState<PageDisplayMode>(readPageDisplay);
     const [paperColor, setPaperColor] = useState(readPaperColorPreference);
     const [zoom, setZoom] = useState(readZoomPreference);
@@ -756,6 +760,14 @@ export default function Workspace() {
         });
     }, []);
 
+    const toggleShowPlan = useCallback(() => {
+        setShowPlan((prev) => {
+            const next = !prev;
+            writeShowPlan(next);
+            return next;
+        });
+    }, []);
+
     const updatePageDisplay = useCallback((value: string) => {
         const next = normalizePageDisplay(value);
         setPageDisplayState(next);
@@ -841,6 +853,7 @@ export default function Workspace() {
             sceneLinksPanelOpen: panelOpen && panelMode === 'linked' && linkedPanelTab === 'scene-links',
             viewMode,
             printLayout,
+            showPlan,
             pageDisplay,
             paperColor,
             zoom,
@@ -859,6 +872,7 @@ export default function Workspace() {
                 toggleSceneLinksPanel,
                 setViewMode: switchViewMode,
                 togglePrintLayout,
+                toggleShowPlan,
                 setPageDisplay: updatePageDisplay,
                 setPaperColor: updatePaperColor,
                 setZoom: updateZoom,
@@ -895,7 +909,7 @@ export default function Workspace() {
             },
             workStatus: work.status,
         };
-    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize]);
+    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize]);
 
     const workWords = liveWorkWords ?? work.word_count;
 
@@ -1139,6 +1153,7 @@ export default function Workspace() {
                                 initialSection={currentSection}
                                 canUpdate={can.update}
                                 printLayout={printLayout}
+                                showPlan={showPlan}
                                 pageDisplay={pageDisplay}
                                 marginXIn={marginXIn}
                                 onCounts={handleCounts}
@@ -1163,6 +1178,7 @@ export default function Workspace() {
                                     onCounts={handleCounts}
                                     chrome="none"
                                     printLayout={printLayout}
+                                    showPlan={showPlan}
                                     marginXIn={marginXIn}
                                     bridgeRef={bridgeRef}
                                     onStateChange={handleEditorStateChange}
@@ -1182,6 +1198,7 @@ export default function Workspace() {
                                     onCounts={handleCounts}
                                     chrome="none"
                                     printLayout={printLayout}
+                                    showPlan={showPlan}
                                     pageDisplay={pageDisplay}
                                     marginXIn={marginXIn}
                                     bridgeRef={bridgeRef}

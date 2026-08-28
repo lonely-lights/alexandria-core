@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type Ref } from 'react';
 import RichTextEditor from '@alexandria/components/editor/RichTextEditor';
 
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
+import PlanBlock from '../Outline/PlanBlock';
 import { readPageDisplay, type PageDisplayMode } from '../pageDisplay';
 import type { CurrentSection } from '../Workspace';
 import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
@@ -43,6 +44,14 @@ export interface ManuscriptEditorProps {
      * today's behavior.
      */
     printLayout?: boolean;
+    /**
+     * Ghost layer visibility — the outline-mode Task 6 plan block
+     * (synopsis + beat checklist) rendered above the editor. Owned by
+     * the Workspace the same way printLayout is; omitted (falsy)
+     * mounts in FlowSection deliberately leave it out here since
+     * FlowSection renders its own PlanBlock once, above the whole row.
+     */
+    showPlan?: boolean;
     /**
      * How a page boundary is drawn in print layout ('tight' | 'pages').
      * Same ownership story as printLayout: the Workspace passes it,
@@ -98,6 +107,7 @@ export default function ManuscriptEditor({
     canUpdate,
     onCounts,
     printLayout,
+    showPlan,
     pageDisplay,
     marginXIn,
     chrome,
@@ -137,6 +147,15 @@ export default function ManuscriptEditor({
 
     return (
         <SectionChrome>
+            {showPlan && (
+                <PlanBlock
+                    section={section}
+                    projectSlug={projectSlug}
+                    workSlug={workSlug}
+                    canUpdate={canUpdate}
+                />
+            )}
+
             {/* Manuscript — the editor's content wrapper scrolls */}
             {canUpdate ? (
                 <RichTextEditor
