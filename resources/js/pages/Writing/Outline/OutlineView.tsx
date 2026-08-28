@@ -105,21 +105,10 @@ const titleInputStyle: CSSProperties = {
     fontWeight: 600,
     padding: '0.125rem 0',
     minWidth: '6rem',
-    // Sized per-row to the title text (see the row markup) so the
-    // colon separator hugs the title and the synopsis flows right
-    // after it, document-style — no orphaned separator glyphs at a
-    // fixed column (owner, 2026-08-28 walkthrough).
-    flex: '0 1 auto',
-    maxWidth: '55%',
-};
-
-/** Separator between title and synopsis — renders ONLY when the row has
- *  a synopsis (owner rule: no separator with nothing to separate). */
-const colonStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)',
-    flexShrink: 0,
-    fontWeight: 600,
-    marginRight: '0.375rem',
+    // Columnar layout (owner, 2026-08-28 walkthrough): titles on the
+    // left, synopses aligned in their own column — with NO separator
+    // glyph between them.
+    flex: '1 1 40%',
 };
 
 const synopsisInputStyle: CSSProperties = {
@@ -510,10 +499,7 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
                                     value={row.title}
                                     disabled={!canUpdate}
                                     placeholder={t('writing.outline.title_placeholder')}
-                                    style={{
-                                        ...titleInputStyle,
-                                        width: `calc(${Math.max(row.title.length, 8)}ch + 0.75rem)`,
-                                    }}
+                                    style={titleInputStyle}
                                     onChange={(event) =>
                                         dispatch({
                                             type: 'edit',
@@ -525,11 +511,6 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
                                     onKeyDown={(event) => handleKeyDown(event, row)}
                                     onPaste={(event) => handlePaste(event, row)}
                                 />
-                                {row.synopsis !== null && row.synopsis !== '' && (
-                                    <span style={colonStyle} aria-hidden="true">
-                                        :
-                                    </span>
-                                )}
                                 <input
                                     type="text"
                                     value={row.synopsis ?? ''}
