@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('slug');
             $table->string('kind');
             $table->text('definition');
-            $table->text('craft_guidance');
-            $table->text('pitfalls');
+            $table->text('craft_guidance')->nullable();
+            $table->text('pitfalls')->nullable();
             $table->text('shape')->nullable();
             $table->boolean('is_seeded')->default(false);
             $table->timestamps();
