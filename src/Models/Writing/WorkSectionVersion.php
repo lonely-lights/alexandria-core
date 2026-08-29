@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Models\Writing;
 
+use Eloquent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -25,11 +26,11 @@ use Illuminate\Support\Carbon;
  * @property-read WorkSection $section
  * @property-read WorkRevision|null $revision
  *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class WorkSectionVersion extends Model
 {
-    const UPDATED_AT = null;
+    const null UPDATED_AT = null;
 
     protected $guarded = ['id'];
 

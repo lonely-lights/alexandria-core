@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alexandria\Core\Models\Writing;
 
+use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,7 +32,7 @@ use Illuminate\Support\Carbon;
  * @property-read WorkSection|null $scopeSection
  * @property-read Collection<int, WorkSectionVersion> $versions
  *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class WorkRevision extends Model
 {
