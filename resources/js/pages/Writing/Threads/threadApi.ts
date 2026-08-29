@@ -17,10 +17,12 @@
  *    {state, unplanted}` ({@see PatternThreadController::storeMark}),
  *    since that's the raw return of `PatternThreadService::status()`.
  *
- * Promise-group rows carry the thread's RAW scope_type FQCN
- * (`PatternThreadService::promiseGroup` never maps it through the
- * short-name table) — unlike every other endpoint here, which speaks
- * the short `section|work|entry` wire vocabulary.
+ * Fix round 1: `PatternThreadController::promises` now maps each
+ * group's `scope_type` through the same short-name table every other
+ * endpoint uses — `PatternThreadService::promiseGroup` still returns
+ * the raw FQCN internally, but the controller normalizes it before the
+ * response leaves PHP, so `PromiseGroup.scope_type` is the short
+ * `PatternScopeType` union like everywhere else.
  */
 
 import { writingUrl } from '@alexandria/lib/urls';
@@ -164,12 +166,20 @@ export interface PromiseThreadRow {
 }
 
 export interface PromiseGroup {
-    /** Raw morph FQCN (e.g. `Alexandria\Core\Models\Writing\WorkSection`)
-     *  — see this file's header note; NOT the short `PatternScopeType`. */
-    scope_type: string;
+    scope_type: PatternScopeType;
     scope_id: number;
     scope_title: string;
     threads: PromiseThreadRow[];
+}
+
+/** `GET writing.scope_options` response — the scope picker's "linked
+ *  compendium entry" branch: the entry a work is linked to (via
+ *  `works.entry_id`), plus its ancestor chain, nearest-first (immediate
+ *  parent first, root last) — the order the picker renders them in. */
+export interface ScopeOptions {
+    work: { id: number; title: string };
+    entry: { id: number; name: string } | null;
+    entry_ancestors: Array<{ id: number; name: string }>;
 }
 
 function threadsQuery(filters: ThreadFilters): string {
@@ -443,6 +453,25 @@ export async function fetchPromises(projectSlug: string): Promise<PromiseGroup[]
         const body = (await response.json()) as { promises: PromiseGroup[] };
 
         return body.promises;
+    } catch {
+        return null;
+    }
+}
+
+/* ── Scope-picker data (fix round 1) ── */
+
+export async function fetchScopeOptions(projectSlug: string, workId: number): Promise<ScopeOptions | null> {
+    try {
+        const response = await fetch(
+            `${writingUrl(projectSlug)}/scope-options?work_id=${encodeURIComponent(String(workId))}`,
+            { credentials: 'same-origin', headers: outlineApiHeaders() },
+        );
+
+        if (!response.ok) {
+            return null;
+        }
+
+        return (await response.json()) as ScopeOptions;
     } catch {
         return null;
     }

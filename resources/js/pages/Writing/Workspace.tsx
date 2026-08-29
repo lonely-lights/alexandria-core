@@ -1561,7 +1561,6 @@ export default function Workspace() {
                             : null
                     }
                     lockedSection={markThreadRequest.lockedSection}
-                    linkedEntry={work.linked_entry}
                     lockedThread={null}
                     anchor={markThreadRequest.anchor}
                     onClose={() => setMarkThreadRequest(null)}

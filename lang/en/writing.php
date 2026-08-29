@@ -531,7 +531,6 @@ return [
     'threads.scope_label' => 'Scope — where must this resolve?',
     'threads.scope_this_section' => 'This section',
     'threads.scope_this_work' => 'This work',
-    'threads.scope_linked_entry' => 'Its compendium entry (:name)',
     'threads.create_action' => 'Create thread',
     'threads.create_error' => "Couldn't create the thread. Please try again.",
     'threads.change_thread' => 'Change thread',

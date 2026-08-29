@@ -11,6 +11,7 @@ import {
     createMark,
     createThread,
     fetchCards,
+    fetchScopeOptions,
     fetchThreads,
     PATTERN_STANCES,
     type PatternCard,
@@ -19,6 +20,7 @@ import {
     type PatternScopeType,
     type PatternStance,
     type PatternThread,
+    type ScopeOptions,
 } from './threadApi';
 
 /**
@@ -36,9 +38,10 @@ import {
  *
  * Two different "section" concepts are in play and must not be
  * conflated: the thread's SCOPE (chosen once, at creation, from
- * `sections`/`workId`/`linkedEntry`) is where the thread must resolve;
- * the MARK's section (`lockedSection ?? currentSection`) is simply
- * wherever this modal was opened from — fixed, never a step-1 choice.
+ * `sections`/`workId`/the fetched `writing.scope_options` entry +
+ * ancestors) is where the thread must resolve; the MARK's section
+ * (`lockedSection ?? currentSection`) is simply wherever this modal was
+ * opened from — fixed, never a step-1 choice.
  *
  * Entry points:
  *  - File → "Mark device…" (`lockedSection: null`): unlocked — the mark
@@ -141,9 +144,6 @@ export interface MarkThreadModalProps {
     /** Non-null when opened from a Kanban card / outline row — fixes
      *  both the mark's section and the scope-picker's ancestor base. */
     lockedSection: ThreadSectionRef | null;
-    /** The work's linked compendium entry, if any (`work.linked_entry`) —
-     *  offered as a scope option for a brand new thread. */
-    linkedEntry: { id: number; name: string } | null;
     /** Non-null skips step 1 entirely — Task 6 reuse. */
     lockedThread: PatternThread | null;
     /** Captured editor selection, when opened from the selection bubble. */
@@ -192,7 +192,6 @@ export default function MarkThreadModal({
     sections,
     currentSection,
     lockedSection,
-    linkedEntry,
     lockedThread,
     anchor,
     onClose,
@@ -209,10 +208,12 @@ export default function MarkThreadModal({
     const [selectedThread, setSelectedThread] = useState<PatternThread | null>(null);
     const thread = lockedThread ?? selectedThread;
 
-    /* ── Step 1 data: open threads + the card library ── */
+    /* ── Step 1 data: open threads + the card library + the scope picker's
+       compendium-entry branch ── */
     const [openThreads, setOpenThreads] = useState<PatternThread[] | null>(null);
     const [threadsError, setThreadsError] = useState(false);
     const [cards, setCards] = useState<PatternCard[] | null>(null);
+    const [scopeOptions, setScopeOptions] = useState<ScopeOptions | null>(null);
     const [search, setSearch] = useState('');
     const [creatingNew, setCreatingNew] = useState(false);
 
@@ -242,10 +243,20 @@ export default function MarkThreadModal({
             }
         });
 
+        // The work's linked compendium entry + its ancestor chain (fix
+        // round 1) — only ever needed for the new-thread scope picker,
+        // but fetched eagerly here alongside cards/threads so toggling
+        // "New thread…" doesn't show a loading flicker.
+        fetchScopeOptions(projectSlug, workId).then((result) => {
+            if (!cancelled && result !== null) {
+                setScopeOptions(result);
+            }
+        });
+
         return () => {
             cancelled = true;
         };
-    }, [projectSlug, lockedThread]);
+    }, [projectSlug, workId, lockedThread]);
 
     const cardsByKind = useMemo(() => {
         const groups = new Map<string, PatternCard[]>();
@@ -380,7 +391,7 @@ export default function MarkThreadModal({
                     setScope={setScope}
                     section={section}
                     ancestors={ancestors}
-                    linkedEntry={linkedEntry}
+                    scopeOptions={scopeOptions}
                     creating={creating}
                     createError={createError}
                     onSubmitNewThread={() => void submitNewThread()}
@@ -431,7 +442,10 @@ interface ThreadPickerStepProps {
     setScope: (value: ScopeChoice) => void;
     section: ThreadSectionRef;
     ancestors: SectionNode[];
-    linkedEntry: { id: number; name: string } | null;
+    /** The work's linked compendium entry + its ancestor chain (fix
+     *  round 1) — `null` until `writing.scope_options` resolves, or when
+     *  the work has no linked entry (both render no extra options). */
+    scopeOptions: ScopeOptions | null;
     creating: boolean;
     createError: boolean;
     onSubmitNewThread: () => void;
@@ -459,27 +473,35 @@ function ThreadPickerStep({
     setScope,
     section,
     ancestors,
-    linkedEntry,
+    scopeOptions,
     creating,
     createError,
     onSubmitNewThread,
     onClose,
 }: ThreadPickerStepProps) {
-    const scopeOptions: Array<{ choice: ScopeChoice; label: string }> = [
+    // Compendium branch: the linked entry itself (nearest to the work),
+    // then its ancestors nearest-first — same "nearest thing first"
+    // ordering as the section ancestors above. Labels are the entry
+    // names as-is, exactly like section ancestors use their title as-is.
+    const entryOptions: Array<{ choice: ScopeChoice; label: string }> =
+        scopeOptions === null || scopeOptions.entry === null
+            ? []
+            : [
+                  { choice: { type: 'entry' as const, id: scopeOptions.entry.id }, label: scopeOptions.entry.name },
+                  ...scopeOptions.entry_ancestors.map((ancestor) => ({
+                      choice: { type: 'entry' as const, id: ancestor.id },
+                      label: ancestor.name,
+                  })),
+              ];
+
+    const scopeChoiceOptions: Array<{ choice: ScopeChoice; label: string }> = [
         { choice: { type: 'section', id: section.id }, label: section.title },
         ...ancestors.map((ancestor) => ({
             choice: { type: 'section' as const, id: ancestor.id },
             label: ancestor.title,
         })),
         { choice: { type: 'work' }, label: t('writing.threads.scope_this_work') },
-        ...(linkedEntry !== null
-            ? [
-                  {
-                      choice: { type: 'entry' as const, id: linkedEntry.id },
-                      label: t('writing.threads.scope_linked_entry').replace(':name', linkedEntry.name),
-                  },
-              ]
-            : []),
+        ...entryOptions,
     ];
 
     return (
@@ -598,7 +620,7 @@ function ThreadPickerStep({
                                 {t('writing.threads.scope_label')}
                             </span>
 
-                            {scopeOptions.map(({ choice, label }) => (
+                            {scopeChoiceOptions.map(({ choice, label }) => (
                                 <label key={scopeKey(choice)} className="flex cursor-pointer items-center gap-3 text-sm">
                                     <input
                                         type="radio"
