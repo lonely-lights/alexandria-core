@@ -461,6 +461,15 @@ return [
     'ribbon.locked_hint' => 'Available in the store',
     'ribbon.export_coming' => 'Export (coming later)',
 
+    // FDX gateway (Final Draft import/export) — Task 5
+    'fdx.export_title' => 'Export to Final Draft',
+    'fdx.include_synopses' => 'Include synopses',
+    'fdx.include_beats' => 'Include beat markers',
+    'fdx.include_markers' => 'Include act & chapter markers',
+    'fdx.export_action' => 'Export to Final Draft…',
+    'fdx.import_action' => 'Import from Final Draft…',
+    'fdx.import_failed' => 'Import failed. Please check the file and try again.',
+
     'flash.work_created' => 'Work created.',
     'flash.work_updated' => 'Work updated.',
     'flash.work_deleted' => 'Work deleted.',

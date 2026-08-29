@@ -110,6 +110,8 @@ export interface WritingRibbonContext {
         setStatus(value: string): void; // work status select
         goToIndex(): void;        // project works index
         goToDashboard(): void;    // global /writing
+        openExportFdx(): void;    // opens ExportFdxModal (FDX Gateway Task 5)
+        importFdx(): void;        // file picker -> POST -> navigate to the new Work
     };
     workStatus: string;
 }

@@ -18,6 +18,8 @@ import ContinuousFlow, { type ActiveScene } from './Flow/ContinuousFlow';
 import FlowToggle from './Flow/FlowToggle';
 import { flowUrl, parseSceneFragment } from './Flow/flowUrl';
 import { readViewMode, writeViewMode, type WorkspaceViewMode } from './Flow/viewMode';
+import ExportFdxModal from './Fdx/ExportFdxModal';
+import { importFdx } from './Fdx/importFdx';
 import AddSectionModal from './Sections/AddSectionModal';
 import ManuscriptEditor, {
     PRINT_LAYOUT_STORAGE_KEY,
@@ -347,6 +349,14 @@ export default function Workspace() {
     const [addTarget, setAddTarget] = useState<{ parentId: number | null } | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<SectionNode | null>(null);
     const [deleting, setDeleting] = useState(false);
+
+    // FDX gateway (Task 5) — export options modal trigger + import error
+    // surface. No established toast idiom lives in this desk (the closest
+    // precedent, WorkSettingsModal's entryLinkError, is local state + an
+    // inline notice, not a global toast) — this mirrors that: a dismissible
+    // inline banner under the ribbon, not `useToastContext`.
+    const [fdxExportOpen, setFdxExportOpen] = useState(false);
+    const [fdxImportError, setFdxImportError] = useState<string | null>(null);
 
     // Ribbon editor bridge — populated by whichever editor is mounted
     // (via useImperativeHandle); editorTick bumps on its state changes
@@ -910,10 +920,15 @@ export default function Workspace() {
                     ),
                 goToIndex: () => router.visit(worksBase(projectSlug)),
                 goToDashboard: () => router.visit('/writing'),
+                openExportFdx: () => setFdxExportOpen(true),
+                importFdx: () => {
+                    setFdxImportError(null);
+                    importFdx(projectSlug, (message) => setFdxImportError(message ?? t('writing.fdx.import_failed')));
+                },
             },
             workStatus: work.status,
         };
-    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize]);
+    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize, t]);
 
     const workWords = liveWorkWords ?? work.word_count;
 
@@ -1078,6 +1093,33 @@ export default function Workspace() {
                         }
                     />
                 </div>
+
+                {/* FDX import error — Task 5. No toast idiom exists in this
+                    desk (see the fdxImportError declaration above), so this
+                    mirrors WorkSettingsModal's entryLinkError pattern: a
+                    dismissible inline notice instead of a global toast. */}
+                {fdxImportError && (
+                    <div
+                        className="shrink-0 flex items-center justify-between gap-3 px-4 py-2 text-sm"
+                        style={{
+                            background: 'var(--theme-status-error-subtle)',
+                            color: 'var(--theme-status-error-stroke)',
+                        }}
+                    >
+                        <span className="flex items-center gap-2">
+                            <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                            {fdxImportError}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setFdxImportError(null)}
+                            aria-label="Dismiss"
+                            className="inline-flex h-5 w-5 shrink-0 items-center justify-center"
+                        >
+                            <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
+                        </button>
+                    </div>
+                )}
 
                 <div className="writing-workspace-body relative flex min-h-0 flex-1">
                     {/* Navigator — pushed back entirely in focus mode:
@@ -1421,6 +1463,14 @@ export default function Workspace() {
                     workSlug={work.slug}
                     parentId={addTarget.parentId}
                     onClose={() => setAddTarget(null)}
+                />
+            )}
+
+            {fdxExportOpen && (
+                <ExportFdxModal
+                    projectSlug={project.slug}
+                    workSlug={work.slug}
+                    onClose={() => setFdxExportOpen(false)}
                 />
             )}
 

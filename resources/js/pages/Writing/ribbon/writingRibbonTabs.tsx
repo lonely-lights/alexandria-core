@@ -104,6 +104,29 @@ const fileTab: RibbonTab<Ctx> = {
             labelKey: 'writing.ribbon.group_export',
             controls: [
                 {
+                    // FDX Gateway Task 5. Visible regardless of canUpdate —
+                    // export only needs works.export.fdx's `can:view,work`
+                    // server-side, no update permission (a read-only viewer
+                    // can still export what they can read).
+                    id: 'export-fdx',
+                    type: 'button',
+                    icon: 'fa-solid fa-file-export',
+                    labelKey: 'writing.fdx.export_action',
+                    onAction: (ctx) => ctx.actions.openExportFdx(),
+                },
+                {
+                    // Visible regardless of canUpdate: import creates a
+                    // brand-new sibling Work (works.import.fdx authorizes
+                    // against the PROJECT's work.create permission, not
+                    // this work's canUpdate) — same reasoning as the
+                    // always-visible goto controls above.
+                    id: 'import-fdx',
+                    type: 'button',
+                    icon: 'fa-solid fa-file-import',
+                    labelKey: 'writing.fdx.import_action',
+                    onAction: (ctx) => ctx.actions.importFdx(),
+                },
+                {
                     // Placeholder — manuscript/PDF/Fountain export ships later.
                     id: 'export-stub',
                     type: 'button',
