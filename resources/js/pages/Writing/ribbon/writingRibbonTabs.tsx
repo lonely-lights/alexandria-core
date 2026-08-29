@@ -137,6 +137,23 @@ const fileTab: RibbonTab<Ctx> = {
                 },
             ],
         },
+        {
+            // Scoped revisions (Stage 9). Requires update — marking a
+            // revision authorizes against works.revisions.store's
+            // `can:update,work`, same as add/delete section above.
+            id: 'revisions',
+            labelKey: 'writing.ribbon.group_revisions',
+            controls: [
+                {
+                    id: 'mark-revision',
+                    type: 'button',
+                    icon: 'fa-solid fa-clock-rotate-left',
+                    labelKey: 'writing.revisions.mark_action',
+                    visible: editable,
+                    onAction: (ctx) => ctx.actions.openMarkRevision(),
+                },
+            ],
+        },
     ],
 };
 

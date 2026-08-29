@@ -20,6 +20,8 @@ import { flowUrl, parseSceneFragment } from './Flow/flowUrl';
 import { readViewMode, writeViewMode, type WorkspaceViewMode } from './Flow/viewMode';
 import ExportFdxModal from './Fdx/ExportFdxModal';
 import { importFdx } from './Fdx/importFdx';
+import HistoryPanel from './Revisions/HistoryPanel';
+import MarkRevisionModal from './Revisions/MarkRevisionModal';
 import AddSectionModal from './Sections/AddSectionModal';
 import ManuscriptEditor, {
     PRINT_LAYOUT_STORAGE_KEY,
@@ -357,6 +359,13 @@ export default function Workspace() {
     // inline banner under the ribbon, not `useToastContext`.
     const [fdxExportOpen, setFdxExportOpen] = useState(false);
     const [fdxImportError, setFdxImportError] = useState<string | null>(null);
+
+    // Mark-revision dialog (Stage 9) — `lockedSection: null` is the File-menu
+    // entry point (scope picker unlocked); a SectionNode is the Navigator
+    // row menu's entry point (scope locked to that row). `historyRefreshSignal`
+    // bumps after a successful mark so an already-open History panel refetches.
+    const [markRevisionRequest, setMarkRevisionRequest] = useState<{ lockedSection: SectionNode | null } | null>(null);
+    const [historyRefreshSignal, setHistoryRefreshSignal] = useState(0);
 
     // Ribbon editor bridge — populated by whichever editor is mounted
     // (via useImperativeHandle); editorTick bumps on its state changes
@@ -925,6 +934,7 @@ export default function Workspace() {
                     setFdxImportError(null);
                     importFdx(projectSlug, (message) => setFdxImportError(message ?? t('writing.fdx.import_failed')));
                 },
+                openMarkRevision: () => setMarkRevisionRequest({ lockedSection: null }),
             },
             workStatus: work.status,
         };
@@ -1172,6 +1182,7 @@ export default function Workspace() {
                                 onSelect={selectSection}
                                 onRequestAdd={(parentId) => setAddTarget({ parentId })}
                                 onRequestDelete={setDeleteTarget}
+                                onRequestMarkRevision={(node) => setMarkRevisionRequest({ lockedSection: node })}
                                 liveCounts={liveCounts}
                                 currentOutline={currentOutline}
                             />
@@ -1327,6 +1338,15 @@ export default function Workspace() {
                                         onNavigate={selectSection}
                                     />
                                 )}
+                                {panelMode === 'history' && (
+                                    <HistoryPanel
+                                        projectSlug={project.slug}
+                                        workSlug={work.slug}
+                                        currentSection={effectiveSection}
+                                        canUpdate={can.update}
+                                        refreshSignal={historyRefreshSignal}
+                                    />
+                                )}
                                 {panelMode === 'comments' && (
                                     <CommentRail
                                         workSlug={work.slug}
@@ -1471,6 +1491,18 @@ export default function Workspace() {
                     projectSlug={project.slug}
                     workSlug={work.slug}
                     onClose={() => setFdxExportOpen(false)}
+                />
+            )}
+
+            {markRevisionRequest !== null && (
+                <MarkRevisionModal
+                    projectSlug={project.slug}
+                    workSlug={work.slug}
+                    sections={sections}
+                    currentSection={effectiveSection}
+                    lockedSection={markRevisionRequest.lockedSection}
+                    onClose={() => setMarkRevisionRequest(null)}
+                    onMarked={() => setHistoryRefreshSignal((n) => n + 1)}
                 />
             )}
 

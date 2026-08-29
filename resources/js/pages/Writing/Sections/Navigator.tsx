@@ -57,6 +57,8 @@ interface NavigatorProps {
     onRequestAdd: (parentId: number | null) => void;
     /** Open the Workspace-owned delete ConfirmModal for this node. */
     onRequestDelete: (node: SectionNode) => void;
+    /** Open the Workspace-owned MarkRevisionModal, scope locked to this node (Stage 9). */
+    onRequestMarkRevision: (node: SectionNode) => void;
     /** Autosave-confirmed word counts (by section id) overlaying the prop tree. */
     liveCounts?: Record<number, number>;
     /** Headings extracted from the current prose section, rendered as an in-section outline. */
@@ -196,6 +198,7 @@ export default function Navigator({
     onSelect,
     onRequestAdd,
     onRequestDelete,
+    onRequestMarkRevision,
     liveCounts,
     currentOutline = [],
 }: NavigatorProps) {
@@ -264,6 +267,7 @@ export default function Navigator({
         onRename: setRenameTarget,
         onMove: moveSection,
         onMoveTo: setMoveTarget,
+        onMarkRevision: onRequestMarkRevision,
         liveCounts,
         currentOutline,
         t,
@@ -405,6 +409,7 @@ interface TreeShared {
     onRename: (node: SectionNode) => void;
     onMove: (sectionId: number, toParentId: number | null, position: number) => void;
     onMoveTo: (node: SectionNode) => void;
+    onMarkRevision: (node: SectionNode) => void;
     liveCounts?: Record<number, number>;
     currentOutline: SectionOutlineItem[];
     t: Translator;
@@ -480,7 +485,7 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, liveCounts, t } =
+    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onMarkRevision, liveCounts, t } =
         shared;
 
     const isSelected = node.slug === currentSlug;
@@ -613,6 +618,11 @@ function NavigatorRow({
                                         onClick: () => onMoveTo(node),
                                     },
                                     { divider: true },
+                                    {
+                                        label: t('writing.revisions.mark_action'),
+                                        icon: 'fa-clock-rotate-left',
+                                        onClick: () => onMarkRevision(node),
+                                    },
                                     {
                                         label: t('writing.workspace.copy_section_link'),
                                         icon: 'fa-link',

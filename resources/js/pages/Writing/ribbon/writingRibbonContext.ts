@@ -112,6 +112,7 @@ export interface WritingRibbonContext {
         goToDashboard(): void;    // global /writing
         openExportFdx(): void;    // opens ExportFdxModal (FDX Gateway Task 5)
         importFdx(): void;        // file picker -> POST -> navigate to the new Work
+        openMarkRevision(): void; // opens MarkRevisionModal, scope unlocked (Stage 9)
     };
     workStatus: string;
 }
