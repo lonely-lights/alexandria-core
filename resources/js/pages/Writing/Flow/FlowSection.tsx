@@ -99,6 +99,8 @@ export interface FlowSectionProps {
     onSceneLinksChange: (links: ScreenplaySceneLink[]) => void;
     onEntryLinkSelect: () => void;
     onAddComment: (anchor: { from: number; to: number; text: string }) => void;
+    /** Fires on the "Mark device" bubble click (Devices & Tropes Task 5). */
+    onMarkThread: (anchor: { from: number; to: number; text: string }) => void;
 }
 
 export default function FlowSection({
@@ -122,6 +124,7 @@ export default function FlowSection({
     onSceneLinksChange,
     onEntryLinkSelect,
     onAddComment,
+    onMarkThread,
 }: FlowSectionProps) {
     const t = useT();
     const { node, depth, isContainer } = row;
@@ -249,6 +252,8 @@ export default function FlowSection({
                             onEntryLinkSelect={onEntryLinkSelect}
                             enableComments={canUpdate}
                             onAddComment={onAddComment}
+                            enableMarkThread={canUpdate}
+                            onMarkThread={onMarkThread}
                         />
                     ) : (
                         <ManuscriptEditor
@@ -268,6 +273,8 @@ export default function FlowSection({
                             onOutlineChange={isActive ? onOutlineChange : noop}
                             enableComments={canUpdate}
                             onAddComment={onAddComment}
+                            enableMarkThread={canUpdate}
+                            onMarkThread={onMarkThread}
                         />
                     )}
                 </div>

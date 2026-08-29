@@ -86,6 +86,10 @@ export interface ManuscriptEditorProps {
     enableComments?: boolean;
     /** Fires with selected range + snapshotted text when the user clicks "Add comment". */
     onAddComment?: (anchor: { from: number; to: number; text: string }) => void;
+    /** Enable the floating "Mark device" affordance (Devices & Tropes Task 5). */
+    enableMarkThread?: boolean;
+    /** Fires with selected range + snapshotted text when the user clicks "Mark device". */
+    onMarkThread?: (anchor: { from: number; to: number; text: string }) => void;
 }
 
 export const PRINT_LAYOUT_STORAGE_KEY = 'alexandria.writing.print_layout';
@@ -117,6 +121,8 @@ export default function ManuscriptEditor({
     onOutlineChange,
     enableComments,
     onAddComment,
+    enableMarkThread,
+    onMarkThread,
 }: ManuscriptEditorProps) {
     const { noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
@@ -182,6 +188,8 @@ export default function ManuscriptEditor({
                     onStateChange={onStateChange}
                     enableComments={enableComments}
                     onAddComment={onAddComment}
+                    enableMarkThread={enableMarkThread}
+                    onMarkThread={onMarkThread}
                 />
             ) : (
                 <div

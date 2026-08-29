@@ -18,6 +18,7 @@ import {
 } from '@alexandria/editor/screenplay/sceneLinks';
 import type { ScreenplayElement } from '@alexandria/editor/screenplay/types';
 import AddCommentBubble from '@alexandria/editor/extensions/AddCommentBubble';
+import MarkDeviceBubble from '@alexandria/editor/extensions/MarkDeviceBubble';
 import { applySheetMargins } from '@alexandria/editor/extensions/pageBreakDecorations';
 import useT from '@alexandria/hooks/useT';
 
@@ -117,6 +118,10 @@ interface ScreenplaySurfaceProps {
     enableComments?: boolean;
     /** Fires with the selected range + snapshotted text when the user clicks "Add comment". */
     onAddComment?: (anchor: { from: number; to: number; text: string }) => void;
+    /** Enable the floating "Mark device" affordance (Devices & Tropes Task 5). */
+    enableMarkThread?: boolean;
+    /** Fires with the selected range + snapshotted text when the user clicks "Mark device". */
+    onMarkThread?: (anchor: { from: number; to: number; text: string }) => void;
 }
 
 /**
@@ -136,6 +141,8 @@ function ScreenplaySurface({
     onSerialized,
     enableComments = false,
     onAddComment,
+    enableMarkThread = false,
+    onMarkThread,
 }: ScreenplaySurfaceProps) {
     const t = useT();
     const [showKeys, setShowKeys] = useState(false);
@@ -253,7 +260,7 @@ function ScreenplaySurface({
     const commentSelectionRange = useEditorState({
         editor,
         selector: ({ editor: e }): { from: number; to: number } | null => {
-            if (!e || !enableComments) return null;
+            if (!e || (!enableComments && !enableMarkThread)) return null;
             const { from, to } = e.state.selection;
             return from !== to ? { from, to } : null;
         },
@@ -522,12 +529,23 @@ function ScreenplaySurface({
                 />
             )}
 
-            {enableComments && commentSelectionRange !== null && (
-                <AddCommentBubble
-                    editor={editor}
-                    range={commentSelectionRange}
-                    onAddComment={onAddComment}
-                />
+            {commentSelectionRange !== null && (
+                <>
+                    {enableComments && (
+                        <AddCommentBubble
+                            editor={editor}
+                            range={commentSelectionRange}
+                            onAddComment={onAddComment}
+                        />
+                    )}
+                    {enableMarkThread && (
+                        <MarkDeviceBubble
+                            editor={editor}
+                            range={commentSelectionRange}
+                            onMarkThread={onMarkThread}
+                        />
+                    )}
+                </>
             )}
 
             {/* Keyboard-flow help — opened via bridge.openHelp() */}
@@ -589,6 +607,8 @@ export default function ScreenplayEditor({
     onEntryLinkSelect,
     enableComments,
     onAddComment,
+    enableMarkThread,
+    onMarkThread,
 }: ManuscriptEditorProps) {
     const { noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
@@ -618,6 +638,8 @@ export default function ScreenplayEditor({
                     onSerialized={noteChange}
                     enableComments={enableComments}
                     onAddComment={onAddComment}
+                    enableMarkThread={enableMarkThread}
+                    onMarkThread={onMarkThread}
                 />
             ) : (
                 /* Read-only: the parsed blocks as styled static markup

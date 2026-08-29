@@ -8,11 +8,13 @@ import {
 } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import { worksBase } from '@alexandria/lib/urls';
 
 import type { KanbanCardModel } from './kanbanModel';
 import type { MoodAccent } from './moodPalette';
 import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
+import type { ThreadSectionRef } from '../Threads/MarkThreadModal';
 
 /**
  * KanbanCard — one scene index card, spec 2026-08-28 Kanban board (né Beat Board) Task 3.
@@ -57,6 +59,9 @@ export interface KanbanCardProps {
     onRowEdit: (key: string, patch: Partial<OutlineRow>) => void;
     onBeatToggle: (row: OutlineRow, beat: OutlineBeat) => void;
     onOpen: (slug: string) => void;
+    /** Opens MarkThreadModal locked to this card's section (Devices &
+     *  Tropes Task 5). Omitted for a not-yet-saved card (no sectionId). */
+    onRequestMarkThread?: (section: ThreadSectionRef) => void;
     dragHandleProps: HTMLAttributes<HTMLDivElement>;
 }
 
@@ -124,6 +129,22 @@ const openBtnStyle: CSSProperties = {
     position: 'absolute',
     top: '0.5rem',
     right: '0.5rem',
+    border: 'none',
+    background: 'none',
+    cursor: 'pointer',
+    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+    fontSize: '0.6875rem',
+    padding: '0.125rem',
+    lineHeight: 1,
+};
+
+const cardMenuWrapStyle: CSSProperties = {
+    position: 'absolute',
+    top: '0.375rem',
+    right: '1.5rem',
+};
+
+const cardMenuBtnStyle: CSSProperties = {
     border: 'none',
     background: 'none',
     cursor: 'pointer',
@@ -304,6 +325,7 @@ export default function KanbanCard({
     onRowEdit,
     onBeatToggle,
     onOpen,
+    onRequestMarkThread,
     dragHandleProps,
 }: KanbanCardProps) {
     const t = useT();
@@ -431,6 +453,37 @@ export default function KanbanCard({
                     aria-hidden="true"
                 />
             </button>
+
+            {canUpdate && row.sectionId !== null && onRequestMarkThread !== undefined && (
+                <span style={cardMenuWrapStyle} onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu
+                        align="right"
+                        density="compact"
+                        menuClassName="w-48 py-1"
+                        trigger={
+                            <button
+                                type="button"
+                                style={cardMenuBtnStyle}
+                                aria-label={t('writing.workspace.section_options')}
+                                title={t('writing.workspace.section_options')}
+                            >
+                                <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true" />
+                            </button>
+                        }
+                        items={[
+                            {
+                                label: t('writing.threads.mark_action'),
+                                icon: 'fa-book-bookmark',
+                                onClick: () =>
+                                    onRequestMarkThread({
+                                        id: row.sectionId as number,
+                                        title: row.title,
+                                    }),
+                            },
+                        ]}
+                    />
+                </span>
+            )}
 
             <div style={headerRowStyle} onDoubleClick={handleOpen}>
                 {row.label !== '' && (

@@ -76,6 +76,8 @@ export interface ContinuousFlowProps {
     onSceneLinksChange: (links: ScreenplaySceneLink[]) => void;
     onEntryLinkSelect: () => void;
     onAddComment: (anchor: { from: number; to: number; text: string }) => void;
+    /** Fires on the "Mark device" bubble click (Devices & Tropes Task 5). */
+    onMarkThread: (anchor: { from: number; to: number; text: string }) => void;
     /** Imperative scroll-to-section, filled in for the Navigator. */
     scrollToSlugRef: RefObject<((slug: string) => void) | null>;
 }
@@ -136,6 +138,7 @@ export default function ContinuousFlow({
     onSceneLinksChange,
     onEntryLinkSelect,
     onAddComment,
+    onMarkThread,
     scrollToSlugRef,
 }: ContinuousFlowProps) {
     const flat = useMemo(() => flattenTree(sections), [sections]);
@@ -525,6 +528,7 @@ export default function ContinuousFlow({
                         onSceneLinksChange={onSceneLinksChange}
                         onEntryLinkSelect={onEntryLinkSelect}
                         onAddComment={onAddComment}
+                        onMarkThread={onMarkThread}
                     />
                 ))}
             </div>

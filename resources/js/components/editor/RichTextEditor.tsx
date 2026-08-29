@@ -23,6 +23,7 @@ import {
 import { ProseTabKeymap } from './proseTabKeymap';
 import { CommentMark } from '@alexandria/editor/extensions/commentMark';
 import AddCommentBubble from '@alexandria/editor/extensions/AddCommentBubble';
+import MarkDeviceBubble from '@alexandria/editor/extensions/MarkDeviceBubble';
 import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
 
 /**
@@ -150,6 +151,17 @@ interface RichTextEditorProps {
      * in composer mode; `text` becomes the server-persisted anchor_text.
      */
     onAddComment?: (anchor: { from: number; to: number; text: string }) => void;
+    /**
+     * Enable the floating "Mark device" bubble (Devices & Tropes Task 5)
+     * — a sibling to the comment bubble, sharing its selection-capture
+     * state but rendered independently so either can be on without the
+     * other.
+     */
+    enableMarkThread?: boolean;
+    /** Fires with the selected range + snapshotted text when the user
+     *  clicks "Mark device". `text`/the range become the mark's
+     *  anchor_text/anchor_offset_hint. */
+    onMarkThread?: (anchor: { from: number; to: number; text: string }) => void;
 }
 
 /* ── Toolbar button definitions ── */
@@ -310,6 +322,8 @@ export default function RichTextEditor({
     aiInstructions = [],
     enableComments = false,
     onAddComment,
+    enableMarkThread = false,
+    onMarkThread,
 }: RichTextEditorProps) {
     const t = useT();
     const [showLinkModal, setShowLinkModal] = useState(false);
@@ -484,13 +498,14 @@ export default function RichTextEditor({
         },
     }) ?? ({} as Record<string, boolean>);
 
-    // Comment selection state — non-null when text is selected and
-    // enableComments is active. Read here (before the early return) so
-    // the hook runs unconditionally per Rules of Hooks.
+    // Selection-bubble range — non-null when text is selected and either
+    // the comment bubble or the mark-device bubble is active. Read here
+    // (before the early return) so the hook runs unconditionally per
+    // Rules of Hooks.
     const commentSelectionRange = useEditorState({
         editor,
         selector: ({ editor: e }): { from: number; to: number } | null => {
-            if (!e || !enableComments) return null;
+            if (!e || (!enableComments && !enableMarkThread)) return null;
             const { from, to } = e.state.selection;
             return from !== to ? { from, to } : null;
         },
@@ -1203,12 +1218,23 @@ export default function RichTextEditor({
                 />
             )}
 
-            {enableComments && commentSelectionRange !== null && (
-                <AddCommentBubble
-                    editor={editor}
-                    range={commentSelectionRange}
-                    onAddComment={onAddComment}
-                />
+            {commentSelectionRange !== null && (
+                <>
+                    {enableComments && (
+                        <AddCommentBubble
+                            editor={editor}
+                            range={commentSelectionRange}
+                            onAddComment={onAddComment}
+                        />
+                    )}
+                    {enableMarkThread && (
+                        <MarkDeviceBubble
+                            editor={editor}
+                            range={commentSelectionRange}
+                            onMarkThread={onMarkThread}
+                        />
+                    )}
+                </>
             )}
         </div>
     );

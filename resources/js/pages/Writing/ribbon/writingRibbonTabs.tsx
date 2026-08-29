@@ -154,6 +154,28 @@ const fileTab: RibbonTab<Ctx> = {
                 },
             ],
         },
+        {
+            // Devices & Tropes (Task 5, design doc
+            // 2026-08-29-devices-tropes-design.md). Requires update —
+            // marking a device authorizes against writing.threads.marks.store's
+            // `can:update,project`. Disabled (not hidden) with no open
+            // section: a mark always needs one to attach to, but the
+            // spec calls for the button to stay visible whenever
+            // canUpdate — same visible/disabled split as add-inside above.
+            id: 'threads',
+            labelKey: 'writing.threads.group_threads',
+            controls: [
+                {
+                    id: 'mark-thread',
+                    type: 'button',
+                    icon: 'fa-solid fa-book-bookmark',
+                    labelKey: 'writing.threads.mark_action',
+                    visible: editable,
+                    disabled: (ctx) => !ctx.hasSection,
+                    onAction: (ctx) => ctx.actions.openMarkThread(),
+                },
+            ],
+        },
     ],
 };
 

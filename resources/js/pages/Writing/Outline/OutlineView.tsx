@@ -8,7 +8,9 @@ import {
 } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 
+import type { ThreadSectionRef } from '../Threads/MarkThreadModal';
 import { beatKey, outlineReducer, type OutlineAction } from './outlineReducer';
 import {
     readCollapsedKeys,
@@ -43,6 +45,9 @@ export interface OutlineViewProps {
     workSlug: string;
     canUpdate: boolean;
     onNavigate: (slug: string) => void;
+    /** Opens MarkThreadModal locked to this row's section (Devices &
+     *  Tropes Task 5). Omitted for a not-yet-saved row (no sectionId). */
+    onRequestMarkThread?: (section: ThreadSectionRef) => void;
 }
 
 const paneStyle: CSSProperties = {
@@ -257,7 +262,12 @@ function blockedFor(row: OutlineRow, blocked: BlockedOutlineRow[]): BlockedOutli
     return row.sectionId === null ? undefined : blocked.find((b) => b.sectionId === row.sectionId);
 }
 
-export default function OutlineView({ projectSlug, workSlug, canUpdate }: OutlineViewProps) {
+export default function OutlineView({
+    projectSlug,
+    workSlug,
+    canUpdate,
+    onRequestMarkThread,
+}: OutlineViewProps) {
     const t = useT();
     const { rows, setRows, deleteRow, forceDelete, flush, status, blocked, reload } =
         useOutlineSync({
@@ -568,6 +578,34 @@ export default function OutlineView({ projectSlug, workSlug, canUpdate }: Outlin
                                     onKeyDown={(event) => handleKeyDown(event, row)}
                                     onBlur={() => flush()}
                                 />
+                                {canUpdate && row.sectionId !== null && onRequestMarkThread !== undefined && (
+                                    <DropdownMenu
+                                        align="right"
+                                        density="compact"
+                                        menuClassName="w-48 py-1"
+                                        trigger={
+                                            <button
+                                                type="button"
+                                                style={iconBtnStyle}
+                                                aria-label={t('writing.workspace.section_options')}
+                                                title={t('writing.workspace.section_options')}
+                                            >
+                                                <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true" />
+                                            </button>
+                                        }
+                                        items={[
+                                            {
+                                                label: t('writing.threads.mark_action'),
+                                                icon: 'fa-book-bookmark',
+                                                onClick: () =>
+                                                    onRequestMarkThread({
+                                                        id: row.sectionId as number,
+                                                        title: row.title,
+                                                    }),
+                                            },
+                                        ]}
+                                    />
+                                )}
                                 {canUpdate && (
                                     <button
                                         type="button"

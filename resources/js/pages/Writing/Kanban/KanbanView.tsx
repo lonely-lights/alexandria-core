@@ -7,6 +7,7 @@ import {
 
 import useT from '@alexandria/hooks/useT';
 
+import type { ThreadSectionRef } from '../Threads/MarkThreadModal';
 import { applyCardDrop, buildKanbanColumns, type KanbanColumn } from './kanbanModel';
 import KanbanCard from './KanbanCard';
 import { patchBeatDone } from '../Outline/outlineApi';
@@ -50,6 +51,9 @@ export interface KanbanViewProps {
     workSlug: string;
     canUpdate: boolean;
     onNavigate: (slug: string) => void;
+    /** Opens MarkThreadModal locked to a card's section (Devices &
+     *  Tropes Task 5). Omitted for a not-yet-saved card (no sectionId). */
+    onRequestMarkThread?: (section: ThreadSectionRef) => void;
 }
 
 interface DropTarget {
@@ -179,7 +183,13 @@ const emptyStateStyle: CSSProperties = {
     flex: 1,
 };
 
-export default function KanbanView({ projectSlug, workSlug, canUpdate, onNavigate }: KanbanViewProps) {
+export default function KanbanView({
+    projectSlug,
+    workSlug,
+    canUpdate,
+    onNavigate,
+    onRequestMarkThread,
+}: KanbanViewProps) {
     const t = useT();
     const { rows, setRows, flush, status } = useOutlineSync({ projectSlug, workSlug });
 
@@ -452,6 +462,7 @@ export default function KanbanView({ projectSlug, workSlug, canUpdate, onNavigat
                                                 onRowEdit={handleRowEdit}
                                                 onBeatToggle={handleBeatToggle}
                                                 onOpen={onNavigate}
+                                                onRequestMarkThread={onRequestMarkThread}
                                                 dragHandleProps={{
                                                     draggable: canUpdate,
                                                     onDragStart: (event) =>

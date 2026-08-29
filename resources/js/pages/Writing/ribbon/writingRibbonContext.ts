@@ -113,6 +113,7 @@ export interface WritingRibbonContext {
         openExportFdx(): void;    // opens ExportFdxModal (FDX Gateway Task 5)
         importFdx(): void;        // file picker -> POST -> navigate to the new Work
         openMarkRevision(): void; // opens MarkRevisionModal, scope unlocked (Stage 9)
+        openMarkThread(): void; // opens MarkThreadModal, unlocked on the current section (Devices & Tropes Task 5)
     };
     workStatus: string;
 }

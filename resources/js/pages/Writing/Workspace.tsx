@@ -22,6 +22,7 @@ import ExportFdxModal from './Fdx/ExportFdxModal';
 import { importFdx } from './Fdx/importFdx';
 import HistoryPanel from './Revisions/HistoryPanel';
 import MarkRevisionModal from './Revisions/MarkRevisionModal';
+import MarkThreadModal, { type ThreadAnchor, type ThreadSectionRef } from './Threads/MarkThreadModal';
 import AddSectionModal from './Sections/AddSectionModal';
 import ManuscriptEditor, {
     PRINT_LAYOUT_STORAGE_KEY,
@@ -367,6 +368,16 @@ export default function Workspace() {
     const [markRevisionRequest, setMarkRevisionRequest] = useState<{ lockedSection: SectionNode | null } | null>(null);
     const [historyRefreshSignal, setHistoryRefreshSignal] = useState(0);
 
+    // Mark-thread dialog (Devices & Tropes Task 5) — `lockedSection: null`
+    // is the File-menu entry point (mark lands on the current section);
+    // Kanban/outline row menus pass that row's `{id, title}` (they don't
+    // hold the nested section tree); the editor selection bubble passes
+    // `anchor` alongside whichever entry point opened it.
+    const [markThreadRequest, setMarkThreadRequest] = useState<{
+        lockedSection: ThreadSectionRef | null;
+        anchor: ThreadAnchor | null;
+    } | null>(null);
+
     // Ribbon editor bridge — populated by whichever editor is mounted
     // (via useImperativeHandle); editorTick bumps on its state changes
     // so ribbon control predicates re-read it.
@@ -619,6 +630,27 @@ export default function Workspace() {
             }
         }
     }, [panelOpen, panelMode, work.id]);
+
+    // Fired by the editor's "Mark device" floating bubble (Devices &
+    // Tropes Task 5) — opens MarkThreadModal with the captured selection
+    // as the mark's anchor. Unlike the comment bubble, there's no
+    // section choice here: the mark always lands on whichever section
+    // is being edited, so `lockedSection` is set even from this
+    // "unlocked" entry point's perspective (the thread PICKER still runs;
+    // only the mark's section is fixed).
+    const handleMarkThreadFromSelection = useCallback(
+        (selectionAnchor: { from: number; to: number; text: string }) => {
+            if (effectiveSectionId === null || effectiveSectionTitle === null) {
+                return;
+            }
+
+            setMarkThreadRequest({
+                lockedSection: { id: effectiveSectionId, title: effectiveSectionTitle },
+                anchor: { text: selectionAnchor.text, offsetHint: selectionAnchor.from },
+            });
+        },
+        [effectiveSectionId, effectiveSectionTitle],
+    );
 
     // Fired by editor floating button — opens the sidebar in comments mode.
     const handleAddComment = useCallback((anchor: { from: number; to: number; text: string }) => {
@@ -935,6 +967,7 @@ export default function Workspace() {
                     importFdx(projectSlug, (message) => setFdxImportError(message ?? t('writing.fdx.import_failed')));
                 },
                 openMarkRevision: () => setMarkRevisionRequest({ lockedSection: null }),
+                openMarkThread: () => setMarkThreadRequest({ lockedSection: null, anchor: null }),
             },
             workStatus: work.status,
         };
@@ -1206,6 +1239,9 @@ export default function Workspace() {
                                 workSlug={work.slug}
                                 canUpdate={can.update}
                                 onNavigate={selectSection}
+                                onRequestMarkThread={(row) =>
+                                    setMarkThreadRequest({ lockedSection: row, anchor: null })
+                                }
                             />
                         ) : viewMode === 'kanban' ? (
                             <KanbanView
@@ -1213,6 +1249,9 @@ export default function Workspace() {
                                 workSlug={work.slug}
                                 canUpdate={can.update}
                                 onNavigate={selectSection}
+                                onRequestMarkThread={(row) =>
+                                    setMarkThreadRequest({ lockedSection: row, anchor: null })
+                                }
                             />
                         ) : viewMode === 'continuous' && sections.length > 0 ? (
                             <ContinuousFlow
@@ -1233,6 +1272,7 @@ export default function Workspace() {
                                 onSceneLinksChange={setScreenplaySceneLinks}
                                 onEntryLinkSelect={handleEntryLinkSelect}
                                 onAddComment={handleAddComment}
+                                onMarkThread={handleMarkThreadFromSelection}
                                 scrollToSlugRef={scrollToSlugRef}
                             />
                         ) : currentSection !== null ? (
@@ -1256,6 +1296,8 @@ export default function Workspace() {
                                     onEntryLinkSelect={handleEntryLinkSelect}
                                     enableComments={can.update}
                                     onAddComment={handleAddComment}
+                                    enableMarkThread={can.update}
+                                    onMarkThread={handleMarkThreadFromSelection}
                                 />
                             ) : (
                                 <ManuscriptEditor
@@ -1275,6 +1317,8 @@ export default function Workspace() {
                                     onOutlineChange={setCurrentOutline}
                                     enableComments={can.update}
                                     onAddComment={handleAddComment}
+                                    enableMarkThread={can.update}
+                                    onMarkThread={handleMarkThreadFromSelection}
                                 />
                             )
                         ) : (
@@ -1503,6 +1547,25 @@ export default function Workspace() {
                     lockedSection={markRevisionRequest.lockedSection}
                     onClose={() => setMarkRevisionRequest(null)}
                     onMarked={() => setHistoryRefreshSignal((n) => n + 1)}
+                />
+            )}
+
+            {markThreadRequest !== null && (
+                <MarkThreadModal
+                    projectSlug={project.slug}
+                    workId={work.id}
+                    sections={sections}
+                    currentSection={
+                        effectiveSection !== null
+                            ? { id: effectiveSection.id, title: effectiveSection.title }
+                            : null
+                    }
+                    lockedSection={markThreadRequest.lockedSection}
+                    linkedEntry={work.linked_entry}
+                    lockedThread={null}
+                    anchor={markThreadRequest.anchor}
+                    onClose={() => setMarkThreadRequest(null)}
+                    onMarked={() => { /* Threads sidebar mode (Task 7+) will refresh from this. */ }}
                 />
             )}
 
