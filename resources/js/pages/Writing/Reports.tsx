@@ -9,6 +9,7 @@ import { projectUrl, workUrl } from '@alexandria/lib/urls';
 import type { EntryCard } from './Sections/ReferencePanel';
 import CharactersReport from './Sections/Reports/CharactersReport';
 import ProgressReport from './Sections/Reports/ProgressReport';
+import PromisesReport from './Sections/Reports/PromisesReport';
 import StructureReport from './Sections/Reports/StructureReport';
 
 /**
@@ -140,6 +141,7 @@ export default function Reports() {
                     t={t}
                 />
                 <ProgressReport progress={progress} t={t} />
+                <PromisesReport projectSlug={project.slug} workId={work.id} t={t} />
             </div>
         </AppLayout>
     );

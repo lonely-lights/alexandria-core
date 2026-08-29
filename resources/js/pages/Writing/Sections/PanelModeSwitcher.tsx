@@ -13,8 +13,9 @@ import { getSidebarModes, subscribeSidebarModes } from '../sidebarModeRegistry';
  * Right-rail mode switcher — Stage 11.5 Task 4; extended Stage 12a Task 2;
  * extended outline-mode Task 7.
  *
- * Five built-in icon buttons (Linked items · Notes · Comments · Outline ·
- * History) followed by any modes registered via sidebarModeRegistry. Registered
+ * Six built-in icon buttons (Linked items · Notes · Comments · Outline ·
+ * History · Devices & Tropes) followed by any modes registered via
+ * sidebarModeRegistry. Registered
  * modes are entitlement-gated via resolveGate: 'hidden' → omit, 'locked'
  * → disabled button + fa-lock badge + locked-hint title, 'visible' →
  * normal button.
@@ -50,6 +51,7 @@ const MODES: Array<{ id: PanelMode; icon: string; labelKey: string }> = [
     { id: 'comments', icon: 'fa-solid fa-comment-dots', labelKey: 'writing.panel.mode_comments' },
     { id: 'outline', icon: 'fa-solid fa-list-tree', labelKey: 'writing.outline.sidebar_label' },
     { id: 'history', icon: 'fa-solid fa-clock-rotate-left', labelKey: 'writing.revisions.sidebar_label' },
+    { id: 'threads', icon: 'fa-solid fa-wand-magic-sparkles', labelKey: 'writing.threads.sidebar_label' },
 ];
 
 export default function PanelModeSwitcher({ mode, onChange, can = {} }: PanelModeSwitcherProps) {

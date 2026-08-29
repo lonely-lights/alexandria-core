@@ -23,6 +23,8 @@ import { importFdx } from './Fdx/importFdx';
 import HistoryPanel from './Revisions/HistoryPanel';
 import MarkRevisionModal from './Revisions/MarkRevisionModal';
 import MarkThreadModal, { type ThreadAnchor, type ThreadSectionRef } from './Threads/MarkThreadModal';
+import ThreadsPanel from './Threads/ThreadsPanel';
+import type { PatternThread } from './Threads/threadApi';
 import AddSectionModal from './Sections/AddSectionModal';
 import ManuscriptEditor, {
     PRINT_LAYOUT_STORAGE_KEY,
@@ -372,11 +374,19 @@ export default function Workspace() {
     // is the File-menu entry point (mark lands on the current section);
     // Kanban/outline row menus pass that row's `{id, title}` (they don't
     // hold the nested section tree); the editor selection bubble passes
-    // `anchor` alongside whichever entry point opened it.
+    // `anchor` alongside whichever entry point opened it. `lockedThread`
+    // (Task 6) is non-null when ThreadsPanel/ThreadDetailModal request an
+    // additional mark on an ALREADY-selected thread — MarkThreadModal
+    // skips its picker step entirely in that case.
     const [markThreadRequest, setMarkThreadRequest] = useState<{
         lockedSection: ThreadSectionRef | null;
         anchor: ThreadAnchor | null;
+        lockedThread: PatternThread | null;
     } | null>(null);
+    // Bumped after a mark is added (via the shared MarkThreadModal, from
+    // any entry point) so an already-open Threads panel/detail modal
+    // refetches.
+    const [threadsRefreshSignal, setThreadsRefreshSignal] = useState(0);
 
     // Ribbon editor bridge — populated by whichever editor is mounted
     // (via useImperativeHandle); editorTick bumps on its state changes
@@ -647,6 +657,7 @@ export default function Workspace() {
             setMarkThreadRequest({
                 lockedSection: { id: effectiveSectionId, title: effectiveSectionTitle },
                 anchor: { text: selectionAnchor.text, offsetHint: selectionAnchor.from },
+                lockedThread: null,
             });
         },
         [effectiveSectionId, effectiveSectionTitle],
@@ -967,7 +978,7 @@ export default function Workspace() {
                     importFdx(projectSlug, (message) => setFdxImportError(message ?? t('writing.fdx.import_failed')));
                 },
                 openMarkRevision: () => setMarkRevisionRequest({ lockedSection: null }),
-                openMarkThread: () => setMarkThreadRequest({ lockedSection: null, anchor: null }),
+                openMarkThread: () => setMarkThreadRequest({ lockedSection: null, anchor: null, lockedThread: null }),
             },
             workStatus: work.status,
         };
@@ -1240,17 +1251,18 @@ export default function Workspace() {
                                 canUpdate={can.update}
                                 onNavigate={selectSection}
                                 onRequestMarkThread={(row) =>
-                                    setMarkThreadRequest({ lockedSection: row, anchor: null })
+                                    setMarkThreadRequest({ lockedSection: row, anchor: null, lockedThread: null })
                                 }
                             />
                         ) : viewMode === 'kanban' ? (
                             <KanbanView
                                 projectSlug={project.slug}
                                 workSlug={work.slug}
+                                workId={work.id}
                                 canUpdate={can.update}
                                 onNavigate={selectSection}
                                 onRequestMarkThread={(row) =>
-                                    setMarkThreadRequest({ lockedSection: row, anchor: null })
+                                    setMarkThreadRequest({ lockedSection: row, anchor: null, lockedThread: null })
                                 }
                             />
                         ) : viewMode === 'continuous' && sections.length > 0 ? (
@@ -1389,6 +1401,19 @@ export default function Workspace() {
                                         currentSection={effectiveSection}
                                         canUpdate={can.update}
                                         refreshSignal={historyRefreshSignal}
+                                    />
+                                )}
+                                {panelMode === 'threads' && (
+                                    <ThreadsPanel
+                                        projectSlug={project.slug}
+                                        workId={work.id}
+                                        sections={sections}
+                                        currentSection={effectiveSection}
+                                        canUpdate={can.update}
+                                        refreshSignal={threadsRefreshSignal}
+                                        onRequestAddMark={(thread) =>
+                                            setMarkThreadRequest({ lockedSection: null, anchor: null, lockedThread: thread })
+                                        }
                                     />
                                 )}
                                 {panelMode === 'comments' && (
@@ -1561,10 +1586,10 @@ export default function Workspace() {
                             : null
                     }
                     lockedSection={markThreadRequest.lockedSection}
-                    lockedThread={null}
+                    lockedThread={markThreadRequest.lockedThread}
                     anchor={markThreadRequest.anchor}
                     onClose={() => setMarkThreadRequest(null)}
-                    onMarked={() => { /* Threads sidebar mode (Task 7+) will refresh from this. */ }}
+                    onMarked={() => setThreadsRefreshSignal((n) => n + 1)}
                 />
             )}
 

@@ -1,4 +1,5 @@
 import {
+    useEffect,
     useState,
     type CSSProperties,
     type DragEvent,
@@ -8,12 +9,16 @@ import {
 import useT from '@alexandria/hooks/useT';
 
 import type { ThreadSectionRef } from '../Threads/MarkThreadModal';
+import { stanceAccent, stanceInitial, type PatternChip } from '../Threads/patternChips';
+import { fetchThreads } from '../Threads/threadApi';
 import { applyCardDrop, buildKanbanColumns, type KanbanColumn } from './kanbanModel';
 import KanbanCard from './KanbanCard';
 import { patchBeatDone } from '../Outline/outlineApi';
 import { moodAccent } from './moodPalette';
 import useOutlineSync from '../Outline/useOutlineSync';
 import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
+
+const MAX_CHIPS_PER_CARD = 3;
 
 /**
  * Kanban board (né Beat Board) — full-pane columns view, spec 2026-08-28 Kanban board (né Beat Board) Task 4.
@@ -49,6 +54,8 @@ import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
 export interface KanbanViewProps {
     projectSlug: string;
     workSlug: string;
+    /** Devices & Tropes Task 6 — the work's stance-chip fetch (work_id filter). */
+    workId: number;
     canUpdate: boolean;
     onNavigate: (slug: string) => void;
     /** Opens MarkThreadModal locked to a card's section (Devices &
@@ -186,6 +193,7 @@ const emptyStateStyle: CSSProperties = {
 export default function KanbanView({
     projectSlug,
     workSlug,
+    workId,
     canUpdate,
     onNavigate,
     onRequestMarkThread,
@@ -195,6 +203,53 @@ export default function KanbanView({
 
     const [draggingKey, setDraggingKey] = useState<string | null>(null);
     const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
+
+    // Devices & Tropes stance chips (Task 6) — one lazy, non-blocking
+    // fetch via the work_id filter, never per-card. Judgment call
+    // (documented in patternChips.ts): `threads.index` only serializes
+    // marks when narrowed to a single section_id, so a bulk work-scoped
+    // fetch can't carry real per-mark ROLE data. Chips here key off each
+    // thread's own SCOPE matching the card's section instead (the
+    // common case — MarkThreadModal defaults a brand-new thread's scope
+    // to the section it was marked from), coloured by stance rather than
+    // labelled by role.
+    const [sectionChips, setSectionChips] = useState<Map<number, PatternChip[]>>(new Map());
+
+    useEffect(() => {
+        let cancelled = false;
+
+        fetchThreads(projectSlug, { workId }).then((threads) => {
+            if (cancelled || threads === null) {
+                return;
+            }
+
+            const map = new Map<number, PatternChip[]>();
+
+            for (const thread of threads) {
+                if (thread.scope_type !== 'section') {
+                    continue;
+                }
+
+                const list = map.get(thread.scope_id) ?? [];
+
+                if (list.length < MAX_CHIPS_PER_CARD) {
+                    list.push({
+                        id: thread.id,
+                        label: stanceInitial(thread.stance),
+                        accent: stanceAccent(thread.stance),
+                        title: `${thread.title} — ${thread.card_name}`,
+                    });
+                    map.set(thread.scope_id, list);
+                }
+            }
+
+            setSectionChips(map);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [projectSlug, workId]);
 
     const columns = buildKanbanColumns(rows);
 
@@ -459,6 +514,11 @@ export default function KanbanView({
                                                 workSlug={workSlug}
                                                 canUpdate={canUpdate}
                                                 accent={moodAccent(cardModel.row.mood)}
+                                                chips={
+                                                    cardModel.row.sectionId !== null
+                                                        ? (sectionChips.get(cardModel.row.sectionId) ?? [])
+                                                        : []
+                                                }
                                                 onRowEdit={handleRowEdit}
                                                 onBeatToggle={handleBeatToggle}
                                                 onOpen={onNavigate}

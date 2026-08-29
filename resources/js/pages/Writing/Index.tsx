@@ -26,6 +26,8 @@ import WorkCard from "./Sections/WorkCard";
 import type { WorkRow } from "./Sections/WorkCard";
 import WorkSettingsModal from "./Sections/WorkSettingsModal";
 import type { LengthPlanOption } from "./Sections/WorkSettingsModal";
+import OpenPromisesList from "./Threads/OpenPromisesList";
+import PatternLibrary from "./Threads/PatternLibrary";
 
 /**
  * Writing dashboard → index — Stage 8g.1 (Plan 2 Task 5).
@@ -254,6 +256,23 @@ export default function WritingIndex() {
                         onSettings={setSettingsWork}
                     />
                 </div>
+
+                {/* Devices & Tropes — Task 6 (design doc
+                    2026-08-29-devices-tropes-design.md Surfaces #1/#5).
+                    Library card list (left, wider) beside the cross-work
+                    open-promises block (right), same golden-ratio split
+                    as the panel above. `can.manageStructure` is the same
+                    Gate::allows('update', $project) tier the cards/threads
+                    routes authorize mutations under. */}
+                <section className="mt-8" data-writing-patterns-section>
+                    <div
+                        className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.618fr)_minmax(19rem,1fr)] xl:gap-6"
+                        data-writing-patterns-grid
+                    >
+                        <PatternLibrary projectSlug={project.slug} canManage={can.manageStructure} />
+                        <OpenPromisesList projectSlug={project.slug} />
+                    </div>
+                </section>
             </div>
 
             {createOpen && (

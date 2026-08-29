@@ -15,6 +15,7 @@ import type { KanbanCardModel } from './kanbanModel';
 import type { MoodAccent } from './moodPalette';
 import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
 import type { ThreadSectionRef } from '../Threads/MarkThreadModal';
+import type { PatternChip } from '../Threads/patternChips';
 
 /**
  * KanbanCard — one scene index card, spec 2026-08-28 Kanban board (né Beat Board) Task 3.
@@ -62,6 +63,9 @@ export interface KanbanCardProps {
     /** Opens MarkThreadModal locked to this card's section (Devices &
      *  Tropes Task 5). Omitted for a not-yet-saved card (no sectionId). */
     onRequestMarkThread?: (section: ThreadSectionRef) => void;
+    /** Up to 3 stance chips for threads scoped to this card's section
+     *  (Devices & Tropes Task 6 — see KanbanView's fetch note). */
+    chips?: PatternChip[];
     dragHandleProps: HTMLAttributes<HTMLDivElement>;
 }
 
@@ -316,6 +320,28 @@ const statusBadgeStyle: CSSProperties = {
     lineHeight: 1.6,
 };
 
+const chipRowStyle: CSSProperties = {
+    display: 'flex',
+    gap: '0.25rem',
+};
+
+function chipTokenStyle(chip: PatternChip): CSSProperties {
+    return {
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '1.125rem',
+        height: '1.125rem',
+        borderRadius: '999px',
+        border: `1px solid ${chip.accent.border}`,
+        background: chip.accent.wash,
+        color: chip.accent.border,
+        fontSize: '0.5625rem',
+        fontWeight: 700,
+        flexShrink: 0,
+    };
+}
+
 export default function KanbanCard({
     card,
     projectSlug,
@@ -326,6 +352,7 @@ export default function KanbanCard({
     onBeatToggle,
     onOpen,
     onRequestMarkThread,
+    chips = [],
     dragHandleProps,
 }: KanbanCardProps) {
     const t = useT();
@@ -653,13 +680,24 @@ export default function KanbanCard({
                         (row.wordCount ?? 0).toLocaleString(),
                     )}
                 </span>
-                {row.status !== null &&
-                    row.status !== undefined &&
-                    row.status !== '' && (
-                        <span style={statusBadgeStyle}>
-                            {t(`writing.statuses.${row.status}`, row.status)}
+                <span className="flex items-center gap-1.5">
+                    {chips.length > 0 && (
+                        <span style={chipRowStyle}>
+                            {chips.map((chip) => (
+                                <span key={chip.id} title={chip.title} style={chipTokenStyle(chip)}>
+                                    {chip.label}
+                                </span>
+                            ))}
                         </span>
                     )}
+                    {row.status !== null &&
+                        row.status !== undefined &&
+                        row.status !== '' && (
+                            <span style={statusBadgeStyle}>
+                                {t(`writing.statuses.${row.status}`, row.status)}
+                            </span>
+                        )}
+                </span>
             </div>
         </div>
     );

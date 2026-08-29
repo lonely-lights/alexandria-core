@@ -23,6 +23,19 @@
  * the raw FQCN internally, but the controller normalizes it before the
  * response leaves PHP, so `PromiseGroup.scope_type` is the short
  * `PatternScopeType` union like everywhere else.
+ *
+ * Task 6 addition: `writing.threads.index`/`store`/`update` never
+ * return a thread's FULL mark history — `marks` is only populated when
+ * a single `section_id` filters the request (see this file's header
+ * note above), and store/update omit it entirely. ThreadDetailModal
+ * needs every mark in order to render its marks list, so Task 6 added
+ * a dedicated `GET writing.threads.show` endpoint
+ * ({@see PatternThreadController::show}) that always returns the
+ * thread's complete mark set, each carrying a `section_title` (marks
+ * ordered oldest-first by `created_at` — the design doc's "story
+ * order" simplified to pin order, since a thread's marks can span
+ * different works via Entry scope and there's no single manuscript
+ * position to sort by across works).
  */
 
 import { writingUrl } from '@alexandria/lib/urls';
@@ -329,6 +342,43 @@ export async function createThread(projectSlug: string, input: ThreadInput): Pro
         }
 
         const body = (await response.json()) as { thread: PatternThread };
+
+        return body.thread;
+    } catch {
+        return null;
+    }
+}
+
+/** A mark as returned by `writing.threads.show` — the same wire shape
+ *  plus the pinned section's title, since that endpoint spans every
+ *  section a thread's marks touch (unlike the `section_id`-filtered
+ *  `index` rows, where the caller already knows the one section). */
+export interface PatternMarkWithSection extends PatternMark {
+    section_title: string;
+}
+
+/** `writing.threads.show`'s response shape — a thread row whose `marks`
+ *  is always populated (see this file's header note) and ordered by
+ *  pin time. */
+export interface PatternThreadDetail extends PatternThread {
+    marks: PatternMarkWithSection[];
+}
+
+export async function fetchThread(
+    projectSlug: string,
+    threadId: number,
+): Promise<PatternThreadDetail | null> {
+    try {
+        const response = await fetch(`${writingUrl(projectSlug)}/threads/${threadId}`, {
+            credentials: 'same-origin',
+            headers: outlineApiHeaders(),
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const body = (await response.json()) as { thread: PatternThreadDetail };
 
         return body.thread;
     } catch {

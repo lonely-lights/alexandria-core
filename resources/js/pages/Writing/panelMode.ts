@@ -3,7 +3,8 @@
  * extended outline-mode Task 7; extended Stage 9 (scoped revisions).
  *
  * Per-work client-side storage for the right-rail mode switcher
- * (Linked items · Notes · Comments · Outline · History + package-registered modes).
+ * (Linked items · Notes · Comments · Outline · History · Devices & Tropes
+ * + package-registered modes).
  * Key per work: `alexandria.writing.panel-mode:<workId>`.
  *
  * Designed as a pure module so Vitest can test the helpers without
@@ -11,13 +12,13 @@
  */
 
 /**
- * The five built-in modes plus any id registered via sidebarModeRegistry.
+ * The six built-in modes plus any id registered via sidebarModeRegistry.
  * The `(string & {})` tail preserves autocomplete for the literals while
  * accepting arbitrary registered ids.
  */
-export type PanelMode = 'linked' | 'notes' | 'comments' | 'outline' | 'history' | (string & {});
+export type PanelMode = 'linked' | 'notes' | 'comments' | 'outline' | 'history' | 'threads' | (string & {});
 
-const BUILT_IN_MODES = new Set<string>(['linked', 'notes', 'comments', 'outline', 'history'] as const);
+const BUILT_IN_MODES = new Set<string>(['linked', 'notes', 'comments', 'outline', 'history', 'threads'] as const);
 const KEY_PREFIX = 'alexandria.writing.panel-mode';
 
 /** Build the localStorage key for a given work id. */

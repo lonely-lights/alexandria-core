@@ -7,6 +7,7 @@ import Modal, { ModalFooter, ModalHeader } from '@alexandria/components/ui/Modal
 import useT from '@alexandria/hooks/useT';
 
 import type { SectionNode } from '../Workspace';
+import { ancestorsOf, scopeChoiceToWire, scopeKey, type ScopeChoice } from './scopeChoice';
 import {
     createMark,
     createThread,
@@ -17,7 +18,6 @@ import {
     type PatternCard,
     type PatternMark,
     type PatternMarkRole,
-    type PatternScopeType,
     type PatternStance,
     type PatternThread,
     type ScopeOptions,
@@ -66,31 +66,6 @@ import {
 
 const CONFIRM_CLOSE_DELAY_MS = 1100;
 
-/** Depth-first ancestor path for `targetId`, nearest ancestor first —
- *  same algorithm as MarkRevisionModal's `ancestorsOf`, not imported
- *  (too small a pure helper to be worth a shared module for). */
-function ancestorsOf(nodes: SectionNode[], targetId: number): SectionNode[] {
-    function walk(list: SectionNode[], trail: SectionNode[]): SectionNode[] | null {
-        for (const node of list) {
-            if (node.id === targetId) {
-                return trail;
-            }
-
-            const found = walk(node.children, [...trail, node]);
-
-            if (found !== null) {
-                return found;
-            }
-        }
-
-        return null;
-    }
-
-    const trail = walk(nodes, []);
-
-    return trail === null ? [] : [...trail].reverse();
-}
-
 /** A section-shaped scope/mark target. Kanban cards and outline rows
  *  don't hold the nested `SectionNode` tree, so this is the lightest
  *  shape that still locates ancestors in `sections`. */
@@ -102,36 +77,6 @@ export interface ThreadSectionRef {
 export interface ThreadAnchor {
     text: string;
     offsetHint: number | null;
-}
-
-type ScopeChoice =
-    | { type: 'section'; id: number }
-    | { type: 'work' }
-    | { type: 'entry'; id: number };
-
-function scopeKey(choice: ScopeChoice): string {
-    switch (choice.type) {
-        case 'section':
-            return `section:${choice.id}`;
-        case 'entry':
-            return `entry:${choice.id}`;
-        default:
-            return 'work';
-    }
-}
-
-function scopeChoiceToWire(
-    choice: ScopeChoice,
-    workId: number,
-): { scope_type: PatternScopeType; scope_id: number } {
-    switch (choice.type) {
-        case 'section':
-            return { scope_type: 'section', scope_id: choice.id };
-        case 'entry':
-            return { scope_type: 'entry', scope_id: choice.id };
-        default:
-            return { scope_type: 'work', scope_id: workId };
-    }
 }
 
 export interface MarkThreadModalProps {
