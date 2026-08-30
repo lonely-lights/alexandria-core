@@ -8,6 +8,7 @@ import useT from '@alexandria/hooks/useT';
 
 import type { SectionNode } from '../Workspace';
 import { ancestorsOf, scopeChoiceToWire, scopeKey, type ScopeChoice } from './scopeChoice';
+import { groupCardsByKind } from './cardGroups';
 import {
     createMark,
     createThread,
@@ -203,17 +204,7 @@ export default function MarkThreadModal({
         };
     }, [projectSlug, workId, lockedThread]);
 
-    const cardsByKind = useMemo(() => {
-        const groups = new Map<string, PatternCard[]>();
-
-        for (const card of cards ?? []) {
-            const list = groups.get(card.kind) ?? [];
-            list.push(card);
-            groups.set(card.kind, list);
-        }
-
-        return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
-    }, [cards]);
+    const cardsByKind = useMemo(() => groupCardsByKind(cards), [cards]);
 
     const filteredThreads = useMemo(() => {
         const needle = search.trim().toLowerCase();

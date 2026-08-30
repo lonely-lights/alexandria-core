@@ -6,6 +6,7 @@ import useT from '@alexandria/hooks/useT';
 
 import PatternCardModal from './PatternCardModal';
 import { deleteCard, fetchCards, type CardDeleteResult, type PatternCard } from './threadApi';
+import { groupCardsByKind } from './cardGroups';
 
 /**
  * "Devices & Tropes" library — Task 6 (design doc
@@ -79,17 +80,7 @@ export default function PatternLibrary({ projectSlug, canManage }: PatternLibrar
 
     useEffect(load, [projectSlug]);
 
-    const grouped = useMemo(() => {
-        const groups = new Map<string, PatternCard[]>();
-
-        for (const card of cards ?? []) {
-            const list = groups.get(card.kind) ?? [];
-            list.push(card);
-            groups.set(card.kind, list);
-        }
-
-        return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
-    }, [cards]);
+    const grouped = useMemo(() => groupCardsByKind(cards), [cards]);
 
     const existingKinds = useMemo(
         () => [...new Set((cards ?? []).map((card) => card.kind))].sort((a, b) => a.localeCompare(b)),

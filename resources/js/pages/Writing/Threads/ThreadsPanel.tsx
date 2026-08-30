@@ -117,12 +117,10 @@ function ThreadRow({
     thread,
     roles,
     onOpen,
-    t,
 }: {
     thread: PatternThread;
     roles: string[];
     onOpen: () => void;
-    t: ReturnType<typeof useT>;
 }) {
     return (
         <button type="button" className={rowClass} style={rowStyle} onClick={onOpen}>
@@ -243,7 +241,6 @@ export default function ThreadsPanel({
                         thread={thread}
                         roles={roleChips((thread.marks ?? []).map((mark) => mark.role))}
                         onOpen={() => setSelectedThreadId(thread.id)}
-                        t={t}
                     />
                 ))}
 
@@ -266,7 +263,6 @@ export default function ThreadsPanel({
                         thread={thread}
                         roles={[]}
                         onOpen={() => setSelectedThreadId(thread.id)}
-                        t={t}
                     />
                 ))}
             </div>
