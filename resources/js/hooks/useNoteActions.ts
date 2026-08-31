@@ -27,6 +27,24 @@ export function useNoteActions(projectId: number) {
         return res.ok;
     }, [projectId, jsonHeaders]);
 
+    /**
+     * Set (or clear, with `null`) a note's color via the general note
+     * update endpoint — `color` has been a `sometimes|nullable` field on
+     * PUT .../notes/:id since the note-color feature shipped, so this is
+     * just the single-field slice of NoteModal's own save call, factored
+     * out for callers (Notes Keep's palette popover) that only ever touch
+     * color and don't want to round-trip title/text too.
+     */
+    const setColor = useCallback(async (noteId: number, color: string | null): Promise<boolean> => {
+        const res = await fetch(`/api/v1/projects/${projectId}/notes/${noteId}`, {
+            method: 'PUT',
+            headers: csrfHeaders(),
+            credentials: 'same-origin',
+            body: JSON.stringify({ color }),
+        });
+        return res.ok;
+    }, [projectId]);
+
     const generateTitle = useCallback(async (noteId: number): Promise<string | null> => {
         const res = await fetch(`/api/v1/projects/${projectId}/notes/${noteId}/generate-title`, {
             method: 'POST',
@@ -123,6 +141,7 @@ export function useNoteActions(projectId: number) {
 
     return {
         togglePin,
+        setColor,
         generateTitle,
         categorize,
         approveRouting,
