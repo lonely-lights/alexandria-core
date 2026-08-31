@@ -51,6 +51,44 @@ export function keptCount(threads: PatternThread[]): number {
     return threads.filter((thread) => thread.status === 'kept').length;
 }
 
+/**
+ * Every promise row across ALL scope groups, each carrying its own
+ * group's `scope_title` — the sidebar rail card's cross-scope flatten
+ * (2026-08-29-devices-tropes rework-1). Unlike `buildWorkPromiseRows`,
+ * this keeps every open thread project-wide rather than filtering to
+ * one work.
+ */
+export function flattenPromiseRows(promiseGroups: PromiseGroup[]): PromiseTableRow[] {
+    const rows: PromiseTableRow[] = [];
+
+    for (const group of promiseGroups) {
+        for (const row of group.threads) {
+            rows.push({ ...row, scope_title: group.scope_title });
+        }
+    }
+
+    return rows;
+}
+
+/** Total open-promise count across every scope group — the rail card's
+ *  header badge. */
+export function totalPromiseCount(promiseGroups: PromiseGroup[]): number {
+    return promiseGroups.reduce((sum, group) => sum + group.threads.length, 0);
+}
+
+/**
+ * The `limit` oldest open promises across every scope group,
+ * oldest-first. Each group's own `threads` array is already
+ * oldest-first WITHIN that scope (see this file's header note /
+ * `PatternThreadService::promises`), but the rail flattens across
+ * scopes first, so it re-sorts globally by `created_at`.
+ */
+export function oldestPromiseRows(promiseGroups: PromiseGroup[], limit: number): PromiseTableRow[] {
+    return flattenPromiseRows(promiseGroups)
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        .slice(0, limit);
+}
+
 export interface StanceCount {
     stance: string;
     count: number;

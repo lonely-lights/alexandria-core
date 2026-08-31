@@ -572,6 +572,12 @@ return [
     'threads.delete_thread_confirm_title' => 'Delete this thread?',
     'threads.delete_thread_confirm_body' => 'This removes the thread and its marks. The device or trope itself stays in your library.',
 
+    // Devices & Tropes — dashboard rail card (2026-08-29-devices-tropes rework-1)
+    'threads.rail_heading' => 'Open promises',
+    'threads.rail_empty' => 'No open promises yet.',
+    'threads.rail_load_error' => 'Could not load open promises.',
+    'threads.rail_view_all' => 'View all (:count)',
+
     // Devices & Tropes — Reports "Promises" group (Task 6)
     'reports.promises_heading' => 'Promises',
     'reports.promises_loading' => 'Loading…',

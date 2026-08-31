@@ -28,6 +28,7 @@ import WorkSettingsModal from "./Sections/WorkSettingsModal";
 import type { LengthPlanOption } from "./Sections/WorkSettingsModal";
 import OpenPromisesList from "./Threads/OpenPromisesList";
 import PatternLibrary from "./Threads/PatternLibrary";
+import PromisesRailCard from "./Threads/PromisesRailCard";
 
 /**
  * Writing dashboard → index — Stage 8g.1 (Plan 2 Task 5).
@@ -192,61 +193,83 @@ export default function WritingIndex() {
                     className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.618fr)_minmax(19rem,1fr)] xl:gap-6"
                     data-writing-dashboard-grid
                 >
-                    <section className="min-w-0" data-writing-structure-panel>
-                        {structureMeta !== null ? (
-                            <Deferred
-                                data="structure"
-                                fallback={
-                                    <div
-                                        className="animate-pulse overflow-hidden"
-                                        style={panelStyle}
-                                    >
+                    <div className="flex min-w-0 flex-col gap-8" data-writing-main-column>
+                        <section className="min-w-0" data-writing-structure-panel>
+                            {structureMeta !== null ? (
+                                <Deferred
+                                    data="structure"
+                                    fallback={
                                         <div
-                                            className="flex items-center gap-3 px-5 py-4"
-                                            style={panelHeaderStyle}
+                                            className="animate-pulse overflow-hidden"
+                                            style={panelStyle}
                                         >
-                                            <span
-                                                className="h-10 w-10 rounded-xl"
-                                                style={panelIconStyle}
-                                            />
-                                            <div className="flex flex-col gap-2">
+                                            <div
+                                                className="flex items-center gap-3 px-5 py-4"
+                                                style={panelHeaderStyle}
+                                            >
                                                 <span
-                                                    className="h-3 w-24 rounded-full"
-                                                    style={countBadgeStyle}
+                                                    className="h-10 w-10 rounded-xl"
+                                                    style={panelIconStyle}
                                                 />
-                                                <span
-                                                    className="h-4 w-44 rounded-full"
-                                                    style={countBadgeStyle}
-                                                />
+                                                <div className="flex flex-col gap-2">
+                                                    <span
+                                                        className="h-3 w-24 rounded-full"
+                                                        style={countBadgeStyle}
+                                                    />
+                                                    <span
+                                                        className="h-4 w-44 rounded-full"
+                                                        style={countBadgeStyle}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div
+                                                className="px-6 py-20 text-center text-sm"
+                                                style={mutedTextStyle}
+                                            >
+                                                {t("writing.structure.loading")}
                                             </div>
                                         </div>
-                                        <div
-                                            className="px-6 py-20 text-center text-sm"
-                                            style={mutedTextStyle}
-                                        >
-                                            {t("writing.structure.loading")}
-                                        </div>
-                                    </div>
-                                }
-                            >
-                                {structure ? (
-                                    <StructureTree
-                                        project={project}
-                                        structure={structure}
-                                        works={works}
-                                        canLink={can.create}
-                                        canManage={can.manageStructure}
-                                        onConfigure={() => setPickerOpen(true)}
-                                    />
-                                ) : null}
-                            </Deferred>
-                        ) : (
-                            <StructureEmptyState
-                                canManage={can.manageStructure}
-                                onConfigure={() => setPickerOpen(true)}
-                            />
-                        )}
-                    </section>
+                                    }
+                                >
+                                    {structure ? (
+                                        <StructureTree
+                                            project={project}
+                                            structure={structure}
+                                            works={works}
+                                            canLink={can.create}
+                                            canManage={can.manageStructure}
+                                            onConfigure={() => setPickerOpen(true)}
+                                        />
+                                    ) : null}
+                                </Deferred>
+                            ) : (
+                                <StructureEmptyState
+                                    canManage={can.manageStructure}
+                                    onConfigure={() => setPickerOpen(true)}
+                                />
+                            )}
+                        </section>
+
+                        {/* Devices & Tropes library — 2026-08-29-devices-tropes
+                            rework-1 (owner ruling: "The library becomes its own
+                            titled panel directly below the structure tree in
+                            the main column"). `data-writing-patterns-section`
+                            is the scroll target the sidebar's Open Promises
+                            rail card's "view all" link jumps to. The full
+                            grouped-by-scope `OpenPromisesList` archive lives
+                            here too (below the card library, same main
+                            column) — the rail card is the ambient pulse, this
+                            panel is the browsable detail view.
+                            `can.manageStructure` is the same
+                            Gate::allows('update', $project) tier the
+                            cards/threads routes authorize mutations under. */}
+                        <section className="min-w-0" data-writing-patterns-section>
+                            <PatternLibrary projectSlug={project.slug} canManage={can.manageStructure} />
+                            <div className="mt-6">
+                                <OpenPromisesList projectSlug={project.slug} />
+                            </div>
+                        </section>
+                    </div>
 
                     <WritingSidebar
                         project={project}
@@ -256,23 +279,6 @@ export default function WritingIndex() {
                         onSettings={setSettingsWork}
                     />
                 </div>
-
-                {/* Devices & Tropes — Task 6 (design doc
-                    2026-08-29-devices-tropes-design.md Surfaces #1/#5).
-                    Library card list (left, wider) beside the cross-work
-                    open-promises block (right), same golden-ratio split
-                    as the panel above. `can.manageStructure` is the same
-                    Gate::allows('update', $project) tier the cards/threads
-                    routes authorize mutations under. */}
-                <section className="mt-8" data-writing-patterns-section>
-                    <div
-                        className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.618fr)_minmax(19rem,1fr)] xl:gap-6"
-                        data-writing-patterns-grid
-                    >
-                        <PatternLibrary projectSlug={project.slug} canManage={can.manageStructure} />
-                        <OpenPromisesList projectSlug={project.slug} />
-                    </div>
-                </section>
             </div>
 
             {createOpen && (
@@ -537,6 +543,12 @@ function WritingSidebar({
                     ))}
                 </dl>
             </section>
+
+            {/* Open promises — ambient pulse, 2026-08-29-devices-tropes
+                rework-1 (owner ruling: "An Open Promises card joins the
+                sticky works/stats rail: count, oldest few threads, status
+                dots, always visible while you scroll."). */}
+            <PromisesRailCard projectSlug={project.slug} />
 
             <section
                 className="min-h-0 overflow-hidden xl:flex xl:flex-1 xl:flex-col"
