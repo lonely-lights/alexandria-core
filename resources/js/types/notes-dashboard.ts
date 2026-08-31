@@ -95,6 +95,9 @@ export interface PaginatedNotes {
     to: number | null;
     total: number;
     per_page: number;
+    /** True when current_page < last_page. Drives incremental-load UI
+     * (e.g. the Notes Dashboard's Grid view, owner ruling 2026-08-31). */
+    has_more: boolean;
 }
 
 export interface NoteCreator {
