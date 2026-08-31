@@ -50,6 +50,7 @@ import {
     type MarginXEventDetail,
 } from './pageMargins';
 import Navigator from './Sections/Navigator';
+import { readStructureOpen, writeStructureOpen } from './Sections/structureOpen';
 import CommentRail from './Sections/CommentRail';
 import PanelModeSwitcher from './Sections/PanelModeSwitcher';
 import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
@@ -154,7 +155,6 @@ interface WorkspaceProps {
 /** Persisted reference-panel visibility (desktop only — the xl: gate still applies). */
 export const PANEL_OPEN_STORAGE_KEY = 'alexandria.writing.panel_open';
 export const PAPER_COLOR_STORAGE_KEY = 'alexandria.writing.paper_color';
-export const STRUCTURE_OPEN_STORAGE_KEY = 'alexandria.writing.structure_open';
 export const ZOOM_STORAGE_KEY = 'alexandria.writing.zoom';
 const LEGACY_NEUTRAL_PAPER_STORAGE_KEY = 'alexandria.writing.neutral_paper';
 const LEGACY_NEUTRAL_CHROME_STORAGE_KEY = 'alexandria.writing.neutral_chrome';
@@ -201,14 +201,6 @@ function readPaperColorPreference(): string {
             : DEFAULT_PAPER_COLOR;
     } catch {
         return DEFAULT_PAPER_COLOR;
-    }
-}
-
-function readStructureOpenPreference(): boolean {
-    try {
-        return localStorage.getItem(STRUCTURE_OPEN_STORAGE_KEY) !== 'false';
-    } catch {
-        return true;
     }
 }
 
@@ -333,7 +325,7 @@ export default function Workspace() {
     const [linkedPanelTab, setLinkedPanelTab] = useState(() =>
         work.format === 'screenplay' ? 'scene-links' : 'browse',
     );
-    const [structureOpen, setStructureOpen] = useState(readStructureOpenPreference);
+    const [structureOpen, setStructureOpen] = useState(() => readStructureOpen(work.id));
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [paperModalOpen, setPaperModalOpen] = useState(false);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
@@ -805,14 +797,10 @@ export default function Workspace() {
     const toggleStructure = useCallback(() => {
         setStructureOpen((prev) => {
             const next = !prev;
-            try {
-                localStorage.setItem(STRUCTURE_OPEN_STORAGE_KEY, String(next));
-            } catch {
-                // Persistence is best-effort; private-mode failures are fine.
-            }
+            writeStructureOpen(work.id, next);
             return next;
         });
-    }, []);
+    }, [work.id]);
 
     const togglePrintLayout = useCallback(() => {
         setPrintLayout((prev) => {
@@ -1176,61 +1164,90 @@ export default function Workspace() {
                 )}
 
                 <div className="writing-workspace-body relative flex min-h-0 flex-1">
-                    {/* Navigator — pushed back entirely in focus mode:
+                    {/* Sections binder — pushed back entirely in focus mode:
                         focus is "just the text" (owner ruling 2026-08-09).
                         Also absent in outline and board mode: each of
                         those panes IS the section map at full width, so
-                        the floating Sections layer would only duplicate
-                        it and collide with the wider layout (owner,
-                        2026-08-28). Stored open/closed preferences are
-                        untouched either way, so returning to continuous
-                        restores what was open. */}
+                        a docked binder would only duplicate it and
+                        collide with the wider layout (owner, 2026-08-28).
+                        Stored open/closed preferences are untouched
+                        either way, so returning to continuous restores
+                        what was open.
+
+                        Docked left column at the workspace's xl layout
+                        breakpoint (owner ruling 2026-08-29: sections must
+                        be "very present on this page", not hidden behind
+                        a floating chevron) — the manuscript reflows
+                        beside it via the normal flex row below. Below xl
+                        the open panel floats over the manuscript instead
+                        (position swaps in CSS; see
+                        .writing-workspace-binder-panel in
+                        manuscript.css), anchored where the collapsed
+                        rail sits rather than the old chevron's own
+                        floating position. Navigator itself always stays
+                        mounted (only the rail button unmounts) so its
+                        expand/collapse tree state survives a collapse
+                        toggle. */}
                     {chromeVisible && viewMode !== 'outline' && viewMode !== 'kanban' && (
-                    <div className="writing-workspace-structure-layer hidden md:block">
-                        <button
-                            type="button"
-                            className="writing-workspace-structure-toggle alex-toolbar-btn"
-                            data-writing-structure-toggle
-                            aria-label={
-                                structureOpen
-                                    ? t('writing.workspace.hide_sections')
-                                    : t('writing.workspace.show_sections')
-                            }
-                            title={
-                                structureOpen
-                                    ? t('writing.workspace.hide_sections')
-                                    : t('writing.workspace.show_sections')
-                            }
-                            aria-expanded={structureOpen}
-                            onClick={toggleStructure}
-                        >
-                            <i
-                                className={`fa-solid ${structureOpen ? 'fa-chevron-up' : 'fa-list-ul'}`}
-                                aria-hidden="true"
-                            />
-                        </button>
-                        <nav
-                            className="writing-workspace-section-pane writing-workspace-section-pane--floating writing-workspace-scroll overflow-y-auto"
+                    <div className="writing-workspace-binder hidden md:flex md:min-h-0 md:shrink-0">
+                        {!structureOpen && (
+                            <div className="writing-workspace-binder-rail flex flex-col items-center gap-2 py-2">
+                                <button
+                                    type="button"
+                                    className="writing-workspace-structure-toggle alex-toolbar-btn"
+                                    data-writing-structure-toggle
+                                    aria-label={t('writing.workspace.show_sections')}
+                                    title={t('writing.workspace.show_sections')}
+                                    aria-expanded={structureOpen}
+                                    onClick={toggleStructure}
+                                >
+                                    <i className="fa-solid fa-list-ul" aria-hidden="true" />
+                                </button>
+                            </div>
+                        )}
+                        <div
+                            className="writing-workspace-binder-panel flex w-72 min-h-0 flex-col"
                             data-open={structureOpen ? 'true' : 'false'}
-                            aria-hidden={!structureOpen}
-                            style={{ borderColor: paneBorderColor }}
                         >
-                            <Navigator
-                                projectSlug={project.slug}
-                                workSlug={work.slug}
-                                work={work}
-                                sections={sections}
-                                currentSection={effectiveSection}
-                                currentSlug={effectiveSection?.slug ?? null}
-                                canUpdate={can.update}
-                                onSelect={selectSection}
-                                onRequestAdd={(parentId) => setAddTarget({ parentId })}
-                                onRequestDelete={setDeleteTarget}
-                                onRequestMarkRevision={(node) => setMarkRevisionRequest({ lockedSection: node })}
-                                liveCounts={liveCounts}
-                                currentOutline={currentOutline}
-                            />
-                        </nav>
+                            {structureOpen && (
+                                <div className="writing-workspace-binder-header flex shrink-0 items-center justify-between gap-2 px-2 py-1.5">
+                                    <span
+                                        className="text-xs font-semibold uppercase tracking-[0.04em]"
+                                        style={mutedText}
+                                    >
+                                        {t('writing.workspace.sections')}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="writing-workspace-structure-toggle alex-toolbar-btn"
+                                        data-writing-structure-toggle
+                                        aria-label={t('writing.workspace.hide_sections')}
+                                        title={t('writing.workspace.hide_sections')}
+                                        aria-expanded={structureOpen}
+                                        onClick={toggleStructure}
+                                    >
+                                        <i className="fa-solid fa-angles-left" aria-hidden="true" />
+                                    </button>
+                                </div>
+                            )}
+                            <nav className="writing-workspace-section-pane writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
+                                <Navigator
+                                    projectSlug={project.slug}
+                                    workSlug={work.slug}
+                                    work={work}
+                                    sections={sections}
+                                    currentSection={effectiveSection}
+                                    currentSlug={effectiveSection?.slug ?? null}
+                                    canUpdate={can.update}
+                                    onSelect={selectSection}
+                                    onRequestAdd={(parentId) => setAddTarget({ parentId })}
+                                    onRequestDelete={setDeleteTarget}
+                                    onRequestMarkRevision={(node) => setMarkRevisionRequest({ lockedSection: node })}
+                                    liveCounts={liveCounts}
+                                    currentOutline={currentOutline}
+                                />
+                            </nav>
+                        </div>
                     </div>
                     )}
 
