@@ -40,6 +40,19 @@ return [
     'tab.notes' => 'Notes',
     'tab.notebooks' => 'Notebooks',
 
+    // ── Notes tab: List/Grid view toggle + scope filter (owner ruling
+    // 2026-08-31, Notes Keep graduated from a trial page into a real
+    // dashboard view) ─────────────────────────────────────────────────
+    'view.list' => 'List',
+    'view.grid' => 'Grid',
+    'view.list_aria' => 'Switch to list view',
+    'view.grid_aria' => 'Switch to grid view',
+    'scope.all' => 'All notes',
+    'scope.root' => 'Unsorted only',
+    'scope.all_aria' => 'Show all project notes',
+    'scope.root_aria' => 'Show only unsorted/root notes',
+    'scope.group_aria' => 'Notes scope filter',
+
     // ── Dashboard view ──────────────────────────────────────────────
     'dashboard.recent_heading' => 'Recent Notes',
     'dashboard.most_recent_label' => 'Most Recent',
@@ -499,6 +512,8 @@ return [
     'drawer.action.sorting_history' => 'Sorting History',
     'drawer.action.dashboard' => 'Notes Dashboard',
     'drawer.action.dashboard_aria' => 'Open Notes Dashboard',
+    'drawer.action.grid_view' => 'Grid View',
+    'drawer.action.grid_view_aria' => 'Open the Notes Dashboard grid view',
     'drawer.action.close' => 'Close',
     'drawer.view.active' => 'Active Notes',
     'drawer.view.archived' => 'Archived Notes',

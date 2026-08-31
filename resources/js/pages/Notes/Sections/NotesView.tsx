@@ -59,6 +59,12 @@ interface NotesViewProps {
     // attached to that specific notable instead of the whole project.
     contextType?: "project" | "blueprint" | "entry" | "work_section" | "work";
     contextId?: number;
+    // Dashboard base-scope filter (owner ruling, 2026-08-31): 'root'
+    // narrows the context-free list to the unsorted/root inbox; omitted
+    // (or 'all') keeps the default whole-project aggregate. The drawer
+    // never sets this: it always scopes via contextType/contextId above,
+    // which the server prioritizes over `scope` regardless.
+    scope?: "all" | "root";
 }
 
 // `preview` was a standalone column; it's now rendered inline under
@@ -229,6 +235,7 @@ export default function NotesView({
     refetchNonce,
     contextType,
     contextId,
+    scope,
 }: NotesViewProps) {
     const t = useT();
     const { fmtDate, fmtTime } = useDateFormatters();
@@ -446,6 +453,12 @@ export default function NotesView({
         if (contextType && contextType !== "project" && contextId) {
             params.set("context_type", contextType);
             params.set("context_id", String(contextId));
+        } else if (scope === "root") {
+            // Base-scope filter (owner ruling, 2026-08-31), only
+            // meaningful on the context-free dashboard list; the server
+            // ignores it anyway once a notable context is present, but
+            // omitting it here keeps the drawer's request shape unchanged.
+            params.set("scope", "root");
         }
 
         fetch(
@@ -476,6 +489,7 @@ export default function NotesView({
         notebookFilters,
         contextType,
         contextId,
+        scope,
     ]);
 
     useEffect(() => {

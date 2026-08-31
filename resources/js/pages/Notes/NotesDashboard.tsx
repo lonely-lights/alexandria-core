@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { useState, useEffect, useCallback, type CSSProperties } from 'react';
+import { useState, useEffect, useCallback, type CSSProperties, type ReactNode } from 'react';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import RuledCursiveBg from '@alexandria/components/backgrounds/RuledCursiveBg';
@@ -21,13 +21,43 @@ import type { NotesDashboardProps, NoteStatusFilter } from '@alexandria/types/no
 
 type View = 'dashboard' | 'notes' | 'notebooks';
 
-function viewFromHash(): View {
-    const hash = window.location.hash.slice(1) as View;
-    const valid: View[] = ['dashboard', 'notes', 'notebooks'];
-    return valid.includes(hash) ? hash : 'dashboard';
+/** Notes tab rendering mode: List is the classic table (NotesView), Grid
+ * is the Google Keep-style masonry board (owner ruling, 2026-08-31: Notes
+ * Keep graduated from a standalone trial page into a real dashboard view). */
+type NotesTabViewMode = 'list' | 'grid';
+
+/** Dashboard base-scope filter: 'all' is the whole-project aggregate
+ * (default, owner ruling 2026-08-31), 'root' narrows to the unsorted
+ * inbox (the pre-ruling default). */
+type NotesScope = 'all' | 'root';
+
+interface NotesDashboardSlotProps {
+    /**
+     * App-supplied Grid view for the Notes tab (owner ruling, 2026-08-31).
+     * Core ships no grid renderer of its own, the masonry-grid components
+     * (Notes Keep) live app-side, so the Grid toggle only renders when a
+     * consumer supplies this slot. Receives the current scope filter so
+     * List and Grid stay in sync on which corpus they're showing.
+     */
+    gridView?: (ctx: { scope: NotesScope }) => ReactNode;
 }
 
-export default function NotesDashboard() {
+/**
+ * Initial active tab. A real hash always wins (deep links like
+ * `#notebooks`); otherwise a `?view=grid` or `?view=list` query param
+ * (the notes.keep redirect, and the drawer's grid-view opener) lands the
+ * user straight on the Notes tab so the requested view mode is visible.
+ */
+function initialActiveView(): View {
+    const hash = window.location.hash.slice(1);
+    if (hash === 'notes' || hash === 'notebooks' || hash === 'dashboard') {
+        return hash;
+    }
+    const queryView = new URLSearchParams(window.location.search).get('view');
+    return queryView === 'grid' || queryView === 'list' ? 'notes' : 'dashboard';
+}
+
+export default function NotesDashboard({ gridView }: NotesDashboardSlotProps = {}) {
     const props = usePage<NotesDashboardProps>().props;
     const { project, stats, recentNotes } = props;
     const t = useT();
@@ -37,7 +67,39 @@ export default function NotesDashboard() {
     // pills into the existing overflow menu (same trick we used on
     // Projects Show).
     const isMobileNotesDashboard = useMediaQuery('(max-width: 1023px)');
-    const [activeView, setActiveView] = useState<View>(viewFromHash);
+    const [activeView, setActiveView] = useState<View>(initialActiveView);
+
+    // Notes tab view mode (List/Grid) + base-scope filter (All/Root).
+    // View mode is persisted per project (house idiom: `namespace:id`
+    // localStorage key, matching e.g. the writing structure tree's
+    // expanded-node persistence); `?view=` in the URL overrides it for
+    // this load without clobbering the stored preference for next time.
+    // Scope resets to 'all' every load by design: the owner ruling makes
+    // 'all' the default, so a stale 'root' filter must never persist
+    // silently across sessions.
+    const viewStorageKey = `alexandria.notes.dashboard-view:${project.id}`;
+    const [notesViewMode, setNotesViewModeState] = useState<NotesTabViewMode>(() => {
+        const queryView = new URLSearchParams(window.location.search).get('view');
+        if (queryView === 'grid' || queryView === 'list') return queryView;
+        try {
+            const stored = window.localStorage.getItem(viewStorageKey);
+            if (stored === 'grid' || stored === 'list') return stored;
+        } catch {
+            // localStorage disabled / quota-full, fall back to List.
+        }
+        return 'list';
+    });
+    const [notesScope, setNotesScope] = useState<NotesScope>('all');
+
+    function setNotesViewMode(mode: NotesTabViewMode): void {
+        setNotesViewModeState(mode);
+        try {
+            window.localStorage.setItem(viewStorageKey, mode);
+        } catch {
+            // ignore, state already updated, persistence is best-effort
+        }
+    }
+
     const [initialStatusFilter, setInitialStatusFilter] = useState<NoteStatusFilter | null>(null);
     const [initialQuickFilter, setInitialQuickFilter] = useState<string | null>(null);
     // Deep link from the command palette's Notes results:
@@ -314,15 +376,76 @@ export default function NotesDashboard() {
                     )}
                     {visited.has('notes') && (
                         <div hidden={activeView !== 'notes'}>
-                            <NotesView
-                                projectId={project.id}
-                                initialStatusFilter={initialStatusFilter}
-                                initialQuickFilter={initialQuickFilter}
-                                initialSearch={initialSearch}
-                                initialNotebookId={activeNotebookId}
-                                notebookSelectionNonce={notebookSelectionNonce}
-                                refetchNonce={notesRefetchNonce}
-                            />
+                            {/* View mode (List/Grid) + base-scope (All/Root)
+                                controls. The Grid toggle only renders when a
+                                consumer supplies the gridView slot, since a
+                                bare core install has no grid renderer to switch
+                                to. Scope always renders; it governs both
+                                List (server-side, via NotesView's `scope`
+                                prop) and Grid (passed straight through to
+                                the slot) so switching views mid-filter
+                                doesn't silently change the corpus. */}
+                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 pt-4">
+                                {gridView && (
+                                    <div className="inline-flex items-center gap-1" role="group" aria-label={t('notes.view.grid_aria')}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setNotesViewMode('list')}
+                                            className={`alex-notes-tab alex-notes-tab--icon-only ${notesViewMode === 'list' ? 'alex-notes-tab--active' : ''}`}
+                                            aria-label={t('notes.view.list_aria')}
+                                            aria-pressed={notesViewMode === 'list'}
+                                            title={t('notes.view.list')}
+                                        >
+                                            <i className="fa-solid fa-list text-xs" aria-hidden="true" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setNotesViewMode('grid')}
+                                            className={`alex-notes-tab alex-notes-tab--icon-only ${notesViewMode === 'grid' ? 'alex-notes-tab--active' : ''}`}
+                                            aria-label={t('notes.view.grid_aria')}
+                                            aria-pressed={notesViewMode === 'grid'}
+                                            title={t('notes.view.grid')}
+                                        >
+                                            <i className="fa-solid fa-table-cells-large text-xs" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                )}
+                                <div className="ml-auto inline-flex items-center gap-1" role="group" aria-label={t('notes.scope.group_aria')}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNotesScope('all')}
+                                        className={`alex-notes-tab ${notesScope === 'all' ? 'alex-notes-tab--active' : ''}`}
+                                        aria-label={t('notes.scope.all_aria')}
+                                        aria-pressed={notesScope === 'all'}
+                                    >
+                                        {t('notes.scope.all')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNotesScope('root')}
+                                        className={`alex-notes-tab ${notesScope === 'root' ? 'alex-notes-tab--active' : ''}`}
+                                        aria-label={t('notes.scope.root_aria')}
+                                        aria-pressed={notesScope === 'root'}
+                                    >
+                                        {t('notes.scope.root')}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {notesViewMode === 'grid' && gridView ? (
+                                gridView({ scope: notesScope })
+                            ) : (
+                                <NotesView
+                                    projectId={project.id}
+                                    initialStatusFilter={initialStatusFilter}
+                                    initialQuickFilter={initialQuickFilter}
+                                    initialSearch={initialSearch}
+                                    initialNotebookId={activeNotebookId}
+                                    notebookSelectionNonce={notebookSelectionNonce}
+                                    refetchNonce={notesRefetchNonce}
+                                    scope={notesScope}
+                                />
+                            )}
                         </div>
                     )}
                     {visited.has('notebooks') && (

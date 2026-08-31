@@ -6,7 +6,7 @@ import {
     type CSSProperties,
     type RefObject,
 } from "react";
-import { usePage } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
 import Tooltip from "@alexandria/components/ui/Tooltip";
@@ -1803,6 +1803,33 @@ export default function NotesDrawer() {
                                     {t("notes.drawer.action.dashboard")}
                                 </span>
                             </a>
+                        </Tooltip>
+                        <Tooltip
+                            content={t("notes.drawer.action.grid_view_aria")}
+                            placement="bottom"
+                        >
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    close();
+                                    router.visit(
+                                        `${notesUrl(context?.projectSlug ?? "")}?view=grid`,
+                                    );
+                                }}
+                                className="alex-btn alex-btn--ghost inline-flex items-center"
+                                style={btnSm}
+                                aria-label={t(
+                                    "notes.drawer.action.grid_view_aria",
+                                )}
+                            >
+                                <i
+                                    className="fa-solid fa-table-cells-large text-xs"
+                                    aria-hidden="true"
+                                />
+                                <span className="hidden sm:inline">
+                                    {t("notes.drawer.action.grid_view")}
+                                </span>
+                            </button>
                         </Tooltip>
                         {isMobileDrawer ? (
                             <button
