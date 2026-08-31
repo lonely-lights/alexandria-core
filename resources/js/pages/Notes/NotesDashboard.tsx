@@ -17,7 +17,7 @@ import NoteModal from './Sections/NoteModal';
 import SortingHistoryModal from '@alexandria/components/notes/modals/SortingHistoryModal';
 import ImportModal from '@alexandria/components/notes/modals/ImportModal';
 import NotebookFormModal from '@alexandria/components/notes/modals/NotebookFormModal';
-import type { NotesDashboardProps, NoteStatusFilter } from '@alexandria/types/notes-dashboard';
+import type { Note, NotesDashboardProps, NoteStatusFilter } from '@alexandria/types/notes-dashboard';
 
 type View = 'dashboard' | 'notes' | 'notebooks';
 
@@ -31,15 +31,41 @@ type NotesTabViewMode = 'list' | 'grid';
  * inbox (the pre-ruling default). */
 type NotesScope = 'all' | 'root';
 
+/**
+ * Context handed to the app-supplied gridView/captureBar slots (owner
+ * ruling, 2026-08-31 toolbar unification). search/scope/viewMode are all
+ * lifted here so List and Grid share one toolbar row and one search query
+ * that survives switching between them; onNoteCreated wires the shared
+ * capture bar back into whichever view is mounted.
+ */
+interface NotesTabSlotContext {
+    scope: NotesScope;
+    onScopeChange: (scope: NotesScope) => void;
+    viewMode: NotesTabViewMode;
+    onViewModeChange: (mode: NotesTabViewMode) => void;
+    search: string;
+    onSearchChange: (value: string) => void;
+    /** Bumped by the shared capture bar's onCreated so Grid can prepend
+     * the new note optimistically (its pre-existing append behavior). */
+    createdNote: { note: Note; seq: number } | null;
+}
+
 interface NotesDashboardSlotProps {
     /**
      * App-supplied Grid view for the Notes tab (owner ruling, 2026-08-31).
      * Core ships no grid renderer of its own, the masonry-grid components
      * (Notes Keep) live app-side, so the Grid toggle only renders when a
-     * consumer supplies this slot. Receives the current scope filter so
-     * List and Grid stay in sync on which corpus they're showing.
+     * consumer supplies this slot.
      */
-    gridView?: (ctx: { scope: NotesScope }) => ReactNode;
+    gridView?: (ctx: NotesTabSlotContext) => ReactNode;
+    /**
+     * App-supplied capture bar for the Notes tab (owner ruling,
+     * 2026-08-31: QuickCaptureBar graduated from Grid-only to a fixture
+     * shared by both views). Core ships no capture UI of its own — same
+     * reasoning as gridView. `onCreated` must be called with the newly
+     * created note so both views can refresh appropriately.
+     */
+    captureBar?: (ctx: { onCreated: (note: Note) => void }) => ReactNode;
 }
 
 /**
@@ -57,7 +83,7 @@ function initialActiveView(): View {
     return queryView === 'grid' || queryView === 'list' ? 'notes' : 'dashboard';
 }
 
-export default function NotesDashboard({ gridView }: NotesDashboardSlotProps = {}) {
+export default function NotesDashboard({ gridView, captureBar }: NotesDashboardSlotProps = {}) {
     const props = usePage<NotesDashboardProps>().props;
     const { project, stats, recentNotes } = props;
     const t = useT();
@@ -107,6 +133,16 @@ export default function NotesDashboard({ gridView }: NotesDashboardSlotProps = {
     const [initialSearch] = useState<string | null>(
         () => new URLSearchParams(window.location.search).get('search'),
     );
+    // Lifted search (owner ruling, 2026-08-31 toolbar unification): ONE
+    // query shared by List and Grid via the unified NotesToolbar row, so
+    // switching views mid-search never loses what the user typed.
+    const [notesSearch, setNotesSearch] = useState<string>(initialSearch ?? '');
+    // Fed to the app-supplied captureBar slot's `onCreated`: KeepGrid
+    // watches `seq` to prepend `note` optimistically (its existing
+    // append/refresh behavior); List refreshes through the standard
+    // refreshAfterSave path below instead, it doesn't need the note
+    // object itself.
+    const [gridCreatedNote, setGridCreatedNote] = useState<{ note: Note; seq: number } | null>(null);
     const [showCreate, setShowCreate] = useState(false);
     const [activeNotebookId, setActiveNotebookId] = useState<number | null>(null);
     // Bumps on every notebook-tile click so NotesView re-applies the
@@ -154,6 +190,18 @@ export default function NotesDashboard({ gridView }: NotesDashboardSlotProps = {
         setNotebooksRefetchNonce((n) => n + 1);
     }, []);
 
+    /**
+     * The shared capture bar's onCreated (owner ruling, 2026-08-31: the
+     * capture bar now renders in both views, not just Grid). List gets
+     * the same refresh other mutations already use; Grid keeps its
+     * existing optimistic prepend, now driven by this note passthrough
+     * since the capture bar itself no longer lives inside KeepGrid.
+     */
+    const handleCaptureCreated = useCallback((note: Note) => {
+        refreshAfterSave();
+        setGridCreatedNote((prev) => ({ note, seq: (prev?.seq ?? 0) + 1 }));
+    }, [refreshAfterSave]);
+
     function navigateToNotes(statusFilter?: NoteStatusFilter, quickFilter?: string): void {
         setInitialStatusFilter(statusFilter ?? null);
         setInitialQuickFilter(quickFilter ?? null);
@@ -164,26 +212,15 @@ export default function NotesDashboard({ gridView }: NotesDashboardSlotProps = {
         <AppLayout
             title={t('notes.page.title')}
             immersive
-            // Wire the bottom-right FAB to the real New Note / New
-            // Notebook actions. AppLayout already renders the FAB as
-            // a slide-up modal chooser when there's >1 action — exactly
-            // the "tap +, pick Note or Notebook, route from there" flow.
-            // On mobile we also hide the page-header buttons so the
-            // FAB is the single canonical add-new entry point.
-            fabActions={[
-                {
-                    label: t('notes.action.new_note'),
-                    description: t('notes.action.new_note_description'),
-                    icon: 'fa-solid fa-note-sticky',
-                    onClick: () => setShowCreate(true),
-                },
-                {
-                    label: t('notes.action.new_notebook'),
-                    description: t('notes.action.new_notebook_description'),
-                    icon: 'fa-solid fa-book-medical',
-                    onClick: () => setShowNotebookForm(true),
-                },
-            ]}
+            // Floating + FAB retired on this page only (owner ruling,
+            // 2026-08-31 toolbar unification): the header's New Note
+            // button is now visible at every viewport width (see the
+            // PageHeader actions below), so the FAB's add-new affordance
+            // is redundant here. `null` — not omitting the prop — is the
+            // house idiom for "no FAB on this page" (see AppLayout's
+            // `fabActions === null ? null : (fabActions ?? defaultFabActions)`;
+            // omitting it would fall through to the app-wide default FAB).
+            fabActions={null}
         >
             <PageHeader
                 breadcrumbs={[
@@ -191,10 +228,11 @@ export default function NotesDashboard({ gridView }: NotesDashboardSlotProps = {
                     { label: t('notes.page.breadcrumb') },
                 ]}
                 actions={
-                    // Hidden on mobile — FAB chooser owns the add-new
-                    // affordance there. Desktop keeps the discoverable
-                    // inline buttons.
-                    <div className="hidden items-center gap-2 sm:flex">
+                    // Always visible (owner ruling, 2026-08-31): the FAB
+                    // that used to own mobile's add-new affordance was
+                    // retired on this page, so these buttons are the only
+                    // entry point at every viewport width now.
+                    <div className="flex items-center gap-2">
                         <ActionButton
                             icon="fa-solid fa-plus"
                             label={t('notes.action.new_note')}
@@ -376,64 +414,35 @@ export default function NotesDashboard({ gridView }: NotesDashboardSlotProps = {
                     )}
                     {visited.has('notes') && (
                         <div hidden={activeView !== 'notes'}>
-                            {/* View mode (List/Grid) + base-scope (All/Root)
-                                controls. The Grid toggle only renders when a
-                                consumer supplies the gridView slot, since a
-                                bare core install has no grid renderer to switch
-                                to. Scope always renders; it governs both
-                                List (server-side, via NotesView's `scope`
-                                prop) and Grid (passed straight through to
-                                the slot) so switching views mid-filter
-                                doesn't silently change the corpus. */}
-                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 pt-4">
-                                {gridView && (
-                                    <div className="inline-flex items-center gap-1" role="group" aria-label={t('notes.view.grid_aria')}>
-                                        <button
-                                            type="button"
-                                            onClick={() => setNotesViewMode('list')}
-                                            className={`alex-notes-tab alex-notes-tab--icon-only ${notesViewMode === 'list' ? 'alex-notes-tab--active' : ''}`}
-                                            aria-label={t('notes.view.list_aria')}
-                                            aria-pressed={notesViewMode === 'list'}
-                                            title={t('notes.view.list')}
-                                        >
-                                            <i className="fa-solid fa-list text-xs" aria-hidden="true" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setNotesViewMode('grid')}
-                                            className={`alex-notes-tab alex-notes-tab--icon-only ${notesViewMode === 'grid' ? 'alex-notes-tab--active' : ''}`}
-                                            aria-label={t('notes.view.grid_aria')}
-                                            aria-pressed={notesViewMode === 'grid'}
-                                            title={t('notes.view.grid')}
-                                        >
-                                            <i className="fa-solid fa-table-cells-large text-xs" aria-hidden="true" />
-                                        </button>
-                                    </div>
-                                )}
-                                <div className="ml-auto inline-flex items-center gap-1" role="group" aria-label={t('notes.scope.group_aria')}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setNotesScope('all')}
-                                        className={`alex-notes-tab ${notesScope === 'all' ? 'alex-notes-tab--active' : ''}`}
-                                        aria-label={t('notes.scope.all_aria')}
-                                        aria-pressed={notesScope === 'all'}
-                                    >
-                                        {t('notes.scope.all')}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setNotesScope('root')}
-                                        className={`alex-notes-tab ${notesScope === 'root' ? 'alex-notes-tab--active' : ''}`}
-                                        aria-label={t('notes.scope.root_aria')}
-                                        aria-pressed={notesScope === 'root'}
-                                    >
-                                        {t('notes.scope.root')}
-                                    </button>
+                            {/* Shared capture bar (owner ruling, 2026-08-31):
+                                renders once, above the unified toolbar, in
+                                BOTH List and Grid — QuickCaptureBar graduated
+                                from Grid-only to a page-level fixture. Core
+                                ships no capture UI of its own, so this only
+                                renders when the app supplies the slot. */}
+                            {captureBar && (
+                                <div className="pt-4">
+                                    {captureBar({ onCreated: handleCaptureCreated })}
                                 </div>
-                            </div>
+                            )}
 
+                            {/* View mode (List/Grid), search, Filters, and
+                                base-scope (All/Root) all now live in ONE
+                                unified toolbar row rendered by whichever of
+                                NotesView (List) or the gridView slot (Grid)
+                                is currently mounted (NotesToolbar.tsx). Search
+                                + scope + view mode are lifted here so they
+                                survive switching between the two views. */}
                             {notesViewMode === 'grid' && gridView ? (
-                                gridView({ scope: notesScope })
+                                gridView({
+                                    scope: notesScope,
+                                    onScopeChange: setNotesScope,
+                                    viewMode: notesViewMode,
+                                    onViewModeChange: setNotesViewMode,
+                                    search: notesSearch,
+                                    onSearchChange: setNotesSearch,
+                                    createdNote: gridCreatedNote,
+                                })
                             ) : (
                                 <NotesView
                                     projectId={project.id}
@@ -444,6 +453,10 @@ export default function NotesDashboard({ gridView }: NotesDashboardSlotProps = {
                                     notebookSelectionNonce={notebookSelectionNonce}
                                     refetchNonce={notesRefetchNonce}
                                     scope={notesScope}
+                                    search={notesSearch}
+                                    onSearchChange={setNotesSearch}
+                                    onViewModeChange={gridView ? setNotesViewMode : undefined}
+                                    onScopeChange={setNotesScope}
                                 />
                             )}
                         </div>

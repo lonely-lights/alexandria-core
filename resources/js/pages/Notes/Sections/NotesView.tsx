@@ -16,10 +16,11 @@ import HistoryModal from "@alexandria/components/notes/modals/HistoryModal";
 import NotebookSelectorModal, {
     type NotebookData,
 } from "@alexandria/components/notes/modals/NotebookSelectorModal";
-import SearchableMultiSelectModal, {
-    type SearchableItem,
-} from "@alexandria/components/ui/SearchableMultiSelectModal";
 import EntryLink from "@alexandria/components/entries/EntryLink";
+import NotesFilterModal, {
+    NotesFilterChips,
+} from "@alexandria/components/notes/modals/NotesFilterModal";
+import NotesToolbar from "@alexandria/pages/Notes/NotesToolbar";
 import { NOTE_COLORS } from "@alexandria/lib/noteColors";
 import { useNoteActions } from "@alexandria/hooks/useNoteActions";
 import { useToastContext } from "@alexandria/components/ui/ToastProvider";
@@ -65,6 +66,22 @@ interface NotesViewProps {
     // never sets this: it always scopes via contextType/contextId above,
     // which the server prioritizes over `scope` regardless.
     scope?: "all" | "root";
+    // ── Notes Dashboard toolbar unification (owner ruling, 2026-08-31) ──
+    // The five props below are ALL optional and unset by every caller
+    // except the dashboard (NotesDashboard.tsx) — the drawer keeps its
+    // fully self-contained behavior (internal search state, no view
+    // toggle, no scope pills) by simply never passing them.
+    //
+    // `search`/`onSearchChange` make the search box a controlled input
+    // when provided (dashboard mode, where the query is lifted so it
+    // survives a List<->Grid switch); otherwise NotesView manages its own
+    // search state exactly as before.
+    search?: string;
+    onSearchChange?: (value: string) => void;
+    // View toggle + scope pills render inside NotesToolbar only when
+    // these are supplied — the dashboard passes them, the drawer doesn't.
+    onViewModeChange?: (mode: "list" | "grid") => void;
+    onScopeChange?: (scope: "all" | "root") => void;
 }
 
 // `preview` was a standalone column; it's now rendered inline under
@@ -236,6 +253,10 @@ export default function NotesView({
     contextType,
     contextId,
     scope,
+    search: controlledSearch,
+    onSearchChange,
+    onViewModeChange,
+    onScopeChange,
 }: NotesViewProps) {
     const t = useT();
     const { fmtDate, fmtTime } = useDateFormatters();
@@ -248,9 +269,17 @@ export default function NotesView({
     const [quickFilter, setQuickFilter] = useState<NoteQuickFilter>(
         (initialQuickFilter as NoteQuickFilter) || "all",
     );
-    // Both seeded from initialSearch so a deep-linked search applies on
-    // the FIRST fetch instead of after the debounce round-trip.
-    const [search, setSearch] = useState(initialSearch ?? "");
+    // Search is a CONTROLLED input when the caller passes `search` +
+    // `onSearchChange` (the dashboard, which lifts search so it survives
+    // a List<->Grid switch) — otherwise NotesView manages it internally,
+    // seeded from initialSearch so a deep-linked search applies on the
+    // FIRST fetch instead of after the debounce round-trip.
+    const isSearchControlled = controlledSearch !== undefined;
+    const [internalSearch, setInternalSearch] = useState(initialSearch ?? "");
+    const search = isSearchControlled ? controlledSearch : internalSearch;
+    const setSearch = isSearchControlled
+        ? (onSearchChange ?? (() => {}))
+        : setInternalSearch;
     const [debouncedSearch, setDebouncedSearch] = useState(initialSearch ?? "");
     const [sortKey, setSortKey] = useState<NoteSortKey>("created_at");
     const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -358,8 +387,6 @@ export default function NotesView({
     const [historyLoading, setHistoryLoading] = useState(false);
     const [showNotebooks, setShowNotebooks] = useState(false);
     const [showFilterModal, setShowFilterModal] = useState(false);
-    const [showAuthorPicker, setShowAuthorPicker] = useState(false);
-    const [showNotebookPicker, setShowNotebookPicker] = useState(false);
     const [notebooks, setNotebooks] = useState<NotebookData[]>([]);
     const [notebookNoteId, setNotebookNoteId] = useState<number | null>(null);
     const [notebookFilters, setNotebookFilters] = useState<number[]>(
@@ -785,6 +812,27 @@ export default function NotesView({
         setSelectedIds(new Set());
     }
 
+    // Author / notebook filter changes — fed to the shared NotesFilterModal
+    // / NotesFilterChips (NotesFilterModal.tsx), which own no state of
+    // their own beyond the two picker-open booleans.
+    function handleCreatorIdsChange(ids: number[]) {
+        setCreatorIds(ids);
+        setPage(1);
+    }
+
+    function handleNotebookFiltersChange(ids: number[]) {
+        setNotebookFilters(ids);
+        setPage(1);
+    }
+
+    function handleClearAllFilters() {
+        handleStatusChange("active");
+        setCreatorIds([]);
+        setQuickFilter("all");
+        setNotebookFilters([]);
+        setPage(1);
+    }
+
     // Sortable column key mapping
     function sortKeyForColumn(col: ColumnKey): NoteSortKey | null {
         if (NON_SORTABLE.includes(col)) return null;
@@ -832,31 +880,7 @@ export default function NotesView({
         return null;
     }
 
-    const statusOptions: { value: NoteStatusFilter; label: string }[] = [
-        { value: "all", label: t("notes.list.status.all") },
-        { value: "active", label: t("notes.list.status.active") },
-        { value: "archived", label: t("notes.list.status.archived") },
-        { value: "trashed", label: t("notes.list.status.trashed") },
-    ];
-
     /* ── Reusable styles ────────────────────────────────────────────── */
-
-    const searchInputStyle: CSSProperties = {
-        background: "var(--theme-base-surface)",
-        border: "1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
-        borderRadius: "var(--theme-radius-input)",
-        color: "var(--theme-base-content)",
-    };
-
-    const filtersBtnStyle: CSSProperties = {
-        background: hasActiveFilters
-            ? "var(--theme-brand-secondary-500)"
-            : "transparent",
-        color: hasActiveFilters
-            ? "var(--theme-brand-secondary-content)"
-            : "color-mix(in srgb, var(--theme-base-content) 80%, transparent)",
-        borderRadius: "var(--theme-radius-button)",
-    };
 
     // paper-board owns the offset bevel shadow on tf themes — no extra
     // centered box-shadow here, otherwise the warm `--tf-tape-shadow`
@@ -893,212 +917,142 @@ export default function NotesView({
         <div
             className={`flex flex-col pt-4 ${isMobileTable ? "gap-3 text-[13px]" : "gap-8"}`}
         >
-            {/* Filter bar. Mobile shrinks the search input + tightens gaps
-                so Search / Filters / Compact fit on a single row at 375px.
-                The columns config gear is mobile-hidden (the persisted
-                column list is overridden by effectiveColumns there
-                anyway, so the gear has nothing to configure that the
-                user can see). */}
-            <div
-                className={`flex items-center ${isMobileTable ? "gap-2" : "flex-wrap gap-2"}`}
-            >
-                {/* Search */}
-                <input
-                    type="text"
-                    placeholder={t("notes.list.search_placeholder")}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className={`px-3 py-1.5 text-xs sm:text-sm ${isMobileTable ? "min-w-0 flex-1" : "w-56"}`}
-                    style={searchInputStyle}
-                />
-
-                {/* Filter button */}
-                <Tooltip
-                    content={t("notes.list.filters.tooltip")}
-                    placement="bottom"
-                >
-                    <button
-                        type="button"
-                        onClick={() => setShowFilterModal(true)}
-                        className="inline-flex flex-shrink-0 items-center gap-1.5 px-2 py-1 text-[11px] font-medium transition-colors sm:px-2.5 sm:text-xs"
-                        style={filtersBtnStyle}
-                    >
-                        <i className="fa-solid fa-filter text-[10px]" />
-                        {t("notes.list.filters.button")}
-                        {hasActiveFilters && (
-                            <span
-                                className="inline-flex items-center px-1.5 py-0 text-[10px] font-semibold"
-                                style={{
-                                    background:
-                                        "color-mix(in srgb, var(--theme-brand-secondary-content) 20%, transparent)",
-                                    color: "var(--theme-brand-secondary-content)",
-                                    borderRadius: "var(--theme-radius-badge)",
-                                }}
-                            >
-                                {activeFilterCount}
-                            </span>
-                        )}
-                    </button>
-                </Tooltip>
-
-                {/* Active filter chips — sit to the right of the Filters
-                    button so the user reads left→right: "manage filters,
-                    here's what's active." `.alex-notes-filter-chip` is a
-                    dismissable pill; hover shifts to error red to hint
-                    the click removes the filter. The `--brand` modifier
-                    is for notebook chips (primary tint at rest), the
-                    plain class is for status/quick/author chips. */}
-                {notebookFilters.map((nbId) => {
-                    const nb = notebooks.find((n) => n.id === nbId);
-                    return (
-                        <button
-                            key={`nb-chip-${nbId}`}
-                            type="button"
-                            onClick={() => {
-                                setNotebookFilters((prev) =>
-                                    prev.filter((id) => id !== nbId),
-                                );
-                                setPage(1);
-                            }}
-                            className="alex-notes-filter-chip alex-notes-filter-chip--brand"
-                        >
-                            <i className="fa-solid fa-book text-[9px]" />
-                            {nb?.title ??
-                                t("notes.list.chip.notebook_fallback").replace(
-                                    ":id",
-                                    String(nbId),
-                                )}
-                            <i className="fa-solid fa-xmark text-[9px]" />
-                        </button>
-                    );
-                })}
-                {statusFilter !== "active" && (
-                    <button
-                        type="button"
-                        onClick={() => handleStatusChange("active")}
-                        className="alex-notes-filter-chip"
-                    >
-                        {statusFilter}
-                        <i className="fa-solid fa-xmark text-[9px]" />
-                    </button>
-                )}
-                {quickFilter !== "all" && (
-                    <button
-                        type="button"
-                        onClick={() =>
-                            handleQuickFilter("all" as NoteQuickFilter)
-                        }
-                        className="alex-notes-filter-chip"
-                    >
-                        {quickFilter.replace("_", " ")}
-                        <i className="fa-solid fa-xmark text-[9px]" />
-                    </button>
-                )}
-                {creatorIds.map((cid) => {
-                    const c = creators.find((cc) => cc.id === cid);
-                    return (
-                        <button
-                            key={`author-chip-${cid}`}
-                            type="button"
-                            onClick={() => {
-                                setCreatorIds((prev) =>
-                                    prev.filter((id) => id !== cid),
-                                );
-                                setPage(1);
-                            }}
-                            className="alex-notes-filter-chip"
-                        >
-                            <i className="fa-solid fa-user text-[9px]" />
-                            {c?.name ??
-                                t("notes.list.chip.author_fallback").replace(
-                                    ":id",
-                                    String(cid),
-                                )}
-                            <i className="fa-solid fa-xmark text-[9px]" />
-                        </button>
-                    );
-                })}
-
-                {/* Empty Trash */}
-                {statusFilter === "trashed" && notes && notes.total > 0 && (
-                    <button
-                        type="button"
-                        onClick={async () => {
-                            const confirmMsg = t(
-                                "notes.list.empty_trash.confirm",
-                            ).replace(":count", String(notes.total));
-                            if (!confirm(confirmMsg)) return;
-                            const ids = notes.data.map((n) => n.id);
-                            await fetch(
-                                `/api/v1/projects/${projectId}/notes/bulk-action`,
-                                {
-                                    method: "POST",
-                                    headers: csrfHeaders(),
-                                    credentials: "same-origin",
-                                    body: JSON.stringify({
-                                        action: "force_delete",
-                                        note_ids: ids,
-                                    }),
-                                },
-                            );
-                            fetchData();
-                        }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium"
-                        style={{
-                            background: "var(--theme-status-error-stroke)",
-                            color: "var(--theme-status-error-content)",
-                            borderRadius: "var(--theme-radius-button)",
-                        }}
-                    >
-                        <i className="fa-solid fa-trash text-[10px]" />{" "}
-                        {t("notes.list.empty_trash.label")}
-                    </button>
-                )}
-
-                <div
-                    className={`ml-auto flex flex-shrink-0 items-center ${isMobileTable ? "gap-2" : "gap-3"}`}
-                >
-                    <Tooltip
-                        content={t("notes.list.compact.tooltip")}
-                        placement="bottom"
-                    >
-                        <label
-                            className="flex cursor-pointer items-center gap-1.5 text-[11px] sm:gap-2 sm:text-xs"
-                            style={muteText}
-                        >
-                            <input
-                                type="checkbox"
-                                checked={compact}
-                                onChange={(e) => setCompact(e.target.checked)}
-                                className="alex-toggle"
-                            />
-                            {t("notes.list.compact.label")}
-                        </label>
-                    </Tooltip>
-
-                    {/* Columns gear is desktop-only — on mobile the
-                        effectiveColumns filter overrides the persisted
-                        list to title-only, so the gear has nothing to
-                        toggle the user can see. */}
-                    {!isMobileTable && (
+            {/* Unified toolbar row (owner ruling, 2026-08-31): view toggle
+                + search + Filters + active-filter chips + scope pills +
+                extras (Compact / columns gear), shared with the Grid view
+                via NotesToolbar. View toggle + scope pills only render
+                when the dashboard passes onViewModeChange/onScopeChange —
+                the drawer's NotesView renders neither, matching its
+                pre-unification layout exactly. */}
+            <NotesToolbar
+                showViewToggle={!!onViewModeChange}
+                viewMode="list"
+                onViewModeChange={onViewModeChange ?? (() => {})}
+                search={search}
+                onSearchChange={setSearch}
+                onOpenFilters={() => setShowFilterModal(true)}
+                hasActiveFilters={hasActiveFilters}
+                activeFilterCount={activeFilterCount}
+                filterChips={
+                    <NotesFilterChips
+                        statusFilter={statusFilter}
+                        onStatusChange={handleStatusChange}
+                        quickFilter={quickFilter}
+                        onQuickFilterToggle={handleQuickFilter}
+                        creatorIds={creatorIds}
+                        onCreatorIdsChange={handleCreatorIdsChange}
+                        creators={creators}
+                        notebookFilters={notebookFilters}
+                        onNotebookFiltersChange={handleNotebookFiltersChange}
+                        notebooks={notebooks}
+                        hasActiveFilters={hasActiveFilters}
+                        onClearAll={handleClearAllFilters}
+                    />
+                }
+                showScopePills={!!onScopeChange}
+                scope={scope ?? "all"}
+                onScopeChange={onScopeChange ?? (() => {})}
+                extras={
+                    <>
                         <Tooltip
-                            content={t("notes.list.config_columns.tooltip")}
+                            content={t("notes.list.compact.tooltip")}
                             placement="bottom"
                         >
-                            <button
-                                type="button"
-                                onClick={() => setShowColumnMenu(true)}
-                                className="alex-notes-icon-btn"
-                                aria-label={t(
-                                    "notes.list.config_columns.tooltip",
-                                )}
+                            <label
+                                className="flex cursor-pointer items-center gap-1.5 text-[11px] sm:gap-2 sm:text-xs"
+                                style={muteText}
                             >
-                                <i className="fa-solid fa-table-columns text-xs" />
-                            </button>
+                                <input
+                                    type="checkbox"
+                                    checked={compact}
+                                    onChange={(e) => setCompact(e.target.checked)}
+                                    className="alex-toggle"
+                                />
+                                {t("notes.list.compact.label")}
+                            </label>
                         </Tooltip>
-                    )}
-                </div>
-            </div>
+
+                        {/* Columns gear is desktop-only — on mobile the
+                            effectiveColumns filter overrides the persisted
+                            list to title-only, so the gear has nothing to
+                            toggle the user can see. */}
+                        {!isMobileTable && (
+                            <Tooltip
+                                content={t("notes.list.config_columns.tooltip")}
+                                placement="bottom"
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => setShowColumnMenu(true)}
+                                    className="alex-notes-icon-btn"
+                                    aria-label={t(
+                                        "notes.list.config_columns.tooltip",
+                                    )}
+                                >
+                                    <i className="fa-solid fa-table-columns text-xs" />
+                                </button>
+                            </Tooltip>
+                        )}
+                    </>
+                }
+            />
+
+            {/* Empty Trash — a list-only bulk action (Grid has no
+                selection/bulk-action surface at all), so it stays outside
+                the shared toolbar row rather than crowding its anatomy. */}
+            {statusFilter === "trashed" && notes && notes.total > 0 && (
+                <button
+                    type="button"
+                    onClick={async () => {
+                        const confirmMsg = t(
+                            "notes.list.empty_trash.confirm",
+                        ).replace(":count", String(notes.total));
+                        if (!confirm(confirmMsg)) return;
+                        const ids = notes.data.map((n) => n.id);
+                        await fetch(
+                            `/api/v1/projects/${projectId}/notes/bulk-action`,
+                            {
+                                method: "POST",
+                                headers: csrfHeaders(),
+                                credentials: "same-origin",
+                                body: JSON.stringify({
+                                    action: "force_delete",
+                                    note_ids: ids,
+                                }),
+                            },
+                        );
+                        fetchData();
+                    }}
+                    className="inline-flex w-fit items-center gap-1 px-2.5 py-1 text-xs font-medium"
+                    style={{
+                        background: "var(--theme-status-error-stroke)",
+                        color: "var(--theme-status-error-content)",
+                        borderRadius: "var(--theme-radius-button)",
+                    }}
+                >
+                    <i className="fa-solid fa-trash text-[10px]" />{" "}
+                    {t("notes.list.empty_trash.label")}
+                </button>
+            )}
+
+            {/* Filter Modal + Author/Notebook pickers — shared with the
+                Grid view (NotesFilterModal.tsx). */}
+            <NotesFilterModal
+                open={showFilterModal}
+                onClose={() => setShowFilterModal(false)}
+                statusFilter={statusFilter}
+                onStatusChange={handleStatusChange}
+                quickFilter={quickFilter}
+                onQuickFilterToggle={handleQuickFilter}
+                creatorIds={creatorIds}
+                onCreatorIdsChange={handleCreatorIdsChange}
+                creators={creators}
+                notebookFilters={notebookFilters}
+                onNotebookFiltersChange={handleNotebookFiltersChange}
+                notebooks={notebooks}
+                hasActiveFilters={hasActiveFilters}
+                onClearAll={handleClearAllFilters}
+            />
 
             {/* Bulk actions bar */}
             {selectedIds.size > 0 && (
@@ -2275,290 +2229,6 @@ export default function NotesView({
                 onMoveNotebook={(nbId) => void addNoteToNotebook(nbId)}
             />
 
-            {/* Author picker — opened from the filter modal trigger.
-                Items are the already-fetched `creators` list so we don't
-                need a separate endpoint. */}
-            <SearchableMultiSelectModal
-                open={showAuthorPicker}
-                onClose={() => setShowAuthorPicker(false)}
-                title={t("notes.list.author_picker.title")}
-                subtitle={t("notes.list.author_picker.subtitle")}
-                items={creators.map((c): SearchableItem => ({
-                    id: c.id,
-                    label: c.name,
-                    icon: "fa-solid fa-user",
-                }))}
-                selectedIds={creatorIds}
-                onToggle={(id, next) => {
-                    const numId = Number(id);
-                    setCreatorIds((prev) =>
-                        next
-                            ? [...prev, numId]
-                            : prev.filter((x) => x !== numId),
-                    );
-                    setPage(1);
-                }}
-                onClear={() => {
-                    setCreatorIds([]);
-                    setPage(1);
-                }}
-                emptyLabel={t("notes.list.author_picker.empty")}
-                searchPlaceholder={t("notes.list.author_picker.search")}
-            />
-
-            {/* Notebook picker */}
-            <SearchableMultiSelectModal
-                open={showNotebookPicker}
-                onClose={() => setShowNotebookPicker(false)}
-                title={t("notes.list.notebook_picker.title")}
-                subtitle={t("notes.list.notebook_picker.subtitle")}
-                items={notebooks.map((nb): SearchableItem => ({
-                    id: nb.id,
-                    label: nb.title,
-                    icon: nb.icon ?? "fa-solid fa-book",
-                    color: nb.color,
-                    count: nb.notes_count,
-                }))}
-                selectedIds={notebookFilters}
-                onToggle={(id, next) => {
-                    const numId = Number(id);
-                    setNotebookFilters((prev) =>
-                        next
-                            ? [...prev, numId]
-                            : prev.filter((x) => x !== numId),
-                    );
-                    setPage(1);
-                }}
-                onClear={() => {
-                    setNotebookFilters([]);
-                    setPage(1);
-                }}
-                emptyLabel={t("notes.list.notebook_picker.empty")}
-                searchPlaceholder={t("notes.list.notebook_picker.search")}
-            />
-
-            {/* Filter Modal */}
-            <Modal
-                open={showFilterModal}
-                onClose={() => setShowFilterModal(false)}
-                maxWidth="max-w-lg"
-            >
-                <div className="p-5">
-                    <div className="mb-4 flex items-center gap-3">
-                        <div
-                            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
-                            style={{
-                                background:
-                                    "color-mix(in srgb, var(--theme-brand-secondary-500) 20%, transparent)",
-                            }}
-                        >
-                            <i
-                                className="fa-solid fa-filter"
-                                style={{
-                                    color: "var(--theme-brand-secondary-500)",
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <h3 className="font-bold">
-                                {t("notes.list.filter_modal.title")}
-                            </h3>
-                            <p className="text-xs" style={subtleText}>
-                                {t("notes.list.filter_modal.subtitle")}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Status */}
-                    <div className="mb-4">
-                        <label
-                            className="mb-1.5 block text-xs font-semibold uppercase tracking-wider"
-                            style={fadedText}
-                        >
-                            {t("notes.list.filter_modal.status_label")}
-                        </label>
-                        <div className="flex flex-wrap gap-1">
-                            {statusOptions.map((opt) => (
-                                <button
-                                    key={opt.value}
-                                    type="button"
-                                    onClick={() => {
-                                        handleStatusChange(opt.value);
-                                    }}
-                                    className={`alex-notes-quick-chip ${statusFilter === opt.value ? "alex-notes-quick-chip--active" : ""}`}
-                                >
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Quick Filters */}
-                    <div className="mb-4">
-                        <label
-                            className="mb-1.5 block text-xs font-semibold uppercase tracking-wider"
-                            style={fadedText}
-                        >
-                            {t("notes.list.filter_modal.quick_label")}
-                        </label>
-                        <div className="flex flex-wrap gap-1">
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    handleQuickFilter("uncategorized")
-                                }
-                                className={`alex-notes-quick-chip alex-notes-quick-chip--warning ${quickFilter === "uncategorized" ? "alex-notes-quick-chip--active" : ""}`}
-                            >
-                                <i className="fa-solid fa-inbox text-xs" />{" "}
-                                {t("notes.list.quick.uncategorized")}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    handleQuickFilter("pending_routing")
-                                }
-                                className={`alex-notes-quick-chip alex-notes-quick-chip--info ${quickFilter === "pending_routing" ? "alex-notes-quick-chip--active" : ""}`}
-                            >
-                                <i className="fa-solid fa-route text-xs" />{" "}
-                                {t("notes.list.quick.pending")}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleQuickFilter("pinned")}
-                                className={`alex-notes-quick-chip ${quickFilter === "pinned" ? "alex-notes-quick-chip--active" : ""}`}
-                            >
-                                <i className="fa-solid fa-thumbtack text-xs" />{" "}
-                                {t("notes.list.quick.pinned")}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Author + Notebook — each opens a dedicated
-                        searchable picker modal (same pattern as Tags),
-                        so long lists stay usable and selected entries
-                        show as chips at the top of the picker. */}
-                    <div className="mb-4 grid grid-cols-2 gap-3">
-                        <div>
-                            <label
-                                className="mb-1.5 block text-xs font-semibold uppercase tracking-wider"
-                                style={fadedText}
-                            >
-                                {t("notes.list.filter_modal.author_label")}
-                            </label>
-                            <button
-                                type="button"
-                                onClick={() => setShowAuthorPicker(true)}
-                                className="alex-notes-facet-trigger flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm"
-                                style={{
-                                    borderRadius: "var(--theme-radius-input)",
-                                }}
-                            >
-                                <span className="flex min-w-0 items-center gap-2">
-                                    <i
-                                        className="fa-solid fa-user text-[11px]"
-                                        style={subtleText}
-                                    />
-                                    <span className="truncate">
-                                        {creatorIds.length === 0
-                                            ? t(
-                                                  "notes.list.filter_modal.all_authors",
-                                              )
-                                            : creatorIds.length === 1
-                                              ? (creators.find(
-                                                    (c) =>
-                                                        c.id === creatorIds[0],
-                                                )?.name ??
-                                                t(
-                                                    "notes.list.filter_modal.one_selected",
-                                                ))
-                                              : t(
-                                                    "notes.list.filter_modal.n_selected",
-                                                ).replace(
-                                                    ":count",
-                                                    String(creatorIds.length),
-                                                )}
-                                    </span>
-                                </span>
-                                <i
-                                    className="fa-solid fa-chevron-right text-[10px]"
-                                    style={microText}
-                                />
-                            </button>
-                        </div>
-                        <div>
-                            <label
-                                className="mb-1.5 block text-xs font-semibold uppercase tracking-wider"
-                                style={fadedText}
-                            >
-                                {t("notes.list.filter_modal.notebook_label")}
-                            </label>
-                            <button
-                                type="button"
-                                onClick={() => setShowNotebookPicker(true)}
-                                className="alex-notes-facet-trigger flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm"
-                                style={{
-                                    borderRadius: "var(--theme-radius-input)",
-                                }}
-                            >
-                                <span className="flex min-w-0 items-center gap-2">
-                                    <i
-                                        className="fa-solid fa-book text-[11px]"
-                                        style={subtleText}
-                                    />
-                                    <span className="truncate">
-                                        {notebookFilters.length === 0
-                                            ? t(
-                                                  "notes.list.filter_modal.all_notebooks",
-                                              )
-                                            : notebookFilters.length === 1
-                                              ? (notebooks.find(
-                                                    (n) =>
-                                                        n.id ===
-                                                        notebookFilters[0],
-                                                )?.title ??
-                                                t(
-                                                    "notes.list.filter_modal.one_selected",
-                                                ))
-                                              : t(
-                                                    "notes.list.filter_modal.n_selected",
-                                                ).replace(
-                                                    ":count",
-                                                    String(
-                                                        notebookFilters.length,
-                                                    ),
-                                                )}
-                                    </span>
-                                </span>
-                                <i
-                                    className="fa-solid fa-chevron-right text-[10px]"
-                                    style={microText}
-                                />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Clear all */}
-                    {hasActiveFilters && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                handleStatusChange("active");
-                                setCreatorIds([]);
-                                setQuickFilter("all");
-                                setNotebookFilters([]);
-                                setPage(1);
-                            }}
-                            className="alex-notes-bulk-btn flex w-full items-center justify-center gap-1.5 py-2"
-                            style={{
-                                color: "var(--theme-status-error-stroke)",
-                            }}
-                        >
-                            <i className="fa-solid fa-xmark text-xs" />{" "}
-                            {t("notes.list.filter_modal.clear_all")}
-                        </button>
-                    )}
-                </div>
-            </Modal>
         </div>
     );
 }
