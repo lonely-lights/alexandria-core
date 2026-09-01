@@ -165,8 +165,11 @@ input.alex-toggle {
     border-radius: var(--theme-radius-badge);
     cursor: pointer;
     position: relative;
+    box-shadow: none;
     transition:
         background var(--theme-motion-duration-interactive)
+            var(--theme-motion-easing-standard),
+        box-shadow var(--theme-motion-duration-interactive)
             var(--theme-motion-easing-standard);
 }
 
@@ -184,14 +187,19 @@ input.alex-toggle::after {
         var(--theme-motion-easing-standard);
 }
 
-/* Hover (any state) and `:checked` share one rule — identical
- * styling. The thumb position (left vs right) tells the user whether
- * the toggle is actually active; hover shows the same strong
- * activation styling regardless. Holding at `-400` for the fill,
- * since going lighter (`-300`) reads as washed-out against dark
- * surfaces (oklch lightness rises faster than chroma at the upper
- * steps). */
-input.alex-toggle:hover:not(:disabled),
+/* An off toggle stays neutral even under the cursor. Hover raises the
+ * neutral track slightly so it still feels interactive, but brand fill
+ * and glow are reserved exclusively for the active state. */
+input.alex-toggle:hover:not(:checked):not(:disabled) {
+    background: color-mix(
+        in srgb,
+        var(--theme-base-content) 28%,
+        transparent
+    );
+}
+
+/* Holding at `-400` for the active fill: lighter steps read as
+ * washed-out against dark surfaces. */
 input.alex-toggle:checked,
 input.alex-toggle:checked:hover:not(:disabled) {
     background: var(--theme-brand-primary-400);
@@ -254,4 +262,29 @@ input.alex-toggle:disabled {
         var(--theme-brand-primary-500) 10%,
         transparent
     );
+}
+
+/* Mobile Safari automatically zooms the page when a focused editable
+ * control computes below 16px. Keep text-entry controls at that floor
+ * throughout the mobile/tablet layout so focus never reframes the app.
+ * This deliberately does not restrict viewport scaling: user-initiated
+ * pinch zoom remains available for accessibility. */
+@media (max-width: 1023.98px) {
+    input:not([type]),
+    input[type='text'],
+    input[type='search'],
+    input[type='email'],
+    input[type='password'],
+    input[type='url'],
+    input[type='tel'],
+    input[type='number'],
+    input[type='date'],
+    input[type='time'],
+    input[type='datetime-local'],
+    input[type='month'],
+    input[type='week'],
+    textarea,
+    select {
+        font-size: 1rem;
+    }
 }

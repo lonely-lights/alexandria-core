@@ -12,6 +12,7 @@ import { getSettingsSlots } from './settingsCache';
 import AnimatedPronouns from './components/AnimatedPronouns';
 import RingModal from './components/RingModal';
 import SectionContent from './components/SectionContent';
+import SettingsSearch from './components/SettingsSearch';
 
 /**
  * Reusable Settings body — the actual UI (state + section rail + content
@@ -185,6 +186,7 @@ export default function SettingsBody({
         return { [owner?.key ?? 'profile']: true };
     });
     const [showRingModal, setShowRingModal] = useState(false);
+    const [isSearchingSettings, setIsSearchingSettings] = useState(false);
     const [savedRingId, setSavedRingId] = useState<number | null>(profile.avatar_ring_id);
     const [previewRingId, setPreviewRingId] = useState<number | null>(profile.avatar_ring_id);
     const avatarInput = useRef<HTMLInputElement>(null);
@@ -226,6 +228,14 @@ export default function SettingsBody({
             }
         } else {
             setActiveSection(item.key);
+        }
+    }
+
+    function selectSection(key: string) {
+        setActiveSection(key);
+        const owner = nav.find((item) => item.children?.some((child) => child.key === key));
+        if (owner) {
+            setExpandedGroups({ [owner.key]: true });
         }
     }
 
@@ -506,8 +516,14 @@ export default function SettingsBody({
                                         borderColor: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
                                     }}
                                 >
-                                    <nav className="space-y-1 p-2">
-                                        {nav.map((item) => (
+                                    <SettingsSearch
+                                        nav={nav}
+                                        onSelect={selectSection}
+                                        onSearchingChange={setIsSearchingSettings}
+                                    />
+                                    {!isSearchingSettings && (
+                                        <nav className="space-y-1 p-2 pt-0">
+                                            {nav.map((item) => (
                                             <div key={item.key}>
                                                 <button
                                                     onClick={() => handleNavClick(item)}
@@ -545,7 +561,7 @@ export default function SettingsBody({
                                                             return (
                                                                 <button
                                                                     key={child.key}
-                                                                    onClick={() => setActiveSection(child.key)}
+                                                                    onClick={() => selectSection(child.key)}
                                                                     className={`alex-settings-nav-row flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-all duration-150 ${
                                                                         isChildActive ? 'alex-settings-nav-row--active' : ''
                                                                     }`}
@@ -573,8 +589,9 @@ export default function SettingsBody({
                                                     </div>
                                                 )}
                                             </div>
-                                        ))}
-                                    </nav>
+                                            ))}
+                                        </nav>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -645,4 +662,3 @@ function AnimatedSection({ sectionKey, children }: { sectionKey: string; childre
 
     return <div ref={ref}>{children}</div>;
 }
-

@@ -187,6 +187,8 @@ export default function SectionContent({
     // Preference / accessibility / tools section pages.
     const sectionMeta: Record<string, { mapped: string; icon: string; labelKey: string }> = {
         'pref-appearance': { mapped: 'appearance', icon: 'fa-palette', labelKey: 'settings.section.preferences.label' },
+        'pref-behavior': { mapped: 'behavior', icon: 'fa-computer-mouse', labelKey: 'settings.section.preferences.label' },
+        'pref-workspace': { mapped: 'workspace', icon: 'fa-pen-ruler', labelKey: 'settings.section.preferences.label' },
         'pref-language': { mapped: 'language', icon: 'fa-globe', labelKey: 'settings.section.preferences.label' },
         'pref-notifications': { mapped: 'notifications', icon: 'fa-bell', labelKey: 'settings.section.preferences.label' },
         'tools-editor': { mapped: 'editor', icon: 'fa-pen-to-square', labelKey: 'settings.section.tools.label' },

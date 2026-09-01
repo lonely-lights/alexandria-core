@@ -11,8 +11,9 @@ declare(strict_types=1);
  * `t('settings.notifications.unwired_banner')`, etc.
  *
  * Keys use dot-prefixed sub-namespaces matching the section structure
- * (`appearance.*`, `language.*`, `notifications.*`, `editor.*`,
- * `accessibility.*`) — useT() does a single substring split at the
+ * (`appearance.*`, `behavior.*`, `workspace.*`, `language.*`,
+ * `notifications.*`, `editor.*`, `accessibility.*`) — useT() does a
+ * single substring split at the
  * group boundary, so the sub-namespace has to be a flat lookup
  * inside the group's bag.
  *
@@ -29,19 +30,6 @@ return [
     'appearance.color_mode_help' => 'System follows your operating system setting.',
     'appearance.font_size_label' => 'Font Size',
     'appearance.font_size_preview' => 'Aa',
-    'appearance.interface_behavior_header' => 'Interface Behavior',
-    'appearance.reduced_motion_label' => 'Reduced Motion',
-    'appearance.reduced_motion_description' => 'Minimize animations and transitions',
-    'appearance.compact_mode_label' => 'Compact Mode',
-    'appearance.compact_mode_description' => 'Use a denser layout with less spacing',
-    'appearance.menu_behavior_header' => 'Menu Behavior',
-    'appearance.menu_dismiss_label' => 'Hover-off Auto-dismiss',
-    'appearance.menu_dismiss_description' => 'Close an open menu after the cursor sits off it (and its button) for a moment',
-    'appearance.menu_dismiss_delay_label' => 'Delay (ms)',
-    'appearance.menu_dismiss_delay_hint' => 'How long the cursor may sit off the menu before it closes.',
-    'appearance.writing_workspace_header' => 'Writing Workspace',
-    'appearance.section_type_labels_label' => 'Show section type labels',
-    'appearance.section_type_labels_description' => 'Show labels such as ACT and SCENE beside section names in the writing workspace.',
     'appearance.save_button' => 'Save Appearance',
     // User-level theme cascade root (Stage 8b)
     'appearance.theme_label' => 'Theme',
@@ -50,6 +38,20 @@ return [
     'appearance.theme_inherit_hint' => 'No preset pinned — Alexandria uses the default theme.',
     'appearance.theme_fine_tune_title' => 'Fine-tune tokens',
     'appearance.theme_fine_tune_subtitle' => 'Adjust individual colors and styles on top of your chosen preset.',
+
+    // -- Behavior ----------------------------------------------------
+    'behavior.menu_dismiss_label' => 'Hover-off Auto-dismiss',
+    'behavior.menu_dismiss_description' => 'Close an open menu after the cursor sits off it (and its button) for a moment',
+    'behavior.menu_dismiss_delay_label' => 'Delay (ms)',
+    'behavior.menu_dismiss_delay_hint' => 'How long the cursor may sit off the menu before it closes.',
+    'behavior.save_button' => 'Save Behavior',
+
+    // -- Workspace ---------------------------------------------------
+    'workspace.compact_mode_label' => 'Compact Mode',
+    'workspace.compact_mode_description' => 'Use a denser workspace layout with less spacing',
+    'workspace.section_type_labels_label' => 'Show section type labels',
+    'workspace.section_type_labels_description' => 'Show labels such as ACT and SCENE beside section names in the writing workspace.',
+    'workspace.save_button' => 'Save Workspace',
 
     // ── Language / Regional Formats ─────────────────────────────────
     'language.date_format_label' => 'Date Format',
@@ -112,6 +114,12 @@ return [
     'drawer.title' => 'Settings',
     'drawer.aria_label' => 'Settings drawer',
 
+    // -- Settings search ---------------------------------------------
+    'search.label' => 'Search settings',
+    'search.placeholder' => 'Search settings',
+    'search.clear' => 'Clear settings search',
+    'search.empty' => 'No settings match that search.',
+
     // ── Profile-card chrome (banner / avatar controls / preview) ────
     'aria.banner_alt' => 'Profile banner',
     'banner.upload_button' => 'Upload Banner',
@@ -157,7 +165,11 @@ return [
     'section.ai.label' => 'AI',
 
     'section.pref-appearance.title' => 'Appearance',
-    'section.pref-appearance.subtitle' => 'Theme, font size, and display preferences',
+    'section.pref-appearance.subtitle' => 'Color mode, font size, and theme',
+    'section.pref-behavior.title' => 'Behavior',
+    'section.pref-behavior.subtitle' => 'App-wide interaction and menu behavior',
+    'section.pref-workspace.title' => 'Workspace',
+    'section.pref-workspace.subtitle' => 'Writing workspace layout and display preferences',
     'section.pref-language.title' => 'Regional Formats',
     'section.pref-language.subtitle' => 'Date, time, and number formatting',
     'section.pref-notifications.title' => 'Notifications',

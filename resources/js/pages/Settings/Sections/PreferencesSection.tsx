@@ -9,7 +9,7 @@ import TokenOverrideEditor from '@alexandria/components/theming/TokenOverrideEdi
 import { useTheme } from '@alexandria/hooks/useTheme';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
-import { useState, type SyntheticEvent, type ReactNode } from 'react';
+import { useId, useState, type SyntheticEvent, type ReactNode } from 'react';
 import { patchCachedPreferences } from '../settingsCache';
 
 /**
@@ -64,6 +64,10 @@ export default function PreferencesSection({
     switch (section) {
         case 'appearance':
             return <AppearanceSectionWithTheme preferences={preferences} options={options} applyViewPreferences={apply} />;
+        case 'behavior':
+            return <BehaviorSection preferences={preferences} />;
+        case 'workspace':
+            return <WorkspaceSection preferences={preferences} applyViewPreferences={apply} />;
         case 'language':
             return <LanguageSection preferences={preferences} options={options} />;
         case 'notifications':
@@ -164,28 +168,6 @@ function GroupDivider() {
                 borderColor: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
             }}
         />
-    );
-}
-
-/**
- * Semantic preference subsection used when one settings page contains
- * behavior with different scopes. The shared fieldset/legend treatment
- * gives future options a clear home without inventing a new layout each
- * time.
- */
-function PreferenceGroup({ label, children }: { label: ReactNode; children: ReactNode }) {
-    return (
-        <fieldset className="space-y-4">
-            <legend
-                className="mb-4 text-[11px] font-semibold uppercase tracking-[.25em]"
-                style={{
-                    color: 'color-mix(in srgb, var(--theme-brand-primary-500) 80%, transparent)',
-                }}
-            >
-                {label}
-            </legend>
-            {children}
-        </fieldset>
     );
 }
 
@@ -298,12 +280,7 @@ function AppearanceSection({
     const theme = useTheme();
     const form = useForm({
         font_size: preferences.font_size as string,
-        reduced_motion: preferences.reduced_motion as boolean,
-        compact_mode: preferences.compact_mode as boolean,
-        menu_dismiss_delay_ms: (preferences.menu_dismiss_delay_ms as number | null) ?? 0,
-        show_section_type_labels: (preferences.show_section_type_labels as boolean | undefined) ?? true,
     });
-    const menuDismissEnabled = form.data.menu_dismiss_delay_ms > 0;
 
     const modes: Array<{ key: 'light' | 'dark' | 'system'; labelKey: string; icon: string }> = [
         { key: 'light', labelKey: 'settings.appearance.color_mode_light', icon: 'fa-sun' },
@@ -320,10 +297,7 @@ function AppearanceSection({
         // ToastProvider bridge — a client-side onSuccess toast here
         // doubled it (findings #10).
         form.put('/account/preferences', {
-            onSuccess: () =>
-                patchCachedPreferences({
-                    show_section_type_labels: form.data.show_section_type_labels,
-                }),
+            onSuccess: () => patchCachedPreferences({ font_size: form.data.font_size }),
         });
     }
 
@@ -404,84 +378,13 @@ function AppearanceSection({
                 </div>
             </div>
 
-            <PreferenceGroup label={t('settings.appearance.interface_behavior_header')}>
-                <Toggle
-                    label={t('settings.appearance.reduced_motion_label')}
-                    description={t('settings.appearance.reduced_motion_description')}
-                    checked={form.data.reduced_motion}
-                    onChange={(v) => {
-                        form.setData('reduced_motion', v);
-                        applyViewPreferences({ reduced_motion: v });
-                    }}
-                />
-                <Toggle
-                    label={t('settings.appearance.compact_mode_label')}
-                    description={t('settings.appearance.compact_mode_description')}
-                    checked={form.data.compact_mode}
-                    onChange={(v) => {
-                        form.setData('compact_mode', v);
-                        applyViewPreferences({ compact_mode: v });
-                    }}
-                />
-            </PreferenceGroup>
-
-            <GroupDivider />
-
-            <PreferenceGroup label={t('settings.appearance.menu_behavior_header')}>
-                <Toggle
-                    label={t('settings.appearance.menu_dismiss_label')}
-                    description={t('settings.appearance.menu_dismiss_description')}
-                    checked={menuDismissEnabled}
-                    onChange={(v) => {
-                        form.setData(
-                            'menu_dismiss_delay_ms',
-                            v ? DEFAULT_MENU_DISMISS_DELAY_MS : 0,
-                        );
-                    }}
-                />
-                {menuDismissEnabled && (
-                    <div className="max-w-[10rem]">
-                        <Input
-                            type="number"
-                            label={t('settings.appearance.menu_dismiss_delay_label')}
-                            hint={t('settings.appearance.menu_dismiss_delay_hint')}
-                            min={100}
-                            max={10000}
-                            step={100}
-                            value={form.data.menu_dismiss_delay_ms}
-                            onChange={(e) => {
-                                const parsed = parseInt(e.target.value, 10);
-                                form.setData(
-                                    'menu_dismiss_delay_ms',
-                                    Number.isNaN(parsed) ? 0 : parsed,
-                                );
-                            }}
-                        />
-                    </div>
-                )}
-            </PreferenceGroup>
-
-            <GroupDivider />
-
-            <PreferenceGroup label={t('settings.appearance.writing_workspace_header')}>
-                <Toggle
-                    label={t('settings.appearance.section_type_labels_label')}
-                    description={t('settings.appearance.section_type_labels_description')}
-                    checked={form.data.show_section_type_labels}
-                    onChange={(v) => {
-                        form.setData('show_section_type_labels', v);
-                        applyViewPreferences({ show_section_type_labels: v });
-                    }}
-                />
-            </PreferenceGroup>
-
             <SaveRow processing={form.processing} labelKey="settings.appearance.save_button" t={t} />
         </form>
     );
 }
 
 /**
- * Appearance card = the mode/font/motion form + the user-level theme
+ * Appearance card = the color-mode/font form + the user-level theme
  * block (Stage 8b cascade root), which persists independently through
  * PATCH /account/theme and therefore sits outside the form.
  */
@@ -495,6 +398,139 @@ function AppearanceSectionWithTheme(props: {
             <AppearanceSection {...props} />
             <UserThemeSection />
         </div>
+    );
+}
+
+function BehaviorSection({ preferences }: { preferences: Record<string, unknown> }) {
+    const t = useT();
+    const delayInputId = useId();
+    const delayLegendId = `${delayInputId}-legend`;
+    const delayHintId = `${delayInputId}-hint`;
+    const form = useForm({
+        menu_dismiss_delay_ms: (preferences.menu_dismiss_delay_ms as number | null) ?? 0,
+    });
+    const menuDismissEnabled = form.data.menu_dismiss_delay_ms > 0;
+
+    function handleSubmit(e: SyntheticEvent) {
+        e.preventDefault();
+        form.put('/account/preferences', {
+            onSuccess: () => patchCachedPreferences({
+                menu_dismiss_delay_ms: form.data.menu_dismiss_delay_ms,
+            }),
+        });
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+                <Toggle
+                    label={t('settings.behavior.menu_dismiss_label')}
+                    description={t('settings.behavior.menu_dismiss_description')}
+                    checked={menuDismissEnabled}
+                    onChange={(enabled) => {
+                        form.setData(
+                            'menu_dismiss_delay_ms',
+                            enabled ? DEFAULT_MENU_DISMISS_DELAY_MS : 0,
+                        );
+                    }}
+                />
+                {menuDismissEnabled && (
+                    <fieldset
+                        className="mt-1 max-w-xl border px-4 pb-4 pt-2 lg:ml-5"
+                        style={{
+                            borderColor: 'color-mix(in srgb, var(--theme-base-content) 16%, transparent)',
+                            borderRadius: 'var(--theme-radius-card)',
+                        }}
+                    >
+                        <legend
+                            id={delayLegendId}
+                            className="px-2 text-xs font-medium"
+                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)' }}
+                        >
+                            {t('settings.behavior.menu_dismiss_delay_label')}
+                        </legend>
+                        <div className="max-w-[10rem]">
+                            <Input
+                                id={delayInputId}
+                                type="number"
+                                aria-labelledby={delayLegendId}
+                                aria-describedby={delayHintId}
+                                min={100}
+                                max={10000}
+                                step={100}
+                                value={form.data.menu_dismiss_delay_ms}
+                                onChange={(event) => {
+                                    const parsed = parseInt(event.target.value, 10);
+                                    form.setData(
+                                        'menu_dismiss_delay_ms',
+                                        Number.isNaN(parsed) ? 0 : parsed,
+                                    );
+                                }}
+                            />
+                        </div>
+                        <p
+                            id={delayHintId}
+                            className="mt-1 text-xs"
+                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}
+                        >
+                            {t('settings.behavior.menu_dismiss_delay_hint')}
+                        </p>
+                    </fieldset>
+                )}
+            </div>
+
+            <SaveRow processing={form.processing} labelKey="settings.behavior.save_button" t={t} />
+        </form>
+    );
+}
+
+function WorkspaceSection({
+    preferences,
+    applyViewPreferences,
+}: {
+    preferences: Record<string, unknown>;
+    applyViewPreferences: ApplyViewPreferences;
+}) {
+    const t = useT();
+    const form = useForm({
+        compact_mode: (preferences.compact_mode as boolean | undefined) ?? false,
+        show_section_type_labels: (preferences.show_section_type_labels as boolean | undefined) ?? true,
+    });
+
+    function handleSubmit(e: SyntheticEvent) {
+        e.preventDefault();
+        form.put('/account/preferences', {
+            onSuccess: () => patchCachedPreferences({
+                compact_mode: form.data.compact_mode,
+                show_section_type_labels: form.data.show_section_type_labels,
+            }),
+        });
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <Toggle
+                label={t('settings.workspace.compact_mode_label')}
+                description={t('settings.workspace.compact_mode_description')}
+                checked={form.data.compact_mode}
+                onChange={(enabled) => {
+                    form.setData('compact_mode', enabled);
+                    applyViewPreferences({ compact_mode: enabled });
+                }}
+            />
+            <GroupDivider />
+            <Toggle
+                label={t('settings.workspace.section_type_labels_label')}
+                description={t('settings.workspace.section_type_labels_description')}
+                checked={form.data.show_section_type_labels}
+                onChange={(enabled) => {
+                    form.setData('show_section_type_labels', enabled);
+                    applyViewPreferences({ show_section_type_labels: enabled });
+                }}
+            />
+
+            <SaveRow processing={form.processing} labelKey="settings.workspace.save_button" t={t} />
+        </form>
     );
 }
 

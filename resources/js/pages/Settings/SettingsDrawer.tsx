@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import gsap from 'gsap';
 import useT from '@alexandria/hooks/useT';
 import SectionContent from './components/SectionContent';
+import SettingsSearch from './components/SettingsSearch';
 import { ALL_NAV, type NavItem } from './nav-config';
 import { type SettingsBodyProps } from './SettingsBody';
 import { getSettingsSlots, useSettingsData } from './settingsCache';
@@ -390,10 +391,20 @@ function mergedNav(): NavItem[] {
 }
 
 function RootList({ onSelect }: { onSelect: (key: string) => void }) {
+    const nav = mergedNav();
+    const [isSearching, setIsSearching] = useState(false);
+
     return (
         <div className="h-full overflow-y-auto pb-4">
-            {mergedNav().map((group) => (
-                <section key={group.key} className="mt-3">
+            <SettingsSearch
+                nav={nav}
+                onSelect={onSelect}
+                onSearchingChange={setIsSearching}
+                sticky
+            />
+            {!isSearching && (
+                nav.map((group) => (
+                    <section key={group.key} className="mt-3">
                     <h3
                         className="flex items-center gap-2 px-4 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider"
                         style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}
@@ -425,8 +436,9 @@ function RootList({ onSelect }: { onSelect: (key: string) => void }) {
                             </li>
                         ))}
                     </ul>
-                </section>
-            ))}
+                    </section>
+                ))
+            )}
         </div>
     );
 }
