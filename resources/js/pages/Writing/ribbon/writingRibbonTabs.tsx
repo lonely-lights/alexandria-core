@@ -380,6 +380,13 @@ const viewTab: RibbonTab<Ctx> = {
             labelKey: 'writing.ribbon.group_view',
             controls: [
                 {
+                    id: 'section-settings',
+                    type: 'button',
+                    icon: 'fa-solid fa-list-ul',
+                    labelKey: 'writing.workspace.section_settings_menu',
+                    onAction: (ctx) => ctx.actions.openSectionSettings(),
+                },
+                {
                     id: 'print-layout',
                     type: 'toggle',
                     icon: 'fa-solid fa-ruler-combined',

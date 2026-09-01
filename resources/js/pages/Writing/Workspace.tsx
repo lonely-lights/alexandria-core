@@ -13,6 +13,13 @@ import CompactUserMenu from '@alexandria/components/navigation/CompactUserMenu';
 import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
+import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import {
+    applyViewPreferences,
+    VIEW_PREFERENCES_CHANGED_EVENT,
+    type ViewPreferences,
+} from '@alexandria/lib/applyViewPreferences';
+import { patchCachedPreferences } from '@alexandria/pages/Settings/settingsCache';
 
 import ContinuousFlow, { type ActiveScene } from './Flow/ContinuousFlow';
 import FlowToggle from './Flow/FlowToggle';
@@ -50,6 +57,7 @@ import {
     type MarginXEventDetail,
 } from './pageMargins';
 import Navigator from './Sections/Navigator';
+import SectionSettingsModal from './Sections/SectionSettingsModal';
 import { readStructureOpen, writeStructureOpen } from './Sections/structureOpen';
 import CommentRail from './Sections/CommentRail';
 import PanelModeSwitcher from './Sections/PanelModeSwitcher';
@@ -288,6 +296,9 @@ export default function Workspace() {
     const menuDismissDelayMs =
         (pageProps as { auth?: { preferences?: { menu_dismiss_delay_ms?: number | null } } })
             .auth?.preferences?.menu_dismiss_delay_ms ?? null;
+    const sharedShowSectionTypeLabels =
+        (pageProps as { auth?: { preferences?: { show_section_type_labels?: boolean } } })
+            .auth?.preferences?.show_section_type_labels ?? true;
 
     // Build ribbon gates: permission map from the page `can` prop +
     // entitlement keys normalised by useEntitlements() (truthy keys only).
@@ -335,6 +346,10 @@ export default function Workspace() {
     );
     const [structureOpen, setStructureOpen] = useState(() => readStructureOpen(work.id));
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [sectionSettingsOpen, setSectionSettingsOpen] = useState(false);
+    const [showSectionTypeLabels, setShowSectionTypeLabels] = useState(sharedShowSectionTypeLabels);
+    const [sectionSettingsSaving, setSectionSettingsSaving] = useState(false);
+    const [sectionSettingsError, setSectionSettingsError] = useState<string | null>(null);
     const [paperModalOpen, setPaperModalOpen] = useState(false);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
     const [showPlan, setShowPlan] = useState(readShowPlan);
@@ -436,6 +451,24 @@ export default function Workspace() {
 
     const effectiveSection =
         viewMode === 'continuous' ? (activeScene?.section ?? currentSection) : currentSection;
+
+    useEffect(() => {
+        setShowSectionTypeLabels(sharedShowSectionTypeLabels);
+    }, [sharedShowSectionTypeLabels]);
+
+    useEffect(() => {
+        function handleViewPreferenceChange(event: Event) {
+            const detail = (event as CustomEvent<ViewPreferences>).detail;
+
+            if (detail.show_section_type_labels !== undefined) {
+                setShowSectionTypeLabels(detail.show_section_type_labels);
+            }
+        }
+
+        window.addEventListener(VIEW_PREFERENCES_CHANGED_EVENT, handleViewPreferenceChange);
+
+        return () => window.removeEventListener(VIEW_PREFERENCES_CHANGED_EVENT, handleViewPreferenceChange);
+    }, []);
 
     /* Margin drags arrive as window events from the ruler (six layers
        below — an event beats threading a callback down through all of
@@ -825,6 +858,58 @@ export default function Workspace() {
         });
     }, [work.id]);
 
+    const openSectionSettings = useCallback(() => {
+        setSectionSettingsError(null);
+        setSectionSettingsOpen(true);
+    }, []);
+
+    const updateShowSectionTypeLabels = useCallback(
+        async (value: boolean) => {
+            const previous = showSectionTypeLabels;
+            const restorePreviousSetting = () => {
+                setShowSectionTypeLabels(previous);
+                applyViewPreferences({
+                    show_section_type_labels: previous,
+                });
+                setSectionSettingsError(t('writing.workspace.section_settings_save_failed'));
+            };
+
+            setSectionSettingsError(null);
+            setSectionSettingsSaving(true);
+            setShowSectionTypeLabels(value);
+            applyViewPreferences({ show_section_type_labels: value });
+
+            try {
+                const response = await fetch('/account/preferences', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-Silent': 'true',
+                        ...csrfHeaders(),
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        show_section_type_labels: value,
+                    }),
+                });
+
+                if (!response.ok) {
+                    restorePreviousSetting();
+
+                    return;
+                }
+
+                patchCachedPreferences({ show_section_type_labels: value });
+            } catch {
+                restorePreviousSetting();
+            } finally {
+                setSectionSettingsSaving(false);
+            }
+        },
+        [showSectionTypeLabels, t],
+    );
+
     const togglePrintLayout = useCallback(() => {
         setPrintLayout((prev) => {
             const next = !prev;
@@ -954,6 +1039,7 @@ export default function Workspace() {
                 setPaperColor: updatePaperColor,
                 setZoom: updateZoom,
                 setFontSize: updateFontSize,
+                openSectionSettings,
                 openSettings: () => setSettingsOpen(true),
                 openReports: () => router.visit(`${worksBase(projectSlug, workSlug)}/reports`),
                 addSection: () => setAddTarget({ parentId: null }),
@@ -993,7 +1079,7 @@ export default function Workspace() {
             },
             workStatus: work.status,
         };
-    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize, t]);
+    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize, openSectionSettings, t]);
 
     const workWords = liveWorkWords ?? work.word_count;
 
@@ -1258,7 +1344,7 @@ export default function Workspace() {
                                 doubled label is gone); the collapse toggle
                                 rides in as its headerTrailing so it sits
                                 right of the tree actions. */}
-                            <nav className="writing-workspace-section-pane writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
+                            <nav className="writing-workspace-section-pane min-h-0 flex-1 overflow-hidden">
                                 <Navigator
                                     headerTrailing={
                                         <button
@@ -1283,10 +1369,12 @@ export default function Workspace() {
                                     onSelect={selectSection}
                                     onRequestAdd={(parentId) => setAddTarget({ parentId })}
                                     onRequestDelete={setDeleteTarget}
+                                    onRequestSettings={openSectionSettings}
                                     onRequestMarkRevision={(node) => setMarkRevisionRequest({ lockedSection: node })}
                                     liveCounts={liveCounts}
                                     currentOutline={currentOutline}
                                     menuDismissDelayMs={menuDismissDelayMs}
+                                    showSectionTypeLabels={showSectionTypeLabels}
                                 />
                             </nav>
                         </div>
@@ -1548,6 +1636,17 @@ export default function Workspace() {
                     onClose={() => setSettingsOpen(false)}
                 />
             )}
+
+            <SectionSettingsModal
+                open={sectionSettingsOpen}
+                showSectionTypeLabels={showSectionTypeLabels}
+                saving={sectionSettingsSaving}
+                error={sectionSettingsError}
+                onShowSectionTypeLabelsChange={(value) => {
+                    void updateShowSectionTypeLabels(value);
+                }}
+                onClose={() => setSectionSettingsOpen(false)}
+            />
 
             <Modal
                 open={paperModalOpen}

@@ -102,6 +102,7 @@ export interface WritingRibbonContext {
         setPaperColor(value: string): void;
         setZoom(value: string): void;
         setFontSize(value: string): void;
+        openSectionSettings(): void;
         openSettings(): void;
         openReports(): void;
         addSection(): void;       // root-level (opens the existing AddSectionModal)

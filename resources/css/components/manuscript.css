@@ -210,13 +210,9 @@
 
 .writing-workspace-binder-header {
     border-bottom: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
-    /* The header renders inside the tree scroll container now (Navigator
-       owns the single SECTIONS row) — sticky keeps it pinned while the
-       tree scrolls beneath, and the explicit background matches whatever
-       the panel paints in each mode so rows never ghost through. */
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    /* Navigator owns the single SECTIONS row as a fixed flex sibling of
+       the dedicated tree scroller. The browser scrollbar therefore begins
+       beneath this header instead of implying that the header also scrolls. */
     background: var(--alex-writing-section-pane-bg, var(--theme-base-page));
 }
 

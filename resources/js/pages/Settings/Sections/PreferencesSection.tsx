@@ -10,6 +10,7 @@ import { useTheme } from '@alexandria/hooks/useTheme';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
 import { useState, type SyntheticEvent, type ReactNode } from 'react';
+import { patchCachedPreferences } from '../settingsCache';
 
 /**
  * Subset of view preferences the consumer app may want to mirror onto
@@ -23,6 +24,7 @@ export interface ViewPreferences {
     font_size?: string;
     reduced_motion?: boolean;
     compact_mode?: boolean;
+    show_section_type_labels?: boolean;
     high_contrast?: boolean;
     focus_indicators?: string;
     dyslexia_friendly_font?: boolean;
@@ -166,6 +168,28 @@ function GroupDivider() {
 }
 
 /**
+ * Semantic preference subsection used when one settings page contains
+ * behavior with different scopes. The shared fieldset/legend treatment
+ * gives future options a clear home without inventing a new layout each
+ * time.
+ */
+function PreferenceGroup({ label, children }: { label: ReactNode; children: ReactNode }) {
+    return (
+        <fieldset className="space-y-4">
+            <legend
+                className="mb-4 text-[11px] font-semibold uppercase tracking-[.25em]"
+                style={{
+                    color: 'color-mix(in srgb, var(--theme-brand-primary-500) 80%, transparent)',
+                }}
+            >
+                {label}
+            </legend>
+            {children}
+        </fieldset>
+    );
+}
+
+/**
  * User-level theme preset + fine-tune editor — Stage 8b, the root of
  * the theme cascade. Reads the persisted values off the shared
  * auth.preferences prop and saves through PATCH /account/theme (same
@@ -277,6 +301,7 @@ function AppearanceSection({
         reduced_motion: preferences.reduced_motion as boolean,
         compact_mode: preferences.compact_mode as boolean,
         menu_dismiss_delay_ms: (preferences.menu_dismiss_delay_ms as number | null) ?? 0,
+        show_section_type_labels: (preferences.show_section_type_labels as boolean | undefined) ?? true,
     });
     const menuDismissEnabled = form.data.menu_dismiss_delay_ms > 0;
 
@@ -294,7 +319,12 @@ function AppearanceSection({
         // Success feedback comes from the controller's flash via the
         // ToastProvider bridge — a client-side onSuccess toast here
         // doubled it (findings #10).
-        form.put('/account/preferences');
+        form.put('/account/preferences', {
+            onSuccess: () =>
+                patchCachedPreferences({
+                    show_section_type_labels: form.data.show_section_type_labels,
+                }),
+        });
     }
 
     const labelStyle = { color: 'var(--theme-base-content)' };
@@ -374,8 +404,7 @@ function AppearanceSection({
                 </div>
             </div>
 
-            {/* Toggles */}
-            <div className="space-y-4">
+            <PreferenceGroup label={t('settings.appearance.interface_behavior_header')}>
                 <Toggle
                     label={t('settings.appearance.reduced_motion_label')}
                     description={t('settings.appearance.reduced_motion_description')}
@@ -394,6 +423,11 @@ function AppearanceSection({
                         applyViewPreferences({ compact_mode: v });
                     }}
                 />
+            </PreferenceGroup>
+
+            <GroupDivider />
+
+            <PreferenceGroup label={t('settings.appearance.menu_behavior_header')}>
                 <Toggle
                     label={t('settings.appearance.menu_dismiss_label')}
                     description={t('settings.appearance.menu_dismiss_description')}
@@ -425,7 +459,21 @@ function AppearanceSection({
                         />
                     </div>
                 )}
-            </div>
+            </PreferenceGroup>
+
+            <GroupDivider />
+
+            <PreferenceGroup label={t('settings.appearance.writing_workspace_header')}>
+                <Toggle
+                    label={t('settings.appearance.section_type_labels_label')}
+                    description={t('settings.appearance.section_type_labels_description')}
+                    checked={form.data.show_section_type_labels}
+                    onChange={(v) => {
+                        form.setData('show_section_type_labels', v);
+                        applyViewPreferences({ show_section_type_labels: v });
+                    }}
+                />
+            </PreferenceGroup>
 
             <SaveRow processing={form.processing} labelKey="settings.appearance.save_button" t={t} />
         </form>

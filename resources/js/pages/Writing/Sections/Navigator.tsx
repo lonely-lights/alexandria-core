@@ -59,6 +59,8 @@ interface NavigatorProps {
     onRequestAdd: (parentId: number | null) => void;
     /** Open the Workspace-owned delete ConfirmModal for this node. */
     onRequestDelete: (node: SectionNode) => void;
+    /** Open the shared account-level Section Settings modal. */
+    onRequestSettings: () => void;
     /** Open the Workspace-owned MarkRevisionModal, scope locked to this node (Stage 9). */
     onRequestMarkRevision: (node: SectionNode) => void;
     /** Rendered at the far right of the header row, after the tree
@@ -75,6 +77,8 @@ interface NavigatorProps {
      * and, for now, only DropdownMenu instance wired to it).
      */
     menuDismissDelayMs?: number | null;
+    /** Whether section-type chips such as ACT and SCENE are visible. */
+    showSectionTypeLabels?: boolean;
 }
 
 /* ── Theme styles ── */
@@ -160,26 +164,6 @@ function collectParentIds(nodes: SectionNode[], into: Set<number>): Set<number> 
     return into;
 }
 
-function findNodeBySlug(nodes: SectionNode[], slug: string | null): SectionNode | null {
-    if (slug === null) {
-        return null;
-    }
-
-    for (const node of nodes) {
-        if (node.slug === slug) {
-            return node;
-        }
-
-        const found = findNodeBySlug(node.children, slug);
-
-        if (found !== null) {
-            return found;
-        }
-    }
-
-    return null;
-}
-
 function findNodeById(nodes: SectionNode[], id: number): SectionNode | null {
     for (const node of nodes) {
         if (node.id === id) return node;
@@ -210,11 +194,13 @@ export default function Navigator({
     onSelect,
     onRequestAdd,
     onRequestDelete,
+    onRequestSettings,
     onRequestMarkRevision,
     headerTrailing,
     liveCounts,
     currentOutline = [],
     menuDismissDelayMs = null,
+    showSectionTypeLabels = true,
 }: NavigatorProps) {
     const t = useT();
     const [expanded, setExpanded] = useState<Set<number>>(
@@ -222,7 +208,6 @@ export default function Navigator({
     );
     const [renameTarget, setRenameTarget] = useState<SectionNode | null>(null);
     const [moveTarget, setMoveTarget] = useState<SectionNode | null>(null);
-    const currentNode = findNodeBySlug(sections, currentSlug);
     const guidance = getStructureGuidance({ work, sections, currentSection });
 
     function toggle(id: number) {
@@ -286,11 +271,12 @@ export default function Navigator({
         liveCounts,
         currentOutline,
         menuDismissDelayMs,
+        showSectionTypeLabels,
         t,
     };
 
     return (
-        <div className="flex min-h-full flex-col">
+        <div className="flex h-full min-h-0 flex-col">
             {/* Single header row for the whole binder (owner review,
                 2026-08-31): SECTIONS label with the add-section button
                 right beside it; the host's headerTrailing (the collapse
@@ -319,12 +305,27 @@ export default function Navigator({
                             </button>
                         </Tooltip>
                     )}
+                    <Tooltip content={t('writing.workspace.section_settings')}>
+                        <button
+                            type="button"
+                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                            data-writing-section-settings
+                            style={panelActionStyle}
+                            aria-label={t('writing.workspace.section_settings')}
+                            onClick={onRequestSettings}
+                        >
+                            <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true" />
+                        </button>
+                    </Tooltip>
                 </div>
                 <div className="flex items-center gap-0.5">
                     {headerTrailing}
                 </div>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col gap-0.5 p-2">
+            <div
+                className="writing-workspace-section-scroll writing-workspace-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2"
+                data-writing-section-scroll
+            >
                 {guidance !== null && (
                     <section
                         className="mb-2 grid gap-2 px-2 py-2.5"
@@ -408,6 +409,7 @@ interface TreeShared {
     liveCounts?: Record<number, number>;
     currentOutline: SectionOutlineItem[];
     menuDismissDelayMs: number | null;
+    showSectionTypeLabels: boolean;
     t: Translator;
 }
 
@@ -481,7 +483,7 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onMarkRevision, onDelete, liveCounts, menuDismissDelayMs, t } =
+    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onMarkRevision, onDelete, liveCounts, menuDismissDelayMs, showSectionTypeLabels, t } =
         shared;
 
     const isSelected = node.slug === currentSlug;
@@ -537,7 +539,7 @@ function NavigatorRow({
                     )}
                 </button>
 
-                {node.label && (
+                {showSectionTypeLabels && node.label && (
                     <span className="shrink-0" style={labelChipStyle}>
                         {node.label}
                     </span>

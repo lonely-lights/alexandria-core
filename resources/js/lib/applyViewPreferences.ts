@@ -2,10 +2,13 @@ export interface ViewPreferences {
     font_size?: string;
     reduced_motion?: boolean;
     compact_mode?: boolean;
+    show_section_type_labels?: boolean;
     high_contrast?: boolean;
     focus_indicators?: string;
     dyslexia_friendly_font?: boolean;
 }
+
+export const VIEW_PREFERENCES_CHANGED_EVENT = 'alexandria-core:view-preferences-changed';
 
 /**
  * Mirror a (partial) preferences object onto <html> as data-* attributes.
@@ -29,6 +32,9 @@ export function applyViewPreferences(prefs: ViewPreferences): void {
         if (prefs.compact_mode) html.setAttribute('data-compact', 'true');
         else html.removeAttribute('data-compact');
     }
+    if (prefs.show_section_type_labels !== undefined) {
+        html.setAttribute('data-show-section-type-labels', String(prefs.show_section_type_labels));
+    }
     if (prefs.high_contrast !== undefined) {
         if (prefs.high_contrast) html.setAttribute('data-high-contrast', 'true');
         else html.removeAttribute('data-high-contrast');
@@ -37,4 +43,6 @@ export function applyViewPreferences(prefs: ViewPreferences): void {
         if (prefs.dyslexia_friendly_font) html.setAttribute('data-dyslexia', 'true');
         else html.removeAttribute('data-dyslexia');
     }
+
+    window.dispatchEvent(new CustomEvent(VIEW_PREFERENCES_CHANGED_EVENT, { detail: prefs }));
 }

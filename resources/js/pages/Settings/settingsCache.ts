@@ -137,6 +137,26 @@ export function seedSettings(data: SettingsBodyProps): void {
 }
 
 /**
+ * Merge account preference changes into the mobile drawer cache. Quick
+ * settings elsewhere in the app use this after a successful save so the
+ * next drawer open reflects the same account-level value without a reload.
+ */
+export function patchCachedPreferences(preferences: Record<string, unknown>): void {
+    if (cached === null) {
+        return;
+    }
+
+    cached = {
+        ...cached,
+        preferences: {
+            ...cached.preferences,
+            ...preferences,
+        },
+    };
+    notify();
+}
+
+/**
  * Wipe the cache. Call after a save action that mutates a field the
  * drawer surfaces so the next open re-fetches fresh data. No-arg, no
  * partial-key invalidation for now — the payload is small enough that
