@@ -35,13 +35,16 @@
    (title-to-tab alignment) stays out of this box. */
 .ribbon-header-leading { display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; padding: 0 1.5rem; }
-.ribbon-header-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-/* The old 1.25rem left padding moved into the leading corner's symmetric
-   gutter (owner, 2026-08-31: the mark must center on the VISUAL corner,
-   which runs to the title text) — the title's x-position is unchanged:
-   1.5rem + mark + 1.5rem = the same 92px the old 72px box + 1.25rem gave. */
+.ribbon-header-main { display: flex; flex-direction: column; flex: 1; min-width: 0;
+    /* Pull the whole column back over the corner gutter's empty right
+       margin so BOTH rows (title and menus/tabs) keep their pre-corner
+       x-positions while the mark centers on the visual span (owner,
+       2026-08-31). The overlapped strip is padding only, never content. */
+    margin-left: -1.25rem; }
+/* Left padding = tab-row padding (0.5rem) + first tab's own padding
+   (0.75rem) so the title text left-aligns with the word "Write". */
 .ribbon-header-identity { display: flex; align-items: center; gap: 0.5rem; min-width: 0;
-    padding: 0.375rem 0.625rem 0.125rem 0; }
+    padding: 0.375rem 0.625rem 0.125rem 1.25rem; }
 .ribbon-header-trailing { display: flex; align-items: center; gap: 0.375rem; flex-shrink: 0;
     padding: 0 0.75rem; }
 .ribbon-band { display: flex; align-items: stretch; gap: 0; margin: 0.25rem 1.25rem 0.625rem;
