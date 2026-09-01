@@ -10,6 +10,8 @@ import Sortable from "sortablejs";
 import ActionButton from "@alexandria/components/ui/ActionButton";
 import Tooltip from "@alexandria/components/ui/Tooltip";
 import Input from "@alexandria/components/form/Input";
+import { useHoverOffDismiss } from "@alexandria/hooks/useHoverOffDismiss";
+import { useMenuDismissDelay } from "@alexandria/hooks/useMenuDismissDelay";
 import useT from "@alexandria/hooks/useT";
 import { pageUrl, worksBase } from "@alexandria/lib/urls";
 import ArchiveEntryModal from "@alexandria/components/entries/ArchiveEntryModal";
@@ -311,6 +313,16 @@ export default function TreeView({
     const [search, setSearch] = useState("");
     const [archiveEntry, setArchiveEntry] = useState<TreeNode | null>(null);
     const [showNodeMenu, setShowNodeMenu] = useState(false);
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference) for the
+    // node 3-dot menu, armed only while open. Wired on the trigger and
+    // the menu separately: the full-screen backdrop sits inside the
+    // same wrapper, so a wrapper-level leave would never fire.
+    const nodeMenuDismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter: handleNodeMenuHoverEnter, handlePointerLeave: handleNodeMenuHoverLeave } =
+        useHoverOffDismiss({
+            delayMs: showNodeMenu ? nodeMenuDismissDelayMs : null,
+            onDismiss: () => setShowNodeMenu(false),
+        });
     const [rearrangeMode, setRearrangeMode] = useState(false);
     const [draggingParentId, setDraggingParentId] = useState<
         number | null | undefined
@@ -1243,6 +1255,8 @@ export default function TreeView({
                                                             !showNodeMenu,
                                                         )
                                                     }
+                                                    onMouseEnter={handleNodeMenuHoverEnter}
+                                                    onMouseLeave={handleNodeMenuHoverLeave}
                                                     className={
                                                         ghostIconBtnClass
                                                     }
@@ -1265,6 +1279,8 @@ export default function TreeView({
                                                             style={
                                                                 dropdownMenuStyle
                                                             }
+                                                            onMouseEnter={handleNodeMenuHoverEnter}
+                                                            onMouseLeave={handleNodeMenuHoverLeave}
                                                         >
                                                             {!isSubtree && (
                                                                 <button

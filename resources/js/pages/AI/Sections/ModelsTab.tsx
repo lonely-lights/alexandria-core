@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Pagination from '@alexandria/components/ui/Pagination';
 import { useJsonFetch } from '@alexandria/lib/fetchJson';
 import { createColumnPersistence } from '@alexandria/lib/persistedColumns';
+import { useHoverOffDismiss } from '@alexandria/hooks/useHoverOffDismiss';
+import { useMenuDismissDelay } from '@alexandria/hooks/useMenuDismissDelay';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import type { AiModelEntry, AiProvider, PaginatedResponse } from '@alexandria/types/ai-dashboard';
 
@@ -234,6 +236,15 @@ export default function ModelsTab({ projectId, providers }: ModelsTabProps) {
     const [gearOpen, setGearOpen] = useState(false);
     const gearRef = useRef<HTMLDivElement>(null);
 
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
+    // only while open; the wrapper holds both the gear and its popover.
+    const gearDismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter: handleGearHoverEnter, handlePointerLeave: handleGearHoverLeave } =
+        useHoverOffDismiss({
+            delayMs: gearOpen ? gearDismissDelayMs : null,
+            onDismiss: () => setGearOpen(false),
+        });
+
     // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -370,7 +381,12 @@ export default function ModelsTab({ projectId, providers }: ModelsTabProps) {
                     </label>
 
                     {/* Gear / column config */}
-                    <div ref={gearRef} className="relative">
+                    <div
+                        ref={gearRef}
+                        className="relative"
+                        onMouseEnter={handleGearHoverEnter}
+                        onMouseLeave={handleGearHoverLeave}
+                    >
                         <button
                             type="button"
                             onClick={() => setGearOpen((v) => !v)}

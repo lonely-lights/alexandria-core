@@ -12,6 +12,8 @@ import AvatarWithRing from "../ui/AvatarWithRing";
 import Tooltip from "../ui/Tooltip";
 import UserMenuPanel from "./UserMenuPanel";
 import type { UserMenuItem } from "../../types/navigation";
+import { useHoverOffDismiss } from "../../hooks/useHoverOffDismiss";
+import { useMenuDismissDelay } from "../../hooks/useMenuDismissDelay";
 import useT from "../../hooks/useT";
 
 interface NavbarProps {
@@ -104,6 +106,15 @@ export default function Navbar({
     const [scrolled, setScrolled] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
+    // only while open. Trigger and panel share the wrapper subtree.
+    const menuDismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter: handleMenuHoverEnter, handlePointerLeave: handleMenuHoverLeave } =
+        useHoverOffDismiss({
+            delayMs: dropdownOpen ? menuDismissDelayMs : null,
+            onDismiss: () => setDropdownOpen(false),
+        });
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -340,11 +351,15 @@ export default function Navbar({
                                 className="relative min-w-0"
                                 ref={dropdownRef}
                                 style={{ height: "72px", display: "flex" }}
+                                onMouseEnter={handleMenuHoverEnter}
+                                onMouseLeave={handleMenuHoverLeave}
                             >
                                 <button
                                     onClick={() =>
                                         setDropdownOpen(!dropdownOpen)
                                     }
+                                    aria-haspopup="menu"
+                                    aria-expanded={dropdownOpen}
                                     className="alex-user-trigger inline-flex min-w-0 max-w-full items-center gap-3 px-3 text-base font-medium transition-all duration-300 focus:outline-none"
                                     style={{
                                         color: "var(--theme-base-content)",

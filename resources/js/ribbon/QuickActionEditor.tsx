@@ -1,5 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 
+import { useHoverOffDismiss } from '@alexandria/hooks/useHoverOffDismiss';
+import { useMenuDismissDelay } from '@alexandria/hooks/useMenuDismissDelay';
 import useT from '@alexandria/hooks/useT';
 
 import {
@@ -36,6 +38,16 @@ export default function QuickActionEditor({
     const [url, setUrl] = useState('');
     const [icon, setIcon] = useState('fa-solid fa-bookmark');
 
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
+    // only while open and never while one of the bookmark fields holds
+    // focus, so the editor is not yanked away mid-keystroke.
+    const [typing, setTyping] = useState(false);
+    const dismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter, handlePointerLeave } = useHoverOffDismiss({
+        delayMs: open && !typing ? dismissDelayMs : null,
+        onDismiss: () => setOpen(false),
+    });
+
     function addBookmark(): void {
         const trimmedLabel = label.trim();
         const trimmedUrl = url.trim();
@@ -68,7 +80,11 @@ export default function QuickActionEditor({
     };
 
     return (
-        <div className="relative">
+        <div
+            className="relative"
+            onMouseEnter={handlePointerEnter}
+            onMouseLeave={handlePointerLeave}
+        >
             <button
                 type="button"
                 data-ribbon-qat-editor
@@ -80,7 +96,15 @@ export default function QuickActionEditor({
             </button>
 
             {open && (
-                <div className="ribbon-qat-editor space-y-3" style={panelStyle}>
+                <div
+                    className="ribbon-qat-editor space-y-3"
+                    style={panelStyle}
+                    onFocus={(event) => {
+                        const tag = (event.target as HTMLElement).tagName;
+                        setTyping(tag === 'INPUT' || tag === 'TEXTAREA');
+                    }}
+                    onBlur={() => setTyping(false)}
+                >
                     <div className="space-y-1">
                         {actions.length === 0 && (
                             <p className="px-1 text-xs" style={{ color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)' }}>

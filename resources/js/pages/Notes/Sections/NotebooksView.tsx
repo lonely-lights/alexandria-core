@@ -4,6 +4,8 @@ import NotebookFormModal, { type NotebookFormData } from '@alexandria/components
 import LinkEntriesModal from '@alexandria/components/notes/modals/LinkEntriesModal';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import { useHoverOffDismiss } from '@alexandria/hooks/useHoverOffDismiss';
+import { useMenuDismissDelay } from '@alexandria/hooks/useMenuDismissDelay';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 
 // Threshold at which the filter input becomes useful — below this the
@@ -589,6 +591,14 @@ function TileMenu({ isPinned, onEdit, onPinToggle, onDelete, onLinkEntries, t }:
     const [pos, setPos] = useState({ top: 0, left: 0 });
     const btnRef = useRef<HTMLButtonElement | null>(null);
 
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
+    // only while open. The menu is portaled, so both sides are wired.
+    const dismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter, handlePointerLeave } = useHoverOffDismiss({
+        delayMs: open ? dismissDelayMs : null,
+        onDismiss: () => setOpen(false),
+    });
+
     useEffect(() => {
         if (!open) return;
         function handleDocClick(e: MouseEvent) {
@@ -623,6 +633,8 @@ function TileMenu({ isPinned, onEdit, onPinToggle, onDelete, onLinkEntries, t }:
                 onClick={toggle}
                 aria-label={t('notes.notebooks.tile.menu_aria')}
                 className="alex-notes-tile-menu-trigger backdrop-blur-sm"
+                onMouseEnter={handlePointerEnter}
+                onMouseLeave={handlePointerLeave}
             >
                 <i className="fa-solid fa-ellipsis-vertical text-xs" />
             </button>
@@ -640,6 +652,8 @@ function TileMenu({ isPinned, onEdit, onPinToggle, onDelete, onLinkEntries, t }:
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
+                    onMouseEnter={handlePointerEnter}
+                    onMouseLeave={handlePointerLeave}
                 >
                     {items.map((item, i) => (
                         <li key={i}>

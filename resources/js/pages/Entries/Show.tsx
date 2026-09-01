@@ -1,6 +1,8 @@
 import { usePage, router } from '@inertiajs/react';
 import { useState, useEffect, useCallback, useRef, type CSSProperties } from 'react';
 import { useCmdK } from '@alexandria/hooks/useCmdK';
+import { useHoverOffDismiss } from '@alexandria/hooks/useHoverOffDismiss';
+import { useMenuDismissDelay } from '@alexandria/hooks/useMenuDismissDelay';
 import useT from '@alexandria/hooks/useT';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
@@ -288,6 +290,18 @@ export default function EntryShow() {
         (entry.metadata?.structure_settings ?? {}) as { children_label?: string; max_depth?: number; show_as?: 'tree' | 'list' },
     );
     const structureConfigRef = useRef<HTMLDivElement>(null);
+
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
+    // only while open and never while a text field inside the popover
+    // holds focus (the panel is a small settings form, and closing it
+    // mid-keystroke would be hostile).
+    const [structureConfigTyping, setStructureConfigTyping] = useState(false);
+    const structureConfigDismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter: handleStructureConfigHoverEnter, handlePointerLeave: handleStructureConfigHoverLeave } =
+        useHoverOffDismiss({
+            delayMs: showStructureConfig && !structureConfigTyping ? structureConfigDismissDelayMs : null,
+            onDismiss: () => setShowStructureConfig(false),
+        });
 
     // Close on outside click
     useEffect(() => {
@@ -594,7 +608,12 @@ export default function EntryShow() {
                             )}
                             <span style={structureBadgeStyle}>{entry.children_count ?? 0}</span>
                             <div className="flex-1" />
-                            <div className="relative" ref={structureConfigRef}>
+                            <div
+                                className="relative"
+                                ref={structureConfigRef}
+                                onMouseEnter={handleStructureConfigHoverEnter}
+                                onMouseLeave={handleStructureConfigHoverLeave}
+                            >
                                 <button
                                     type="button"
                                     onClick={() => setShowStructureConfig(!showStructureConfig)}
@@ -604,7 +623,15 @@ export default function EntryShow() {
                                     <i className="fa-solid fa-gear text-xs" /> {t('entries.show.structure.configure')}
                                 </button>
                                 {showStructureConfig && (
-                                    <div className="absolute right-0 top-full z-30 mt-1 w-64 overflow-hidden" style={popoverStyle}>
+                                    <div
+                                        className="absolute right-0 top-full z-30 mt-1 w-64 overflow-hidden"
+                                        style={popoverStyle}
+                                        onFocus={(e) => {
+                                            const tag = (e.target as HTMLElement).tagName;
+                                            setStructureConfigTyping(tag === 'INPUT' || tag === 'TEXTAREA');
+                                        }}
+                                        onBlur={() => setStructureConfigTyping(false)}
+                                    >
                                         <div className="px-3 py-2" style={popoverHeaderStyle}>
                                             <span className="text-xs font-medium" style={popoverHeadingStyle}>
                                                 <i className="fa-solid fa-sliders mr-1" style={popoverPrimaryIconStyle} />

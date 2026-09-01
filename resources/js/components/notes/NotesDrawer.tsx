@@ -24,6 +24,8 @@ import {
 } from "@alexandria/hooks/useDrawerMode";
 import useMediaQuery from "@alexandria/hooks/useMediaQuery";
 import { useNoteActions } from "@alexandria/hooks/useNoteActions";
+import { useHoverOffDismiss } from "@alexandria/hooks/useHoverOffDismiss";
+import { useMenuDismissDelay } from "@alexandria/hooks/useMenuDismissDelay";
 import useT, { type Translator } from "@alexandria/hooks/useT";
 import NoteModal from "@alexandria/pages/Notes/Sections/NoteModal";
 import NotesView from "@alexandria/pages/Notes/Sections/NotesView";
@@ -3908,6 +3910,32 @@ function PortalMenu({
     const menuRef = useRef<HTMLUListElement>(null);
     const [pos, setPos] = useState({ top: 0, left: 0 });
 
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
+    // only while open. The trigger button belongs to the caller and is
+    // only reachable through `btnRef`, so its enter/leave listeners are
+    // attached natively for the lifetime of the open menu.
+    const dismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter, handlePointerLeave } = useHoverOffDismiss({
+        delayMs: open ? dismissDelayMs : null,
+        onDismiss: onClose,
+    });
+
+    useEffect(() => {
+        const trigger = btnRef.current;
+
+        if (!open || !trigger) {
+            return;
+        }
+
+        trigger.addEventListener("mouseenter", handlePointerEnter);
+        trigger.addEventListener("mouseleave", handlePointerLeave);
+
+        return () => {
+            trigger.removeEventListener("mouseenter", handlePointerEnter);
+            trigger.removeEventListener("mouseleave", handlePointerLeave);
+        };
+    }, [open, btnRef, handlePointerEnter, handlePointerLeave]);
+
     useEffect(() => {
         if (!open) return;
         if (btnRef.current) {
@@ -3937,6 +3965,8 @@ function PortalMenu({
             ref={menuRef}
             className="fixed z-[9999] w-44"
             style={{ ...portalMenuStyle, top: pos.top, left: pos.left }}
+            onMouseEnter={handlePointerEnter}
+            onMouseLeave={handlePointerLeave}
         >
             {items.map((item, i) => (
                 <li

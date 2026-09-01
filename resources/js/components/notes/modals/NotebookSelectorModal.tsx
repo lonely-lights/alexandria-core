@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import Modal from '@alexandria/components/ui/Modal';
+import { useHoverOffDismiss } from '@alexandria/hooks/useHoverOffDismiss';
+import { useMenuDismissDelay } from '@alexandria/hooks/useMenuDismissDelay';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 
 export interface NotebookData {
@@ -184,6 +186,14 @@ function NotebookActionsMenu({ onLink, onMove, t }: { onLink: () => void; onMove
     const btnRef = useRef<HTMLButtonElement | null>(null);
     const menuRef = useRef<HTMLUListElement | null>(null);
 
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
+    // only while open. The menu is portaled, so both sides are wired.
+    const dismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter, handlePointerLeave } = useHoverOffDismiss({
+        delayMs: open ? dismissDelayMs : null,
+        onDismiss: () => setOpen(false),
+    });
+
     // Close when clicking anywhere outside the menu or its trigger, or
     // when Escape is pressed. The portal renders the <ul> under
     // document.body, so the event target check uses both refs.
@@ -227,12 +237,16 @@ function NotebookActionsMenu({ onLink, onMove, t }: { onLink: () => void; onMove
                 onClick={toggle}
                 className="alex-notes-tile-menu-trigger opacity-0 group-hover:opacity-100"
                 aria-label={t('notes.notebook_selector.actions_aria')}
+                onMouseEnter={handlePointerEnter}
+                onMouseLeave={handlePointerLeave}
             >
                 <i className="fa-solid fa-ellipsis-vertical text-xs" />
             </button>
             {open && createPortal(
                 <ul
                     ref={menuRef}
+                    onMouseEnter={handlePointerEnter}
+                    onMouseLeave={handlePointerLeave}
                     className="fixed z-[9999] w-52 overflow-hidden"
                     style={{
                         top: pos.top,

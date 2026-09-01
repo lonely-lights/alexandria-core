@@ -126,6 +126,14 @@ export default function Ribbon<Ctx>({
         onDismiss: () => setMenuPlaceholder(null),
     });
 
+    // Same treatment for the right-click quick-action context menu. It
+    // has no hover-able trigger (the control under the cursor opened
+    // it), so the portaled panel alone defines the region.
+    const { handlePointerEnter: handleContextMenuHoverEnter, handlePointerLeave: handleContextMenuHoverLeave } = useHoverOffDismiss({
+        delayMs: contextMenu ? menuDismissDelayMs : null,
+        onDismiss: () => setContextMenu(null),
+    });
+
     useRibbonShortcuts(tabs, context, gates);
 
     useEffect(() => {
@@ -458,6 +466,8 @@ export default function Ribbon<Ctx>({
                         (item) => item.type === 'control' && item.setKey === setKey && item.controlId === contextMenu.controlId,
                     )}
                     onToggle={() => toggleQuickAction(contextMenu.controlId)}
+                    onMouseEnter={handleContextMenuHoverEnter}
+                    onMouseLeave={handleContextMenuHoverLeave}
                 />,
                 document.body,
             )}
@@ -681,17 +691,24 @@ function QuickActionContextMenu({
     y,
     pinned,
     onToggle,
+    onMouseEnter,
+    onMouseLeave,
 }: {
     x: number;
     y: number;
     pinned: boolean;
     onToggle: () => void;
+    /** Hover-off auto-dismiss region handlers from the host Ribbon. */
+    onMouseEnter: () => void;
+    onMouseLeave: () => void;
 }) {
     const t = useT();
 
     return (
         <div
             className="ribbon-context-menu"
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
             style={{
                 left: x,
                 top: y,

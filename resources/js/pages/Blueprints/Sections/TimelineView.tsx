@@ -8,6 +8,8 @@ import {
 } from "react";
 import { useDateFormatters } from "@alexandria/lib/formatDate";
 import { useJsonFetch } from "@alexandria/lib/fetchJson";
+import { useHoverOffDismiss } from "@alexandria/hooks/useHoverOffDismiss";
+import { useMenuDismissDelay } from "@alexandria/hooks/useMenuDismissDelay";
 import useT from "@alexandria/hooks/useT";
 import {
     ZOOM_INDEX,
@@ -379,6 +381,15 @@ export default function TimelineView({
     const [mergeLanes, setMergeLanes] = useState(false);
     const [showLaneFilter, setShowLaneFilter] = useState(false);
     const laneFilterRef = useRef<HTMLDivElement>(null);
+
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
+    // only while open; the wrapper holds both the button and the popup.
+    const laneFilterDismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter: handleLaneFilterHoverEnter, handlePointerLeave: handleLaneFilterHoverLeave } =
+        useHoverOffDismiss({
+            delayMs: showLaneFilter ? laneFilterDismissDelayMs : null,
+            onDismiss: () => setShowLaneFilter(false),
+        });
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Close lane filter on outside click
@@ -755,7 +766,12 @@ export default function TimelineView({
                         </button>
 
                         {/* Lane visibility filter */}
-                        <div className="relative" ref={laneFilterRef}>
+                        <div
+                            className="relative"
+                            ref={laneFilterRef}
+                            onMouseEnter={handleLaneFilterHoverEnter}
+                            onMouseLeave={handleLaneFilterHoverLeave}
+                        >
                             <button
                                 type="button"
                                 onClick={() =>
