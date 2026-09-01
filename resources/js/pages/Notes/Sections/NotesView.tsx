@@ -916,9 +916,9 @@ export default function NotesView({
     return (
         <div
             // Dashboard (onViewModeChange present) matches the Grid view's
-            // spacing rhythm: the capture bar's py-4 already supplies the
-            // gap above the toolbar, and gap-6 mirrors Grid's mb-6 below
-            // it (owner ruling, 2026-08-31: the two views' toolbar spacing
+            // spacing rhythm: the dashboard's tab wrapper supplies pt-4
+            // above the toolbar, and gap-6 mirrors Grid's mb-6 below it
+            // (owner ruling, 2026-08-31: the two views' toolbar spacing
             // must match). The drawer keeps its pre-unification pt-4/gap-8.
             className={`flex flex-col ${onViewModeChange ? "" : "pt-4"} ${isMobileTable ? "gap-3 text-[13px]" : onViewModeChange ? "gap-6" : "gap-8"}`}
         >

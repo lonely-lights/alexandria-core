@@ -32,7 +32,7 @@ type NotesTabViewMode = 'list' | 'grid';
 type NotesScope = 'all' | 'root';
 
 /**
- * Context handed to the app-supplied gridView/captureBar slots (owner
+ * Context handed to the app-supplied gridView slot (owner
  * ruling, 2026-08-31 toolbar unification). search/scope/viewMode are all
  * lifted here so List and Grid share one toolbar row and one search query
  * that survives switching between them; onNoteCreated wires the shared
@@ -59,16 +59,6 @@ interface NotesDashboardSlotProps {
      * consumer supplies this slot.
      */
     gridView?: (ctx: NotesTabSlotContext) => ReactNode;
-    /**
-     * App-supplied capture bar for the Notes tab (owner ruling,
-     * 2026-08-31: QuickCaptureBar graduated from Grid-only to a fixture
-     * shared by both views). Core ships no capture UI of its own, same
-     * reasoning as gridView. The bar is a TRIGGER only (owner ruling,
-     * 2026-08-31): clicking it opens the same NoteModal every other
-     * new-note path uses via `onActivate`; creation itself never happens
-     * inline.
-     */
-    captureBar?: (ctx: { onActivate: () => void }) => ReactNode;
 }
 
 /**
@@ -86,7 +76,7 @@ function initialActiveView(): View {
     return queryView === 'grid' || queryView === 'list' ? 'notes' : 'dashboard';
 }
 
-export default function NotesDashboard({ gridView, captureBar }: NotesDashboardSlotProps = {}) {
+export default function NotesDashboard({ gridView }: NotesDashboardSlotProps = {}) {
     const props = usePage<NotesDashboardProps>().props;
     const { project, stats, recentNotes } = props;
     const t = useT();
@@ -398,19 +388,12 @@ export default function NotesDashboard({ gridView, captureBar }: NotesDashboardS
                         </div>
                     )}
                     {visited.has('notes') && (
-                        <div hidden={activeView !== 'notes'}>
-                            {/* Shared capture bar (owner ruling, 2026-08-31):
-                                renders once, above the unified toolbar, in
-                                BOTH List and Grid — QuickCaptureBar graduated
-                                from Grid-only to a page-level fixture. Core
-                                ships no capture UI of its own, so this only
-                                renders when the app supplies the slot. */}
-                            {captureBar && (
-                                <div className="py-4">
-                                    {captureBar({ onActivate: () => setShowCreate(true) })}
-                                </div>
-                            )}
-
+                        <div hidden={activeView !== 'notes'} className="pt-4">
+                            {/* The Take-a-note capture bar was removed
+                                (owner ruling, 2026-08-31 review): the header's
+                                New Note button is the single create entry
+                                point here. pt-4 keeps the toolbar's breathing
+                                room the bar used to provide in both views. */}
                             {/* View mode (List/Grid), search, Filters, and
                                 base-scope (All/Root) all now live in ONE
                                 unified toolbar row rendered by whichever of
