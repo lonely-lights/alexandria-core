@@ -5,6 +5,8 @@ import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
 import { worksBase, workUrl } from '@alexandria/lib/urls';
+import Tooltip from '@alexandria/components/ui/Tooltip';
+import type { ReactNode } from 'react';
 
 import type { CurrentSection, SectionNode } from '../Workspace';
 import MoveSectionModal from './MoveSectionModal';
@@ -59,6 +61,9 @@ interface NavigatorProps {
     onRequestDelete: (node: SectionNode) => void;
     /** Open the Workspace-owned MarkRevisionModal, scope locked to this node (Stage 9). */
     onRequestMarkRevision: (node: SectionNode) => void;
+    /** Rendered at the far right of the header row, after the tree
+     * actions. The workspace passes its binder collapse toggle here. */
+    headerTrailing?: ReactNode;
     /** Autosave-confirmed word counts (by section id) overlaying the prop tree. */
     liveCounts?: Record<number, number>;
     /** Headings extracted from the current prose section, rendered as an in-section outline. */
@@ -199,6 +204,7 @@ export default function Navigator({
     onRequestAdd,
     onRequestDelete,
     onRequestMarkRevision,
+    headerTrailing,
     liveCounts,
     currentOutline = [],
 }: NavigatorProps) {
@@ -273,63 +279,80 @@ export default function Navigator({
         t,
     };
 
+    // Delete acts on the CURRENT section; the tooltip names it so the
+    // target is never ambiguous (owner review, 2026-08-31).
+    const deleteLabel = currentNode === null
+        ? t('writing.workspace.delete_section')
+        : `${t('writing.workspace.delete_section')}: ${currentNode.title}`;
+
     return (
         <div className="flex min-h-full flex-col">
-            {canUpdate && (
-                <div
-                    className="flex shrink-0 items-center justify-between gap-2 px-2 py-1.5"
-                    style={panelHeaderStyle}
-                >
-                    <span className="text-xs font-semibold uppercase tracking-[0.04em]" style={wordCountStyle}>
-                        {t('writing.workspace.sections')}
-                    </span>
-                    <div className="flex items-center gap-0.5">
-                        <button
-                            type="button"
-                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                            data-writing-section-action="add-section"
-                            style={panelActionStyle}
-                            title={t('writing.workspace.add_section')}
-                            aria-label={t('writing.workspace.add_section')}
-                            onClick={() => onRequestAdd(null)}
-                        >
-                            <i className="fa-solid fa-plus" aria-hidden="true" />
-                        </button>
-                        <button
-                            type="button"
-                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                            data-writing-section-action="add-inside"
-                            style={{ ...panelActionStyle, opacity: currentNode === null ? 0.4 : 1 }}
-                            title={t('writing.workspace.add_child')}
-                            aria-label={t('writing.workspace.add_child')}
-                            disabled={currentNode === null}
-                            onClick={() => {
-                                if (currentNode !== null) {
-                                    openAddChild(currentNode);
-                                }
-                            }}
-                        >
-                            <i className="fa-solid fa-indent" aria-hidden="true" />
-                        </button>
-                        <button
-                            type="button"
-                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                            data-writing-section-action="delete-section"
-                            style={{ ...panelActionStyle, opacity: currentNode === null ? 0.4 : 1 }}
-                            title={t('writing.workspace.delete_section')}
-                            aria-label={t('writing.workspace.delete_section')}
-                            disabled={currentNode === null}
-                            onClick={() => {
-                                if (currentNode !== null) {
-                                    onRequestDelete(currentNode);
-                                }
-                            }}
-                        >
-                            <i className="fa-solid fa-trash-can" aria-hidden="true" />
-                        </button>
-                    </div>
+            {/* Single header row for the whole binder (owner review,
+                2026-08-31): SECTIONS label, then the tree actions, then
+                whatever the host passes as headerTrailing. In the
+                workspace that is the collapse toggle, so the actions sit
+                just left of the arrows. */}
+            <div
+                className="writing-workspace-binder-header flex shrink-0 items-center justify-between gap-2 px-2 py-1.5"
+                style={panelHeaderStyle}
+            >
+                <span className="pl-1 text-xs font-semibold uppercase tracking-[0.04em]" style={wordCountStyle}>
+                    {t('writing.workspace.sections')}
+                </span>
+                <div className="flex items-center gap-0.5">
+                    {canUpdate && (
+                        <>
+                            <Tooltip content={t('writing.workspace.add_section')}>
+                                <button
+                                    type="button"
+                                    className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                                    data-writing-section-action="add-section"
+                                    style={panelActionStyle}
+                                    aria-label={t('writing.workspace.add_section')}
+                                    onClick={() => onRequestAdd(null)}
+                                >
+                                    <i className="fa-solid fa-plus" aria-hidden="true" />
+                                </button>
+                            </Tooltip>
+                            <Tooltip content={t('writing.workspace.add_child')} disabled={currentNode === null}>
+                                <button
+                                    type="button"
+                                    className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                                    data-writing-section-action="add-inside"
+                                    style={{ ...panelActionStyle, opacity: currentNode === null ? 0.4 : 1 }}
+                                    aria-label={t('writing.workspace.add_child')}
+                                    disabled={currentNode === null}
+                                    onClick={() => {
+                                        if (currentNode !== null) {
+                                            openAddChild(currentNode);
+                                        }
+                                    }}
+                                >
+                                    <i className="fa-solid fa-indent" aria-hidden="true" />
+                                </button>
+                            </Tooltip>
+                            <Tooltip content={deleteLabel} disabled={currentNode === null}>
+                                <button
+                                    type="button"
+                                    className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                                    data-writing-section-action="delete-section"
+                                    style={{ ...panelActionStyle, opacity: currentNode === null ? 0.4 : 1 }}
+                                    aria-label={deleteLabel}
+                                    disabled={currentNode === null}
+                                    onClick={() => {
+                                        if (currentNode !== null) {
+                                            onRequestDelete(currentNode);
+                                        }
+                                    }}
+                                >
+                                    <i className="fa-solid fa-trash-can" aria-hidden="true" />
+                                </button>
+                            </Tooltip>
+                        </>
+                    )}
+                    {headerTrailing}
                 </div>
-            )}
+            </div>
             <div className="flex min-h-0 flex-1 flex-col gap-0.5 p-2">
                 {guidance !== null && (
                     <section

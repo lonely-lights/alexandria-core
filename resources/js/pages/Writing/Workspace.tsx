@@ -1213,27 +1213,26 @@ export default function Workspace() {
                             className="writing-workspace-binder-panel flex w-72 min-h-0 flex-col"
                             data-open={structureOpen ? 'true' : 'false'}
                         >
-                                <div className="writing-workspace-binder-header flex shrink-0 items-center justify-between gap-2 px-2 py-1.5">
-                                    <span
-                                        className="text-xs font-semibold uppercase tracking-[0.04em]"
-                                        style={mutedText}
-                                    >
-                                        {t('writing.workspace.sections')}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        className="writing-workspace-structure-toggle alex-toolbar-btn"
-                                        data-writing-structure-toggle
-                                        aria-label={t('writing.workspace.hide_sections')}
-                                        title={t('writing.workspace.hide_sections')}
-                                        aria-expanded={structureOpen}
-                                        onClick={toggleStructure}
-                                    >
-                                        <i className="fa-solid fa-angles-left" aria-hidden="true" />
-                                    </button>
-                                </div>
+                            {/* Navigator owns the single SECTIONS header
+                                row now (owner review, 2026-08-31 — the
+                                doubled label is gone); the collapse toggle
+                                rides in as its headerTrailing so it sits
+                                right of the tree actions. */}
                             <nav className="writing-workspace-section-pane writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
                                 <Navigator
+                                    headerTrailing={
+                                        <button
+                                            type="button"
+                                            className="writing-workspace-structure-toggle alex-toolbar-btn"
+                                            data-writing-structure-toggle
+                                            aria-label={t('writing.workspace.hide_sections')}
+                                            title={t('writing.workspace.hide_sections')}
+                                            aria-expanded={structureOpen}
+                                            onClick={toggleStructure}
+                                        >
+                                            <i className="fa-solid fa-angles-left" aria-hidden="true" />
+                                        </button>
+                                    }
                                     projectSlug={project.slug}
                                     workSlug={work.slug}
                                     work={work}
