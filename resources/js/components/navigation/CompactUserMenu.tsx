@@ -17,6 +17,8 @@ interface CompactUserMenuProps {
 
     /** Same contract as Navbar's `userMenuFooter`. */
     userMenuFooter?: ReactNode;
+    /** Reports dropdown open/close so hosts can e.g. mute a wrapping Tooltip. */
+    onOpenChange?: (open: boolean) => void;
 }
 
 /**
@@ -32,11 +34,20 @@ export default function CompactUserMenu({
     size = 24,
     userMenuItems,
     userMenuFooter,
+    onOpenChange,
 }: CompactUserMenuProps) {
     const { auth } = usePage<SharedProps>().props;
     const user = auth?.user ?? null;
     const [open, setOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
+
+    // Hosts that wrap the trigger in a Tooltip need to suppress it while
+    // the menu is open — the dropdown lives inside this same subtree, so
+    // hovering it still reads as hovering the tooltip trigger (owner bug
+    // report, 2026-08-31).
+    useEffect(() => {
+        onOpenChange?.(open);
+    }, [open, onOpenChange]);
 
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {

@@ -373,6 +373,9 @@ export default function Workspace() {
     // row menu's entry point (scope locked to that row). `historyRefreshSignal`
     // bumps after a successful mark so an already-open History panel refetches.
     const [markRevisionRequest, setMarkRevisionRequest] = useState<{ lockedSection: SectionNode | null } | null>(null);
+    // Mutes the account tooltip while its dropdown is open (the menu
+    // renders inside the tooltip trigger subtree).
+    const [accountMenuOpen, setAccountMenuOpen] = useState(false);
     const [historyRefreshSignal, setHistoryRefreshSignal] = useState(0);
 
     // Mark-thread dialog (Devices & Tropes Task 5) — `lockedSection: null`
@@ -1139,9 +1142,13 @@ export default function Workspace() {
                                         <i className="fa-solid fa-comment-dots" aria-hidden="true" />
                                     </button>
                                 </Tooltip>
-                                <Tooltip content={t('ribbon.account')}>
+                                <Tooltip content={t('ribbon.account')} disabled={accountMenuOpen}>
                                     <span className="inline-flex">
-                                        <CompactUserMenu ariaLabel={t('ribbon.account')} size={36} />
+                                        <CompactUserMenu
+                                            ariaLabel={t('ribbon.account')}
+                                            size={36}
+                                            onOpenChange={setAccountMenuOpen}
+                                        />
                                     </span>
                                 </Tooltip>
                             </>
