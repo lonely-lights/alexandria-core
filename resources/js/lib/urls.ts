@@ -154,6 +154,21 @@ export function recycleBinUrl(project: string): string {
     return `${projectUrl(project)}/recycle-bin`;
 }
 
+/** `/p/x/recycle-bin/works/{work}/restore` — single trashed-work restore. */
+export function recycleBinWorkRestoreUrl(project: string, work: string): string {
+    return `${recycleBinUrl(project)}/works/${slug(work)}/restore`;
+}
+
+/** `/p/x/recycle-bin/sections/{section}/restore` — single trashed-section restore. */
+export function recycleBinSectionRestoreUrl(project: string, sectionId: number): string {
+    return `${recycleBinUrl(project)}/sections/${sectionId}/restore`;
+}
+
+/** `/p/x/recycle-bin/restore-mixed` — mixed-type bulk restore. */
+export function recycleBinRestoreMixedUrl(project: string): string {
+    return `${recycleBinUrl(project)}/restore-mixed`;
+}
+
 /** Fixed segment — not host-configurable. */
 export function projectSearchUrl(project: string): string {
     return `${projectUrl(project)}/search`;

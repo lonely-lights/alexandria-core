@@ -155,17 +155,30 @@ export interface SearchResults {
     total: number;
 }
 
-export interface TrashedEntry {
+export type RecycleBinItemType = 'entry' | 'work' | 'section';
+
+/**
+ * One trashed row in the recycle bin — Devices & Tropes rework-6 grew
+ * this from entries-only to a typed union covering entries, works, and
+ * work sections. `slug` is null for sections (no route binding uses a
+ * section slug — restore addresses them by numeric id); `blueprint` is
+ * entry-only; `parent` carries the type-specific context line (a
+ * section's work + parent-section breadcrumb, or a work's linked entry
+ * name), null when there is none.
+ */
+export interface RecycleBinItem {
+    type: RecycleBinItemType;
     id: number;
+    slug: string | null;
     name: string;
-    slug: string;
     /** Human-readable relative time, e.g. "3 days ago". */
     deleted_at_human: string;
+    parent: string | null;
     blueprint: {
         name: string | null;
         slug: string | null;
         icon: string | null;
-    };
+    } | null;
 }
 
 export interface RecycleBinProps {
@@ -174,6 +187,6 @@ export interface RecycleBinProps {
         name: string;
         slug: string;
     };
-    entries: TrashedEntry[];
+    items: RecycleBinItem[];
     [key: string]: unknown;
 }

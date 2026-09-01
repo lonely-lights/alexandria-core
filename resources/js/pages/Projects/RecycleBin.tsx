@@ -4,8 +4,14 @@ import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
 import ActionButton from '@alexandria/components/ui/ActionButton';
 import useT from '@alexandria/hooks/useT';
-import { projectUrl, recycleBinUrl } from '@alexandria/lib/urls';
-import type { RecycleBinProps, TrashedEntry } from '@alexandria/types/projects';
+import {
+    projectUrl,
+    recycleBinRestoreMixedUrl,
+    recycleBinSectionRestoreUrl,
+    recycleBinUrl,
+    recycleBinWorkRestoreUrl,
+} from '@alexandria/lib/urls';
+import type { RecycleBinItem, RecycleBinItemType, RecycleBinProps } from '@alexandria/types/projects';
 
 /* ── Theme token styles ── */
 
@@ -37,6 +43,24 @@ const blueprintBadgeStyle: CSSProperties = {
     gap: '0.375rem',
 };
 
+const typeBadgeStyles: Record<RecycleBinItemType, CSSProperties> = {
+    entry: {
+        background: 'var(--theme-brand-primary-500)',
+        color: 'var(--theme-brand-primary-content)',
+        borderRadius: 'var(--theme-radius-badge)',
+    },
+    work: {
+        background: 'var(--theme-brand-secondary-700)',
+        color: 'var(--theme-brand-secondary-content)',
+        borderRadius: 'var(--theme-radius-badge)',
+    },
+    section: {
+        background: 'color-mix(in srgb, var(--theme-base-content) 20%, transparent)',
+        color: 'var(--theme-base-content)',
+        borderRadius: 'var(--theme-radius-badge)',
+    },
+};
+
 const iconBoxStyle: CSSProperties = {
     background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
     borderRadius: '0.75rem',
@@ -50,48 +74,57 @@ const inputStyle: CSSProperties = {
     outline: 'none',
 };
 
+/** Composite key so entries/works/sections with the same numeric id never collide in selection state. */
+function itemKey(item: RecycleBinItem): string {
+    return `${item.type}:${item.id}`;
+}
+
 export default function RecycleBin() {
     const t = useT();
-    const { project, entries } = usePage<RecycleBinProps>().props;
+    const { project, items } = usePage<RecycleBinProps>().props;
 
     const [search, setSearch] = useState('');
+    const [typeFilter, setTypeFilter] = useState<'' | RecycleBinItemType>('');
     const [blueprintFilter, setBlueprintFilter] = useState('');
-    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
 
     const selectAllRef = useRef<HTMLInputElement>(null);
 
-    /* Unique blueprints derived from loaded entries for the filter dropdown */
+    /* Unique blueprints derived from loaded entry rows for the filter dropdown */
     const uniqueBlueprints = useMemo(() => {
         const map = new Map<string, { name: string; slug: string }>();
-        entries.forEach((e) => {
-            if (e.blueprint.slug) {
-                map.set(e.blueprint.slug, {
-                    name: e.blueprint.name ?? e.blueprint.slug,
-                    slug: e.blueprint.slug,
+        items.forEach((item) => {
+            if (item.blueprint?.slug) {
+                map.set(item.blueprint.slug, {
+                    name: item.blueprint.name ?? item.blueprint.slug,
+                    slug: item.blueprint.slug,
                 });
             }
         });
         return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-    }, [entries]);
+    }, [items]);
 
     /* Client-side filtered view */
-    const filteredEntries = useMemo(() => {
-        let result = entries;
+    const filteredItems = useMemo(() => {
+        let result = items;
         const q = search.trim().toLowerCase();
         if (q) {
-            result = result.filter((e) => e.name.toLowerCase().includes(q));
+            result = result.filter((item) => item.name.toLowerCase().includes(q));
+        }
+        if (typeFilter) {
+            result = result.filter((item) => item.type === typeFilter);
         }
         if (blueprintFilter) {
-            result = result.filter((e) => e.blueprint.slug === blueprintFilter);
+            result = result.filter((item) => item.blueprint?.slug === blueprintFilter);
         }
         return result;
-    }, [entries, search, blueprintFilter]);
+    }, [items, search, typeFilter, blueprintFilter]);
 
     const allVisibleSelected =
-        filteredEntries.length > 0 && filteredEntries.every((e) => selectedIds.includes(e.id));
+        filteredItems.length > 0 && filteredItems.every((item) => selectedKeys.includes(itemKey(item)));
 
     const someVisibleSelected =
-        !allVisibleSelected && filteredEntries.some((e) => selectedIds.includes(e.id));
+        !allVisibleSelected && filteredItems.some((item) => selectedKeys.includes(itemKey(item)));
 
     /* Drive the indeterminate attribute on the select-all checkbox */
     useEffect(() => {
@@ -100,50 +133,55 @@ export default function RecycleBin() {
         }
     }, [someVisibleSelected]);
 
-    /* Clear selections when the active filter changes so stale ids don't linger */
+    /* Clear selections when the active filter changes so stale keys don't linger */
     useEffect(() => {
-        setSelectedIds([]);
-    }, [search, blueprintFilter]);
+        setSelectedKeys([]);
+    }, [search, typeFilter, blueprintFilter]);
 
     function toggleSelectAll() {
         if (allVisibleSelected) {
-            const visibleSet = new Set(filteredEntries.map((e) => e.id));
-            setSelectedIds((prev) => prev.filter((id) => !visibleSet.has(id)));
+            const visibleSet = new Set(filteredItems.map(itemKey));
+            setSelectedKeys((prev) => prev.filter((key) => !visibleSet.has(key)));
         } else {
-            const visibleIds = filteredEntries.map((e) => e.id);
-            setSelectedIds((prev) => [...new Set([...prev, ...visibleIds])]);
+            const visibleKeys = filteredItems.map(itemKey);
+            setSelectedKeys((prev) => [...new Set([...prev, ...visibleKeys])]);
         }
     }
 
-    function toggleSelect(id: number) {
-        setSelectedIds((prev) =>
-            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-        );
+    function toggleSelect(item: RecycleBinItem) {
+        const key = itemKey(item);
+        setSelectedKeys((prev) => (prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]));
     }
 
-    function handleRestore(entry: TrashedEntry) {
-        router.post(
-            `${recycleBinUrl(project.slug)}/${entry.slug}/restore`,
-            {},
-            { preserveScroll: true },
-        );
+    function handleRestore(item: RecycleBinItem) {
+        const url =
+            item.type === 'entry'
+                ? `${recycleBinUrl(project.slug)}/${item.slug}/restore`
+                : item.type === 'work'
+                  ? recycleBinWorkRestoreUrl(project.slug, item.slug ?? String(item.id))
+                  : recycleBinSectionRestoreUrl(project.slug, item.id);
+
+        router.post(url, {}, { preserveScroll: true });
     }
 
     function handleRestoreSelected() {
+        const selectedSet = new Set(selectedKeys);
+        const selectedItems = items.filter((item) => selectedSet.has(itemKey(item)));
+
         router.post(
-            `${recycleBinUrl(project.slug)}/restore`,
-            { ids: selectedIds },
+            recycleBinRestoreMixedUrl(project.slug),
+            { items: selectedItems.map((item) => ({ type: item.type, id: item.id })) },
             {
                 preserveScroll: true,
-                onSuccess: () => setSelectedIds([]),
+                onSuccess: () => setSelectedKeys([]),
             },
         );
     }
 
     const summaryLabel =
-        entries.length === 1
+        items.length === 1
             ? t('entries.recycle_bin.summary.singular').replace(':count', '1')
-            : t('entries.recycle_bin.summary.plural').replace(':count', String(entries.length));
+            : t('entries.recycle_bin.summary.plural').replace(':count', String(items.length));
 
     return (
         <AppLayout>
@@ -181,7 +219,7 @@ export default function RecycleBin() {
             </PageHeader>
 
             <div className="container mx-auto max-w-7xl px-4 py-8">
-                {entries.length === 0 ? (
+                {items.length === 0 ? (
                     <EmptyState label={t('entries.recycle_bin.empty')} />
                 ) : (
                     <>
@@ -203,6 +241,19 @@ export default function RecycleBin() {
                                     style={inputStyle}
                                 />
                             </div>
+
+                            {/* Type filter */}
+                            <select
+                                value={typeFilter}
+                                onChange={(e) => setTypeFilter(e.target.value as '' | RecycleBinItemType)}
+                                className="rounded-md px-2.5 py-1.5 text-sm"
+                                style={inputStyle}
+                            >
+                                <option value="">{t('entries.recycle_bin.filter.all_types')}</option>
+                                <option value="entry">{t('entries.recycle_bin.type.entry')}</option>
+                                <option value="work">{t('entries.recycle_bin.type.work')}</option>
+                                <option value="section">{t('entries.recycle_bin.type.section')}</option>
+                            </select>
 
                             {/* Blueprint filter — only shown when 2+ distinct blueprints are present */}
                             {uniqueBlueprints.length > 1 && (
@@ -226,17 +277,17 @@ export default function RecycleBin() {
                             {/* Restore Selected — right-aligned, disabled until a row is checked */}
                             <ActionButton
                                 label={
-                                    selectedIds.length > 0
+                                    selectedKeys.length > 0
                                         ? t('entries.recycle_bin.restore_selected_count').replace(
                                               ':count',
-                                              String(selectedIds.length),
+                                              String(selectedKeys.length),
                                           )
                                         : t('entries.recycle_bin.restore_selected')
                                 }
                                 icon="fa-solid fa-rotate-left"
                                 variant="ghost"
                                 size="sm"
-                                disabled={selectedIds.length === 0}
+                                disabled={selectedKeys.length === 0}
                                 onClick={handleRestoreSelected}
                             />
                         </div>
@@ -245,7 +296,7 @@ export default function RecycleBin() {
                         <div className="overflow-hidden rounded-lg" style={tableCardStyle}>
                             {/* Header row */}
                             <div
-                                className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider"
+                                className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider"
                                 style={{ ...subtleText, ...rowBorder }}
                             >
                                 <input
@@ -256,13 +307,14 @@ export default function RecycleBin() {
                                     aria-label={t('entries.recycle_bin.col.select_all')}
                                     className="rounded"
                                 />
+                                <span>{t('entries.recycle_bin.col.type')}</span>
                                 <span>{t('entries.recycle_bin.col.entry')}</span>
-                                <span>{t('entries.recycle_bin.col.blueprint')}</span>
+                                <span>{t('entries.recycle_bin.col.context')}</span>
                                 <span>{t('entries.recycle_bin.col.deleted')}</span>
                                 <span />
                             </div>
 
-                            {filteredEntries.length === 0 ? (
+                            {filteredItems.length === 0 ? (
                                 <div
                                     className="px-4 py-6 text-center text-sm"
                                     style={fadedText}
@@ -270,42 +322,55 @@ export default function RecycleBin() {
                                     {t('entries.recycle_bin.no_results')}
                                 </div>
                             ) : (
-                                filteredEntries.map((entry) => (
+                                filteredItems.map((item) => (
                                     <div
-                                        key={entry.id}
-                                        className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-4 px-4 py-3"
+                                        key={itemKey(item)}
+                                        className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-4 px-4 py-3"
                                         style={rowBorder}
                                     >
                                         <input
                                             type="checkbox"
-                                            checked={selectedIds.includes(entry.id)}
-                                            onChange={() => toggleSelect(entry.id)}
-                                            aria-label={`Select ${entry.name}`}
+                                            checked={selectedKeys.includes(itemKey(item))}
+                                            onChange={() => toggleSelect(item)}
+                                            aria-label={`Select ${item.name}`}
                                             className="rounded"
                                         />
+
+                                        <span
+                                            className="whitespace-nowrap px-2 py-0.5 text-xs"
+                                            style={typeBadgeStyles[item.type]}
+                                        >
+                                            {t(`entries.recycle_bin.type.${item.type}`)}
+                                        </span>
 
                                         <span
                                             className="truncate font-medium"
                                             style={{ color: 'var(--theme-base-content)' }}
                                         >
-                                            {entry.name}
+                                            {item.name}
                                         </span>
 
-                                        <span style={blueprintBadgeStyle}>
-                                            {entry.blueprint.icon && (
-                                                <i
-                                                    className={entry.blueprint.icon}
-                                                    aria-hidden="true"
-                                                />
-                                            )}
-                                            {entry.blueprint.name ?? '—'}
-                                        </span>
+                                        {item.type === 'entry' ? (
+                                            <span style={blueprintBadgeStyle}>
+                                                {item.blueprint?.icon && (
+                                                    <i
+                                                        className={item.blueprint.icon}
+                                                        aria-hidden="true"
+                                                    />
+                                                )}
+                                                {item.blueprint?.name ?? '—'}
+                                            </span>
+                                        ) : (
+                                            <span className="truncate text-sm" style={fadedText}>
+                                                {item.parent ?? '—'}
+                                            </span>
+                                        )}
 
                                         <span
                                             className="whitespace-nowrap text-sm"
                                             style={fadedText}
                                         >
-                                            {entry.deleted_at_human}
+                                            {item.deleted_at_human}
                                         </span>
 
                                         <ActionButton
@@ -313,7 +378,7 @@ export default function RecycleBin() {
                                             icon="fa-solid fa-rotate-left"
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => handleRestore(entry)}
+                                            onClick={() => handleRestore(item)}
                                         />
                                     </div>
                                 ))

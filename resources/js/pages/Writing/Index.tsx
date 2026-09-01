@@ -52,7 +52,7 @@ interface WritingIndexProps {
     } | null;
     structure?: StructurePayload | null;
     structureChoices?: StructureChoice[];
-    can: { create: boolean; manageStructure: boolean };
+    can: { create: boolean; manageStructure: boolean; delete: boolean };
     [key: string]: unknown;
 }
 
@@ -299,6 +299,7 @@ export default function WritingIndex() {
                     types={types}
                     lengthPlans={lengthPlans}
                     structureBlueprint={structureMeta}
+                    canDelete={can.delete}
                     onClose={() => setSettingsWork(null)}
                 />
             )}

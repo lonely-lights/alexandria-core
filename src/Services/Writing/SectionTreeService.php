@@ -95,6 +95,30 @@ class SectionTreeService
     }
 
     /**
+     * All ids in the live subtree rooted at $section, including $section
+     * itself, collected breadth-first. Shared by deleteSubtree and the
+     * delete-impact endpoint so "what would be removed" and "what IS
+     * removed" can never drift apart.
+     *
+     * @return array<int, int>
+     */
+    public function subtreeIds(WorkSection $section): array
+    {
+        $ids = [$section->id];
+        $frontier = [$section->id];
+
+        while ($frontier !== []) {
+            $frontier = WorkSection::query()
+                ->whereIn('parent_id', $frontier)
+                ->pluck('id')
+                ->all();
+            $ids = [...$ids, ...$frontier];
+        }
+
+        return $ids;
+    }
+
+    /**
      * Soft-delete a section and every descendant, then refresh the
      * work's cached word count. Descendants are collected breadth-first
      * over the live tree.
@@ -104,22 +128,108 @@ class SectionTreeService
     public function deleteSubtree(WorkSection $section): void
     {
         DB::transaction(function () use ($section): void {
-            $ids = [$section->id];
-            $frontier = [$section->id];
-
-            while ($frontier !== []) {
-                $frontier = WorkSection::query()
-                    ->whereIn('parent_id', $frontier)
-                    ->pluck('id')
-                    ->all();
-                $ids = [...$ids, ...$frontier];
-            }
+            $ids = $this->subtreeIds($section);
 
             // Per-model deletes are deliberate (model-event fidelity
             // for future observers) — don't bulk-optimize.
             WorkSection::query()->whereIn('id', $ids)->get()->each->delete();
 
             app(WorkSectionContentService::class)->refreshWorkRollup($section->work_id);
+        });
+    }
+
+    /**
+     * Soft-delete every live section belonging to a work — the section
+     * side of a work-delete cascade. Callers wrap this alongside the
+     * work's own delete() in one transaction (see WorkController::destroy)
+     * so a work never gets soft-deleted while its sections stay live.
+     *
+     * @throws Throwable transaction failures bubble to the caller
+     */
+    public function deleteAllForWork(Work $work): void
+    {
+        DB::transaction(function () use ($work): void {
+            // Per-model deletes, same rationale as deleteSubtree.
+            $work->sections()->get()->each->delete();
+        });
+    }
+
+    /**
+     * Restore a trashed section, its trashed section-ancestors, and its
+     * trashed work — a child cannot live under a trashed parent, and that
+     * rule applies one level up too (a section cannot live under a
+     * trashed work). Live ancestors are left untouched. Ancestors are
+     * walked via withTrashed() since a trashed row's normal relations
+     * are hidden by the SoftDeletes global scope.
+     *
+     * @throws Throwable transaction failures bubble to the caller
+     */
+    public function restoreWithAncestors(WorkSection $section): void
+    {
+        DB::transaction(function () use ($section): void {
+            $work = Work::withTrashed()->findOrFail($section->work_id);
+
+            if ($work->trashed()) {
+                $work->restore();
+            }
+
+            $ancestorIds = [];
+            $current = $section;
+
+            while ($current->parent_id !== null) {
+                $parent = WorkSection::withTrashed()->find($current->parent_id);
+
+                if ($parent === null) {
+                    break;
+                }
+
+                $ancestorIds[] = $parent->id;
+                $current = $parent;
+            }
+
+            if ($ancestorIds !== []) {
+                WorkSection::withTrashed()
+                    ->whereIn('id', $ancestorIds)
+                    ->whereNotNull('deleted_at')
+                    ->get()
+                    ->each->restore();
+            }
+
+            if ($section->trashed()) {
+                $section->restore();
+            }
+        });
+    }
+
+    /**
+     * Restore a trashed work plus every one of its trashed sections.
+     *
+     * Chosen over "only sections deleted in the same cascade window":
+     * per-model deletes inside deleteAllForWork()/deleteSubtree() write
+     * their deleted_at timestamps in a loop, and DB timestamp columns
+     * commonly round to whole seconds — a window match would be an
+     * unreliable proxy for "was this section deleted as part of this
+     * work-delete". Restoring every trashed section for the work is
+     * simple, deterministic, and testable, and matches what the user
+     * sees in the workspace immediately before the work was deleted.
+     * The tradeoff: a section the user independently trashed BEFORE
+     * deleting the whole work comes back too — an accepted edge case
+     * (it can be re-deleted from the workspace afterward).
+     *
+     * @throws Throwable transaction failures bubble to the caller
+     */
+    public function restoreAllForWork(Work $work): void
+    {
+        DB::transaction(function () use ($work): void {
+            if ($work->trashed()) {
+                $work->restore();
+            }
+
+            WorkSection::withTrashed()
+                ->where('work_id', $work->id)
+                ->whereNotNull('deleted_at')
+                ->get()
+                ->each->restore();
         });
     }
 

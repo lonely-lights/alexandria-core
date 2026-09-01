@@ -177,6 +177,38 @@ class Note extends Model
     }
 
     /**
+     * Count of distinct active notes attached to any of the given notable
+     * ids, across one or more notable types in a single query — used by
+     * delete-impact endpoints so "how many notes would vanish from view"
+     * stays accurate even when a note is attached to more than one of the
+     * ids being counted (e.g. a work AND one of its sections).
+     *
+     * @param  array<class-string, array<int, int>>  $notableIdsByType  keyed by notable_type, e.g. [WorkSection::class => [1, 2, 3]]
+     */
+    public static function countForNotables(array $notableIdsByType): int
+    {
+        $notableIdsByType = array_filter($notableIdsByType, fn (array $ids): bool => $ids !== []);
+
+        if ($notableIdsByType === []) {
+            return 0;
+        }
+
+        return static::query()
+            ->join(self::PIVOT_TABLE, 'notes.id', '=', self::PIVOT_TABLE.'.note_id')
+            ->where('notes.status', 'active')
+            ->where(function (Builder $query) use ($notableIdsByType): void {
+                foreach ($notableIdsByType as $type => $ids) {
+                    $query->orWhere(function (Builder $q) use ($type, $ids): void {
+                        $q->where(self::PIVOT_TABLE.'.notable_type', $type)
+                            ->whereIn(self::PIVOT_TABLE.'.notable_id', $ids);
+                    });
+                }
+            })
+            ->distinct('notes.id')
+            ->count('notes.id');
+    }
+
+    /**
      * Get all models this note is attached to (Projects, Blueprints, Entries, etc.)
      */
     public function getAttachments(): \Illuminate\Support\Collection

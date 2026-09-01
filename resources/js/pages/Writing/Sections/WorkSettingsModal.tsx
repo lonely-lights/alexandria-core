@@ -1,10 +1,12 @@
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
 import { worksBase, workUrl } from '@alexandria/lib/urls';
 import Button from '@alexandria/components/ui/Button';
+import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
 import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import CheckboxField from '@alexandria/components/form/CheckboxField';
@@ -86,6 +88,7 @@ export default function WorkSettingsModal({
     types,
     lengthPlans,
     structureBlueprint = null,
+    canDelete = false,
     onClose,
 }: {
     project: { id: number; slug: string };
@@ -93,6 +96,10 @@ export default function WorkSettingsModal({
     types: string[];
     lengthPlans: LengthPlanOption[];
     structureBlueprint?: { id: number; name: string } | null;
+    /** Gates the danger-zone delete button — WorkPolicy::delete is its own
+        ability, separate from the update permission that gates opening
+        this modal at all. */
+    canDelete?: boolean;
     onClose: () => void;
 }) {
     const t = useT();
@@ -172,6 +179,24 @@ export default function WorkSettingsModal({
     const [linkedEntry, setLinkedEntry] = useState<LinkedEntryOption | null>(work.linked_entry ?? null);
     const [entryLinkError, setEntryLinkError] = useState<string | undefined>(undefined);
     const [savingLink, setSavingLink] = useState(false);
+
+    // Danger zone — named delete-impact confirm (Devices & Tropes
+    // rework-6). Impact is fetched fresh each time the confirm opens.
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [deletingWork, setDeletingWork] = useState(false);
+    const deleteImpactUrl = deleteConfirmOpen ? `${worksBase(project.slug, work.slug)}/delete-impact` : null;
+    const { data: deleteImpact, loading: deleteImpactLoading } = useJsonFetch<{
+        title: string;
+        sections: number;
+        notes: number;
+    }>(deleteImpactUrl);
+
+    function confirmDeleteWork() {
+        router.delete(workUrl(project.slug, work.slug), {
+            onStart: () => setDeletingWork(true),
+            onFinish: () => setDeletingWork(false),
+        });
+    }
 
     // Nested length_plan.* errors come back keyed by dot path, which
     // the typed errors bag doesn't know about.
@@ -282,6 +307,7 @@ export default function WorkSettingsModal({
     const columnLabelColor = 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)';
 
     return (
+        <>
         <Modal open onClose={onClose} maxWidth="max-w-3xl">
             <ModalHeader title={t('writing.settings.title')} onClose={onClose} />
             {/* noValidate: the server validates `required`; without it
@@ -555,6 +581,33 @@ export default function WorkSettingsModal({
                             </div>
                         )}
                     </div>
+
+                    {/* ── Danger zone (full width) ── */}
+                    {canDelete && (
+                        <div
+                            className="flex flex-col gap-2 rounded-md p-4"
+                            style={{
+                                border: '1px solid color-mix(in srgb, var(--theme-status-error-stroke) 30%, transparent)',
+                                background: 'color-mix(in srgb, var(--theme-status-error-fill) 30%, transparent)',
+                            }}
+                        >
+                            <div
+                                className="text-xs font-semibold uppercase tracking-wide"
+                                style={{ color: 'var(--theme-status-error-stroke)' }}
+                            >
+                                {t('writing.settings.danger_heading')}
+                            </div>
+                            <div>
+                                <Button
+                                    type="button"
+                                    variant="danger"
+                                    onClick={() => setDeleteConfirmOpen(true)}
+                                >
+                                    {t('writing.settings.delete_work')}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <ModalFooter>
                     <Button variant="ghost" onClick={onClose}>
@@ -566,5 +619,58 @@ export default function WorkSettingsModal({
                 </ModalFooter>
             </form>
         </Modal>
+        <ConfirmModal
+            open={deleteConfirmOpen}
+            onClose={() => setDeleteConfirmOpen(false)}
+            onConfirm={confirmDeleteWork}
+            title={t('writing.settings.delete_confirm_title')}
+            message={
+                <div className="flex flex-col gap-2">
+                    <p>
+                        <strong>{work.title}</strong>
+                    </p>
+                    <p>{t('writing.settings.delete_confirm_body')}</p>
+                    {deleteImpactLoading ? (
+                        <p
+                            className="italic"
+                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}
+                        >
+                            {t('writing.settings.delete_impact_loading')}
+                        </p>
+                    ) : (
+                        deleteImpact !== null && (
+                            <ul className="list-disc pl-4">
+                                {deleteImpact.sections > 0 && (
+                                    <li>
+                                        {(deleteImpact.sections === 1
+                                            ? t('writing.settings.delete_impact_sections.singular')
+                                            : t('writing.settings.delete_impact_sections.plural')
+                                        ).replace(':count', String(deleteImpact.sections))}
+                                    </li>
+                                )}
+                                {deleteImpact.notes > 0 && (
+                                    <li>
+                                        {(deleteImpact.notes === 1
+                                            ? t('writing.settings.delete_impact_notes.singular')
+                                            : t('writing.settings.delete_impact_notes.plural')
+                                        ).replace(':count', String(deleteImpact.notes))}
+                                    </li>
+                                )}
+                            </ul>
+                        )
+                    )}
+                    <p
+                        className="text-xs"
+                        style={{ color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)' }}
+                    >
+                        {t('writing.settings.delete_confirm_recycle_note')}
+                    </p>
+                </div>
+            }
+            confirmLabel={t('writing.settings.delete_confirm_action')}
+            variant="danger"
+            loading={deletingWork || deleteImpactLoading}
+        />
+        </>
     );
 }
