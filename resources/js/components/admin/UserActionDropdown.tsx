@@ -2,6 +2,8 @@ import { router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
 import { useDropdownClose } from '@alexandria/hooks/useDropdownClose';
+import { useHoverOffDismiss } from '@alexandria/hooks/useHoverOffDismiss';
+import { useMenuDismissDelay } from '@alexandria/hooks/useMenuDismissDelay';
 import useT from '@alexandria/hooks/useT';
 
 /**
@@ -31,6 +33,14 @@ export default function UserActionDropdown({
     const ref = useRef<HTMLDivElement>(null);
     useDropdownClose(open, setOpen, ref);
 
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
+    // only while open; the wrapper holds both trigger and menu.
+    const dismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter, handlePointerLeave } = useHoverOffDismiss({
+        delayMs: open ? dismissDelayMs : null,
+        onDismiss: () => setOpen(false),
+    });
+
     function suspend() {
         if (!window.confirm(t('admin.users.action.suspend.confirm'))) return;
         setOpen(false);
@@ -49,7 +59,12 @@ export default function UserActionDropdown({
     }
 
     return (
-        <div ref={ref} className="relative">
+        <div
+            ref={ref}
+            className="relative"
+            onMouseEnter={handlePointerEnter}
+            onMouseLeave={handlePointerLeave}
+        >
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}

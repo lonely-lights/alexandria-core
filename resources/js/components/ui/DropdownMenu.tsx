@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useHoverOffDismiss } from '@alexandria/hooks/useHoverOffDismiss';
+import { useMenuDismissDelay } from '@alexandria/hooks/useMenuDismissDelay';
 
 interface DropdownMenuItem {
     label: string;
@@ -46,13 +47,14 @@ interface DropdownMenuProps {
     menuClassName?: string;
     inheritCssVariables?: string[];
     /**
-     * Hover-off auto-dismiss (Stage 11 rework): when set to a positive
-     * number, the menu closes itself `autoDismissMs` after the pointer
-     * leaves both the trigger and the open menu (re-entering either one
-     * cancels the pending close). Reads from the user's
-     * `menu_dismiss_delay_ms` preference at call sites that wire it up —
-     * unset/0/null leaves this OFF, matching prior click/outside-click-
-     * only behavior.
+     * Hover-off auto-dismiss override. By default (prop omitted) the menu
+     * reads the user's `menu_dismiss_delay_ms` preference through
+     * `useMenuDismissDelay` and closes itself that many ms after the
+     * pointer leaves both the trigger and the open menu (re-entering
+     * either one cancels the pending close). Pass an explicit `null` or
+     * `0` to force the feature OFF for one menu regardless of the
+     * preference (click/outside-click-only behavior), or a positive
+     * number to force a specific delay.
      */
     autoDismissMs?: number | null;
 }
@@ -173,7 +175,7 @@ export default function DropdownMenu({
     menuStyle: menuStyleOverride,
     menuClassName = '',
     inheritCssVariables = [],
-    autoDismissMs = null,
+    autoDismissMs,
 }: DropdownMenuProps) {
     const [open, setOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -182,12 +184,17 @@ export default function DropdownMenu({
     const triggerRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
 
+    // Preference is the default; an explicit prop (including null/0 to
+    // switch the feature off) overrides it for this one menu.
+    const preferredDismissMs = useMenuDismissDelay();
+    const dismissMs = autoDismissMs === undefined ? preferredDismissMs : autoDismissMs;
+
     // Only armed while the menu is actually open — leaving delayMs at
     // its real value while closed would let a stale timer, started by
     // idly hovering + unhovering the trigger before ever opening the
     // menu, slam the menu shut the instant it's next opened.
     const { handlePointerEnter: handleHoverOffEnter, handlePointerLeave: handleHoverOffLeave } = useHoverOffDismiss({
-        delayMs: open ? autoDismissMs : null,
+        delayMs: open ? dismissMs : null,
         onDismiss: () => setOpen(false),
     });
 

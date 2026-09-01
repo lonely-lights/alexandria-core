@@ -76,7 +76,6 @@ interface NavigatorProps {
      * workspace. Null/0 leaves the feature off (Stage 11 rework — first
      * and, for now, only DropdownMenu instance wired to it).
      */
-    menuDismissDelayMs?: number | null;
     /** Whether section-type chips such as ACT and SCENE are visible. */
     showSectionTypeLabels?: boolean;
 }
@@ -199,7 +198,6 @@ export default function Navigator({
     headerTrailing,
     liveCounts,
     currentOutline = [],
-    menuDismissDelayMs = null,
     showSectionTypeLabels = true,
 }: NavigatorProps) {
     const t = useT();
@@ -270,7 +268,6 @@ export default function Navigator({
         onDelete: onRequestDelete,
         liveCounts,
         currentOutline,
-        menuDismissDelayMs,
         showSectionTypeLabels,
         t,
     };
@@ -408,7 +405,6 @@ interface TreeShared {
     onDelete: (node: SectionNode) => void;
     liveCounts?: Record<number, number>;
     currentOutline: SectionOutlineItem[];
-    menuDismissDelayMs: number | null;
     showSectionTypeLabels: boolean;
     t: Translator;
 }
@@ -483,7 +479,7 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onMarkRevision, onDelete, liveCounts, menuDismissDelayMs, showSectionTypeLabels, t } =
+    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onMarkRevision, onDelete, liveCounts, showSectionTypeLabels, t } =
         shared;
 
     const isSelected = node.slug === currentSlug;
@@ -566,7 +562,6 @@ function NavigatorRow({
                                 density="compact"
                                 labelAlign="right"
                                 menuClassName="w-48"
-                                autoDismissMs={menuDismissDelayMs}
                                 inheritCssVariables={[
                                     '--alex-writing-section-pane-bg',
                                     '--alex-writing-section-row-hover-bg',

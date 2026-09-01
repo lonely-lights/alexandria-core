@@ -1,5 +1,7 @@
 import { usePage } from "@inertiajs/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useHoverOffDismiss } from "../../hooks/useHoverOffDismiss";
+import { useMenuDismissDelay } from "../../hooks/useMenuDismissDelay";
 import type { SharedProps } from "../../types/index";
 import type { UserMenuItem } from "../../types/navigation";
 import AvatarWithRing from "../ui/AvatarWithRing";
@@ -41,6 +43,15 @@ export default function CompactUserMenu({
     const [open, setOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
+    // Hover-off auto-dismiss from the user's menu_dismiss_delay_ms
+    // preference, armed only while open. Trigger and panel live in the
+    // same wrapper subtree, so one enter/leave pair covers both.
+    const dismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter, handlePointerLeave } = useHoverOffDismiss({
+        delayMs: open ? dismissDelayMs : null,
+        onDismiss: () => setOpen(false),
+    });
+
     // Hosts that wrap the trigger in a Tooltip need to suppress it while
     // the menu is open — the dropdown lives inside this same subtree, so
     // hovering it still reads as hovering the tooltip trigger (owner bug
@@ -75,7 +86,12 @@ export default function CompactUserMenu({
         // `flex` (not a plain block) — an inline-flex button inside a
         // block div rides the text baseline, and the line box's phantom
         // descender space pushes the avatar off vertical center.
-        <div className="relative flex items-center" ref={wrapperRef}>
+        <div
+            className="relative flex items-center"
+            ref={wrapperRef}
+            onMouseEnter={handlePointerEnter}
+            onMouseLeave={handlePointerLeave}
+        >
             <button
                 type="button"
                 onClick={() => setOpen(!open)}

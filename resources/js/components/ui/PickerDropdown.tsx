@@ -7,6 +7,8 @@ import {
     type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { useHoverOffDismiss } from "@alexandria/hooks/useHoverOffDismiss";
+import { useMenuDismissDelay } from "@alexandria/hooks/useMenuDismissDelay";
 
 /**
  * Reusable theme-aware picker dropdown — picks a single value from a
@@ -83,7 +85,23 @@ interface PickerDropdownProps<T extends string | number> {
         toggle: () => void;
         close: () => void;
         ref: (node: HTMLElement | null) => void;
+        /**
+         * Hover-off auto-dismiss handlers for the custom trigger. Wire
+         * them as `onMouseEnter` / `onMouseLeave` on the anchor element
+         * so leaving the trigger counts the same as leaving the menu;
+         * skip them (and pass `autoDismissMs={null}`) when the trigger
+         * holds a text input, where hover-off dismissal would fight the
+         * user mid-keystroke.
+         */
+        onMouseEnter: () => void;
+        onMouseLeave: () => void;
     }) => ReactNode;
+    /**
+     * Hover-off auto-dismiss override, mirroring `DropdownMenu`. Omitted:
+     * the user's `menu_dismiss_delay_ms` preference applies. Explicit
+     * `null`/`0`: off for this picker. Positive number: that delay.
+     */
+    autoDismissMs?: number | null;
 }
 
 export default function PickerDropdown<T extends string | number>({
@@ -100,6 +118,7 @@ export default function PickerDropdown<T extends string | number>({
     align = "left",
     fullWidth = false,
     trigger,
+    autoDismissMs,
 }: PickerDropdownProps<T>) {
     const [open, setOpen] = useState(false);
     const [triggerHovered, setTriggerHovered] = useState(false);
@@ -118,6 +137,19 @@ export default function PickerDropdown<T extends string | number>({
     }, []);
 
     const selectedOption = options.find((o) => o.value === value);
+
+    // Preference is the default; an explicit prop overrides. Only armed
+    // while open so an idle hover-off of the trigger can never leave a
+    // stale timer behind (same guard as DropdownMenu).
+    const preferredDismissMs = useMenuDismissDelay();
+    const dismissMs = autoDismissMs === undefined ? preferredDismissMs : autoDismissMs;
+    const {
+        handlePointerEnter: handleHoverOffEnter,
+        handlePointerLeave: handleHoverOffLeave,
+    } = useHoverOffDismiss({
+        delayMs: open ? dismissMs : null,
+        onDismiss: () => setOpen(false),
+    });
 
     useEffect(() => {
         if (disabled) {
@@ -218,14 +250,22 @@ export default function PickerDropdown<T extends string | number>({
                     toggle: () => setOpen((value) => !value),
                     close: () => setOpen(false),
                     ref: setTriggerNode,
+                    onMouseEnter: handleHoverOffEnter,
+                    onMouseLeave: handleHoverOffLeave,
                 })
             ) : (
             <button
                 ref={setTriggerNode}
                 type="button"
                 onClick={() => setOpen(!open)}
-                onMouseEnter={() => setTriggerHovered(true)}
-                onMouseLeave={() => setTriggerHovered(false)}
+                onMouseEnter={() => {
+                    setTriggerHovered(true);
+                    handleHoverOffEnter();
+                }}
+                onMouseLeave={() => {
+                    setTriggerHovered(false);
+                    handleHoverOffLeave();
+                }}
                 className={`relative ${fullWidth ? "flex w-full" : "inline-flex"} items-center gap-1.5 ${className ?? ""}`}
                 style={triggerStyle}
                 aria-label={ariaLabel}
@@ -271,6 +311,8 @@ export default function PickerDropdown<T extends string | number>({
                         className="fixed z-[9999] overflow-hidden"
                         style={menuStyle}
                         role="listbox"
+                        onMouseEnter={handleHoverOffEnter}
+                        onMouseLeave={handleHoverOffLeave}
                     >
                         {options.map((opt) => (
                             <PickerDropdownRow

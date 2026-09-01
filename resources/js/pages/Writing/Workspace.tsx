@@ -290,12 +290,6 @@ export default function Workspace() {
     const currentUserId =
         (pageProps as { auth?: { user?: { id: number } } }).auth?.user?.id ?? 0;
 
-    // Hover-off auto-dismiss preference (Stage 11 rework) — wired to the
-    // Navigator section row menu only for now (owner: prove it works
-    // there before spreading it to other DropdownMenu call sites).
-    const menuDismissDelayMs =
-        (pageProps as { auth?: { preferences?: { menu_dismiss_delay_ms?: number | null } } })
-            .auth?.preferences?.menu_dismiss_delay_ms ?? null;
     const sharedShowSectionTypeLabels =
         (pageProps as { auth?: { preferences?: { show_section_type_labels?: boolean } } })
             .auth?.preferences?.show_section_type_labels ?? true;
@@ -1373,7 +1367,6 @@ export default function Workspace() {
                                     onRequestMarkRevision={(node) => setMarkRevisionRequest({ lockedSection: node })}
                                     liveCounts={liveCounts}
                                     currentOutline={currentOutline}
-                                    menuDismissDelayMs={menuDismissDelayMs}
                                     showSectionTypeLabels={showSectionTypeLabels}
                                 />
                             </nav>

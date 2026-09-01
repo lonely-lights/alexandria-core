@@ -1,5 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useHoverOffDismiss } from '@alexandria/hooks/useHoverOffDismiss';
+import { useMenuDismissDelay } from '@alexandria/hooks/useMenuDismissDelay';
 import useT from '@alexandria/hooks/useT';
 import {
     aiUrl,
@@ -416,6 +418,16 @@ function ProjectSwitcher({
     onToggle: () => void;
     onClose: () => void;
 }) {
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
+    // only while open. Wired on the trigger and the listbox separately
+    // rather than on the wrapper: the full-screen backdrop is a child
+    // of the wrapper, so the wrapper itself would never see a leave.
+    const dismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter, handlePointerLeave } = useHoverOffDismiss({
+        delayMs: open ? dismissDelayMs : null,
+        onDismiss: onClose,
+    });
+
     return (
         <div className="my-3 flex justify-center">
             <div className="relative">
@@ -428,6 +440,8 @@ function ProjectSwitcher({
                     }}
                     aria-expanded={open}
                     aria-haspopup="listbox"
+                    onMouseEnter={handlePointerEnter}
+                    onMouseLeave={handlePointerLeave}
                 >
                     <span>{project.name}</span>
                     <i
@@ -452,6 +466,8 @@ function ProjectSwitcher({
                                 border: '1px solid var(--theme-base-400)',
                                 borderRadius: 'var(--theme-radius-card)',
                             }}
+                            onMouseEnter={handlePointerEnter}
+                            onMouseLeave={handlePointerLeave}
                         >
                             {projects.map((p) => {
                                 const isCurrent = p.id === project.id;

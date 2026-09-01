@@ -62,6 +62,13 @@ export default function RibbonCombo<Ctx>({ control, ctx }: Props<Ctx>) {
     // preset pick, or another surface moving the same preference.
     const [draft, setDraft] = useState(committed);
     const inputRef = useRef<HTMLInputElement>(null);
+    // Hover-off auto-dismiss guard (owner ruling 2026-09-01: every
+    // activated dropdown dismisses, this one included). The field, the
+    // arrow and the list are one region; the timer is switched OFF for
+    // as long as the input holds keyboard focus so a writer mid-keystroke
+    // never has the list yanked away. Focusing the input also closes the
+    // list (see onFocus below), so this is belt and braces.
+    const [inputFocused, setInputFocused] = useState(false);
 
     useEffect(() => {
         setDraft(committed);
@@ -96,9 +103,14 @@ export default function RibbonCombo<Ctx>({ control, ctx }: Props<Ctx>) {
                     disabled={disabled}
                     menuWidth={104}
                     align="right"
-                    trigger={({ open, toggle, close, ref }) => (
+                    // undefined: follow the menu_dismiss_delay_ms
+                    // preference. null: forced off while typing.
+                    autoDismissMs={inputFocused ? null : undefined}
+                    trigger={({ open, toggle, close, ref, onMouseEnter, onMouseLeave }) => (
                         <span
                             ref={ref}
+                            onMouseEnter={onMouseEnter}
+                            onMouseLeave={onMouseLeave}
                             // The number must not crowd the arrow the way a
                             // native select does — gap-2 plus the arrow's own
                             // left padding, so the air is visible and the
@@ -119,11 +131,15 @@ export default function RibbonCombo<Ctx>({ control, ctx }: Props<Ctx>) {
                                 // Selecting on focus means a click lands you
                                 // ready to overtype, and never opens the list.
                                 onFocus={(event) => {
+                                    setInputFocused(true);
                                     close();
                                     event.currentTarget.select();
                                 }}
                                 onChange={(event) => setDraft(event.target.value)}
-                                onBlur={commit}
+                                onBlur={() => {
+                                    setInputFocused(false);
+                                    commit();
+                                }}
                                 onKeyDown={(event) => {
                                     if (event.key === 'Enter') {
                                         event.preventDefault();

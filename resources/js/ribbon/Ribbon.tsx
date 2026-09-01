@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseE
 import { createPortal } from 'react-dom';
 import { usePage } from '@inertiajs/react';
 
+import { useHoverOffDismiss } from '@alexandria/hooks/useHoverOffDismiss';
+import { useMenuDismissDelay } from '@alexandria/hooks/useMenuDismissDelay';
 import useT from '@alexandria/hooks/useT';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 
@@ -113,6 +115,16 @@ export default function Ribbon<Ctx>({
         width: number;
     } | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; controlId: string } | null>(null);
+
+    // Hover-off auto-dismiss (menu_dismiss_delay_ms preference) for the
+    // fixed-band File/Edit/View menus. Armed only while a tab menu is
+    // open; the tab buttons and the portaled menu are separate DOM
+    // subtrees, so both sides are wired.
+    const menuDismissDelayMs = useMenuDismissDelay();
+    const { handlePointerEnter: handleMenuHoverEnter, handlePointerLeave: handleMenuHoverLeave } = useHoverOffDismiss({
+        delayMs: menuPlaceholder ? menuDismissDelayMs : null,
+        onDismiss: () => setMenuPlaceholder(null),
+    });
 
     useRibbonShortcuts(tabs, context, gates);
 
@@ -318,7 +330,11 @@ export default function Ribbon<Ctx>({
                     className={`ribbon-tab ${!fixedBand && tab.id === activeTab.id ? 'ribbon-tab--active' : ''} ${fixedBand && menuPlaceholder?.tabId === tab.id ? 'ribbon-tab--menu-open' : ''}`}
                     onClick={(event) => onTabClick(tab.id, event)}
                     onFocus={(event) => onTabPreview(tab.id, event.currentTarget)}
-                    onMouseEnter={(event) => onTabPreview(tab.id, event.currentTarget)}
+                    onMouseEnter={(event) => {
+                        handleMenuHoverEnter();
+                        onTabPreview(tab.id, event.currentTarget);
+                    }}
+                    onMouseLeave={handleMenuHoverLeave}
                 >
                     {t(tab.labelKey)}
                 </button>
@@ -455,6 +471,8 @@ export default function Ribbon<Ctx>({
                     top={menuPlaceholder.top}
                     width={menuPlaceholder.width}
                     onClose={() => setMenuPlaceholder(null)}
+                    onMouseEnter={handleMenuHoverEnter}
+                    onMouseLeave={handleMenuHoverLeave}
                 />,
                 document.body,
             )}
@@ -470,6 +488,8 @@ function RibbonTabMenu<Ctx>({
     top,
     width,
     onClose,
+    onMouseEnter,
+    onMouseLeave,
 }: {
     tab: RibbonTab<Ctx> | null;
     ctx: Ctx;
@@ -480,6 +500,9 @@ function RibbonTabMenu<Ctx>({
     top: number;
     width: number;
     onClose: () => void;
+    /** Hover-off auto-dismiss region handlers from the host Ribbon. */
+    onMouseEnter: () => void;
+    onMouseLeave: () => void;
 }) {
     const t = useT();
     const [openSelectId, setOpenSelectId] = useState<string | null>(null);
@@ -548,6 +571,8 @@ function RibbonTabMenu<Ctx>({
                 minWidth: Math.max(width + 96, 220),
             }}
             onMouseDown={(event) => event.stopPropagation()}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
         >
             {groups.map((group, groupIndex) => (
                 <div key={group.id} className="ribbon-tab-menu-group">
