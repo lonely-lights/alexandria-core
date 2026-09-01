@@ -8,7 +8,7 @@ import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
 import { openNotesDrawer } from '@alexandria/components/notes/NotesDrawer';
 import Ribbon from '@alexandria/ribbon/Ribbon';
 import type { RibbonGates } from '@alexandria/ribbon/types';
-import LogoMark from '@alexandria/components/brand/LogoMark';
+import LogoLockup from '@alexandria/components/brand/LogoLockup';
 import CompactUserMenu from '@alexandria/components/navigation/CompactUserMenu';
 import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
@@ -1068,10 +1068,22 @@ export default function Workspace() {
                                     )
                                 }
                                 aria-label={t('ribbon.menu')}
-                                className="inline-flex shrink-0 cursor-pointer items-center"
+                                className="inline-flex shrink-0 cursor-pointer items-center justify-center self-stretch px-1.5"
                                 style={{ color: 'var(--theme-base-content)' }}
                             >
-                                <LogoMark size={30} ariaLabel="" />
+                                {/* Same interactive lockup as the navbar
+                                    (owner, 2026-08-31): wave on hover,
+                                    one-shot jump on click — the click
+                                    still opens the sidebar via the
+                                    wrapping button. Mark-only, sized to
+                                    the corner's negative space. */}
+                                <LogoLockup
+                                    size="md"
+                                    markSize={38}
+                                    showWordmark={false}
+                                    wordmarkText="Alexandria"
+                                    interactive
+                                />
                             </button>
                         }
                         headerRow={

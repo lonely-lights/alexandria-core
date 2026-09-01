@@ -52,6 +52,9 @@ interface LogoLockupProps {
      * see takeout/"The Logo Itself" for the concept note.
      */
     onMarkClick?: () => void;
+    /** Exact mark pixel size, overriding the preset's mark dimension —
+     * for corners whose negative space sits between two presets. */
+    markSize?: number;
 }
 
 const SIZE_TOKENS: Record<'sm' | 'md' | 'lg', { mark: number; fontSize: string; gap: string }> = {
@@ -73,6 +76,7 @@ export default function LogoLockup({
     animation,
     interactive = false,
     onMarkClick,
+    markSize,
 }: LogoLockupProps) {
     const tokens = SIZE_TOKENS[size];
     const [jumping, setJumping] = useState(false);
@@ -106,7 +110,7 @@ export default function LogoLockup({
     return (
         <span className={classes} style={{ gap: tokens.gap, ...style }} onClick={handleClick}>
             <LogoMark
-                size={tokens.mark}
+                size={markSize ?? tokens.mark}
                 ariaLabel={showWordmark ? '' : wordmarkText}
                 pose={pose}
                 animation={animation}
