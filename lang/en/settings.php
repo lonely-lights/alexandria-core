@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 /*
- * Settings-page UI strings — labels, descriptions, helper text, save
- * buttons, and section headers across the /settings + /profile body.
+ * Settings-page UI strings — labels, descriptions, helper text, status
+ * messages, and section headers across the /settings + /profile body.
  *
  * Surfaced React-side via the `t.settings` shared prop and accessed
  * through `useT()`: `t('settings.appearance.color_mode_label')`,
@@ -22,6 +22,7 @@ declare(strict_types=1);
  * keys in their own lang/<locale>/settings.php.
  */
 return [
+    'preferences.save_failed' => 'This setting could not be saved. Your previous value has been restored.',
     // ── Appearance ──────────────────────────────────────────────────
     'appearance.color_mode_label' => 'Color Mode',
     'appearance.color_mode_light' => 'Light',
@@ -260,6 +261,7 @@ return [
     'placeholder.tools-integrations.description' => 'Connect your favorite tools like Notion, Google Drive, Dropbox, and more to streamline your workflow.',
 
     // ── Save-success toasts (shared across every section) ───────────
+    'toast.setting_updated' => 'Setting updated.',
     'toast.saved' => 'Changes saved',
     'toast.profile_saved' => 'Profile updated',
     'toast.preferences_saved' => 'Preferences saved',

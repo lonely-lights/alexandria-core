@@ -305,6 +305,7 @@ function ToastStack({
                         stackIndex={idx}
                         hovered={hovered}
                         atBottom={atBottom}
+                        position={position}
                         onDismiss={onDismiss}
                     />
                 ))}
@@ -318,12 +319,14 @@ function ToastItem({
     stackIndex,
     hovered,
     atBottom,
+    position,
     onDismiss,
 }: {
     toast: Toast;
     stackIndex: number;
     hovered: boolean;
     atBottom: boolean;
+    position: ToastPosition;
     onDismiss: (id: string) => void;
 }) {
     const config = TOAST_CONFIG[toast.type] ?? TOAST_CONFIG.default;
@@ -364,11 +367,19 @@ function ToastItem({
     const anchorClass = atBottom
         ? 'absolute bottom-0 left-0 right-0'
         : 'absolute top-0 left-0 right-0';
+    const alignmentClass = position.endsWith('-left')
+        ? 'justify-start'
+        : position.endsWith('-right')
+          ? 'justify-end'
+          : 'justify-center';
 
     return (
-        <div className={`${anchorClass} pointer-events-auto`} style={style}>
+        <div
+            className={`${anchorClass} ${alignmentClass} pointer-events-auto flex`}
+            style={style}
+        >
             <div
-                className="overflow-hidden"
+                className="w-fit max-w-full overflow-hidden"
                 style={{
                     background: 'var(--theme-base-surface)',
                     border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
@@ -383,7 +394,7 @@ function ToastItem({
                         style={{ color: config.iconColor }}
                         aria-hidden="true"
                     />
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0">
                         <p
                             className="text-sm font-medium leading-5"
                             style={{ color: 'var(--theme-base-content)' }}

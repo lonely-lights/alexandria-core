@@ -32,9 +32,10 @@
  * matches `SettingsBodyProps` (see SettingsBody.tsx).
  */
 
-import { useEffect, useState, type ReactNode } from 'react';
-import { type NavItem } from './nav-config';
-import { type SettingsBodyProps } from './SettingsBody';
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import type { NavItem } from './nav-config';
+import type { SettingsBodyProps } from './SettingsBody';
 
 type CacheState = SettingsBodyProps | null;
 
@@ -95,9 +96,11 @@ async function fetchSettings(): Promise<SettingsBodyProps> {
             'X-Requested-With': 'XMLHttpRequest',
         },
     });
+
     if (!response.ok) {
         throw new Error(`Settings fetch failed: ${response.status}`);
     }
+
     return (await response.json()) as SettingsBodyProps;
 }
 
@@ -107,18 +110,25 @@ async function fetchSettings(): Promise<SettingsBodyProps> {
  * cached, subsequent calls resolve immediately.
  */
 export function preloadSettings(): Promise<SettingsBodyProps> {
-    if (cached) return Promise.resolve(cached);
-    if (inflight) return inflight;
+    if (cached) {
+        return Promise.resolve(cached);
+    }
+
+    if (inflight) {
+        return inflight;
+    }
 
     inflight = fetchSettings()
         .then((data) => {
             cached = data;
             inflight = null;
             notify();
+
             return data;
         })
         .catch((err) => {
             inflight = null;
+
             throw err;
         });
 
@@ -136,12 +146,25 @@ export function seedSettings(data: SettingsBodyProps): void {
     notify();
 }
 
+export const ACCOUNT_PREFERENCES_CHANGED_EVENT =
+    'alexandria-core:account-preferences-changed';
+
 /**
  * Merge account preference changes into the mobile drawer cache. Quick
  * settings elsewhere in the app use this after a successful save so the
  * next drawer open reflects the same account-level value without a reload.
  */
-export function patchCachedPreferences(preferences: Record<string, unknown>): void {
+export function patchCachedPreferences(
+    preferences: Record<string, unknown>,
+): void {
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+            new CustomEvent(ACCOUNT_PREFERENCES_CHANGED_EVENT, {
+                detail: preferences,
+            }),
+        );
+    }
+
     if (cached === null) {
         return;
     }
@@ -189,8 +212,9 @@ export function useSettingsData(): CacheState {
                 // the drawer renders a "Couldn't load settings" state.
                 // We don't throw — uncaught promise rejections at module
                 // scope would propagate to window.onerror.
-                // eslint-disable-next-line no-console
-                console.error('[settingsCache] preload failed; drawer will retry on next open.');
+                console.error(
+                    '[settingsCache] preload failed; drawer will retry on next open.',
+                );
             });
         }
 
