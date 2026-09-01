@@ -1189,9 +1189,14 @@ export default function Workspace() {
                         expand/collapse tree state survives a collapse
                         toggle. */}
                     {chromeVisible && viewMode !== 'outline' && viewMode !== 'kanban' && (
-                    <div className="writing-workspace-binder hidden md:flex md:min-h-0 md:shrink-0">
-                        {!structureOpen && (
-                            <div className="writing-workspace-binder-rail flex flex-col items-center gap-2 py-2">
+                    <div
+                        className="writing-workspace-binder hidden md:flex md:min-h-0 md:shrink-0"
+                        data-open={structureOpen ? 'true' : 'false'}
+                    >
+                        {/* Rail + panel both stay mounted; data-open on the
+                            root drives the CSS width/fade animation between
+                            them (owner ruling, 2026-08-31 review). */}
+                        <div className="writing-workspace-binder-rail flex flex-col items-center gap-2 py-2">
                                 <button
                                     type="button"
                                     className="writing-workspace-structure-toggle alex-toolbar-btn"
@@ -1204,12 +1209,10 @@ export default function Workspace() {
                                     <i className="fa-solid fa-list-ul" aria-hidden="true" />
                                 </button>
                             </div>
-                        )}
                         <div
                             className="writing-workspace-binder-panel flex w-72 min-h-0 flex-col"
                             data-open={structureOpen ? 'true' : 'false'}
                         >
-                            {structureOpen && (
                                 <div className="writing-workspace-binder-header flex shrink-0 items-center justify-between gap-2 px-2 py-1.5">
                                     <span
                                         className="text-xs font-semibold uppercase tracking-[0.04em]"
@@ -1229,7 +1232,6 @@ export default function Workspace() {
                                         <i className="fa-solid fa-angles-left" aria-hidden="true" />
                                     </button>
                                 </div>
-                            )}
                             <nav className="writing-workspace-section-pane writing-workspace-scroll min-h-0 flex-1 overflow-y-auto">
                                 <Navigator
                                     projectSlug={project.slug}
