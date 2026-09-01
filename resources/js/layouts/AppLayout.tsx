@@ -1,12 +1,11 @@
 import { Head, router, usePage } from "@inertiajs/react";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import Navbar from "../components/navigation/Navbar";
 import Sidebar from "../components/navigation/Sidebar";
 import BottomNav from "../components/navigation/BottomNav";
 import CommandPalette from "../components/search/CommandPalette";
 import NotesDrawer, { openNotesDrawer } from "../components/notes/NotesDrawer";
 import type { NotesContext } from "../components/notes/NotesDrawer";
-import { projectSearch } from "../lib/projectSearch";
 import { aiBase, notesUrl, pagesBase, writingUrl } from "../lib/urls";
 import { ToastProvider } from "../components/ui/ToastProvider";
 import Fab from "../components/ui/Fab";
@@ -16,6 +15,8 @@ import {
     preloadSettings,
     getSettingsSlots,
 } from "../pages/Settings/settingsCache";
+import { ALL_NAV } from "../pages/Settings/nav-config";
+import { globalSearch } from "../pages/Settings/paletteSearch";
 import type { BottomNavTab, UserMenuItem } from "../types/navigation";
 import type { SharedProps } from "../types/index";
 
@@ -24,6 +25,11 @@ import type { SharedProps } from "../types/index";
  *  it from outside the React tree. */
 export const SETTINGS_DRAWER_TOGGLE_EVENT =
     "alexandria-core:settings-drawer-toggle";
+
+export interface SettingsDrawerToggleDetail {
+    /** Optional section deep link. Omit to open the drawer's root list. */
+    section?: string;
+}
 
 /** Toggles the slide-in Sidebar from outside the React tree — the
  *  same drawer the navbar hamburger opens. Navbar-less surfaces (the
@@ -297,6 +303,8 @@ export default function AppLayout({
     const [paletteOpen, setPaletteOpen] = useState(false);
     const [addNewOpen, setAddNewOpen] = useState(false);
     const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
+    const [settingsDrawerInitialSection, setSettingsDrawerInitialSection] =
+        useState<string | null>(null);
     const pageProps = usePage<SharedProps>().props;
     const { currentProject, auth } = pageProps;
     const user = auth?.user ?? null;
@@ -543,7 +551,10 @@ export default function AppLayout({
     // time once the user is authed so the drawer renders with cached
     // data the first time it opens — no perceptible "loading" state.
     useEffect(() => {
-        function openDrawer() {
+        function openDrawer(event: Event) {
+            const detail = (event as CustomEvent<SettingsDrawerToggleDetail>)
+                .detail;
+            setSettingsDrawerInitialSection(detail?.section ?? null);
             setSettingsDrawerOpen(true);
         }
         window.addEventListener(SETTINGS_DRAWER_TOGGLE_EVENT, openDrawer);
@@ -635,6 +646,14 @@ export default function AppLayout({
     const showBottomNav =
         !!resolvedBottomNavTabs && resolvedBottomNavTabs.length > 0;
     const showSearch = onSearchToggle !== null;
+    const commandPaletteSearch = useMemo(
+        () =>
+            globalSearch(currentProject?.slug, [
+                ...ALL_NAV,
+                ...(getSettingsSlots().extraNav ?? []),
+            ]),
+        [currentProject?.slug],
+    );
 
     return (
         <ToastProvider>
@@ -689,16 +708,15 @@ export default function AppLayout({
 
             {showBottomNav && <BottomNav tabs={resolvedBottomNavTabs!} />}
 
-            {/* Mount CommandPalette globally when there's a current
-                project to search against — wires Cmd+K + the navbar
-                search button to /p/{slug}/search through the
-                projectSearch helper. Per-page mounts (e.g. legacy's
-                Show pages) are no longer required. */}
-            {currentProject && (
+            {/* The navbar palette is account-global. Its local Settings
+                index works on every authenticated route; when a current
+                project exists, project results join the same grouped
+                result set. */}
+            {user && (
                 <CommandPalette
                     open={paletteOpen}
                     onClose={() => setPaletteOpen(false)}
-                    onSearch={projectSearch(currentProject.slug)}
+                    onSearch={commandPaletteSearch}
                 />
             )}
 
@@ -728,8 +746,10 @@ export default function AppLayout({
                     return (
                         <SettingsDrawer
                             open={settingsDrawerOpen}
+                            initialSection={settingsDrawerInitialSection}
                             onClose={() => {
                                 setSettingsDrawerOpen(false);
+                                setSettingsDrawerInitialSection(null);
                                 window.dispatchEvent(
                                     new CustomEvent(
                                         SETTINGS_DRAWER_CLOSED_EVENT,

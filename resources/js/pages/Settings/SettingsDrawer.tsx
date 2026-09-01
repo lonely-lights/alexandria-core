@@ -38,6 +38,8 @@ import { getSettingsSlots, useSettingsData } from './settingsCache';
 export interface SettingsDrawerProps {
     /** Drawer open/closed. Owned by AppLayout. */
     open: boolean;
+    /** Optional section to show immediately when the drawer opens. */
+    initialSection?: string | null;
     /** Called when the drawer's slide-out animation completes. */
     onClose: () => void;
     /** Sheet height. Defaults to `'85dvh'`. Set to `'100dvh'` for full
@@ -51,6 +53,7 @@ export interface SettingsDrawerProps {
 
 export default function SettingsDrawer({
     open,
+    initialSection = null,
     onClose,
     panelHeight = '85dvh',
     accountManagementSlot,
@@ -71,15 +74,19 @@ export default function SettingsDrawer({
     const isDraggingRef = useRef(false);
 
     // Reset the navigation stack each time the drawer opens — the user
-    // expects to land on the root list, not the section they were on
-    // before they closed it.
+    // Ordinary opens land on the root list, while a search deep link may
+    // intentionally land one level in on its complete owning section.
     useEffect(() => {
         if (open) {
-            setStack([]);
+            setStack(
+                initialSection && findNavItem(initialSection)
+                    ? [initialSection]
+                    : [],
+            );
             setMounted(true);
             closingRef.current = false;
         }
-    }, [open]);
+    }, [open, initialSection]);
 
     // Slide-up entrance + scroll-lock. Runs every time `mounted` flips
     // true (i.e., on each open). GSAP from-tweens force the initial

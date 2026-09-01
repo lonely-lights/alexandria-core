@@ -4,9 +4,15 @@ import AppLayout from '@alexandria/layouts/AppLayout';
 import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import useT from '@alexandria/hooks/useT';
 import SettingsBody, { type SettingsBodyProps } from './SettingsBody';
-import { seedSettings } from './settingsCache';
-import { SETTINGS_DRAWER_TOGGLE_EVENT, SETTINGS_DRAWER_CLOSED_EVENT } from '@alexandria/layouts/AppLayout';
+import { getSettingsSlots, seedSettings } from './settingsCache';
+import {
+    SETTINGS_DRAWER_TOGGLE_EVENT,
+    SETTINGS_DRAWER_CLOSED_EVENT,
+    type SettingsDrawerToggleDetail,
+} from '@alexandria/layouts/AppLayout';
 import { type ViewPreferences } from './Sections/PreferencesSection';
+import { ALL_NAV } from './nav-config';
+import { settingsSectionFromUrl } from './paletteSearch';
 
 /**
  * /settings + /profile page shell.
@@ -48,8 +54,15 @@ export default function Account({
     applyViewPreferences,
 }: AccountSlotProps = {}) {
     const t = useT();
-    const inertiaProps = usePage<AccountInertiaProps>().props;
+    const page = usePage<AccountInertiaProps>();
+    const inertiaProps = page.props;
     const isMobile = useMediaQuery('(max-width: 1023px)');
+    const requestedSection = settingsSectionFromUrl(page.url, [
+        ...ALL_NAV,
+        ...(getSettingsSlots().extraNav ?? []),
+    ]);
+    const initialActiveSection =
+        requestedSection ?? inertiaProps.initialActiveSection;
 
     // Mobile-only: seed the drawer cache from this page's Inertia
     // props so the drawer's first render skips the fetch. Then fire
@@ -59,7 +72,16 @@ export default function Account({
     useEffect(() => {
         if (!isMobile) return;
         seedSettings(inertiaProps as unknown as SettingsBodyProps);
-        window.dispatchEvent(new CustomEvent(SETTINGS_DRAWER_TOGGLE_EVENT));
+        window.dispatchEvent(
+            new CustomEvent<SettingsDrawerToggleDetail>(
+                SETTINGS_DRAWER_TOGGLE_EVENT,
+                {
+                    detail: {
+                        section: requestedSection ?? undefined,
+                    },
+                },
+            ),
+        );
 
         function onClose() {
             // Match the global drawer's close behavior — history.back
@@ -72,7 +94,7 @@ export default function Account({
         }
         window.addEventListener(SETTINGS_DRAWER_CLOSED_EVENT, onClose);
         return () => window.removeEventListener(SETTINGS_DRAWER_CLOSED_EVENT, onClose);
-    }, [isMobile, inertiaProps]);
+    }, [isMobile, inertiaProps, requestedSection]);
 
     return (
         <AppLayout title={t('settings.drawer.title')} immersive>
@@ -85,6 +107,7 @@ export default function Account({
             ) : (
                 <SettingsBody
                     {...inertiaProps}
+                    initialActiveSection={initialActiveSection}
                     accountManagementSlot={accountManagementSlot}
                     applyViewPreferences={applyViewPreferences}
                 />
