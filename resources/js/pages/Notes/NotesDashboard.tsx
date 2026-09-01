@@ -17,7 +17,7 @@ import NoteModal from './Sections/NoteModal';
 import SortingHistoryModal from '@alexandria/components/notes/modals/SortingHistoryModal';
 import ImportModal from '@alexandria/components/notes/modals/ImportModal';
 import NotebookFormModal from '@alexandria/components/notes/modals/NotebookFormModal';
-import type { Note, NotesDashboardProps, NoteStatusFilter } from '@alexandria/types/notes-dashboard';
+import type { NotesDashboardProps, NoteStatusFilter } from '@alexandria/types/notes-dashboard';
 
 type View = 'dashboard' | 'notes' | 'notebooks';
 

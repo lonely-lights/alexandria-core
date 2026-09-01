@@ -4,6 +4,7 @@ import useT from '@alexandria/hooks/useT';
 
 import { stanceAccent, stanceInitial } from './patternChips';
 import { fetchPromises, type PatternStance, type PromiseGroup } from './threadApi';
+import usePromiseGroups from './usePromiseGroups';
 
 /**
  * Cross-work "Open promises" block — Task 6 (design doc
@@ -67,30 +68,7 @@ function stanceDotStyle(stance: PatternStance | null): CSSProperties {
 
 export default function OpenPromisesList({ projectSlug }: OpenPromisesListProps) {
     const t = useT();
-    const [groups, setGroups] = useState<PromiseGroup[] | null>(null);
-    const [failed, setFailed] = useState(false);
-
-    useEffect(() => {
-        let cancelled = false;
-
-        fetchPromises(projectSlug).then((result) => {
-            if (cancelled) {
-                return;
-            }
-
-            if (result === null) {
-                setFailed(true);
-                return;
-            }
-
-            setFailed(false);
-            setGroups(result);
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [projectSlug]);
+    const { groups, failed } = usePromiseGroups(projectSlug);
 
     return (
         <aside className="min-w-0" style={panelStyle} data-writing-open-promises>

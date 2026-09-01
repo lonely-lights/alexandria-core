@@ -5,6 +5,7 @@ import useT from '@alexandria/hooks/useT';
 import { stanceAccent, stanceInitial } from './patternChips';
 import { oldestPromiseRows, totalPromiseCount, type PromiseTableRow } from './promiseRows';
 import { fetchPromises, type PatternStance, type PromiseGroup } from './threadApi';
+import usePromiseGroups from './usePromiseGroups';
 
 /**
  * Sidebar rail's "Open promises" card — the writing hub's ambient pulse
@@ -120,30 +121,7 @@ function PromiseRailRow({ row, t }: { row: PromiseTableRow; t: ReturnType<typeof
 
 export default function PromisesRailCard({ projectSlug }: PromisesRailCardProps) {
     const t = useT();
-    const [groups, setGroups] = useState<PromiseGroup[] | null>(null);
-    const [failed, setFailed] = useState(false);
-
-    useEffect(() => {
-        let cancelled = false;
-
-        fetchPromises(projectSlug).then((result) => {
-            if (cancelled) {
-                return;
-            }
-
-            if (result === null) {
-                setFailed(true);
-                return;
-            }
-
-            setFailed(false);
-            setGroups(result);
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [projectSlug]);
+    const { groups, failed } = usePromiseGroups(projectSlug);
 
     const total = groups === null ? 0 : totalPromiseCount(groups);
     const rows = groups === null ? [] : oldestPromiseRows(groups, RAIL_LIMIT);
