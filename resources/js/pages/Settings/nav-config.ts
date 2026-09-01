@@ -1,82 +1,136 @@
+import type { Translator } from '@alexandria/hooks/useT';
+
 /**
- * Settings nav structure — shared between the desktop rail nav (in
+ * Settings nav structure, shared between the desktop rail nav (in
  * `<SettingsBody>`) and the mobile drilldown (`<MobileNav>`). Keep this
  * file presentation-free: it's just data that drives the active-section
  * + expanded-group state machine.
+ *
+ * Labels and search synonyms are translation KEYS, not English. The lang
+ * source is `lang/en/settings.php` (`nav.*` for labels, `nav_terms.*` for
+ * the `|`-separated synonym lists). Run the tree through `resolveNav()`
+ * with the page's `useT()` translator before rendering or searching it.
  */
 
 export interface NavItem {
+    key: string;
+    /**
+     * Translation key for the human-facing label (`settings.nav.profile`).
+     * `resolveNav` falls back to the raw value on a miss, so consumer apps
+     * may still register a literal label through `extraNav`.
+     */
+    label: string;
+    icon: string;
+    color?: string;
+    /**
+     * Translation key whose value is a `|`-separated list of control names
+     * and synonyms used by Settings search (`settings.nav_terms.pref-appearance`).
+     */
+    searchTermsKey?: string;
+    children?: NavItem[];
+}
+
+/** A `NavItem` with its label and search terms materialized as display text. */
+export interface ResolvedNavItem {
     key: string;
     label: string;
     icon: string;
     color?: string;
     /** Human-facing control names and synonyms used by Settings search. */
-    searchTerms?: string[];
-    children?: NavItem[];
+    searchTerms: string[];
+    children?: ResolvedNavItem[];
 }
 
 export interface SettingsSearchResult {
-    group: NavItem;
-    item: NavItem;
+    group: ResolvedNavItem;
+    item: ResolvedNavItem;
     matchingTerms: string[];
 }
 
+const SEARCH_TERMS_SEPARATOR = '|';
+
 export const ALL_NAV: NavItem[] = [
     {
-        key: 'profile', label: 'Profile', icon: 'fa-user', color: 'primary',
+        key: 'profile', label: 'settings.nav.profile', icon: 'fa-user', color: 'primary',
         children: [
-            { key: 'identity', label: 'Identity', icon: 'fa-user-circle', searchTerms: ['Display Name', 'Username', 'Avatar', 'Profile Picture', 'Banner', 'Pronouns'] },
-            { key: 'about', label: 'About', icon: 'fa-feather', searchTerms: ['Tagline', 'Biography', 'Bio', 'Private Bio'] },
-            { key: 'details', label: 'Details', icon: 'fa-circle-info', searchTerms: ['Location', 'Website', 'Birthday', 'Date of Birth'] },
-            { key: 'links', label: 'Links', icon: 'fa-link', searchTerms: ['Social Links', 'Website Links', 'Support Links'] },
-            { key: 'account', label: 'Account', icon: 'fa-user-gear', searchTerms: ['Email', 'Password', 'Delete Account'] },
-            { key: 'security', label: 'Security', icon: 'fa-key', searchTerms: ['Two-factor Authentication', '2FA', 'Recovery Codes'] },
+            { key: 'identity', label: 'settings.nav.identity', icon: 'fa-user-circle', searchTermsKey: 'settings.nav_terms.identity' },
+            { key: 'about', label: 'settings.nav.about', icon: 'fa-feather', searchTermsKey: 'settings.nav_terms.about' },
+            { key: 'details', label: 'settings.nav.details', icon: 'fa-circle-info', searchTermsKey: 'settings.nav_terms.details' },
+            { key: 'links', label: 'settings.nav.links', icon: 'fa-link', searchTermsKey: 'settings.nav_terms.links' },
+            { key: 'account', label: 'settings.nav.account', icon: 'fa-user-gear', searchTermsKey: 'settings.nav_terms.account' },
+            { key: 'security', label: 'settings.nav.security', icon: 'fa-key', searchTermsKey: 'settings.nav_terms.security' },
         ],
     },
     {
-        key: 'preferences', label: 'Preferences', icon: 'fa-sliders',
+        key: 'preferences', label: 'settings.nav.preferences', icon: 'fa-sliders',
         children: [
-            { key: 'pref-appearance', label: 'Appearance', icon: 'fa-palette', searchTerms: ['Color Mode', 'Light Mode', 'Dark Mode', 'System Mode', 'Font Size', 'Theme', 'Theme Preset', 'Fine-tune Theme'] },
-            { key: 'pref-behavior', label: 'Behavior', icon: 'fa-computer-mouse', searchTerms: ['Hover-off Auto-dismiss', 'Menu Auto-dismiss', 'Menu Dismiss Delay', 'Hover Behavior'] },
-            { key: 'pref-workspace', label: 'Workspace', icon: 'fa-pen-ruler', searchTerms: ['Compact Mode', 'Dense Layout', 'Show Section Type Labels', 'Act Labels', 'Scene Labels', 'Writing Workspace'] },
-            { key: 'pref-language', label: 'Formats', icon: 'fa-globe', searchTerms: ['Date Format', 'Time Format', 'First Day of Week', 'Number Format', 'Regional Formats'] },
-            { key: 'pref-notifications', label: 'Notifications', icon: 'fa-bell', searchTerms: ['Email Notifications', 'Push Notifications', 'In-App Notifications', 'Mentions', 'Comments', 'Project Invites', 'Product Updates'] },
+            { key: 'pref-appearance', label: 'settings.nav.pref-appearance', icon: 'fa-palette', searchTermsKey: 'settings.nav_terms.pref-appearance' },
+            { key: 'pref-behavior', label: 'settings.nav.pref-behavior', icon: 'fa-computer-mouse', searchTermsKey: 'settings.nav_terms.pref-behavior' },
+            { key: 'pref-workspace', label: 'settings.nav.pref-workspace', icon: 'fa-pen-ruler', searchTermsKey: 'settings.nav_terms.pref-workspace' },
+            { key: 'pref-language', label: 'settings.nav.pref-language', icon: 'fa-globe', searchTermsKey: 'settings.nav_terms.pref-language' },
+            { key: 'pref-notifications', label: 'settings.nav.pref-notifications', icon: 'fa-bell', searchTermsKey: 'settings.nav_terms.pref-notifications' },
         ],
     },
     {
-        key: 'privacy', label: 'Privacy', icon: 'fa-shield-halved',
+        key: 'privacy', label: 'settings.nav.privacy', icon: 'fa-shield-halved',
         children: [
-            { key: 'privacy-visibility', label: 'Visibility', icon: 'fa-eye', searchTerms: ['Field Visibility', 'Profile Visibility'] },
-            { key: 'privacy-settings', label: 'Privacy', icon: 'fa-lock', searchTerms: ['Online Status', 'Activity Status', 'Project Invites'] },
-            { key: 'privacy-lists', label: 'Lists', icon: 'fa-users-rectangle', searchTerms: ['Privacy Lists', 'Custom Groups', 'Access Lists'] },
+            { key: 'privacy-visibility', label: 'settings.nav.privacy-visibility', icon: 'fa-eye', searchTermsKey: 'settings.nav_terms.privacy-visibility' },
+            { key: 'privacy-settings', label: 'settings.nav.privacy-settings', icon: 'fa-lock', searchTermsKey: 'settings.nav_terms.privacy-settings' },
+            { key: 'privacy-lists', label: 'settings.nav.privacy-lists', icon: 'fa-users-rectangle', searchTermsKey: 'settings.nav_terms.privacy-lists' },
         ],
     },
     {
-        key: 'tools', label: 'Tools', icon: 'fa-toolbox',
+        key: 'tools', label: 'settings.nav.tools', icon: 'fa-toolbox',
         children: [
-            { key: 'tools-editor', label: 'Editor', icon: 'fa-pen-to-square', searchTerms: ['Default Editor Mode', 'Auto-Save', 'Spell Check', 'Word Count', 'Reading Time', 'Note Visibility'] },
-            { key: 'tools-shortcuts', label: 'Shortcuts', icon: 'fa-keyboard', searchTerms: ['Keyboard Shortcuts', 'Key Bindings', 'Hotkeys'] },
-            { key: 'tools-integrations', label: 'Integrations', icon: 'fa-plug', searchTerms: ['Connected Apps', 'Google Drive', 'Dropbox', 'Notion'] },
+            { key: 'tools-editor', label: 'settings.nav.tools-editor', icon: 'fa-pen-to-square', searchTermsKey: 'settings.nav_terms.tools-editor' },
+            { key: 'tools-shortcuts', label: 'settings.nav.tools-shortcuts', icon: 'fa-keyboard', searchTermsKey: 'settings.nav_terms.tools-shortcuts' },
+            { key: 'tools-integrations', label: 'settings.nav.tools-integrations', icon: 'fa-plug', searchTermsKey: 'settings.nav_terms.tools-integrations' },
         ],
     },
     {
-        key: 'ai', label: 'AI', icon: 'fa-microchip',
+        key: 'ai', label: 'settings.nav.ai', icon: 'fa-microchip',
         children: [
-            { key: 'ai-connection', label: 'Connection', icon: 'fa-plug', searchTerms: ['API Keys', 'AI Providers', 'Bring Your Own Key'] },
-            { key: 'ai-models', label: 'Models', icon: 'fa-cubes', searchTerms: ['AI Model Selection', 'Default Model'] },
-            { key: 'ai-usage', label: 'Usage', icon: 'fa-chart-pie', searchTerms: ['AI Usage', 'Tokens', 'Monthly Usage'] },
-            { key: 'ai-preferences', label: 'Preferences', icon: 'fa-sliders', searchTerms: ['AI Suggestions', 'Response Length', 'Auto-categorize'] },
+            { key: 'ai-connection', label: 'settings.nav.ai-connection', icon: 'fa-plug', searchTermsKey: 'settings.nav_terms.ai-connection' },
+            { key: 'ai-models', label: 'settings.nav.ai-models', icon: 'fa-cubes', searchTermsKey: 'settings.nav_terms.ai-models' },
+            { key: 'ai-usage', label: 'settings.nav.ai-usage', icon: 'fa-chart-pie', searchTermsKey: 'settings.nav_terms.ai-usage' },
+            { key: 'ai-preferences', label: 'settings.nav.ai-preferences', icon: 'fa-sliders', searchTermsKey: 'settings.nav_terms.ai-preferences' },
         ],
     },
     {
-        key: 'accessibility', label: 'Accessibility', icon: 'fa-universal-access',
+        key: 'accessibility', label: 'settings.nav.accessibility', icon: 'fa-universal-access',
         children: [
-            { key: 'a11y-visual', label: 'Visual', icon: 'fa-eye', searchTerms: ['High Contrast', 'Focus Indicators', 'Dyslexia-Friendly Font'] },
-            { key: 'a11y-motion', label: 'Motion', icon: 'fa-wand-magic-sparkles', searchTerms: ['Reduced Motion', 'Reduce Motion', 'Animations', 'Transitions'] },
-            { key: 'a11y-assistive', label: 'Assistive', icon: 'fa-universal-access', searchTerms: ['Screen Reader Mode', 'Keyboard Shortcuts', 'Assistive Technology'] },
+            { key: 'a11y-visual', label: 'settings.nav.a11y-visual', icon: 'fa-eye', searchTermsKey: 'settings.nav_terms.a11y-visual' },
+            { key: 'a11y-motion', label: 'settings.nav.a11y-motion', icon: 'fa-wand-magic-sparkles', searchTermsKey: 'settings.nav_terms.a11y-motion' },
+            { key: 'a11y-assistive', label: 'settings.nav.a11y-assistive', icon: 'fa-universal-access', searchTermsKey: 'settings.nav_terms.a11y-assistive' },
         ],
     },
 ];
+
+/**
+ * Materialize one nav item's display text. `t(key, key)` means a literal
+ * (untranslated) label registered by a consumer app passes straight
+ * through; a missing `searchTermsKey` yields no search terms.
+ */
+export function resolveNavItem(item: NavItem, t: Translator): ResolvedNavItem {
+    const terms = item.searchTermsKey ? t(item.searchTermsKey, '') : '';
+
+    return {
+        key: item.key,
+        label: t(item.label, item.label),
+        icon: item.icon,
+        color: item.color,
+        searchTerms: terms
+            .split(SEARCH_TERMS_SEPARATOR)
+            .map((term) => term.trim())
+            .filter((term) => term.length > 0),
+        children: item.children?.map((child) => resolveNavItem(child, t)),
+    };
+}
+
+/** Resolve a whole nav tree (built-ins plus any consumer-app extras). */
+export function resolveNav(nav: NavItem[], t: Translator): ResolvedNavItem[] {
+    return nav.map((item) => resolveNavItem(item, t));
+}
 
 function normalizeSearchValue(value: string): string {
     return value.toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -87,7 +141,7 @@ function normalizeSearchValue(value: string): string {
  * resolves to its owning Appearance section so selecting the result
  * opens the complete editable card rather than an isolated toggle.
  */
-export function searchSettings(nav: NavItem[], query: string): SettingsSearchResult[] {
+export function searchSettings(nav: ResolvedNavItem[], query: string): SettingsSearchResult[] {
     const normalizedQuery = normalizeSearchValue(query);
     if (!normalizedQuery) return [];
 
@@ -96,7 +150,7 @@ export function searchSettings(nav: NavItem[], query: string): SettingsSearchRes
 
     for (const group of nav) {
         for (const item of group.children ?? []) {
-            const values = [group.label, item.label, ...(item.searchTerms ?? [])];
+            const values = [group.label, item.label, ...item.searchTerms];
             const haystack = normalizeSearchValue(values.join(' '));
 
             if (!tokens.every((token) => haystack.includes(token))) continue;
@@ -104,7 +158,7 @@ export function searchSettings(nav: NavItem[], query: string): SettingsSearchRes
             results.push({
                 group,
                 item,
-                matchingTerms: (item.searchTerms ?? []).filter((term) => {
+                matchingTerms: item.searchTerms.filter((term) => {
                     const normalizedTerm = normalizeSearchValue(term);
                     return tokens.every((token) => normalizedTerm.includes(token));
                 }),

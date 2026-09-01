@@ -17,6 +17,7 @@
  */
 
 import { usePage } from '@inertiajs/react';
+import { useMemo } from 'react';
 
 interface SharedWithT {
     t?: Record<string, Record<string, string>>;
@@ -27,23 +28,30 @@ export type Translator = (key: string, fallback?: string) => string;
 
 export default function useT(): Translator {
     const props = usePage<SharedWithT>().props;
-    const bag = props.t ?? {};
+    const sharedBag = props.t;
 
-    return (key: string, fallback?: string): string => {
-        const dotIndex = key.indexOf('.');
+    // Memoized on the shared bag so the translator keeps a stable identity
+    // across renders and can sit in hook dependency arrays (AppLayout's
+    // command-palette search memo, for one) without recomputing every render.
+    return useMemo((): Translator => {
+        const bag = sharedBag ?? {};
 
-        if (dotIndex === -1) {
-            return fallback ?? key;
-        }
+        return (key: string, fallback?: string): string => {
+            const dotIndex = key.indexOf('.');
 
-        const group = key.slice(0, dotIndex);
-        const subKey = key.slice(dotIndex + 1);
-        const groupBag = bag[group];
+            if (dotIndex === -1) {
+                return fallback ?? key;
+            }
 
-        if (!groupBag) {
-            return fallback ?? key;
-        }
+            const group = key.slice(0, dotIndex);
+            const subKey = key.slice(dotIndex + 1);
+            const groupBag = bag[group];
 
-        return groupBag[subKey] ?? fallback ?? key;
-    };
+            if (!groupBag) {
+                return fallback ?? key;
+            }
+
+            return groupBag[subKey] ?? fallback ?? key;
+        };
+    }, [sharedBag]);
 }

@@ -15,8 +15,9 @@ import {
     preloadSettings,
     getSettingsSlots,
 } from "../pages/Settings/settingsCache";
-import { ALL_NAV } from "../pages/Settings/nav-config";
+import { ALL_NAV, resolveNav } from "../pages/Settings/nav-config";
 import { globalSearch } from "../pages/Settings/paletteSearch";
+import useT from "../hooks/useT";
 import type { BottomNavTab, UserMenuItem } from "../types/navigation";
 import type { SharedProps } from "../types/index";
 
@@ -309,6 +310,7 @@ export default function AppLayout({
     const { currentProject, auth } = pageProps;
     const user = auth?.user ?? null;
     const url = usePage().url;
+    const t = useT();
 
     // Persist the most recently seen `currentProject` so routes that
     // don't carry a project context (the /dashboard landing, /profile,
@@ -648,11 +650,15 @@ export default function AppLayout({
     const showSearch = onSearchToggle !== null;
     const commandPaletteSearch = useMemo(
         () =>
-            globalSearch(currentProject?.slug, [
-                ...ALL_NAV,
-                ...(getSettingsSlots().extraNav ?? []),
-            ]),
-        [currentProject?.slug],
+            globalSearch(
+                currentProject?.slug,
+                resolveNav(
+                    [...ALL_NAV, ...(getSettingsSlots().extraNav ?? [])],
+                    t,
+                ),
+                t("settings.search.group"),
+            ),
+        [currentProject?.slug, t],
     );
 
     return (

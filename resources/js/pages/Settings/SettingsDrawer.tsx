@@ -4,7 +4,7 @@ import gsap from 'gsap';
 import useT from '@alexandria/hooks/useT';
 import SectionContent from './components/SectionContent';
 import SettingsSearch from './components/SettingsSearch';
-import { ALL_NAV, type NavItem } from './nav-config';
+import { ALL_NAV, resolveNav, resolveNavItem, type NavItem } from './nav-config';
 import { type SettingsBodyProps } from './SettingsBody';
 import { getSettingsSlots, useSettingsData } from './settingsCache';
 
@@ -204,6 +204,7 @@ export default function SettingsDrawer({
     // would otherwise repeat this title inside the body is hidden via
     // scoped CSS — see components/settings-drawer.css.
     const activeItem = activeKey ? findNavItem(activeKey) : null;
+    const activeLabel = activeItem ? resolveNavItem(activeItem, t).label : null;
     const isDetail = stack.length > 0;
 
     return createPortal(
@@ -283,7 +284,7 @@ export default function SettingsDrawer({
                             className="flex-1 text-center text-base font-semibold truncate"
                             style={{ fontFamily: 'var(--theme-typography-heading-family)' }}
                         >
-                            {activeItem?.label ?? t('settings.drawer.title')}
+                            {activeLabel ?? t('settings.drawer.title')}
                         </h2>
                         <button
                             type="button"
@@ -394,11 +395,14 @@ function PaneSkeleton() {
 function mergedNav(): NavItem[] {
     // Built-ins + consumer-app extras (slot registry) — same merge the
     // desktop rail applies, so app-registered groups appear here too.
+    // Unresolved (translation keys): key lookups only. Resolve through
+    // `resolveNav` / `resolveNavItem` before rendering any label.
     return [...ALL_NAV, ...(getSettingsSlots().extraNav ?? [])];
 }
 
 function RootList({ onSelect }: { onSelect: (key: string) => void }) {
-    const nav = mergedNav();
+    const t = useT();
+    const nav = resolveNav(mergedNav(), t);
     const [isSearching, setIsSearching] = useState(false);
 
     return (

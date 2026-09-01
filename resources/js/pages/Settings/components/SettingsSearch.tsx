@@ -1,9 +1,10 @@
 import { useId, useMemo, useState } from 'react';
 import useT from '@alexandria/hooks/useT';
-import { searchSettings, type NavItem } from '../nav-config';
+import { searchSettings, type ResolvedNavItem } from '../nav-config';
 
 interface SettingsSearchProps {
-    nav: NavItem[];
+    /** The resolved nav tree (see `resolveNav` in nav-config). */
+    nav: ResolvedNavItem[];
     onSelect: (key: string) => void;
     onSearchingChange?: (searching: boolean) => void;
     sticky?: boolean;

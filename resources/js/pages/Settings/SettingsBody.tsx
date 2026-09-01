@@ -4,7 +4,7 @@ import AvatarWithRing, { type AvatarRingOption } from '@alexandria/components/ui
 import { useEnterAnimation } from '@alexandria/hooks/useEnterAnimation';
 import useT from '@alexandria/hooks/useT';
 import { type ViewPreferences } from './Sections/PreferencesSection';
-import { ALL_NAV, type NavItem } from './nav-config';
+import { ALL_NAV, resolveNav, type ResolvedNavItem } from './nav-config';
 // Safe import despite settingsCache importing SettingsBodyProps from
 // here — that one is type-only and erased at compile, so there's no
 // runtime cycle.
@@ -174,8 +174,9 @@ export default function SettingsBody({
 }: SettingsBodyProps) {
     const t = useT();
     // Built-in groups + consumer-app extras (slot registry, registered
-    // once at app boot — stable across renders).
-    const nav = [...ALL_NAV, ...(getSettingsSlots().extraNav ?? [])];
+    // once at app boot — stable across renders), with labels + search
+    // terms resolved through the page's translator.
+    const nav = resolveNav([...ALL_NAV, ...(getSettingsSlots().extraNav ?? [])], t);
     const [activeSection, setActiveSection] = useState(initialActiveSection);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
         // Expand the group that owns the landing section (findings #13) —
@@ -220,7 +221,7 @@ export default function SettingsBody({
         });
     }
 
-    function handleNavClick(item: NavItem) {
+    function handleNavClick(item: ResolvedNavItem) {
         if (item.children) {
             toggleGroup(item.key);
             if (!expandedGroups[item.key]) {

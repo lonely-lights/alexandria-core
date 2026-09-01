@@ -8,6 +8,7 @@ import {
     ALL_NAV,
     searchSettings,
     type NavItem,
+    type ResolvedNavItem,
 } from './nav-config';
 
 const SETTINGS_SECTION_QUERY_KEY = 'section';
@@ -16,10 +17,15 @@ const SETTINGS_SECTION_QUERY_KEY = 'section';
  * Turn the shared settings index into a CommandPalette result group.
  * Results stay section-level: a match for "Font Size" opens Appearance
  * with the rest of that section still visible and editable.
+ *
+ * `nav` is the RESOLVED tree (see `resolveNav` in nav-config) and
+ * `groupLabel` is the translated heading for the result group, normally
+ * `t('settings.search.group')`.
  */
 export function settingsPaletteGroup(
     query: string,
-    nav: NavItem[] = ALL_NAV,
+    nav: ResolvedNavItem[],
+    groupLabel: string,
 ): PaletteSearchGroup | null {
     const entries: PaletteSearchEntry[] = searchSettings(nav, query)
         .slice(0, 8)
@@ -33,7 +39,7 @@ export function settingsPaletteGroup(
     if (entries.length === 0) return null;
 
     return {
-        label: 'Settings',
+        label: groupLabel,
         icon: 'fa-solid fa-gear',
         entries,
     };
@@ -45,13 +51,14 @@ export function settingsPaletteGroup(
  * when a project is active, its server-backed groups are merged underneath.
  */
 export function globalSearch(
-    projectSlug?: string,
-    nav: NavItem[] = ALL_NAV,
+    projectSlug: string | undefined,
+    nav: ResolvedNavItem[],
+    groupLabel: string,
 ): (query: string) => Promise<PaletteSearchResults> {
     const searchProject = projectSlug ? projectSearch(projectSlug) : null;
 
     return async (query) => {
-        const settingsGroup = settingsPaletteGroup(query, nav);
+        const settingsGroup = settingsPaletteGroup(query, nav, groupLabel);
         let projectResults: PaletteSearchResults = {
             query,
             total: 0,
@@ -85,10 +92,13 @@ export function settingsSectionHref(section: string): string {
     return `/settings?${SETTINGS_SECTION_QUERY_KEY}=${encodeURIComponent(section)}`;
 }
 
+/** The key-only shape deep-link validation needs; raw or resolved nav both fit. */
+type NavKeyShape = Pick<NavItem, 'key'> & { children?: NavKeyShape[] };
+
 /** Resolve and validate a settings-section deep link against the shared nav. */
 export function settingsSectionFromUrl(
     url: string,
-    nav: NavItem[] = ALL_NAV,
+    nav: NavKeyShape[] = ALL_NAV,
 ): string | null {
     const query = url.split('?')[1]?.split('#')[0] ?? '';
     const requested = new URLSearchParams(query).get(
