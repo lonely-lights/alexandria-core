@@ -1,9 +1,9 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 
 import { stanceAccent, stanceInitial } from './patternChips';
-import { fetchPromises, type PatternStance, type PromiseGroup } from './threadApi';
+import type { PatternStance } from './threadApi';
 import usePromiseGroups from './usePromiseGroups';
 
 /**
