@@ -582,7 +582,7 @@ export default function OutlineView({
                                     <DropdownMenu
                                         align="right"
                                         density="compact"
-                                        menuClassName="w-48 py-1"
+                                        menuClassName="w-48"
                                         trigger={
                                             <button
                                                 type="button"

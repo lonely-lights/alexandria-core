@@ -68,6 +68,13 @@ interface NavigatorProps {
     liveCounts?: Record<number, number>;
     /** Headings extracted from the current prose section, rendered as an in-section outline. */
     currentOutline?: SectionOutlineItem[];
+    /**
+     * Hover-off auto-dismiss delay (ms) for the row's 3-dot menu, read
+     * from the user's `menu_dismiss_delay_ms` preference by the
+     * workspace. Null/0 leaves the feature off (Stage 11 rework — first
+     * and, for now, only DropdownMenu instance wired to it).
+     */
+    menuDismissDelayMs?: number | null;
 }
 
 /* ── Theme styles ── */
@@ -207,6 +214,7 @@ export default function Navigator({
     headerTrailing,
     liveCounts,
     currentOutline = [],
+    menuDismissDelayMs = null,
 }: NavigatorProps) {
     const t = useT();
     const [expanded, setExpanded] = useState<Set<number>>(
@@ -277,6 +285,7 @@ export default function Navigator({
         onDelete: onRequestDelete,
         liveCounts,
         currentOutline,
+        menuDismissDelayMs,
         t,
     };
 
@@ -398,6 +407,7 @@ interface TreeShared {
     onDelete: (node: SectionNode) => void;
     liveCounts?: Record<number, number>;
     currentOutline: SectionOutlineItem[];
+    menuDismissDelayMs: number | null;
     t: Translator;
 }
 
@@ -471,7 +481,7 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onMarkRevision, onDelete, liveCounts, t } =
+    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onMarkRevision, onDelete, liveCounts, menuDismissDelayMs, t } =
         shared;
 
     const isSelected = node.slug === currentSlug;
@@ -553,7 +563,8 @@ function NavigatorRow({
                                 align="left"
                                 density="compact"
                                 labelAlign="right"
-                                menuClassName="w-48 py-1"
+                                menuClassName="w-48"
+                                autoDismissMs={menuDismissDelayMs}
                                 inheritCssVariables={[
                                     '--alex-writing-section-pane-bg',
                                     '--alex-writing-section-row-hover-bg',

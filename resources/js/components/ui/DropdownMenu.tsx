@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useHoverOffDismiss } from '@alexandria/hooks/useHoverOffDismiss';
 
 interface DropdownMenuItem {
     label: string;
@@ -44,6 +45,16 @@ interface DropdownMenuProps {
     menuStyle?: CSSProperties;
     menuClassName?: string;
     inheritCssVariables?: string[];
+    /**
+     * Hover-off auto-dismiss (Stage 11 rework): when set to a positive
+     * number, the menu closes itself `autoDismissMs` after the pointer
+     * leaves both the trigger and the open menu (re-entering either one
+     * cancels the pending close). Reads from the user's
+     * `menu_dismiss_delay_ms` preference at call sites that wire it up —
+     * unset/0/null leaves this OFF, matching prior click/outside-click-
+     * only behavior.
+     */
+    autoDismissMs?: number | null;
 }
 
 function DropdownRow({
@@ -71,12 +82,13 @@ function DropdownRow({
     // (was 80% — too similar to muted non-danger text). Hover bg uses the
     // pre-baked --theme-status-error-subtle token (fill @ 10% opacity)
     // for token consistency instead of an ad-hoc 12% mix.
-    // Danger text pulls 35% toward base-content: on dark themes that
+    // Danger text pulls 50% toward base-content: on dark themes that
     // lightens the red toward the near-white content color, on light
     // themes it darkens it — contrast improves in BOTH directions
-    // against the menu surface (owner review, 2026-08-31: pure
-    // error-stroke red sank into the dark section-pane menus).
-    const dangerText = 'color-mix(in srgb, var(--theme-status-error-stroke) 65%, var(--theme-base-content))';
+    // against the menu surface (owner review, 2026-08-31: 65% stroke
+    // was still hard to see on dark section-pane menus; brightened
+    // to an even 50/50 split with base-content).
+    const dangerText = 'color-mix(in srgb, var(--theme-status-error-stroke) 50%, var(--theme-base-content))';
     const baseColor = item.danger ? dangerText : 'var(--theme-base-content)';
     const fadedColor = item.danger
         ? dangerText
@@ -161,6 +173,7 @@ export default function DropdownMenu({
     menuStyle: menuStyleOverride,
     menuClassName = '',
     inheritCssVariables = [],
+    autoDismissMs = null,
 }: DropdownMenuProps) {
     const [open, setOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -168,6 +181,15 @@ export default function DropdownMenu({
     const [defaultTriggerHovered, setDefaultTriggerHovered] = useState(false);
     const triggerRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+
+    // Only armed while the menu is actually open — leaving delayMs at
+    // its real value while closed would let a stale timer, started by
+    // idly hovering + unhovering the trigger before ever opening the
+    // menu, slam the menu shut the instant it's next opened.
+    const { handlePointerEnter: handleHoverOffEnter, handlePointerLeave: handleHoverOffLeave } = useHoverOffDismiss({
+        delayMs: open ? autoDismissMs : null,
+        onDismiss: () => setOpen(false),
+    });
 
     function getPosition(): CSSProperties {
         if (!triggerRef.current) return { opacity: 0 };
@@ -280,7 +302,7 @@ export default function DropdownMenu({
     };
 
     return (
-        <div ref={triggerRef}>
+        <div ref={triggerRef} onMouseEnter={handleHoverOffEnter} onMouseLeave={handleHoverOffLeave}>
             {/* Trigger */}
             {trigger ? (
                 <span onClick={() => setOpen(!open)} className="cursor-pointer">{trigger}</span>
@@ -307,6 +329,8 @@ export default function DropdownMenu({
                     className={`fixed z-[9999] overflow-hidden ${menuClassName || 'w-60'}`}
                     data-open={visible ? 'true' : 'false'}
                     style={menuStyle}
+                    onMouseEnter={handleHoverOffEnter}
+                    onMouseLeave={handleHoverOffLeave}
                 >
                     {items.map((item, i) => {
                         if ('divider' in item && item.divider) {

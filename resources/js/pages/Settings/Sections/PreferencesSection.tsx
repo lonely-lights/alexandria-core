@@ -1,5 +1,6 @@
 import { router, useForm, usePage } from '@inertiajs/react';
 import type { FormDataConvertible } from '@inertiajs/core';
+import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
 import Toggle from '@alexandria/components/form/Toggle';
 import Button from '@alexandria/components/ui/Button';
@@ -28,6 +29,13 @@ export interface ViewPreferences {
 }
 
 type ApplyViewPreferences = (prefs: ViewPreferences) => void;
+
+/**
+ * Pre-filled delay (ms) the number input shows the moment the "hover-off
+ * auto-dismiss" checkbox is first checked, before the user has typed a
+ * value of their own.
+ */
+const DEFAULT_MENU_DISMISS_DELAY_MS = 1500;
 
 interface PreferencesSectionProps {
     section: string;
@@ -268,7 +276,9 @@ function AppearanceSection({
         font_size: preferences.font_size as string,
         reduced_motion: preferences.reduced_motion as boolean,
         compact_mode: preferences.compact_mode as boolean,
+        menu_dismiss_delay_ms: (preferences.menu_dismiss_delay_ms as number | null) ?? 0,
     });
+    const menuDismissEnabled = form.data.menu_dismiss_delay_ms > 0;
 
     const modes: Array<{ key: 'light' | 'dark' | 'system'; labelKey: string; icon: string }> = [
         { key: 'light', labelKey: 'settings.appearance.color_mode_light', icon: 'fa-sun' },
@@ -384,6 +394,37 @@ function AppearanceSection({
                         applyViewPreferences({ compact_mode: v });
                     }}
                 />
+                <Toggle
+                    label={t('settings.appearance.menu_dismiss_label')}
+                    description={t('settings.appearance.menu_dismiss_description')}
+                    checked={menuDismissEnabled}
+                    onChange={(v) => {
+                        form.setData(
+                            'menu_dismiss_delay_ms',
+                            v ? DEFAULT_MENU_DISMISS_DELAY_MS : 0,
+                        );
+                    }}
+                />
+                {menuDismissEnabled && (
+                    <div className="max-w-[10rem]">
+                        <Input
+                            type="number"
+                            label={t('settings.appearance.menu_dismiss_delay_label')}
+                            hint={t('settings.appearance.menu_dismiss_delay_hint')}
+                            min={100}
+                            max={10000}
+                            step={100}
+                            value={form.data.menu_dismiss_delay_ms}
+                            onChange={(e) => {
+                                const parsed = parseInt(e.target.value, 10);
+                                form.setData(
+                                    'menu_dismiss_delay_ms',
+                                    Number.isNaN(parsed) ? 0 : parsed,
+                                );
+                            }}
+                        />
+                    </div>
+                )}
             </div>
 
             <SaveRow processing={form.processing} labelKey="settings.appearance.save_button" t={t} />

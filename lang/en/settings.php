@@ -33,6 +33,10 @@ return [
     'appearance.reduced_motion_description' => 'Minimize animations and transitions',
     'appearance.compact_mode_label' => 'Compact Mode',
     'appearance.compact_mode_description' => 'Use a denser layout with less spacing',
+    'appearance.menu_dismiss_label' => 'Hover-off Auto-dismiss',
+    'appearance.menu_dismiss_description' => 'Close an open menu after the cursor sits off it (and its button) for a moment',
+    'appearance.menu_dismiss_delay_label' => 'Delay (ms)',
+    'appearance.menu_dismiss_delay_hint' => 'How long the cursor may sit off the menu before it closes.',
     'appearance.save_button' => 'Save Appearance',
     // User-level theme cascade root (Stage 8b)
     'appearance.theme_label' => 'Theme',
