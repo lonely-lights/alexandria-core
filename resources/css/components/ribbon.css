@@ -30,9 +30,11 @@
    stacked over the tab strip on the left; the trailing cluster spans
    the full height of both rows on the right. */
 .ribbon-header { display: flex; align-items: stretch; min-width: 0; }
-/* Symmetric padding — the logo sits centered in its gutter. */
-.ribbon-header-leading { display: flex; align-items: center; flex-shrink: 0;
-    padding: 0 0.625rem; }
+/* Centered corner block (owner, 2026-08-31): the mark floats mid-gutter
+   with equal air on both sides; the identity block's own left padding
+   (title-to-tab alignment) stays out of this box. */
+.ribbon-header-leading { display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; padding: 0 0.875rem; }
 .ribbon-header-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 /* Left padding = tab-row padding (0.5rem) + first tab's own padding
    (0.75rem) so the title text left-aligns with the word "Write". */

@@ -1068,7 +1068,7 @@ export default function Workspace() {
                                     )
                                 }
                                 aria-label={t('ribbon.menu')}
-                                className="inline-flex shrink-0 cursor-pointer items-center justify-center self-stretch px-1.5"
+                                className="inline-flex shrink-0 cursor-pointer items-center justify-center self-stretch"
                                 style={{ color: 'var(--theme-base-content)' }}
                             >
                                 {/* Same interactive lockup as the navbar
@@ -1079,7 +1079,7 @@ export default function Workspace() {
                                     the corner's negative space. */}
                                 <LogoLockup
                                     size="md"
-                                    markSize={38}
+                                    markSize={44}
                                     showWordmark={false}
                                     wordmarkText="Alexandria"
                                     interactive

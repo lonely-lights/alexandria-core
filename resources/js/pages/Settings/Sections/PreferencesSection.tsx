@@ -35,7 +35,7 @@ type ApplyViewPreferences = (prefs: ViewPreferences) => void;
  * auto-dismiss" checkbox is first checked, before the user has typed a
  * value of their own.
  */
-const DEFAULT_MENU_DISMISS_DELAY_MS = 1500;
+const DEFAULT_MENU_DISMISS_DELAY_MS = 700;
 
 interface PreferencesSectionProps {
     section: string;
