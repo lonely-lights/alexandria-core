@@ -45,9 +45,10 @@ interface NotesTabSlotContext {
     onViewModeChange: (mode: NotesTabViewMode) => void;
     search: string;
     onSearchChange: (value: string) => void;
-    /** Bumped by the shared capture bar's onCreated so Grid can prepend
-     * the new note optimistically (its pre-existing append behavior). */
-    createdNote: { note: Note; seq: number } | null;
+    /** Bumped after any note save (the shared NoteModal path included)
+     * so Grid refetches its first page; List listens to the same nonce
+     * through its own channel. */
+    refetchNonce: number;
 }
 
 interface NotesDashboardSlotProps {
@@ -61,11 +62,13 @@ interface NotesDashboardSlotProps {
     /**
      * App-supplied capture bar for the Notes tab (owner ruling,
      * 2026-08-31: QuickCaptureBar graduated from Grid-only to a fixture
-     * shared by both views). Core ships no capture UI of its own — same
-     * reasoning as gridView. `onCreated` must be called with the newly
-     * created note so both views can refresh appropriately.
+     * shared by both views). Core ships no capture UI of its own, same
+     * reasoning as gridView. The bar is a TRIGGER only (owner ruling,
+     * 2026-08-31): clicking it opens the same NoteModal every other
+     * new-note path uses via `onActivate`; creation itself never happens
+     * inline.
      */
-    captureBar?: (ctx: { onCreated: (note: Note) => void }) => ReactNode;
+    captureBar?: (ctx: { onActivate: () => void }) => ReactNode;
 }
 
 /**
@@ -137,12 +140,6 @@ export default function NotesDashboard({ gridView, captureBar }: NotesDashboardS
     // query shared by List and Grid via the unified NotesToolbar row, so
     // switching views mid-search never loses what the user typed.
     const [notesSearch, setNotesSearch] = useState<string>(initialSearch ?? '');
-    // Fed to the app-supplied captureBar slot's `onCreated`: KeepGrid
-    // watches `seq` to prepend `note` optimistically (its existing
-    // append/refresh behavior); List refreshes through the standard
-    // refreshAfterSave path below instead, it doesn't need the note
-    // object itself.
-    const [gridCreatedNote, setGridCreatedNote] = useState<{ note: Note; seq: number } | null>(null);
     const [showCreate, setShowCreate] = useState(false);
     const [activeNotebookId, setActiveNotebookId] = useState<number | null>(null);
     // Bumps on every notebook-tile click so NotesView re-applies the
@@ -189,18 +186,6 @@ export default function NotesDashboard({ gridView, captureBar }: NotesDashboardS
         setNotesRefetchNonce((n) => n + 1);
         setNotebooksRefetchNonce((n) => n + 1);
     }, []);
-
-    /**
-     * The shared capture bar's onCreated (owner ruling, 2026-08-31: the
-     * capture bar now renders in both views, not just Grid). List gets
-     * the same refresh other mutations already use; Grid keeps its
-     * existing optimistic prepend, now driven by this note passthrough
-     * since the capture bar itself no longer lives inside KeepGrid.
-     */
-    const handleCaptureCreated = useCallback((note: Note) => {
-        refreshAfterSave();
-        setGridCreatedNote((prev) => ({ note, seq: (prev?.seq ?? 0) + 1 }));
-    }, [refreshAfterSave]);
 
     function navigateToNotes(statusFilter?: NoteStatusFilter, quickFilter?: string): void {
         setInitialStatusFilter(statusFilter ?? null);
@@ -421,8 +406,8 @@ export default function NotesDashboard({ gridView, captureBar }: NotesDashboardS
                                 ships no capture UI of its own, so this only
                                 renders when the app supplies the slot. */}
                             {captureBar && (
-                                <div className="pt-4">
-                                    {captureBar({ onCreated: handleCaptureCreated })}
+                                <div className="py-4">
+                                    {captureBar({ onActivate: () => setShowCreate(true) })}
                                 </div>
                             )}
 
@@ -441,7 +426,7 @@ export default function NotesDashboard({ gridView, captureBar }: NotesDashboardS
                                     onViewModeChange: setNotesViewMode,
                                     search: notesSearch,
                                     onSearchChange: setNotesSearch,
-                                    createdNote: gridCreatedNote,
+                                    refetchNonce: notesRefetchNonce,
                                 })
                             ) : (
                                 <NotesView
