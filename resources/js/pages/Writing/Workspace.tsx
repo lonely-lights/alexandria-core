@@ -69,6 +69,7 @@ import { type PanelMode, readPanelMode, writePanelMode } from './panelMode';
 import { getSidebarModes, subscribeSidebarModes } from './sidebarModeRegistry';
 import { resolveGate } from '@alexandria/ribbon/ribbonGates';
 import { worksBase, workUrl } from '@alexandria/lib/urls';
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
 
 /**
  * Writing dashboard → workspace — Stage 8g.1 (ribbon-driven since
@@ -148,7 +149,7 @@ interface WorkspaceProps {
     pins: EntryCard[];
     types: string[];
     lengthPlans: LengthPlanOption[];
-    can: { update: boolean };
+    can: { update: boolean; delete: boolean };
     [key: string]: unknown;
 }
 
@@ -346,6 +347,18 @@ export default function Workspace() {
     const [addTarget, setAddTarget] = useState<{ parentId: number | null } | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<SectionNode | null>(null);
     const [deleting, setDeleting] = useState(false);
+
+    // Named delete-impact (Devices & Tropes rework-6) — fetched fresh
+    // each time the confirm modal opens so the counts can never go stale
+    // between opening the modal and clicking confirm.
+    const deleteImpactUrl = deleteTarget !== null
+        ? `${worksBase(project.slug, work.slug)}/sections/${deleteTarget.id}/delete-impact`
+        : null;
+    const { data: deleteImpact, loading: deleteImpactLoading } = useJsonFetch<{
+        title: string;
+        descendant_sections: number;
+        notes: number;
+    }>(deleteImpactUrl);
 
     // FDX gateway (Task 5) — export options modal trigger + import error
     // surface. No established toast idiom lives in this desk (the closest
@@ -1197,17 +1210,18 @@ export default function Workspace() {
                             root drives the CSS width/fade animation between
                             them (owner ruling, 2026-08-31 review). */}
                         <div className="writing-workspace-binder-rail flex flex-col items-center gap-2 py-2">
-                                <button
-                                    type="button"
-                                    className="writing-workspace-structure-toggle alex-toolbar-btn"
-                                    data-writing-structure-toggle
-                                    aria-label={t('writing.workspace.show_sections')}
-                                    title={t('writing.workspace.show_sections')}
-                                    aria-expanded={structureOpen}
-                                    onClick={toggleStructure}
-                                >
-                                    <i className="fa-solid fa-list-ul" aria-hidden="true" />
-                                </button>
+                                <Tooltip content={t('writing.workspace.show_sections')} placement="right">
+                                    <button
+                                        type="button"
+                                        className="writing-workspace-structure-toggle alex-toolbar-btn"
+                                        data-writing-structure-toggle
+                                        aria-label={t('writing.workspace.show_sections')}
+                                        aria-expanded={structureOpen}
+                                        onClick={toggleStructure}
+                                    >
+                                        <i className="fa-solid fa-list-ul" aria-hidden="true" />
+                                    </button>
+                                </Tooltip>
                             </div>
                         <div
                             className="writing-workspace-binder-panel flex w-72 min-h-0 flex-col"
@@ -1503,6 +1517,7 @@ export default function Workspace() {
                     types={types}
                     lengthPlans={lengthPlans}
                     structureBlueprint={structureBlueprint}
+                    canDelete={can.delete}
                     onClose={() => setSettingsOpen(false)}
                 />
             )}
@@ -1616,10 +1631,55 @@ export default function Workspace() {
                 onClose={() => setDeleteTarget(null)}
                 onConfirm={confirmDelete}
                 title={t('writing.workspace.delete_confirm_title')}
-                message={t('writing.workspace.delete_confirm_body')}
+                message={
+                    deleteTarget !== null && (
+                        <div className="flex flex-col gap-2">
+                            <p>
+                                <strong>{deleteTarget.title}</strong>
+                                {deleteTarget.label && ` · ${deleteTarget.label}`}
+                            </p>
+                            <p>{t('writing.workspace.delete_confirm_body')}</p>
+                            {deleteImpactLoading ? (
+                                <p
+                                    className="italic"
+                                    style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}
+                                >
+                                    {t('writing.workspace.delete_impact_loading')}
+                                </p>
+                            ) : (
+                                deleteImpact !== null && (
+                                    <ul className="list-disc pl-4">
+                                        {deleteImpact.descendant_sections > 0 && (
+                                            <li>
+                                                {(deleteImpact.descendant_sections === 1
+                                                    ? t('writing.workspace.delete_impact_sections.singular')
+                                                    : t('writing.workspace.delete_impact_sections.plural')
+                                                ).replace(':count', String(deleteImpact.descendant_sections))}
+                                            </li>
+                                        )}
+                                        {deleteImpact.notes > 0 && (
+                                            <li>
+                                                {(deleteImpact.notes === 1
+                                                    ? t('writing.workspace.delete_impact_notes.singular')
+                                                    : t('writing.workspace.delete_impact_notes.plural')
+                                                ).replace(':count', String(deleteImpact.notes))}
+                                            </li>
+                                        )}
+                                    </ul>
+                                )
+                            )}
+                            <p
+                                className="text-xs"
+                                style={{ color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)' }}
+                            >
+                                {t('writing.workspace.delete_confirm_recycle_note')}
+                            </p>
+                        </div>
+                    )
+                }
                 confirmLabel={t('writing.workspace.delete_confirm_action')}
                 variant="danger"
-                loading={deleting}
+                loading={deleting || deleteImpactLoading}
             />
         </AppLayout>
     );
