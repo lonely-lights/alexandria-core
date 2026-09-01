@@ -1,4 +1,4 @@
-import { useState, useRef, type CSSProperties, type ReactNode, type ReactElement, cloneElement, isValidElement } from 'react';
+import { useEffect, useState, useRef, type CSSProperties, type ReactNode, type ReactElement, cloneElement, isValidElement } from 'react';
 import {
     useFloating,
     useHover,
@@ -116,6 +116,17 @@ export default function Tooltip({
     // bubble out from under the caller.
     const isControlled = open !== undefined;
     const visible = isControlled ? open : isOpen;
+
+    // `enabled: false` on useHover only stops NEW hover interactions;
+    // it never closes a bubble that is already showing. Without this,
+    // disabling a tooltip mid-hover (the workspace account menu opening
+    // under the pointer) left the bubble stuck open (owner bug report,
+    // 2026-08-31).
+    useEffect(() => {
+        if (disabled) {
+            setIsOpen(false);
+        }
+    }, [disabled]);
 
     const { refs, floatingStyles, context } = useFloating({
         open: visible,

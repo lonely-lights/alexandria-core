@@ -71,12 +71,18 @@ function DropdownRow({
     // (was 80% — too similar to muted non-danger text). Hover bg uses the
     // pre-baked --theme-status-error-subtle token (fill @ 10% opacity)
     // for token consistency instead of an ad-hoc 12% mix.
-    const baseColor = item.danger ? 'var(--theme-status-error-stroke)' : 'var(--theme-base-content)';
+    // Danger text pulls 35% toward base-content: on dark themes that
+    // lightens the red toward the near-white content color, on light
+    // themes it darkens it — contrast improves in BOTH directions
+    // against the menu surface (owner review, 2026-08-31: pure
+    // error-stroke red sank into the dark section-pane menus).
+    const dangerText = 'color-mix(in srgb, var(--theme-status-error-stroke) 65%, var(--theme-base-content))';
+    const baseColor = item.danger ? dangerText : 'var(--theme-base-content)';
     const fadedColor = item.danger
-        ? 'var(--theme-status-error-stroke)'
+        ? dangerText
         : 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)';
     const iconFadedColor = item.danger
-        ? 'color-mix(in srgb, var(--theme-status-error-stroke) 75%, transparent)'
+        ? `color-mix(in srgb, ${dangerText} 80%, transparent)`
         : 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)';
     const hoverBg = item.danger
         ? 'var(--theme-status-error-subtle)'
