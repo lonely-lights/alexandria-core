@@ -1096,16 +1096,17 @@ export default function Workspace() {
         // so the header's search button just dispatches the global
         // `alexandria-core:command-palette-toggle` event; Cmd+K keeps
         // working too.
-        // bottomNavTabs={null}: the workspace is a viewport-exact app
-        // surface — the mobile BottomNav would overlay the status bar
-        // and its main-padding would re-grow the document. The status
-        // bar's back chevron is the mobile way out.
+        // The mobile dock uses its guarded peek presentation here: the
+        // collapsed Writing handle cannot navigate, while one deliberate
+        // reveal exposes Settings and the other global destinations. Peek
+        // mode overlays rather than re-growing this viewport-exact surface.
         <AppLayout
             title={`${work.title} - ${project.name}`}
             navbar={false}
             immersive
             fabActions={null}
-            bottomNavTabs={null}
+            bottomNavPresentation="peek"
+            bottomNavActiveTabId="writing"
         >
             {/* The workspace IS the viewport — only the editor desk
                 (and the side rails internally) scroll, so the window

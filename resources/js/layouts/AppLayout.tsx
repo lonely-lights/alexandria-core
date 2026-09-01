@@ -238,6 +238,10 @@ interface AppLayoutProps {
      *  anonymous pages (auth, dev sandbox unless logged in) never see
      *  it. */
     bottomNavTabs?: BottomNavTab[] | null;
+    /** `peek` exposes a safe disclosure handle before showing actionable tabs. */
+    bottomNavPresentation?: "standard" | "peek";
+    /** Marks a tab active on nested routes whose URL does not share its href. */
+    bottomNavActiveTabId?: string;
 
     // ────────────────────────────────────────────────────────────────────
     // Floating action button
@@ -295,6 +299,8 @@ export default function AppLayout({
     onNotesToggle,
 
     bottomNavTabs,
+    bottomNavPresentation = "standard",
+    bottomNavActiveTabId,
 
     fabActions,
 
@@ -702,7 +708,7 @@ export default function AppLayout({
                     // padding can grow to ~98px there; a flat pb-20 leaves
                     // the last ~18px of content tucked under the nav).
                     // lg:pb-0 keeps desktop unchanged.
-                    showBottomNav
+                    showBottomNav && bottomNavPresentation === "standard"
                         ? "pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0"
                         : "",
                 ]
@@ -712,7 +718,13 @@ export default function AppLayout({
                 {children}
             </main>
 
-            {showBottomNav && <BottomNav tabs={resolvedBottomNavTabs!} />}
+            {showBottomNav && (
+                <BottomNav
+                    tabs={resolvedBottomNavTabs!}
+                    presentation={bottomNavPresentation}
+                    activeTabId={bottomNavActiveTabId}
+                />
+            )}
 
             {/* The navbar palette is account-global. Its local Settings
                 index works on every authenticated route; when a current
