@@ -129,7 +129,7 @@ return [
     'structure.picker_clear' => 'Unlink structure',
     'structure.save' => 'Save',
 
-    'workspace.add_section' => 'Add section',
+    'workspace.add_section' => 'Add Section',
     'workspace.add_child' => 'Add inside',
     'workspace.add_subsection' => 'Add subsection',
     'workspace.duplicate_section' => 'Duplicate',

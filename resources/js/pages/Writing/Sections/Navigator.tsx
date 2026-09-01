@@ -274,82 +274,44 @@ export default function Navigator({
         onMove: moveSection,
         onMoveTo: setMoveTarget,
         onMarkRevision: onRequestMarkRevision,
+        onDelete: onRequestDelete,
         liveCounts,
         currentOutline,
         t,
     };
 
-    // Delete acts on the CURRENT section; the tooltip names it so the
-    // target is never ambiguous (owner review, 2026-08-31).
-    const deleteLabel = currentNode === null
-        ? t('writing.workspace.delete_section')
-        : `${t('writing.workspace.delete_section')}: ${currentNode.title}`;
-
     return (
         <div className="flex min-h-full flex-col">
             {/* Single header row for the whole binder (owner review,
-                2026-08-31): SECTIONS label, then the tree actions, then
-                whatever the host passes as headerTrailing. In the
-                workspace that is the collapse toggle, so the actions sit
-                just left of the arrows. */}
+                2026-08-31): SECTIONS label with the add-section button
+                right beside it; the host's headerTrailing (the collapse
+                toggle in the workspace) holds the right edge. Add-inside
+                and delete moved into each row's dot menu, where the
+                target is unambiguous. */}
             <div
                 className="writing-workspace-binder-header flex shrink-0 items-center justify-between gap-2 px-2 py-1.5"
                 style={panelHeaderStyle}
             >
-                <span className="pl-1 text-xs font-semibold uppercase tracking-[0.04em]" style={wordCountStyle}>
-                    {t('writing.workspace.sections')}
-                </span>
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center gap-1">
+                    <span className="pl-1 text-xs font-semibold uppercase tracking-[0.04em]" style={wordCountStyle}>
+                        {t('writing.workspace.sections')}
+                    </span>
                     {canUpdate && (
-                        <>
-                            <Tooltip content={t('writing.workspace.add_section')}>
-                                <button
-                                    type="button"
-                                    className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                                    data-writing-section-action="add-section"
-                                    style={panelActionStyle}
-                                    aria-label={t('writing.workspace.add_section')}
-                                    onClick={() => onRequestAdd(null)}
-                                >
-                                    <i className="fa-solid fa-plus" aria-hidden="true" />
-                                </button>
-                            </Tooltip>
-                            <Tooltip content={t('writing.workspace.add_child')} disabled={currentNode === null}>
-                                <button
-                                    type="button"
-                                    className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                                    data-writing-section-action="add-inside"
-                                    style={{ ...panelActionStyle, opacity: currentNode === null ? 0.4 : 1 }}
-                                    aria-label={t('writing.workspace.add_child')}
-                                    disabled={currentNode === null}
-                                    onClick={() => {
-                                        if (currentNode !== null) {
-                                            openAddChild(currentNode);
-                                        }
-                                    }}
-                                >
-                                    <i className="fa-solid fa-indent" aria-hidden="true" />
-                                </button>
-                            </Tooltip>
-                            <Tooltip content={deleteLabel} disabled={currentNode === null}>
-                                <button
-                                    type="button"
-                                    className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                                    data-writing-section-action="delete-section"
-                                    style={{ ...panelActionStyle, opacity: currentNode === null ? 0.4 : 1 }}
-                                    aria-label={deleteLabel}
-                                    disabled={currentNode === null}
-                                    onClick={() => {
-                                        if (currentNode !== null) {
-                                            onRequestDelete(currentNode);
-                                        }
-                                    }}
-                                >
-                                    <i className="fa-solid fa-trash-can" aria-hidden="true" />
-                                </button>
-                            </Tooltip>
-                        </>
+                        <Tooltip content={t('writing.workspace.add_section')}>
+                            <button
+                                type="button"
+                                className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                                data-writing-section-action="add-section"
+                                style={panelActionStyle}
+                                aria-label={t('writing.workspace.add_section')}
+                                onClick={() => onRequestAdd(null)}
+                            >
+                                <i className="fa-solid fa-plus" aria-hidden="true" />
+                            </button>
+                        </Tooltip>
                     )}
+                </div>
+                <div className="flex items-center gap-0.5">
                     {headerTrailing}
                 </div>
             </div>
@@ -433,6 +395,7 @@ interface TreeShared {
     onMove: (sectionId: number, toParentId: number | null, position: number) => void;
     onMoveTo: (node: SectionNode) => void;
     onMarkRevision: (node: SectionNode) => void;
+    onDelete: (node: SectionNode) => void;
     liveCounts?: Record<number, number>;
     currentOutline: SectionOutlineItem[];
     t: Translator;
@@ -508,7 +471,7 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onMarkRevision, liveCounts, t } =
+    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onMarkRevision, onDelete, liveCounts, t } =
         shared;
 
     const isSelected = node.slug === currentSlug;
@@ -650,6 +613,13 @@ function NavigatorRow({
                                         label: t('writing.workspace.copy_section_link'),
                                         icon: 'fa-link',
                                         onClick: copyLink,
+                                    },
+                                    { divider: true },
+                                    {
+                                        label: t('writing.workspace.delete_section'),
+                                        icon: 'fa-trash-can',
+                                        danger: true,
+                                        onClick: () => onDelete(node),
                                     },
                                 ]}
                             />
