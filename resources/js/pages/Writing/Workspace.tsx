@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 
 import useT from '@alexandria/hooks/useT';
 import useEntitlements from '@alexandria/hooks/useEntitlements';
+import useMediaQuery from '@alexandria/hooks/useMediaQuery';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
 import { openNotesDrawer } from '@alexandria/components/notes/NotesDrawer';
@@ -42,6 +43,7 @@ import OutlineSidebar from './Outline/OutlineSidebar';
 import OutlineView from './Outline/OutlineView';
 import type { OutlineBeat } from './Outline/outlineTypes';
 import { readShowPlan, writeShowPlan } from './Outline/planPrefs';
+import MobileWritingChrome from './Mobile/MobileWritingChrome';
 import { clampFontSize, readFontSize, writeFontSize } from './fontSize';
 import {
     normalizePageDisplay,
@@ -76,7 +78,7 @@ import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
 import { type PanelMode, readPanelMode, writePanelMode } from './panelMode';
 import { getSidebarModes, subscribeSidebarModes } from './sidebarModeRegistry';
 import { resolveGate } from '@alexandria/ribbon/ribbonGates';
-import { worksBase, workUrl } from '@alexandria/lib/urls';
+import { aiBase, notesUrl, projectUrl, worksBase, workUrl } from '@alexandria/lib/urls';
 import { useJsonFetch } from '@alexandria/lib/fetchJson';
 
 /**
@@ -324,6 +326,8 @@ export default function Workspace() {
     const registeredModes = useSyncExternalStore(subscribeSidebarModes, getSidebarModes);
 
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
+    const desktopPanelAvailable = useMediaQuery('(min-width: 1280px)');
+    const [mobileKeyboardVisible, setMobileKeyboardVisible] = useState(false);
     // Per-work panel mode (Linked items · Notes · Comments + registered modes);
     // persisted to localStorage keyed by work id (Task 4). Separate from the
     // linked-mode's internal tab (linkedPanelTab).
@@ -1077,6 +1081,133 @@ export default function Workspace() {
 
     const workWords = liveWorkWords ?? work.word_count;
 
+    const mobileDestinations = [
+        {
+            id: 'project',
+            label: t('writing.rail.project_home'),
+            icon: 'fa-solid fa-globe',
+            href: projectUrl(project.slug),
+        },
+        {
+            id: 'notes',
+            label: t('writing.rail.notes'),
+            icon: 'fa-solid fa-note-sticky',
+            href: notesUrl(project.slug),
+        },
+        {
+            id: 'ai',
+            label: t('writing.rail.ai'),
+            icon: 'fa-solid fa-wand-magic-sparkles',
+            href: aiBase(project.slug),
+        },
+        {
+            id: 'reports',
+            label: t('writing.rail.reports'),
+            icon: 'fa-solid fa-chart-simple',
+            href: `${worksBase(project.slug, work.slug)}/reports`,
+        },
+    ];
+
+    function renderCompanionContent() {
+        return (
+            <>
+                {panelMode === 'linked' && (
+                    <ReferencePanel
+                        project={project}
+                        work={work}
+                        currentSection={effectiveSection}
+                        pins={pins}
+                        canUpdate={can.update}
+                        saveSignal={saveSignal}
+                        sceneLinks={screenplaySceneLinks}
+                        sceneLinksFocusSignal={sceneLinksFocusSignal}
+                        activeTab={linkedPanelTab}
+                        onActiveTabChange={setLinkedPanelTab}
+                        onSelect={selectSection}
+                    />
+                )}
+                {panelMode === 'notes' && (
+                    <SidebarNotesPanel
+                        projectId={project.id}
+                        projectSlug={project.slug}
+                        work={work}
+                        currentSection={effectiveSection}
+                        sections={sections}
+                    />
+                )}
+                {panelMode === 'outline' && (
+                    <OutlineSidebar
+                        projectSlug={project.slug}
+                        workSlug={work.slug}
+                        currentSectionId={effectiveSectionId}
+                        canUpdate={can.update}
+                        onNavigate={selectSection}
+                    />
+                )}
+                {panelMode === 'history' && (
+                    <HistoryPanel
+                        projectSlug={project.slug}
+                        workSlug={work.slug}
+                        currentSection={effectiveSection}
+                        canUpdate={can.update}
+                        refreshSignal={historyRefreshSignal}
+                    />
+                )}
+                {panelMode === 'threads' && (
+                    <ThreadsPanel
+                        projectSlug={project.slug}
+                        workId={work.id}
+                        sections={sections}
+                        currentSection={effectiveSection}
+                        canUpdate={can.update}
+                        refreshSignal={threadsRefreshSignal}
+                        onRequestAddMark={(thread) =>
+                            setMarkThreadRequest({ lockedSection: null, anchor: null, lockedThread: thread })
+                        }
+                    />
+                )}
+                {panelMode === 'comments' && (
+                    <CommentRail
+                        workSlug={work.slug}
+                        projectSlug={project.slug}
+                        sectionId={effectiveSection?.id ?? null}
+                        editorBridge={bridgeRef.current}
+                        editorTick={editorTick}
+                        currentUserId={currentUserId}
+                        canUpdate={can.update}
+                        pendingAnchor={pendingCommentAnchor}
+                        onComposerDismiss={() => setPendingCommentAnchor(null)}
+                        highlightCommentId={highlightCommentId}
+                        onHighlightHandled={() => setHighlightCommentId(null)}
+                    />
+                )}
+                {registeredModes.map((mode) =>
+                    mode.id === panelMode ? (
+                        <mode.component
+                            key={mode.id}
+                            project={project}
+                            work={work}
+                            currentSection={effectiveSection}
+                            editorBridge={bridgeRef.current}
+                            bridgeSectionId={
+                                viewMode === 'continuous'
+                                    ? effectiveSectionId !== null &&
+                                      bridgesRef.current.get(effectiveSectionId)
+                                        ? effectiveSectionId
+                                        : null
+                                    : bridgeRef.current !== null
+                                      ? currentSectionId
+                                      : null
+                            }
+                            editorTick={editorTick}
+                            canUpdate={can.update}
+                        />
+                    ) : null,
+                )}
+            </>
+        );
+    }
+
     // Current-section live counts for the status bar — server-confirmed
     // autosave values overlay the Inertia props (same freshness as the
     // Navigator rows; the old SectionChrome footer read the autosave
@@ -1107,11 +1238,12 @@ export default function Workspace() {
             fabActions={null}
             bottomNavPresentation="peek"
             bottomNavActiveTabId="writing"
+            bottomNavHidden={mobileKeyboardVisible}
         >
             {/* The workspace IS the viewport — only the editor desk
                 (and the side rails internally) scroll, so the window
                 never grows a second scrollbar. Height/overflow are
-                INLINE on purpose: `h-dvh` was a first-use utility in
+                INLINE on purpose: `h-svh` was a first-use utility in
                 the vendor path and Tailwind's source scan missed it in
                 some dev pipelines (vendor/ is .gitignored) — inline
                 styles can't be skipped by a CSS generator. */}
@@ -1119,7 +1251,7 @@ export default function Workspace() {
                 className="writing-workspace-shell flex flex-col"
                 data-writing-paper-color={paperColor}
                 style={{
-                    height: '100dvh',
+                    height: '100svh',
                     overflow: 'hidden',
                     '--alex-writing-zoom': `${Number(zoom) / 100}`,
                     '--alex-writing-font-size': `${fontSize}pt`,
@@ -1130,7 +1262,7 @@ export default function Workspace() {
                     chip over the tab strip; right column: search + avatar
                     spanning both rows (breadcrumb + counts/progress live in
                     the status bar). */}
-                <div className="shrink-0" style={ribbonShellStyle}>
+                <div className="hidden shrink-0 lg:block" style={ribbonShellStyle}>
                     <Ribbon
                         setKey="writing"
                         context={ribbonCtx}
@@ -1256,6 +1388,64 @@ export default function Workspace() {
                     />
                 </div>
 
+                <MobileWritingChrome
+                    workTitle={work.title}
+                    sectionTitle={effectiveSection?.title ?? null}
+                    viewMode={viewMode}
+                    context={ribbonCtx}
+                    gates={writingGates}
+                    destinations={mobileDestinations}
+                    onCompanionModeChange={(mode) => {
+                        setPanelMode(mode);
+                        writePanelMode(work.id, mode);
+                        if (mode === 'linked' && work.format === 'screenplay') {
+                            setLinkedPanelTab('scene-links');
+                        }
+                    }}
+                    onAddComment={handleAddComment}
+                    onMarkThread={handleMarkThreadFromSelection}
+                    onKeyboardVisibilityChange={setMobileKeyboardVisible}
+                    renderStructure={(close) => (
+                        <Navigator
+                            showHeader={false}
+                            projectSlug={project.slug}
+                            workSlug={work.slug}
+                            work={work}
+                            sections={sections}
+                            currentSection={effectiveSection}
+                            currentSlug={effectiveSection?.slug ?? null}
+                            canUpdate={can.update}
+                            onSelect={(slug) => {
+                                close();
+                                selectSection(slug);
+                            }}
+                            onRequestAdd={(parentId) => setAddTarget({ parentId })}
+                            onRequestDelete={setDeleteTarget}
+                            onRequestSettings={openSectionSettings}
+                            onRequestMarkRevision={(node) =>
+                                setMarkRevisionRequest({ lockedSection: node })
+                            }
+                            liveCounts={liveCounts}
+                            currentOutline={currentOutline}
+                            showSectionTypeLabels={showSectionTypeLabels}
+                        />
+                    )}
+                    renderCompanions={() => (
+                        <div className="flex h-full min-h-0 flex-col">
+                            <PanelModeSwitcher
+                                mode={panelMode}
+                                presentation="labeled"
+                                onChange={(mode) => {
+                                    setPanelMode(mode);
+                                    writePanelMode(work.id, mode);
+                                }}
+                                can={{ 'work.update': can.update }}
+                            />
+                            <div className="min-h-0 flex-1">{renderCompanionContent()}</div>
+                        </div>
+                    )}
+                />
+
                 {/* FDX import error — Task 5. No toast idiom exists in this
                     desk (see the fdxImportError declaration above), so this
                     mirrors WorkSettingsModal's entryLinkError pattern: a
@@ -1310,7 +1500,7 @@ export default function Workspace() {
                         toggle. */}
                     {chromeVisible && viewMode !== 'outline' && viewMode !== 'kanban' && (
                     <div
-                        className="writing-workspace-binder hidden md:flex md:min-h-0 md:shrink-0"
+                        className="writing-workspace-binder hidden lg:flex lg:min-h-0 lg:shrink-0"
                         data-open={structureOpen ? 'true' : 'false'}
                     >
                         {/* Rail + panel both stay mounted; data-open on the
@@ -1381,7 +1571,7 @@ export default function Workspace() {
                         toggle floats over whichever is mounted. */}
                     <section className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
                         {sections.length > 0 && (
-                            <div className="absolute right-4 top-2 z-10">
+                            <div className="absolute right-4 top-2 z-10 hidden lg:block">
                                 <FlowToggle mode={viewMode} onChange={switchViewMode} />
                             </div>
                         )}
@@ -1488,7 +1678,7 @@ export default function Workspace() {
                         Mode switcher (Linked items · Notes · Comments) sits at
                         the top; content below is keyed by panelMode. The xl:
                         responsive gate stays on top of the user toggle. */}
-                    {chromeVisible && panelOpen && (
+                    {chromeVisible && panelOpen && desktopPanelAvailable && (
                         <aside
                             className="hidden min-h-0 w-80 shrink-0 border-l xl:flex xl:flex-col"
                             style={{ borderColor: paneBorderColor }}
@@ -1502,99 +1692,7 @@ export default function Workspace() {
                                 can={{ 'work.update': can.update }}
                             />
                             <div className="min-h-0 flex-1">
-                                {panelMode === 'linked' && (
-                                    <ReferencePanel
-                                        project={project}
-                                        work={work}
-                                        currentSection={effectiveSection}
-                                        pins={pins}
-                                        canUpdate={can.update}
-                                        saveSignal={saveSignal}
-                                        sceneLinks={screenplaySceneLinks}
-                                        sceneLinksFocusSignal={sceneLinksFocusSignal}
-                                        activeTab={linkedPanelTab}
-                                        onActiveTabChange={setLinkedPanelTab}
-                                        onSelect={selectSection}
-                                    />
-                                )}
-                                {panelMode === 'notes' && (
-                                    <SidebarNotesPanel
-                                        projectId={project.id}
-                                        projectSlug={project.slug}
-                                        work={work}
-                                        currentSection={effectiveSection}
-                                        sections={sections}
-                                    />
-                                )}
-                                {panelMode === 'outline' && (
-                                    <OutlineSidebar
-                                        projectSlug={project.slug}
-                                        workSlug={work.slug}
-                                        currentSectionId={effectiveSectionId}
-                                        canUpdate={can.update}
-                                        onNavigate={selectSection}
-                                    />
-                                )}
-                                {panelMode === 'history' && (
-                                    <HistoryPanel
-                                        projectSlug={project.slug}
-                                        workSlug={work.slug}
-                                        currentSection={effectiveSection}
-                                        canUpdate={can.update}
-                                        refreshSignal={historyRefreshSignal}
-                                    />
-                                )}
-                                {panelMode === 'threads' && (
-                                    <ThreadsPanel
-                                        projectSlug={project.slug}
-                                        workId={work.id}
-                                        sections={sections}
-                                        currentSection={effectiveSection}
-                                        canUpdate={can.update}
-                                        refreshSignal={threadsRefreshSignal}
-                                        onRequestAddMark={(thread) =>
-                                            setMarkThreadRequest({ lockedSection: null, anchor: null, lockedThread: thread })
-                                        }
-                                    />
-                                )}
-                                {panelMode === 'comments' && (
-                                    <CommentRail
-                                        workSlug={work.slug}
-                                        projectSlug={project.slug}
-                                        sectionId={effectiveSection?.id ?? null}
-                                        editorBridge={bridgeRef.current}
-                                        editorTick={editorTick}
-                                        currentUserId={currentUserId}
-                                        canUpdate={can.update}
-                                        pendingAnchor={pendingCommentAnchor}
-                                        onComposerDismiss={() => setPendingCommentAnchor(null)}
-                                        highlightCommentId={highlightCommentId}
-                                        onHighlightHandled={() => setHighlightCommentId(null)}
-                                    />
-                                )}
-                                {registeredModes.map((m) =>
-                                    m.id === panelMode ? (
-                                        <m.component
-                                            key={m.id}
-                                            project={project}
-                                            work={work}
-                                            currentSection={effectiveSection}
-                                            editorBridge={bridgeRef.current}
-                                            bridgeSectionId={
-                                                viewMode === 'continuous'
-                                                    ? effectiveSectionId !== null &&
-                                                      bridgesRef.current.get(effectiveSectionId)
-                                                        ? effectiveSectionId
-                                                        : null
-                                                    : bridgeRef.current !== null
-                                                      ? currentSectionId
-                                                      : null
-                                            }
-                                            editorTick={editorTick}
-                                            canUpdate={can.update}
-                                        />
-                                    ) : null,
-                                )}
+                                {renderCompanionContent()}
                             </div>
                         </aside>
                     )}
@@ -1616,6 +1714,7 @@ export default function Workspace() {
                     sectionTarget={effectiveSection?.target_words ?? null}
                     sectionPages={sectionPages}
                     sectionFormat={effectiveSection?.format ?? null}
+                    mobileHidden={mobileKeyboardVisible}
                 />
             </div>
 

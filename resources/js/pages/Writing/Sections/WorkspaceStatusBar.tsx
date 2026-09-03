@@ -1,10 +1,10 @@
-import { Link } from '@inertiajs/react';
-import type { CSSProperties } from 'react';
+import { Link } from "@inertiajs/react";
+import type { CSSProperties } from "react";
 
-import useT from '@alexandria/hooks/useT';
-import { worksBase } from '@alexandria/lib/urls';
+import useT from "@alexandria/hooks/useT";
+import { worksBase } from "@alexandria/lib/urls";
 
-import type { WorkLengthPlan } from './WorkSettingsModal';
+import type { WorkLengthPlan } from "./WorkSettingsModal";
 
 /**
  * Workspace status bar — Word-style anatomy (ribbon transitions).
@@ -15,11 +15,10 @@ import type { WorkLengthPlan } from './WorkSettingsModal';
  * that lived in SectionChrome's footer. The work-status chip moved UP
  * to the merged ribbon header's leading cluster (Workspace.tsx).
  *
- * Desktop (≥ md), left → right: breadcrumb (project › work) · spacer ·
+ * Desktop (≥ lg), left → right: breadcrumb (project › work) · spacer ·
  * current-section counts · divider · work progress.
- * Mobile (< md): a deliberate compact line — back chevron, truncated
- * work title, spacer, abbreviated section words (e.g. `1.2k`); the
- * targets and progress bar hide below md.
+ * Mobile (< lg): a centered compact line with abbreviated section and
+ * work words (e.g. `1.2k`); targets and progress bars stay on desktop.
  *
  * Counts are assembled in Workspace from the editors' existing
  * `onCounts` flow (server-confirmed autosave values overlaying the
@@ -51,7 +50,9 @@ interface WorkspaceStatusBarProps {
     sectionTarget: number | null;
     /** Server-confirmed page estimate for the current section (null until the first save). */
     sectionPages: number | null;
-    sectionFormat: 'prose' | 'screenplay' | null;
+    sectionFormat: "prose" | "screenplay" | null;
+    /** The software-keyboard editing strip owns this space on phones. */
+    mobileHidden?: boolean;
 }
 
 /** Compact count for the mobile line: <1000 verbatim, else `X.Yk`. */
@@ -66,34 +67,43 @@ function abbreviateCount(count: number): string {
 /* ── Theme styles ── */
 
 const barStyle: CSSProperties = {
-    background: 'var(--theme-base-page)',
-    borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background:
+        "color-mix(in srgb, var(--theme-base-content) 6%, var(--theme-base-page))",
+    borderTop:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
 };
 
 const crumbSeparatorStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+    color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
 };
 
 const metaTextStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
 };
 
 /* ── Shared mini progress bar (work tracker + per-section tracker) ── */
 
-function MiniProgressBar({ ratio, widthClass = 'w-32' }: { ratio: number; widthClass?: string }) {
+function MiniProgressBar({
+    ratio,
+    widthClass = "w-32",
+}: {
+    ratio: number;
+    widthClass?: string;
+}) {
     return (
         <div
             aria-hidden="true"
             className={`h-1 ${widthClass} shrink-0 overflow-hidden rounded-full`}
             style={{
-                background: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                background:
+                    "color-mix(in srgb, var(--theme-base-content) 12%, transparent)",
             }}
         >
             <div
                 className="h-full rounded-full"
                 style={{
                     width: `${Math.min(100, ratio * 100)}%`,
-                    background: 'var(--theme-brand-primary-500)',
+                    background: "var(--theme-brand-primary-500)",
                 }}
             />
         </div>
@@ -102,7 +112,13 @@ function MiniProgressBar({ ratio, widthClass = 'w-32' }: { ratio: number; widthC
 
 /* ── Work progress (the old ribbon trailing cluster's bar + counts) ── */
 
-function WorkProgress({ work, workWords }: { work: StatusBarWork; workWords: number }) {
+function WorkProgress({
+    work,
+    workWords,
+}: {
+    work: StatusBarWork;
+    workWords: number;
+}) {
     const t = useT();
     const targetLines = work.length_plan?.target_lines ?? null;
 
@@ -114,25 +130,34 @@ function WorkProgress({ work, workWords }: { work: StatusBarWork; workWords: num
     let progressRatio: number | null = null;
 
     if (work.target_words !== null) {
-        countLabel = `${t('writing.workspace.words').replace(':count', workWords.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', work.target_words.toLocaleString())}`;
-        progressRatio = work.target_words > 0 ? workWords / work.target_words : null;
+        countLabel = `${t("writing.workspace.words").replace(":count", workWords.toLocaleString())} ${t("writing.workspace.of_target").replace(":target", work.target_words.toLocaleString())}`;
+        progressRatio =
+            work.target_words > 0 ? workWords / work.target_words : null;
     } else if (targetLines !== null) {
-        countLabel = `${t('writing.workspace.lines').replace(':count', work.line_count.toLocaleString())} ${t('writing.workspace.of_target').replace(':target', targetLines.toLocaleString())}`;
+        countLabel = `${t("writing.workspace.lines").replace(":count", work.line_count.toLocaleString())} ${t("writing.workspace.of_target").replace(":target", targetLines.toLocaleString())}`;
         progressRatio = targetLines > 0 ? work.line_count / targetLines : null;
     } else if (work.target_pages !== null) {
-        countLabel = t('writing.workspace.pages_of_target')
-            .replace(':count', work.page_estimate.toLocaleString())
-            .replace(':target', work.target_pages.toLocaleString());
-        progressRatio = work.target_pages > 0 ? work.page_estimate / work.target_pages : null;
+        countLabel = t("writing.workspace.pages_of_target")
+            .replace(":count", work.page_estimate.toLocaleString())
+            .replace(":target", work.target_pages.toLocaleString());
+        progressRatio =
+            work.target_pages > 0
+                ? work.page_estimate / work.target_pages
+                : null;
     } else {
         // No target set: label the work total so it can't read as a duplicate
         // of the section counter when both sit in the bar.
-        countLabel = t('writing.workspace.words_total').replace(':count', workWords.toLocaleString());
+        countLabel = t("writing.workspace.words_total").replace(
+            ":count",
+            workWords.toLocaleString(),
+        );
     }
 
     return (
         <>
-            {progressRatio !== null && <MiniProgressBar ratio={progressRatio} />}
+            {progressRatio !== null && (
+                <MiniProgressBar ratio={progressRatio} />
+            )}
             <span className="shrink-0 tabular-nums" style={metaTextStyle}>
                 {countLabel}
             </span>
@@ -151,6 +176,7 @@ export default function WorkspaceStatusBar({
     sectionTarget,
     sectionPages,
     sectionFormat,
+    mobileHidden = false,
 }: WorkspaceStatusBarProps) {
     const t = useT();
 
@@ -158,20 +184,28 @@ export default function WorkspaceStatusBar({
     // from the work total that sits beside it in the bar.
     const sectionWordsLabel =
         sectionTarget !== null
-            ? t('writing.workspace.section_words_of_target')
-                  .replace(':count', sectionWords.toLocaleString())
-                  .replace(':target', sectionTarget.toLocaleString())
-            : t('writing.workspace.section_words').replace(':count', sectionWords.toLocaleString());
+            ? t("writing.workspace.section_words_of_target")
+                  .replace(":count", sectionWords.toLocaleString())
+                  .replace(":target", sectionTarget.toLocaleString())
+            : t("writing.workspace.section_words").replace(
+                  ":count",
+                  sectionWords.toLocaleString(),
+              );
 
     // A per-section tracker bar that mirrors the work tracker — only when
     // the section carries its own word target.
     const sectionRatio =
-        sectionTarget !== null && sectionTarget > 0 ? sectionWords / sectionTarget : null;
+        sectionTarget !== null && sectionTarget > 0
+            ? sectionWords / sectionTarget
+            : null;
 
     return (
-        <div className="h-8 shrink-0 px-4 text-xs" style={barStyle}>
+        <div
+            className={`h-9 shrink-0 px-4 text-xs lg:h-8 ${mobileHidden ? "hidden lg:block" : ""}`}
+            style={barStyle}
+        >
             {/* Desktop line */}
-            <div className="hidden h-full min-w-0 items-center gap-3 md:flex">
+            <div className="hidden h-full min-w-0 items-center gap-3 lg:flex">
                 <Link
                     href={worksBase(project.slug)}
                     className="alex-page-header-crumb-link shrink-0"
@@ -188,21 +222,48 @@ export default function WorkspaceStatusBar({
                 {hasSection && (
                     <>
                         {sectionRatio !== null && (
-                            <MiniProgressBar ratio={sectionRatio} widthClass="w-20" />
+                            <MiniProgressBar
+                                ratio={sectionRatio}
+                                widthClass="w-20"
+                            />
                         )}
-                        <span className="shrink-0 tabular-nums" style={metaTextStyle}>
+                        <span
+                            className="shrink-0 tabular-nums"
+                            style={metaTextStyle}
+                        >
                             {sectionWordsLabel}
-                            {sectionFormat === 'screenplay' && sectionPages !== null && sectionWords > 0 && (
-                                <> · {t('writing.workspace.pages').replace(':count', sectionPages.toLocaleString())}</>
-                            )}
-                            {sectionFormat !== 'screenplay' && sectionPages !== null && sectionPages > 0 && sectionWords > 0 && (
-                                <>
-                                    {' · '}
-                                    <span title={t('writing.workspace.page_estimate_title')}>
-                                        {t('writing.workspace.page_estimate').replace(':pages', sectionPages.toLocaleString())}
-                                    </span>
-                                </>
-                            )}
+                            {sectionFormat === "screenplay" &&
+                                sectionPages !== null &&
+                                sectionWords > 0 && (
+                                    <>
+                                        {" "}
+                                        ·{" "}
+                                        {t("writing.workspace.pages").replace(
+                                            ":count",
+                                            sectionPages.toLocaleString(),
+                                        )}
+                                    </>
+                                )}
+                            {sectionFormat !== "screenplay" &&
+                                sectionPages !== null &&
+                                sectionPages > 0 &&
+                                sectionWords > 0 && (
+                                    <>
+                                        {" · "}
+                                        <span
+                                            title={t(
+                                                "writing.workspace.page_estimate_title",
+                                            )}
+                                        >
+                                            {t(
+                                                "writing.workspace.page_estimate",
+                                            ).replace(
+                                                ":pages",
+                                                sectionPages.toLocaleString(),
+                                            )}
+                                        </span>
+                                    </>
+                                )}
                         </span>
                         <span aria-hidden="true" style={crumbSeparatorStyle}>
                             ·
@@ -212,22 +273,26 @@ export default function WorkspaceStatusBar({
                 <WorkProgress work={work} workWords={workWords} />
             </div>
 
-            {/* Mobile line — compact: back chevron, title, abbreviated words */}
-            <div className="flex h-full min-w-0 items-center gap-2 md:hidden">
-                <Link
-                    href={worksBase(project.slug)}
-                    className="alex-page-header-crumb-link shrink-0"
-                    aria-label={t('writing.statusbar.back')}
-                >
-                    <i className="fa-solid fa-chevron-left text-[10px]" aria-hidden="true" />
-                </Link>
-                <span className="truncate font-semibold">{work.title}</span>
-                <div className="flex-1" />
+            {/* Mobile line: compact, non-navigating writing status. Leaving
+                the desk stays behind the guarded F25 navigation modal. */}
+            <div className="flex h-full min-w-0 items-center justify-center gap-2 px-2 text-center lg:hidden">
                 {hasSection && (
-                    <span className="shrink-0 tabular-nums" style={metaTextStyle}>
-                        {abbreviateCount(sectionWords)}
+                    <span
+                        className="shrink-0 tabular-nums"
+                        style={metaTextStyle}
+                    >
+                        {t("writing.workspace.section_words").replace(
+                            ":count",
+                            abbreviateCount(sectionWords),
+                        )}
                     </span>
                 )}
+                <span className="shrink-0 tabular-nums" style={metaTextStyle}>
+                    {t("writing.workspace.words_total").replace(
+                        ":count",
+                        abbreviateCount(workWords),
+                    )}
+                </span>
             </div>
         </div>
     );

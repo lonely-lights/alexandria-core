@@ -105,6 +105,7 @@ export default function Navbar({
     const user = auth?.user ?? null;
     const [scrolled, setScrolled] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const navbarRef = useRef<HTMLElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
@@ -122,6 +123,34 @@ export default function Navbar({
         window.addEventListener("scroll", handleScroll);
 
         return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    useEffect(() => {
+        const navbar = navbarRef.current;
+
+        if (navbar === null) {
+            return;
+        }
+
+        const updateNavbarHeight = () => {
+            document.documentElement.style.setProperty(
+                "--navbar-height",
+                `${navbar.offsetHeight}px`,
+            );
+        };
+        const resizeObserver =
+            typeof ResizeObserver === "undefined"
+                ? null
+                : new ResizeObserver(updateNavbarHeight);
+
+        updateNavbarHeight();
+        resizeObserver?.observe(navbar);
+        window.addEventListener("resize", updateNavbarHeight);
+
+        return () => {
+            resizeObserver?.disconnect();
+            window.removeEventListener("resize", updateNavbarHeight);
+        };
     }, []);
 
     useEffect(() => {
@@ -154,15 +183,9 @@ export default function Navbar({
 
     return (
         <nav
-            ref={(el) => {
-                if (el) {
-                    document.documentElement.style.setProperty(
-                        "--navbar-height",
-                        `${el.offsetHeight}px`,
-                    );
-                }
-            }}
-            className="fixed top-0 z-40 w-full px-2 py-0 backdrop-blur-lg transition-all duration-300 overflow-visible"
+            ref={navbarRef}
+            data-safe-area-navbar
+            className="safe-top fixed top-0 z-40 w-full overflow-visible px-2 py-0 backdrop-blur-lg transition-[background,box-shadow] duration-300"
             style={{
                 // Hard-cap at legacy's 72px height. Sizing the user
                 // avatar bigger than 48px would otherwise stretch the
@@ -173,7 +196,7 @@ export default function Navbar({
                 // sizing eats 1px from the content area, throwing off
                 // items-center's symmetry. The bottom hairline when
                 // scrolled is layered via inset box-shadow instead.
-                height: "72px",
+                height: "calc(72px + max(var(--safe-top, 0px), var(--theme-safe-top-min, 0px)))",
                 // DaisyUI's `.navbar` class ships `min-height: 4rem`
                 // (or higher in some configs). When that min-height
                 // exceeds our `height: 72px`, CSS takes the larger of
@@ -182,9 +205,10 @@ export default function Navbar({
                 // navbar bg below the button's hover highlight. Pin
                 // min-height inline (highest specificity) so the nav
                 // is exactly 72px and the hover fills edge-to-edge.
-                minHeight: "72px",
-                maxHeight: "72px",
-                paddingTop: 0,
+                minHeight:
+                    "calc(72px + max(var(--safe-top, 0px), var(--theme-safe-top-min, 0px)))",
+                maxHeight:
+                    "calc(72px + max(var(--safe-top, 0px), var(--theme-safe-top-min, 0px)))",
                 paddingBottom: 0,
                 // base-chrome is the elevated-chrome surface (preset- and
                 // mode-aware). Translucency lets the page bg show through
@@ -197,7 +221,14 @@ export default function Navbar({
                     : "none",
             }}
         >
-            <div className="container mx-auto flex max-w-7xl items-center justify-between px-2">
+            <div
+                data-safe-area-navbar-row
+                className="container mx-auto flex h-[72px] max-w-7xl items-center justify-between px-2"
+                style={{
+                    paddingLeft: "calc(0.5rem + var(--safe-left, 0px))",
+                    paddingRight: "calc(0.5rem + var(--safe-right, 0px))",
+                }}
+            >
                 <div className="flex flex-1 items-center">
                     {/* Hamburger Menu Button */}
                     <button
@@ -530,4 +561,3 @@ function DefaultGuestActions() {
         </div>
     );
 }
-

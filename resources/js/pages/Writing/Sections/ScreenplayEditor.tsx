@@ -338,6 +338,14 @@ function ScreenplaySurface({
             if (!editor) return null;
             return bridge.getSelectionRange(editor);
         },
+        getSelectionSnapshot() {
+            if (!editor) return null;
+            const { from, to } = editor.state.selection;
+
+            return from === to
+                ? null
+                : { from, to, text: editor.state.doc.textBetween(from, to, ' ') };
+        },
         getCommentPositionMap() {
             if (!editor) return {};
             return bridge.getCommentPositionMap(editor);

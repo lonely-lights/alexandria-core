@@ -104,7 +104,7 @@ export default function BottomNav({
                 onClick={() => setPeekOpen(true)}
                 className="fixed right-4 z-40 flex items-center justify-center rounded-full text-sm lg:hidden"
                 style={{
-                    bottom: "calc(env(safe-area-inset-bottom, 0px) / 2 + 2.25rem)",
+                    bottom: "calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 2.25rem)",
                     width: "2.75rem",
                     minHeight: "2.75rem",
                     color: "var(--theme-brand-primary-highlight-fg)",
@@ -210,19 +210,19 @@ export default function BottomNav({
             onTouchStart={() => setDimmed(false)}
             className="fixed inset-x-4 z-40 flex items-stretch gap-1 lg:hidden"
             style={{
-                    // Floating pill (owner direction, 2026-08-26, settled
-                    // after the edge-to-edge experiments — Reddit-app
-                    // reference): inset from the sides, riding above the
-                    // home-indicator zone, fully rounded, each tab's
-                    // highlight its own pill inside the capsule.
-                bottom: "calc(env(safe-area-inset-bottom, 0px) / 2 + 0.3125rem)",
+                // Floating pill (owner direction, 2026-08-26, settled
+                // after the edge-to-edge experiments — Reddit-app
+                // reference): inset from the sides, riding above the
+                // home-indicator zone, fully rounded, each tab's
+                // highlight its own pill inside the capsule.
+                bottom: "calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 0.3125rem)",
                 minHeight: "3.875rem",
                 padding: "0.375rem",
                 borderRadius: "999px",
-                    // base-chrome is the elevated-chrome surface (darker than
-                    // page in light mode, lighter in dark) — same role as
-                    // the top navbar. Near-solid so content scrolling under
-                    // the float reads as depth, not bleed-through.
+                // base-chrome is the elevated-chrome surface (darker than
+                // page in light mode, lighter in dark) — same role as
+                // the top navbar. Near-solid so content scrolling under
+                // the float reads as depth, not bleed-through.
                 background:
                     "color-mix(in srgb, var(--theme-base-chrome) 96%, transparent)",
                 border: "1px solid var(--theme-base-400)",

@@ -24,6 +24,7 @@ import { getSidebarModes, subscribeSidebarModes } from '../sidebarModeRegistry';
 interface PanelModeSwitcherProps {
     mode: PanelMode;
     onChange: (mode: PanelMode) => void;
+    presentation?: 'icons' | 'labeled';
     /** Permission map threaded from Workspace (e.g. work.update) — used
      *  alongside entitlements to gate registered modes. Defaults to {}. */
     can?: Record<string, boolean>;
@@ -54,33 +55,42 @@ const MODES: Array<{ id: PanelMode; icon: string; labelKey: string }> = [
     { id: 'threads', icon: 'fa-solid fa-wand-magic-sparkles', labelKey: 'writing.threads.sidebar_label' },
 ];
 
-export default function PanelModeSwitcher({ mode, onChange, can = {} }: PanelModeSwitcherProps) {
+export default function PanelModeSwitcher({
+    mode,
+    onChange,
+    presentation = 'icons',
+    can = {},
+}: PanelModeSwitcherProps) {
     const t = useT();
     const entitlements = useEntitlements();
     const registeredModes = useSyncExternalStore(subscribeSidebarModes, getSidebarModes);
     const gates: RibbonGates = { can, entitlements };
+    const labeled = presentation === 'labeled';
 
     return (
         <div
-            className="flex shrink-0 items-center gap-1 px-2 py-1.5"
+            className={`flex shrink-0 items-center gap-1 overflow-x-auto px-2 py-1.5 ${labeled ? 'writing-workspace-scroll' : ''}`}
             style={stripStyle}
             data-panel-mode-switcher
+            data-presentation={presentation}
         >
             {MODES.map(({ id, icon, labelKey }) => {
                 const isActive = id === mode;
+                const label = t(labelKey);
 
                 return (
-                    <Tooltip key={id} content={t(labelKey)}>
+                    <Tooltip key={id} content={label} disabled={labeled}>
                         <button
                             type="button"
                             onClick={() => onChange(id)}
-                            aria-label={t(labelKey)}
+                            aria-label={label}
                             aria-pressed={isActive}
                             data-panel-mode-btn={id}
-                            className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${isActive ? 'alex-toolbar-btn--active' : ''}`}
+                            className={`alex-toolbar-btn inline-flex shrink-0 items-center justify-center text-sm transition-colors ${labeled ? 'min-h-11 gap-2 px-3' : 'h-8 w-8'} ${isActive ? 'alex-toolbar-btn--active' : ''}`}
                             style={isActive ? activeBtnStyle : idleBtnStyle}
                         >
                             <i className={icon} aria-hidden="true" />
+                            {labeled && <span className="whitespace-nowrap text-xs font-semibold">{label}</span>}
                         </button>
                     </Tooltip>
                 );
@@ -108,10 +118,11 @@ export default function PanelModeSwitcher({ mode, onChange, can = {} }: PanelMod
                                 disabled
                                 aria-label={label}
                                 data-panel-mode-btn={m.id}
-                                className="alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors"
+                                className={`alex-toolbar-btn inline-flex shrink-0 items-center justify-center text-sm transition-colors ${labeled ? 'min-h-11 gap-2 px-3' : 'h-8 w-8'}`}
                                 style={idleBtnStyle}
                             >
                                 <i className={m.icon} aria-hidden="true" />
+                                {labeled && <span className="whitespace-nowrap text-xs font-semibold">{label}</span>}
                             </button>
                             <i
                                 className="fa-solid fa-lock ribbon-ctl-lock pointer-events-none absolute bottom-0 right-0 text-[8px]"
@@ -122,17 +133,18 @@ export default function PanelModeSwitcher({ mode, onChange, can = {} }: PanelMod
                 }
 
                 return (
-                    <Tooltip key={m.id} content={label}>
+                    <Tooltip key={m.id} content={label} disabled={labeled}>
                         <button
                             type="button"
                             onClick={() => onChange(m.id)}
                             aria-label={label}
                             aria-pressed={isActive}
                             data-panel-mode-btn={m.id}
-                            className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${isActive ? 'alex-toolbar-btn--active' : ''}`}
+                            className={`alex-toolbar-btn inline-flex shrink-0 items-center justify-center text-sm transition-colors ${labeled ? 'min-h-11 gap-2 px-3' : 'h-8 w-8'} ${isActive ? 'alex-toolbar-btn--active' : ''}`}
                             style={isActive ? activeBtnStyle : idleBtnStyle}
                         >
                             <i className={m.icon} aria-hidden="true" />
+                            {labeled && <span className="whitespace-nowrap text-xs font-semibold">{label}</span>}
                         </button>
                     </Tooltip>
                 );
