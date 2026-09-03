@@ -376,8 +376,8 @@ const viewTab: RibbonTab<Ctx> = {
     labelKey: 'writing.ribbon.tab_view',
     groups: [
         {
-            id: 'display',
-            labelKey: 'writing.ribbon.group_view',
+            id: 'workspace',
+            labelKey: 'writing.ribbon.group_workspace',
             controls: [
                 {
                     id: 'section-settings',
@@ -386,6 +386,50 @@ const viewTab: RibbonTab<Ctx> = {
                     labelKey: 'writing.workspace.section_settings_menu',
                     onAction: (ctx) => ctx.actions.openSectionSettings(),
                 },
+            ],
+        },
+        {
+            id: 'view-modes',
+            labelKey: 'writing.ribbon.group_view_modes',
+            controls: [
+                {
+                    id: 'continuous-view',
+                    type: 'toggle',
+                    icon: 'fa-solid fa-align-left',
+                    labelKey: 'writing.ribbon.continuous_view',
+                    active: (ctx) => ctx.viewMode === 'continuous',
+                    onAction: (ctx) => ctx.actions.setViewMode('continuous'),
+                },
+                {
+                    id: 'focus-view',
+                    type: 'toggle',
+                    icon: 'fa-solid fa-expand',
+                    labelKey: 'writing.ribbon.focus_view',
+                    active: (ctx) => ctx.viewMode === 'focus',
+                    onAction: (ctx) => ctx.actions.setViewMode('focus'),
+                },
+                {
+                    id: 'outline-view',
+                    type: 'toggle',
+                    icon: 'fa-solid fa-list-tree',
+                    labelKey: 'writing.ribbon.outline_view',
+                    active: (ctx) => ctx.viewMode === 'outline',
+                    onAction: (ctx) => ctx.actions.setViewMode('outline'),
+                },
+                {
+                    id: 'kanban-view',
+                    type: 'toggle',
+                    icon: 'fa-solid fa-table-columns',
+                    labelKey: 'writing.ribbon.kanban_view',
+                    active: (ctx) => ctx.viewMode === 'kanban',
+                    onAction: (ctx) => ctx.actions.setViewMode('kanban'),
+                },
+            ],
+        },
+        {
+            id: 'display',
+            labelKey: 'writing.ribbon.group_display',
+            controls: [
                 {
                     id: 'print-layout',
                     type: 'toggle',
@@ -394,24 +438,6 @@ const viewTab: RibbonTab<Ctx> = {
                     shortcut: 'Mod-Shift-L',
                     active: (ctx) => ctx.printLayout,
                     onAction: (ctx) => ctx.actions.togglePrintLayout(),
-                },
-                {
-                    id: 'outline-view',
-                    type: 'toggle',
-                    icon: 'fa-solid fa-list-tree',
-                    labelKey: 'writing.ribbon.outline_view',
-                    active: (ctx) => ctx.viewMode === 'outline',
-                    onAction: (ctx) =>
-                        ctx.actions.setViewMode(ctx.viewMode === 'outline' ? 'continuous' : 'outline'),
-                },
-                {
-                    id: 'kanban-view',
-                    type: 'toggle',
-                    icon: 'fa-solid fa-table-columns',
-                    labelKey: 'writing.ribbon.kanban_view',
-                    active: (ctx) => ctx.viewMode === 'kanban',
-                    onAction: (ctx) =>
-                        ctx.actions.setViewMode(ctx.viewMode === 'kanban' ? 'continuous' : 'kanban'),
                 },
                 {
                     id: 'show-plan',
@@ -462,6 +488,12 @@ const viewTab: RibbonTab<Ctx> = {
                         }
                     },
                 },
+            ],
+        },
+        {
+            id: 'panels',
+            labelKey: 'writing.ribbon.group_panels',
+            controls: [
                 {
                     id: 'panel',
                     type: 'toggle',
@@ -481,6 +513,12 @@ const viewTab: RibbonTab<Ctx> = {
                     active: (ctx) => ctx.sceneLinksPanelOpen,
                     onAction: (ctx) => ctx.actions.toggleSceneLinksPanel(),
                 },
+            ],
+        },
+        {
+            id: 'editor-view',
+            labelKey: 'writing.ribbon.group_editor_view',
+            controls: [
                 {
                     id: 'code-view',
                     type: 'toggle',

@@ -37,6 +37,9 @@ export interface WritingEditorBridge {
     scrollToCommentMark(commentId: number): void;
     hasNonEmptySelection(): boolean;
     getSelectionRange(): { from: number; to: number } | null;
+    /** Snapshotted selection for contextual mobile actions. Optional so
+     *  third-party editor bridges remain source-compatible. */
+    getSelectionSnapshot?(): { from: number; to: number; text: string } | null;
     getCommentPositionMap(): Record<number, number>;
     /**
      * Find all occurrences of `text` in the current doc.

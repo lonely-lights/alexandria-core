@@ -1,17 +1,23 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    type CSSProperties,
+} from "react";
 
-import useT from '@alexandria/hooks/useT';
-import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
+import useT from "@alexandria/hooks/useT";
+import type { ScreenplaySceneLink } from "@alexandria/editor/screenplay/sceneLinks";
 
-import PlanBlock from '../Outline/PlanBlock';
-import ManuscriptEditor from '../Sections/ManuscriptEditor';
-import ScreenplayEditor from '../Sections/ScreenplayEditor';
-import type { PageDisplayMode } from '../pageDisplay';
-import type { SectionOutlineItem } from '../Sections/sectionOutline';
-import type { SectionCountsCallback } from '../Sections/useSectionAutosave';
-import type { CurrentSection } from '../Workspace';
-import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
-import { estimatePlaceholderHeight, type FlatSection } from './flowModel';
+import PlanBlock from "../Outline/PlanBlock";
+import ManuscriptEditor from "../Sections/ManuscriptEditor";
+import ScreenplayEditor from "../Sections/ScreenplayEditor";
+import type { PageDisplayMode } from "../pageDisplay";
+import type { SectionOutlineItem } from "../Sections/sectionOutline";
+import type { SectionCountsCallback } from "../Sections/useSectionAutosave";
+import type { CurrentSection } from "../Workspace";
+import type { WritingEditorBridge } from "../ribbon/writingRibbonContext";
+import { estimatePlaceholderHeight, type FlatSection } from "./flowModel";
 
 /**
  * One row of the continuous manuscript flow — spec 2026-08-08.
@@ -39,24 +45,25 @@ import { estimatePlaceholderHeight, type FlatSection } from './flowModel';
  */
 
 /** Normalize a work's free-form format string to the two editor families. */
-export function guessFormat(format: string): 'prose' | 'screenplay' {
-    return format === 'screenplay' ? 'screenplay' : 'prose';
+export function guessFormat(format: string): "prose" | "screenplay" {
+    return format === "screenplay" ? "screenplay" : "prose";
 }
 
 /** Min height for a just-engaged empty editor, so it stays clickable. */
 const ENGAGED_MIN_HEIGHT_PX = 280;
 
 const mutedText: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+    color: "color-mix(in srgb, var(--theme-base-content) 50%, transparent)",
 };
 
 const headingText: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 85%, transparent)',
+    color: "color-mix(in srgb, var(--theme-base-content) 85%, transparent)",
 };
 
 /* Scene-break ornament: two hairlines fading out toward the margins so
    the feather sits in the composition rather than on a ruled line. */
-const ORNAMENT_RULE_INK = 'color-mix(in srgb, var(--theme-base-content) 25%, transparent)';
+const ORNAMENT_RULE_INK =
+    "color-mix(in srgb, var(--theme-base-content) 25%, transparent)";
 
 const ornamentRuleLeft: CSSProperties = {
     background: `linear-gradient(to right, transparent, ${ORNAMENT_RULE_INK})`,
@@ -67,7 +74,7 @@ const ornamentRuleRight: CSSProperties = {
 };
 
 const ornamentGlyph: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+    color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
 };
 
 export interface FlowSectionProps {
@@ -93,7 +100,10 @@ export interface FlowSectionProps {
     /** Side margin in proportional inches (ruler-draggable). */
     marginXIn: number;
     onCounts: SectionCountsCallback;
-    onBridgeChange: (sectionId: number, bridge: WritingEditorBridge | null) => void;
+    onBridgeChange: (
+        sectionId: number,
+        bridge: WritingEditorBridge | null,
+    ) => void;
     onEditorStateChange: () => void;
     onOutlineChange: (outline: SectionOutlineItem[]) => void;
     onSceneLinksChange: (links: ScreenplaySceneLink[]) => void;
@@ -145,7 +155,7 @@ export default function FlowSection({
         onEditorStateChange();
     }, [node.id, onBridgeChange, onEditorStateChange]);
 
-    const hasText = (section?.content ?? '').trim() !== '';
+    const hasText = (section?.content ?? "").trim() !== "";
     const showEditor = section !== null && (hasText || engaged);
 
     // Report the bridge once the editor is mounted (onStateChange only
@@ -180,9 +190,11 @@ export default function FlowSection({
             {isContainer ? (
                 <h2
                     className="alex-flow-heading px-6 pt-12 pb-4 text-center font-semibold"
-                    style={{ ...headingText, fontSize: depth === 0 ? '1.5rem' : '1.25rem' }}
+                    style={{
+                        ...headingText,
+                        fontSize: depth === 0 ? "1.5rem" : "1.25rem",
+                    }}
                 >
-                    {node.label ? `${node.label} — ` : ''}
                     {node.title}
                 </h2>
             ) : (
@@ -194,13 +206,19 @@ export default function FlowSection({
                         data-flow-divider=""
                         className="alex-flow-ornament mx-auto my-10 flex max-w-xs items-center gap-4 select-none"
                     >
-                        <span className="h-px flex-1" style={ornamentRuleLeft} />
+                        <span
+                            className="h-px flex-1"
+                            style={ornamentRuleLeft}
+                        />
                         <i
                             className="fa-light fa-feather text-xs"
                             aria-hidden="true"
                             style={ornamentGlyph}
                         />
-                        <span className="h-px flex-1" style={ornamentRuleRight} />
+                        <span
+                            className="h-px flex-1"
+                            style={ornamentRuleRight}
+                        />
                     </div>
                 )
             )}
@@ -233,8 +251,14 @@ export default function FlowSection({
             )}
 
             {showEditor ? (
-                <div style={engaged && !hasText ? { minHeight: ENGAGED_MIN_HEIGHT_PX } : undefined}>
-                    {format === 'screenplay' ? (
+                <div
+                    style={
+                        engaged && !hasText
+                            ? { minHeight: ENGAGED_MIN_HEIGHT_PX }
+                            : undefined
+                    }
+                >
+                    {format === "screenplay" ? (
                         <ScreenplayEditor
                             projectId={projectId}
                             projectSlug={projectSlug}
@@ -248,7 +272,9 @@ export default function FlowSection({
                             scrollMode="parent"
                             bridgeRef={bridgeRef}
                             onStateChange={handleStateChange}
-                            onSceneLinksChange={isActive ? onSceneLinksChange : noop}
+                            onSceneLinksChange={
+                                isActive ? onSceneLinksChange : noop
+                            }
                             onEntryLinkSelect={onEntryLinkSelect}
                             enableComments={canUpdate}
                             onAddComment={onAddComment}
@@ -282,23 +308,23 @@ export default function FlowSection({
                 /* Hydrated but empty. Read-only viewers get nothing —
                    an empty section has nothing to show them. */
                 canUpdate && (
-                <button
-                    type="button"
-                    data-flow-begin=""
-                    onClick={() => setEngaged(true)}
-                    /* The CTA stands in for a sheet that has no content
+                    <button
+                        type="button"
+                        data-flow-begin=""
+                        onClick={() => setEngaged(true)}
+                        /* The CTA stands in for a sheet that has no content
                        yet, so it takes the page's own footprint —
                        `my-6` is the sheet's 1.5rem block margin. */
-                    className="alex-flow-begin alex-sheet-footprint my-6 block w-full cursor-pointer rounded-lg border border-dashed px-6 py-6"
-                >
-                    <span className="flex items-center justify-center gap-2.5 text-sm font-medium">
-                        <i
-                            className="fa-light fa-pen-nib alex-flow-begin-icon"
-                            aria-hidden="true"
-                        />
-                        <span>{t('writing.flow.begin_writing')}</span>
-                    </span>
-                </button>
+                        className="alex-flow-begin alex-sheet-footprint my-6 block w-full cursor-pointer rounded-lg border border-dashed px-6 py-6"
+                    >
+                        <span className="flex items-center justify-center gap-2.5 text-sm font-medium">
+                            <i
+                                className="fa-light fa-pen-nib alex-flow-begin-icon"
+                                aria-hidden="true"
+                            />
+                            <span>{t("writing.flow.begin_writing")}</span>
+                        </span>
+                    </button>
                 )
             ) : (
                 <div
@@ -313,7 +339,7 @@ export default function FlowSection({
                         ),
                     }}
                 >
-                    {node.has_content ? t('writing.flow.loading') : ''}
+                    {node.has_content ? t("writing.flow.loading") : ""}
                 </div>
             )}
         </div>

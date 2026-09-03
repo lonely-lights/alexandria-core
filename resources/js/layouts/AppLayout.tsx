@@ -238,6 +238,14 @@ interface AppLayoutProps {
      *  anonymous pages (auth, dev sandbox unless logged in) never see
      *  it. */
     bottomNavTabs?: BottomNavTab[] | null;
+    /** `peek` exposes a safe disclosure handle before showing actionable tabs. */
+    bottomNavPresentation?: "standard" | "peek";
+    /** Marks a tab active on nested routes whose URL does not share its href. */
+    bottomNavActiveTabId?: string;
+    /** Temporarily suppress mobile navigation while a child surface needs
+     *  exclusive access to the lower viewport (for example, an editor's
+     *  software-keyboard accessory strip). */
+    bottomNavHidden?: boolean;
 
     // ────────────────────────────────────────────────────────────────────
     // Floating action button
@@ -295,6 +303,9 @@ export default function AppLayout({
     onNotesToggle,
 
     bottomNavTabs,
+    bottomNavPresentation = "standard",
+    bottomNavActiveTabId,
+    bottomNavHidden = false,
 
     fabActions,
 
@@ -646,7 +657,9 @@ export default function AppLayout({
                     )
                   : null));
     const showBottomNav =
-        !!resolvedBottomNavTabs && resolvedBottomNavTabs.length > 0;
+        !bottomNavHidden &&
+        !!resolvedBottomNavTabs &&
+        resolvedBottomNavTabs.length > 0;
     const showSearch = onSearchToggle !== null;
     const commandPaletteSearch = useMemo(
         () =>
@@ -695,24 +708,37 @@ export default function AppLayout({
             <main
                 data-theme-target="content"
                 className={[
-                    immersive ? "" : "pt-20",
-                    // pb-[calc(5rem+env(safe-area-inset-bottom))] gives the
+                    // pb-[calc(5rem+var(--safe-bottom))] gives the
                     // bottom nav full clearance on iPhones with a home
                     // indicator (the nav's own min-height + safe-area
                     // padding can grow to ~98px there; a flat pb-20 leaves
                     // the last ~18px of content tucked under the nav).
                     // lg:pb-0 keeps desktop unchanged.
-                    showBottomNav
-                        ? "pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0"
+                    showBottomNav && bottomNavPresentation === "standard"
+                        ? "pb-[calc(5rem+var(--safe-bottom))] lg:pb-0"
                         : "",
                 ]
                     .filter(Boolean)
                     .join(" ")}
+                style={
+                    immersive
+                        ? undefined
+                        : {
+                              paddingTop:
+                                  "calc(5rem + max(var(--safe-top, 0px), var(--theme-safe-top-min, 0px)))",
+                          }
+                }
             >
                 {children}
             </main>
 
-            {showBottomNav && <BottomNav tabs={resolvedBottomNavTabs!} />}
+            {showBottomNav && (
+                <BottomNav
+                    tabs={resolvedBottomNavTabs!}
+                    presentation={bottomNavPresentation}
+                    activeTabId={bottomNavActiveTabId}
+                />
+            )}
 
             {/* The navbar palette is account-global. Its local Settings
                 index works on every authenticated route; when a current

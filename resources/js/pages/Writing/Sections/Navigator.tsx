@@ -1,19 +1,22 @@
-import { router } from '@inertiajs/react';
-import { useRef, useState, type CSSProperties } from 'react';
+import { router } from "@inertiajs/react";
+import { useRef, useState, type CSSProperties } from "react";
 
-import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
-import useT, { type Translator } from '@alexandria/hooks/useT';
-import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
-import { worksBase, workUrl } from '@alexandria/lib/urls';
-import Tooltip from '@alexandria/components/ui/Tooltip';
-import type { ReactNode } from 'react';
+import DropdownMenu from "@alexandria/components/ui/DropdownMenu";
+import useT, { type Translator } from "@alexandria/hooks/useT";
+import { useSortableReorder } from "@alexandria/hooks/useSortableReorder";
+import { worksBase, workUrl } from "@alexandria/lib/urls";
+import Tooltip from "@alexandria/components/ui/Tooltip";
+import type { ReactNode } from "react";
 
-import type { CurrentSection, SectionNode } from '../Workspace';
-import MoveSectionModal from './MoveSectionModal';
-import RenameSectionModal from './RenameSectionModal';
-import type { SectionOutlineItem } from './sectionOutline';
-import { getStructureGuidance, type StructureGuidanceState } from './structureGuidance';
-import type { WorkStructure } from './structureTemplates';
+import type { CurrentSection, SectionNode } from "../Workspace";
+import MoveSectionModal from "./MoveSectionModal";
+import RenameSectionModal from "./RenameSectionModal";
+import type { SectionOutlineItem } from "./sectionOutline";
+import {
+    getStructureGuidance,
+    type StructureGuidanceState,
+} from "./structureGuidance";
+import type { WorkStructure } from "./structureTemplates";
 
 /**
  * Workspace section Navigator — Stage 8g.1 (Plan 2 Task 6; drag-reorder
@@ -66,6 +69,8 @@ interface NavigatorProps {
     /** Rendered at the far right of the header row, after the tree
      * actions. The workspace passes its binder collapse toggle here. */
     headerTrailing?: ReactNode;
+    /** The mobile Structure surface supplies its own title and actions. */
+    showHeader?: boolean;
     /** Autosave-confirmed word counts (by section id) overlaying the prop tree. */
     liveCounts?: Record<number, number>;
     /** Headings extracted from the current prose section, rendered as an in-section outline. */
@@ -84,76 +89,81 @@ interface NavigatorProps {
 
 const selectedRowStyle: CSSProperties = {
     background:
-        'var(--alex-writing-section-row-selected-bg, color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent))',
-    color: 'var(--alex-writing-section-row-selected-fg, var(--theme-brand-primary-500))',
+        "var(--alex-writing-section-row-selected-bg, color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent))",
+    color: "var(--alex-writing-section-row-selected-fg, var(--theme-brand-primary-500))",
 };
 
 const chevronStyle: CSSProperties = {
-    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 40%, transparent))',
+    color: "var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 40%, transparent))",
 };
 
 const leafDotStyle: CSSProperties = {
     background:
-        'var(--alex-writing-section-dot-bg, color-mix(in srgb, var(--theme-base-content) 15%, transparent))',
+        "var(--alex-writing-section-dot-bg, color-mix(in srgb, var(--theme-base-content) 15%, transparent))",
 };
 
 const labelChipStyle: CSSProperties = {
     background:
-        'var(--alex-writing-section-chip-bg, color-mix(in srgb, var(--theme-base-content) 8%, transparent))',
-    color: 'var(--alex-writing-section-chip-fg, color-mix(in srgb, var(--theme-base-content) 60%, transparent))',
-    borderRadius: 'var(--theme-radius-badge)',
-    padding: '0 0.375rem',
-    fontSize: '0.625rem',
+        "var(--alex-writing-section-chip-bg, color-mix(in srgb, var(--theme-base-content) 8%, transparent))",
+    color: "var(--alex-writing-section-chip-fg, color-mix(in srgb, var(--theme-base-content) 60%, transparent))",
+    borderRadius: "var(--theme-radius-badge)",
+    padding: "0 0.375rem",
+    fontSize: "0.625rem",
     fontWeight: 600,
     lineHeight: 1.6,
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-    whiteSpace: 'nowrap',
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    whiteSpace: "nowrap",
 };
 
 const wordCountStyle: CSSProperties = {
-    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 45%, transparent))',
+    color: "var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 45%, transparent))",
 };
 
 const hoverActionStyle: CSSProperties = {
-    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 50%, transparent))',
+    color: "var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 50%, transparent))",
 };
 
 const panelHeaderStyle: CSSProperties = {
-    borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
+    borderBottom:
+        "1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))",
 };
 
 const panelActionStyle: CSSProperties = {
-    borderRadius: 'var(--theme-radius-button)',
-    color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 58%, transparent))',
+    borderRadius: "var(--theme-radius-button)",
+    color: "var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 58%, transparent))",
 };
 
 const guidanceCardStyle: CSSProperties = {
-    background: 'var(--alex-writing-section-pane-bg, var(--theme-base-surface))',
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-    borderRadius: 'var(--theme-radius-card)',
-    boxShadow: '0 10px 28px rgb(0 0 0 / 0.16)',
+    background:
+        "var(--alex-writing-section-pane-bg, var(--theme-base-surface))",
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+    borderRadius: "var(--theme-radius-card)",
+    boxShadow: "0 10px 28px rgb(0 0 0 / 0.16)",
 };
 
 const guidanceItemStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
-    borderRadius: 'var(--theme-radius-button)',
+    background: "color-mix(in srgb, var(--theme-base-content) 4%, transparent)",
+    borderRadius: "var(--theme-radius-button)",
 };
 
 const guidanceStateStyle: Record<StructureGuidanceState, CSSProperties> = {
     complete: {
-        color: 'var(--theme-success, var(--theme-brand-primary-500))',
+        color: "var(--theme-success, var(--theme-brand-primary-500))",
     },
     current: {
-        color: 'var(--theme-brand-primary-500)',
+        color: "var(--theme-brand-primary-500)",
     },
     open: {
-        color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 50%, transparent))',
+        color: "var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 50%, transparent))",
     },
 };
 
 /** Collect the ids of every node that has children (default-expanded set). */
-function collectParentIds(nodes: SectionNode[], into: Set<number>): Set<number> {
+function collectParentIds(
+    nodes: SectionNode[],
+    into: Set<number>,
+): Set<number> {
     for (const node of nodes) {
         if (node.children.length > 0) {
             into.add(node.id);
@@ -173,7 +183,11 @@ function findNodeById(nodes: SectionNode[], id: number): SectionNode | null {
 }
 
 /** True when `candidateId` is `nodeId` itself or inside its subtree. */
-function isSelfOrDescendant(nodes: SectionNode[], nodeId: number, candidateId: number | null): boolean {
+function isSelfOrDescendant(
+    nodes: SectionNode[],
+    nodeId: number,
+    candidateId: number | null,
+): boolean {
     if (candidateId === null) return false;
     const node = findNodeById(nodes, nodeId);
     if (node === null) return false;
@@ -196,13 +210,14 @@ export default function Navigator({
     onRequestSettings,
     onRequestMarkRevision,
     headerTrailing,
+    showHeader = true,
     liveCounts,
     currentOutline = [],
     showSectionTypeLabels = true,
 }: NavigatorProps) {
     const t = useT();
-    const [expanded, setExpanded] = useState<Set<number>>(
-        () => collectParentIds(sections, new Set()),
+    const [expanded, setExpanded] = useState<Set<number>>(() =>
+        collectParentIds(sections, new Set()),
     );
     const [renameTarget, setRenameTarget] = useState<SectionNode | null>(null);
     const [moveTarget, setMoveTarget] = useState<SectionNode | null>(null);
@@ -227,7 +242,11 @@ export default function Navigator({
         onRequestAdd(node.id);
     }
 
-    function moveSection(sectionId: number, toParentId: number | null, position: number) {
+    function moveSection(
+        sectionId: number,
+        toParentId: number | null,
+        position: number,
+    ) {
         if (isSelfOrDescendant(sections, sectionId, toParentId)) {
             return; // dropping a parent into its own subtree — ignore
         }
@@ -237,7 +256,7 @@ export default function Navigator({
         router.put(
             `${worksBase(projectSlug, workSlug)}/sections/${sectionId}/move`,
             { parent_id: toParentId, position },
-            { preserveScroll: true, preserveState: true, only: ['sections'] },
+            { preserveScroll: true, preserveState: true, only: ["sections"] },
         );
     }
 
@@ -257,7 +276,7 @@ export default function Navigator({
                 {
                     preserveScroll: true,
                     preserveState: true,
-                    only: ['sections', 'currentSection'],
+                    only: ["sections", "currentSection"],
                 },
             );
         },
@@ -274,51 +293,66 @@ export default function Navigator({
 
     return (
         <div className="flex h-full min-h-0 flex-col">
-            {/* Single header row for the whole binder (owner review,
-                2026-08-31): SECTIONS label with the add-section button
-                right beside it; the host's headerTrailing (the collapse
-                toggle in the workspace) holds the right edge. Add-inside
-                and delete moved into each row's dot menu, where the
-                target is unambiguous. */}
-            <div
-                className="writing-workspace-binder-header flex shrink-0 items-center justify-between gap-2 px-2 py-1.5"
-                style={panelHeaderStyle}
-            >
-                <div className="flex items-center gap-1">
-                    <span className="pl-1 text-xs font-semibold uppercase tracking-[0.04em]" style={wordCountStyle}>
-                        {t('writing.workspace.sections')}
-                    </span>
-                    {canUpdate && (
-                        <Tooltip content={t('writing.workspace.add_section')}>
+            {showHeader && (
+                /* Desktop binder header. Mobile Structure owns this title
+                   and these actions in its modal header instead. */
+                <div
+                    className="writing-workspace-binder-header flex shrink-0 items-center justify-between gap-2 px-2 py-1.5"
+                    style={panelHeaderStyle}
+                >
+                    <div className="flex items-center gap-1">
+                        <span
+                            className="pl-1 text-xs font-semibold uppercase tracking-[0.04em]"
+                            style={wordCountStyle}
+                        >
+                            {t("writing.workspace.sections")}
+                        </span>
+                        {canUpdate && (
+                            <Tooltip
+                                content={t("writing.workspace.add_section")}
+                            >
+                                <button
+                                    type="button"
+                                    className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                                    data-writing-section-action="add-section"
+                                    style={panelActionStyle}
+                                    aria-label={t(
+                                        "writing.workspace.add_section",
+                                    )}
+                                    onClick={() => onRequestAdd(null)}
+                                >
+                                    <i
+                                        className="fa-solid fa-plus"
+                                        aria-hidden="true"
+                                    />
+                                </button>
+                            </Tooltip>
+                        )}
+                        <Tooltip
+                            content={t("writing.workspace.section_settings")}
+                        >
                             <button
                                 type="button"
                                 className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                                data-writing-section-action="add-section"
+                                data-writing-section-settings
                                 style={panelActionStyle}
-                                aria-label={t('writing.workspace.add_section')}
-                                onClick={() => onRequestAdd(null)}
+                                aria-label={t(
+                                    "writing.workspace.section_settings",
+                                )}
+                                onClick={onRequestSettings}
                             >
-                                <i className="fa-solid fa-plus" aria-hidden="true" />
+                                <i
+                                    className="fa-solid fa-ellipsis-vertical"
+                                    aria-hidden="true"
+                                />
                             </button>
                         </Tooltip>
-                    )}
-                    <Tooltip content={t('writing.workspace.section_settings')}>
-                        <button
-                            type="button"
-                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                            data-writing-section-settings
-                            style={panelActionStyle}
-                            aria-label={t('writing.workspace.section_settings')}
-                            onClick={onRequestSettings}
-                        >
-                            <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true" />
-                        </button>
-                    </Tooltip>
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                        {headerTrailing}
+                    </div>
                 </div>
-                <div className="flex items-center gap-0.5">
-                    {headerTrailing}
-                </div>
-            </div>
+            )}
             <div
                 className="writing-workspace-section-scroll writing-workspace-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2"
                 data-writing-section-scroll
@@ -330,10 +364,16 @@ export default function Navigator({
                         style={guidanceCardStyle}
                     >
                         <div className="grid gap-1">
-                            <h3 className="text-xs font-semibold" style={{ color: 'var(--theme-base-content)' }}>
+                            <h3
+                                className="text-xs font-semibold"
+                                style={{ color: "var(--theme-base-content)" }}
+                            >
                                 {t(guidance.titleKey)}
                             </h3>
-                            <p className="text-[11px] leading-relaxed" style={wordCountStyle}>
+                            <p
+                                className="text-[11px] leading-relaxed"
+                                style={wordCountStyle}
+                            >
                                 {t(guidance.bodyKey)}
                             </p>
                         </div>
@@ -342,7 +382,9 @@ export default function Navigator({
                                 <div
                                     key={item.id}
                                     className="flex items-center gap-2 px-2 py-1.5 text-[11px]"
-                                    data-writing-structure-guidance-item={item.id}
+                                    data-writing-structure-guidance-item={
+                                        item.id
+                                    }
                                     data-state={item.state}
                                     style={guidanceItemStyle}
                                 >
@@ -351,21 +393,31 @@ export default function Navigator({
                                         aria-hidden="true"
                                         style={guidanceStateStyle[item.state]}
                                     />
-                                    <span className="min-w-0 flex-1 truncate" style={wordCountStyle}>
+                                    <span
+                                        className="min-w-0 flex-1 truncate"
+                                        style={wordCountStyle}
+                                    >
                                         {t(item.labelKey)}
                                     </span>
                                     <span
                                         className="shrink-0 font-mono text-[10px] font-semibold tabular-nums"
                                         style={guidanceStateStyle[item.state]}
                                     >
-                                        {item.valueKey !== undefined ? t(item.valueKey) : item.value}
+                                        {item.valueKey !== undefined
+                                            ? t(item.valueKey)
+                                            : item.value}
                                     </span>
                                 </div>
                             ))}
                         </div>
                     </section>
                 )}
-                <SiblingGroup nodes={sections} parentId={null} depth={0} shared={shared} />
+                <SiblingGroup
+                    nodes={sections}
+                    parentId={null}
+                    depth={0}
+                    shared={shared}
+                />
             </div>
             {renameTarget !== null && (
                 <RenameSectionModal
@@ -399,7 +451,11 @@ interface TreeShared {
     onAddChild: (node: SectionNode) => void;
     onDuplicate: (node: SectionNode) => void;
     onRename: (node: SectionNode) => void;
-    onMove: (sectionId: number, toParentId: number | null, position: number) => void;
+    onMove: (
+        sectionId: number,
+        toParentId: number | null,
+        position: number,
+    ) => void;
     onMoveTo: (node: SectionNode) => void;
     onMarkRevision: (node: SectionNode) => void;
     onDelete: (node: SectionNode) => void;
@@ -446,8 +502,15 @@ function SiblingGroup({
 
                 router.put(
                     `${worksBase(shared.projectSlug, shared.workSlug)}/sections/reorder`,
-                    { parent_id: parentId, ids: next.map((sibling) => sibling.id) },
-                    { preserveScroll: true, preserveState: true, only: ['sections'] },
+                    {
+                        parent_id: parentId,
+                        ids: next.map((sibling) => sibling.id),
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        only: ["sections"],
+                    },
                 );
 
                 return next;
@@ -455,16 +518,25 @@ function SiblingGroup({
         },
         shared.canUpdate,
         {
-            group: 'writing-sections',
+            group: "writing-sections",
             onMoveAcross: (sectionId, toParentId, newIndex) =>
                 shared.onMove(sectionId, toParentId, newIndex),
         },
     );
 
     return (
-        <div ref={groupRef} data-sortable-parent={parentId ?? 'root'} className="flex flex-col gap-0.5">
+        <div
+            ref={groupRef}
+            data-sortable-parent={parentId ?? "root"}
+            className="flex flex-col gap-0.5"
+        >
             {ordered.map((node) => (
-                <NavigatorRow key={node.id} node={node} depth={depth} shared={shared} />
+                <NavigatorRow
+                    key={node.id}
+                    node={node}
+                    depth={depth}
+                    shared={shared}
+                />
             ))}
         </div>
     );
@@ -479,8 +551,24 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onMarkRevision, onDelete, liveCounts, showSectionTypeLabels, t } =
-        shared;
+    const {
+        projectSlug,
+        workSlug,
+        currentSlug,
+        expanded,
+        canUpdate,
+        onSelect,
+        onToggle,
+        onAddChild,
+        onDuplicate,
+        onRename,
+        onMoveTo,
+        onMarkRevision,
+        onDelete,
+        liveCounts,
+        showSectionTypeLabels,
+        t,
+    } = shared;
 
     const isSelected = node.slug === currentSlug;
     const hasChildren = node.children.length > 0;
@@ -504,10 +592,10 @@ function NavigatorRow({
         <div data-section-id={node.id} className="flex flex-col gap-0.5">
             <div
                 className="alex-row group flex cursor-pointer items-center gap-1 py-1 pr-2 text-sm"
-                data-selected={isSelected ? 'true' : undefined}
+                data-selected={isSelected ? "true" : undefined}
                 style={{
                     paddingLeft: `${depth * 18 + 8}px`,
-                    borderRadius: 'var(--theme-radius-button)',
+                    borderRadius: "var(--theme-radius-button)",
                     ...(isSelected ? selectedRowStyle : {}),
                 }}
                 onClick={() => onSelect(node.slug)}
@@ -527,11 +615,14 @@ function NavigatorRow({
                 >
                     {hasChildren ? (
                         <i
-                            className={`fa-solid fa-chevron-right text-[9px] transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}`}
+                            className={`fa-solid fa-chevron-right text-[9px] transition-transform duration-150 ${isExpanded ? "rotate-90" : ""}`}
                             style={chevronStyle}
                         />
                     ) : (
-                        <span className="h-1 w-1 rounded-full" style={leafDotStyle} />
+                        <span
+                            className="h-1 w-1 rounded-full"
+                            style={leafDotStyle}
+                        />
                     )}
                 </button>
 
@@ -541,20 +632,27 @@ function NavigatorRow({
                     </span>
                 )}
 
-                <span className={`min-w-0 flex-1 truncate ${isSelected ? 'font-medium' : ''}`}>
+                <span
+                    className={`min-w-0 flex-1 truncate ${isSelected ? "font-medium" : ""}`}
+                >
                     {node.title}
                 </span>
 
                 {/* Hover actions */}
                 {canUpdate && (
-                    <span className={`flex shrink-0 items-center gap-0.5 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
+                    <span
+                        className={`flex shrink-0 items-center gap-0.5 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${isSelected ? "opacity-100" : "opacity-0"}`}
+                    >
                         <span
                             className="drag-handle flex h-5 w-5 cursor-grab items-center justify-center active:cursor-grabbing"
                             style={hoverActionStyle}
-                            title={t('writing.workspace.drag_to_reorder')}
+                            title={t("writing.workspace.drag_to_reorder")}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <i className="fa-solid fa-grip-vertical text-[10px]" aria-hidden="true" />
+                            <i
+                                className="fa-solid fa-grip-vertical text-[10px]"
+                                aria-hidden="true"
+                            />
                         </span>
                         <span onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu
@@ -563,20 +661,22 @@ function NavigatorRow({
                                 labelAlign="right"
                                 menuClassName="w-48"
                                 inheritCssVariables={[
-                                    '--alex-writing-section-pane-bg',
-                                    '--alex-writing-section-row-hover-bg',
-                                    '--alex-writing-section-muted',
-                                    '--theme-base-content',
-                                    '--theme-base-surface',
-                                    '--theme-motion-duration-fast',
-                                    '--theme-motion-easing-standard',
-                                    '--theme-radius-button',
-                                    '--theme-radius-card',
+                                    "--alex-writing-section-pane-bg",
+                                    "--alex-writing-section-row-hover-bg",
+                                    "--alex-writing-section-muted",
+                                    "--theme-base-content",
+                                    "--theme-base-surface",
+                                    "--theme-motion-duration-fast",
+                                    "--theme-motion-easing-standard",
+                                    "--theme-radius-button",
+                                    "--theme-radius-card",
                                 ]}
                                 menuStyle={{
-                                    background: 'var(--alex-writing-section-pane-bg, var(--theme-base-surface))',
-                                    borderColor: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
-                                    color: 'var(--theme-base-content)',
+                                    background:
+                                        "var(--alex-writing-section-pane-bg, var(--theme-base-surface))",
+                                    borderColor:
+                                        "color-mix(in srgb, var(--theme-base-content) 12%, transparent)",
+                                    color: "var(--theme-base-content)",
                                 }}
                                 trigger={
                                     <button
@@ -584,48 +684,69 @@ function NavigatorRow({
                                         className="flex h-5 w-5 items-center justify-center rounded-full"
                                         data-writing-section-menu={node.id}
                                         style={hoverActionStyle}
-                                        title={t('writing.workspace.section_options')}
-                                        aria-label={t('writing.workspace.section_options')}
+                                        title={t(
+                                            "writing.workspace.section_options",
+                                        )}
+                                        aria-label={t(
+                                            "writing.workspace.section_options",
+                                        )}
                                     >
-                                        <i className="fa-solid fa-ellipsis-vertical text-[10px]" aria-hidden="true" />
+                                        <i
+                                            className="fa-solid fa-ellipsis-vertical text-[10px]"
+                                            aria-hidden="true"
+                                        />
                                     </button>
                                 }
                                 items={[
                                     {
-                                        label: t('writing.workspace.add_subsection'),
-                                        icon: 'fa-plus',
+                                        label: t(
+                                            "writing.workspace.add_subsection",
+                                        ),
+                                        icon: "fa-plus",
                                         onClick: () => onAddChild(node),
                                     },
                                     {
-                                        label: t('writing.workspace.duplicate_section'),
-                                        icon: 'fa-copy',
+                                        label: t(
+                                            "writing.workspace.duplicate_section",
+                                        ),
+                                        icon: "fa-copy",
                                         onClick: () => onDuplicate(node),
                                     },
                                     {
-                                        label: t('writing.workspace.rename_section'),
-                                        icon: 'fa-pen',
+                                        label: t(
+                                            "writing.workspace.rename_section",
+                                        ),
+                                        icon: "fa-pen",
                                         onClick: () => onRename(node),
                                     },
                                     {
-                                        label: t('writing.workspace.move_section'),
-                                        icon: 'fa-arrows-up-down-left-right',
+                                        label: t(
+                                            "writing.workspace.move_section",
+                                        ),
+                                        icon: "fa-arrows-up-down-left-right",
                                         onClick: () => onMoveTo(node),
                                     },
                                     { divider: true },
                                     {
-                                        label: t('writing.revisions.mark_action'),
-                                        icon: 'fa-clock-rotate-left',
+                                        label: t(
+                                            "writing.revisions.mark_action",
+                                        ),
+                                        icon: "fa-clock-rotate-left",
                                         onClick: () => onMarkRevision(node),
                                     },
                                     {
-                                        label: t('writing.workspace.copy_section_link'),
-                                        icon: 'fa-link',
+                                        label: t(
+                                            "writing.workspace.copy_section_link",
+                                        ),
+                                        icon: "fa-link",
                                         onClick: copyLink,
                                     },
                                     { divider: true },
                                     {
-                                        label: t('writing.workspace.delete_section'),
-                                        icon: 'fa-trash-can',
+                                        label: t(
+                                            "writing.workspace.delete_section",
+                                        ),
+                                        icon: "fa-trash-can",
                                         danger: true,
                                         onClick: () => onDelete(node),
                                     },
@@ -639,7 +760,10 @@ function NavigatorRow({
                     <span
                         className="shrink-0 text-[11px] tabular-nums"
                         style={wordCountStyle}
-                        title={t('writing.workspace.words').replace(':count', wordCount.toLocaleString())}
+                        title={t("writing.workspace.words").replace(
+                            ":count",
+                            wordCount.toLocaleString(),
+                        )}
                     >
                         {wordCount.toLocaleString()}
                     </span>
@@ -647,7 +771,10 @@ function NavigatorRow({
             </div>
 
             {outline.length > 0 && (
-                <div className="flex flex-col gap-0.5" data-writing-section-outline={node.id}>
+                <div
+                    className="flex flex-col gap-0.5"
+                    data-writing-section-outline={node.id}
+                >
                     {outline.map((item) => (
                         <div
                             key={item.id}
@@ -655,7 +782,7 @@ function NavigatorRow({
                             data-writing-section-outline-item={item.id}
                             style={{
                                 paddingLeft: `${depth * 18 + 34 + (item.level - 1) * 12}px`,
-                                color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 48%, transparent))',
+                                color: "var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 48%, transparent))",
                             }}
                         >
                             <i
@@ -663,7 +790,9 @@ function NavigatorRow({
                                 aria-hidden="true"
                                 style={chevronStyle}
                             />
-                            <span className="min-w-0 truncate">{item.title}</span>
+                            <span className="min-w-0 truncate">
+                                {item.title}
+                            </span>
                         </div>
                     ))}
                 </div>

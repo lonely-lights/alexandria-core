@@ -1,15 +1,17 @@
-import { router, useForm, usePage } from '@inertiajs/react';
 import type { FormDataConvertible } from '@inertiajs/core';
+import { router, usePage } from '@inertiajs/react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
 import Toggle from '@alexandria/components/form/Toggle';
-import Button from '@alexandria/components/ui/Button';
 import ThemePresetPicker from '@alexandria/components/theming/ThemePresetPicker';
 import TokenOverrideEditor from '@alexandria/components/theming/TokenOverrideEditor';
+import { useToastContext } from '@alexandria/components/ui/ToastProvider';
+import useT from '@alexandria/hooks/useT';
 import { useTheme } from '@alexandria/hooks/useTheme';
-import useT, { type Translator } from '@alexandria/hooks/useT';
+import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import type { ThemeOverridePatch } from '@alexandria/lib/themeOverride';
-import { useId, useState, type SyntheticEvent, type ReactNode } from 'react';
 import { patchCachedPreferences } from '../settingsCache';
 
 /**
@@ -39,6 +41,192 @@ type ApplyViewPreferences = (prefs: ViewPreferences) => void;
  */
 const DEFAULT_MENU_DISMISS_DELAY_MS = 700;
 
+type PreferenceValue = string | number | boolean | null;
+type PreferenceFormData = Record<string, PreferenceValue>;
+
+function viewPreferencesFromPatch(
+    patch: Record<string, unknown>,
+): ViewPreferences {
+    const viewPatch: ViewPreferences = {};
+
+    if (typeof patch.font_size === 'string') {
+        viewPatch.font_size = patch.font_size;
+    }
+
+    if (typeof patch.reduced_motion === 'boolean') {
+        viewPatch.reduced_motion = patch.reduced_motion;
+    }
+
+    if (typeof patch.compact_mode === 'boolean') {
+        viewPatch.compact_mode = patch.compact_mode;
+    }
+
+    if (typeof patch.show_section_type_labels === 'boolean') {
+        viewPatch.show_section_type_labels = patch.show_section_type_labels;
+    }
+
+    if (typeof patch.high_contrast === 'boolean') {
+        viewPatch.high_contrast = patch.high_contrast;
+    }
+
+    if (typeof patch.focus_indicators === 'string') {
+        viewPatch.focus_indicators = patch.focus_indicators;
+    }
+
+    if (typeof patch.dyslexia_friendly_font === 'boolean') {
+        viewPatch.dyslexia_friendly_font = patch.dyslexia_friendly_font;
+    }
+
+    return viewPatch;
+}
+
+/**
+ * Immediate, optimistic persistence for click/select-style account
+ * preferences. Requests are serialized per visible section so rapid
+ * changes cannot arrive out of order; changes made while a request is in
+ * flight are folded into the next request. A failed latest request restores
+ * the last server-confirmed section snapshot.
+ */
+function useAutosavingPreferences<T extends PreferenceFormData>(
+    initialData: T,
+    applyViewPreferences: ApplyViewPreferences = () => undefined,
+) {
+    const t = useT();
+    const { show: showToast } = useToastContext();
+    const [data, setData] = useState<T>(initialData);
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const dataRef = useRef<T>(initialData);
+    const persistedRef = useRef<T>(initialData);
+    const pendingRevisionRef = useRef(0);
+    const savedRevisionRef = useRef(0);
+    const savingRef = useRef(false);
+    const mountedRef = useRef(true);
+    const flushRef = useRef<() => void>(() => undefined);
+
+    useEffect(() => {
+        mountedRef.current = true;
+
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
+
+    const reflectPreferences = useCallback(
+        (patch: Partial<T>) => {
+            const preferencePatch = patch as Record<string, unknown>;
+            patchCachedPreferences(preferencePatch);
+            applyViewPreferences(viewPreferencesFromPatch(preferencePatch));
+        },
+        [applyViewPreferences],
+    );
+
+    const flush = useCallback(async () => {
+        if (
+            savingRef.current ||
+            pendingRevisionRef.current === savedRevisionRef.current
+        ) {
+            return;
+        }
+
+        const revision = pendingRevisionRef.current;
+        const payload = { ...dataRef.current };
+        savingRef.current = true;
+
+        const restoreLastSavedValues = () => {
+            // A newer optimistic change will be sent next. Only roll back
+            // when the failed request still represents the visible state.
+            if (pendingRevisionRef.current !== revision) {
+                return;
+            }
+
+            const rollback = { ...persistedRef.current };
+            dataRef.current = rollback;
+            savedRevisionRef.current = revision;
+            reflectPreferences(rollback);
+
+            if (mountedRef.current) {
+                setData(rollback);
+                setSaveError(t('settings.preferences.save_failed'));
+            }
+        };
+
+        try {
+            const response = await fetch('/account/preferences', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-Silent': 'true',
+                    ...csrfHeaders(),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                restoreLastSavedValues();
+
+                return;
+            }
+
+            persistedRef.current = payload;
+            savedRevisionRef.current = revision;
+
+            if (pendingRevisionRef.current === revision) {
+                showToast(t('settings.toast.setting_updated'), {
+                    type: 'success',
+                });
+            }
+
+            if (mountedRef.current) {
+                setSaveError(null);
+            }
+        } catch {
+            restoreLastSavedValues();
+        } finally {
+            savingRef.current = false;
+
+            if (pendingRevisionRef.current !== savedRevisionRef.current) {
+                queueMicrotask(() => flushRef.current());
+            }
+        }
+    }, [reflectPreferences, showToast, t]);
+
+    useEffect(() => {
+        flushRef.current = () => {
+            void flush();
+        };
+    }, [flush]);
+
+    function update<K extends keyof T>(key: K, value: T[K]) {
+        const next = { ...dataRef.current, [key]: value };
+        dataRef.current = next;
+        pendingRevisionRef.current += 1;
+        setData(next);
+        setSaveError(null);
+        reflectPreferences({ [key]: value } as unknown as Partial<T>);
+        queueMicrotask(() => flushRef.current());
+    }
+
+    return { data, update, saveError };
+}
+
+function AutosaveError({ message }: { message: string | null }) {
+    if (message === null) {
+        return null;
+    }
+
+    return (
+        <p
+            role="alert"
+            className="text-sm"
+            style={{ color: 'var(--theme-status-danger-fill)' }}
+        >
+            {message}
+        </p>
+    );
+}
+
 interface PreferencesSectionProps {
     section: string;
     preferences: Record<string, unknown>;
@@ -59,54 +247,73 @@ export default function PreferencesSection({
     options,
     applyViewPreferences,
 }: PreferencesSectionProps) {
-    const apply: ApplyViewPreferences = applyViewPreferences ?? (() => undefined);
+    const apply: ApplyViewPreferences =
+        applyViewPreferences ?? (() => undefined);
 
     switch (section) {
         case 'appearance':
-            return <AppearanceSectionWithTheme preferences={preferences} options={options} applyViewPreferences={apply} />;
+            return (
+                <AppearanceSectionWithTheme
+                    preferences={preferences}
+                    options={options}
+                    applyViewPreferences={apply}
+                />
+            );
         case 'behavior':
             return <BehaviorSection preferences={preferences} />;
         case 'workspace':
-            return <WorkspaceSection preferences={preferences} applyViewPreferences={apply} />;
+            return (
+                <WorkspaceSection
+                    preferences={preferences}
+                    applyViewPreferences={apply}
+                />
+            );
         case 'language':
-            return <LanguageSection preferences={preferences} options={options} />;
+            return (
+                <LanguageSection preferences={preferences} options={options} />
+            );
         case 'notifications':
-            return <NotificationsSection preferences={preferences} options={options} />;
+            return (
+                <NotificationsSection
+                    preferences={preferences}
+                    options={options}
+                />
+            );
         case 'editor':
-            return <EditorSection preferences={preferences} options={options} />;
+            return (
+                <EditorSection preferences={preferences} options={options} />
+            );
         case 'accessibility':
         case 'a11y-visual':
-            return <AccessibilitySection preferences={preferences} options={options} subsection="visual" applyViewPreferences={apply} />;
+            return (
+                <AccessibilitySection
+                    preferences={preferences}
+                    options={options}
+                    subsection="visual"
+                    applyViewPreferences={apply}
+                />
+            );
         case 'a11y-motion':
-            return <AccessibilitySection preferences={preferences} options={options} subsection="motion" applyViewPreferences={apply} />;
+            return (
+                <AccessibilitySection
+                    preferences={preferences}
+                    options={options}
+                    subsection="motion"
+                    applyViewPreferences={apply}
+                />
+            );
         case 'a11y-assistive':
-            return <AccessibilitySection preferences={preferences} options={options} subsection="assistive" applyViewPreferences={apply} />;
+            return (
+                <AccessibilitySection
+                    preferences={preferences}
+                    options={options}
+                    subsection="assistive"
+                    applyViewPreferences={apply}
+                />
+            );
         default:
             return null;
     }
-}
-
-/**
- * Save-button row used at the bottom of every preferences sub-form. The
- * label is per-section (Save Appearance / Save Formats / etc.); the
- * processing label uses the universal `common.saving` key.
- */
-function SaveRow({
-    processing,
-    labelKey,
-    t,
-}: {
-    processing: boolean;
-    labelKey: string;
-    t: Translator;
-}) {
-    return (
-        <div className="flex justify-end pt-2">
-            <Button type="submit" loading={processing} variant="primary">
-                {processing ? t('common.saving') : t(labelKey)}
-            </Button>
-        </div>
-    );
 }
 
 /**
@@ -165,7 +372,8 @@ function GroupDivider() {
         <hr
             className="border-0 border-t"
             style={{
-                borderColor: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                borderColor:
+                    'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
             }}
         />
     );
@@ -176,7 +384,7 @@ function GroupDivider() {
  * the theme cascade. Reads the persisted values off the shared
  * auth.preferences prop and saves through PATCH /account/theme (same
  * contract as the project / blueprint / entry theme endpoints). Sits
- * outside the preferences <form> because it persists independently.
+ * outside the basic preference controls because it persists independently.
  */
 function UserThemeSection() {
     const t = useT();
@@ -222,10 +430,15 @@ function UserThemeSection() {
     return (
         <div
             className="space-y-6 border-t pt-8"
-            style={{ borderColor: 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)' }}
+            style={{
+                borderColor:
+                    'color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+            }}
         >
             <div>
-                <span className="block text-sm font-semibold">{t('settings.appearance.theme_label')}</span>
+                <span className="block text-sm font-semibold">
+                    {t('settings.appearance.theme_label')}
+                </span>
                 <p className="text-xs" style={subtleText}>
                     {t('settings.appearance.theme_help')}
                 </p>
@@ -257,7 +470,10 @@ function UserThemeSection() {
                 {editorOpen && (
                     <div className="mt-4">
                         <TokenOverrideEditor
-                            initialOverride={(themePrefs?.theme_override as ThemeOverridePatch | null) ?? null}
+                            initialOverride={
+                                (themePrefs?.theme_override as ThemeOverridePatch | null) ??
+                                null
+                            }
                             onSave={saveOverride}
                         />
                     </div>
@@ -278,28 +494,40 @@ function AppearanceSection({
 }) {
     const t = useT();
     const theme = useTheme();
-    const form = useForm({
-        font_size: preferences.font_size as string,
-    });
+    const { show: showToast } = useToastContext();
+    const form = useAutosavingPreferences(
+        {
+            font_size: preferences.font_size as string,
+        },
+        applyViewPreferences,
+    );
 
-    const modes: Array<{ key: 'light' | 'dark' | 'system'; labelKey: string; icon: string }> = [
-        { key: 'light', labelKey: 'settings.appearance.color_mode_light', icon: 'fa-sun' },
-        { key: 'dark', labelKey: 'settings.appearance.color_mode_dark', icon: 'fa-moon' },
-        { key: 'system', labelKey: 'settings.appearance.color_mode_system', icon: 'fa-circle-half-stroke' },
+    const modes: Array<{
+        key: 'light' | 'dark' | 'system';
+        labelKey: string;
+        icon: string;
+    }> = [
+        {
+            key: 'light',
+            labelKey: 'settings.appearance.color_mode_light',
+            icon: 'fa-sun',
+        },
+        {
+            key: 'dark',
+            labelKey: 'settings.appearance.color_mode_dark',
+            icon: 'fa-moon',
+        },
+        {
+            key: 'system',
+            labelKey: 'settings.appearance.color_mode_system',
+            icon: 'fa-circle-half-stroke',
+        },
     ];
 
     // Derived selection state from the theme store (always authoritative).
-    const activeModeKey: 'light' | 'dark' | 'system' = theme?.followSystem ? 'system' : (theme?.mode ?? 'dark');
-
-    function handleSubmit(e: SyntheticEvent) {
-        e.preventDefault();
-        // Success feedback comes from the controller's flash via the
-        // ToastProvider bridge — a client-side onSuccess toast here
-        // doubled it (findings #10).
-        form.put('/account/preferences', {
-            onSuccess: () => patchCachedPreferences({ font_size: form.data.font_size }),
-        });
-    }
+    const activeModeKey: 'light' | 'dark' | 'system' = theme?.followSystem
+        ? 'system'
+        : (theme?.mode ?? 'dark');
 
     const labelStyle = { color: 'var(--theme-base-content)' };
     const helpStyle = {
@@ -307,26 +535,38 @@ function AppearanceSection({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="space-y-8">
             {/* Color mode */}
             <div>
-                <span className="mb-2 block text-sm font-semibold" style={labelStyle}>
+                <span
+                    className="mb-2 block text-sm font-semibold"
+                    style={labelStyle}
+                >
                     {t('settings.appearance.color_mode_label')}
                 </span>
                 <div className="grid grid-cols-3 gap-3">
                     {modes.map((m) => {
                         const selected = activeModeKey === m.key;
+
                         return (
                             <button
                                 key={m.key}
                                 type="button"
                                 onClick={() => {
-                                    if (!theme) return;
+                                    if (!theme || selected) {
+                                        return;
+                                    }
+
                                     if (m.key === 'system') {
                                         theme.setFollowSystem(true);
                                     } else {
                                         theme.setMode(m.key);
                                     }
+
+                                    showToast(
+                                        t('settings.toast.setting_updated'),
+                                        { type: 'success' },
+                                    );
                                 }}
                                 className={`alex-pref-card flex flex-col items-center gap-2 p-4 ${selected ? 'alex-pref-card--selected' : ''}`}
                             >
@@ -339,7 +579,9 @@ function AppearanceSection({
                                     }}
                                     aria-hidden="true"
                                 />
-                                <span className="text-sm font-medium">{t(m.labelKey)}</span>
+                                <span className="text-sm font-medium">
+                                    {t(m.labelKey)}
+                                </span>
                             </button>
                         );
                     })}
@@ -351,24 +593,36 @@ function AppearanceSection({
 
             {/* Font Size */}
             <div>
-                <span className="mb-2 block text-sm font-semibold" style={labelStyle}>
+                <span
+                    className="mb-2 block text-sm font-semibold"
+                    style={labelStyle}
+                >
                     {t('settings.appearance.font_size_label')}
                 </span>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {Object.entries(options.font_size).map(([val, label]) => {
                         const selected = form.data.font_size === val;
-                        const previewSize = val === 'small' ? 'text-sm' : val === 'large' ? 'text-lg' : val === 'x-large' ? 'text-xl' : 'text-base';
+                        const previewSize =
+                            val === 'small'
+                                ? 'text-sm'
+                                : val === 'large'
+                                  ? 'text-lg'
+                                  : val === 'x-large'
+                                    ? 'text-xl'
+                                    : 'text-base';
+
                         return (
                             <button
                                 key={val}
                                 type="button"
                                 onClick={() => {
-                                    form.setData('font_size', val);
-                                    applyViewPreferences({ font_size: val });
+                                    form.update('font_size', val);
                                 }}
                                 className={`alex-pref-card flex flex-col items-center gap-1 p-4 ${selected ? 'alex-pref-card--selected' : ''}`}
                             >
-                                <span className={`${previewSize} font-semibold`}>
+                                <span
+                                    className={`${previewSize} font-semibold`}
+                                >
                                     {t('settings.appearance.font_size_preview')}
                                 </span>
                                 <span className="text-xs">{label}</span>
@@ -378,8 +632,8 @@ function AppearanceSection({
                 </div>
             </div>
 
-            <SaveRow processing={form.processing} labelKey="settings.appearance.save_button" t={t} />
-        </form>
+            <AutosaveError message={form.saveError} />
+        </div>
     );
 }
 
@@ -401,51 +655,53 @@ function AppearanceSectionWithTheme(props: {
     );
 }
 
-function BehaviorSection({ preferences }: { preferences: Record<string, unknown> }) {
+function BehaviorSection({
+    preferences,
+}: {
+    preferences: Record<string, unknown>;
+}) {
     const t = useT();
     const delayInputId = useId();
     const delayLegendId = `${delayInputId}-legend`;
     const delayHintId = `${delayInputId}-hint`;
-    const form = useForm({
-        menu_dismiss_delay_ms: (preferences.menu_dismiss_delay_ms as number | null) ?? 0,
+    const initialDelay =
+        (preferences.menu_dismiss_delay_ms as number | null) ?? 0;
+    const form = useAutosavingPreferences({
+        menu_dismiss_delay_ms: initialDelay,
     });
     const menuDismissEnabled = form.data.menu_dismiss_delay_ms > 0;
 
-    function handleSubmit(e: SyntheticEvent) {
-        e.preventDefault();
-        form.put('/account/preferences', {
-            onSuccess: () => patchCachedPreferences({
-                menu_dismiss_delay_ms: form.data.menu_dismiss_delay_ms,
-            }),
-        });
-    }
-
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
             <div>
                 <Toggle
                     label={t('settings.behavior.menu_dismiss_label')}
-                    description={t('settings.behavior.menu_dismiss_description')}
+                    description={t(
+                        'settings.behavior.menu_dismiss_description',
+                    )}
                     checked={menuDismissEnabled}
                     onChange={(enabled) => {
-                        form.setData(
-                            'menu_dismiss_delay_ms',
-                            enabled ? DEFAULT_MENU_DISMISS_DELAY_MS : 0,
-                        );
+                        const next = enabled
+                            ? DEFAULT_MENU_DISMISS_DELAY_MS
+                            : 0;
+                        form.update('menu_dismiss_delay_ms', next);
                     }}
                 />
                 {menuDismissEnabled && (
                     <fieldset
                         className="mt-1 max-w-xl border px-4 pb-4 pt-2 lg:ml-5"
                         style={{
-                            borderColor: 'color-mix(in srgb, var(--theme-base-content) 16%, transparent)',
+                            borderColor:
+                                'color-mix(in srgb, var(--theme-base-content) 16%, transparent)',
                             borderRadius: 'var(--theme-radius-card)',
                         }}
                     >
                         <legend
                             id={delayLegendId}
                             className="px-2 text-xs font-medium"
-                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)' }}
+                            style={{
+                                color: 'color-mix(in srgb, var(--theme-base-content) 55%, transparent)',
+                            }}
                         >
                             {t('settings.behavior.menu_dismiss_delay_label')}
                         </legend>
@@ -460,18 +716,26 @@ function BehaviorSection({ preferences }: { preferences: Record<string, unknown>
                                 step={100}
                                 value={form.data.menu_dismiss_delay_ms}
                                 onChange={(event) => {
-                                    const parsed = parseInt(event.target.value, 10);
-                                    form.setData(
-                                        'menu_dismiss_delay_ms',
-                                        Number.isNaN(parsed) ? 0 : parsed,
+                                    const parsed = parseInt(
+                                        event.target.value,
+                                        10,
                                     );
+
+                                    if (parsed >= 100 && parsed <= 10000) {
+                                        form.update(
+                                            'menu_dismiss_delay_ms',
+                                            parsed,
+                                        );
+                                    }
                                 }}
                             />
                         </div>
                         <p
                             id={delayHintId}
                             className="mt-1 text-xs"
-                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}
+                            style={{
+                                color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+                            }}
                         >
                             {t('settings.behavior.menu_dismiss_delay_hint')}
                         </p>
@@ -479,8 +743,8 @@ function BehaviorSection({ preferences }: { preferences: Record<string, unknown>
                 )}
             </div>
 
-            <SaveRow processing={form.processing} labelKey="settings.behavior.save_button" t={t} />
-        </form>
+            <AutosaveError message={form.saveError} />
+        </div>
     );
 }
 
@@ -492,45 +756,41 @@ function WorkspaceSection({
     applyViewPreferences: ApplyViewPreferences;
 }) {
     const t = useT();
-    const form = useForm({
-        compact_mode: (preferences.compact_mode as boolean | undefined) ?? false,
-        show_section_type_labels: (preferences.show_section_type_labels as boolean | undefined) ?? true,
-    });
-
-    function handleSubmit(e: SyntheticEvent) {
-        e.preventDefault();
-        form.put('/account/preferences', {
-            onSuccess: () => patchCachedPreferences({
-                compact_mode: form.data.compact_mode,
-                show_section_type_labels: form.data.show_section_type_labels,
-            }),
-        });
-    }
+    const form = useAutosavingPreferences(
+        {
+            compact_mode:
+                (preferences.compact_mode as boolean | undefined) ?? false,
+            show_section_type_labels:
+                (preferences.show_section_type_labels as boolean | undefined) ??
+                true,
+        },
+        applyViewPreferences,
+    );
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
             <Toggle
                 label={t('settings.workspace.compact_mode_label')}
                 description={t('settings.workspace.compact_mode_description')}
                 checked={form.data.compact_mode}
                 onChange={(enabled) => {
-                    form.setData('compact_mode', enabled);
-                    applyViewPreferences({ compact_mode: enabled });
+                    form.update('compact_mode', enabled);
                 }}
             />
             <GroupDivider />
             <Toggle
                 label={t('settings.workspace.section_type_labels_label')}
-                description={t('settings.workspace.section_type_labels_description')}
+                description={t(
+                    'settings.workspace.section_type_labels_description',
+                )}
                 checked={form.data.show_section_type_labels}
                 onChange={(enabled) => {
-                    form.setData('show_section_type_labels', enabled);
-                    applyViewPreferences({ show_section_type_labels: enabled });
+                    form.update('show_section_type_labels', enabled);
                 }}
             />
 
-            <SaveRow processing={form.processing} labelKey="settings.workspace.save_button" t={t} />
-        </form>
+            <AutosaveError message={form.saveError} />
+        </div>
     );
 }
 
@@ -542,36 +802,28 @@ function LanguageSection({
     options: Record<string, Record<string, string>>;
 }) {
     const t = useT();
-    const form = useForm({
+    const form = useAutosavingPreferences({
         date_format: preferences.date_format as string,
         time_format: preferences.time_format as string,
         first_day_of_week: preferences.first_day_of_week as string,
         number_format: preferences.number_format as string,
     });
 
-    function handleSubmit(e: SyntheticEvent) {
-        e.preventDefault();
-        // Success feedback comes from the controller's flash via the
-        // ToastProvider bridge — a client-side onSuccess toast here
-        // doubled it (findings #10).
-        form.put('/account/preferences');
-    }
-
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Select
                     label={t('settings.language.date_format_label')}
                     name="date_format"
                     value={form.data.date_format}
-                    onChange={(e) => form.setData('date_format', e.target.value)}
+                    onChange={(e) => form.update('date_format', e.target.value)}
                     options={options.date_format}
                 />
                 <Select
                     label={t('settings.language.time_format_label')}
                     name="time_format"
                     value={form.data.time_format}
-                    onChange={(e) => form.setData('time_format', e.target.value)}
+                    onChange={(e) => form.update('time_format', e.target.value)}
                     options={options.time_format}
                 />
             </div>
@@ -581,20 +833,24 @@ function LanguageSection({
                     label={t('settings.language.first_day_label')}
                     name="first_day_of_week"
                     value={form.data.first_day_of_week}
-                    onChange={(e) => form.setData('first_day_of_week', e.target.value)}
+                    onChange={(e) =>
+                        form.update('first_day_of_week', e.target.value)
+                    }
                     options={options.first_day_of_week}
                 />
                 <Select
                     label={t('settings.language.number_format_label')}
                     name="number_format"
                     value={form.data.number_format}
-                    onChange={(e) => form.setData('number_format', e.target.value)}
+                    onChange={(e) =>
+                        form.update('number_format', e.target.value)
+                    }
                     options={options.number_format}
                 />
             </div>
 
-            <SaveRow processing={form.processing} labelKey="settings.language.save_button" t={t} />
-        </form>
+            <AutosaveError message={form.saveError} />
+        </div>
     );
 }
 
@@ -606,7 +862,7 @@ function NotificationsSection({
     options: Record<string, Record<string, string>>;
 }) {
     const t = useT();
-    const form = useForm({
+    const form = useAutosavingPreferences({
         email_notifications: preferences.email_notifications as boolean,
         email_frequency: preferences.email_frequency as string,
         push_notifications: preferences.push_notifications as boolean,
@@ -621,104 +877,116 @@ function NotificationsSection({
         community_digest: preferences.community_digest as boolean,
     });
 
-    function handleSubmit(e: SyntheticEvent) {
-        e.preventDefault();
-        // Success feedback comes from the controller's flash via the
-        // ToastProvider bridge — a client-side onSuccess toast here
-        // doubled it (findings #10).
-        form.put('/account/preferences');
-    }
-
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <UnwiredBanner>{t('settings.notifications.unwired_banner')}</UnwiredBanner>
+        <div className="space-y-6">
+            <UnwiredBanner>
+                {t('settings.notifications.unwired_banner')}
+            </UnwiredBanner>
 
             <div className="space-y-4">
-                <GroupHeader>{t('settings.notifications.delivery_header')}</GroupHeader>
+                <GroupHeader>
+                    {t('settings.notifications.delivery_header')}
+                </GroupHeader>
                 <Toggle
                     label={t('settings.notifications.email_label')}
                     checked={form.data.email_notifications}
-                    onChange={(v) => form.setData('email_notifications', v)}
+                    onChange={(v) => form.update('email_notifications', v)}
                 />
                 {form.data.email_notifications && (
                     <Select
-                        label={t('settings.notifications.email_frequency_label')}
+                        label={t(
+                            'settings.notifications.email_frequency_label',
+                        )}
                         name="email_frequency"
                         options={options.email_frequency}
                         value={form.data.email_frequency}
-                        onChange={(e) => form.setData('email_frequency', e.target.value)}
+                        onChange={(e) =>
+                            form.update('email_frequency', e.target.value)
+                        }
                     />
                 )}
                 <Toggle
                     label={t('settings.notifications.push_label')}
                     checked={form.data.push_notifications}
-                    onChange={(v) => form.setData('push_notifications', v)}
+                    onChange={(v) => form.update('push_notifications', v)}
                 />
                 <Toggle
                     label={t('settings.notifications.in_app_label')}
                     checked={form.data.in_app_notifications}
-                    onChange={(v) => form.setData('in_app_notifications', v)}
+                    onChange={(v) => form.update('in_app_notifications', v)}
                 />
             </div>
 
             <GroupDivider />
 
             <div className="space-y-4">
-                <GroupHeader>{t('settings.notifications.notify_about_header')}</GroupHeader>
+                <GroupHeader>
+                    {t('settings.notifications.notify_about_header')}
+                </GroupHeader>
                 <Toggle
                     label={t('settings.notifications.mentions_label')}
-                    description={t('settings.notifications.mentions_description')}
+                    description={t(
+                        'settings.notifications.mentions_description',
+                    )}
                     checked={form.data.notify_mentions}
-                    onChange={(v) => form.setData('notify_mentions', v)}
+                    onChange={(v) => form.update('notify_mentions', v)}
                 />
                 <Toggle
                     label={t('settings.notifications.comments_label')}
-                    description={t('settings.notifications.comments_description')}
+                    description={t(
+                        'settings.notifications.comments_description',
+                    )}
                     checked={form.data.notify_comments}
-                    onChange={(v) => form.setData('notify_comments', v)}
+                    onChange={(v) => form.update('notify_comments', v)}
                 />
                 <Toggle
                     label={t('settings.notifications.invites_label')}
-                    description={t('settings.notifications.invites_description')}
+                    description={t(
+                        'settings.notifications.invites_description',
+                    )}
                     checked={form.data.notify_project_invites}
-                    onChange={(v) => form.setData('notify_project_invites', v)}
+                    onChange={(v) => form.update('notify_project_invites', v)}
                 />
                 <Toggle
                     label={t('settings.notifications.ai_completion_label')}
-                    description={t('settings.notifications.ai_completion_description')}
+                    description={t(
+                        'settings.notifications.ai_completion_description',
+                    )}
                     checked={form.data.notify_ai_completion}
-                    onChange={(v) => form.setData('notify_ai_completion', v)}
+                    onChange={(v) => form.update('notify_ai_completion', v)}
                 />
             </div>
 
             <GroupDivider />
 
             <div className="space-y-4">
-                <GroupHeader>{t('settings.notifications.communications_header')}</GroupHeader>
+                <GroupHeader>
+                    {t('settings.notifications.communications_header')}
+                </GroupHeader>
                 <Toggle
                     label={t('settings.notifications.marketing_emails_label')}
                     checked={form.data.marketing_emails}
-                    onChange={(v) => form.setData('marketing_emails', v)}
+                    onChange={(v) => form.update('marketing_emails', v)}
                 />
                 <Toggle
                     label={t('settings.notifications.product_updates_label')}
                     checked={form.data.product_updates}
-                    onChange={(v) => form.setData('product_updates', v)}
+                    onChange={(v) => form.update('product_updates', v)}
                 />
                 <Toggle
                     label={t('settings.notifications.tips_label')}
                     checked={form.data.tips_and_tutorials}
-                    onChange={(v) => form.setData('tips_and_tutorials', v)}
+                    onChange={(v) => form.update('tips_and_tutorials', v)}
                 />
                 <Toggle
                     label={t('settings.notifications.community_digest_label')}
                     checked={form.data.community_digest}
-                    onChange={(v) => form.setData('community_digest', v)}
+                    onChange={(v) => form.update('community_digest', v)}
                 />
             </div>
 
-            <SaveRow processing={form.processing} labelKey="settings.notifications.save_button" t={t} />
-        </form>
+            <AutosaveError message={form.saveError} />
+        </div>
     );
 }
 
@@ -730,7 +998,7 @@ function EditorSection({
     options: Record<string, Record<string, string>>;
 }) {
     const t = useT();
-    const form = useForm({
+    const form = useAutosavingPreferences({
         default_editor_mode: preferences.default_editor_mode as string,
         auto_save: preferences.auto_save as boolean,
         auto_save_interval: preferences.auto_save_interval as number,
@@ -740,16 +1008,8 @@ function EditorSection({
         default_note_visibility: preferences.default_note_visibility as string,
     });
 
-    function handleSubmit(e: SyntheticEvent) {
-        e.preventDefault();
-        // Success feedback comes from the controller's flash via the
-        // ToastProvider bridge — a client-side onSuccess toast here
-        // doubled it (findings #10).
-        form.put('/account/preferences');
-    }
-
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
             <UnwiredBanner>{t('settings.editor.unwired_banner')}</UnwiredBanner>
 
             <Select
@@ -757,48 +1017,61 @@ function EditorSection({
                 name="default_editor_mode"
                 options={options.editor_mode}
                 value={form.data.default_editor_mode}
-                onChange={(e) => form.setData('default_editor_mode', e.target.value)}
+                onChange={(e) =>
+                    form.update('default_editor_mode', e.target.value)
+                }
             />
             <Toggle
                 label={t('settings.editor.auto_save_label')}
                 description={t('settings.editor.auto_save_description')}
                 checked={form.data.auto_save}
-                onChange={(v) => form.setData('auto_save', v)}
+                onChange={(v) => form.update('auto_save', v)}
             />
             {form.data.auto_save && (
                 <Select
                     label={t('settings.editor.auto_save_interval_label')}
                     name="auto_save_interval"
-                    options={Object.fromEntries(Object.entries(options.auto_save_interval).map(([k, v]) => [k, v]))}
+                    options={Object.fromEntries(
+                        Object.entries(options.auto_save_interval).map(
+                            ([k, v]) => [k, v],
+                        ),
+                    )}
                     value={form.data.auto_save_interval.toString()}
-                    onChange={(e) => form.setData('auto_save_interval', parseInt(e.target.value))}
+                    onChange={(e) =>
+                        form.update(
+                            'auto_save_interval',
+                            parseInt(e.target.value),
+                        )
+                    }
                 />
             )}
             <Toggle
                 label={t('settings.editor.spell_check_label')}
                 checked={form.data.spell_check}
-                onChange={(v) => form.setData('spell_check', v)}
+                onChange={(v) => form.update('spell_check', v)}
             />
             <Toggle
                 label={t('settings.editor.word_count_label')}
                 checked={form.data.show_word_count}
-                onChange={(v) => form.setData('show_word_count', v)}
+                onChange={(v) => form.update('show_word_count', v)}
             />
             <Toggle
                 label={t('settings.editor.reading_time_label')}
                 checked={form.data.show_reading_time}
-                onChange={(v) => form.setData('show_reading_time', v)}
+                onChange={(v) => form.update('show_reading_time', v)}
             />
             <Select
                 label={t('settings.editor.note_visibility_label')}
                 name="default_note_visibility"
                 options={options.note_visibility}
                 value={form.data.default_note_visibility}
-                onChange={(e) => form.setData('default_note_visibility', e.target.value)}
+                onChange={(e) =>
+                    form.update('default_note_visibility', e.target.value)
+                }
             />
 
-            <SaveRow processing={form.processing} labelKey="settings.editor.save_button" t={t} />
-        </form>
+            <AutosaveError message={form.saveError} />
+        </div>
     );
 }
 
@@ -816,33 +1089,30 @@ function AccessibilitySection({
     applyViewPreferences: ApplyViewPreferences;
 }) {
     const t = useT();
-    const form = useForm({
-        screen_reader_mode: preferences.screen_reader_mode as boolean,
-        high_contrast: preferences.high_contrast as boolean,
-        keyboard_shortcuts: preferences.keyboard_shortcuts as boolean,
-        focus_indicators: preferences.focus_indicators as string,
-        dyslexia_friendly_font: preferences.dyslexia_friendly_font as boolean,
-        reduced_motion: preferences.reduced_motion as boolean,
-    });
-
-    function handleSubmit(e: SyntheticEvent) {
-        e.preventDefault();
-        // Success feedback comes from the controller's flash via the
-        // ToastProvider bridge — a client-side onSuccess toast here
-        // doubled it (findings #10).
-        form.put('/account/preferences');
-    }
+    const form = useAutosavingPreferences(
+        {
+            screen_reader_mode: preferences.screen_reader_mode as boolean,
+            high_contrast: preferences.high_contrast as boolean,
+            keyboard_shortcuts: preferences.keyboard_shortcuts as boolean,
+            focus_indicators: preferences.focus_indicators as string,
+            dyslexia_friendly_font:
+                preferences.dyslexia_friendly_font as boolean,
+            reduced_motion: preferences.reduced_motion as boolean,
+        },
+        applyViewPreferences,
+    );
 
     if (subsection === 'visual') {
         return (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-6">
                 <Toggle
                     label={t('settings.accessibility.high_contrast_label')}
-                    description={t('settings.accessibility.high_contrast_description')}
+                    description={t(
+                        'settings.accessibility.high_contrast_description',
+                    )}
                     checked={form.data.high_contrast}
                     onChange={(v) => {
-                        form.setData('high_contrast', v);
-                        applyViewPreferences({ high_contrast: v });
+                        form.update('high_contrast', v);
                     }}
                 />
                 <Select
@@ -851,34 +1121,35 @@ function AccessibilitySection({
                     options={options.focus_indicators}
                     value={form.data.focus_indicators}
                     onChange={(e) => {
-                        form.setData('focus_indicators', e.target.value);
-                        applyViewPreferences({ focus_indicators: e.target.value });
+                        form.update('focus_indicators', e.target.value);
                     }}
                 />
                 <Toggle
                     label={t('settings.accessibility.dyslexia_label')}
-                    description={t('settings.accessibility.dyslexia_description')}
+                    description={t(
+                        'settings.accessibility.dyslexia_description',
+                    )}
                     checked={form.data.dyslexia_friendly_font}
                     onChange={(v) => {
-                        form.setData('dyslexia_friendly_font', v);
-                        applyViewPreferences({ dyslexia_friendly_font: v });
+                        form.update('dyslexia_friendly_font', v);
                     }}
                 />
-                <SaveRow processing={form.processing} labelKey="settings.accessibility.save_button" t={t} />
-            </form>
+                <AutosaveError message={form.saveError} />
+            </div>
         );
     }
 
     if (subsection === 'motion') {
         return (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-6">
                 <Toggle
                     label={t('settings.accessibility.reduce_motion_label')}
-                    description={t('settings.accessibility.reduce_motion_description')}
+                    description={t(
+                        'settings.accessibility.reduce_motion_description',
+                    )}
                     checked={form.data.reduced_motion}
                     onChange={(v) => {
-                        form.setData('reduced_motion', v);
-                        applyViewPreferences({ reduced_motion: v });
+                        form.update('reduced_motion', v);
                     }}
                 />
                 <p
@@ -889,27 +1160,31 @@ function AccessibilitySection({
                 >
                     {t('settings.accessibility.os_motion_help')}
                 </p>
-                <SaveRow processing={form.processing} labelKey="settings.accessibility.save_button" t={t} />
-            </form>
+                <AutosaveError message={form.saveError} />
+            </div>
         );
     }
 
     // subsection === 'assistive'
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
             <Toggle
                 label={t('settings.accessibility.screen_reader_label')}
-                description={t('settings.accessibility.screen_reader_description')}
+                description={t(
+                    'settings.accessibility.screen_reader_description',
+                )}
                 checked={form.data.screen_reader_mode}
-                onChange={(v) => form.setData('screen_reader_mode', v)}
+                onChange={(v) => form.update('screen_reader_mode', v)}
             />
             <Toggle
                 label={t('settings.accessibility.keyboard_shortcuts_label')}
-                description={t('settings.accessibility.keyboard_shortcuts_description')}
+                description={t(
+                    'settings.accessibility.keyboard_shortcuts_description',
+                )}
                 checked={form.data.keyboard_shortcuts}
-                onChange={(v) => form.setData('keyboard_shortcuts', v)}
+                onChange={(v) => form.update('keyboard_shortcuts', v)}
             />
-            <SaveRow processing={form.processing} labelKey="settings.accessibility.save_button" t={t} />
-        </form>
+            <AutosaveError message={form.saveError} />
+        </div>
     );
 }

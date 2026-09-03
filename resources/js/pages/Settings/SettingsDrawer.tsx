@@ -229,8 +229,9 @@ export default function SettingsDrawer({
                     borderTopRightRadius: 'var(--theme-radius-card, 1rem)',
                     boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.18)',
                     height: panelHeight,
-                    maxHeight: '100dvh',
-                    paddingBottom: 'env(safe-area-inset-bottom)',
+                    maxHeight: '100svh',
+                    paddingBottom:
+                        'var(--safe-bottom, env(safe-area-inset-bottom, 0px))',
                 }}
             >
                 {/* Grab zone — handle pill + header bar. Touch-listeners

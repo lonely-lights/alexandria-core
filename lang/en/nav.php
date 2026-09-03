@@ -36,4 +36,10 @@ return [
     'no_projects' => 'No projects yet',
     'create_project' => 'Create Project',
     'go_to_project' => 'Go to :project',
+
+    // ── Mobile navigation disclosure ────────────────────────────────
+    'mobile.navigation_title' => 'Navigation',
+    'mobile.primary_navigation' => 'Primary mobile navigation',
+    'mobile.open_navigation' => 'Open app navigation',
+    'mobile.close_navigation' => 'Close app navigation',
 ];
