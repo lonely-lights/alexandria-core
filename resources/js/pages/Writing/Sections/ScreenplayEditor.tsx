@@ -30,6 +30,7 @@ import {
 } from './ManuscriptEditor';
 import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
 import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
+import { findWritingMatches, searchWriting, replaceWriting, selectWritingMatch } from '@alexandria/editor/extensions/writingSearch';
 import SectionChrome from './SectionChrome';
 import useSectionAutosave from './useSectionAutosave';
 
@@ -95,6 +96,7 @@ function canRunHistoryCommand(editor: Editor | null, command: HistoryCommand): b
 /* ── Editable surface ── */
 
 interface ScreenplaySurfaceProps {
+    readOnly: boolean;
     projectId: number;
     initialContent: string;
     printLayout: boolean;
@@ -125,10 +127,11 @@ interface ScreenplaySurfaceProps {
 }
 
 /**
- * The TipTap instance lives in its own component so the read-only path
- * never constructs an editor (hooks must run unconditionally).
+ * Keep one TipTap instance across editing/reading changes so its formatted
+ * display, selection and undo history survive the switch.
  */
 function ScreenplaySurface({
+    readOnly,
     projectId,
     initialContent,
     printLayout,
@@ -177,6 +180,7 @@ function ScreenplaySurface({
     }
 
     const editor = useEditor({
+        editable: !readOnly,
         extensions: buildScreenplayExtensions({
             projectId,
             onEntryLinkSelect: () => {
@@ -200,6 +204,10 @@ function ScreenplaySurface({
             reportSceneLinks(e);
         },
     });
+
+    useEffect(() => {
+        editor?.setEditable(!readOnly, false);
+    }, [editor, readOnly]);
 
     // Section switches remount this component (Workspace keys the
     // editor by section id) — clear the debounce on unmount so a stale
@@ -321,6 +329,10 @@ function ScreenplaySurface({
         focus() {
             editor?.commands.focus();
         },
+        searchText: (query, options, current) => searchWriting(editor, query, options, current),
+        findMatches: (query, options) => editor ? findWritingMatches(editor.state.doc, query, options) : [],
+        replaceText: (query, replacement, options, current) => replaceWriting(editor, query, replacement, options, current),
+        selectTextMatch: (match) => selectWritingMatch(editor, match),
         // Comment mark operations (Stage 11.5 Task 3) — delegated to commentBridgeHelpers
         applyCommentMark(from, to, commentId) {
             if (!editor) return;
@@ -622,10 +634,10 @@ export default function ScreenplayEditor({
 
     return (
         <SectionChrome
-            className={`rte-manuscript rte-screenplay${effectivePrintLayout && canUpdate ? ' rte-manuscript--print' : ''}`}
+            className={`rte-manuscript rte-screenplay${effectivePrintLayout ? ' rte-manuscript--print' : ''}`}
         >
-            {canUpdate ? (
                 <ScreenplaySurface
+                    readOnly={!canUpdate}
                     projectId={projectId}
                     initialContent={initialContent}
                     printLayout={effectivePrintLayout}
@@ -641,30 +653,6 @@ export default function ScreenplayEditor({
                     enableMarkThread={enableMarkThread}
                     onMarkThread={onMarkThread}
                 />
-            ) : (
-                /* Read-only: the parsed blocks as styled static markup
-                   inside the sheet — no editor instance. The class
-                   names reuse the desk/sheet/element CSS directly. */
-                <div
-                    className={
-                        scrollMode === 'self'
-                            ? 'tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto'
-                            : 'tiptap-editor'
-                    }
-                >
-                    <div className="ProseMirror">
-                        {parseScreenplay(initialContent).map((block, index) => (
-                            <p
-                                key={`${index}-${block.element}`}
-                                data-element={block.element}
-                                className={`sp-${block.element} whitespace-pre-wrap`}
-                            >
-                                {block.text}
-                            </p>
-                        ))}
-                    </div>
-                </div>
-            )}
         </SectionChrome>
     );
 }

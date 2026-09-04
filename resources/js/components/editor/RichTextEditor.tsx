@@ -25,6 +25,7 @@ import { CommentMark } from '@alexandria/editor/extensions/commentMark';
 import AddCommentBubble from '@alexandria/editor/extensions/AddCommentBubble';
 import MarkDeviceBubble from '@alexandria/editor/extensions/MarkDeviceBubble';
 import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
+import { WritingSearch, findWritingMatches, searchWriting, replaceWriting, selectWritingMatch } from '@alexandria/editor/extensions/writingSearch';
 
 /**
  * RichTextEditor — Tiptap 3 wiki-markup editor surface.
@@ -54,6 +55,7 @@ import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
 export type EditorTier = 'free' | 'premium' | 'pro';
 
 interface RichTextEditorProps {
+    readOnly?: boolean;
     /** Wiki markup value */
     value: string;
     /** Called with wiki markup on change (300ms debounced) */
@@ -298,6 +300,7 @@ function ToolbarIconButton({
 /* ── Component ── */
 
 export default function RichTextEditor({
+    readOnly = false,
     value,
     onChange,
     onImmediateChange,
@@ -374,6 +377,7 @@ export default function RichTextEditor({
     const isManuscript = variant === 'manuscript';
 
     const extensions = [
+        WritingSearch,
         StarterKit.configure({
             heading: tier !== 'free' ? { levels: [1, 2, 3] } : false,
             link: false,
@@ -394,6 +398,7 @@ export default function RichTextEditor({
     ];
 
     const editor = useEditor({
+        editable: !readOnly,
         extensions,
         content: parseWikiToHtml(value),
         // Tiptap React >=3.21 disables auto re-render on transactions by
@@ -422,6 +427,10 @@ export default function RichTextEditor({
         },
     });
 
+    useEffect(() => {
+        editor?.setEditable(!readOnly, false);
+    }, [editor, readOnly]);
+
     /* Page-break bands. The measure pass reads layout, so it has to run
        from out here rather than inside the plugin — and it has to run
        AFTER the browser has laid out whatever just changed, hence the
@@ -435,9 +444,9 @@ export default function RichTextEditor({
 
         const view = editor.view;
         const run = () =>
-            // Always enabled for the manuscript surface: pagination is a
-            // property of the page model, not of the ruler toggle.
-            measurePageBreaks({ view, mode: pageDisplay, enabled: true, marginXIn });
+            // Desktop keeps its page model. Compact editing reflows without
+            // paper-break spacers competing with the small viewport.
+            measurePageBreaks({ view, mode: pageDisplay, enabled: !window.matchMedia('(max-width: 1023px)').matches, marginXIn });
 
         let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -653,6 +662,10 @@ export default function RichTextEditor({
             if (!editor) return [];
             return bridge.findTextInDoc(editor, text);
         },
+        searchText: (query, options, current) => searchWriting(editor, query, options, current),
+        findMatches: (query, options) => editor ? findWritingMatches(editor.state.doc, query, options) : [],
+        replaceText: (query, replacement, options, current) => replaceWriting(editor, query, replacement, options, current),
+        selectTextMatch: (match) => selectWritingMatch(editor, match),
         reanchorCommentMark(from: number, to: number, commentId: number): void {
             if (!editor) return;
             bridge.reanchorCommentMark(editor, from, to, commentId);
@@ -1025,12 +1038,13 @@ export default function RichTextEditor({
                 )}
 
                 {/* Editor Area / Code View */}
-                {codeView ? (
+                {codeView && !readOnly ? (
                     <div
                         className={isManuscript ? 'flex min-h-0 flex-1 flex-col' : 'overflow-hidden'}
                         style={isManuscript ? undefined : editorAreaStyle}
                     >
                         <textarea
+                            readOnly={readOnly}
                             value={codeValue}
                             onChange={(e) => {
                                 setCodeValue(e.target.value);

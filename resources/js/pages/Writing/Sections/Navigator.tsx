@@ -66,6 +66,7 @@ interface NavigatorProps {
     /** Rendered at the far right of the header row, after the tree
      * actions. The workspace passes its binder collapse toggle here. */
     headerTrailing?: ReactNode;
+    headerTitle?: string;
     /** Autosave-confirmed word counts (by section id) overlaying the prop tree. */
     liveCounts?: Record<number, number>;
     /** Headings extracted from the current prose section, rendered as an in-section outline. */
@@ -196,6 +197,7 @@ export default function Navigator({
     onRequestSettings,
     onRequestMarkRevision,
     headerTrailing,
+    headerTitle,
     liveCounts,
     currentOutline = [],
     showSectionTypeLabels = true,
@@ -286,7 +288,7 @@ export default function Navigator({
             >
                 <div className="flex items-center gap-1">
                     <span className="pl-1 text-xs font-semibold uppercase tracking-[0.04em]" style={wordCountStyle}>
-                        {t('writing.workspace.sections')}
+                        {headerTitle ?? t('writing.workspace.sections')}
                     </span>
                     {canUpdate && (
                         <Tooltip content={t('writing.workspace.add_section')}>

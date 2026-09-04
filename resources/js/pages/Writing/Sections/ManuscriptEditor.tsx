@@ -163,8 +163,8 @@ export default function ManuscriptEditor({
             )}
 
             {/* Manuscript — the editor's content wrapper scrolls */}
-            {canUpdate ? (
                 <RichTextEditor
+                    readOnly={!canUpdate}
                     key={section.id}
                     variant="manuscript"
                     /* In parent-scroll mode the surface must grow to
@@ -191,19 +191,6 @@ export default function ManuscriptEditor({
                     enableMarkThread={enableMarkThread}
                     onMarkThread={onMarkThread}
                 />
-            ) : (
-                <div
-                    className={
-                        scrollMode === 'self'
-                            ? 'writing-workspace-scroll min-h-0 flex-1 overflow-y-auto'
-                            : undefined
-                    }
-                >
-                    <pre className="mx-auto w-full max-w-3xl px-6 pt-10 pb-[40vh] font-sans text-sm leading-relaxed whitespace-pre-wrap">
-                        {content}
-                    </pre>
-                </div>
-            )}
         </SectionChrome>
     );
 }

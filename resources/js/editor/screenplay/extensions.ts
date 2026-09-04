@@ -6,6 +6,7 @@ import createEntryLinkExtension, {
     type EntryLinkSearchResult,
 } from "../../components/tiptap-bio-editor/extensions/entry-link";
 import { CommentMark } from "../extensions/commentMark";
+import { WritingSearch } from "../extensions/writingSearch";
 import { ELEMENTS, ENTER_NEXT, TAB_CYCLE } from "./formatSpec";
 import type { ScreenplayBlock, ScreenplayElement } from "./types";
 
@@ -307,6 +308,7 @@ export function buildScreenplayExtensions({
             onSelect: onEntryLinkSelect,
         }),
         UndoRedo,
+        WritingSearch,
         ScreenplayKeymap,
         // Comment mark (Stage 11.5 Task 3). The screenplay schema does not
         // restrict marks on text nodes, so the mark applies cleanly.

@@ -66,7 +66,7 @@ function abbreviateCount(count: number): string {
 /* ── Theme styles ── */
 
 const barStyle: CSSProperties = {
-    background: 'var(--theme-base-page)',
+    background: 'var(--theme-base-surface)',
     borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
 };
 
@@ -212,22 +212,15 @@ export default function WorkspaceStatusBar({
                 <WorkProgress work={work} workWords={workWords} />
             </div>
 
-            {/* Mobile line — compact: back chevron, title, abbreviated words */}
-            <div className="flex h-full min-w-0 items-center gap-2 md:hidden">
-                <Link
-                    href={worksBase(project.slug)}
-                    className="alex-page-header-crumb-link shrink-0"
-                    aria-label={t('writing.statusbar.back')}
-                >
-                    <i className="fa-solid fa-chevron-left text-[10px]" aria-hidden="true" />
-                </Link>
-                <span className="truncate font-semibold">{work.title}</span>
-                <div className="flex-1" />
+            {/* Global navigation stays behind the deliberate bottom-right menu. */}
+            <div className="flex h-full min-w-0 items-center justify-center gap-2 md:hidden" style={metaTextStyle}>
                 {hasSection && (
-                    <span className="shrink-0 tabular-nums" style={metaTextStyle}>
-                        {abbreviateCount(sectionWords)}
+                    <span className="min-w-0 truncate tabular-nums">
+                        {t('writing.workspace.section_words').replace(':count', abbreviateCount(sectionWords))}
                     </span>
                 )}
+                <span aria-hidden="true">·</span>
+                <span className="min-w-0 truncate tabular-nums">{t('writing.tools.work_words').replace(':count', abbreviateCount(workWords))}</span>
             </div>
         </div>
     );

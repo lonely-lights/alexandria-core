@@ -7,11 +7,16 @@
  */
 
 import type { WorkspaceViewMode } from '../Flow/viewMode';
+import type { SearchOptions, TextMatch } from '@alexandria/editor/extensions/writingSearch';
 
 /** Commands both editors expose to the ribbon (via ref). All methods
  *  must be safe to call when unsupported — no-op + reflect via the
  *  capability queries so controls disable instead of breaking. */
 export interface WritingEditorBridge {
+    findMatches?(query: string, options: SearchOptions): TextMatch[];
+    searchText?(query: string, options: SearchOptions, current?: number): TextMatch[];
+    replaceText?(query: string, replacement: string, options: SearchOptions, current?: number): number;
+    selectTextMatch?(match: TextMatch): void;
     /** prose marks: bold | italic | underline; lists: bulletList | orderedList; headings via setHeading */
     toggleMark(name: 'bold' | 'italic' | 'underline'): void;
     toggleList(name: 'bulletList' | 'orderedList'): void;
@@ -93,6 +98,7 @@ export interface WritingRibbonContext {
     editorTick: number;
     editor: WritingEditorBridge | null;
     actions: {
+        openFind?(replace?: boolean): void;
         togglePanel(): void;
         toggleSceneLinksPanel(): void;
         setViewMode(mode: WorkspaceViewMode): void;

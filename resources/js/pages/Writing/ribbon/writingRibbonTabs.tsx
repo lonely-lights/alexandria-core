@@ -25,7 +25,7 @@ const editable = (ctx: Ctx): boolean => ctx.canUpdate;
 const zoomOptions = ['75', '90', '100', '110', '125', '150'];
 const paperColorOptions = ['theme', 'white', 'ivory', 'cream', 'gray'];
 const pageDisplayOptions = ['tight', 'pages'];
-const proseStyleOptions = ['normal', 'title', 'subtitle', 'heading1', 'heading2', 'heading3', 'save-preset'];
+const proseStyleOptions = ['normal', 'title', 'subtitle', 'heading1', 'heading2', 'heading3'];
 
 function markToggle(
     id: 'bold' | 'italic' | 'underline',
@@ -184,6 +184,14 @@ const editTab: RibbonTab<Ctx> = {
     labelKey: 'writing.ribbon.tab_edit',
     groups: [
         {
+            id: 'find',
+            labelKey: 'writing.find.title',
+            controls: [
+                { id: 'find-text', type: 'button', icon: 'fa-solid fa-magnifying-glass', labelKey: 'writing.find.find', menuShortcut: 'Mod-F', disabled: (ctx) => !ctx.editor?.searchText || ctx.editor.isCodeView(), onAction: (ctx) => ctx.actions.openFind?.() },
+                { id: 'replace-text', type: 'button', icon: 'fa-solid fa-text-slash', labelKey: 'writing.find.replace', visible: editable, disabled: (ctx) => !ctx.editor?.replaceText || ctx.editor.isCodeView(), onAction: (ctx) => ctx.actions.openFind?.(true) },
+            ],
+        },
+        {
             id: 'history-view',
             labelKey: 'writing.ribbon.group_history_view',
             controls: [
@@ -238,7 +246,7 @@ const editTab: RibbonTab<Ctx> = {
                     visible: editable,
                     options: (ctx) => {
                         const values = ctx.format === 'screenplay'
-                            ? [...ELEMENTS, 'save-preset']
+                            ? [...ELEMENTS]
                             : proseStyleOptions;
 
                         return values.map((value) => ({

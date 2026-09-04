@@ -182,7 +182,6 @@ export default function FlowSection({
                     className="alex-flow-heading px-6 pt-12 pb-4 text-center font-semibold"
                     style={{ ...headingText, fontSize: depth === 0 ? '1.5rem' : '1.25rem' }}
                 >
-                    {node.label ? `${node.label} — ` : ''}
                     {node.title}
                 </h2>
             ) : (

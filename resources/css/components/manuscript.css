@@ -652,3 +652,98 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
     user-select: none;
     z-index: 9999;
 }
+
+/* Compact editing chrome is independent of document/paper formatting. */
+.writing-touch-button {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: var(--theme-radius-button);
+    color: var(--theme-base-content);
+    cursor: pointer;
+}
+.writing-touch-button:hover, .writing-touch-button[aria-pressed="true"],
+.writing-tool-row:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, transparent);
+}
+.writing-tool-dialog {
+    padding: 0;
+    margin: auto;
+    width: min(36rem, calc(100vw - 1.5rem));
+    max-height: min(80dvh, 48rem);
+    overflow: hidden;
+    border: 1px solid var(--theme-base-400);
+    border-radius: var(--theme-radius-card);
+    background: var(--theme-base-surface);
+    color: var(--theme-base-content);
+}
+.writing-tool-dialog::backdrop {
+    background: var(--theme-semantic-scrim);
+}
+.writing-tool-dialog__body {
+    display: flex;
+    flex-direction: column;
+    max-height: min(80dvh, 48rem);
+}
+.writing-tool-search {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--theme-base-400);
+    border-radius: var(--theme-radius-input);
+    background: var(--theme-base-page);
+    color: var(--theme-base-content);
+    font-size: 16px;
+}
+.writing-tool-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    margin-block: 3px;
+    border-radius: var(--theme-radius-button);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+.writing-tool-row:disabled { opacity: 0.45; cursor: default; }
+.writing-touch-button:disabled { opacity: 0.4; cursor: default; }
+.writing-search-match {
+    background: var(--theme-status-warning-subtle);
+    outline: 1px solid var(--theme-status-warning-stroke);
+}
+.writing-search-match--current {
+    background: color-mix(in srgb, var(--theme-brand-primary-500) 25%, transparent);
+    outline: 2px solid var(--theme-brand-primary-500);
+}
+.writing-tool-row > i:first-child { width: 1.25rem; flex-shrink: 0; text-align: center; }
+.writing-workspace-shell[data-writing-compact] .rte-manuscript .tiptap-editor .ProseMirror {
+    zoom: 1;
+    width: 100%;
+    max-width: 100%;
+    padding: 1.25rem 1rem 8rem;
+    font-size: max(16px, var(--alex-writing-font-size, 12pt));
+    overflow-wrap: anywhere;
+}
+.writing-workspace-shell[data-writing-compact] .writing-app-rail { display: none; }
+.writing-workspace-shell[data-writing-compact] .rte-screenplay .ProseMirror { font-size: 16px; }
+.writing-editing-strip {
+    position: fixed;
+    inset-inline: 0;
+    z-index: 60;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    background: var(--theme-base-surface);
+    color: var(--theme-base-content);
+    border-top: 1px solid var(--theme-base-400);
+}
+.writing-workspace-shell[data-writing-compact][data-writing-keyboard] {
+    max-height: var(--writing-visible-height);
+    padding-bottom: 48px;
+}

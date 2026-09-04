@@ -4,7 +4,7 @@ import Tooltip from '@alexandria/components/ui/Tooltip';
 import useT from '@alexandria/hooks/useT';
 import useEntitlements from '@alexandria/hooks/useEntitlements';
 import { resolveGate } from '@alexandria/ribbon/ribbonGates';
-import type { RibbonGates } from '@alexandria/ribbon/types';
+import type { RibbonGates, RibbonRequires } from '@alexandria/ribbon/types';
 
 import type { PanelMode } from '../panelMode';
 import { getSidebarModes, subscribeSidebarModes } from '../sidebarModeRegistry';
@@ -45,7 +45,7 @@ const idleBtnStyle: CSSProperties = {
     borderRadius: 'var(--theme-radius-button)',
 };
 
-const MODES: Array<{ id: PanelMode; icon: string; labelKey: string }> = [
+export const BUILTIN_PANEL_MODES: Array<{ id: PanelMode; icon: string; labelKey: string; requires?: RibbonRequires }> = [
     { id: 'linked', icon: 'fa-solid fa-link', labelKey: 'writing.panel.mode_linked' },
     { id: 'notes', icon: 'fa-solid fa-note-sticky', labelKey: 'writing.panel.mode_notes' },
     { id: 'comments', icon: 'fa-solid fa-comment-dots', labelKey: 'writing.panel.mode_comments' },
@@ -66,7 +66,7 @@ export default function PanelModeSwitcher({ mode, onChange, can = {} }: PanelMod
             style={stripStyle}
             data-panel-mode-switcher
         >
-            {MODES.map(({ id, icon, labelKey }) => {
+            {BUILTIN_PANEL_MODES.map(({ id, icon, labelKey }) => {
                 const isActive = id === mode;
 
                 return (

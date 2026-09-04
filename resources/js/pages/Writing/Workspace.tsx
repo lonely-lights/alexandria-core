@@ -61,7 +61,13 @@ import Navigator from './Sections/Navigator';
 import SectionSettingsModal from './Sections/SectionSettingsModal';
 import { readStructureOpen, writeStructureOpen } from './Sections/structureOpen';
 import CommentRail from './Sections/CommentRail';
-import PanelModeSwitcher from './Sections/PanelModeSwitcher';
+import PanelModeSwitcher, { BUILTIN_PANEL_MODES } from './Sections/PanelModeSwitcher';
+import MobileWritingHeader from './mobile/MobileWritingHeader';
+import WritingTools from './mobile/WritingTools';
+import WritingCompanion from './mobile/WritingCompanion';
+import useWritingViewport from './mobile/useWritingViewport';
+import FindReplaceBar from './Sections/FindReplaceBar';
+import MobileEditingStrip from './mobile/MobileEditingStrip';
 import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
 import SidebarNotesPanel from './Sections/SidebarNotesPanel';
 import ScreenplayEditor from './Sections/ScreenplayEditor';
@@ -326,6 +332,13 @@ export default function Workspace() {
     const registeredModes = useSyncExternalStore(subscribeSidebarModes, getSidebarModes);
 
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
+    const viewport = useWritingViewport();
+    const [toolsPage, setToolsPage] = useState<string | null>(null);
+    const [mobileStructureOpen, setMobileStructureOpen] = useState(false);
+    const [mobileCompanionOpen, setMobileCompanionOpen] = useState(false);
+    const [readingMode, setReadingMode] = useState(false);
+    const [findOpen, setFindOpen] = useState(false);
+    const [replaceInitially, setReplaceInitially] = useState(false);
     // Per-work panel mode (Linked items · Notes · Comments + registered modes);
     // persisted to localStorage keyed by work id (Task 4). Separate from the
     // linked-mode's internal tab (linkedPanelTab).
@@ -605,6 +618,7 @@ export default function Workspace() {
     );
 
     const handleEntryLinkSelect = useCallback(() => {
+        setMobileCompanionOpen(true);
         setPanelOpen(true);
         setPanelMode('linked');
         writePanelMode(work.id, 'linked');
@@ -642,6 +656,13 @@ export default function Workspace() {
     }, [project.id, project.slug, work.id, work.title, effectiveSectionId, effectiveSectionTitle]);
 
     const toggleSceneLinksPanel = useCallback(() => {
+        if (viewport.compact) {
+            setPanelMode('linked');
+            writePanelMode(work.id, 'linked');
+            setLinkedPanelTab('scene-links');
+            setMobileCompanionOpen(true);
+            return;
+        }
         setPanelOpen((prev) => {
             const shouldClose = prev && panelMode === 'linked' && linkedPanelTab === 'scene-links';
             const next = !shouldClose;
@@ -661,7 +682,7 @@ export default function Workspace() {
 
             return next;
         });
-    }, [panelMode, linkedPanelTab, work.id]);
+    }, [panelMode, linkedPanelTab, work.id, viewport.compact]);
 
     // Toggle the comment rail panel on/off. When already in comments mode,
     // closes the panel; otherwise opens and switches to comments mode.
@@ -709,6 +730,7 @@ export default function Workspace() {
 
     // Fired by editor floating button — opens the sidebar in comments mode.
     const handleAddComment = useCallback((anchor: { from: number; to: number; text: string }) => {
+        setMobileCompanionOpen(true);
         setPendingCommentAnchor(anchor);
         setPanelOpen(true);
         setPanelMode('comments');
@@ -835,6 +857,10 @@ export default function Workspace() {
     }, []);
 
     const togglePanel = useCallback(() => {
+        if (viewport.compact) {
+            setMobileCompanionOpen((value) => !value);
+            return;
+        }
         setPanelOpen((prev) => {
             const next = !prev;
             try {
@@ -844,7 +870,7 @@ export default function Workspace() {
             }
             return next;
         });
-    }, []);
+    }, [viewport.compact]);
 
     const toggleStructure = useCallback(() => {
         setStructureOpen((prev) => {
@@ -1006,7 +1032,7 @@ export default function Workspace() {
 
         return {
             format: (effectiveSectionFormat ?? work.format) === 'screenplay' ? 'screenplay' : 'prose',
-            canUpdate: can.update,
+            canUpdate: can.update && !readingMode,
             panelOpen,
             sceneLinksPanelOpen: panelOpen && panelMode === 'linked' && linkedPanelTab === 'scene-links',
             viewMode,
@@ -1026,6 +1052,7 @@ export default function Workspace() {
                 return bridgeRef.current;
             },
             actions: {
+                openFind: (replace = false) => { setReplaceInitially(replace); setFindOpen(true); },
                 togglePanel,
                 toggleSceneLinksPanel,
                 setViewMode: switchViewMode,
@@ -1075,7 +1102,31 @@ export default function Workspace() {
             },
             workStatus: work.status,
         };
-    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize, openSectionSettings, t]);
+    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, readingMode, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize, openSectionSettings, t]);
+
+    useEffect(() => {
+        const openTools = (event: KeyboardEvent) => {
+            if (event.altKey && event.code === 'Slash' && !event.isComposing) {
+                event.preventDefault();
+                setMobileStructureOpen(false);
+                setMobileCompanionOpen(false);
+                setToolsPage('');
+            }
+            if ((event.ctrlKey || event.metaKey) && !event.altKey && ['f', 'h'].includes(event.key.toLowerCase()) && !event.isComposing && !document.querySelector('dialog[open]') && !bridgeRef.current?.isCodeView()) {
+                event.preventDefault();
+                setReplaceInitially(event.key.toLowerCase() === 'h');
+                setFindOpen(true);
+            }
+        };
+        document.addEventListener('keydown', openTools);
+        return () => document.removeEventListener('keydown', openTools);
+    }, []);
+
+    function toggleReading() {
+        if (!readingMode && bridgeRef.current?.isCodeView()) bridgeRef.current.toggleCodeView();
+        setReadingMode((value) => !value);
+        if (viewMode === 'outline' || viewMode === 'kanban') switchViewMode('continuous');
+    }
 
     const workWords = liveWorkWords ?? work.word_count;
 
@@ -1120,11 +1171,15 @@ export default function Workspace() {
             <div
                 className="writing-workspace-shell safe-x safe-bottom flex flex-col"
                 data-writing-paper-color={paperColor}
+                data-writing-compact={viewport.compact || undefined}
+                data-writing-reading={readingMode || undefined}
+                data-writing-keyboard={viewport.compact && viewport.keyboard || undefined}
                 style={{
                     height: '100dvh',
                     overflow: 'hidden',
                     '--alex-writing-zoom': `${Number(zoom) / 100}`,
                     '--alex-writing-font-size': `${fontSize}pt`,
+                    '--writing-visible-height': `${viewport.height}px`,
                 } as CSSProperties}
             >
                 {/* Writing ribbon — the Docs-style split header. Left column:
@@ -1133,6 +1188,8 @@ export default function Workspace() {
                     spanning both rows (breadcrumb + counts/progress live in
                     the status bar). */}
                 <div ref={headerRef} className="alex-writing-header shrink-0" style={ribbonShellStyle}>
+                    {viewport.compact ? <MobileWritingHeader title={work.title} reading={readingMode}
+                        onDesk={() => setToolsPage('')} onTools={() => setToolsPage('edit')} onReading={toggleReading} /> :
                     <Ribbon
                         setKey="writing"
                         context={ribbonCtx}
@@ -1193,6 +1250,11 @@ export default function Workspace() {
                         }
                         trailing={
                             <>
+                                <Tooltip content={t('writing.tools.search')}>
+                                    <button type="button" className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs" onClick={() => setToolsPage('')} aria-label={t('writing.tools.search')}>
+                                        <i className="fa-solid fa-magnifying-glass-plus" aria-hidden="true" />
+                                    </button>
+                                </Tooltip>
                                 <Tooltip content={t('ribbon.search')}>
                                     <button
                                         type="button"
@@ -1255,8 +1317,12 @@ export default function Workspace() {
                                 </Tooltip>
                             </>
                         }
-                    />
+                    />}
                 </div>
+
+                {findOpen && <FindReplaceBar key={effectiveSectionId} editor={bridgeRef.current} editorTick={editorTick}
+                    canUpdate={can.update && !readingMode} sectionTitle={effectiveSection?.title ?? work.title}
+                    replaceInitially={replaceInitially} onClose={() => setFindOpen(false)} />}
 
                 {/* FDX import error — Task 5. No toast idiom exists in this
                     desk (see the fdxImportError declaration above), so this
@@ -1310,7 +1376,7 @@ export default function Workspace() {
                         mounted (only the rail button unmounts) so its
                         expand/collapse tree state survives a collapse
                         toggle. */}
-                    {chromeVisible && viewMode !== 'outline' && viewMode !== 'kanban' && (
+                    {!viewport.compact && chromeVisible && viewMode !== 'outline' && viewMode !== 'kanban' && (
                     <div
                         className="writing-workspace-binder hidden md:flex md:min-h-0 md:shrink-0"
                         data-open={structureOpen ? 'true' : 'false'}
@@ -1382,7 +1448,7 @@ export default function Workspace() {
                         own scrollport (continuous mode) does. The view
                         toggle floats over whichever is mounted. */}
                     <section className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-                        {sections.length > 0 && (
+                        {!viewport.compact && sections.length > 0 && (
                             <div className="absolute right-4 top-2 z-10">
                                 <FlowToggle mode={viewMode} onChange={switchViewMode} />
                             </div>
@@ -1414,8 +1480,8 @@ export default function Workspace() {
                                 work={work}
                                 sections={sections}
                                 initialSection={currentSection}
-                                canUpdate={can.update}
-                                printLayout={printLayout}
+                                canUpdate={can.update && !readingMode}
+                                printLayout={!viewport.compact && printLayout}
                                 showPlan={showPlan}
                                 pageDisplay={pageDisplay}
                                 marginXIn={marginXIn}
@@ -1438,10 +1504,10 @@ export default function Workspace() {
                                     projectSlug={project.slug}
                                     workSlug={work.slug}
                                     section={currentSection}
-                                    canUpdate={can.update}
+                                    canUpdate={can.update && !readingMode}
                                     onCounts={handleCounts}
                                     chrome="none"
-                                    printLayout={printLayout}
+                                    printLayout={!viewport.compact && printLayout}
                                     showPlan={showPlan}
                                     marginXIn={marginXIn}
                                     bridgeRef={bridgeRef}
@@ -1449,9 +1515,9 @@ export default function Workspace() {
                                     onOutlineChange={setCurrentOutline}
                                     onSceneLinksChange={setScreenplaySceneLinks}
                                     onEntryLinkSelect={handleEntryLinkSelect}
-                                    enableComments={can.update}
+                                    enableComments={can.update && !readingMode}
                                     onAddComment={handleAddComment}
-                                    enableMarkThread={can.update}
+                                    enableMarkThread={can.update && !readingMode}
                                     onMarkThread={handleMarkThreadFromSelection}
                                 />
                             ) : (
@@ -1460,19 +1526,19 @@ export default function Workspace() {
                                     projectSlug={project.slug}
                                     workSlug={work.slug}
                                     section={currentSection}
-                                    canUpdate={can.update}
+                                    canUpdate={can.update && !readingMode}
                                     onCounts={handleCounts}
                                     chrome="none"
-                                    printLayout={printLayout}
+                                    printLayout={!viewport.compact && printLayout}
                                     showPlan={showPlan}
                                     pageDisplay={pageDisplay}
                                     marginXIn={marginXIn}
                                     bridgeRef={bridgeRef}
                                     onStateChange={handleEditorStateChange}
                                     onOutlineChange={setCurrentOutline}
-                                    enableComments={can.update}
+                                    enableComments={can.update && !readingMode}
                                     onAddComment={handleAddComment}
-                                    enableMarkThread={can.update}
+                                    enableMarkThread={can.update && !readingMode}
                                     onMarkThread={handleMarkThreadFromSelection}
                                 />
                             )
@@ -1490,11 +1556,10 @@ export default function Workspace() {
                         Mode switcher (Linked items · Notes · Comments) sits at
                         the top; content below is keyed by panelMode. The xl:
                         responsive gate stays on top of the user toggle. */}
-                    {chromeVisible && panelOpen && (
-                        <aside
-                            className="hidden min-h-0 w-80 shrink-0 border-l xl:flex xl:flex-col"
-                            style={{ borderColor: paneBorderColor }}
-                        >
+                    {((!viewport.compact && chromeVisible && panelOpen) || (viewport.compact && mobileCompanionOpen)) && (
+                        <WritingCompanion compact={viewport.compact} open={mobileCompanionOpen}
+                            title={t([...BUILTIN_PANEL_MODES, ...registeredModes].find((mode) => mode.id === panelMode)?.labelKey ?? 'writing.tools.companions')}
+                            onClose={() => setMobileCompanionOpen(false)}>
                             <PanelModeSwitcher
                                 mode={panelMode}
                                 onChange={(mode) => {
@@ -1598,14 +1663,14 @@ export default function Workspace() {
                                     ) : null,
                                 )}
                             </div>
-                        </aside>
+                        </WritingCompanion>
                     )}
 
-                    <WorkspaceAppRail
+                    {!viewport.compact && <WorkspaceAppRail
                         projectSlug={project.slug}
                         workSlug={work.slug}
                         onNotesClick={handleNotesClick}
-                    />
+                    />}
                 </div>
 
                 {/* Bottom-attached status bar — full workspace width */}
@@ -1620,6 +1685,38 @@ export default function Workspace() {
                     sectionFormat={effectiveSection?.format ?? null}
                 />
             </div>
+
+            {toolsPage !== null && <WritingTools context={ribbonCtx} gates={writingGates} initialPage={toolsPage} onClose={() => setToolsPage(null)} destinations={[
+                { id: 'structure', label: t('writing.tools.structure'), icon: 'fa-solid fa-list-tree', onSelect: () => { if (viewport.compact) setMobileStructureOpen(true); else if (!structureOpen) toggleStructure(); } },
+                { id: 'reading', label: t(readingMode ? 'writing.tools.edit' : 'writing.tools.read'), icon: 'fa-solid fa-book-open', onSelect: toggleReading },
+                ...[...BUILTIN_PANEL_MODES, ...registeredModes].filter((mode) => !('requires' in mode) || resolveGate(mode.requires, writingGates) !== 'hidden').map((mode) => ({
+                    id: `panel-${mode.id}`, label: t(mode.labelKey), icon: mode.icon, category: 'companions' as const,
+                    disabled: 'requires' in mode && resolveGate(mode.requires, writingGates) === 'locked',
+                    onSelect: () => { setPanelMode(mode.id); writePanelMode(work.id, mode.id); setPanelOpen(true); setMobileCompanionOpen(true); },
+                })),
+                { id: 'project-search', label: t('writing.tools.project_search'), icon: 'fa-solid fa-magnifying-glass', onSelect: () => window.dispatchEvent(new CustomEvent('alexandria-core:command-palette-toggle')) },
+                { id: 'section-settings', category: 'workspace', label: t('writing.workspace.section_settings_menu'), icon: 'fa-solid fa-list-ul', onSelect: openSectionSettings },
+                { id: 'work-settings', category: 'workspace', label: t('writing.settings.title'), icon: 'fa-solid fa-gear', disabled: !can.update, onSelect: () => setSettingsOpen(true) },
+            ]} />}
+
+            {viewport.compact && <Modal open={mobileStructureOpen} onClose={() => setMobileStructureOpen(false)} maxWidth="max-w-lg">
+                <div style={{ height: 'min(75dvh, 44rem)' }} className="flex min-h-0 flex-col">
+                    <Navigator headerTitle={t('writing.tools.structure')}
+                        headerTrailing={<button type="button" className="writing-touch-button" aria-label={t('writing.tools.close')} onClick={() => setMobileStructureOpen(false)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>}
+                        projectSlug={project.slug} workSlug={work.slug} work={work} sections={sections}
+                        currentSection={effectiveSection} currentSlug={effectiveSection?.slug ?? null}
+                        canUpdate={can.update} onSelect={(slug) => { selectSection(slug); setMobileStructureOpen(false); }}
+                        onRequestAdd={(parentId) => { setMobileStructureOpen(false); setAddTarget({ parentId }); }}
+                        onRequestDelete={(node) => { setMobileStructureOpen(false); setDeleteTarget(node); }}
+                        onRequestSettings={() => { setMobileStructureOpen(false); openSectionSettings(); }}
+                        onRequestMarkRevision={(node) => { setMobileStructureOpen(false); setMarkRevisionRequest({ lockedSection: node }); }}
+                        liveCounts={liveCounts} currentOutline={currentOutline} showSectionTypeLabels={showSectionTypeLabels} />
+                </div>
+            </Modal>}
+
+            {viewport.compact && viewport.keyboard && viewport.editing && can.update && !readingMode && toolsPage === null && !mobileCompanionOpen && !mobileStructureOpen && (
+                <MobileEditingStrip context={ribbonCtx} gates={writingGates} top={viewport.top + viewport.height - 48} onTools={() => setToolsPage('edit')} />
+            )}
 
             {settingsOpen && (
                 <WorkSettingsModal
