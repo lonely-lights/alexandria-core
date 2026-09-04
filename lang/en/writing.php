@@ -748,4 +748,5 @@ return [
     'case.upper' => 'UPPERCASE',
     'case.lower' => 'lowercase',
     'case.hint' => 'Select prose text. Linked entries and mentions keep their text unchanged.',
+    'revisions.restore_save_error' => 'Your latest edits could not be saved. Nothing was restored. Keep this tab open, reconnect, and retry.',
 ];

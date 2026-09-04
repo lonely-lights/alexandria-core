@@ -22,6 +22,13 @@ it('counts repeat mentions of the same entry', function () {
     expect($result->mentionNames)->toBe(['Mira Vance' => 2]);
 });
 
+it('counts displayed prose link text without treating bracketed asides as links', function (): void {
+    $analyzer = app(SectionContentAnalyzer::class);
+    expect($analyzer->analyze('[https://example.com Hidden address] and [x y]', 'prose')->wordCount)->toBe(5)
+        ->and($analyzer->analyze('[https://example.com Hidden address]', 'screenplay')->wordCount)->toBe(3)
+        ->and($analyzer->analyze('See https://example.com now.', 'prose')->wordCount)->toBe(3);
+});
+
 it('handles empty and null-ish content', function () {
     $result = app(SectionContentAnalyzer::class)->analyze('', 'prose');
 

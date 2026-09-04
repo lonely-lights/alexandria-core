@@ -1106,7 +1106,7 @@ export default function Workspace() {
             },
             workStatus: work.status,
         };
-    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, readingMode, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize, openSectionSettings, t]);
+    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, readingMode, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize, openSectionSettings, saveCoordinator, t]);
 
     useEffect(() => {
         const openTools = (event: KeyboardEvent) => {

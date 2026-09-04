@@ -23,6 +23,16 @@ class SectionContentAnalyzer
 
         $mentionNames = [];
 
+        // Prose web links display their label, not the hidden destination.
+        // Fountain has no external-link mark, so its bracketed text stays literal.
+        if ($format !== 'screenplay') {
+            $content = (string) preg_replace(
+                '/(?<!\[)\[((?:https?:\/\/|mailto:|tel:|\/(?!\/))[^\s<>"\'\[\]]+)[ \t]+([^\[\]\r\n]+)\](?!\])/iu',
+                '$2',
+                $content,
+            );
+        }
+
         $visibleText = (string) preg_replace_callback(
             self::WIKI_LINK_PATTERN,
             function (array $match) use (&$mentionNames): string {

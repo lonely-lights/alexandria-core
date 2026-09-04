@@ -51,4 +51,10 @@ return [
 
     // ── Formatting-help legend ───────────────────────────────────────
     'legend.title' => 'Formatting Help',
+    'entry_links.suggestions' => 'Entry suggestions',
+    'entry_links.loading' => 'Loading…',
+    'entry_links.prompt' => 'Type to search entries…',
+    'entry_links.error' => 'Could not load entries. Try typing again.',
+    'entry_links.empty' => 'No entries found',
+    'entry_links.entry' => 'Entry',
 ];

@@ -8,6 +8,8 @@ interface ModalProps {
     open: boolean;
     onClose: () => void;
     maxWidth?: string;
+    /** Prevent backdrop and Escape dismissal before any exit animation starts. */
+    dismissible?: boolean;
 }
 
 export default function Modal({
@@ -15,6 +17,7 @@ export default function Modal({
     open,
     onClose,
     maxWidth = 'max-w-md',
+    dismissible = true,
 }: ModalProps) {
     const { backdropRef, panelRef, animateClose } = useFloatingPanel(
         open,
@@ -38,6 +41,7 @@ export default function Modal({
                 ease: 'power2.in',
             },
         },
+        dismissible,
     );
 
     if (!open) return null;

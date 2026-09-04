@@ -9,7 +9,7 @@ import ManuscriptRuler from './ManuscriptRuler';
 import { parseWikiToHtml } from '../tiptap-bio-editor/utils/wiki-parser';
 import { serializeToWiki } from '../tiptap-bio-editor/utils/wiki-serializer';
 import createMentionExtension from '../tiptap-bio-editor/extensions/mention';
-import createEntryLinkExtension from '../tiptap-bio-editor/extensions/entry-link';
+import createEntryLinkExtension, { startEntryLinkSearch } from '../tiptap-bio-editor/extensions/entry-link';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import Input from '@alexandria/components/form/Input';
@@ -250,7 +250,7 @@ const BUTTONS: Record<string, ToolbarButtonDef> = {
     entryLink: {
         icon: 'fa-file-lines', titleKey: 'editor.toolbar.entry_link.title', descriptionKey: 'editor.toolbar.entry_link.description',
         shortcut: '[[', shortcutMac: '[[',
-        action: (e) => e.chain().focus().insertContent('[[').run(),
+        action: (e) => startEntryLinkSearch(e),
         isActive: () => false,
     },
 };
@@ -403,7 +403,7 @@ export default function RichTextEditor({
         }),
         Placeholder.configure({ placeholder }),
         ...(enableMentions ? [createMentionExtension({ searchEndpoint: mentionSearchEndpoint })] : []),
-        ...(enableEntryLinks ? [createEntryLinkExtension({ projectId, onSelect: () => onEntryLinkSelectRef.current?.() })] : []),
+        ...(enableEntryLinks ? [createEntryLinkExtension({ projectId, translate: t, onSelect: () => onEntryLinkSelectRef.current?.() })] : []),
         ProseTabKeymap,
         ...(enableComments ? [CommentMark] : []),
         // Prose only — ScreenplayEditor runs its own editor and keeps
@@ -639,7 +639,7 @@ export default function RichTextEditor({
         setElement() {},
         currentElement: () => null,
         insertEntryLink() {
-            editor?.chain().focus().insertContent('[[').run();
+            if (!codeView) startEntryLinkSearch(editor);
         },
         openHelp() {
             setShowLegend(true);
@@ -1006,7 +1006,7 @@ export default function RichTextEditor({
                         {enableEntryLinks && (
                             <Tooltip content={t('editor.toolbar.entry_link.title')}>
                                 <ToolbarIconButton
-                                    onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().insertContent('[[').run(); }}
+                                    onMouseDown={(e) => { e.preventDefault(); startEntryLinkSearch(editor); }}
                                 >
                                     <i className="fa-solid fa-file-lines" />
                                 </ToolbarIconButton>

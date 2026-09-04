@@ -34,6 +34,7 @@ import { findWritingMatches, searchWriting, replaceWriting, selectWritingMatch }
 import { selectedWordCount } from '@alexandria/editor/selectionWordCount';
 import { writingStatistics, type WritingStatistics } from '@alexandria/editor/writingStatistics';
 import WritingStatisticsDialog from './WritingStatisticsDialog';
+import { startEntryLinkSearch } from '@alexandria/components/tiptap-bio-editor/extensions/entry-link';
 import SectionChrome from './SectionChrome';
 import useSectionAutosave from './useSectionAutosave';
 
@@ -186,8 +187,13 @@ function ScreenplaySurface({
         editable: !readOnly,
         extensions: buildScreenplayExtensions({
             projectId,
+            translate: t,
             onEntryLinkSelect: () => {
-                onEntryLinkSelectRef.current?.();
+                // A phone overlay would hide the manuscript and interrupt typing.
+                // Existing-link taps still open its companion through the click handler.
+                if (window.matchMedia('(min-width: 1024px)').matches) {
+                    onEntryLinkSelectRef.current?.();
+                }
             },
             enableComments,
         }),
@@ -305,7 +311,7 @@ function ScreenplaySurface({
             // Entry links only live in action blocks — no-op elsewhere
             // (the ribbon control disables itself off currentElement()).
             if (!editor || editor.state.selection.$from.parent.type.name !== 'action') return;
-            editor.chain().focus().insertContent('[[').run();
+            startEntryLinkSearch(editor);
         },
         openHelp() {
             setShowKeys(true);

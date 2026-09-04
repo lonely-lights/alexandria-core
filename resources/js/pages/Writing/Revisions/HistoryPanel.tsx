@@ -224,7 +224,7 @@ export default function HistoryPanel({
 
     const [confirmingRestore, setConfirmingRestore] = useState(false);
     const [restoring, setRestoring] = useState(false);
-    const [restoreFailed, setRestoreFailed] = useState(false);
+    const [restoreFailed, setRestoreFailed] = useState<'save' | 'restore' | null>(null);
 
     const cancelRef = useRef<() => void>(() => undefined);
     const sectionId = currentSection?.id ?? null;
@@ -295,7 +295,7 @@ export default function HistoryPanel({
         setDetail(null);
         setDetailFailed(false);
         setConfirmingRestore(false);
-        setRestoreFailed(false);
+        setRestoreFailed(null);
     }
 
     async function confirmRestore() {
@@ -304,14 +304,14 @@ export default function HistoryPanel({
         }
 
         setRestoring(true);
-        setRestoreFailed(false);
+        setRestoreFailed(null);
 
         // The pre-restore revision must contain the latest local writing, and
         // no old autosave may arrive after the restored version.
         const saves = await saveCoordinator?.flush();
         if (saves?.some((saved) => !saved)) {
             setRestoring(false);
-            setRestoreFailed(true);
+            setRestoreFailed('save');
             return;
         }
 
@@ -320,7 +320,7 @@ export default function HistoryPanel({
         setRestoring(false);
 
         if (result === null) {
-            setRestoreFailed(true);
+            setRestoreFailed('restore');
 
             return;
         }
@@ -467,7 +467,7 @@ export default function HistoryPanel({
                     >
                         {restoreFailed && (
                             <p className="text-xs" style={{ color: 'var(--theme-status-error-stroke)' }}>
-                                {t('writing.revisions.restore_error')}
+                                {t(restoreFailed === 'save' ? 'writing.revisions.restore_save_error' : 'writing.revisions.restore_error')}
                             </p>
                         )}
                         {canUpdate && (
@@ -489,7 +489,12 @@ export default function HistoryPanel({
                 onClose={() => setConfirmingRestore(false)}
                 onConfirm={() => void confirmRestore()}
                 title={t('writing.revisions.restore_confirm_title')}
-                message={t('writing.revisions.restore_confirm_body')}
+                message={<>
+                    <p>{t('writing.revisions.restore_confirm_body')}</p>
+                    {restoreFailed && <p role="alert" className="mt-3" style={{ color: 'var(--theme-status-error-stroke)' }}>
+                        {t(restoreFailed === 'save' ? 'writing.revisions.restore_save_error' : 'writing.revisions.restore_error')}
+                    </p>}
+                </>}
                 confirmLabel={t('writing.revisions.restore_action')}
                 loading={restoring}
             />

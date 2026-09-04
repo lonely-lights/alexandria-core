@@ -1,6 +1,7 @@
 import { Extension, Node, type Editor, type JSONContent } from "@tiptap/core";
 import { UndoRedo } from "@tiptap/extensions";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
+import type { Translator } from '@alexandria/hooks/useT';
 
 import createEntryLinkExtension, {
     type EntryLinkSearchResult,
@@ -287,10 +288,12 @@ const ScreenplayKeymap = Extension.create({
 export function buildScreenplayExtensions({
     projectId,
     onEntryLinkSelect,
+    translate,
     enableComments = false,
 }: {
     projectId?: number;
     onEntryLinkSelect?: (item: EntryLinkSearchResult) => void;
+    translate?: Translator;
     enableComments?: boolean;
 } = {}) {
     return [
@@ -304,6 +307,7 @@ export function buildScreenplayExtensions({
         Transition,
         createEntryLinkExtension({
             projectId: projectId ?? null,
+            translate,
             triggers: ["[[", "@"],
             onSelect: onEntryLinkSelect,
         }),

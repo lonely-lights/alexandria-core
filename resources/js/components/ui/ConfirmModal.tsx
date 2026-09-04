@@ -1,7 +1,7 @@
-import { type CSSProperties, type ReactNode } from "react";
-import useT from "@alexandria/hooks/useT";
-import Modal from "./Modal";
-import ActionButton from "./ActionButton";
+import { type CSSProperties, type ReactNode } from 'react';
+import useT from '@alexandria/hooks/useT';
+import Modal from './Modal';
+import ActionButton from './ActionButton';
 
 interface ConfirmModalProps {
     open: boolean;
@@ -14,43 +14,43 @@ interface ConfirmModalProps {
     cancelLabel?: string;
     /** Visual treatment for the confirm action. `danger` uses error styling
         + an alert icon — appropriate for deletes. */
-    variant?: "default" | "danger";
+    variant?: 'default' | 'danger';
     /** Disable the confirm button (e.g. while a save is in flight). */
     loading?: boolean;
 }
 
 const dangerHeaderStyle: CSSProperties = {
     borderBottom:
-        "1px solid color-mix(in srgb, var(--theme-status-error-stroke) 30%, transparent)",
+        '1px solid color-mix(in srgb, var(--theme-status-error-stroke) 30%, transparent)',
     background:
-        "color-mix(in srgb, var(--theme-status-error-fill) 50%, transparent)",
+        'color-mix(in srgb, var(--theme-status-error-fill) 50%, transparent)',
 };
 
 const defaultHeaderStyle: CSSProperties = {
     borderBottom:
-        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
-    background: "color-mix(in srgb, var(--theme-base-200) 50%, transparent)",
+        '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    background: 'color-mix(in srgb, var(--theme-base-200) 50%, transparent)',
 };
 
 const dangerIconWrapStyle: CSSProperties = {
     background:
-        "color-mix(in srgb, var(--theme-status-error-fill) 70%, transparent)",
-    color: "var(--theme-status-error-stroke)",
+        'color-mix(in srgb, var(--theme-status-error-fill) 70%, transparent)',
+    color: 'var(--theme-status-error-stroke)',
 };
 
 const defaultIconWrapStyle: CSSProperties = {
     background:
-        "color-mix(in srgb, var(--theme-brand-primary-500) 15%, transparent)",
-    color: "var(--theme-brand-primary-500)",
+        'color-mix(in srgb, var(--theme-brand-primary-500) 15%, transparent)',
+    color: 'var(--theme-brand-primary-500)',
 };
 
 const bodyStyle: CSSProperties = {
-    color: "color-mix(in srgb, var(--theme-base-content) 80%, transparent)",
+    color: 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
 };
 
 const footerDividerStyle: CSSProperties = {
     borderTop:
-        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
+        '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
 };
 
 /**
@@ -65,16 +65,25 @@ export default function ConfirmModal({
     message,
     confirmLabel,
     cancelLabel,
-    variant = "default",
+    variant = 'default',
     loading = false,
 }: ConfirmModalProps) {
     const t = useT();
-    const isDanger = variant === "danger";
-    const resolvedConfirmLabel = confirmLabel ?? t("common.confirm");
-    const resolvedCancelLabel = cancelLabel ?? t("common.cancel");
+    const isDanger = variant === 'danger';
+    const resolvedConfirmLabel = confirmLabel ?? t('common.confirm');
+    const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
+    // Once a mutation is in flight, dismissal must not imply it was cancelled.
+    const close = () => {
+        if (!loading) onClose();
+    };
 
     return (
-        <Modal open={open} onClose={onClose} maxWidth="max-w-md">
+        <Modal
+            open={open}
+            onClose={close}
+            dismissible={!loading}
+            maxWidth="max-w-md"
+        >
             <div className="flex flex-col">
                 <div
                     className="flex items-start gap-3 px-5 py-3"
@@ -89,7 +98,7 @@ export default function ConfirmModal({
                         }
                     >
                         <i
-                            className={`fa-solid ${isDanger ? "fa-triangle-exclamation" : "fa-circle-question"} text-sm`}
+                            className={`fa-solid ${isDanger ? 'fa-triangle-exclamation' : 'fa-circle-question'} text-sm`}
                         />
                     </div>
                     <h2 className="pt-1 text-sm font-semibold">{title}</h2>
@@ -107,16 +116,17 @@ export default function ConfirmModal({
                         icon="fa-solid fa-xmark"
                         label={resolvedCancelLabel}
                         variant="ghost"
-                        onClick={onClose}
+                        onClick={close}
+                        disabled={loading}
                     />
                     <ActionButton
                         icon={
-                            isDanger ? "fa-solid fa-trash" : "fa-solid fa-check"
+                            isDanger ? 'fa-solid fa-trash' : 'fa-solid fa-check'
                         }
                         label={resolvedConfirmLabel}
                         onClick={onConfirm}
                         loading={loading}
-                        variant={isDanger ? "error" : "primary"}
+                        variant={isDanger ? 'error' : 'primary'}
                     />
                 </div>
             </div>

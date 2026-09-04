@@ -17,14 +17,9 @@
  * and explicit close buttons.
  */
 
-import {
-    useCallback,
-    useEffect,
-    useLayoutEffect,
-    useRef,
-    type RefObject,
-} from "react";
-import gsap from "gsap";
+import gsap from 'gsap';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import type { RefObject } from 'react';
 
 const openPanelStack: symbol[] = [];
 
@@ -53,16 +48,19 @@ export function useFloatingPanel(
     open: boolean,
     onClose: () => void,
     animation: FloatingPanelAnimation,
+    dismissible = true,
 ): FloatingPanelHandles {
     const backdropRef = useRef<HTMLDivElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const closingRef = useRef(false);
-    const panelIdRef = useRef(Symbol("floating-panel"));
+    const panelIdRef = useRef(Symbol('floating-panel'));
 
     // Stash the animation spec in a ref so consumers don't have to
     // memoize the object — we only read it at open/close moments.
     const animationRef = useRef(animation);
-    animationRef.current = animation;
+    useLayoutEffect(() => {
+        animationRef.current = animation;
+    }, [animation]);
 
     // Lock page scroll while open. Apply `overflow: hidden` to <html>
     // (not <body>) — body's overflow propagates to the viewport and
@@ -72,7 +70,9 @@ export function useFloatingPanel(
     // reserved column stays put. Save/restore the previous value so
     // nested overlays don't trample each other.
     useEffect(() => {
-        if (!open) return;
+        if (!open) {
+            return;
+        }
 
         const panelId = panelIdRef.current;
         openPanelStack.push(panelId);
@@ -87,11 +87,13 @@ export function useFloatingPanel(
     }, [open]);
 
     useEffect(() => {
-        if (!open) return;
+        if (!open) {
+            return;
+        }
 
         const html = document.documentElement;
         const previousOverflow = html.style.overflow;
-        html.style.overflow = "hidden";
+        html.style.overflow = 'hidden';
 
         return () => {
             html.style.overflow = previousOverflow;
@@ -106,7 +108,10 @@ export function useFloatingPanel(
     // `from` state lands first and the user only ever sees the
     // animation, not the unstyled flash.
     useLayoutEffect(() => {
-        if (!open) return;
+        if (!open) {
+            return;
+        }
+
         closingRef.current = false;
         const { enter, backdropEnterDuration = 0.25 } = animationRef.current;
 
@@ -117,52 +122,60 @@ export function useFloatingPanel(
                 {
                     opacity: 1,
                     duration: backdropEnterDuration,
-                    ease: "power2.out",
+                    ease: 'power2.out',
                 },
             );
         }
+
         if (panelRef.current) {
             gsap.fromTo(panelRef.current, enter.from, enter.to);
         }
     }, [open]);
 
     const animateClose = useCallback(() => {
-        if (closingRef.current) return;
+        if (!dismissible || closingRef.current) {
+            return;
+        }
+
         closingRef.current = true;
         const { exit, backdropExitDuration = 0.25 } = animationRef.current;
 
         const tl = gsap.timeline({ onComplete: onClose });
+
         if (panelRef.current) {
             tl.to(panelRef.current, exit, 0);
         }
+
         if (backdropRef.current) {
             tl.to(
                 backdropRef.current,
                 {
                     opacity: 0,
                     duration: backdropExitDuration,
-                    ease: "power2.in",
+                    ease: 'power2.in',
                 },
                 0,
             );
         }
-    }, [onClose]);
+    }, [onClose, dismissible]);
 
     // Escape closes
     useEffect(() => {
-        if (!open) return;
+        if (!open) {
+            return;
+        }
 
         function handleKey(e: KeyboardEvent) {
             const isTopmost = openPanelStack.at(-1) === panelIdRef.current;
 
-            if (e.key === "Escape" && isTopmost) {
+            if (e.key === 'Escape' && isTopmost) {
                 animateClose();
             }
         }
 
-        document.addEventListener("keydown", handleKey);
+        document.addEventListener('keydown', handleKey);
 
-        return () => document.removeEventListener("keydown", handleKey);
+        return () => document.removeEventListener('keydown', handleKey);
     }, [open, animateClose]);
 
     return { backdropRef, panelRef, animateClose };
