@@ -2,6 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import { useBrowserChrome } from '@alexandria/hooks/useBrowserChrome';
 import useEntitlements from '@alexandria/hooks/useEntitlements';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
@@ -310,6 +311,7 @@ export default function Workspace() {
     // section's first confirmed save — same freshness the old
     // SectionChrome footer had reading the autosave hook directly).
     const [livePages, setLivePages] = useState<Record<number, number | null>>({});
+    const headerRef = useBrowserChrome<HTMLDivElement>();
 
     // Bumped after each confirmed autosave so the reference panel
     // re-fetches the section's server-synced mentions.
@@ -1116,7 +1118,7 @@ export default function Workspace() {
                 some dev pipelines (vendor/ is .gitignored) — inline
                 styles can't be skipped by a CSS generator. */}
             <div
-                className="writing-workspace-shell flex flex-col"
+                className="writing-workspace-shell safe-x safe-bottom flex flex-col"
                 data-writing-paper-color={paperColor}
                 style={{
                     height: '100dvh',
@@ -1130,7 +1132,7 @@ export default function Workspace() {
                     chip over the tab strip; right column: search + avatar
                     spanning both rows (breadcrumb + counts/progress live in
                     the status bar). */}
-                <div className="shrink-0" style={ribbonShellStyle}>
+                <div ref={headerRef} className="alex-writing-header shrink-0" style={ribbonShellStyle}>
                     <Ribbon
                         setKey="writing"
                         context={ribbonCtx}

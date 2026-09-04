@@ -33,7 +33,7 @@ export default function Fab({
             style={{
                 position: "fixed",
                 right: "1.25rem",
-                bottom: "calc(env(safe-area-inset-bottom) + 4.75rem)",
+                bottom: "calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 4.75rem)",
                 // 33% smaller than the original 3.5rem (owner, 2026-08-26)
                 // — the full-size disc crowded the floating pill nav.
                 width: "2.375rem",

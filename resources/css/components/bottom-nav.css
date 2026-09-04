@@ -84,7 +84,7 @@ nav[aria-label="Primary mobile navigation"] button:focus-visible {
  * on lg+ there's no bottom nav, so anchor it lower for a normal feel. */
 @media (min-width: 1024px) {
     .alex-fab {
-        bottom: calc(env(safe-area-inset-bottom) + 1.5rem) !important;
+        bottom: calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 1.5rem) !important;
         right: 1.5rem !important;
     }
 }

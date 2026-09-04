@@ -104,7 +104,7 @@ export default function BottomNav({
                 onClick={() => setPeekOpen(true)}
                 className="fixed right-4 z-40 flex items-center justify-center rounded-full text-sm lg:hidden"
                 style={{
-                    bottom: "calc(env(safe-area-inset-bottom, 0px) / 2 + 2.25rem)",
+                    bottom: "calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 2.25rem)",
                     width: "2.75rem",
                     minHeight: "2.75rem",
                     color: "var(--theme-brand-primary-highlight-fg)",
@@ -215,7 +215,7 @@ export default function BottomNav({
                     // reference): inset from the sides, riding above the
                     // home-indicator zone, fully rounded, each tab's
                     // highlight its own pill inside the capsule.
-                bottom: "calc(env(safe-area-inset-bottom, 0px) / 2 + 0.3125rem)",
+                bottom: "calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 0.3125rem)",
                 minHeight: "3.875rem",
                 padding: "0.375rem",
                 borderRadius: "999px",

@@ -701,7 +701,7 @@ export default function AppLayout({
             <main
                 data-theme-target="content"
                 className={[
-                    immersive ? "" : "pt-20",
+                    immersive ? "" : navbar ? "alex-main-below-navbar" : "pt-20",
                     // pb-[calc(5rem+env(safe-area-inset-bottom))] gives the
                     // bottom nav full clearance on iPhones with a home
                     // indicator (the nav's own min-height + safe-area
@@ -709,7 +709,7 @@ export default function AppLayout({
                     // the last ~18px of content tucked under the nav).
                     // lg:pb-0 keeps desktop unchanged.
                     showBottomNav && bottomNavPresentation === "standard"
-                        ? "pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0"
+                        ? "alex-bottom-nav-clearance"
                         : "",
                 ]
                     .filter(Boolean)

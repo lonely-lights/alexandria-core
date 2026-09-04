@@ -15,6 +15,7 @@ import type { UserMenuItem } from "../../types/navigation";
 import { useHoverOffDismiss } from "../../hooks/useHoverOffDismiss";
 import { useMenuDismissDelay } from "../../hooks/useMenuDismissDelay";
 import useT from "../../hooks/useT";
+import { useBrowserChrome } from "../../hooks/useBrowserChrome";
 
 interface NavbarProps {
     /** Toggles the Sidebar drawer. */
@@ -106,6 +107,7 @@ export default function Navbar({
     const [scrolled, setScrolled] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const navbarRef = useBrowserChrome<HTMLElement>();
 
     // Hover-off auto-dismiss (menu_dismiss_delay_ms preference), armed
     // only while open. Trigger and panel share the wrapper subtree.
@@ -154,50 +156,25 @@ export default function Navbar({
 
     return (
         <nav
-            ref={(el) => {
-                if (el) {
-                    document.documentElement.style.setProperty(
-                        "--navbar-height",
-                        `${el.offsetHeight}px`,
-                    );
-                }
-            }}
-            className="fixed top-0 z-40 w-full px-2 py-0 backdrop-blur-lg transition-all duration-300 overflow-visible"
+            ref={navbarRef}
+            className="alex-top-navbar fixed top-0 z-40 w-full backdrop-blur-lg transition-all duration-300 overflow-visible"
             style={{
-                // Hard-cap at legacy's 72px height. Sizing the user
-                // avatar bigger than 48px would otherwise stretch the
-                // navbar; with the cap, the avatar can overflow below
-                // for the "hanging seal" effect while chrome stays put.
-                //
-                // `border-b` is intentionally NOT used — border-box
-                // sizing eats 1px from the content area, throwing off
-                // items-center's symmetry. The bottom hairline when
-                // scrolled is layered via inset box-shadow instead.
-                height: "72px",
-                // DaisyUI's `.navbar` class ships `min-height: 4rem`
-                // (or higher in some configs). When that min-height
-                // exceeds our `height: 72px`, CSS takes the larger of
-                // the two — the nav renders ~80px tall while the user
-                // trigger button stays 72px, leaving an 8px strip of
-                // navbar bg below the button's hover highlight. Pin
-                // min-height inline (highest specificity) so the nav
-                // is exactly 72px and the hover fills edge-to-edge.
-                minHeight: "72px",
-                maxHeight: "72px",
-                paddingTop: 0,
+                // CSS keeps a 72px interactive row below the safe inset.
+                // The scrolled hairline is an inset shadow so it does not
+                // consume a pixel of the row's height.
                 paddingBottom: 0,
                 // base-chrome is the elevated-chrome surface (preset- and
-                // mode-aware). Translucency lets the page bg show through
-                // for the frosted-glass feel; scrolled state firms up.
-                background: scrolled
+                // mode-aware). Desktop keeps the frosted-glass treatment;
+                // mobile CSS uses the opaque token for consistent OS tint.
+                '--navbar-background': scrolled
                     ? "color-mix(in srgb, var(--theme-base-chrome) 70%, transparent)"
                     : "color-mix(in srgb, var(--theme-base-chrome) 30%, transparent)",
                 boxShadow: scrolled
                     ? "0 8px 16px rgba(0, 0, 0, 0.18), inset 0 -1px 0 var(--theme-base-400)"
                     : "none",
-            }}
+            } as CSSProperties}
         >
-            <div className="container mx-auto flex max-w-7xl items-center justify-between px-2">
+            <div className="container mx-auto flex h-[72px] max-w-7xl items-center justify-between px-2">
                 <div className="flex flex-1 items-center">
                     {/* Hamburger Menu Button */}
                     <button
@@ -530,4 +507,3 @@ function DefaultGuestActions() {
         </div>
     );
 }
-
