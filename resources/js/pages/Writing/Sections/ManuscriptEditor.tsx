@@ -146,8 +146,8 @@ export default function ManuscriptEditor({
     // resets its own state — and flushes the outgoing section's
     // pending save — on the same id change).
     useEffect(() => {
-        setContent(section.content ?? '');
-        onOutlineChange?.(extractSectionOutline(section.content));
+        setContent(initialContent);
+        onOutlineChange?.(extractSectionOutline(initialContent));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [section.id]);
 
@@ -173,7 +173,7 @@ export default function ManuscriptEditor({
                     className={scrollMode === 'self' ? 'min-h-0 flex-1' : undefined}
                     value={content}
                     onChange={handleChange}
-                    onImmediateChange={(wiki) => onOutlineChange?.(extractSectionOutline(wiki))}
+                    onImmediateChange={(wiki) => { noteChange(wiki); onOutlineChange?.(extractSectionOutline(wiki)); }}
                     tier="pro"
                     enableEntryLinks
                     enableMentions={false}

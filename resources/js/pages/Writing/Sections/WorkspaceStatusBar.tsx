@@ -5,6 +5,7 @@ import useT from '@alexandria/hooks/useT';
 import { worksBase } from '@alexandria/lib/urls';
 
 import type { WorkLengthPlan } from './WorkSettingsModal';
+import WritingSaveStatus from './WritingSaveStatus';
 
 /**
  * Workspace status bar — Word-style anatomy (ribbon transitions).
@@ -176,7 +177,8 @@ export default function WorkspaceStatusBar({
         sectionTarget !== null && sectionTarget > 0 ? sectionWords / sectionTarget : null;
 
     return (
-        <div className="h-8 shrink-0 px-4 text-xs" style={barStyle}>
+        <div className="flex h-11 shrink-0 items-center gap-2 px-4 text-xs md:h-8" style={barStyle}>
+            <div className="h-full min-w-0 flex-1">
             {/* Desktop line */}
             <div className="hidden h-full min-w-0 items-center gap-3 md:flex">
                 <Link
@@ -233,6 +235,8 @@ export default function WorkspaceStatusBar({
                 <span aria-hidden="true">·</span>
                 <span className="min-w-0 truncate tabular-nums">{t('writing.tools.work_words').replace(':count', abbreviateCount(workWords))}</span>
             </div>
+            </div>
+            <WritingSaveStatus />
         </div>
     );
 }

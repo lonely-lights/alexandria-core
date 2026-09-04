@@ -8,6 +8,17 @@ declare(strict_types=1);
  * lookup inside the group bag.
  */
 return [
+    'save.title' => 'Save status',
+    'save.idle' => 'No unsaved changes',
+    'save.saved' => 'All changes saved',
+    'save.dirty' => 'Unsaved changes',
+    'save.saving' => 'Saving changes…',
+    'save.error' => 'Changes could not be saved',
+    'save.keep_open' => 'Keep this workspace open until saving succeeds. Unsaved text is held in this tab, not stored offline.',
+    'save.retry' => 'Retry',
+    'save.retry_all' => 'Retry all',
+    'save.now' => 'Save now',
+    'save.leave_warning' => 'Some writing changes have not been saved. Stay here to finish saving or retry. Leave anyway? Unsaved text may be lost.',
     'ribbon.clear_text_formatting' => 'Clear text formatting',
     'ribbon.clear_text_formatting_terms' => 'remove formatting reset bold italic underline emphasis',
     'ribbon.clear_text_formatting_hint' => 'Remove bold, italic and underline. Keep headings, lists, links and comments.',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 
 import Button from '@alexandria/components/ui/Button';
 import Input from '@alexandria/components/form/Input';
@@ -7,6 +7,7 @@ import useT from '@alexandria/hooks/useT';
 
 import type { CurrentSection, SectionNode } from '../Workspace';
 import { markRevision } from './revisionApi';
+import { WritingSaveContext } from '../Sections/WritingSaveContext';
 
 /**
  * Mark-revision dialog — Stage 9 (design doc 2026-08-29-revisions-design.md
@@ -74,6 +75,7 @@ export default function MarkRevisionModal({
     onMarked,
 }: MarkRevisionModalProps) {
     const t = useT();
+    const saveCoordinator = useContext(WritingSaveContext);
 
     const ancestors = lockedSection === null && currentSection !== null
         ? ancestorsOf(sections, currentSection.id)
@@ -92,6 +94,13 @@ export default function MarkRevisionModal({
     async function submit() {
         setSubmitting(true);
         setFailed(false);
+
+        const saves = await saveCoordinator?.flush();
+        if (saves?.some((saved) => !saved)) {
+            setSubmitting(false);
+            setFailed(true);
+            return;
+        }
 
         const revision = await markRevision(projectSlug, workSlug, {
             scopeSectionId: lockedSection?.id ?? scopeSectionId,

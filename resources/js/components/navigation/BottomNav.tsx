@@ -104,7 +104,7 @@ export default function BottomNav({
                 onClick={() => setPeekOpen(true)}
                 className="fixed right-4 z-40 flex items-center justify-center rounded-full text-sm lg:hidden"
                 style={{
-                    bottom: "calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 2.25rem)",
+                    bottom: "calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 3rem)",
                     width: "2.75rem",
                     minHeight: "2.75rem",
                     color: "var(--theme-brand-primary-highlight-fg)",

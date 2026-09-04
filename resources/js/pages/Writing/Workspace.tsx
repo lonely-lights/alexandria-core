@@ -78,6 +78,8 @@ import WorkSettingsModal, {
     type WorkLengthPlan,
 } from './Sections/WorkSettingsModal';
 import WorkspaceStatusBar from './Sections/WorkspaceStatusBar';
+import WritingSaveProvider from './Sections/WritingSaveContext';
+import { WritingSaveCoordinator } from './Sections/SectionSaveQueue';
 import type { WritingEditorBridge, WritingRibbonContext } from './ribbon/writingRibbonContext';
 import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
 import { type PanelMode, readPanelMode, writePanelMode } from './panelMode';
@@ -312,6 +314,7 @@ export default function Workspace() {
     // Inertia props until the next full prop refresh catches up.
     const [liveCounts, setLiveCounts] = useState<Record<number, number>>({});
     const [liveWorkWords, setLiveWorkWords] = useState<number | null>(null);
+    const saveCoordinator = useMemo(() => new WritingSaveCoordinator(), [work.id]);
 
     // Server-confirmed page estimates per section (null until the
     // section's first confirmed save — same freshness the old
@@ -1052,6 +1055,7 @@ export default function Workspace() {
                 return bridgeRef.current;
             },
             actions: {
+                saveNow: () => { void saveCoordinator.flush(); },
                 openFind: (replace = false) => { setReplaceInitially(replace); setFindOpen(true); },
                 togglePanel,
                 toggleSceneLinksPanel,
@@ -1153,6 +1157,7 @@ export default function Workspace() {
         // collapsed Writing handle cannot navigate, while one deliberate
         // reveal exposes Settings and the other global destinations. Peek
         // mode overlays rather than re-growing this viewport-exact surface.
+        <WritingSaveProvider coordinator={saveCoordinator} workPath={worksBase(project.slug, work.slug)}>
         <AppLayout
             title={`${work.title} - ${project.name}`}
             navbar={false}
@@ -1904,5 +1909,6 @@ export default function Workspace() {
                 loading={deleting || deleteImpactLoading}
             />
         </AppLayout>
+        </WritingSaveProvider>
     );
 }

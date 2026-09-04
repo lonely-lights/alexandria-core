@@ -104,6 +104,7 @@ export interface WritingRibbonContext {
     editorTick: number;
     editor: WritingEditorBridge | null;
     actions: {
+        saveNow?(): void;
         openFind?(replace?: boolean): void;
         togglePanel(): void;
         toggleSceneLinksPanel(): void;

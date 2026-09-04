@@ -196,6 +196,12 @@ const editTab: RibbonTab<Ctx> = {
             labelKey: 'writing.ribbon.group_history_view',
             controls: [
                 {
+                    id: 'save-now', type: 'button', icon: 'fa-solid fa-cloud-arrow-up',
+                    labelKey: 'writing.save.now', visible: editable,
+                    disabled: (ctx) => !ctx.actions.saveNow,
+                    onAction: (ctx) => ctx.actions.saveNow?.(),
+                },
+                {
                     id: 'undo',
                     type: 'button',
                     icon: 'fa-solid fa-rotate-left',

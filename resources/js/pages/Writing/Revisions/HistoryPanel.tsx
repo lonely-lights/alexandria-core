@@ -1,5 +1,4 @@
-import { router } from '@inertiajs/react';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useContext, useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import Button from '@alexandria/components/ui/Button';
 import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
@@ -7,6 +6,7 @@ import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 
 import type { CurrentSection } from '../Workspace';
+import { WritingSaveContext } from '../Sections/WritingSaveContext';
 import {
     fetchSectionHistory,
     fetchVersion,
@@ -212,6 +212,7 @@ export default function HistoryPanel({
     refreshSignal,
 }: HistoryPanelProps) {
     const t = useT();
+    const saveCoordinator = useContext(WritingSaveContext);
     const [history, setHistory] = useState<SectionHistory | null>(null);
     const [loading, setLoading] = useState(false);
     const [failed, setFailed] = useState(false);
@@ -305,6 +306,15 @@ export default function HistoryPanel({
         setRestoring(true);
         setRestoreFailed(false);
 
+        // The pre-restore revision must contain the latest local writing, and
+        // no old autosave may arrive after the restored version.
+        const saves = await saveCoordinator?.flush();
+        if (saves?.some((saved) => !saved)) {
+            setRestoring(false);
+            setRestoreFailed(true);
+            return;
+        }
+
         const result = await restoreVersion(projectSlug, workSlug, selected.versionId);
 
         setRestoring(false);
@@ -318,7 +328,8 @@ export default function HistoryPanel({
         setConfirmingRestore(false);
         closeView();
         loadHistory();
-        router.reload({ only: ['currentSection', 'sections'] });
+        // Replace mounted editor/flow caches and their save queues together.
+        window.location.reload();
     }
 
     const own = history?.own ?? [];

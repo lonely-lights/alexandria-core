@@ -115,7 +115,7 @@ interface ScreenplaySurfaceProps {
     onStateChange?: () => void;
     onSceneLinksChange?: (links: ScreenplaySceneLink[]) => void;
     onEntryLinkSelect?: () => void;
-    /** Receives the codec-serialized doc, 300ms-debounced. */
+    /** Receives each document update immediately; the save queue owns debouncing. */
     onSerialized: (serialized: string) => void;
     /** Enable the floating "Add comment" affordance (Stage 11.5 Task 3). */
     enableComments?: boolean;
@@ -151,7 +151,6 @@ function ScreenplaySurface({
     const t = useT();
     const [showKeys, setShowKeys] = useState(false);
     const [hoveredEntry, setHoveredEntry] = useState<{ entryId: number; rect: DOMRect } | null>(null);
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const entryLookupCacheRef = useRef(new Map<string, number | 'loading' | 'missing'>());
     const onStateChangeRef = useRef(onStateChange);
@@ -194,10 +193,7 @@ function ScreenplaySurface({
             reportSceneLinks(e);
         },
         onUpdate: ({ editor: e }) => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-            debounceRef.current = setTimeout(() => {
-                onSerialized(serializeScreenplay(docToBlocks(e.getJSON())));
-            }, 300);
+            onSerialized(serializeScreenplay(docToBlocks(e.getJSON())));
             reportSceneLinks(e);
         },
         onTransaction: ({ editor: e }) => {
@@ -210,14 +206,10 @@ function ScreenplaySurface({
         editor?.setEditable(!readOnly, false);
     }, [editor, readOnly]);
 
-    // Section switches remount this component (Workspace keys the
-    // editor by section id) — clear the debounce on unmount so a stale
-    // timer never fires onSerialized into the dead instance.
+    // Section switches remount this component; content is already in the
+    // save queue, while hover timers must not survive the editor surface.
     useEffect(() => {
         return () => {
-            if (debounceRef.current !== null) {
-                clearTimeout(debounceRef.current);
-            }
             if (hoverCloseTimerRef.current !== null) {
                 clearTimeout(hoverCloseTimerRef.current);
             }
