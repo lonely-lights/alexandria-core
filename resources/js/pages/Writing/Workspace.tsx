@@ -1685,6 +1685,9 @@ export default function Workspace() {
                     workWords={workWords}
                     hasSection={effectiveSection !== null}
                     sectionWords={sectionWords}
+                    onOpenStatistics={effectiveSection !== null && (viewMode === 'focus' || viewMode === 'continuous') && !ribbonCtx.editor?.isCodeView()
+                        ? () => ribbonCtx.editor?.openStatistics?.()
+                        : undefined}
                     selectedWords={effectiveSection !== null && (viewMode === 'focus' || viewMode === 'continuous')
                         ? ribbonCtx.editor?.selectedWordCount?.() ?? null
                         : null}

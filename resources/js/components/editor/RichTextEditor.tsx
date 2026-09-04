@@ -30,6 +30,9 @@ import { WritingSearch, findWritingMatches, searchWriting, replaceWriting, selec
 import { selectedWordCount } from '@alexandria/editor/selectionWordCount';
 import { canClearTextFormatting, clearTextFormatting, captureWritingLink, type WritingLinkSelection } from '@alexandria/editor/writingTextCommands';
 import WritingLinkDialog from '@alexandria/pages/Writing/Sections/WritingLinkDialog';
+import { writingStatistics, type WritingStatistics } from '@alexandria/editor/writingStatistics';
+import WritingStatisticsDialog from '@alexandria/pages/Writing/Sections/WritingStatisticsDialog';
+import { canChangeWritingCase, changeWritingCase } from '@alexandria/editor/changeWritingCase';
 
 /**
  * RichTextEditor — Tiptap 3 wiki-markup editor surface.
@@ -337,6 +340,7 @@ export default function RichTextEditor({
     const t = useT();
     const [showLinkModal, setShowLinkModal] = useState(false);
     const [writingLink, setWritingLink] = useState<WritingLinkSelection | null>(null);
+    const [statistics, setStatistics] = useState<WritingStatistics | null>(null);
     const [showLegend, setShowLegend] = useState(false);
     const [showAiModal, setShowAiModal] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
@@ -570,6 +574,9 @@ export default function RichTextEditor({
     // Ribbon editor bridge (Ribbon Plan 2 Task 2) — recreated per
     // render so it always closes over the current editor + codeView.
     useImperativeHandle(bridgeRef, (): WritingEditorBridge => ({
+        openStatistics: () => { if (!codeView) setStatistics(writingStatistics(editor)); },
+        canChangeTextCase: () => !codeView && canChangeWritingCase(editor),
+        changeTextCase: (mode) => { if (!codeView) changeWritingCase(editor, mode); },
         canChangeListLevel: (direction) => !codeView && canChangeListLevel(editor, direction),
         changeListLevel: (direction) => { if (!codeView) changeListLevel(editor, direction); },
         selectedWordCount: () => codeView ? null : selectedWordCount(editor),
@@ -1138,6 +1145,7 @@ export default function RichTextEditor({
 
             {/* Link Modal */}
             {writingLink && editor && <WritingLinkDialog editor={editor} selection={writingLink} onClose={() => setWritingLink(null)} />}
+            {statistics && <WritingStatisticsDialog statistics={statistics} onClose={() => setStatistics(null)} />}
             <Modal open={showLinkModal} onClose={() => setShowLinkModal(false)} maxWidth="max-w-sm">
                 <div className="p-6">
                     <h3 className="mb-4 text-lg font-bold">{t('editor.link_modal.title')}</h3>

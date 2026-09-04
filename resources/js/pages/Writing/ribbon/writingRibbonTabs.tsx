@@ -187,6 +187,7 @@ const editTab: RibbonTab<Ctx> = {
             id: 'find',
             labelKey: 'writing.find.title',
             controls: [
+                { id: 'writing-statistics', type: 'button', icon: 'fa-solid fa-calculator', labelKey: 'writing.statistics.title', searchKeywordKeys: ['writing.statistics.terms'], disabled: (ctx) => !ctx.editor?.openStatistics || ctx.editor.isCodeView(), onAction: (ctx) => ctx.editor?.openStatistics?.() },
                 { id: 'find-text', type: 'button', icon: 'fa-solid fa-magnifying-glass', labelKey: 'writing.find.find', menuShortcut: 'Mod-F', disabled: (ctx) => !ctx.editor?.searchText || ctx.editor.isCodeView(), onAction: (ctx) => ctx.actions.openFind?.() },
                 { id: 'replace-text', type: 'button', icon: 'fa-solid fa-text-slash', labelKey: 'writing.find.replace', visible: editable, disabled: (ctx) => !ctx.editor?.replaceText || ctx.editor.isCodeView(), onAction: (ctx) => ctx.actions.openFind?.(true) },
             ],
@@ -330,6 +331,15 @@ const editTab: RibbonTab<Ctx> = {
                     visible: proseEditable,
                     disabled: (ctx) => !(ctx.editor?.canClearTextFormatting?.() ?? false),
                     onAction: (ctx) => ctx.editor?.clearTextFormatting?.(),
+                },
+                {
+                    id: 'change-case', type: 'select', icon: 'fa-solid fa-font',
+                    labelKey: 'writing.case.title', visible: proseEditable,
+                    searchKeywordKeys: ['writing.case.terms'],
+                    disabledReasonKey: 'writing.case.hint',
+                    disabled: (ctx) => !(ctx.editor?.canChangeTextCase?.() ?? false),
+                    options: () => [{ value: 'upper', labelKey: 'writing.case.upper' }, { value: 'lower', labelKey: 'writing.case.lower' }],
+                    onAction: (ctx, value) => { if (value === 'upper' || value === 'lower') ctx.editor?.changeTextCase?.(value); },
                 },
                 {
                     id: 'bullet-list',

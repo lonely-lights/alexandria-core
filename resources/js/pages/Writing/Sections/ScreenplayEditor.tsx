@@ -32,6 +32,8 @@ import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
 import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
 import { findWritingMatches, searchWriting, replaceWriting, selectWritingMatch } from '@alexandria/editor/extensions/writingSearch';
 import { selectedWordCount } from '@alexandria/editor/selectionWordCount';
+import { writingStatistics, type WritingStatistics } from '@alexandria/editor/writingStatistics';
+import WritingStatisticsDialog from './WritingStatisticsDialog';
 import SectionChrome from './SectionChrome';
 import useSectionAutosave from './useSectionAutosave';
 
@@ -150,6 +152,7 @@ function ScreenplaySurface({
 }: ScreenplaySurfaceProps) {
     const t = useT();
     const [showKeys, setShowKeys] = useState(false);
+    const [statistics, setStatistics] = useState<WritingStatistics | null>(null);
     const [hoveredEntry, setHoveredEntry] = useState<{ entryId: number; rect: DOMRect } | null>(null);
     const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const entryLookupCacheRef = useRef(new Map<string, number | 'loading' | 'missing'>());
@@ -272,6 +275,7 @@ function ScreenplaySurface({
     // methods are safe no-ops: the schema makes marks/headings/lists
     // impossible by construction.
     useImperativeHandle(bridgeRef, (): WritingEditorBridge => ({
+        openStatistics: () => setStatistics(writingStatistics(editor)),
         selectedWordCount: () => selectedWordCount(editor),
         toggleMark() {},
         toggleList() {},
@@ -555,6 +559,7 @@ function ScreenplaySurface({
             )}
 
             {/* Keyboard-flow help — opened via bridge.openHelp() */}
+            {statistics && <WritingStatisticsDialog statistics={statistics} onClose={() => setStatistics(null)} />}
             <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-lg">
                 <ModalHeader title={t('writing.workspace.keys_title')} onClose={() => setShowKeys(false)} />
                 <div className="grid gap-2.5 p-5 text-sm">

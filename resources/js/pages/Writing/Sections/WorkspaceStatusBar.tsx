@@ -51,6 +51,7 @@ interface WorkspaceStatusBarProps {
     sectionWords: number;
     /** Live selected words; null means no selection (zero is meaningful). */
     selectedWords?: number | null;
+    onOpenStatistics?: () => void;
     sectionTarget: number | null;
     /** Server-confirmed page estimate for the current section (null until the first save). */
     sectionPages: number | null;
@@ -152,6 +153,7 @@ export default function WorkspaceStatusBar({
     hasSection,
     sectionWords,
     selectedWords = null,
+    onOpenStatistics,
     sectionTarget,
     sectionPages,
     sectionFormat,
@@ -199,7 +201,7 @@ export default function WorkspaceStatusBar({
                         {selectionLabel === null && sectionRatio !== null && (
                             <MiniProgressBar ratio={sectionRatio} widthClass="w-20" />
                         )}
-                        <span className="shrink-0 tabular-nums" style={metaTextStyle}>
+                        <button type="button" className="h-full shrink-0 tabular-nums enabled:hover:underline" style={metaTextStyle} onClick={onOpenStatistics} disabled={!onOpenStatistics} aria-label={t('writing.statistics.title')}>
                             {selectionLabel !== null
                                 ? <span data-writing-selection-count>{selectionLabel}</span>
                                 : sectionWordsLabel}
@@ -214,7 +216,7 @@ export default function WorkspaceStatusBar({
                                     </span>
                                 </>
                             )}
-                        </span>
+                        </button>
                         <span aria-hidden="true" style={crumbSeparatorStyle}>
                             ·
                         </span>
@@ -224,7 +226,7 @@ export default function WorkspaceStatusBar({
             </div>
 
             {/* Global navigation stays behind the deliberate bottom-right menu. */}
-            <div className="flex h-full min-w-0 items-center justify-center gap-2 md:hidden" style={metaTextStyle}>
+            <button type="button" className="flex h-full w-full min-w-0 items-center justify-center gap-2 md:hidden" style={metaTextStyle} onClick={onOpenStatistics} disabled={!onOpenStatistics} aria-label={t('writing.statistics.title')}>
                 {hasSection && (
                     <span className="min-w-0 truncate tabular-nums">
                         {selectionLabel !== null
@@ -234,7 +236,7 @@ export default function WorkspaceStatusBar({
                 )}
                 <span aria-hidden="true">·</span>
                 <span className="min-w-0 truncate tabular-nums">{t('writing.tools.work_words').replace(':count', abbreviateCount(workWords))}</span>
-            </div>
+            </button>
             </div>
             <WritingSaveStatus />
         </div>
