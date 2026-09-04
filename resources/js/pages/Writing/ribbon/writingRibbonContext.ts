@@ -15,6 +15,10 @@ import type { SearchOptions, TextMatch } from '@alexandria/editor/extensions/wri
 export interface WritingEditorBridge {
     /** Null for a collapsed selection or source view; never a saved count. */
     selectedWordCount?(): number | null;
+    canClearTextFormatting?(): boolean;
+    clearTextFormatting?(): void;
+    canEditExternalLink?(): boolean;
+    editExternalLink?(): void;
     findMatches?(query: string, options: SearchOptions): TextMatch[];
     searchText?(query: string, options: SearchOptions, current?: number): TextMatch[];
     replaceText?(query: string, replacement: string, options: SearchOptions, current?: number): number;

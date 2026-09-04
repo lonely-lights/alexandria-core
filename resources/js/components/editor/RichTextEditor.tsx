@@ -27,6 +27,8 @@ import MarkDeviceBubble from '@alexandria/editor/extensions/MarkDeviceBubble';
 import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
 import { WritingSearch, findWritingMatches, searchWriting, replaceWriting, selectWritingMatch } from '@alexandria/editor/extensions/writingSearch';
 import { selectedWordCount } from '@alexandria/editor/selectionWordCount';
+import { canClearTextFormatting, clearTextFormatting, captureWritingLink, type WritingLinkSelection } from '@alexandria/editor/writingTextCommands';
+import WritingLinkDialog from '@alexandria/pages/Writing/Sections/WritingLinkDialog';
 
 /**
  * RichTextEditor — Tiptap 3 wiki-markup editor surface.
@@ -331,6 +333,7 @@ export default function RichTextEditor({
 }: RichTextEditorProps) {
     const t = useT();
     const [showLinkModal, setShowLinkModal] = useState(false);
+    const [writingLink, setWritingLink] = useState<WritingLinkSelection | null>(null);
     const [showLegend, setShowLegend] = useState(false);
     const [showAiModal, setShowAiModal] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
@@ -562,6 +565,10 @@ export default function RichTextEditor({
     // render so it always closes over the current editor + codeView.
     useImperativeHandle(bridgeRef, (): WritingEditorBridge => ({
         selectedWordCount: () => codeView ? null : selectedWordCount(editor),
+        canClearTextFormatting: () => !codeView && canClearTextFormatting(editor),
+        clearTextFormatting: () => { if (!codeView && clearTextFormatting(editor)) editor?.commands.focus(); },
+        canEditExternalLink: () => !codeView && captureWritingLink(editor) !== null,
+        editExternalLink: () => { if (!codeView) setWritingLink(captureWritingLink(editor)); },
         toggleMark(name) {
             if (!editor) return;
             if (name === 'bold') {
@@ -716,13 +723,17 @@ export default function RichTextEditor({
     const actions: EditorActions = {
         openLinkModal: useCallback(() => {
             if (!editor) return;
+            if (isManuscript) {
+                setWritingLink(captureWritingLink(editor));
+                return;
+            }
             const existingLink = editor.getAttributes('link');
             const { from, to } = editor.state.selection;
             const selectedText = editor.state.doc.textBetween(from, to, '');
             setLinkUrl(existingLink.href ?? '');
             setLinkText(selectedText || '');
             setShowLinkModal(true);
-        }, [editor]),
+        }, [editor, isManuscript]),
         insertMention: useCallback(() => {
             if (!editor) return;
             editor.chain().focus().insertContent('@').run();
@@ -1118,6 +1129,7 @@ export default function RichTextEditor({
             </div>
 
             {/* Link Modal */}
+            {writingLink && editor && <WritingLinkDialog editor={editor} selection={writingLink} onClose={() => setWritingLink(null)} />}
             <Modal open={showLinkModal} onClose={() => setShowLinkModal(false)} maxWidth="max-w-sm">
                 <div className="p-6">
                     <h3 className="mb-4 text-lg font-bold">{t('editor.link_modal.title')}</h3>

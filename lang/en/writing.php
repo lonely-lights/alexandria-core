@@ -8,6 +8,20 @@ declare(strict_types=1);
  * lookup inside the group bag.
  */
 return [
+    'ribbon.clear_text_formatting' => 'Clear text formatting',
+    'ribbon.clear_text_formatting_terms' => 'remove formatting reset bold italic underline emphasis',
+    'ribbon.clear_text_formatting_hint' => 'Remove bold, italic and underline. Keep headings, lists, links and comments.',
+    'link.title' => 'Insert or edit link',
+    'link.search_terms' => 'hyperlink external URL website remove unlink',
+    'link.url' => 'Web address',
+    'link.text' => 'Link text',
+    'link.hint' => 'Leave empty to display the web address.',
+    'link.remove' => 'Remove link',
+    'link.apply' => 'Apply link',
+    'link.selection_hint' => 'Place the cursor in a paragraph or select text within one paragraph. Linked entries keep their own controls.',
+    'link.error_invalid-url' => 'Enter a complete http:// or https:// address without spaces or login details.',
+    'link.error_invalid-text' => 'Link text cannot contain square brackets or line breaks in this document format yet.',
+    'link.error_stale' => 'The document changed while this dialog was open. Close it and select the text again.',
     'find.title' => 'Find and replace',
     'find.find' => 'Find in section',
     'find.scope' => 'Current section',

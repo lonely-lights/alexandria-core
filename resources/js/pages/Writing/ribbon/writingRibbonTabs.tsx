@@ -317,6 +317,15 @@ const editTab: RibbonTab<Ctx> = {
                 markToggle('italic', 'fa-solid fa-italic'),
                 markToggle('underline', 'fa-solid fa-underline'),
                 {
+                    id: 'clear-text-formatting', type: 'button', icon: 'fa-solid fa-eraser',
+                    labelKey: 'writing.ribbon.clear_text_formatting',
+                    searchKeywordKeys: ['writing.ribbon.clear_text_formatting_terms'],
+                    disabledReasonKey: 'writing.ribbon.clear_text_formatting_hint',
+                    visible: proseEditable,
+                    disabled: (ctx) => !(ctx.editor?.canClearTextFormatting?.() ?? false),
+                    onAction: (ctx) => ctx.editor?.clearTextFormatting?.(),
+                },
+                {
                     id: 'bullet-list',
                     type: 'toggle',
                     icon: 'fa-solid fa-list-ul',
@@ -363,6 +372,15 @@ const editTab: RibbonTab<Ctx> = {
             id: 'world',
             labelKey: 'writing.ribbon.group_world',
             controls: [
+                {
+                    id: 'external-link', type: 'button', icon: 'fa-solid fa-arrow-up-right-from-square',
+                    labelKey: 'writing.link.title',
+                    searchKeywordKeys: ['writing.link.search_terms'],
+                    visible: proseEditable,
+                    disabled: (ctx) => !(ctx.editor?.canEditExternalLink?.() ?? false),
+                    disabledReasonKey: 'writing.link.selection_hint',
+                    onAction: (ctx) => ctx.editor?.editExternalLink?.(),
+                },
                 {
                     id: 'entry-link',
                     type: 'button',
