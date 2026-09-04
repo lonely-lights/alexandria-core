@@ -403,7 +403,7 @@ export default function RichTextEditor({
         }),
         Placeholder.configure({ placeholder }),
         ...(enableMentions ? [createMentionExtension({ searchEndpoint: mentionSearchEndpoint })] : []),
-        ...(enableEntryLinks ? [createEntryLinkExtension({ projectId, translate: t, onSelect: () => onEntryLinkSelectRef.current?.() })] : []),
+        ...(enableEntryLinks ? [createEntryLinkExtension({ projectId, translate: t, preventPlainNavigation: isManuscript, onSelect: () => onEntryLinkSelectRef.current?.() })] : []),
         ProseTabKeymap,
         ...(enableComments ? [CommentMark] : []),
         // Prose only — ScreenplayEditor runs its own editor and keeps

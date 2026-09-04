@@ -308,6 +308,7 @@ export function buildScreenplayExtensions({
         createEntryLinkExtension({
             projectId: projectId ?? null,
             translate,
+            preventPlainNavigation: true,
             triggers: ["[[", "@"],
             onSelect: onEntryLinkSelect,
         }),

@@ -57,6 +57,8 @@ export interface EntryLinkOptions {
     triggers?: Array<'[[' | '@'>;
     onSelect?: (item: EntryLinkSearchResult) => void;
     translate?: Translator;
+    /** Writing surfaces own link taps; other consumers keep native navigation. */
+    preventPlainNavigation?: boolean;
 }
 
 interface EntryLinkAttrs {
@@ -76,6 +78,7 @@ export default function createEntryLinkExtension(
         triggers = ['[['],
         onSelect = () => {},
         translate = (key, fallback) => fallback ?? key,
+        preventPlainNavigation = false,
     } = options;
     const triggerSet = new Set(triggers);
 
@@ -376,6 +379,7 @@ export default function createEntryLinkExtension(
                             // Ordinary taps edit the document, not the anchor's legacy URL.
                             // Screenplay's companion click handler still receives the event.
                             if (
+                                preventPlainNavigation &&
                                 event.target instanceof Element &&
                                 event.target.closest(
                                     'a[data-type="entry-link"]',
