@@ -31,6 +31,7 @@ import {
 import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
 import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
 import { findWritingMatches, searchWriting, replaceWriting, selectWritingMatch } from '@alexandria/editor/extensions/writingSearch';
+import { selectedWordCount } from '@alexandria/editor/selectionWordCount';
 import SectionChrome from './SectionChrome';
 import useSectionAutosave from './useSectionAutosave';
 
@@ -279,6 +280,7 @@ function ScreenplaySurface({
     // methods are safe no-ops: the schema makes marks/headings/lists
     // impossible by construction.
     useImperativeHandle(bridgeRef, (): WritingEditorBridge => ({
+        selectedWordCount: () => selectedWordCount(editor),
         toggleMark() {},
         toggleList() {},
         toggleHeading() {},

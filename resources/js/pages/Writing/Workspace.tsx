@@ -1680,6 +1680,9 @@ export default function Workspace() {
                     workWords={workWords}
                     hasSection={effectiveSection !== null}
                     sectionWords={sectionWords}
+                    selectedWords={effectiveSection !== null && (viewMode === 'focus' || viewMode === 'continuous')
+                        ? ribbonCtx.editor?.selectedWordCount?.() ?? null
+                        : null}
                     sectionTarget={effectiveSection?.target_words ?? null}
                     sectionPages={sectionPages}
                     sectionFormat={effectiveSection?.format ?? null}

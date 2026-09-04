@@ -206,6 +206,8 @@ return [
     'workspace.words' => ':count words',
     'workspace.words_total' => ':count words in work',
     'workspace.section_words' => 'Section: :count words',
+    'workspace.selected_word' => 'Selected: :count word',
+    'workspace.selected_words' => 'Selected: :count words',
     'workspace.section_words_of_target' => 'Section: :count of :target words',
     'workspace.lines' => ':count lines',
     'workspace.of_target' => 'of :target',

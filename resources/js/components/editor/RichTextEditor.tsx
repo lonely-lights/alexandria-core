@@ -26,6 +26,7 @@ import AddCommentBubble from '@alexandria/editor/extensions/AddCommentBubble';
 import MarkDeviceBubble from '@alexandria/editor/extensions/MarkDeviceBubble';
 import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
 import { WritingSearch, findWritingMatches, searchWriting, replaceWriting, selectWritingMatch } from '@alexandria/editor/extensions/writingSearch';
+import { selectedWordCount } from '@alexandria/editor/selectionWordCount';
 
 /**
  * RichTextEditor — Tiptap 3 wiki-markup editor surface.
@@ -560,6 +561,7 @@ export default function RichTextEditor({
     // Ribbon editor bridge (Ribbon Plan 2 Task 2) — recreated per
     // render so it always closes over the current editor + codeView.
     useImperativeHandle(bridgeRef, (): WritingEditorBridge => ({
+        selectedWordCount: () => codeView ? null : selectedWordCount(editor),
         toggleMark(name) {
             if (!editor) return;
             if (name === 'bold') {

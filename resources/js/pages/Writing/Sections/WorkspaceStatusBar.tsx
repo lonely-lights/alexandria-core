@@ -17,9 +17,9 @@ import type { WorkLengthPlan } from './WorkSettingsModal';
  *
  * Desktop (≥ md), left → right: breadcrumb (project › work) · spacer ·
  * current-section counts · divider · work progress.
- * Mobile (< md): a deliberate compact line — back chevron, truncated
- * work title, spacer, abbreviated section words (e.g. `1.2k`); the
- * targets and progress bar hide below md.
+ * Mobile (< md): a centered compact line with section and work words;
+ * targets and progress bars hide below md. A text selection temporarily
+ * replaces the section count with its exact word count on both layouts.
  *
  * Counts are assembled in Workspace from the editors' existing
  * `onCounts` flow (server-confirmed autosave values overlaying the
@@ -48,6 +48,8 @@ interface WorkspaceStatusBarProps {
     hasSection: boolean;
     /** Live current-section word count (autosave overlay ?? section.word_count). */
     sectionWords: number;
+    /** Live selected words; null means no selection (zero is meaningful). */
+    selectedWords?: number | null;
     sectionTarget: number | null;
     /** Server-confirmed page estimate for the current section (null until the first save). */
     sectionPages: number | null;
@@ -148,11 +150,16 @@ export default function WorkspaceStatusBar({
     workWords,
     hasSection,
     sectionWords,
+    selectedWords = null,
     sectionTarget,
     sectionPages,
     sectionFormat,
 }: WorkspaceStatusBarProps) {
     const t = useT();
+
+    const selectionLabel = selectedWords === null ? null : t(
+        selectedWords === 1 ? 'writing.workspace.selected_word' : 'writing.workspace.selected_words',
+    ).replace(':count', selectedWords.toLocaleString());
 
     // Labeled "Section: …" so the current-section count reads distinctly
     // from the work total that sits beside it in the bar.
@@ -187,15 +194,17 @@ export default function WorkspaceStatusBar({
                 <div className="flex-1" />
                 {hasSection && (
                     <>
-                        {sectionRatio !== null && (
+                        {selectionLabel === null && sectionRatio !== null && (
                             <MiniProgressBar ratio={sectionRatio} widthClass="w-20" />
                         )}
                         <span className="shrink-0 tabular-nums" style={metaTextStyle}>
-                            {sectionWordsLabel}
-                            {sectionFormat === 'screenplay' && sectionPages !== null && sectionWords > 0 && (
+                            {selectionLabel !== null
+                                ? <span data-writing-selection-count>{selectionLabel}</span>
+                                : sectionWordsLabel}
+                            {selectionLabel === null && sectionFormat === 'screenplay' && sectionPages !== null && sectionWords > 0 && (
                                 <> · {t('writing.workspace.pages').replace(':count', sectionPages.toLocaleString())}</>
                             )}
-                            {sectionFormat !== 'screenplay' && sectionPages !== null && sectionPages > 0 && sectionWords > 0 && (
+                            {selectionLabel === null && sectionFormat !== 'screenplay' && sectionPages !== null && sectionPages > 0 && sectionWords > 0 && (
                                 <>
                                     {' · '}
                                     <span title={t('writing.workspace.page_estimate_title')}>
@@ -216,7 +225,9 @@ export default function WorkspaceStatusBar({
             <div className="flex h-full min-w-0 items-center justify-center gap-2 md:hidden" style={metaTextStyle}>
                 {hasSection && (
                     <span className="min-w-0 truncate tabular-nums">
-                        {t('writing.workspace.section_words').replace(':count', abbreviateCount(sectionWords))}
+                        {selectionLabel !== null
+                            ? <span data-writing-selection-count title={selectionLabel}>{selectionLabel}</span>
+                            : t('writing.workspace.section_words').replace(':count', abbreviateCount(sectionWords))}
                     </span>
                 )}
                 <span aria-hidden="true">·</span>
