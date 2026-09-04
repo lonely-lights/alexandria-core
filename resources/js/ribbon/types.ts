@@ -49,6 +49,10 @@ export interface RibbonControl<Ctx = unknown> {
     /** Optional dynamic label — takes precedence over labelKey when present.
      *  Use when the label depends on runtime context (e.g. blueprint plural names). */
     labelFn?: (ctx: Ctx) => string;
+    /** Translation keys for synonyms used by command search. */
+    searchKeywordKeys?: string[];
+    /** Optional translated explanation when the command is unavailable. */
+    disabledReasonKey?: string;
     /** TipTap-style notation, e.g. 'Mod-Shift-R'. Binder + tooltip read it. */
     shortcut?: string;
     /** Display-only shortcut hint for commands bound by the editor, not the ribbon. */
