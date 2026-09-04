@@ -119,6 +119,7 @@ export default function ManuscriptEditor({
     bridgeRef,
     onStateChange,
     onOutlineChange,
+    onEntryLinkSelect,
     enableComments,
     onAddComment,
     enableMarkThread,
@@ -176,6 +177,7 @@ export default function ManuscriptEditor({
                     onImmediateChange={(wiki) => { noteChange(wiki); onOutlineChange?.(extractSectionOutline(wiki)); }}
                     tier="pro"
                     enableEntryLinks
+                    onEntryLinkSelect={onEntryLinkSelect}
                     enableMentions={false}
                     projectId={projectId}
                     maxLength={0}

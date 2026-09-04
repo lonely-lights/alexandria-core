@@ -9,6 +9,7 @@ import ManuscriptRuler from './ManuscriptRuler';
 import { parseWikiToHtml } from '../tiptap-bio-editor/utils/wiki-parser';
 import { serializeToWiki } from '../tiptap-bio-editor/utils/wiki-serializer';
 import createMentionExtension from '../tiptap-bio-editor/extensions/mention';
+import createEntryLinkExtension from '../tiptap-bio-editor/extensions/entry-link';
 import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import Input from '@alexandria/components/form/Input';
@@ -75,6 +76,7 @@ interface RichTextEditorProps {
     mentionSearchEndpoint?: string;
     /** Show [[entry link]] button and enable [[ trigger */
     enableEntryLinks?: boolean;
+    onEntryLinkSelect?: () => void;
     /** Enable AI writing assistant commands */
     enableAi?: boolean;
     /** Project ID for AI transaction tracking */
@@ -313,6 +315,7 @@ export default function RichTextEditor({
     enableMentions = true,
     mentionSearchEndpoint = '/api/v1/users/search',
     enableEntryLinks = false,
+    onEntryLinkSelect,
     enableAi = false,
     label,
     className,
@@ -354,6 +357,8 @@ export default function RichTextEditor({
     // changes between renders.
     const onStateChangeRef = useRef(onStateChange);
     onStateChangeRef.current = onStateChange;
+    const onEntryLinkSelectRef = useRef(onEntryLinkSelect);
+    onEntryLinkSelectRef.current = onEntryLinkSelect;
     const stateChangeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     /** Debounced (~100ms) onStateChange — transactions fire per keystroke. */
@@ -394,6 +399,7 @@ export default function RichTextEditor({
         }),
         Placeholder.configure({ placeholder }),
         ...(enableMentions ? [createMentionExtension({ searchEndpoint: mentionSearchEndpoint })] : []),
+        ...(enableEntryLinks ? [createEntryLinkExtension({ projectId, onSelect: () => onEntryLinkSelectRef.current?.() })] : []),
         ProseTabKeymap,
         ...(enableComments ? [CommentMark] : []),
         // Prose only — ScreenplayEditor runs its own editor and keeps

@@ -182,8 +182,10 @@ function processMentions(text: string): string {
  * Process external links: [url text] or bare URLs
  */
 function processExternalLinks(text: string): string {
-    // Process [url text] format
-    text = text.replace(/\[(\S+)\s+([^]+?)\]/g, (_match, url: string, linkText: string) => {
+    // A bracketed aside such as [x y] is prose, not a URL. Keep explicit
+    // safe schemes and root-relative legacy links; never consume newlines
+    // or nested brackets as part of a link label.
+    text = text.replace(/(?<!\[)\[((?:https?:\/\/|mailto:|tel:|\/(?!\/))[^\s<>"'\[\]]+)[ \t]+([^\[\]\r\n]+)\](?!\])/gi, (_match, url: string, linkText: string) => {
         return `<a href="${escapeHtml(url)}" rel="noopener noreferrer nofollow">${escapeHtml(linkText)}</a>`;
     });
 
