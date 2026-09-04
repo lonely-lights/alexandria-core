@@ -37,8 +37,7 @@ interface WikiMark {
 
 interface SerializeContext {
     inList?: boolean;
-    listMarker?: string;
-    listDepth?: number;
+    listPrefix?: string;
 }
 
 /**
@@ -145,15 +144,14 @@ function serializeHeading(node: WikiNode, context: SerializeContext): string {
 function serializeList(node: WikiNode, marker: string, context: SerializeContext): string {
     if (!node.content) return '';
 
-    const depth = (context.listDepth ?? 0) + 1;
+    const listPrefix = (context.listPrefix ?? '') + marker;
     const items: string[] = [];
 
     for (const item of node.content) {
         const itemContext: SerializeContext = {
             ...context,
             inList: true,
-            listMarker: marker,
-            listDepth: depth,
+            listPrefix,
         };
         items.push(serializeNode(item, itemContext));
     }
@@ -165,9 +163,7 @@ function serializeList(node: WikiNode, marker: string, context: SerializeContext
  * Serialize a list item.
  */
 function serializeListItem(node: WikiNode, context: SerializeContext): string {
-    const marker = context.listMarker ?? '*';
-    const depth = context.listDepth ?? 1;
-    const prefix = marker.repeat(depth) + ' ';
+    const prefix = (context.listPrefix ?? '*') + ' ';
 
     if (!node.content) return prefix;
 

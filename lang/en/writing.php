@@ -728,4 +728,8 @@ return [
     'comments.no_section' => 'Open a section to view comments.',
     'comments.select_to_add' => 'Select text in the editor, then click "Add comment".',
     'comments.error' => 'Could not load comments.',
+    'ribbon.indent_list' => 'Indent list item',
+    'ribbon.outdent_list' => 'Outdent list item',
+    'ribbon.list_level_terms' => 'nested list nesting increase decrease level tab shift tab',
+    'ribbon.list_level_hint' => 'Place the cursor in a list item that can move a level.',
 ];

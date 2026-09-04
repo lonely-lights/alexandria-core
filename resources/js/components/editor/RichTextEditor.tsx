@@ -21,7 +21,7 @@ import {
     PageBreakDecorations,
     measurePageBreaks,
 } from '@alexandria/editor/extensions/pageBreakDecorations';
-import { ProseTabKeymap } from './proseTabKeymap';
+import { ProseTabKeymap, canChangeListLevel, changeListLevel } from './proseTabKeymap';
 import { CommentMark } from '@alexandria/editor/extensions/commentMark';
 import AddCommentBubble from '@alexandria/editor/extensions/AddCommentBubble';
 import MarkDeviceBubble from '@alexandria/editor/extensions/MarkDeviceBubble';
@@ -570,6 +570,8 @@ export default function RichTextEditor({
     // Ribbon editor bridge (Ribbon Plan 2 Task 2) — recreated per
     // render so it always closes over the current editor + codeView.
     useImperativeHandle(bridgeRef, (): WritingEditorBridge => ({
+        canChangeListLevel: (direction) => !codeView && canChangeListLevel(editor, direction),
+        changeListLevel: (direction) => { if (!codeView) changeListLevel(editor, direction); },
         selectedWordCount: () => codeView ? null : selectedWordCount(editor),
         canClearTextFormatting: () => !codeView && canClearTextFormatting(editor),
         clearTextFormatting: () => { if (!codeView && clearTextFormatting(editor)) editor?.commands.focus(); },

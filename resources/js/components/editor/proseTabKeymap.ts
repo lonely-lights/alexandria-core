@@ -1,4 +1,23 @@
-import { Extension, type Editor } from '@tiptap/core';
+import { Extension  } from '@tiptap/core';
+import type {Editor} from '@tiptap/core';
+
+export function canChangeListLevel(editor: Editor | null, direction: 1 | -1): boolean {
+    if (!editor || editor.isDestroyed || !editor.isEditable || !editor.isActive('listItem')) {
+        return false;
+    }
+
+    return direction === 1 ? editor.can().sinkListItem('listItem') : editor.can().liftListItem('listItem');
+}
+
+export function changeListLevel(editor: Editor | null, direction: 1 | -1): boolean {
+    if (!editor || !canChangeListLevel(editor, direction)) {
+        return false;
+    }
+
+    return direction === 1
+        ? editor.chain().focus().sinkListItem('listItem').run()
+        : editor.chain().focus().liftListItem('listItem').run();
+}
 
 function textBeforeCursor(editor: Editor): string {
     const { $from } = editor.state.selection;
@@ -25,12 +44,12 @@ function removeTabStop(editor: Editor): boolean {
 }
 
 export function handleProseTab(editor: Editor, direction: 1 | -1): boolean {
-    if (editor.isActive('listItem')) {
-        const command = direction === 1
-            ? editor.chain().focus().sinkListItem('listItem')
-            : editor.chain().focus().liftListItem('listItem');
+    if (!editor.isEditable) {
+        return false;
+    }
 
-        command.run();
+    if (editor.isActive('listItem')) {
+        changeListLevel(editor, direction);
 
         return true;
     }

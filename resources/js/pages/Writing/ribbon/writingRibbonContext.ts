@@ -13,6 +13,8 @@ import type { SearchOptions, TextMatch } from '@alexandria/editor/extensions/wri
  *  must be safe to call when unsupported — no-op + reflect via the
  *  capability queries so controls disable instead of breaking. */
 export interface WritingEditorBridge {
+    canChangeListLevel?(direction: 1 | -1): boolean;
+    changeListLevel?(direction: 1 | -1): void;
     /** Null for a collapsed selection or source view; never a saved count. */
     selectedWordCount?(): number | null;
     canClearTextFormatting?(): boolean;

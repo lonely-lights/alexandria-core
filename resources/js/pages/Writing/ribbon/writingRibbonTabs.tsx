@@ -349,6 +349,17 @@ const editTab: RibbonTab<Ctx> = {
                     active: (ctx) => ctx.editor?.isMarkActive('orderedList') ?? false,
                     onAction: (ctx) => ctx.editor?.toggleList('orderedList'),
                 },
+                ...([1, -1] as const).map((direction): RibbonControl<Ctx> => ({
+                    id: direction === 1 ? 'indent-list' : 'outdent-list',
+                    type: 'button',
+                    icon: direction === 1 ? 'fa-solid fa-indent' : 'fa-solid fa-outdent',
+                    labelKey: direction === 1 ? 'writing.ribbon.indent_list' : 'writing.ribbon.outdent_list',
+                    searchKeywordKeys: ['writing.ribbon.list_level_terms'],
+                    disabledReasonKey: 'writing.ribbon.list_level_hint',
+                    visible: proseEditable,
+                    disabled: (ctx) => !(ctx.editor?.canChangeListLevel?.(direction) ?? false),
+                    onAction: (ctx) => ctx.editor?.changeListLevel?.(direction),
+                })),
                 {
                     id: 'heading2',
                     type: 'toggle',

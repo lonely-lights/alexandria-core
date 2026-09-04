@@ -20,12 +20,7 @@
  * - [[YouTube:url]] → <div data-youtube-video="url"></div>
  */
 
-type ListType = 'bullet' | 'ordered';
-
-interface ListItem {
-    depth: number;
-    content: string;
-}
+import { parseWikiLists } from './wiki-lists';
 
 /**
  * Parse wiki markup to HTML, suitable for feeding into TipTap's setContent().
@@ -39,7 +34,7 @@ export function parseWikiToHtml(wiki: string): string {
 
     // Process block elements first (headings, lists)
     html = processHeadings(html);
-    html = processLists(html);
+    html = parseWikiLists(html);
 
     // Process special embeds
     html = processImages(html);
@@ -71,71 +66,6 @@ function processHeadings(text: string): string {
         text = text.replace(regex, `<h${level}>$1</h${level}>`);
     }
     return text;
-}
-
-/**
- * Process bullet and ordered lists.
- */
-function processLists(text: string): string {
-    const lines = text.split('\n');
-    const result: string[] = [];
-    let currentList: ListItem[] | null = null;
-    let currentType: ListType | null = null;
-
-    for (const line of lines) {
-        const bulletMatch = line.match(/^(\*+)\s*(.*)$/);
-        const orderedMatch = line.match(/^(#+)\s*(.*)$/);
-
-        if (bulletMatch) {
-            const depth = bulletMatch[1].length;
-            const content = bulletMatch[2];
-
-            if (currentType !== 'bullet' || !currentList) {
-                if (currentList && currentType) {
-                    result.push(closeList(currentList, currentType));
-                }
-                currentList = [];
-                currentType = 'bullet';
-            }
-
-            currentList.push({ depth, content });
-        } else if (orderedMatch) {
-            const depth = orderedMatch[1].length;
-            const content = orderedMatch[2];
-
-            if (currentType !== 'ordered' || !currentList) {
-                if (currentList && currentType) {
-                    result.push(closeList(currentList, currentType));
-                }
-                currentList = [];
-                currentType = 'ordered';
-            }
-
-            currentList.push({ depth, content });
-        } else {
-            if (currentList && currentType) {
-                result.push(closeList(currentList, currentType));
-                currentList = null;
-                currentType = null;
-            }
-            result.push(line);
-        }
-    }
-
-    if (currentList && currentType) {
-        result.push(closeList(currentList, currentType));
-    }
-
-    return result.join('\n');
-}
-
-/**
- * Close a list and generate HTML.
- */
-function closeList(items: ListItem[], type: ListType): string {
-    const tag = type === 'bullet' ? 'ul' : 'ol';
-    const listItems = items.map((item) => `<li>${item.content}</li>`).join('');
-    return `<${tag}>${listItems}</${tag}>`;
 }
 
 /**
