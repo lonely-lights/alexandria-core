@@ -547,7 +547,7 @@ export default function RichTextEditor({
             // replaced so durable anchors may re-apply.
             window.dispatchEvent(new CustomEvent('alexandria:comment-doc-replaced'));
         }
-    }, [value]);
+    }, [value, editor]);
 
     // Toggle between WYSIWYG and code view
     function toggleCodeView() {

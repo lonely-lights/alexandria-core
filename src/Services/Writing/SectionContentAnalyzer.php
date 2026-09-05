@@ -50,8 +50,6 @@ class SectionContentAnalyzer
         $lines = array_filter(array_map('trim', explode("\n", $visibleText)), fn (string $line): bool => $line !== '');
         $lineCount = count($lines);
 
-        $pageEstimate = null;
-
         if ($format === 'screenplay') {
             $linesPerPage = max(1, (int) config('alexandria.writing.formats.screenplay.lines_per_page', 55));
             $pageEstimate = (int) ceil($lineCount / $linesPerPage);

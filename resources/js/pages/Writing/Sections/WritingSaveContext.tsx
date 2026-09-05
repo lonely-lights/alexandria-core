@@ -27,7 +27,6 @@ export default function WritingSaveProvider({
 
             void coordinator.flush();
             event.preventDefault();
-            event.returnValue = '';
         };
         const pageHide = () => {
             void coordinator.flush(true);

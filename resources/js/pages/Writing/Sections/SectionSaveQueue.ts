@@ -26,7 +26,7 @@ export class SectionSaveQueue {
     private maxTimer: ReturnType<typeof setTimeout> | null = null;
     private failed = false;
     private saved = false;
-    private listeners = new Set<() => void>();
+    private readonly listeners = new Set<() => void>();
     private snapshot: SectionSaveSnapshot;
     private onCounts: (counts: SectionSaveCounts) => void = () => {};
 
@@ -170,8 +170,8 @@ export class SectionSaveQueue {
 
 /** Lives for one mounted workspace; preserves failed drafts across section/view switches. */
 export class WritingSaveCoordinator {
-    private sessions = new Map<number, SectionSaveQueue>();
-    private listeners = new Set<() => void>();
+    private readonly sessions = new Map<number, SectionSaveQueue>();
+    private readonly listeners = new Set<() => void>();
     private snapshot: readonly SectionSaveQueue[] = [];
 
     get(

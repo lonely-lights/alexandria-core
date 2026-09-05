@@ -286,8 +286,6 @@ const typeChipStyle: CSSProperties = {
     whiteSpace: 'nowrap',
 };
 
-const paneBorderColor = 'color-mix(in srgb, var(--theme-base-content) 10%, transparent)';
-
 export default function Workspace() {
     const t = useT();
     const entitlements = useEntitlements();
@@ -314,6 +312,8 @@ export default function Workspace() {
     // Inertia props until the next full prop refresh catches up.
     const [liveCounts, setLiveCounts] = useState<Record<number, number>>({});
     const [liveWorkWords, setLiveWorkWords] = useState<number | null>(null);
+    // The work id intentionally invalidates queues when this page changes works.
+    // It is a lifecycle key, not a missing read inside the factory.
     const saveCoordinator = useMemo(() => new WritingSaveCoordinator(), [work.id]);
 
     // Server-confirmed page estimates per section (null until the

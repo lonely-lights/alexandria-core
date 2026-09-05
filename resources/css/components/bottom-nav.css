@@ -7,6 +7,11 @@
  * distinguished by the top accent bar.
  */
 
+/* Standalone core default; the app's :root simulation-aware value wins. */
+:where(:root) {
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 nav[aria-label="Primary mobile navigation"] a,
 nav[aria-label="Primary mobile navigation"] button {
     position: relative;

@@ -27,6 +27,7 @@
    the surrounding workspace chrome keeps the active project/theme
    palette. */
 .writing-workspace-shell {
+    --writing-visible-height: 100dvh;
     --alex-writing-scrollbar-thumb: color-mix(in srgb, var(--theme-base-content) 28%, transparent);
     --alex-writing-scrollbar-track: color-mix(in srgb, var(--theme-base-content) 4%, transparent);
     --alex-writing-scrollbar-thumb-hover: color-mix(in srgb, var(--theme-brand-primary-500) 48%, transparent);
