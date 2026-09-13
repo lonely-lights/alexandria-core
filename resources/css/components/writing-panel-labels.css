@@ -98,8 +98,7 @@
 }
 
 [data-panel-mode-switcher] [data-panel-mode-btn][aria-pressed="true"]:hover,
-[data-panel-mode-switcher],
-    [data-panel-mode-btn][aria-pressed="true"]:focus-visible {
+[data-panel-mode-switcher] [data-panel-mode-btn][aria-pressed="true"]:focus-visible {
     background: color-mix(
         in srgb,
         var(--theme-brand-secondary-500) 28%,
