@@ -1,7 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SearchOptions } from "@alexandria/editor/extensions/writingSearch";
 import useT from "@alexandria/hooks/useT";
 import type { WritingEditorBridge } from "../ribbon/writingRibbonContext";
+
+/** The bridge reads mutable editor state; its snapshot is versioned by the tick. */
+function readSearchState(
+    editor: WritingEditorBridge | null,
+    query: string,
+    options: SearchOptions,
+    editorTick: number,
+) {
+    return {
+        count: editor?.findMatches?.(query, options).length ?? 0,
+        canUndo: editor?.canUndo() ?? false,
+        editorTick,
+    };
+}
 
 export default function FindReplaceBar({
     editor,
@@ -27,7 +41,10 @@ export default function FindReplaceBar({
         wholeWord: false,
     });
     const [requestedMatch, setCurrent] = useState(0);
-    const count = editor?.findMatches?.(query, options).length ?? 0;
+    const { count, canUndo } = useMemo(
+        () => readSearchState(editor, query, options, editorTick),
+        [editor, editorTick, query, options],
+    );
     const current = Math.min(requestedMatch, Math.max(0, count - 1));
     const [message, setMessage] = useState("");
     const bridge = useRef(editor);
@@ -210,7 +227,7 @@ export default function FindReplaceBar({
                     <button
                         type="button"
                         className="writing-touch-button"
-                        disabled={!editor?.canUndo()}
+                        disabled={!canUndo}
                         onClick={() => editor?.undo()}
                         aria-label={t("writing.ribbon.undo")}
                     >
