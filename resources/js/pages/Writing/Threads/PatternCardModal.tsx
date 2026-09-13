@@ -1,12 +1,13 @@
 import { useState } from 'react';
 
-import Button from '@alexandria/components/ui/Button';
 import Input from '@alexandria/components/form/Input';
 import Textarea from '@alexandria/components/form/Textarea';
+import Button from '@alexandria/components/ui/Button';
 import Modal, { ModalFooter, ModalHeader } from '@alexandria/components/ui/Modal';
 import useT from '@alexandria/hooks/useT';
 
-import { createCard, updateCard, type CardInput, type PatternCard } from './threadApi';
+import { createCard, updateCard } from './threadApi';
+import type { CardInput, PatternCard } from './threadApi';
 
 /**
  * Create/edit modal for a Devices & Tropes library card — Task 6
@@ -39,8 +40,13 @@ export default function PatternCardModal({ projectSlug, card, existingKinds, onC
     const [error, setError] = useState(false);
 
     async function submit() {
+        if (saving) {
+            return;
+        }
+
         if (name.trim() === '' || kind.trim() === '' || definition.trim() === '') {
             setError(true);
+
             return;
         }
 
@@ -64,6 +70,7 @@ export default function PatternCardModal({ projectSlug, card, existingKinds, onC
 
         if (result === null) {
             setError(true);
+
             return;
         }
 
@@ -71,19 +78,28 @@ export default function PatternCardModal({ projectSlug, card, existingKinds, onC
     }
 
     return (
-        <Modal open onClose={onClose} maxWidth="max-w-lg">
+        <Modal open onClose={() => {
+            if (!saving) {
+                onClose();
+            }
+        }} dismissible={!saving} maxWidth="max-w-lg">
             <ModalHeader
                 title={card === null ? t('writing.library.modal_new_title') : t('writing.library.modal_edit_title')}
-                onClose={onClose}
+                onClose={() => {
+                    if (!saving) {
+                        onClose();
+                    }
+                }}
             />
             <form
+                className="flex min-h-0 flex-col"
                 noValidate
                 onSubmit={(e) => {
                     e.preventDefault();
                     void submit();
                 }}
             >
-                <div className="flex flex-col gap-4 px-6 py-5">
+                <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
                     <Input
                         label={t('writing.library.name_label')}
                         name="card-name"
@@ -155,7 +171,7 @@ export default function PatternCardModal({ projectSlug, card, existingKinds, onC
                     )}
                 </div>
                 <ModalFooter>
-                    <Button variant="ghost" type="button" onClick={onClose}>
+                    <Button variant="ghost" type="button" disabled={saving} onClick={onClose}>
                         {t('writing.form.cancel')}
                     </Button>
                     <Button type="submit" loading={saving}>

@@ -2,18 +2,25 @@ import type { ReactNode } from "react";
 import Modal, { ModalHeader } from "@alexandria/components/ui/Modal";
 import useCollapsePresence from "@alexandria/hooks/useCollapsePresence";
 
+// Visual trial: false restores tools above the panel content.
+const VERTICAL_COMPANION_PREVIEW = true;
+
 /** One mounted companion instance: docked on desktop, deliberate overlay on mobile. */
 export default function WritingCompanion({
     compact,
     open,
     title,
     onClose,
+    tools,
+    persistentTools = true,
     children,
 }: {
     compact: boolean;
     open: boolean;
     title: string;
     onClose: () => void;
+    tools: ReactNode;
+    persistentTools?: boolean;
     children: ReactNode;
 }) {
     const present = useCollapsePresence(open);
@@ -26,22 +33,44 @@ export default function WritingCompanion({
                     className="flex min-h-0 flex-col"
                     style={{ height: "min(70dvh, 44rem)" }}
                 >
+                    {tools}
                     {children}
                 </div>
             </Modal>
         );
     }
 
-    return (
+    const panel = (
         <aside
             className="writing-companion-collapse"
             data-open={open}
             inert={!open}
             aria-hidden={!open}
         >
-            <div className="writing-companion-content flex min-h-0 w-80 shrink-0 flex-col border-l" style={{ borderColor: "var(--theme-base-400)" }}>
-                {present && children}
+            <div
+                className="writing-companion-content flex min-h-0 w-80 shrink-0 flex-col border-l border-t"
+                style={{ borderColor: "var(--theme-base-400)" }}
+            >
+                {present && (
+                    <>
+                        {!VERTICAL_COMPANION_PREVIEW && tools}
+                        {children}
+                    </>
+                )}
             </div>
         </aside>
+    );
+
+    if (!VERTICAL_COMPANION_PREVIEW) {
+        return panel;
+    }
+
+    return (
+        <div className="writing-companion-dock flex min-h-0 shrink-0">
+            {panel}
+            {(persistentTools || open) && (
+                <div className="writing-companion-tools">{tools}</div>
+            )}
+        </div>
     );
 }

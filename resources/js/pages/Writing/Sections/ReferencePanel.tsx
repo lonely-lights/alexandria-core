@@ -9,6 +9,7 @@ import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLin
 import { pageUrl, worksBase } from '@alexandria/lib/urls';
 
 import type { CurrentSection } from '../Workspace';
+import SectionEntryLinks from './SectionEntryLinks';
 import { getWritingPanels, subscribeWritingPanels } from '../writingPanelRegistry';
 import EntryPickerModal, {
     blueprintIconClass,
@@ -1035,6 +1036,10 @@ export default function ReferencePanel({
 
     return (
         <div className="flex h-full min-h-0 flex-col">
+            {currentSection !== null && (
+                <SectionEntryLinks key={`${work.slug}:${currentSection.id}`} project={project} work={work}
+                    section={currentSection} canUpdate={canUpdate} />
+            )}
             {/* Tab strip */}
             <div className="flex shrink-0 items-center gap-1 px-2 py-1.5" style={tabStripStyle}>
                 {tabs.map((tab) => {

@@ -45,6 +45,8 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, PatternMark> $marks
  * @property-read Authenticatable $creator
  *
+ * @method static PatternThreadFactory factory($count = null, $state = [])
+ *
  * @mixin Eloquent
  */
 class PatternThread extends Model

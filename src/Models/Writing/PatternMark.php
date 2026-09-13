@@ -34,6 +34,8 @@ use Illuminate\Support\Carbon;
  * @property-read WorkSection $section
  * @property-read Authenticatable $creator
  *
+ * @method static PatternMarkFactory factory($count = null, $state = [])
+ *
  * @mixin Eloquent
  */
 class PatternMark extends Model

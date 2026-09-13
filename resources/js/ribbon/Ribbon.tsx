@@ -71,6 +71,8 @@ interface RibbonProps<Ctx> {
     headerRow?: ReactNode;
     /** Optional preloaded QAT items; defaults to auth.preferences.ribbon_quick_actions. */
     quickActions?: RibbonQuickAction[];
+    /** Whether this surface exposes Quick Access and its pinning controls. */
+    showQuickActions?: boolean;
     /** Persistence endpoint for QAT edits. */
     quickActionSaveUrl?: string;
     /** Optional tab id whose controls always render in the band. */
@@ -92,6 +94,7 @@ export default function Ribbon<Ctx>({
     trailing,
     headerRow,
     quickActions,
+    showQuickActions = true,
     quickActionSaveUrl = '/account/ribbon/quick-actions',
     bandTabId,
 }: RibbonProps<Ctx>) {
@@ -385,14 +388,14 @@ export default function Ribbon<Ctx>({
                         <div className="ribbon-header-identity">{headerRow}</div>
                         <div className="ribbon-tabs">
                             {tabStrip}
-                            <QuickActionBar
+                            {showQuickActions && <QuickActionBar
                                 setKey={setKey}
                                 tabs={tabs}
                                 context={context}
                                 gates={gates}
                                 actions={quickActionItems}
                                 onChange={persistQuickActions}
-                            />
+                            />}
                         </div>
                     </div>
                     <div className="ribbon-header-trailing">{!bandVisible && modeToggle}{trailing}</div>
@@ -401,14 +404,14 @@ export default function Ribbon<Ctx>({
                 <div className="ribbon-tabs">
                     {leading}
                     {tabStrip}
-                    <QuickActionBar
+                    {showQuickActions && <QuickActionBar
                         setKey={setKey}
                         tabs={tabs}
                         context={context}
                         gates={gates}
                         actions={quickActionItems}
                         onChange={persistQuickActions}
-                    />
+                    />}
                     <div className="ribbon-tabs-trailing">{!bandVisible && modeToggle}{trailing}</div>
                 </div>
             )}
@@ -418,7 +421,7 @@ export default function Ribbon<Ctx>({
                     {bandPresent && (
                         <div
                             className="ribbon-band"
-                            onContextMenu={handleControlContextMenu}
+                            onContextMenu={showQuickActions ? handleControlContextMenu : undefined}
                             onMouseLeave={() => mode === 'collapsed' && setOverlayOpen(false)}
                         >
                             {bandTab.groups.map((group) => {
@@ -475,7 +478,7 @@ export default function Ribbon<Ctx>({
                 </div>
             </div>
 
-            {contextMenu && createPortal(
+            {showQuickActions && contextMenu && createPortal(
                 <QuickActionContextMenu
                     x={contextMenu.x}
                     y={contextMenu.y}

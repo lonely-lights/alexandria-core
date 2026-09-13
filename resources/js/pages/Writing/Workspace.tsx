@@ -48,6 +48,7 @@ import OutlineView from './Outline/OutlineView';
 import type { OutlineBeat } from './Outline/outlineTypes';
 import { readShowPlan, writeShowPlan } from './Outline/planPrefs';
 import { clampFontSize, readFontSize, writeFontSize } from './fontSize';
+import { workHeaderTitle } from './workTitle';
 import {
     normalizePageDisplay,
     readPageDisplay,
@@ -284,6 +285,7 @@ export default function Workspace() {
     const entitlements = useEntitlements();
     const pageProps = usePage<WorkspaceProps>().props;
     const { project, work, structureBlueprint, sections, currentSection, pins, types, lengthPlans, can } = pageProps;
+    const workTypeLabel = t(`writing.types.${work.type}`, work.type);
 
     // WorkspaceProps uses `[key: string]: unknown` for the Inertia shared
     // bag, so `auth` is not strongly typed here — cast narrowly.
@@ -1166,6 +1168,7 @@ export default function Workspace() {
                         context={ribbonCtx}
                         gates={writingGates}
                         bandTabId="edit"
+                        showQuickActions={false}
                         leading={
                             /* The logo doubles as the hamburger here — the
                                workspace runs navbar-less, so clicking it
@@ -1199,20 +1202,21 @@ export default function Workspace() {
                         }
                         headerRow={
                             <>
-                                <span className="max-w-[12rem] truncate text-base font-semibold md:max-w-[24rem]">
-                                    {work.title}
+                                <span data-writing-work-title className="max-w-[12rem] truncate text-base font-semibold md:max-w-[24rem]">
+                                    {workHeaderTitle(work.title, work.type, workTypeLabel)}
                                 </span>
                                 <span
                                     className="hidden shrink-0 sm:inline-block"
                                     data-writing-work-type
                                     style={typeChipStyle}
                                 >
-                                    {t(`writing.types.${work.type}`, work.type)}
+                                    {workTypeLabel}
                                 </span>
                                 {/* Chip hides below md — the mobile header keeps
                                     to logo · title / tabs, search · avatar. */}
                                 <span
                                     className="hidden shrink-0 md:inline-block"
+                                    data-writing-work-status
                                     style={statusChipStyle}
                                 >
                                     {t(`writing.statuses.${work.status}`, work.status)}
@@ -1222,7 +1226,7 @@ export default function Workspace() {
                         trailing={
                             <>
                                 <Tooltip content={t('writing.tools.desk')}>
-                                    <button type="button" data-writing-desk className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs" onClick={() => setToolsPage('')} aria-label={t('writing.tools.desk')}>
+                                    <button type="button" data-writing-desk className="alex-toolbar-btn writing-header-tool inline-flex items-center transition-colors" onClick={() => setToolsPage('')} aria-label={t('writing.header.desk')}>
                                         <i className="fa-solid fa-feather-pointed" aria-hidden="true" />
                                     </button>
                                 </Tooltip>
@@ -1235,21 +1239,9 @@ export default function Workspace() {
                                             )
                                         }
                                         aria-label={t('ribbon.search')}
-                                        className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                                        className="alex-toolbar-btn writing-header-tool inline-flex items-center transition-colors"
                                     >
                                         <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
-                                    </button>
-                                </Tooltip>
-                                <Tooltip content={t(companionVisible ? 'writing.panel.collapse' : 'writing.panel.expand')}>
-                                    <button
-                                        type="button"
-                                        onClick={togglePanel}
-                                        aria-label={t(companionVisible ? 'writing.panel.collapse' : 'writing.panel.expand')}
-                                        aria-expanded={companionVisible}
-                                        data-writing-companion-toggle
-                                        className={`alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs ${companionVisible ? 'alex-toolbar-btn--active' : ''}`}
-                                    >
-                                        <i className="fa-solid fa-table-columns" aria-hidden="true" />
                                     </button>
                                 </Tooltip>
                                 {can.update && (
@@ -1257,9 +1249,9 @@ export default function Workspace() {
                                         <button
                                             type="button"
                                             onClick={() => setSettingsOpen(true)}
-                                            aria-label={t('writing.settings.title')}
+                                            aria-label={t('writing.header.settings')}
                                             data-writing-work-settings
-                                            className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
+                                            className="alex-toolbar-btn writing-header-tool inline-flex items-center transition-colors"
                                         >
                                             <i className="fa-solid fa-gear" aria-hidden="true" />
                                         </button>
@@ -1523,15 +1515,25 @@ export default function Workspace() {
                     {(!viewport.compact || companionVisible) && (
                         <WritingCompanion compact={viewport.compact} open={companionVisible}
                             title={t([...BUILTIN_PANEL_MODES, ...registeredModes].find((mode) => mode.id === panelMode)?.labelKey ?? 'writing.tools.companions')}
-                            onClose={() => setTransientCompanionOpen(false)}>
-                            <PanelModeSwitcher
+                            onClose={() => setTransientCompanionOpen(false)}
+                            persistentTools={chromeVisible}
+                            tools={<PanelModeSwitcher
                                 mode={panelMode}
+                                open={companionVisible}
+                                tooltipPlacement={viewport.compact ? 'top' : 'left'}
                                 onChange={(mode) => {
+                                    if (!viewport.compact && mode === panelMode && companionVisible) {
+                                        togglePanel();
+                                        return;
+                                    }
                                     setPanelMode(mode);
                                     writePanelMode(work.id, mode);
+                                    if (!companionVisible) {
+                                        togglePanel();
+                                    }
                                 }}
                                 can={{ 'work.update': can.update }}
-                            />
+                            />}>
                             <div className="min-h-0 flex-1">
                                 {panelMode === 'linked' && (
                                     <ReferencePanel
@@ -1579,6 +1581,7 @@ export default function Workspace() {
                                     <ThreadsPanel
                                         projectSlug={project.slug}
                                         workId={work.id}
+                                        workSlug={work.slug}
                                         sections={sections}
                                         currentSection={effectiveSection}
                                         canUpdate={can.update}

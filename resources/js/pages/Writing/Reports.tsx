@@ -4,7 +4,8 @@ import type { CSSProperties } from 'react';
 import useT from '@alexandria/hooks/useT';
 import AppLayout from '@alexandria/layouts/AppLayout';
 import PageHeader from '@alexandria/components/layout/PageHeader';
-import { projectUrl, workUrl } from '@alexandria/lib/urls';
+import { projectUrl, workUrl, workPatternsUrl } from '@alexandria/lib/urls';
+import ButtonLink from '@alexandria/components/ui/ButtonLink';
 
 import type { EntryCard } from './Sections/ReferencePanel';
 import CharactersReport from './Sections/Reports/CharactersReport';
@@ -110,6 +111,7 @@ export default function Reports() {
     return (
         <AppLayout title={`${t('writing.reports.title')} - ${work.title}`} immersive fabActions={null}>
             <PageHeader
+                actions={<ButtonLink href={workPatternsUrl(project.slug, work.slug)} variant="outline" size="sm">{t('writing.work_patterns.title')}</ButtonLink>}
                 breadcrumbs={[
                     { label: project.name, href: projectUrl(project.slug) },
                     { label: work.title, href: workUrl(project.slug, work.slug) },

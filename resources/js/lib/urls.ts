@@ -149,6 +149,11 @@ export function captureUrl(project: string): string {
     return `${projectUrl(project)}/${segments.capture}`;
 }
 
+/** Work tools use two segments so scene slugs remain available. */
+export function workPatternsUrl(project: string, work: string): string {
+    return `${worksBase(project, work)}/tools/devices-tropes`;
+}
+
 /** Fixed segment — not host-configurable. */
 export function recycleBinUrl(project: string): string {
     return `${projectUrl(project)}/recycle-bin`;

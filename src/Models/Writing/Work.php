@@ -144,6 +144,7 @@ class Work extends Model
         return $this->belongsTo(config('alexandria.models.user'), 'user_id');
     }
 
+    /** @return HasMany<WorkSection, $this> */
     public function sections(): HasMany
     {
         return $this->hasMany(WorkSection::class)->orderBy('position');

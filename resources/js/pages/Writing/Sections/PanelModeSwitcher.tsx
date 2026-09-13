@@ -1,13 +1,17 @@
-import { useSyncExternalStore, type CSSProperties } from 'react';
+import { useSyncExternalStore, type CSSProperties } from "react";
 
-import Tooltip from '@alexandria/components/ui/Tooltip';
-import useT from '@alexandria/hooks/useT';
-import useEntitlements from '@alexandria/hooks/useEntitlements';
-import { resolveGate } from '@alexandria/ribbon/ribbonGates';
-import type { RibbonGates, RibbonRequires } from '@alexandria/ribbon/types';
+import Tooltip from "@alexandria/components/ui/Tooltip";
+import useT from "@alexandria/hooks/useT";
+import useEntitlements from "@alexandria/hooks/useEntitlements";
+import { resolveGate } from "@alexandria/ribbon/ribbonGates";
+import type { RibbonGates, RibbonRequires } from "@alexandria/ribbon/types";
 
-import type { PanelMode } from '../panelMode';
-import { getSidebarModes, subscribeSidebarModes } from '../sidebarModeRegistry';
+import type { PanelMode } from "../panelMode";
+import { getSidebarModes, subscribeSidebarModes } from "../sidebarModeRegistry";
+import "../../../../css/components/writing-panel-labels.css";
+
+// Visual trial: flip to false to restore the compact icon-only row.
+const PANEL_LABEL_PREVIEW = true;
 
 /**
  * Right-rail mode switcher — Stage 11.5 Task 4; extended Stage 12a Task 2;
@@ -23,6 +27,8 @@ import { getSidebarModes, subscribeSidebarModes } from '../sidebarModeRegistry';
 
 interface PanelModeSwitcherProps {
     mode: PanelMode;
+    open?: boolean;
+    tooltipPlacement?: "top" | "left";
     onChange: (mode: PanelMode) => void;
     /** Permission map threaded from Workspace (e.g. work.update) — used
      *  alongside entitlements to gate registered modes. Defaults to {}. */
@@ -30,34 +36,71 @@ interface PanelModeSwitcherProps {
 }
 
 const stripStyle: CSSProperties = {
-    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+    borderBottom:
+        "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
 };
 
 const activeBtnStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-brand-secondary-500) 18%, transparent)',
-    color: 'var(--theme-brand-secondary-500)',
-    borderRadius: 'var(--theme-radius-button)',
+    color: "var(--theme-brand-secondary-500)",
+    borderRadius: "var(--theme-radius-button)",
 };
 
 const idleBtnStyle: CSSProperties = {
-    background: 'transparent',
-    color: 'var(--theme-base-content)',
-    borderRadius: 'var(--theme-radius-button)',
+    color: "var(--theme-base-content)",
+    borderRadius: "var(--theme-radius-button)",
 };
 
-export const BUILTIN_PANEL_MODES: Array<{ id: PanelMode; icon: string; labelKey: string; requires?: RibbonRequires }> = [
-    { id: 'linked', icon: 'fa-solid fa-link', labelKey: 'writing.panel.mode_linked' },
-    { id: 'notes', icon: 'fa-solid fa-note-sticky', labelKey: 'writing.panel.mode_notes' },
-    { id: 'comments', icon: 'fa-solid fa-comment-dots', labelKey: 'writing.panel.mode_comments' },
-    { id: 'outline', icon: 'fa-solid fa-list-tree', labelKey: 'writing.outline.sidebar_label' },
-    { id: 'history', icon: 'fa-solid fa-clock-rotate-left', labelKey: 'writing.revisions.sidebar_label' },
-    { id: 'threads', icon: 'fa-solid fa-wand-magic-sparkles', labelKey: 'writing.threads.sidebar_label' },
+export const BUILTIN_PANEL_MODES: Array<{
+    id: PanelMode;
+    icon: string;
+    labelKey: string;
+    requires?: RibbonRequires;
+}> = [
+    {
+        id: "linked",
+        icon: "fa-solid fa-link",
+        labelKey: "writing.panel.mode_linked",
+    },
+    {
+        id: "notes",
+        icon: "fa-solid fa-note-sticky",
+        labelKey: "writing.panel.mode_notes",
+    },
+    {
+        id: "comments",
+        icon: "fa-solid fa-comment-dots",
+        labelKey: "writing.panel.mode_comments",
+    },
+    {
+        id: "outline",
+        icon: "fa-solid fa-list-tree",
+        labelKey: "writing.outline.sidebar_label",
+    },
+    {
+        id: "history",
+        icon: "fa-solid fa-clock-rotate-left",
+        labelKey: "writing.revisions.sidebar_label",
+    },
+    {
+        id: "threads",
+        icon: "fa-solid fa-wand-magic-sparkles",
+        labelKey: "writing.threads.sidebar_label",
+    },
 ];
 
-export default function PanelModeSwitcher({ mode, onChange, can = {} }: PanelModeSwitcherProps) {
+export default function PanelModeSwitcher({
+    mode,
+    open = true,
+    tooltipPlacement = "top",
+    onChange,
+    can = {},
+}: PanelModeSwitcherProps) {
     const t = useT();
     const entitlements = useEntitlements();
-    const registeredModes = useSyncExternalStore(subscribeSidebarModes, getSidebarModes);
+    const registeredModes = useSyncExternalStore(
+        subscribeSidebarModes,
+        getSidebarModes,
+    );
     const gates: RibbonGates = { can, entitlements };
 
     return (
@@ -65,19 +108,24 @@ export default function PanelModeSwitcher({ mode, onChange, can = {} }: PanelMod
             className="flex shrink-0 items-center gap-1 px-2 py-1.5"
             style={stripStyle}
             data-panel-mode-switcher
+            data-panel-label-preview={PANEL_LABEL_PREVIEW}
         >
             {BUILTIN_PANEL_MODES.map(({ id, icon, labelKey }) => {
-                const isActive = id === mode;
+                const isActive = open && id === mode;
 
                 return (
-                    <Tooltip key={id} content={t(labelKey)}>
+                    <Tooltip
+                        key={id}
+                        content={t(labelKey)}
+                        placement={tooltipPlacement}
+                    >
                         <button
                             type="button"
                             onClick={() => onChange(id)}
                             aria-label={t(labelKey)}
                             aria-pressed={isActive}
                             data-panel-mode-btn={id}
-                            className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${isActive ? 'alex-toolbar-btn--active' : ''}`}
+                            className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${isActive ? "alex-toolbar-btn--active" : ""}`}
                             style={isActive ? activeBtnStyle : idleBtnStyle}
                         >
                             <i className={icon} aria-hidden="true" />
@@ -89,47 +137,53 @@ export default function PanelModeSwitcher({ mode, onChange, can = {} }: PanelMod
             {registeredModes.map((m) => {
                 const verdict = resolveGate(m.requires, gates);
 
-                if (verdict === 'hidden') {
+                if (verdict === "hidden") {
                     return null;
                 }
 
-                const isActive = m.id === mode;
+                const isActive = open && m.id === mode;
                 const label = t(m.labelKey);
 
-                if (verdict === 'locked') {
+                if (verdict === "locked") {
                     return (
-                        <span
+                        <Tooltip
                             key={m.id}
-                            className="relative inline-flex"
-                            title={t('writing.ribbon.locked_hint')}
+                            content={`${label}: ${t("writing.ribbon.locked_hint")}`}
+                            placement={tooltipPlacement}
                         >
-                            <button
-                                type="button"
-                                disabled
-                                aria-label={label}
-                                data-panel-mode-btn={m.id}
-                                className="alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors"
-                                style={idleBtnStyle}
-                            >
-                                <i className={m.icon} aria-hidden="true" />
-                            </button>
-                            <i
-                                className="fa-solid fa-lock ribbon-ctl-lock pointer-events-none absolute bottom-0 right-0 text-[8px]"
-                                aria-hidden="true"
-                            />
-                        </span>
+                            <span className="panel-mode-locked relative inline-flex">
+                                <button
+                                    type="button"
+                                    disabled
+                                    aria-label={label}
+                                    data-panel-mode-btn={m.id}
+                                    className="alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors"
+                                    style={idleBtnStyle}
+                                >
+                                    <i className={m.icon} aria-hidden="true" />
+                                </button>
+                                <i
+                                    className="fa-solid fa-lock ribbon-ctl-lock pointer-events-none absolute bottom-0 right-0 text-[8px]"
+                                    aria-hidden="true"
+                                />
+                            </span>
+                        </Tooltip>
                     );
                 }
 
                 return (
-                    <Tooltip key={m.id} content={label}>
+                    <Tooltip
+                        key={m.id}
+                        content={label}
+                        placement={tooltipPlacement}
+                    >
                         <button
                             type="button"
                             onClick={() => onChange(m.id)}
                             aria-label={label}
                             aria-pressed={isActive}
                             data-panel-mode-btn={m.id}
-                            className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${isActive ? 'alex-toolbar-btn--active' : ''}`}
+                            className={`alex-toolbar-btn inline-flex h-8 w-8 items-center justify-center text-sm transition-colors ${isActive ? "alex-toolbar-btn--active" : ""}`}
                             style={isActive ? activeBtnStyle : idleBtnStyle}
                         >
                             <i className={m.icon} aria-hidden="true" />

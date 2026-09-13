@@ -40,6 +40,8 @@ use Illuminate\Support\Carbon;
  * @property-read Project $project
  * @property-read Collection<int, PatternThread> $threads
  *
+ * @method static PatternCardFactory factory($count = null, $state = [])
+ *
  * @mixin Eloquent
  */
 class PatternCard extends Model

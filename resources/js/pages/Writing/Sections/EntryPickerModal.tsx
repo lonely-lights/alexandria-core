@@ -70,12 +70,14 @@ export default function EntryPickerModal({
     title,
     projectId,
     onPick,
+    disabledIds = [],
 }: {
     open: boolean;
     onClose: () => void;
     title: string;
     projectId: number;
     onPick: (row: EntrySearchRow) => void;
+    disabledIds?: number[];
 }) {
     const t = useT();
     const [query, setQuery] = useState('');
@@ -131,6 +133,7 @@ export default function EntryPickerModal({
         <Modal open={open} onClose={onClose} maxWidth="max-w-sm">
             <ModalHeader title={title} onClose={onClose} />
             <div
+                data-entry-picker-search
                 className="px-4 py-3"
                 style={{ borderBottom: '1px solid var(--theme-base-300)' }}
             >
@@ -157,7 +160,8 @@ export default function EntryPickerModal({
                             key={row.id}
                             type="button"
                             onClick={() => onPick(row)}
-                            className="alex-row flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm"
+                            disabled={disabledIds.includes(row.id)}
+                            className="alex-row flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm disabled:opacity-40"
                         >
                             <i
                                 className={`${blueprintIconClass(row.blueprint_icon)} w-4 shrink-0 text-center text-xs`}

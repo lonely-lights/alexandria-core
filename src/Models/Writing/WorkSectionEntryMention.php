@@ -10,9 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Derived appearance-tracking row — Stage 8g.1. Rebuilt from section
- * content + reference fields on every save (never incremental), so
- * it can never drift from the prose. Sources: mention | pov | setting.
+ * Section appearance tracking. Mention, POV, and setting rows are
+ * derived from content and reference fields; linked rows are explicit
+ * associations and survive content rebuilds.
  *
  * @property int $id
  * @property int $work_section_id
@@ -31,6 +31,8 @@ class WorkSectionEntryMention extends Model
     public const string SOURCE_POV = 'pov';
 
     public const string SOURCE_SETTING = 'setting';
+
+    public const string SOURCE_LINKED = 'linked';
 
     protected $guarded = ['id'];
 

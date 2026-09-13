@@ -1,6 +1,8 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import ButtonLink from '@alexandria/components/ui/ButtonLink';
+import { workPatternsUrl } from '@alexandria/lib/urls';
 
 import type { CurrentSection, SectionNode } from '../Workspace';
 import ThreadDetailModal from './ThreadDetailModal';
@@ -26,6 +28,7 @@ import { fetchThreads, type PatternThread } from './threadApi';
 export interface ThreadsPanelProps {
     projectSlug: string;
     workId: number;
+    workSlug: string;
     sections: SectionNode[];
     currentSection: CurrentSection | null;
     canUpdate: boolean;
@@ -145,6 +148,7 @@ function ThreadRow({
 export default function ThreadsPanel({
     projectSlug,
     workId,
+    workSlug,
     sections,
     currentSection,
     canUpdate,
@@ -216,6 +220,11 @@ export default function ThreadsPanel({
         <div data-threads-panel="" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
             <div style={headerStyle}>
                 <span style={titleStyle}>{t('writing.threads.sidebar_label')}</span>
+            </div>
+            <div className="px-3 py-2">
+                <ButtonLink href={workPatternsUrl(projectSlug, workSlug)} variant="ghost" size="sm">
+                    {t('writing.work_patterns.view_all')}
+                </ButtonLink>
             </div>
 
             <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 py-2">
