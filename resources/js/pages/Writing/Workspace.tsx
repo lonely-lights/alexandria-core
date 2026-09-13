@@ -32,6 +32,9 @@ import HistoryPanel from './Revisions/HistoryPanel';
 import MarkRevisionModal from './Revisions/MarkRevisionModal';
 import MarkThreadModal, { type ThreadAnchor, type ThreadSectionRef } from './Threads/MarkThreadModal';
 import ThreadsPanel from './Threads/ThreadsPanel';
+import ThreadHighlightDetails from './Threads/ThreadHighlightDetails';
+import { THREAD_HIGHLIGHT_OPEN, type ThreadHighlightOpen } from './Threads/threadHighlightEvents';
+import { findSectionInTree } from './Threads/scopeChoice';
 import type { PatternThread } from './Threads/threadApi';
 import AddSectionModal from './Sections/AddSectionModal';
 import ManuscriptEditor, {
@@ -429,6 +432,17 @@ export default function Workspace() {
     // any entry point) so an already-open Threads panel/detail modal
     // refetches.
     const [threadsRefreshSignal, setThreadsRefreshSignal] = useState(0);
+    const [highlightedThreads, setHighlightedThreads] = useState<ThreadHighlightOpen | null>(null);
+    useEffect(() => {
+        function open(event: Event) {
+            const detail = (event as CustomEvent<ThreadHighlightOpen>).detail;
+            if (detail?.projectSlug === project.slug && detail.threads.length > 0 && findSectionInTree(sections, detail.sectionId)) {
+                setHighlightedThreads(detail);
+            }
+        }
+        window.addEventListener(THREAD_HIGHLIGHT_OPEN, open);
+        return () => window.removeEventListener(THREAD_HIGHLIGHT_OPEN, open);
+    }, [project.slug, sections]);
 
     // Ribbon editor bridge — populated by whichever editor is mounted
     // (via useImperativeHandle); editorTick bumps on its state changes
@@ -1835,6 +1849,25 @@ export default function Workspace() {
                     lockedSection={markRevisionRequest.lockedSection}
                     onClose={() => setMarkRevisionRequest(null)}
                     onMarked={() => setHistoryRefreshSignal((n) => n + 1)}
+                />
+            )}
+
+            {highlightedThreads !== null && (
+                <ThreadHighlightDetails
+                    key={`${highlightedThreads.sectionId}:${highlightedThreads.threads.map((thread) => thread.id).join(',')}`}
+                    projectSlug={project.slug}
+                    workId={work.id}
+                    sections={sections}
+                    threads={highlightedThreads.threads}
+                    canUpdate={can.update}
+                    refreshSignal={threadsRefreshSignal}
+                    onClose={() => setHighlightedThreads(null)}
+                    onChanged={() => setThreadsRefreshSignal((n) => n + 1)}
+                    onRequestAddMark={(thread) => setMarkThreadRequest({
+                        lockedSection: findSectionInTree(sections, highlightedThreads.sectionId),
+                        anchor: null,
+                        lockedThread: thread,
+                    })}
                 />
             )}
 

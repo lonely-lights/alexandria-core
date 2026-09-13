@@ -41,6 +41,7 @@
 import { writingUrl } from '@alexandria/lib/urls';
 
 import { outlineApiHeaders } from '../Outline/outlineApi';
+import { notifyThreadHighlightsChanged } from './threadHighlightEvents';
 
 export type PatternCardKind = string;
 
@@ -405,6 +406,8 @@ export async function updateThread(
 
         const body = (await response.json()) as { thread: PatternThread };
 
+        notifyThreadHighlightsChanged(projectSlug);
+
         return body.thread;
     } catch {
         return null;
@@ -418,6 +421,10 @@ export async function deleteThread(projectSlug: string, threadId: number): Promi
             credentials: 'same-origin',
             headers: outlineApiHeaders(),
         });
+
+        if (response.ok) {
+            notifyThreadHighlightsChanged(projectSlug);
+        }
 
         return response.ok;
     } catch {
@@ -444,7 +451,10 @@ export async function createMark(
             return null;
         }
 
-        return (await response.json()) as MarkResult;
+        const result = (await response.json()) as MarkResult;
+        notifyThreadHighlightsChanged(projectSlug);
+
+        return result;
     } catch {
         return null;
     }
@@ -467,7 +477,10 @@ export async function updateMark(
             return null;
         }
 
-        return (await response.json()) as MarkResult;
+        const result = (await response.json()) as MarkResult;
+        notifyThreadHighlightsChanged(projectSlug);
+
+        return result;
     } catch {
         return null;
     }
@@ -480,6 +493,10 @@ export async function deleteMark(projectSlug: string, markId: number): Promise<b
             credentials: 'same-origin',
             headers: outlineApiHeaders(),
         });
+
+        if (response.ok) {
+            notifyThreadHighlightsChanged(projectSlug);
+        }
 
         return response.ok;
     } catch {

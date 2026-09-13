@@ -21,6 +21,7 @@ import AddCommentBubble from '@alexandria/editor/extensions/AddCommentBubble';
 import MarkDeviceBubble from '@alexandria/editor/extensions/MarkDeviceBubble';
 import { applySheetMargins } from '@alexandria/editor/extensions/pageBreakDecorations';
 import useT from '@alexandria/hooks/useT';
+import { ThreadHighlightContext, useThreadHighlights } from '../Threads/useThreadHighlights';
 
 import ManuscriptRuler from '@alexandria/components/editor/ManuscriptRuler';
 
@@ -210,6 +211,8 @@ function ScreenplaySurface({
             reportSceneLinks(e);
         },
     });
+
+    const threadTooltip = useThreadHighlights(editor);
 
     useEffect(() => {
         editor?.setEditable(!readOnly, false);
@@ -515,6 +518,7 @@ function ScreenplaySurface({
 
     return (
         <div className={ownsScroll ? 'flex min-h-0 flex-1 flex-col' : 'flex flex-col'}>
+            {threadTooltip}
             {/* No gutter spacer — the vertical ruler it aligned with is
                 retired; a spacer now would skew footprint centering. */}
             {printLayout && ownsScroll && <ManuscriptRuler marginXIn={marginXIn} />}
@@ -641,6 +645,7 @@ export default function ScreenplayEditor({
         <SectionChrome
             className={`rte-manuscript rte-screenplay${effectivePrintLayout ? ' rte-manuscript--print' : ''}`}
         >
+            <ThreadHighlightContext value={{ projectSlug, sectionId: section.id }}>
                 <ScreenplaySurface
                     readOnly={!canUpdate}
                     projectId={projectId}
@@ -658,6 +663,7 @@ export default function ScreenplayEditor({
                     enableMarkThread={enableMarkThread}
                     onMarkThread={onMarkThread}
                 />
+            </ThreadHighlightContext>
         </SectionChrome>
     );
 }

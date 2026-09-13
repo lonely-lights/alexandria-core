@@ -8,6 +8,7 @@ import { readPageDisplay, type PageDisplayMode } from '../pageDisplay';
 import type { CurrentSection } from '../Workspace';
 import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
 import SectionChrome from './SectionChrome';
+import { ThreadHighlightContext } from '../Threads/useThreadHighlights';
 import { extractSectionOutline, type SectionOutlineItem } from './sectionOutline';
 import useSectionAutosave, { type SectionCountsCallback } from './useSectionAutosave';
 
@@ -164,6 +165,7 @@ export default function ManuscriptEditor({
             )}
 
             {/* Manuscript — the editor's content wrapper scrolls */}
+            <ThreadHighlightContext value={{ projectSlug, sectionId: section.id }}>
                 <RichTextEditor
                     readOnly={!canUpdate}
                     key={section.id}
@@ -193,6 +195,7 @@ export default function ManuscriptEditor({
                     enableMarkThread={enableMarkThread}
                     onMarkThread={onMarkThread}
                 />
+            </ThreadHighlightContext>
         </SectionChrome>
     );
 }

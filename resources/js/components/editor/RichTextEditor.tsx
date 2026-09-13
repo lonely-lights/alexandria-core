@@ -25,6 +25,7 @@ import { ProseTabKeymap, canChangeListLevel, changeListLevel } from './proseTabK
 import { CommentMark } from '@alexandria/editor/extensions/commentMark';
 import AddCommentBubble from '@alexandria/editor/extensions/AddCommentBubble';
 import MarkDeviceBubble from '@alexandria/editor/extensions/MarkDeviceBubble';
+import { useThreadHighlights } from '@alexandria/pages/Writing/Threads/useThreadHighlights';
 import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
 import { WritingSearch, findWritingMatches, searchWriting, replaceWriting, selectWritingMatch } from '@alexandria/editor/extensions/writingSearch';
 import { selectedWordCount } from '@alexandria/editor/selectionWordCount';
@@ -440,6 +441,8 @@ export default function RichTextEditor({
             notifyStateChange();
         },
     });
+
+    const threadTooltip = useThreadHighlights(editor);
 
     useEffect(() => {
         editor?.setEditable(!readOnly, false);
@@ -911,6 +914,7 @@ export default function RichTextEditor({
         >
             {/* Label + Character Count Row (card variant only — the
                 manuscript workspace owns its own counters/footer) */}
+            {threadTooltip}
             {!isManuscript && (label || maxLength > 0) && (
                 <div className="flex items-center justify-between">
                     {label && (

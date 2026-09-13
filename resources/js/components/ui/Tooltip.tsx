@@ -10,6 +10,7 @@ import {
     flip,
     shift,
     arrow,
+    autoUpdate,
     FloatingPortal,
     FloatingArrow,
     type Placement,
@@ -24,7 +25,9 @@ interface TooltipProps {
     /** The content shown inside the tooltip */
     content: ReactNode;
     /** The trigger element (must accept ref) */
-    children: ReactElement;
+    children?: ReactElement;
+    /** Existing DOM trigger owned by an editor; caller controls visibility. */
+    reference?: HTMLElement | null;
     /** Placement relative to the trigger */
     placement?: Placement;
     /** Color variant — maps to brand or status theme tokens */
@@ -99,6 +102,7 @@ const VARIANT_TOKENS: Record<TooltipVariant, { bg: string; text: string }> = {
 export default function Tooltip({
     content,
     children,
+    reference,
     placement = 'top',
     variant = 'default',
     open,
@@ -129,6 +133,8 @@ export default function Tooltip({
     }, [disabled]);
 
     const { refs, floatingStyles, context } = useFloating({
+        elements: reference ? { reference } : undefined,
+        whileElementsMounted: reference ? autoUpdate : undefined,
         open: visible,
         onOpenChange: setIsOpen,
         placement,

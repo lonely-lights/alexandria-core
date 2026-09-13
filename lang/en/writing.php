@@ -590,6 +590,7 @@ return [
     // Devices & Tropes — pattern threads (design doc 2026-08-29-devices-tropes-design.md, Task 5)
     'threads.group_threads' => 'Threads',
     'threads.mark_action' => 'Mark device…',
+    'threads.highlight_choose' => 'Threads marked on this text',
     'threads.mark_title' => 'Mark a device or trope',
     'threads.step_pick_thread' => 'Which thread?',
     'threads.search_placeholder' => 'Search threads…',

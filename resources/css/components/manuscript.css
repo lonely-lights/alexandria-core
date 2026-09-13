@@ -713,6 +713,32 @@ body.alex-writing-workspace-lock main[data-theme-target="content"] {
 }
 .writing-tool-row:disabled { opacity: 0.45; cursor: default; }
 .writing-touch-button:disabled { opacity: 0.4; cursor: default; }
+.writing-thread-highlight {
+    background-color: color-mix(in srgb, var(--theme-brand-secondary-500, #6366f1) 14%, transparent);
+    border-bottom: 1px dotted var(--theme-brand-secondary-500, #6366f1);
+    cursor: pointer;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+
+.writing-thread-highlight:hover,
+.writing-thread-highlight:focus-visible {
+    background-color: color-mix(in srgb, var(--theme-brand-secondary-500, #6366f1) 25%, transparent);
+}
+
+.writing-thread-highlight:focus-visible {
+    outline: 2px solid var(--theme-brand-secondary-500, #6366f1);
+    outline-offset: 2px;
+}
+
+@media print {
+    .writing-thread-highlight {
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+    }
+}
+
 .writing-search-match {
     background: var(--theme-status-warning-subtle);
     outline: 1px solid var(--theme-status-warning-stroke);
