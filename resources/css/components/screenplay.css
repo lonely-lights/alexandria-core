@@ -2,20 +2,37 @@
  * Screenplay-mode editor (Stage 8g.1 Plan 3 Task 2) — element layout
  * for the six screenplay block nodes (editor/screenplay/extensions.ts).
  *
- * The screenplay editor root carries BOTH `rte-manuscript` and
- * `rte-screenplay`, so the desk/sheet/print geometry all comes from
- * manuscript.css; this file only adds the Courier voice and the
- * per-element indents. The inch literals are intentional print
- * geometry (industry-standard screenplay margins relative to a 1in
- * page margin), not theme tokens — in non-print mode they read
- * proportionally on the 60rem sheet.
+ * The screenplay editor shares the manuscript desk, but desktop paper
+ * uses print measurements from editor/screenplay/layout.ts. Display
+ * zoom scales the whole sheet; window width must not change line wraps.
  *
  * Colors inherit from the sheet (theme tokens applied by
  * manuscript.css / ui-polish.css).
  */
 
+/* Print defaults; screenplayLayoutStyle supplies per-sheet overrides. */
+:root {
+    --alex-screenplay-page-width: 8.5in;
+    --alex-screenplay-page-height: 11in;
+    --alex-screenplay-margin-top: 1in;
+    --alex-screenplay-margin-right: 1in;
+    --alex-screenplay-margin-bottom: 1in;
+    --alex-screenplay-margin-left: 1.5in;
+    --alex-screenplay-font: 'Courier Prime', 'Courier New', Courier, monospace;
+    --alex-screenplay-font-size: 12pt;
+    --alex-screenplay-line-height: 12pt;
+    --alex-screenplay-character-width: 0.1in;
+    --alex-screenplay-paragraph-space: 12pt;
+    --alex-screenplay-scene-space: 24pt;
+    --alex-screenplay-character-indent: 2.2in;
+    --alex-screenplay-parenthetical-indent: 1.6in;
+    --alex-screenplay-parenthetical-width: 2.5in;
+    --alex-screenplay-dialogue-indent: 1in;
+    --alex-screenplay-dialogue-width: 3.5in;
+}
+
 .rte-screenplay .ProseMirror {
-    font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+    font-family: var(--alex-screenplay-font, 'Courier New'), Courier, monospace;
     font-size: 12pt;
     line-height: 1.1;
 }
@@ -31,14 +48,14 @@
 }
 
 .sp-character {
-    margin-left: 2.2in;
+    margin-left: var(--alex-screenplay-character-indent, 2.2in);
     text-transform: uppercase;
     margin-top: 1em;
 }
 
 .sp-parenthetical {
-    margin-left: 1.6in;
-    max-width: 2.5in;
+    margin-left: var(--alex-screenplay-parenthetical-indent, 1.6in);
+    max-width: var(--alex-screenplay-parenthetical-width, 2.5in);
 }
 
 /* The stored parenthetical text is unwrapped (codec canonical form);
@@ -52,14 +69,81 @@
 }
 
 .sp-dialogue {
-    margin-left: 1in;
-    max-width: 3.5in;
+    margin-left: var(--alex-screenplay-dialogue-indent, 1in);
+    max-width: var(--alex-screenplay-dialogue-width, 3.5in);
 }
 
 .sp-transition {
     text-transform: uppercase;
     text-align: right;
     margin-top: 1em;
+}
+
+/* Desktop screenplay pages keep their print measure in both writing
+   views. Prose's flexible sheet and mobile's reflowing editor keep their
+   own geometry. A smaller desktop pane scrolls the paper horizontally. */
+@media (min-width: 1024px) {
+    .rte-screenplay {
+        min-width: 0;
+    }
+
+    .rte-screenplay .tiptap-editor {
+        min-width: 0;
+    }
+
+    .rte-screenplay .tiptap-editor .ProseMirror,
+    [data-flow-format='screenplay'] .alex-sheet-footprint {
+        width: var(--alex-screenplay-page-width);
+        max-width: none;
+    }
+
+    [data-flow-format='screenplay'] [data-plan-block] {
+        zoom: var(--alex-writing-zoom, 1);
+    }
+
+    .rte-screenplay .tiptap-editor .ProseMirror {
+        box-sizing: border-box;
+        /* A border must not consume part of the six-inch text column. */
+        border: 0;
+        padding: var(--alex-screenplay-margin-top)
+            var(--alex-screenplay-margin-right)
+            var(--alex-screenplay-margin-bottom)
+            var(--alex-screenplay-margin-left);
+        font-size: var(--alex-screenplay-font-size);
+        line-height: var(--alex-screenplay-line-height);
+        /* Courier's browser advance can be a fraction wider than 0.1in,
+           which wraps a nominal sixty-column line after character 59.
+           Keep the preset's typewriter pitch even across font fallbacks. */
+        font-kerning: none;
+        font-variant-ligatures: none;
+        letter-spacing: calc(var(--alex-screenplay-character-width) - 1ch);
+    }
+
+    .rte-screenplay [data-screenplay-scroll='self'] .ProseMirror {
+        min-height: var(--alex-screenplay-page-height);
+    }
+
+    .rte-screenplay .tiptap-editor .ProseMirror p {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .rte-screenplay .tiptap-editor .ProseMirror p + p {
+        margin-top: var(--alex-screenplay-paragraph-space);
+    }
+
+    .rte-screenplay .tiptap-editor .ProseMirror p + .sp-slugline {
+        margin-top: var(--alex-screenplay-scene-space);
+    }
+
+    .rte-screenplay .tiptap-editor .ProseMirror .sp-character + .sp-parenthetical,
+    .rte-screenplay .tiptap-editor .ProseMirror .sp-character + .sp-dialogue,
+    .rte-screenplay .tiptap-editor .ProseMirror .sp-parenthetical + .sp-parenthetical,
+    .rte-screenplay .tiptap-editor .ProseMirror .sp-parenthetical + .sp-dialogue,
+    .rte-screenplay .tiptap-editor .ProseMirror .sp-dialogue + .sp-parenthetical,
+    .rte-screenplay .tiptap-editor .ProseMirror .sp-dialogue + .sp-dialogue {
+        margin-top: 0;
+    }
 }
 
 /* Narrow panes — halve the indents so dialogue columns survive

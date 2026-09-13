@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import useT from '@alexandria/hooks/useT';
+import { parseScreenplay } from '@alexandria/editor/screenplay/codec';
+import { parseScreenplayEmphasis } from '@alexandria/editor/screenplay/emphasis';
+import { screenplayLayoutStyle } from '@alexandria/editor/screenplay/layout';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
 
 import PlanBlock from '../Outline/PlanBlock';
@@ -145,7 +148,12 @@ export default function FlowSection({
         onEditorStateChange();
     }, [node.id, onBridgeChange, onEditorStateChange]);
 
-    const hasText = (section?.content ?? '').trim() !== '';
+    const format = section?.format ?? guessFormat(workFormat);
+    const content = section?.content ?? '';
+    // Fountain markers can survive deleting the last text in older saves.
+    const hasText = format === 'screenplay'
+        ? parseScreenplay(content).some((block) => parseScreenplayEmphasis(block.text).some((run) => run.text.trim() !== ''))
+        : content.trim() !== '';
     const showEditor = section !== null && (hasText || engaged);
 
     // Report the bridge once the editor is mounted (onStateChange only
@@ -169,13 +177,14 @@ export default function FlowSection({
     }, [engaged]);
 
     const noop = useCallback(() => {}, []);
-    const format = section?.format ?? guessFormat(workFormat);
 
     return (
         <div
             data-flow-section=""
             data-flow-section-id={node.id}
             data-flow-section-slug={node.slug}
+            data-flow-format={format}
+            style={format === 'screenplay' ? screenplayLayoutStyle() : undefined}
         >
             {isContainer ? (
                 <h2

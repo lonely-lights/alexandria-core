@@ -28,7 +28,7 @@ export interface WritingEditorBridge {
     searchText?(query: string, options: SearchOptions, current?: number): TextMatch[];
     replaceText?(query: string, replacement: string, options: SearchOptions, current?: number): number;
     selectTextMatch?(match: TextMatch): void;
-    /** prose marks: bold | italic | underline; lists: bulletList | orderedList; headings via setHeading */
+    /** Shared text marks; lists and headings are prose-only. */
     toggleMark(name: 'bold' | 'italic' | 'underline'): void;
     toggleList(name: 'bulletList' | 'orderedList'): void;
     toggleHeading(level: 1 | 2 | 3): void;
@@ -122,6 +122,7 @@ export interface WritingRibbonContext {
         setFontSize(value: string): void;
         openSectionSettings(): void;
         openSettings(): void;
+        openScreenplayElements?(): void;
         openReports(): void;
         addSection(): void;       // root-level (opens the existing AddSectionModal)
         addInside(): void;        // child of current section (disabled when none)

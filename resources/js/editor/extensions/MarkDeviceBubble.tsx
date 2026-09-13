@@ -18,7 +18,7 @@ import useT from '@alexandria/hooks/useT';
 
 const bubbleStyle: CSSProperties = {
     position: 'fixed',
-    zIndex: 200,
+    zIndex: 20,
     background: 'var(--theme-brand-secondary-500, #6366f1)',
     color: '#fff',
     border: 'none',
@@ -58,6 +58,7 @@ export default function MarkDeviceBubble({ editor, range, onMarkThread }: MarkDe
     return (
         <button
             type="button"
+            data-writing-selection-action="device"
             aria-label={t('writing.threads.mark_action')}
             onMouseDown={(e) => {
                 e.preventDefault();

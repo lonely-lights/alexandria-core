@@ -9,7 +9,7 @@ declare(strict_types=1);
  */
 return [
     'mode.collapse' => 'Collapse the ribbon',
-    'mode.expand' => 'Pin the ribbon open',
+    'mode.expand' => 'Expand the ribbon',
 
     // Merged-header chrome (workspace surfaces that run navbar-less).
     'menu' => 'Open navigation menu',

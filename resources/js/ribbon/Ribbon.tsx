@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { usePage } from '@inertiajs/react';
 
+import useCollapsePresence from '@alexandria/hooks/useCollapsePresence';
 import { useHoverOffDismiss } from '@alexandria/hooks/useHoverOffDismiss';
 import { useMenuDismissDelay } from '@alexandria/hooks/useMenuDismissDelay';
 import useT from '@alexandria/hooks/useT';
@@ -95,11 +96,14 @@ export default function Ribbon<Ctx>({
     bandTabId,
 }: RibbonProps<Ctx>) {
     const t = useT();
+    const bandId = useId();
     const page = usePage();
     const tabs = useSyncExternalStore(subscribeRibbon, () => getRibbonTabs(setKey)) as RibbonTab<Ctx>[];
     const [activeTabId, setActiveTabId] = useState<string | null>(null);
     const [mode, setMode] = useState<RibbonMode>(readMode);
     const [overlayOpen, setOverlayOpen] = useState(false);
+    const bandVisible = mode !== 'collapsed' || overlayOpen;
+    const bandPresent = useCollapsePresence(bandVisible);
     const pageQuickActions = (page.props as {
         auth?: { preferences?: { ribbon_quick_actions?: unknown } };
     }).auth?.preferences?.ribbon_quick_actions;
@@ -275,6 +279,7 @@ export default function Ribbon<Ctx>({
 
     function persistMode(next: RibbonMode): void {
         setMode(next);
+        setOverlayOpen(false);
         try {
             localStorage.setItem(MODE_STORAGE_KEY, next);
         } catch {
@@ -317,7 +322,26 @@ export default function Ribbon<Ctx>({
         setMenuPlaceholder(nextPosition);
     }
 
-    const bandVisible = mode !== 'collapsed' || overlayOpen;
+    const modeToggleLabel = t(mode === 'collapsed' ? 'ribbon.mode.expand' : 'ribbon.mode.collapse');
+    const modeToggle = (
+        <Tooltip content={modeToggleLabel}>
+            <button
+                type="button"
+                data-ribbon-mode-toggle="collapse"
+                aria-label={modeToggleLabel}
+                aria-expanded={bandVisible}
+                aria-controls={bandId}
+                className="alex-toolbar-btn ribbon-mode-toggle inline-flex h-7 w-7 items-center justify-center text-xs"
+                onClick={(event) => {
+                    const ribbon = event.currentTarget.closest('.ribbon');
+                    persistMode(mode === 'collapsed' ? 'expanded' : 'collapsed');
+                    requestAnimationFrame(() => ribbon?.querySelector<HTMLButtonElement>('[data-ribbon-mode-toggle]')?.focus({ preventScroll: true }));
+                }}
+            >
+                <i className={`fa-solid ${mode === 'collapsed' ? 'fa-chevron-down' : 'fa-chevron-up'}`} aria-hidden="true" />
+            </button>
+        </Tooltip>
+    );
 
     /* The strip is its own scroll container so a cramped viewport
        (merged-header mode on mobile) scrolls the tabs horizontally
@@ -371,7 +395,7 @@ export default function Ribbon<Ctx>({
                             />
                         </div>
                     </div>
-                    {trailing && <div className="ribbon-header-trailing">{trailing}</div>}
+                    <div className="ribbon-header-trailing">{!bandVisible && modeToggle}{trailing}</div>
                 </div>
             ) : (
                 <div className="ribbon-tabs">
@@ -385,78 +409,71 @@ export default function Ribbon<Ctx>({
                         actions={quickActionItems}
                         onChange={persistQuickActions}
                     />
-                    {trailing && <div className="ribbon-tabs-trailing">{trailing}</div>}
+                    <div className="ribbon-tabs-trailing">{!bandVisible && modeToggle}{trailing}</div>
                 </div>
             )}
 
-            {bandVisible && (
-                <div
-                    className={`ribbon-band ${mode === 'collapsed' ? 'ribbon-band--overlay' : ''}`}
-                    onContextMenu={handleControlContextMenu}
-                    onMouseLeave={() => mode === 'collapsed' && setOverlayOpen(false)}
-                >
-                    {bandTab.groups.map((group) => {
-                        // Apply visibility predicate then gate resolution.
-                        // 'hidden' → exclude; 'locked' → disabled + lock glyph.
-                        const gatedControls = group.controls
-                            .filter((control) => control.visible?.(context) ?? true)
-                            .map((control) => ({
-                                control,
-                                verdict: resolveGate(control.requires, gates),
-                            }))
-                            .filter(({ verdict }) => verdict !== 'hidden');
+            <div id={bandId} className={`ribbon-band-collapse ${mode === 'collapsed' && overlayOpen ? 'ribbon-band-collapse--overlay' : ''}`} data-open={bandVisible} inert={!bandVisible} aria-hidden={!bandVisible}>
+                <div className="ribbon-band-collapse-inner">
+                    {bandPresent && (
+                        <div
+                            className="ribbon-band"
+                            onContextMenu={handleControlContextMenu}
+                            onMouseLeave={() => mode === 'collapsed' && setOverlayOpen(false)}
+                        >
+                            {bandTab.groups.map((group) => {
+                                // Apply visibility predicate then gate resolution.
+                                // 'hidden' → exclude; 'locked' → disabled + lock glyph.
+                                const gatedControls = group.controls
+                                    .filter((control) => control.visible?.(context) ?? true)
+                                    .map((control) => ({
+                                        control,
+                                        verdict: resolveGate(control.requires, gates),
+                                    }))
+                                    .filter(({ verdict }) => verdict !== 'hidden');
 
-                        if (gatedControls.length === 0) {
-                            return null;
-                        }
+                                if (gatedControls.length === 0) {
+                                    return null;
+                                }
 
-                        return (
-                            <div key={group.id} className="ribbon-group">
-                                <div className="ribbon-group-controls">
-                                    {gatedControls.map(({ control, verdict }) => {
-                                        if (verdict === 'locked') {
-                                            // Force disabled; overlay a lock badge.
-                                            // The title on the wrapper acts as a tooltip for
-                                            // the upsell hint (writing.ribbon.locked_hint).
-                                            const lockedControl: RibbonControl<Ctx> = {
-                                                ...control,
-                                                disabled: (_ctx: Ctx) => true,
-                                            };
-                                            return (
-                                                <div
-                                                    key={control.id}
-                                                    className="relative inline-flex"
-                                                    title={t('writing.ribbon.locked_hint')}
-                                                >
-                                                    {renderControl(lockedControl, context)}
-                                                    <i
-                                                        className="fa-solid fa-lock ribbon-ctl-lock pointer-events-none absolute bottom-0 right-0 text-[8px]"
-                                                        aria-hidden="true"
-                                                    />
-                                                </div>
-                                            );
-                                        }
-                                        return renderControl(control, context);
-                                    })}
-                                </div>
-                            </div>
-                        );
-                    })}
+                                return (
+                                    <div key={group.id} className="ribbon-group">
+                                        <div className="ribbon-group-controls">
+                                            {gatedControls.map(({ control, verdict }) => {
+                                                if (verdict === 'locked') {
+                                                    // Force disabled; overlay a lock badge.
+                                                    // The title on the wrapper acts as a tooltip for
+                                                    // the upsell hint (writing.ribbon.locked_hint).
+                                                    const lockedControl: RibbonControl<Ctx> = {
+                                                        ...control,
+                                                        disabled: (_ctx: Ctx) => true,
+                                                    };
+                                                    return (
+                                                        <div
+                                                            key={control.id}
+                                                            className="relative inline-flex"
+                                                            title={t('writing.ribbon.locked_hint')}
+                                                        >
+                                                            {renderControl(lockedControl, context)}
+                                                            <i
+                                                                className="fa-solid fa-lock ribbon-ctl-lock pointer-events-none absolute bottom-0 right-0 text-[8px]"
+                                                                aria-hidden="true"
+                                                            />
+                                                        </div>
+                                                    );
+                                                }
+                                                return renderControl(control, context);
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
 
-                    <div className="ribbon-right">
-                        <Tooltip content={t(mode === 'collapsed' ? 'ribbon.mode.expand' : 'ribbon.mode.collapse')}>
-                            <button
-                                type="button"
-                                data-ribbon-mode-toggle="collapse"
-                                className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs"
-                                onClick={() => persistMode(mode === 'collapsed' ? 'expanded' : 'collapsed')}
-                            >
-                                <i className={`fa-solid ${mode === 'collapsed' ? 'fa-thumbtack' : 'fa-chevron-up'}`} aria-hidden="true" />
-                            </button>
-                        </Tooltip>
-                    </div>
+                            {bandVisible && <div className="ribbon-band-trailing">{modeToggle}</div>}
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
 
             {contextMenu && createPortal(
                 <QuickActionContextMenu

@@ -621,6 +621,7 @@ export default function SidebarNotesPanel({
                 type="button"
                 className="alex-row flex w-full shrink-0 items-center gap-1.5 px-3 py-2.5 text-xs"
                 style={openDrawerBtnStyle}
+                data-sidebar-notes-open-drawer
                 onClick={handleOpenDrawer}
             >
                 <i className="fa-solid fa-arrow-up-right-from-square text-[10px]" aria-hidden="true" />

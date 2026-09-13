@@ -35,6 +35,10 @@ type TickDivision = 'whole' | 'half' | 'quarter' | 'eighth';
 interface ManuscriptRulerProps {
     /** Side margin in proportional inches — the draggable value. */
     marginXIn?: number;
+    marginRightIn?: number;
+    /** Print layouts use a fixed sheet, while prose fills the pane. */
+    fixedPageWidthIn?: number;
+    readOnly?: boolean;
 }
 
 const PAGE_WIDTH_IN = 8.5;
@@ -99,9 +103,9 @@ const horizontalLabelStyle: CSSProperties = {
 
 const markerColor = 'var(--alex-manuscript-ruler-marker, var(--theme-brand-primary-500))';
 
-function isHorizontalMargin(step: number, marginXIn: number): boolean {
+function isHorizontalMargin(step: number, marginXIn: number, marginRightIn: number): boolean {
     return step < marginXIn * EIGHTHS_PER_INCH ||
-        step > (PAGE_WIDTH_IN - marginXIn) * EIGHTHS_PER_INCH;
+        step > (PAGE_WIDTH_IN - marginRightIn) * EIGHTHS_PER_INCH;
 }
 
 function tickDivision(step: number): TickDivision {
@@ -245,7 +249,12 @@ function MarginHandles({
     );
 }
 
-export default function ManuscriptRuler({ marginXIn = 1 }: ManuscriptRulerProps) {
+export default function ManuscriptRuler({
+    marginXIn = 1,
+    marginRightIn = marginXIn,
+    fixedPageWidthIn,
+    readOnly = false,
+}: ManuscriptRulerProps) {
     const stripRef = useRef<HTMLDivElement | null>(null);
 
     return (
@@ -258,18 +267,22 @@ export default function ManuscriptRuler({ marginXIn = 1 }: ManuscriptRulerProps)
                 height: '1.5rem',
                 borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
                 scrollbarGutter: 'stable',
+                overflowX: fixedPageWidthIn ? 'auto' : 'hidden',
             }}
         >
-            <div ref={stripRef} className="alex-sheet-footprint" style={horizontalStripStyle}>
+            <div ref={stripRef} className="alex-sheet-footprint" style={{
+                ...horizontalStripStyle,
+                ...(fixedPageWidthIn ? { width: `${fixedPageWidthIn}in`, maxWidth: 'none' } : {}),
+            }}>
                 <div style={{ ...horizontalMarginStyle, left: 0, width: inchPercent(marginXIn) }} />
-                <div style={{ ...horizontalMarginStyle, right: 0, width: inchPercent(marginXIn) }} />
+                <div style={{ ...horizontalMarginStyle, right: 0, width: inchPercent(marginRightIn) }} />
                 {horizontalEighthSteps.map((n) => (
                     <span
                         key={`tick-${n}`}
                         className="alex-manuscript-ruler__tick"
                         data-ruler-tick="horizontal"
                         data-ruler-division={tickDivision(n)}
-                        data-ruler-zone={isHorizontalMargin(n, marginXIn) ? 'margin' : 'content'}
+                        data-ruler-zone={isHorizontalMargin(n, marginXIn, marginRightIn) ? 'margin' : 'content'}
                         style={{
                             ...horizontalTickStyle,
                             left: eighthPercent(n),
@@ -286,7 +299,7 @@ export default function ManuscriptRuler({ marginXIn = 1 }: ManuscriptRulerProps)
                     const label = contentLabel(n, marginXIn);
 
                     return label === null ||
-                        label >= PAGE_WIDTH_IN - marginXIn * 2 ? null : (
+                        label >= PAGE_WIDTH_IN - marginXIn - marginRightIn ? null : (
                         <span
                             key={`label-${n}`}
                             style={{ ...horizontalLabelStyle, left: eighthPercent(n) }}
@@ -295,7 +308,7 @@ export default function ManuscriptRuler({ marginXIn = 1 }: ManuscriptRulerProps)
                         </span>
                     );
                 })}
-                <MarginHandles marginXIn={marginXIn} stripRef={stripRef} />
+                {!readOnly && <MarginHandles marginXIn={marginXIn} stripRef={stripRef} />}
             </div>
         </div>
     );

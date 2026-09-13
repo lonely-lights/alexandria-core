@@ -1,6 +1,22 @@
 /* Ribbon chrome — spec §1. Bar/band/tab colors all route through
    --theme-* tokens; sizing literals are chrome geometry. */
-.ribbon { background: color-mix(in srgb, var(--theme-base-content) 4%, var(--theme-base-page)); }
+.ribbon { display: flow-root; background: color-mix(in srgb, var(--theme-base-content) 4%, var(--theme-base-page)); }
+.ribbon-mode-toggle {
+    border: 1px solid color-mix(in srgb, var(--theme-base-content) 40%, var(--theme-base-page));
+    background: var(--theme-base-page);
+}
+.ribbon-band-trailing { margin-left: auto; padding-left: 0.5rem; display: flex; align-items: center; }
+.ribbon-band-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.22s ease; }
+.ribbon-band-collapse[data-open="true"] { grid-template-rows: 1fr; }
+.ribbon-band-collapse-inner { min-height: 0; overflow: hidden; opacity: 0; transition: opacity 0.18s ease; }
+.ribbon-band-collapse[data-open="true"] > .ribbon-band-collapse-inner { opacity: 1; }
+.ribbon-band-collapse--overlay { position: absolute; left: 0; right: 0; z-index: 30; }
+@media (prefers-reduced-motion: reduce) {
+    .ribbon-band-collapse, .ribbon-band-collapse-inner { transition: none; }
+}
+.ribbon .ribbon-mode-toggle:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-base-content) 8%, var(--theme-base-page));
+}
 .ribbon-tabs { display: flex; align-items: stretch; gap: 2px; padding: 0.25rem 0.5rem 0; min-width: 0; }
 /* The strip owns the tab buttons; it shrinks (min-width: 0) and scrolls
    horizontally when the merged header can't fit everything — leading
@@ -65,8 +81,7 @@
 .ribbon-ctl i { font-size: 0.75rem; line-height: 1; }
 .ribbon-right { margin-left: auto; display: flex; align-items: center; gap: 0.25rem; }
 .ribbon-tabs-trailing { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
-.ribbon-band--overlay { position: absolute; left: 0; right: 0; z-index: 30;
-    box-shadow: 0 4px 10px rgb(0 0 0 / 0.15); }
+.ribbon-band-collapse--overlay .ribbon-band { box-shadow: 0 4px 10px rgb(0 0 0 / 0.15); }
 
 /* Quick Access: visually distinct from the File/Edit/View menu row. */
 .ribbon-qat { display: flex; align-items: center; gap: 0.125rem; flex-shrink: 0;

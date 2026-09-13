@@ -1,4 +1,4 @@
-import type { ScreenplayBlock } from "./types";
+import type { ScreenplayBlock, ScreenplayElement } from "./types";
 
 /**
  * Screenplay text codec — a Fountain-flavored plain-text serialization for
@@ -19,7 +19,8 @@ import type { ScreenplayBlock } from "./types";
  */
 const SLUGLINE_PREFIX = /^(INT|EXT|EST|INT\.?\/EXT|I\/E)[.\s]/i;
 
-const FORCE_MARKER = /^[.>@!]/;
+const FORCE_MARKER =
+    /^[.>@!]|^::(?:slugline|action|character|parenthetical|dialogue|transition)::/;
 
 const FULLY_PARENTHESIZED = /^\(.*\)$/;
 
@@ -88,6 +89,26 @@ function parseRun(lines: string[], blocks: ScreenplayBlock[]): void {
 
     const first = lines[0];
     const rest = lines.slice(1);
+
+    // Explicit elements preserve custom casing and standalone speech blocks.
+    const explicit = first.match(
+        /^::(slugline|action|character|parenthetical|dialogue|transition)::(.*)$/,
+    );
+
+    if (explicit) {
+        blocks.push({
+            element: explicit[1] as ScreenplayElement,
+            text: explicit[2],
+        });
+
+        if (explicit[1] === "character") {
+            parseSpeechLines(rest, blocks);
+        } else {
+            parseRun(rest, blocks);
+        }
+
+        return;
+    }
 
     switch (first[0]) {
         case ".":
@@ -170,7 +191,10 @@ function parseSpeechLines(lines: string[], blocks: ScreenplayBlock[]): void {
     flush();
 }
 
-export function serializeScreenplay(blocks: ScreenplayBlock[]): string {
+export function serializeScreenplay(
+    blocks: ScreenplayBlock[],
+    preserveCase: ScreenplayElement[] = [],
+): string {
     const runs: string[][] = [];
 
     /**
@@ -182,6 +206,17 @@ export function serializeScreenplay(blocks: ScreenplayBlock[]): string {
     let chainActive = false;
 
     blocks.forEach((block, index) => {
+        if (
+            preserveCase.includes(block.element) ||
+            (!chainActive &&
+                ["dialogue", "parenthetical"].includes(block.element))
+        ) {
+            runs.push([`::${block.element}::${block.text}`]);
+            chainActive = block.element === "character";
+
+            return;
+        }
+
         switch (block.element) {
             case "slugline": {
                 const upper = block.text.toUpperCase();
@@ -226,6 +261,7 @@ export function serializeScreenplay(blocks: ScreenplayBlock[]): string {
                     // unreachable from the editor; emit it as its own run.
                     runs.push([wrapped]);
                 }
+
                 break;
             }
             case "dialogue": {
@@ -240,6 +276,7 @@ export function serializeScreenplay(blocks: ScreenplayBlock[]): string {
                     // escape syntax.
                     runs.push(escapeActionLines(block.text.split("\n")));
                 }
+
                 break;
             }
             case "action": {

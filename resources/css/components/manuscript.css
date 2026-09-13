@@ -136,6 +136,16 @@
     background: var(--theme-base-page);
 }
 
+.writing-workspace-editor {
+    border-top: 1px solid color-mix(in srgb, var(--theme-base-content) 24%, var(--theme-base-page));
+}
+
+.writing-workspace-view-rail {
+    width: 3rem;
+    border-right: 1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+    background: color-mix(in srgb, var(--theme-base-content) 4%, var(--theme-base-page));
+}
+
 /* Sections binder — Devices & Tropes rework 2 (owner ruling 2026-08-29:
    the floating chevron-triggered overlay "doesn't feel like the right
    place or anchor"; sections must be "very present on this page").
@@ -156,6 +166,23 @@
     flex-shrink: 0;
     width: 3rem;
     transition: width 0.22s ease;
+}
+
+.writing-companion-collapse {
+    display: flex;
+    min-height: 0;
+    flex-shrink: 0;
+    width: 0;
+    overflow: hidden;
+    transition: width 0.22s ease;
+}
+
+.writing-companion-collapse[data-open="true"] { width: 20rem; }
+.writing-companion-content { opacity: 0; transition: opacity 0.18s ease; }
+.writing-companion-collapse[data-open="true"] > .writing-companion-content { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+    .writing-companion-collapse, .writing-companion-content { transition: none; }
 }
 
 .writing-workspace-binder[data-open="true"] {

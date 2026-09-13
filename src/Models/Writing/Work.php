@@ -9,6 +9,7 @@ use Alexandria\Core\Models\Framework\Project;
 use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\System\Entry;
 use Alexandria\Core\Traits\Notable\HasNotes;
+use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -45,6 +46,7 @@ use Illuminate\Support\Str;
  * @property string|null $language
  * @property string|null $setting_period
  * @property array<string, mixed>|null $length_plan
+ * @property array<string, mixed>|null $screenplay_template
  * @property int|null $target_words
  * @property int $word_count
  * @property int $line_count
@@ -62,7 +64,7 @@ use Illuminate\Support\Str;
  *
  * @method static WorkFactory factory($count = null, $state = [])
  *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class Work extends Model
 {
@@ -103,6 +105,7 @@ class Work extends Model
     {
         return [
             'length_plan' => 'array',
+            'screenplay_template' => 'array',
         ];
     }
 

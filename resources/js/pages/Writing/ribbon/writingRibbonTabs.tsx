@@ -38,7 +38,7 @@ function markToggle(
         labelKey: `writing.ribbon.${id}`,
         // No shortcut on purpose — TipTap binds Mod-B/I/U inside the editor.
         menuShortcut: `Mod-${id[0].toUpperCase()}`,
-        visible: proseEditable,
+        visible: editable,
         active: (ctx) => ctx.editor?.isMarkActive(id) ?? false,
         onAction: (ctx) => ctx.editor?.toggleMark(id),
     };
@@ -312,6 +312,11 @@ const editTab: RibbonTab<Ctx> = {
                     onAction: (ctx) => ctx.editor?.openHelp(),
                 },
                 {
+                    id: 'screenplay-elements', type: 'button', icon: 'fa-solid fa-sliders',
+                    labelKey: 'writing.elements.title', visible: screenplayEditable,
+                    onAction: (ctx) => ctx.actions.openScreenplayElements?.(),
+                },
+                {
                     id: 'scene-links-panel-edit',
                     type: 'toggle',
                     icon: 'fa-solid fa-link',
@@ -328,7 +333,7 @@ const editTab: RibbonTab<Ctx> = {
                     labelKey: 'writing.ribbon.clear_text_formatting',
                     searchKeywordKeys: ['writing.ribbon.clear_text_formatting_terms'],
                     disabledReasonKey: 'writing.ribbon.clear_text_formatting_hint',
-                    visible: proseEditable,
+                    visible: editable,
                     disabled: (ctx) => !(ctx.editor?.canClearTextFormatting?.() ?? false),
                     onAction: (ctx) => ctx.editor?.clearTextFormatting?.(),
                 },

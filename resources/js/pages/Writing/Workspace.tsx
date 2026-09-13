@@ -5,14 +5,15 @@ import useT from '@alexandria/hooks/useT';
 import { useBrowserChrome } from '@alexandria/hooks/useBrowserChrome';
 import useEntitlements from '@alexandria/hooks/useEntitlements';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
+import { ScreenplayTemplateContext, STANDARD_SCREENPLAY_TEMPLATE, screenplayTemplateCss, type ScreenplayTemplate } from '@alexandria/editor/screenplay/template';
+import ScreenplayElementsModal from './Sections/ScreenplayElementsModal';
 import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
-import { openNotesDrawer } from '@alexandria/components/notes/NotesDrawer';
 import Ribbon from '@alexandria/ribbon/Ribbon';
 import type { RibbonGates } from '@alexandria/ribbon/types';
 import LogoLockup from '@alexandria/components/brand/LogoLockup';
 import CompactUserMenu from '@alexandria/components/navigation/CompactUserMenu';
 import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
-import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
+import Modal from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 import {
@@ -23,7 +24,7 @@ import {
 import { patchCachedPreferences } from '@alexandria/pages/Settings/settingsCache';
 
 import ContinuousFlow, { type ActiveScene } from './Flow/ContinuousFlow';
-import FlowToggle from './Flow/FlowToggle';
+import ViewModeMenu from './Flow/ViewModeMenu';
 import { flowUrl, parseSceneFragment } from './Flow/flowUrl';
 import { readViewMode, writeViewMode, type WorkspaceViewMode } from './Flow/viewMode';
 import ExportFdxModal from './Fdx/ExportFdxModal';
@@ -75,7 +76,6 @@ import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
 import SidebarNotesPanel from './Sections/SidebarNotesPanel';
 import ScreenplayEditor from './Sections/ScreenplayEditor';
 import { extractSectionOutline, type SectionOutlineItem } from './Sections/sectionOutline';
-import WorkspaceAppRail from './Sections/WorkspaceAppRail';
 import WorkSettingsModal, {
     type LengthPlanOption,
     type WorkLengthPlan,
@@ -161,6 +161,7 @@ interface WorkspaceProps {
         target_pages: number | null;
         page_estimate: number;
         length_plan: WorkLengthPlan | null;
+        screenplay_template?: ScreenplayTemplate | null;
         linked_entry: { id: number; name: string } | null;
     };
     structureBlueprint: { id: number; name: string } | null;
@@ -183,17 +184,6 @@ const DEFAULT_ZOOM = '100';
 const ZOOM_VALUES = new Set(['75', '90', '100', '110', '125', '150']);
 const DEFAULT_PAPER_COLOR = 'white';
 const PAPER_COLOR_VALUES = new Set(['theme', 'white', 'ivory', 'cream', 'gray']);
-const PAPER_COLOR_OPTIONS = ['theme', 'white', 'ivory', 'cream', 'gray'];
-const PAPER_COLOR_SWATCHES: Record<string, { background: string; border: string }> = {
-    theme: {
-        background: 'var(--theme-surface-card)',
-        border: 'color-mix(in srgb, var(--theme-base-content) 16%, transparent)',
-    },
-    white: { background: '#ffffff', border: '#d8dee8' },
-    ivory: { background: '#fffaf0', border: '#eadfcb' },
-    cream: { background: '#fdf6e3', border: '#e8dcc4' },
-    gray: { background: '#f8fafc', border: '#d8dee8' },
-};
 
 function readPanelOpenPreference(): boolean {
     try {
@@ -341,7 +331,8 @@ export default function Workspace() {
     const viewport = useWritingViewport();
     const [toolsPage, setToolsPage] = useState<string | null>(null);
     const [mobileStructureOpen, setMobileStructureOpen] = useState(false);
-    const [mobileCompanionOpen, setMobileCompanionOpen] = useState(false);
+    // Mobile overlay and explicit openings in Focus view do not change desktop preferences.
+    const [transientCompanionOpen, setTransientCompanionOpen] = useState(false);
     const [readingMode, setReadingMode] = useState(false);
     const [findOpen, setFindOpen] = useState(false);
     const [replaceInitially, setReplaceInitially] = useState(false);
@@ -361,11 +352,11 @@ export default function Workspace() {
     );
     const [structureOpen, setStructureOpen] = useState(() => readStructureOpen(work.id));
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [elementsOpen, setElementsOpen] = useState(false);
     const [sectionSettingsOpen, setSectionSettingsOpen] = useState(false);
     const [showSectionTypeLabels, setShowSectionTypeLabels] = useState(sharedShowSectionTypeLabels);
     const [sectionSettingsSaving, setSectionSettingsSaving] = useState(false);
     const [sectionSettingsError, setSectionSettingsError] = useState<string | null>(null);
-    const [paperModalOpen, setPaperModalOpen] = useState(false);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
     const [showPlan, setShowPlan] = useState(readShowPlan);
     const [pageDisplay, setPageDisplayState] = useState<PageDisplayMode>(readPageDisplay);
@@ -522,6 +513,7 @@ export default function Workspace() {
        open/closed preferences — continuous (and outline) restore them
        as they were. */
     const chromeVisible = viewMode !== 'focus';
+    const companionVisible = viewport.compact || !chromeVisible ? transientCompanionOpen : panelOpen;
 
     /* Narrowed dependency values, extracted to plain identifiers so the
        hook dep arrays stay simple expressions. These MUST stay in the
@@ -599,6 +591,7 @@ export default function Workspace() {
 
             writeViewMode(work.id, next);
             setViewMode(next);
+            setTransientCompanionOpen(false);
 
             // Focus mode edits whatever the server rendered, so hand it
             // the scene the reader was actually on before it takes over.
@@ -635,7 +628,7 @@ export default function Workspace() {
     );
 
     const handleEntryLinkSelect = useCallback(() => {
-        setMobileCompanionOpen(true);
+        setTransientCompanionOpen(true);
         setPanelOpen(true);
         setPanelMode('linked');
         writePanelMode(work.id, 'linked');
@@ -648,36 +641,12 @@ export default function Workspace() {
         }
     }, [work.id]);
 
-    /** Open the notes drawer scoped to the current section; fall back to
-     *  the work itself when no section is active (e.g., empty work) —
-     *  works hold notes directly, so the drawer stays inside the
-     *  manuscript instead of widening to the whole project. */
-    const handleNotesClick = useCallback(() => {
-        if (effectiveSectionId !== null) {
-            openNotesDrawer({
-                projectId: project.id,
-                projectSlug: project.slug,
-                contextType: 'work_section',
-                contextId: effectiveSectionId,
-                contextLabel: effectiveSectionTitle ?? '',
-            });
-        } else {
-            openNotesDrawer({
-                projectId: project.id,
-                projectSlug: project.slug,
-                contextType: 'work',
-                contextId: work.id,
-                contextLabel: work.title,
-            });
-        }
-    }, [project.id, project.slug, work.id, work.title, effectiveSectionId, effectiveSectionTitle]);
-
     const toggleSceneLinksPanel = useCallback(() => {
-        if (viewport.compact) {
+        if (viewport.compact || viewMode === 'focus') {
             setPanelMode('linked');
             writePanelMode(work.id, 'linked');
             setLinkedPanelTab('scene-links');
-            setMobileCompanionOpen(true);
+            setTransientCompanionOpen(true);
             return;
         }
         setPanelOpen((prev) => {
@@ -699,29 +668,7 @@ export default function Workspace() {
 
             return next;
         });
-    }, [panelMode, linkedPanelTab, work.id, viewport.compact]);
-
-    // Toggle the comment rail panel on/off. When already in comments mode,
-    // closes the panel; otherwise opens and switches to comments mode.
-    const toggleCommentsPanel = useCallback(() => {
-        if (panelOpen && panelMode === 'comments') {
-            setPanelOpen(false);
-            try {
-                localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'false');
-            } catch {
-                // Best-effort.
-            }
-        } else {
-            setPanelOpen(true);
-            setPanelMode('comments');
-            writePanelMode(work.id, 'comments');
-            try {
-                localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
-            } catch {
-                // Best-effort.
-            }
-        }
-    }, [panelOpen, panelMode, work.id]);
+    }, [panelMode, linkedPanelTab, work.id, viewport.compact, viewMode]);
 
     // Fired by the editor's "Mark device" floating bubble (Devices &
     // Tropes Task 5) — opens MarkThreadModal with the captured selection
@@ -747,7 +694,7 @@ export default function Workspace() {
 
     // Fired by editor floating button — opens the sidebar in comments mode.
     const handleAddComment = useCallback((anchor: { from: number; to: number; text: string }) => {
-        setMobileCompanionOpen(true);
+        setTransientCompanionOpen(true);
         setPendingCommentAnchor(anchor);
         setPanelOpen(true);
         setPanelMode('comments');
@@ -874,8 +821,8 @@ export default function Workspace() {
     }, []);
 
     const togglePanel = useCallback(() => {
-        if (viewport.compact) {
-            setMobileCompanionOpen((value) => !value);
+        if (viewport.compact || viewMode === 'focus') {
+            setTransientCompanionOpen((value) => !value);
             return;
         }
         setPanelOpen((prev) => {
@@ -887,7 +834,7 @@ export default function Workspace() {
             }
             return next;
         });
-    }, [viewport.compact]);
+    }, [viewport.compact, viewMode]);
 
     const toggleStructure = useCallback(() => {
         setStructureOpen((prev) => {
@@ -1050,8 +997,8 @@ export default function Workspace() {
         return {
             format: (effectiveSectionFormat ?? work.format) === 'screenplay' ? 'screenplay' : 'prose',
             canUpdate: can.update && !readingMode,
-            panelOpen,
-            sceneLinksPanelOpen: panelOpen && panelMode === 'linked' && linkedPanelTab === 'scene-links',
+            panelOpen: companionVisible,
+            sceneLinksPanelOpen: companionVisible && panelMode === 'linked' && linkedPanelTab === 'scene-links',
             viewMode,
             printLayout,
             showPlan,
@@ -1082,6 +1029,7 @@ export default function Workspace() {
                 setFontSize: updateFontSize,
                 openSectionSettings,
                 openSettings: () => setSettingsOpen(true),
+                openScreenplayElements: () => setElementsOpen(true),
                 openReports: () => router.visit(`${worksBase(projectSlug, workSlug)}/reports`),
                 addSection: () => setAddTarget({ parentId: null }),
                 addInside: () => {
@@ -1120,14 +1068,14 @@ export default function Workspace() {
             },
             workStatus: work.status,
         };
-    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, readingMode, panelOpen, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize, openSectionSettings, saveCoordinator, t]);
+    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, readingMode, companionVisible, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize, openSectionSettings, saveCoordinator, t]);
 
     useEffect(() => {
         const openTools = (event: KeyboardEvent) => {
             if (event.altKey && event.code === 'Slash' && !event.isComposing) {
                 event.preventDefault();
                 setMobileStructureOpen(false);
-                setMobileCompanionOpen(false);
+                setTransientCompanionOpen(false);
                 setToolsPage('');
             }
             if ((event.ctrlKey || event.metaKey) && !event.altKey && ['f', 'h'].includes(event.key.toLowerCase()) && !event.isComposing && !document.querySelector('dialog[open]') && !bridgeRef.current?.isCodeView()) {
@@ -1171,7 +1119,9 @@ export default function Workspace() {
         // collapsed Writing handle cannot navigate, while one deliberate
         // reveal exposes Settings and the other global destinations. Peek
         // mode overlays rather than re-growing this viewport-exact surface.
+        <ScreenplayTemplateContext value={work.screenplay_template ?? STANDARD_SCREENPLAY_TEMPLATE}>
         <WritingSaveProvider coordinator={saveCoordinator} workPath={worksBase(project.slug, work.slug)}>
+        <style>{screenplayTemplateCss(work.screenplay_template ?? STANDARD_SCREENPLAY_TEMPLATE)}</style>
         <AppLayout
             title={`${work.title} - ${project.name}`}
             navbar={false}
@@ -1195,7 +1145,9 @@ export default function Workspace() {
                 data-writing-keyboard={viewport.compact && viewport.keyboard || undefined}
                 style={{
                     height: '100dvh',
-                    overflow: 'hidden',
+                    // Clip without creating a scroll container: scene landing
+                    // must never shift the frame's border under the header.
+                    overflow: 'clip',
                     '--alex-writing-zoom': `${Number(zoom) / 100}`,
                     '--alex-writing-font-size': `${fontSize}pt`,
                     '--writing-visible-height': `${viewport.height}px`,
@@ -1269,9 +1221,9 @@ export default function Workspace() {
                         }
                         trailing={
                             <>
-                                <Tooltip content={t('writing.tools.search')}>
-                                    <button type="button" className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs" onClick={() => setToolsPage('')} aria-label={t('writing.tools.search')}>
-                                        <i className="fa-solid fa-magnifying-glass-plus" aria-hidden="true" />
+                                <Tooltip content={t('writing.tools.desk')}>
+                                    <button type="button" data-writing-desk className="alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs" onClick={() => setToolsPage('')} aria-label={t('writing.tools.desk')}>
+                                        <i className="fa-solid fa-feather-pointed" aria-hidden="true" />
                                     </button>
                                 </Tooltip>
                                 <Tooltip content={t('ribbon.search')}>
@@ -1288,16 +1240,16 @@ export default function Workspace() {
                                         <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
                                     </button>
                                 </Tooltip>
-                                <Tooltip content={t('writing.ribbon.paper_color')}>
+                                <Tooltip content={t(companionVisible ? 'writing.panel.collapse' : 'writing.panel.expand')}>
                                     <button
                                         type="button"
-                                        onClick={() => setPaperModalOpen(true)}
-                                        aria-label={t('writing.ribbon.paper_color')}
-                                        aria-pressed={paperColor !== 'theme'}
-                                        data-writing-paper-select="true"
-                                        className={`alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs ${paperColor !== 'theme' ? 'alex-toolbar-btn--active' : ''}`}
+                                        onClick={togglePanel}
+                                        aria-label={t(companionVisible ? 'writing.panel.collapse' : 'writing.panel.expand')}
+                                        aria-expanded={companionVisible}
+                                        data-writing-companion-toggle
+                                        className={`alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs ${companionVisible ? 'alex-toolbar-btn--active' : ''}`}
                                     >
-                                        <i className="fa-solid fa-file-lines" aria-hidden="true" />
+                                        <i className="fa-solid fa-table-columns" aria-hidden="true" />
                                     </button>
                                 </Tooltip>
                                 {can.update && (
@@ -1313,23 +1265,11 @@ export default function Workspace() {
                                         </button>
                                     </Tooltip>
                                 )}
-                                <Tooltip content={t('writing.comments.toggle_button')}>
-                                    <button
-                                        type="button"
-                                        onClick={toggleCommentsPanel}
-                                        aria-label={t('writing.comments.toggle_button')}
-                                        aria-pressed={panelOpen && panelMode === 'comments'}
-                                        data-writing-comments-toggle
-                                        className={`alex-toolbar-btn inline-flex h-7 w-7 items-center justify-center text-xs ${panelOpen && panelMode === 'comments' ? 'alex-toolbar-btn--active' : ''}`}
-                                    >
-                                        <i className="fa-solid fa-comment-dots" aria-hidden="true" />
-                                    </button>
-                                </Tooltip>
                                 <Tooltip content={t('ribbon.account')} disabled={accountMenuOpen}>
                                     <span className="inline-flex">
                                         <CompactUserMenu
                                             ariaLabel={t('ribbon.account')}
-                                            size={36}
+                                            size={44}
                                             onOpenChange={setAccountMenuOpen}
                                         />
                                     </span>
@@ -1416,6 +1356,7 @@ export default function Workspace() {
                                         <i className="fa-solid fa-list-ul" aria-hidden="true" />
                                     </button>
                                 </Tooltip>
+                                <ViewModeMenu mode={viewMode} onChange={switchViewMode} />
                             </div>
                         <div
                             className="writing-workspace-binder-panel flex w-72 min-h-0 flex-col"
@@ -1429,6 +1370,8 @@ export default function Workspace() {
                             <nav className="writing-workspace-section-pane min-h-0 flex-1 overflow-hidden">
                                 <Navigator
                                     headerTrailing={
+                                        <>
+                                        <ViewModeMenu mode={viewMode} onChange={switchViewMode} />
                                         <button
                                             type="button"
                                             className="writing-workspace-structure-toggle alex-toolbar-btn"
@@ -1440,6 +1383,7 @@ export default function Workspace() {
                                         >
                                             <i className="fa-solid fa-angles-left" aria-hidden="true" />
                                         </button>
+                                        </>
                                     }
                                     projectSlug={project.slug}
                                     workSlug={work.slug}
@@ -1462,16 +1406,17 @@ export default function Workspace() {
                     </div>
                     )}
 
+                    {!viewport.compact && (!chromeVisible || viewMode === 'outline' || viewMode === 'kanban') && (
+                        <div className="writing-workspace-view-rail flex shrink-0 flex-col items-center py-2">
+                            <ViewModeMenu mode={viewMode} onChange={switchViewMode} />
+                        </div>
+                    )}
+
                     {/* Editor pane — the frame itself never scrolls; the
                         editor's content wrapper (focus mode) or the flow's
                         own scrollport (continuous mode) does. The view
                         toggle floats over whichever is mounted. */}
-                    <section className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-                        {!viewport.compact && sections.length > 0 && (
-                            <div className="absolute right-4 top-2 z-10">
-                                <FlowToggle mode={viewMode} onChange={switchViewMode} />
-                            </div>
-                        )}
+                    <section className="writing-workspace-editor relative flex min-w-0 flex-1 flex-col overflow-hidden">
                         {viewMode === 'outline' ? (
                             <OutlineView
                                 projectSlug={project.slug}
@@ -1575,10 +1520,10 @@ export default function Workspace() {
                         Mode switcher (Linked items · Notes · Comments) sits at
                         the top; content below is keyed by panelMode. The xl:
                         responsive gate stays on top of the user toggle. */}
-                    {((!viewport.compact && chromeVisible && panelOpen) || (viewport.compact && mobileCompanionOpen)) && (
-                        <WritingCompanion compact={viewport.compact} open={mobileCompanionOpen}
+                    {(!viewport.compact || companionVisible) && (
+                        <WritingCompanion compact={viewport.compact} open={companionVisible}
                             title={t([...BUILTIN_PANEL_MODES, ...registeredModes].find((mode) => mode.id === panelMode)?.labelKey ?? 'writing.tools.companions')}
-                            onClose={() => setMobileCompanionOpen(false)}>
+                            onClose={() => setTransientCompanionOpen(false)}>
                             <PanelModeSwitcher
                                 mode={panelMode}
                                 onChange={(mode) => {
@@ -1685,11 +1630,6 @@ export default function Workspace() {
                         </WritingCompanion>
                     )}
 
-                    {!viewport.compact && <WorkspaceAppRail
-                        projectSlug={project.slug}
-                        workSlug={work.slug}
-                        onNotesClick={handleNotesClick}
-                    />}
                 </div>
 
                 {/* Bottom-attached status bar — full workspace width */}
@@ -1714,10 +1654,11 @@ export default function Workspace() {
             {toolsPage !== null && <WritingTools context={ribbonCtx} gates={writingGates} initialPage={toolsPage} onClose={() => setToolsPage(null)} destinations={[
                 { id: 'structure', label: t('writing.tools.structure'), icon: 'fa-solid fa-list-tree', onSelect: () => { if (viewport.compact) setMobileStructureOpen(true); else if (!structureOpen) toggleStructure(); } },
                 { id: 'reading', label: t(readingMode ? 'writing.tools.edit' : 'writing.tools.read'), icon: 'fa-solid fa-book-open', onSelect: toggleReading },
+                { id: 'reports', label: t('writing.rail.reports'), icon: 'fa-solid fa-chart-simple', onSelect: () => router.visit(`${worksBase(project.slug, work.slug)}/reports`) },
                 ...[...BUILTIN_PANEL_MODES, ...registeredModes].filter((mode) => !('requires' in mode) || resolveGate(mode.requires, writingGates) !== 'hidden').map((mode) => ({
                     id: `panel-${mode.id}`, label: t(mode.labelKey), icon: mode.icon, category: 'companions' as const,
                     disabled: 'requires' in mode && resolveGate(mode.requires, writingGates) === 'locked',
-                    onSelect: () => { setPanelMode(mode.id); writePanelMode(work.id, mode.id); setPanelOpen(true); setMobileCompanionOpen(true); },
+                    onSelect: () => { setPanelMode(mode.id); writePanelMode(work.id, mode.id); setPanelOpen(true); setTransientCompanionOpen(true); },
                 })),
                 { id: 'project-search', label: t('writing.tools.project_search'), icon: 'fa-solid fa-magnifying-glass', onSelect: () => window.dispatchEvent(new CustomEvent('alexandria-core:command-palette-toggle')) },
                 { id: 'section-settings', category: 'workspace', label: t('writing.workspace.section_settings_menu'), icon: 'fa-solid fa-list-ul', onSelect: openSectionSettings },
@@ -1739,7 +1680,7 @@ export default function Workspace() {
                 </div>
             </Modal>}
 
-            {viewport.compact && viewport.keyboard && viewport.editing && can.update && !readingMode && toolsPage === null && !mobileCompanionOpen && !mobileStructureOpen && (
+            {viewport.compact && viewport.keyboard && viewport.editing && can.update && !readingMode && toolsPage === null && !transientCompanionOpen && !mobileStructureOpen && (
                 <MobileEditingStrip context={ribbonCtx} gates={writingGates} top={viewport.top + viewport.height - 48} onTools={() => setToolsPage('edit')} />
             )}
 
@@ -1755,6 +1696,13 @@ export default function Workspace() {
                 />
             )}
 
+            {elementsOpen && <ScreenplayElementsModal
+                template={work.screenplay_template ?? STANDARD_SCREENPLAY_TEMPLATE}
+                workUrl={`${workUrl(project.slug, work.slug)}/screenplay-template`}
+                beforeApply={() => saveCoordinator.flush()}
+                onClose={() => setElementsOpen(false)}
+            />}
+
             <SectionSettingsModal
                 open={sectionSettingsOpen}
                 showSectionTypeLabels={showSectionTypeLabels}
@@ -1765,63 +1713,6 @@ export default function Workspace() {
                 }}
                 onClose={() => setSectionSettingsOpen(false)}
             />
-
-            <Modal
-                open={paperModalOpen}
-                onClose={() => setPaperModalOpen(false)}
-                maxWidth="max-w-sm"
-            >
-                <ModalHeader
-                    title={t('writing.ribbon.paper_color')}
-                    onClose={() => setPaperModalOpen(false)}
-                />
-                <div className="grid gap-2 p-4">
-                    {PAPER_COLOR_OPTIONS.map((value) => {
-                        const selected = value === paperColor;
-                        const swatch = PAPER_COLOR_SWATCHES[value];
-
-                        return (
-                            <button
-                                key={value}
-                                type="button"
-                                onClick={() => {
-                                    updatePaperColor(value);
-                                    setPaperModalOpen(false);
-                                }}
-                                className="alex-row flex items-center gap-3 px-3 py-2 text-left text-sm"
-                                data-writing-paper-option={value}
-                                style={{
-                                    borderRadius: 'var(--theme-radius-button)',
-                                    background: selected
-                                        ? 'var(--theme-brand-primary-highlight-bg)'
-                                        : 'transparent',
-                                    color: selected
-                                        ? 'var(--theme-brand-primary-highlight-fg)'
-                                        : 'var(--theme-base-content)',
-                                }}
-                                aria-pressed={selected}
-                            >
-                                <span
-                                    className="h-6 w-6 shrink-0"
-                                    style={{
-                                        background: swatch.background,
-                                        border: `1px solid ${swatch.border}`,
-                                        borderRadius: 'var(--theme-radius-button)',
-                                        boxShadow: '0 1px 4px rgb(0 0 0 / 0.12)',
-                                    }}
-                                    aria-hidden="true"
-                                />
-                                <span className="min-w-0 flex-1">
-                                    {t(`writing.ribbon.paper_${value}`)}
-                                </span>
-                                {selected && (
-                                    <i className="fa-solid fa-check text-xs" aria-hidden="true" />
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-            </Modal>
 
             {addTarget !== null && (
                 <AddSectionModal
@@ -1946,5 +1837,6 @@ export default function Workspace() {
             />
         </AppLayout>
         </WritingSaveProvider>
+        </ScreenplayTemplateContext>
     );
 }

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 /**
  * Shared workspace-editor frame.
@@ -10,9 +10,10 @@ import type { ReactNode } from 'react';
 
 interface SectionChromeProps {
     className?: string;
+    style?: CSSProperties;
     children: ReactNode;
 }
 
-export default function SectionChrome({ className, children }: SectionChromeProps) {
-    return <div className={`flex h-full min-h-0 flex-col ${className ?? ''}`}>{children}</div>;
+export default function SectionChrome({ className, style, children }: SectionChromeProps) {
+    return <div className={`flex h-full min-h-0 flex-col ${className ?? ''}`} style={style}>{children}</div>;
 }

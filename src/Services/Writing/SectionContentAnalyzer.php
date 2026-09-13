@@ -44,6 +44,11 @@ class SectionContentAnalyzer
             $content,
         );
 
+        if ($format === 'screenplay') {
+            $visibleText = (string) preg_replace('/^::(?:slugline|action|character|parenthetical|dialogue|transition)::/m', '', $visibleText);
+            $visibleText = (string) preg_replace_callback('/\\\\([\\\\*_nN])/u', static fn (array $match): string => in_array($match[1], ['n', 'N'], true) ? "\n" : $match[1], $visibleText);
+        }
+
         $words = preg_split('/[\s\x{00A0}]+/u', trim($visibleText), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $wordCount = count(array_filter($words, fn (string $word): bool => preg_match('/[\p{L}\p{N}]/u', $word) === 1));
 

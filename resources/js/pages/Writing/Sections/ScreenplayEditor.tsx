@@ -1,61 +1,88 @@
-import type { Editor } from '@tiptap/core';
-import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
-import { useEffect, useImperativeHandle, useMemo, useRef, useState, type MouseEvent, type Ref } from 'react';
+import type { Editor } from "@tiptap/core";
+import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
+import {
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
+import type { MouseEvent, Ref } from "react";
 
-import EntryHoverCard from '@alexandria/components/entries/EntryHoverCard';
-import Modal, { ModalHeader } from '@alexandria/components/ui/Modal';
-import { parseScreenplay, serializeScreenplay } from '@alexandria/editor/screenplay/codec';
+import ManuscriptRuler from "@alexandria/components/editor/ManuscriptRuler";
+import EntryHoverCard from "@alexandria/components/entries/EntryHoverCard";
+import { startEntryLinkSearch } from "@alexandria/components/tiptap-bio-editor/extensions/entry-link";
+import Modal, { ModalHeader } from "@alexandria/components/ui/Modal";
+import AddCommentBubble from "@alexandria/editor/extensions/AddCommentBubble";
+import * as bridge from "@alexandria/editor/extensions/commentBridgeHelpers";
+import MarkDeviceBubble from "@alexandria/editor/extensions/MarkDeviceBubble";
+import { ThreadHighlightContext, useThreadHighlights } from "../Threads/useThreadHighlights";
+import {
+    findWritingMatches,
+    searchWriting,
+    replaceWriting,
+    selectWritingMatch,
+} from "@alexandria/editor/extensions/writingSearch";
+import { parseScreenplay } from "@alexandria/editor/screenplay/codec";
 import {
     blocksToDoc,
     buildScreenplayExtensions,
     convertCurrentBlock,
-    docToBlocks,
-} from '@alexandria/editor/screenplay/extensions';
-import { ELEMENTS } from '@alexandria/editor/screenplay/formatSpec';
+    serializeScreenplayDoc,
+} from "@alexandria/editor/screenplay/extensions";
+import { ELEMENTS } from "@alexandria/editor/screenplay/formatSpec";
 import {
-    extractScreenplaySceneLinks,
-    type ScreenplaySceneLink,
-} from '@alexandria/editor/screenplay/sceneLinks';
-import type { ScreenplayElement } from '@alexandria/editor/screenplay/types';
-import AddCommentBubble from '@alexandria/editor/extensions/AddCommentBubble';
-import MarkDeviceBubble from '@alexandria/editor/extensions/MarkDeviceBubble';
-import { applySheetMargins } from '@alexandria/editor/extensions/pageBreakDecorations';
-import useT from '@alexandria/hooks/useT';
-import { ThreadHighlightContext, useThreadHighlights } from '../Threads/useThreadHighlights';
-
-import ManuscriptRuler from '@alexandria/components/editor/ManuscriptRuler';
-
+    DEFAULT_SCREENPLAY_LAYOUT,
+    screenplayLayoutStyle,
+} from "@alexandria/editor/screenplay/layout";
+import { extractScreenplaySceneLinks } from "@alexandria/editor/screenplay/sceneLinks";
+import type { ScreenplaySceneLink } from "@alexandria/editor/screenplay/sceneLinks";
+import { useScreenplayTemplate } from "@alexandria/editor/screenplay/template";
+import type { ScreenplayElement } from "@alexandria/editor/screenplay/types";
+import { selectedWordCount } from "@alexandria/editor/selectionWordCount";
+import { writingStatistics } from "@alexandria/editor/writingStatistics";
+import type { WritingStatistics } from "@alexandria/editor/writingStatistics";
 import {
-    readPrintLayoutPreference,
-    type ManuscriptEditorProps,
-} from './ManuscriptEditor';
-import type { WritingEditorBridge } from '../ribbon/writingRibbonContext';
-import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
-import { findWritingMatches, searchWriting, replaceWriting, selectWritingMatch } from '@alexandria/editor/extensions/writingSearch';
-import { selectedWordCount } from '@alexandria/editor/selectionWordCount';
-import { writingStatistics, type WritingStatistics } from '@alexandria/editor/writingStatistics';
-import WritingStatisticsDialog from './WritingStatisticsDialog';
-import { startEntryLinkSearch } from '@alexandria/components/tiptap-bio-editor/extensions/entry-link';
-import SectionChrome from './SectionChrome';
-import useSectionAutosave from './useSectionAutosave';
+    canClearTextFormatting,
+    clearTextFormatting,
+} from "@alexandria/editor/writingTextCommands";
+import useT from "@alexandria/hooks/useT";
+
+import type { WritingEditorBridge } from "../ribbon/writingRibbonContext";
+import { readPrintLayoutPreference } from "./ManuscriptEditor";
+import type { ManuscriptEditorProps } from "./ManuscriptEditor";
+import SectionChrome from "./SectionChrome";
+import useSectionAutosave from "./useSectionAutosave";
+import WritingStatisticsDialog from "./WritingStatisticsDialog";
 
 // Same platform sniff RichTextEditor uses for shortcut labels.
-const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
-type HistoryCommand = 'undo' | 'redo';
-type ScreenplayKeyHelp = 'keys_enter' | 'keys_tab' | 'keys_paren' | 'keys_elements';
+const isMac =
+    typeof navigator !== "undefined" &&
+    /Mac|iPhone|iPad/.test(navigator.userAgent);
+type HistoryCommand = "undo" | "redo";
+type ScreenplayKeyHelp =
+    | "keys_enter"
+    | "keys_tab"
+    | "keys_paren"
+    | "keys_elements";
 
 const SCREENPLAY_KEY_HELP: ScreenplayKeyHelp[] = [
-    'keys_enter',
-    'keys_tab',
-    'keys_paren',
-    'keys_elements',
+    "keys_enter",
+    "keys_tab",
+    "keys_paren",
+    "keys_elements",
 ];
 
-function runHistoryCommand(editor: Editor | null, command: HistoryCommand): void {
-    const chain = editor?.chain().focus() as (Record<HistoryCommand, unknown> & { run?: () => boolean }) | undefined;
+function runHistoryCommand(
+    editor: Editor | null,
+    command: HistoryCommand,
+): void {
+    const chain = editor?.chain().focus() as
+        | (Record<HistoryCommand, unknown> & { run?: () => boolean })
+        | undefined;
     const fn = chain?.[command];
 
-    if (typeof fn !== 'function') {
+    if (typeof fn !== "function") {
         return;
     }
 
@@ -63,11 +90,16 @@ function runHistoryCommand(editor: Editor | null, command: HistoryCommand): void
     runnable.run?.();
 }
 
-function canRunHistoryCommand(editor: Editor | null, command: HistoryCommand): boolean {
-    const chain = editor?.can().chain() as (Record<HistoryCommand, unknown> & { run?: () => boolean }) | undefined;
+function canRunHistoryCommand(
+    editor: Editor | null,
+    command: HistoryCommand,
+): boolean {
+    const chain = editor?.can().chain() as
+        | (Record<HistoryCommand, unknown> & { run?: () => boolean })
+        | undefined;
     const fn = chain?.[command];
 
-    if (typeof fn !== 'function') {
+    if (typeof fn !== "function") {
         return false;
     }
 
@@ -110,9 +142,7 @@ interface ScreenplaySurfaceProps {
      * the rulers) so a stacked container can scroll many sections as one
      * continuous flow; `'self'` is today's bounded, self-scrolling pane.
      */
-    scrollMode?: 'self' | 'parent';
-    /** Side margin in proportional inches (ruler-draggable). */
-    marginXIn?: number;
+    scrollMode?: "self" | "parent";
     /** Ribbon editor bridge (Ribbon Plan 2) — element commands + queries. */
     bridgeRef?: Ref<WritingEditorBridge>;
     /** Fires when the selection's element changes — the Workspace bumps `editorTick`. */
@@ -140,8 +170,7 @@ function ScreenplaySurface({
     projectId,
     initialContent,
     printLayout,
-    scrollMode = 'self',
-    marginXIn = 1,
+    scrollMode = "self",
     bridgeRef,
     onStateChange,
     onSceneLinksChange,
@@ -153,11 +182,23 @@ function ScreenplaySurface({
     onMarkThread,
 }: ScreenplaySurfaceProps) {
     const t = useT();
+    const template = useScreenplayTemplate();
+    const templateRef = useRef(template);
+    templateRef.current = template;
     const [showKeys, setShowKeys] = useState(false);
-    const [statistics, setStatistics] = useState<WritingStatistics | null>(null);
-    const [hoveredEntry, setHoveredEntry] = useState<{ entryId: number; rect: DOMRect } | null>(null);
-    const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const entryLookupCacheRef = useRef(new Map<string, number | 'loading' | 'missing'>());
+    const [statistics, setStatistics] = useState<WritingStatistics | null>(
+        null,
+    );
+    const [hoveredEntry, setHoveredEntry] = useState<{
+        entryId: number;
+        rect: DOMRect;
+    } | null>(null);
+    const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null,
+    );
+    const entryLookupCacheRef = useRef(
+        new Map<string, number | "loading" | "missing">(),
+    );
     const onStateChangeRef = useRef(onStateChange);
     const onSceneLinksChangeRef = useRef(onSceneLinksChange);
     const onEntryLinkSelectRef = useRef(onEntryLinkSelect);
@@ -170,7 +211,10 @@ function ScreenplaySurface({
         const selectionPosition = e.state.selection.from;
 
         e.state.doc.forEach((node, offset, index) => {
-            if (selectionPosition >= offset && selectionPosition <= offset + node.nodeSize) {
+            if (
+                selectionPosition >= offset &&
+                selectionPosition <= offset + node.nodeSize
+            ) {
                 activeIndex = index;
             }
         });
@@ -187,12 +231,13 @@ function ScreenplaySurface({
     const editor = useEditor({
         editable: !readOnly,
         extensions: buildScreenplayExtensions({
+            getTemplate: () => templateRef.current,
             projectId,
             translate: t,
             onEntryLinkSelect: () => {
                 // A phone overlay would hide the manuscript and interrupt typing.
                 // Existing-link taps still open its companion through the click handler.
-                if (window.matchMedia('(min-width: 1024px)').matches) {
+                if (window.matchMedia("(min-width: 1024px)").matches) {
                     onEntryLinkSelectRef.current?.();
                 }
             },
@@ -203,7 +248,9 @@ function ScreenplaySurface({
             reportSceneLinks(e);
         },
         onUpdate: ({ editor: e }) => {
-            onSerialized(serializeScreenplay(docToBlocks(e.getJSON())));
+            onSerialized(
+                serializeScreenplayDoc(e.getJSON(), templateRef.current),
+            );
             reportSceneLinks(e);
         },
         onTransaction: ({ editor: e }) => {
@@ -234,184 +281,241 @@ function ScreenplaySurface({
     // needs: when the element under the cursor changes, tick the host
     // so bridge-driven states (element select value, entry-link
     // disabling) re-read.
-    const currentElement = useEditorState({
-        editor,
-        selector: ({ editor: e }): ScreenplayElement => {
-            const name = e?.state.selection.$from.parent.type.name ?? '';
+    const currentElement =
+        useEditorState({
+            editor,
+            selector: ({ editor: e }): ScreenplayElement => {
+                const name = e?.state.selection.$from.parent.type.name ?? "";
 
-            return (ELEMENTS as string[]).includes(name)
-                ? (name as ScreenplayElement)
-                : 'action';
-        },
-    }) ?? 'action';
+                return (ELEMENTS as string[]).includes(name)
+                    ? (name as ScreenplayElement)
+                    : "action";
+            },
+        }) ?? "action";
 
     useEffect(() => {
         onStateChangeRef.current?.();
     }, [currentElement]);
 
-    /* The screenplay sheet honors the same proportional margins as
-       prose. It has no pagination pass to write the sheet variables, so
-       a small observer does the same job here. */
-    useEffect(() => {
-        if (!editor) {
-            return;
-        }
-
-        const dom = editor.view.dom as HTMLElement;
-        const apply = () => applySheetMargins(dom, marginXIn);
-
-        apply();
-
-        const observer = new ResizeObserver(apply);
-        observer.observe(dom);
-
-        return () => observer.disconnect();
-    }, [editor, marginXIn]);
-
     // Comment selection state (Stage 11.5 Task 3) — mirrors
     // RichTextEditor's commentSelectionRange; must run before early return.
-    const commentSelectionRange = useEditorState({
-        editor,
-        selector: ({ editor: e }): { from: number; to: number } | null => {
-            if (!e || (!enableComments && !enableMarkThread)) return null;
-            const { from, to } = e.state.selection;
-            return from !== to ? { from, to } : null;
-        },
-    }) ?? null;
+    const commentSelectionRange =
+        useEditorState({
+            editor,
+            selector: ({ editor: e }): { from: number; to: number } | null => {
+                if (!e || (!enableComments && !enableMarkThread)) {
+                    return null;
+                }
+
+                const { from, to } = e.state.selection;
+
+                return from !== to ? { from, to } : null;
+            },
+        }) ?? null;
 
     // Ribbon editor bridge (Ribbon Plan 2 Task 2) — recreated per
     // render so it always closes over the current editor. Prose-only
-    // methods are safe no-ops: the schema makes marks/headings/lists
+    // methods are safe no-ops: the schema makes headings/lists
     // impossible by construction.
-    useImperativeHandle(bridgeRef, (): WritingEditorBridge => ({
-        openStatistics: () => setStatistics(writingStatistics(editor)),
-        selectedWordCount: () => selectedWordCount(editor),
-        toggleMark() {},
-        toggleList() {},
-        toggleHeading() {},
-        isMarkActive: () => false,
-        setBlockStyle(style) {
-            if (!editor || !(ELEMENTS as string[]).includes(style)) return;
-            editor.commands.focus();
-            convertCurrentBlock(editor, style as ScreenplayElement);
-        },
-        currentBlockStyle() {
-            const name = editor?.state.selection.$from.parent.type.name ?? '';
+    useImperativeHandle(
+        bridgeRef,
+        (): WritingEditorBridge => ({
+            openStatistics: () => setStatistics(writingStatistics(editor)),
+            selectedWordCount: () => selectedWordCount(editor),
+            toggleMark(name) {
+                if (!editor?.isEditable) {
+                    return;
+                }
 
-            return (ELEMENTS as string[]).includes(name) ? name : 'action';
-        },
-        setElement(element) {
-            if (!editor || !(ELEMENTS as string[]).includes(element)) return;
-            editor.commands.focus();
-            convertCurrentBlock(editor, element as ScreenplayElement);
-        },
-        currentElement() {
-            const name = editor?.state.selection.$from.parent.type.name ?? '';
+                editor.chain().focus().toggleMark(name).run();
+            },
+            canClearTextFormatting: () => canClearTextFormatting(editor),
+            clearTextFormatting: () => {
+                clearTextFormatting(editor);
+            },
+            toggleList() {},
+            toggleHeading() {},
+            isMarkActive: (name) => editor?.isActive(name) ?? false,
+            setBlockStyle(style) {
+                if (!editor || !(ELEMENTS as string[]).includes(style)) {
+                    return;
+                }
 
-            return (ELEMENTS as string[]).includes(name) ? name : null;
-        },
-        insertEntryLink() {
-            // Entry links only live in action blocks — no-op elsewhere
-            // (the ribbon control disables itself off currentElement()).
-            if (!editor || editor.state.selection.$from.parent.type.name !== 'action') return;
-            startEntryLinkSearch(editor);
-        },
-        openHelp() {
-            setShowKeys(true);
-        },
-        toggleCodeView() {},
-        isCodeView: () => false,
-        undo() {
-            runHistoryCommand(editor, 'undo');
-        },
-        redo() {
-            runHistoryCommand(editor, 'redo');
-        },
-        canUndo() {
-            return canRunHistoryCommand(editor, 'undo');
-        },
-        canRedo() {
-            return canRunHistoryCommand(editor, 'redo');
-        },
-        focus() {
-            editor?.commands.focus();
-        },
-        searchText: (query, options, current) => searchWriting(editor, query, options, current),
-        findMatches: (query, options) => editor ? findWritingMatches(editor.state.doc, query, options) : [],
-        replaceText: (query, replacement, options, current) => replaceWriting(editor, query, replacement, options, current),
-        selectTextMatch: (match) => selectWritingMatch(editor, match),
-        // Comment mark operations (Stage 11.5 Task 3) — delegated to commentBridgeHelpers
-        applyCommentMark(from, to, commentId) {
-            if (!editor) return;
-            bridge.applyCommentMark(editor, from, to, commentId);
-        },
-        scrollToCommentMark(commentId) {
-            if (!editor) return;
-            bridge.scrollToCommentMark(editor, commentId);
-        },
-        hasNonEmptySelection() {
-            if (!editor) return false;
-            return bridge.hasNonEmptySelection(editor);
-        },
-        getSelectionRange() {
-            if (!editor) return null;
-            return bridge.getSelectionRange(editor);
-        },
-        getCommentPositionMap() {
-            if (!editor) return {};
-            return bridge.getCommentPositionMap(editor);
-        },
-        findTextInDoc(text: string): Array<{ from: number; to: number }> {
-            if (!editor) return [];
-            return bridge.findTextInDoc(editor, text);
-        },
-        reanchorCommentMark(from: number, to: number, commentId: number): void {
-            if (!editor) return;
-            bridge.reanchorCommentMark(editor, from, to, commentId);
-        },
-        removeCommentMark(commentId: number): void {
-            if (!editor) return;
-            bridge.removeCommentMark(editor, commentId);
-        },
-        getPlainText(): string {
-            if (!editor) return '';
-            return bridge.getPlainText(editor);
-        },
-        scrollToOffset(pos: number): void {
-            if (!editor) return;
-            bridge.scrollToOffset(editor, pos);
-        },
-    }));
+                editor.commands.focus();
+                convertCurrentBlock(editor, style as ScreenplayElement);
+            },
+            currentBlockStyle() {
+                const name =
+                    editor?.state.selection.$from.parent.type.name ?? "";
+
+                return (ELEMENTS as string[]).includes(name) ? name : "action";
+            },
+            setElement(element) {
+                if (!editor || !(ELEMENTS as string[]).includes(element)) {
+                    return;
+                }
+
+                editor.commands.focus();
+                convertCurrentBlock(editor, element as ScreenplayElement);
+            },
+            currentElement() {
+                const name =
+                    editor?.state.selection.$from.parent.type.name ?? "";
+
+                return (ELEMENTS as string[]).includes(name) ? name : null;
+            },
+            insertEntryLink() {
+                // Entry links only live in action blocks — no-op elsewhere
+                // (the ribbon control disables itself off currentElement()).
+                if (
+                    !editor ||
+                    editor.state.selection.$from.parent.type.name !== "action"
+                ) {
+                    return;
+                }
+
+                startEntryLinkSearch(editor);
+            },
+            openHelp() {
+                setShowKeys(true);
+            },
+            toggleCodeView() {},
+            isCodeView: () => false,
+            undo() {
+                runHistoryCommand(editor, "undo");
+            },
+            redo() {
+                runHistoryCommand(editor, "redo");
+            },
+            canUndo() {
+                return canRunHistoryCommand(editor, "undo");
+            },
+            canRedo() {
+                return canRunHistoryCommand(editor, "redo");
+            },
+            focus() {
+                editor?.commands.focus();
+            },
+            searchText: (query, options, current) =>
+                searchWriting(editor, query, options, current),
+            findMatches: (query, options) =>
+                editor
+                    ? findWritingMatches(editor.state.doc, query, options)
+                    : [],
+            replaceText: (query, replacement, options, current) =>
+                replaceWriting(editor, query, replacement, options, current),
+            selectTextMatch: (match) => selectWritingMatch(editor, match),
+            // Comment mark operations (Stage 11.5 Task 3) — delegated to commentBridgeHelpers
+            applyCommentMark(from, to, commentId) {
+                if (!editor) {
+                    return;
+                }
+
+                bridge.applyCommentMark(editor, from, to, commentId);
+            },
+            scrollToCommentMark(commentId) {
+                if (!editor) {
+                    return;
+                }
+
+                bridge.scrollToCommentMark(editor, commentId);
+            },
+            hasNonEmptySelection() {
+                if (!editor) {
+                    return false;
+                }
+
+                return bridge.hasNonEmptySelection(editor);
+            },
+            getSelectionRange() {
+                if (!editor) {
+                    return null;
+                }
+
+                return bridge.getSelectionRange(editor);
+            },
+            getCommentPositionMap() {
+                if (!editor) {
+                    return {};
+                }
+
+                return bridge.getCommentPositionMap(editor);
+            },
+            findTextInDoc(text: string): Array<{ from: number; to: number }> {
+                if (!editor) {
+                    return [];
+                }
+
+                return bridge.findTextInDoc(editor, text);
+            },
+            reanchorCommentMark(
+                from: number,
+                to: number,
+                commentId: number,
+            ): void {
+                if (!editor) {
+                    return;
+                }
+
+                bridge.reanchorCommentMark(editor, from, to, commentId);
+            },
+            removeCommentMark(commentId: number): void {
+                if (!editor) {
+                    return;
+                }
+
+                bridge.removeCommentMark(editor, commentId);
+            },
+            getPlainText(): string {
+                if (!editor) {
+                    return "";
+                }
+
+                return bridge.getPlainText(editor);
+            },
+            scrollToOffset(pos: number): void {
+                if (!editor) {
+                    return;
+                }
+
+                bridge.scrollToOffset(editor, pos);
+            },
+        }),
+    );
 
     // Forward desk-gutter clicks into the editor (the sheet is
     // narrower than the pane) — same affordance as RichTextEditor's
     // manuscript mode.
     function handleGutterMouseDown(e: MouseEvent<HTMLDivElement>) {
-        if (e.target !== e.currentTarget) return;
+        if (e.target !== e.currentTarget) {
+            return;
+        }
+
         e.preventDefault();
-        editor?.commands.focus('end');
+        editor?.commands.focus("end");
     }
 
-    function entryLinkFromTarget(target: EventTarget | null): HTMLAnchorElement | null {
+    function entryLinkFromTarget(
+        target: EventTarget | null,
+    ): HTMLAnchorElement | null {
         return target instanceof Element
             ? target.closest<HTMLAnchorElement>('a[data-type="entry-link"]')
             : null;
     }
 
     function entryIdFromLink(link: HTMLAnchorElement): number | null {
-        const rawId = link.getAttribute('data-id');
-        const entryId = rawId !== null ? Number.parseInt(rawId, 10) : Number.NaN;
+        const rawId = link.getAttribute("data-id");
+        const entryId =
+            rawId !== null ? Number.parseInt(rawId, 10) : Number.NaN;
 
         return Number.isFinite(entryId) ? entryId : null;
     }
 
     function openEntryHover(entryId: number, rect: DOMRect) {
         clearHoverTimer();
-        setHoveredEntry((current) => (
-            current?.entryId === entryId
-                ? current
-                : { entryId, rect }
-        ));
+        setHoveredEntry((current) =>
+            current?.entryId === entryId ? current : { entryId, rect },
+        );
     }
 
     function resolveEntryHover(link: HTMLAnchorElement) {
@@ -424,48 +528,62 @@ function ScreenplaySurface({
             return;
         }
 
-        const name = link.getAttribute('data-name')?.trim() ?? '';
+        const name = link.getAttribute("data-name")?.trim() ?? "";
 
-        if (name === '') {
+        if (name === "") {
             return;
         }
 
         const cached = entryLookupCacheRef.current.get(name);
 
-        if (typeof cached === 'number') {
+        if (typeof cached === "number") {
             openEntryHover(cached, rect);
 
             return;
         }
 
-        if (cached === 'loading' || cached === 'missing') {
+        if (cached === "loading" || cached === "missing") {
             return;
         }
 
-        entryLookupCacheRef.current.set(name, 'loading');
-        fetch(`/api/v1/entries/search?q=${encodeURIComponent(name)}&project_id=${projectId}&limit=5`, {
-            credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
+        entryLookupCacheRef.current.set(name, "loading");
+        fetch(
+            `/api/v1/entries/search?q=${encodeURIComponent(name)}&project_id=${projectId}&limit=5`,
+            {
+                credentials: "same-origin",
+                headers: {
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
             },
-        })
-            .then((response) => (response.ok ? response.json() : Promise.reject()))
-            .then((payload: { data?: Array<{ id: number | string; name: string }> }) => {
-                const match = (payload.data ?? []).find(
-                    (row) => row.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
-                ) ?? payload.data?.[0];
-                const resolvedId = match ? Number.parseInt(String(match.id), 10) : Number.NaN;
+        )
+            .then((response) =>
+                response.ok ? response.json() : Promise.reject(),
+            )
+            .then(
+                (payload: {
+                    data?: Array<{ id: number | string; name: string }>;
+                }) => {
+                    const match =
+                        (payload.data ?? []).find(
+                            (row) =>
+                                row.name.toLocaleLowerCase() ===
+                                name.toLocaleLowerCase(),
+                        ) ?? payload.data?.[0];
+                    const resolvedId = match
+                        ? Number.parseInt(String(match.id), 10)
+                        : Number.NaN;
 
-                if (Number.isFinite(resolvedId)) {
-                    entryLookupCacheRef.current.set(name, resolvedId);
-                    openEntryHover(resolvedId, rect);
-                } else {
-                    entryLookupCacheRef.current.set(name, 'missing');
-                }
-            })
+                    if (Number.isFinite(resolvedId)) {
+                        entryLookupCacheRef.current.set(name, resolvedId);
+                        openEntryHover(resolvedId, rect);
+                    } else {
+                        entryLookupCacheRef.current.set(name, "missing");
+                    }
+                },
+            )
             .catch(() => {
-                entryLookupCacheRef.current.set(name, 'missing');
+                entryLookupCacheRef.current.set(name, "missing");
             });
     }
 
@@ -509,29 +627,43 @@ function ScreenplaySurface({
         onEntryLinkSelectRef.current?.();
     }
 
-    if (!editor) return null;
+    if (!editor) {
+        return null;
+    }
 
     // scrollMode='parent': a stacked ancestor owns the scrollport, so the
     // bounded-frame classes (flex-1 + min-h-0, overflow-y-auto) and the
     // per-section rulers drop out and the sheet grows to content height.
-    const ownsScroll = scrollMode === 'self';
+    const ownsScroll = scrollMode === "self";
 
     return (
-        <div className={ownsScroll ? 'flex min-h-0 flex-1 flex-col' : 'flex flex-col'}>
-            {threadTooltip}
+        <div
+            className={
+                ownsScroll ? "flex min-h-0 flex-1 flex-col" : "flex flex-col"
+            }
+        >
             {/* No gutter spacer — the vertical ruler it aligned with is
                 retired; a spacer now would skew footprint centering. */}
-            {printLayout && ownsScroll && <ManuscriptRuler marginXIn={marginXIn} />}
+            {threadTooltip}
+            {printLayout && ownsScroll && (
+                <ManuscriptRuler
+                    marginXIn={DEFAULT_SCREENPLAY_LAYOUT.margins.leftIn}
+                    marginRightIn={DEFAULT_SCREENPLAY_LAYOUT.margins.rightIn}
+                    fixedPageWidthIn={DEFAULT_SCREENPLAY_LAYOUT.page.widthIn}
+                    readOnly
+                />
+            )}
 
             {/* The sheet: geometry from manuscript.css, element layout from screenplay.css. */}
-            <div className={ownsScroll ? 'flex min-h-0 flex-1' : 'flex'}>
+            <div className={ownsScroll ? "flex min-h-0 flex-1" : "flex"}>
                 {/* Vertical ruler retired 2026-08-09 — see ManuscriptRuler. */}
                 <EditorContent
                     editor={editor}
+                    data-screenplay-scroll={scrollMode}
                     className={
                         ownsScroll
-                            ? 'tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto'
-                            : 'tiptap-editor flex-1'
+                            ? "tiptap-editor writing-workspace-scroll min-h-0 flex-1 overflow-y-auto"
+                            : "tiptap-editor flex-1"
                     }
                     onClick={handleEntryLinkClick}
                     onMouseMove={handleEntryLinkMouseMove}
@@ -569,39 +701,55 @@ function ScreenplaySurface({
             )}
 
             {/* Keyboard-flow help — opened via bridge.openHelp() */}
-            {statistics && <WritingStatisticsDialog statistics={statistics} onClose={() => setStatistics(null)} />}
-            <Modal open={showKeys} onClose={() => setShowKeys(false)} maxWidth="max-w-lg">
-                <ModalHeader title={t('writing.workspace.keys_title')} onClose={() => setShowKeys(false)} />
+            {statistics && (
+                <WritingStatisticsDialog
+                    statistics={statistics}
+                    onClose={() => setStatistics(null)}
+                />
+            )}
+            <Modal
+                open={showKeys}
+                onClose={() => setShowKeys(false)}
+                maxWidth="max-w-lg"
+            >
+                <ModalHeader
+                    title={t("writing.workspace.keys_title")}
+                    onClose={() => setShowKeys(false)}
+                />
                 <div className="grid gap-2.5 p-5 text-sm">
                     {SCREENPLAY_KEY_HELP.map((key) => (
                         <div
                             key={key}
                             className="flex items-start gap-3 rounded-md px-3 py-3"
                             style={{
-                                background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
-                                border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
+                                background:
+                                    "color-mix(in srgb, var(--theme-base-content) 4%, transparent)",
+                                border: "1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)",
                             }}
                         >
                             <kbd
                                 className="inline-flex min-h-7 min-w-[4.5rem] shrink-0 items-center justify-center px-2 font-mono text-[11px] font-semibold"
                                 style={{
-                                    background: 'color-mix(in srgb, var(--theme-base-content) 9%, transparent)',
-                                    border: '1px solid color-mix(in srgb, var(--theme-base-content) 18%, transparent)',
-                                    borderRadius: 'var(--theme-radius-button)',
-                                    color: 'var(--theme-base-content)',
+                                    background:
+                                        "color-mix(in srgb, var(--theme-base-content) 9%, transparent)",
+                                    border: "1px solid color-mix(in srgb, var(--theme-base-content) 18%, transparent)",
+                                    borderRadius: "var(--theme-radius-button)",
+                                    color: "var(--theme-base-content)",
                                 }}
                             >
-                                {key === 'keys_enter'
-                                    ? 'Enter'
-                                    : key === 'keys_tab'
-                                        ? 'Tab'
-                                        : key === 'keys_paren'
-                                            ? '('
-                                            : isMac
-                                                ? '⌘⌥ 0–5'
-                                                : 'Ctrl+Alt+0–5'}
+                                {key === "keys_enter"
+                                    ? "Enter"
+                                    : key === "keys_tab"
+                                      ? "Tab"
+                                      : key === "keys_paren"
+                                        ? "("
+                                        : isMac
+                                          ? "⌘⌥ + #"
+                                          : "Ctrl+Alt+#"}
                             </kbd>
-                            <p className="min-w-0 pt-0.5 leading-relaxed">{t(`writing.workspace.${key}`)}</p>
+                            <p className="min-w-0 pt-0.5 leading-relaxed">
+                                {t(`writing.workspace.${key}`)}
+                            </p>
                         </div>
                     ))}
                 </div>
@@ -620,8 +768,7 @@ export default function ScreenplayEditor({
     canUpdate,
     onCounts,
     printLayout,
-    marginXIn,
-    scrollMode = 'self',
+    scrollMode = "self",
     bridgeRef,
     onStateChange,
     onSceneLinksChange,
@@ -631,19 +778,24 @@ export default function ScreenplayEditor({
     enableMarkThread,
     onMarkThread,
 }: ManuscriptEditorProps) {
-    const { noteChange, initialContent } =
-        useSectionAutosave({ projectSlug, workSlug, section, onCounts });
+    const { noteChange, initialContent } = useSectionAutosave({
+        projectSlug,
+        workSlug,
+        section,
+        onCounts,
+    });
 
     // Read the stored preference ONCE (a function-call prop default
     // would re-read localStorage every render). The `??` fallback keeps
     // the editor self-sufficient until the Workspace passes the prop
     // (Ribbon Plan 2 Task 3 always does).
-    const storedPrintLayout = useMemo(readPrintLayoutPreference, []);
+    const storedPrintLayout = useMemo(() => readPrintLayoutPreference(), []);
     const effectivePrintLayout = printLayout ?? storedPrintLayout;
 
     return (
         <SectionChrome
-            className={`rte-manuscript rte-screenplay${effectivePrintLayout ? ' rte-manuscript--print' : ''}`}
+            className={`rte-manuscript rte-screenplay${effectivePrintLayout ? " rte-manuscript--print" : ""}`}
+            style={screenplayLayoutStyle()}
         >
             <ThreadHighlightContext value={{ projectSlug, sectionId: section.id }}>
                 <ScreenplaySurface
@@ -651,7 +803,6 @@ export default function ScreenplayEditor({
                     projectId={projectId}
                     initialContent={initialContent}
                     printLayout={effectivePrintLayout}
-                    marginXIn={marginXIn}
                     scrollMode={scrollMode}
                     bridgeRef={bridgeRef}
                     onStateChange={onStateChange}

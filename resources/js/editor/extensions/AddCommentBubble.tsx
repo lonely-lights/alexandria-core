@@ -18,7 +18,7 @@ import useT from '@alexandria/hooks/useT';
 const bubbleStyle: CSSProperties = {
     position: 'fixed',
     transform: 'translateX(-50%)',
-    zIndex: 200,
+    zIndex: 20,
     background: 'var(--theme-status-warning-stroke, #f59e0b)',
     color: '#fff',
     border: 'none',
@@ -62,6 +62,7 @@ export default function AddCommentBubble({
     return (
         <button
             type="button"
+            data-writing-selection-action="comment"
             aria-label={t('writing.comments.add_comment')}
             onMouseDown={(e) => {
                 e.preventDefault();

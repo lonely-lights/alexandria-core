@@ -16,6 +16,8 @@ export interface ThreadHighlight {
 }
 interface TrackedHighlight extends ThreadHighlight {
     range: { from: number; to: number } | null;
+    /** Snapshot the edited wording for undo without changing the saved quote. */
+    deletedText?: string;
 }
 export const threadHighlightsKey = new PluginKey<TrackedHighlight[]>(
     'threadHighlights',
@@ -109,6 +111,7 @@ export function createThreadHighlightsPlugin(
 
                         return {
                             ...item,
+                            deletedText: existing?.deletedText,
                             range: existing
                                 ? existing.range
                                 : findThreadAnchor(
@@ -130,13 +133,20 @@ export function createThreadHighlightsPlugin(
                     }
 
                     const collapsed = item.range.from === item.range.to;
+                    const restoreText = item.deletedText ?? item.anchorText;
 
                     if (collapsed && isHistoryTransaction(tr)) {
-                        const candidate = findThreadAnchor(
-                            tr.doc,
-                            item.anchorText,
-                            item.offsetHint,
-                        );
+                        const candidate =
+                            findThreadAnchor(
+                                tr.doc,
+                                restoreText,
+                                item.range.from,
+                            ) ??
+                            findThreadAnchor(
+                                tr.doc,
+                                item.anchorText,
+                                item.offsetHint,
+                            );
                         const inverse = tr.mapping.invert();
 
                         if (
@@ -144,7 +154,11 @@ export function createThreadHighlightsPlugin(
                             (inverse.mapResult(candidate.from, 1).deleted ||
                                 inverse.mapResult(candidate.to, -1).deleted)
                         ) {
-                            return { ...item, range: candidate };
+                            return {
+                                ...item,
+                                range: candidate,
+                                deletedText: undefined,
+                            };
                         }
                     }
 
@@ -160,11 +174,21 @@ export function createThreadHighlightsPlugin(
                     // restore it without jumping to a repeated phrase elsewhere.
                     const restored =
                         !collapsed ||
-                        tr.doc.textBetween(from, to, ' ') === item.anchorText;
+                        tr.doc.textBetween(from, to, ' ') === restoreText;
 
                     return {
                         ...item,
                         range: { from, to: restored ? to : from },
+                        deletedText:
+                            !collapsed && from === to
+                                ? tr.before.textBetween(
+                                      item.range.from,
+                                      item.range.to,
+                                      ' ',
+                                  )
+                                : collapsed && !restored
+                                  ? item.deletedText
+                                  : undefined,
                     };
                 });
             },
