@@ -19,7 +19,7 @@ import { useMenuDismissDelay } from "@alexandria/hooks/useMenuDismissDelay";
  * Visual + interaction shape mirrors `<DropdownMenu>`:
  *   • trigger: button with current label + a custom chevron
  *   • menu: portaled, theme-tokenized panel
- *   • outside-click + Escape + scroll all close the menu
+ *   • outside-click + Escape + surrounding-page scroll close the menu
  *
  * Generic over the value type so callers don't need to round-trip
  * through string. Typical usage:
@@ -205,7 +205,12 @@ export default function PickerDropdown<T extends string | number>({
 
     useEffect(() => {
         if (!open) return;
-        const handleScroll = () => setOpen(false);
+        const handleScroll = (event: Event) => {
+            if (event.target instanceof Node && menuRef.current?.contains(event.target)) {
+                return;
+            }
+            setOpen(false);
+        };
         window.addEventListener("scroll", handleScroll, true);
         return () => window.removeEventListener("scroll", handleScroll, true);
     }, [open]);
@@ -240,6 +245,7 @@ export default function PickerDropdown<T extends string | number>({
         boxShadow: "0 12px 32px rgba(0, 0, 0, 0.18)",
         maxHeight: "280px",
         overflowY: "auto",
+        overscrollBehaviorY: "contain",
     };
 
     return (
@@ -308,7 +314,7 @@ export default function PickerDropdown<T extends string | number>({
                 createPortal(
                     <div
                         ref={menuRef}
-                        className="fixed z-[9999] overflow-hidden"
+                        className="fixed z-9999 overflow-hidden"
                         style={menuStyle}
                         role="listbox"
                         onMouseEnter={handleHoverOffEnter}

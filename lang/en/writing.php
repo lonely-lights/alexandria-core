@@ -8,6 +8,23 @@ declare(strict_types=1);
  * lookup inside the group bag.
  */
 return [
+    'transfer.title' => 'Move to another work',
+    'transfer.help' => 'Move this section and its nested sections to another work in this project. Notes, comments, linked items, revision history, and device marks come with it. Its current editor format is preserved.',
+    'transfer.work' => 'Destination work',
+    'transfer.choose_work' => 'Choose a work',
+    'transfer.position' => 'Position',
+    'transfer.at_end' => 'At the end',
+    'transfer.before' => 'Before :title',
+    'transfer.empty' => 'There are no other works you can edit in this project.',
+    'transfer.load_failed' => 'Could not load destinations. Please try again.',
+    'transfer.save_failed' => 'Your latest edits could not be saved. Please save them before moving this section.',
+    'transfer.failed' => 'The section could not be moved. Please try again.',
+    'transfer.retry' => 'Retry',
+    'transfer.confirm' => 'Move section',
+    'transfer.moving' => 'Moving…',
+    'transfer.success' => 'Section moved with its attachments.',
+    'transfer.invalid_work' => 'Choose another work in the same project.',
+    'transfer.invalid_parent' => 'Choose a section in the destination work.',
     'elements.title' => 'Screenplay elements',
     'elements.invalid' => 'Choose a valid screenplay template.',
     'elements.save_text_failed' => 'Save your writing successfully before applying element settings.',

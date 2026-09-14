@@ -1,5 +1,6 @@
 import CompactUserMenu from "@alexandria/components/navigation/CompactUserMenu";
 import useT from "@alexandria/hooks/useT";
+import type { ReactNode } from "react";
 
 export default function MobileWritingHeader({
     title,
@@ -7,12 +8,14 @@ export default function MobileWritingHeader({
     onDesk,
     onTools,
     onReading,
+    tools,
 }: {
     title: string;
     reading: boolean;
     onDesk: () => void;
     onTools: () => void;
     onReading: () => void;
+    tools?: ReactNode;
 }) {
     const t = useT();
 
@@ -29,6 +32,7 @@ export default function MobileWritingHeader({
             >
                 <i className="fa-solid fa-feather-pointed" aria-hidden="true" />
             </button>
+            {tools}
             <span className="min-w-0 flex-1 truncate text-sm font-semibold">
                 {title}
             </span>

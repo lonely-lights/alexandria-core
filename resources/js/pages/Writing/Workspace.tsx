@@ -69,6 +69,7 @@ import CommentRail from './Sections/CommentRail';
 import PanelModeSwitcher, { BUILTIN_PANEL_MODES } from './Sections/PanelModeSwitcher';
 import MobileWritingHeader from './mobile/MobileWritingHeader';
 import WritingTools from './mobile/WritingTools';
+import { WritingToolButtons, WritingToolModal } from './RegisteredWritingTools';
 import WritingCompanion from './mobile/WritingCompanion';
 import useWritingViewport from './mobile/useWritingViewport';
 import FindReplaceBar from './Sections/FindReplaceBar';
@@ -88,6 +89,7 @@ import type { WritingEditorBridge, WritingRibbonContext } from './ribbon/writing
 import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
 import { type PanelMode, readPanelMode, writePanelMode } from './panelMode';
 import { getSidebarModes, subscribeSidebarModes } from './sidebarModeRegistry';
+import { enableWritingHistoryRefresh } from './writingHistory';
 import { resolveGate } from '@alexandria/ribbon/ribbonGates';
 import { worksBase, workUrl } from '@alexandria/lib/urls';
 import { useJsonFetch } from '@alexandria/lib/fetchJson';
@@ -281,6 +283,7 @@ const typeChipStyle: CSSProperties = {
 };
 
 export default function Workspace() {
+    useEffect(enableWritingHistoryRefresh, []);
     const t = useT();
     const entitlements = useEntitlements();
     const pageProps = usePage<WorkspaceProps>().props;
@@ -328,6 +331,8 @@ export default function Workspace() {
     // Subscribe to sidebar mode registry — re-renders when packages register
     // new modes at boot (useSyncExternalStore is safe for concurrent mode).
     const registeredModes = useSyncExternalStore(subscribeSidebarModes, getSidebarModes);
+    const [toolModalId, setToolModalId] = useState<string | null>(null);
+    const activeTool = registeredModes.find((mode) => mode.id === toolModalId && mode.presentation === 'modal' && resolveGate(mode.requires, writingGates) === 'visible');
 
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
     const viewport = useWritingViewport();
@@ -345,7 +350,7 @@ export default function Workspace() {
     // a stored id that is unknown or locked falls back to 'linked'.
     const [panelMode, setPanelMode] = useState<PanelMode>(() => {
         const initAllowedIds = getSidebarModes()
-            .filter((m) => resolveGate(m.requires, writingGates) === 'visible')
+            .filter((m) => m.presentation !== 'modal' && resolveGate(m.requires, writingGates) === 'visible')
             .map((m) => m.id);
         return readPanelMode(work.id, initAllowedIds);
     });
@@ -1162,6 +1167,7 @@ export default function Workspace() {
                     the status bar). */}
                 <div ref={headerRef} className="alex-writing-header shrink-0" style={ribbonShellStyle}>
                     {viewport.compact ? <MobileWritingHeader title={work.title} reading={readingMode}
+                        tools={<WritingToolButtons modes={registeredModes} gates={writingGates} compact onOpen={setToolModalId} />}
                         onDesk={() => setToolsPage('')} onTools={() => setToolsPage('edit')} onReading={toggleReading} /> :
                     <Ribbon
                         setKey="writing"
@@ -1202,7 +1208,7 @@ export default function Workspace() {
                         }
                         headerRow={
                             <>
-                                <span data-writing-work-title className="max-w-[12rem] truncate text-base font-semibold md:max-w-[24rem]">
+                                <span data-writing-work-title className="max-w-48 truncate text-base font-semibold md:max-w-[24rem]">
                                     {workHeaderTitle(work.title, work.type, workTypeLabel)}
                                 </span>
                                 <span
@@ -1230,6 +1236,7 @@ export default function Workspace() {
                                         <i className="fa-solid fa-feather-pointed" aria-hidden="true" />
                                     </button>
                                 </Tooltip>
+                                <WritingToolButtons modes={registeredModes} gates={writingGates} onOpen={setToolModalId} />
                                 <Tooltip content={t('ribbon.search')}>
                                     <button
                                         type="button"
@@ -1607,7 +1614,7 @@ export default function Workspace() {
                                     />
                                 )}
                                 {registeredModes.map((m) =>
-                                    m.id === panelMode ? (
+                                    m.presentation !== 'modal' && m.id === panelMode ? (
                                         <m.component
                                             key={m.id}
                                             project={project}
@@ -1658,7 +1665,12 @@ export default function Workspace() {
                 { id: 'structure', label: t('writing.tools.structure'), icon: 'fa-solid fa-list-tree', onSelect: () => { if (viewport.compact) setMobileStructureOpen(true); else if (!structureOpen) toggleStructure(); } },
                 { id: 'reading', label: t(readingMode ? 'writing.tools.edit' : 'writing.tools.read'), icon: 'fa-solid fa-book-open', onSelect: toggleReading },
                 { id: 'reports', label: t('writing.rail.reports'), icon: 'fa-solid fa-chart-simple', onSelect: () => router.visit(`${worksBase(project.slug, work.slug)}/reports`) },
-                ...[...BUILTIN_PANEL_MODES, ...registeredModes].filter((mode) => !('requires' in mode) || resolveGate(mode.requires, writingGates) !== 'hidden').map((mode) => ({
+                ...registeredModes.filter((mode) => mode.presentation === 'modal' && resolveGate(mode.requires, writingGates) !== 'hidden').map((mode) => ({
+                    id: `tool-${mode.id}`, label: t(mode.labelKey), icon: mode.icon,
+                    disabled: resolveGate(mode.requires, writingGates) === 'locked',
+                    onSelect: () => setToolModalId(mode.id),
+                })),
+                ...[...BUILTIN_PANEL_MODES, ...registeredModes.filter((mode) => mode.presentation !== 'modal')].filter((mode) => !('requires' in mode) || resolveGate(mode.requires, writingGates) !== 'hidden').map((mode) => ({
                     id: `panel-${mode.id}`, label: t(mode.labelKey), icon: mode.icon, category: 'companions' as const,
                     disabled: 'requires' in mode && resolveGate(mode.requires, writingGates) === 'locked',
                     onSelect: () => { setPanelMode(mode.id); writePanelMode(work.id, mode.id); setPanelOpen(true); setTransientCompanionOpen(true); },
@@ -1667,6 +1679,14 @@ export default function Workspace() {
                 { id: 'section-settings', category: 'workspace', label: t('writing.workspace.section_settings_menu'), icon: 'fa-solid fa-list-ul', onSelect: openSectionSettings },
                 { id: 'work-settings', category: 'workspace', label: t('writing.settings.title'), icon: 'fa-solid fa-gear', disabled: !can.update, onSelect: () => setSettingsOpen(true) },
             ]} />}
+
+            {activeTool && <WritingToolModal mode={activeTool} onClose={() => setToolModalId(null)} context={{
+                project, work, currentSection: effectiveSection, editorBridge: ribbonCtx.editor ?? null,
+                bridgeSectionId: viewMode === 'continuous'
+                    ? effectiveSectionId !== null && bridgesRef.current.get(effectiveSectionId) ? effectiveSectionId : null
+                    : bridgeRef.current !== null ? currentSectionId : null,
+                editorTick, canUpdate: can.update,
+            }} />}
 
             {viewport.compact && <Modal open={mobileStructureOpen} onClose={() => setMobileStructureOpen(false)} maxWidth="max-w-lg">
                 <div style={{ height: 'min(75dvh, 44rem)' }} className="flex min-h-0 flex-col">
@@ -1683,7 +1703,7 @@ export default function Workspace() {
                 </div>
             </Modal>}
 
-            {viewport.compact && viewport.keyboard && viewport.editing && can.update && !readingMode && toolsPage === null && !transientCompanionOpen && !mobileStructureOpen && (
+            {viewport.compact && viewport.keyboard && viewport.editing && can.update && !readingMode && toolsPage === null && toolModalId === null && !transientCompanionOpen && !mobileStructureOpen && (
                 <MobileEditingStrip context={ribbonCtx} gates={writingGates} top={viewport.top + viewport.height - 48} onTools={() => setToolsPage('edit')} />
             )}
 

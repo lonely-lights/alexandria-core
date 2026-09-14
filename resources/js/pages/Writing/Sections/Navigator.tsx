@@ -10,6 +10,7 @@ import type { ReactNode } from 'react';
 
 import type { CurrentSection, SectionNode } from '../Workspace';
 import MoveSectionModal from './MoveSectionModal';
+import TransferSectionModal from './TransferSectionModal';
 import RenameSectionModal from './RenameSectionModal';
 import type { SectionOutlineItem } from './sectionOutline';
 import { getStructureGuidance, type StructureGuidanceState } from './structureGuidance';
@@ -208,6 +209,7 @@ export default function Navigator({
     );
     const [renameTarget, setRenameTarget] = useState<SectionNode | null>(null);
     const [moveTarget, setMoveTarget] = useState<SectionNode | null>(null);
+    const [transferTarget, setTransferTarget] = useState<SectionNode | null>(null);
     const guidance = getStructureGuidance({ work, sections, currentSection });
 
     function toggle(id: number) {
@@ -266,6 +268,7 @@ export default function Navigator({
         onRename: setRenameTarget,
         onMove: moveSection,
         onMoveTo: setMoveTarget,
+        onTransfer: setTransferTarget,
         onMarkRevision: onRequestMarkRevision,
         onDelete: onRequestDelete,
         liveCounts,
@@ -377,6 +380,7 @@ export default function Navigator({
                     onClose={() => setRenameTarget(null)}
                 />
             )}
+            {transferTarget !== null && <TransferSectionModal section={transferTarget} projectSlug={projectSlug} workSlug={workSlug} onClose={() => setTransferTarget(null)} />}
             {moveTarget !== null && (
                 <MoveSectionModal
                     section={moveTarget}
@@ -403,6 +407,7 @@ interface TreeShared {
     onRename: (node: SectionNode) => void;
     onMove: (sectionId: number, toParentId: number | null, position: number) => void;
     onMoveTo: (node: SectionNode) => void;
+    onTransfer: (node: SectionNode) => void;
     onMarkRevision: (node: SectionNode) => void;
     onDelete: (node: SectionNode) => void;
     liveCounts?: Record<number, number>;
@@ -481,7 +486,7 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onMarkRevision, onDelete, liveCounts, showSectionTypeLabels, t } =
+    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onTransfer, onMarkRevision, onDelete, liveCounts, showSectionTypeLabels, t } =
         shared;
 
     const isSelected = node.slug === currentSlug;
@@ -550,14 +555,16 @@ function NavigatorRow({
                 {/* Hover actions */}
                 {canUpdate && (
                     <span className={`flex shrink-0 items-center gap-0.5 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
-                        <span
-                            className="drag-handle flex h-5 w-5 cursor-grab items-center justify-center active:cursor-grabbing"
-                            style={hoverActionStyle}
-                            title={t('writing.workspace.drag_to_reorder')}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <i className="fa-solid fa-grip-vertical text-[10px]" aria-hidden="true" />
-                        </span>
+                        <Tooltip content={t('writing.workspace.drag_to_reorder')} placement="top">
+                            <span
+                                className="drag-handle flex h-5 w-5 cursor-grab items-center justify-center active:cursor-grabbing"
+                                style={hoverActionStyle}
+                                aria-label={t('writing.workspace.drag_to_reorder')}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <i className="fa-solid fa-grip-vertical text-[10px]" aria-hidden="true" />
+                            </span>
+                        </Tooltip>
                         <span onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu
                                 align="left"
@@ -581,16 +588,17 @@ function NavigatorRow({
                                     color: 'var(--theme-base-content)',
                                 }}
                                 trigger={
-                                    <button
-                                        type="button"
-                                        className="flex h-5 w-5 items-center justify-center rounded-full"
-                                        data-writing-section-menu={node.id}
-                                        style={hoverActionStyle}
-                                        title={t('writing.workspace.section_options')}
-                                        aria-label={t('writing.workspace.section_options')}
-                                    >
-                                        <i className="fa-solid fa-ellipsis-vertical text-[10px]" aria-hidden="true" />
-                                    </button>
+                                    <Tooltip content={t('writing.workspace.section_options')} placement="right">
+                                        <button
+                                            type="button"
+                                            className="flex h-5 w-5 items-center justify-center rounded-full"
+                                            data-writing-section-menu={node.id}
+                                            style={hoverActionStyle}
+                                            aria-label={t('writing.workspace.section_options')}
+                                        >
+                                            <i className="fa-solid fa-ellipsis-vertical text-[10px]" aria-hidden="true" />
+                                        </button>
+                                    </Tooltip>
                                 }
                                 items={[
                                     {
@@ -612,6 +620,11 @@ function NavigatorRow({
                                         label: t('writing.workspace.move_section'),
                                         icon: 'fa-arrows-up-down-left-right',
                                         onClick: () => onMoveTo(node),
+                                    },
+                                    {
+                                        label: t('writing.transfer.title'),
+                                        icon: 'fa-arrow-right-from-bracket',
+                                        onClick: () => onTransfer(node),
                                     },
                                     { divider: true },
                                     {

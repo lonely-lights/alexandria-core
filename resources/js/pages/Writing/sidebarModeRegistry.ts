@@ -32,6 +32,8 @@ export interface SidebarModeContext {
     bridgeSectionId: number | null;
     editorTick: number;
     canUpdate: boolean;
+    /** Modal tools may dismiss themselves after locating a finding in the draft. */
+    onRequestClose?: () => void;
 }
 
 /** A sidebar mode contributed by a sibling package. */
@@ -42,6 +44,8 @@ export interface RegisteredSidebarMode {
     /** Font Awesome classes for the mode switcher icon. */
     icon: string;
     component: ComponentType<SidebarModeContext>;
+    /** Modal tools appear in the header instead of the companion rail. */
+    presentation?: 'sidebar' | 'modal';
     /** Optional permission/entitlement gate — same rules as ribbon controls. */
     requires?: RibbonRequires;
 }

@@ -134,7 +134,7 @@ export default function PanelModeSwitcher({
                 );
             })}
 
-            {registeredModes.map((m) => {
+            {registeredModes.filter((m) => m.presentation !== 'modal').map((m) => {
                 const verdict = resolveGate(m.requires, gates);
 
                 if (verdict === "hidden") {
