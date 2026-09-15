@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Select from "@alexandria/components/form/Select";
 import Textarea from "@alexandria/components/form/Textarea";
 import Button from "@alexandria/components/ui/Button";
 import Modal, {
@@ -9,6 +8,7 @@ import Modal, {
 import useT from "@alexandria/hooks/useT";
 import { createMark, updateMark } from "../threadApi";
 import type { PatternMarkRole } from "../threadApi";
+import PatternPicker from "./PatternPicker";
 import { MOMENT_ROLES } from "./types";
 import type {
     WorkPatternMoment,
@@ -102,7 +102,7 @@ export default function MomentForm({
                 <div className="min-h-0 space-y-5 overflow-y-auto px-6 py-5">
                     <p className="font-serif text-lg">{thread.title}</p>
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <Select
+                        <PatternPicker
                             id="moment-role"
                             label={t("writing.threads.role_label")}
                             options={MOMENT_ROLES.map((value) => ({
@@ -110,13 +110,12 @@ export default function MomentForm({
                                 label: t(`writing.work_patterns.role_${value}`),
                             }))}
                             value={role}
-                            onChange={(event) =>
-                                setRole(event.target.value as PatternMarkRole)
+                            onChange={(value) =>
+                                setRole(value as PatternMarkRole)
                             }
                             disabled={busy}
-                            size="md"
                         />
-                        <Select
+                        <PatternPicker
                             id="moment-section"
                             label={t("writing.work_patterns.scene_chapter")}
                             options={sections.map((section) => ({
@@ -127,12 +126,8 @@ export default function MomentForm({
                                 "writing.work_patterns.choose_section",
                             )}
                             value={sectionId}
-                            onChange={(event) =>
-                                setSectionId(event.target.value)
-                            }
+                            onChange={(value) => setSectionId(value)}
                             disabled={busy}
-                            required
-                            size="md"
                         />
                     </div>
                     <Textarea

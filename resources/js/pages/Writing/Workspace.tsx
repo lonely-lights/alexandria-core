@@ -1212,7 +1212,7 @@ export default function Workspace() {
                                     {workHeaderTitle(work.title, work.type, workTypeLabel)}
                                 </span>
                                 <span
-                                    className="hidden shrink-0 sm:inline-block"
+                                    className="hidden shrink-0 capitalize sm:inline-block"
                                     data-writing-work-type
                                     style={typeChipStyle}
                                 >

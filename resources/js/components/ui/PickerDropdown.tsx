@@ -47,6 +47,8 @@ interface PickerDropdownOption<T extends string | number> {
 }
 
 interface PickerDropdownProps<T extends string | number> {
+    /** Connects a visible form label to the default trigger. */
+    id?: string;
     value: T;
     options: Array<PickerDropdownOption<T>>;
     onChange: (next: T) => void;
@@ -105,6 +107,7 @@ interface PickerDropdownProps<T extends string | number> {
 }
 
 export default function PickerDropdown<T extends string | number>({
+    id,
     value,
     options,
     onChange,
@@ -261,6 +264,7 @@ export default function PickerDropdown<T extends string | number>({
                 })
             ) : (
             <button
+                id={id}
                 ref={setTriggerNode}
                 type="button"
                 onClick={() => setOpen(!open)}

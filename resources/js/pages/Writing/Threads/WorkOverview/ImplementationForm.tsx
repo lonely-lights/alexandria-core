@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import Input from "@alexandria/components/form/Input";
-import Select from "@alexandria/components/form/Select";
 import Textarea from "@alexandria/components/form/Textarea";
 import Button from "@alexandria/components/ui/Button";
 import Modal, {
@@ -21,6 +20,7 @@ import type {
     PatternStance,
 } from "../threadApi";
 import DevicePicker from "./DevicePicker";
+import PatternPicker from "./PatternPicker";
 import type { WorkPatternSection, WorkPatternThread } from "./types";
 
 export default function ImplementationForm({
@@ -218,18 +218,15 @@ export default function ImplementationForm({
                             size="md"
                         />
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <Select
+                            <PatternPicker
                                 id="implementation-scope"
                                 label={t("writing.threads.detail_scope_label")}
                                 options={scopeOptions}
                                 value={scope}
-                                onChange={(event) =>
-                                    setScope(event.target.value)
-                                }
+                                onChange={(value) => setScope(value)}
                                 disabled={busy}
-                                size="md"
                             />
-                            <Select
+                            <PatternPicker
                                 id="implementation-stance"
                                 label={t("writing.threads.detail_stance_label")}
                                 options={[
@@ -245,15 +242,10 @@ export default function ImplementationForm({
                                     })),
                                 ]}
                                 value={stance}
-                                onChange={(event) =>
-                                    setStance(
-                                        event.target.value as
-                                            | PatternStance
-                                            | "",
-                                    )
+                                onChange={(value) =>
+                                    setStance(value as PatternStance | "")
                                 }
                                 disabled={busy}
-                                size="md"
                             />
                         </div>
                         {error && (

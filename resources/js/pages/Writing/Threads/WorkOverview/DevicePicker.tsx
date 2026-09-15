@@ -1,7 +1,7 @@
-import Select from "@alexandria/components/form/Select";
 import Button from "@alexandria/components/ui/Button";
 import useT from "@alexandria/hooks/useT";
 import type { PatternCard } from "../threadApi";
+import PatternPicker from "./PatternPicker";
 export default function DevicePicker({
     cards,
     cardId,
@@ -26,14 +26,12 @@ export default function DevicePicker({
 
     return (
         <div className="space-y-2">
-            <Select
+            <PatternPicker
                 id="implementation-card"
                 label={t("writing.work_patterns.device_label")}
                 value={cardId}
-                onChange={(event) => onChange(event.target.value)}
-                required
+                onChange={(value) => onChange(value)}
                 disabled={busy || cards === null}
-                size="md"
                 placeholder={t("writing.work_patterns.choose_device")}
                 options={(cards ?? []).map((card) => ({
                     value: card.id,

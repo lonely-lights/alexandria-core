@@ -1,7 +1,7 @@
 import Input from "@alexandria/components/form/Input";
-import Select from "@alexandria/components/form/Select";
 import Button from "@alexandria/components/ui/Button";
 import useT from "@alexandria/hooks/useT";
+import PatternPicker from "./PatternPicker";
 import { MOMENT_ROLES, roleCount } from "./types";
 import type { WorkPatternThread } from "./types";
 
@@ -100,12 +100,11 @@ export default function ImplementationNavigator({
                         onFilters({ ...filters, query: event.target.value })
                     }
                 />
-                <Select
-                    size="md"
-                    aria-label={t("writing.work_patterns.status")}
+                <PatternPicker
+                    ariaLabel={t("writing.work_patterns.status")}
                     value={filters.status}
-                    onChange={(event) =>
-                        onFilters({ ...filters, status: event.target.value })
+                    onChange={(value) =>
+                        onFilters({ ...filters, status: value })
                     }
                     options={["all", "open", "kept", "unplanted"].map(
                         (value) => ({
@@ -115,12 +114,11 @@ export default function ImplementationNavigator({
                     )}
                 />
                 {kinds.length > 1 && (
-                    <Select
-                        size="md"
-                        aria-label={t("writing.work_patterns.kind")}
+                    <PatternPicker
+                        ariaLabel={t("writing.work_patterns.kind")}
                         value={filters.kind}
-                        onChange={(event) =>
-                            onFilters({ ...filters, kind: event.target.value })
+                        onChange={(value) =>
+                            onFilters({ ...filters, kind: value })
                         }
                         options={[
                             {
