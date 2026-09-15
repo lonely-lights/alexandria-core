@@ -684,7 +684,7 @@ return [
     'threads.card_label' => 'Device or trope',
     'threads.card_placeholder' => 'Choose a device or trope…',
     'threads.title_label' => 'Thread name',
-    'threads.title_placeholder' => "e.g. Leyla's locket",
+    'threads.title_placeholder' => "e.g. Leila's locket",
     'threads.stance_label' => 'Stance (optional)',
     'threads.stance_none' => 'No stance yet',
     'threads.stance_straight' => 'Straight',
