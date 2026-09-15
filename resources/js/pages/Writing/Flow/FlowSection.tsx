@@ -36,6 +36,10 @@ import { estimatePlaceholderHeight, type FlatSection } from './flowModel';
  *    ProseMirror in parent-scroll mode collapses to nothing, so
  *    without the ghost there would be no target to click.
  *
+ * A structure-only section (`is_structural`) skips the body entirely:
+ * no editor, no ghost, no reserved placeholder height. It keeps its
+ * heading so the act still reads as a divider in the book.
+ *
  * Above the body sits the typeset break: containers print their
  * heading, leaves print a centered ornament. Those strings are DATA
  * (the writer's own titles and labels), so they carry no lang key.
@@ -131,6 +135,7 @@ export default function FlowSection({
 }: FlowSectionProps) {
     const t = useT();
     const { node, depth, isContainer } = row;
+    const isStructural = node.is_structural === true || section?.is_structural === true;
 
     // The writer clicked the ghost on an empty section: mount the real
     // editor even though there is nothing to render yet.
@@ -154,7 +159,7 @@ export default function FlowSection({
     const hasText = format === 'screenplay'
         ? parseScreenplay(content).some((block) => parseScreenplayEmphasis(block.text).some((run) => run.text.trim() !== ''))
         : content.trim() !== '';
-    const showEditor = section !== null && (hasText || engaged);
+    const showEditor = !isStructural && section !== null && (hasText || engaged);
 
     // Report the bridge once the editor is mounted (onStateChange only
     // fires on the first real selection/content change) and clear it on
@@ -221,7 +226,7 @@ export default function FlowSection({
                 already print their heading, and doubling it would stutter.
                 Read-only viewers still get nothing over an empty section
                 (no ghost, nothing to attribute). */}
-            {!isContainer && section !== null && (showEditor || canUpdate) && (
+            {!isContainer && !isStructural && section !== null && (showEditor || canUpdate) && (
                 <h3
                     data-flow-section-title=""
                     className="pt-2 pb-1 text-center text-sm font-semibold tracking-wide select-none"
@@ -286,7 +291,7 @@ export default function FlowSection({
                         />
                     )}
                 </div>
-            ) : section !== null ? (
+            ) : isStructural ? null : section !== null ? (
                 /* Hydrated but empty. Read-only viewers get nothing —
                    an empty section has nothing to show them. */
                 canUpdate && (

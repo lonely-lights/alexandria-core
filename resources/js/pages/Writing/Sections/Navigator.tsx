@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { useRef, useState, type CSSProperties } from 'react';
 
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
+import { useToastContext } from '@alexandria/components/ui/ToastProvider';
 import useT, { type Translator } from '@alexandria/hooks/useT';
 import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
 import { worksBase, workUrl } from '@alexandria/lib/urls';
@@ -204,6 +205,7 @@ export default function Navigator({
     showSectionTypeLabels = true,
 }: NavigatorProps) {
     const t = useT();
+    const toast = useToastContext();
     const [expanded, setExpanded] = useState<Set<number>>(
         () => collectParentIds(sections, new Set()),
     );
@@ -266,6 +268,36 @@ export default function Navigator({
             );
         },
         onRename: setRenameTarget,
+        onToggleStructural: (node) => {
+            const makeStructural = !node.is_structural;
+
+            router.put(
+                `${worksBase(projectSlug, workSlug)}/sections/${node.id}`,
+                { title: node.title, is_structural: makeStructural },
+                {
+                    preserveScroll: true,
+                    preserveState: true,
+                    only: ['sections', 'currentSection'],
+                    onSuccess: () => {
+                        toast.show(
+                            t(makeStructural
+                                ? 'writing.workspace.structural_on_toast'
+                                : 'writing.workspace.structural_off_toast',
+                            ).replace(':title', node.title),
+                            { type: 'success' },
+                        );
+                    },
+                    // The server names the reason (e.g. the section has words);
+                    // fall back to a generic failure when it doesn't.
+                    onError: (errors) => {
+                        toast.show(
+                            errors.is_structural ?? t('writing.workspace.structural_toggle_failed'),
+                            { type: 'danger', duration: 7000 },
+                        );
+                    },
+                },
+            );
+        },
         onMove: moveSection,
         onMoveTo: setMoveTarget,
         onTransfer: setTransferTarget,
@@ -405,6 +437,8 @@ interface TreeShared {
     onAddChild: (node: SectionNode) => void;
     onDuplicate: (node: SectionNode) => void;
     onRename: (node: SectionNode) => void;
+    /** Flip the section between structure only and writable. */
+    onToggleStructural: (node: SectionNode) => void;
     onMove: (sectionId: number, toParentId: number | null, position: number) => void;
     onMoveTo: (node: SectionNode) => void;
     onTransfer: (node: SectionNode) => void;
@@ -486,7 +520,7 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onMoveTo, onTransfer, onMarkRevision, onDelete, liveCounts, showSectionTypeLabels, t } =
+    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onToggleStructural, onMoveTo, onTransfer, onMarkRevision, onDelete, liveCounts, showSectionTypeLabels, t } =
         shared;
 
     const isSelected = node.slug === currentSlug;
@@ -616,6 +650,15 @@ function NavigatorRow({
                                         icon: 'fa-pen',
                                         onClick: () => onRename(node),
                                     },
+                                    // Only offered while there is no writing to lose;
+                                    // the server refuses the flag on a section with words.
+                                    ...(node.is_structural || !node.has_content
+                                        ? [{
+                                            label: t(node.is_structural ? 'writing.workspace.allow_writing' : 'writing.workspace.make_structural'),
+                                            icon: node.is_structural ? 'fa-pen-nib' : 'fa-sitemap',
+                                            onClick: () => onToggleStructural(node),
+                                        }]
+                                        : []),
                                     {
                                         label: t('writing.workspace.move_section'),
                                         icon: 'fa-arrows-up-down-left-right',

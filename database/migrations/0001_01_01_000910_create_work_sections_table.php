@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('slug');
             $table->string('label')->nullable();
+            $table->boolean('is_structural')->default(false);
             $table->longText('content')->nullable();
             $table->string('format')->nullable();
             $table->text('synopsis')->nullable();

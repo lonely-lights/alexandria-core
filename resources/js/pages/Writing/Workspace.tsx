@@ -128,6 +128,8 @@ export interface SectionNode {
     word_count: number;
     target_words: number | null;
     has_content: boolean;
+    /** Structure only: never holds writing, so no editor or writing prompt. */
+    is_structural?: boolean;
     children: SectionNode[];
 }
 
@@ -136,6 +138,8 @@ export interface CurrentSection {
     title: string;
     slug: string;
     label: string | null;
+    /** Structure only: never holds writing, so no editor or writing prompt. */
+    is_structural?: boolean;
     parent_id: number | null;
     format: 'prose' | 'screenplay';
     status: string | null;
@@ -1459,6 +1463,14 @@ export default function Workspace() {
                                 onMarkThread={handleMarkThreadFromSelection}
                                 scrollToSlugRef={scrollToSlugRef}
                             />
+                        ) : currentSection !== null && currentSection.is_structural ? (
+                            <div
+                                data-structural-notice=""
+                                className="flex flex-1 items-center justify-center px-6 text-center text-sm italic"
+                                style={mutedText}
+                            >
+                                {t('writing.workspace.structural_notice')}
+                            </div>
                         ) : currentSection !== null ? (
                             currentSection.format === 'screenplay' ? (
                                 <ScreenplayEditor

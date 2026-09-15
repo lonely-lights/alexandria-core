@@ -9,6 +9,7 @@ use Alexandria\Core\Models\Notable\Note;
 use Alexandria\Core\Models\System\Entry;
 use Alexandria\Core\Traits\NormalizesLineEndings;
 use Alexandria\Core\Traits\Notable\HasNotes;
+use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,8 @@ use Illuminate\Support\Str;
  *
  * Any node may hold prose (content, wiki markup or Fountain-style
  * text per effectiveFormat()); null content means a pure container.
+ * A section flagged is_structural is structure only: it never holds
+ * content, and the editors render no writing surface for it.
  * Slugs are unique per WORK (not per parent) so /works/{project}/
  * {work}/{section} deep links survive tree reorganization.
  *
@@ -33,6 +36,7 @@ use Illuminate\Support\Str;
  * @property string $title
  * @property string $slug
  * @property string|null $label
+ * @property bool $is_structural
  * @property string|null $content
  * @property string|null $format
  * @property string|null $synopsis
@@ -64,7 +68,7 @@ use Illuminate\Support\Str;
  *
  * @method static WorkSectionFactory factory($count = null, $state = [])
  *
- * @mixin \Eloquent
+ * @mixin Eloquent
  */
 class WorkSection extends Model
 {
@@ -85,11 +89,22 @@ class WorkSection extends Model
 
     protected $guarded = ['id'];
 
+    /**
+     * Mirror the column default so a freshly created in-memory section
+     * reports its flag without a refresh().
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_structural' => false,
+    ];
+
     /** @return array<string, string> */
     protected function casts(): array
     {
         return [
             'beats' => 'array',
+            'is_structural' => 'boolean',
         ];
     }
 
@@ -149,7 +164,7 @@ class WorkSection extends Model
 
     public function comments(): HasMany
     {
-        return $this->hasMany(WorkSectionComment::class)->orderBy('created_at');
+        return $this->hasMany(WorkSectionComment::class)->oldest();
     }
 
     /**
