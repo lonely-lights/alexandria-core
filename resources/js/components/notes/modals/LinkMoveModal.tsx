@@ -1,6 +1,20 @@
-import { useState, useEffect, type CSSProperties } from 'react';
+import {
+    changeButtonStyle,
+    inputStyle,
+    listWrapperStyle,
+    microText,
+    muteText,
+    rowDivider,
+    selectedChipStyle,
+} from '@alexandria/components/notes/modals/linkMoveStyles';
+import SectionSearchResults from '@alexandria/components/notes/modals/SectionSearchResults';
+import type { SectionSearchHit } from '@alexandria/components/notes/modals/SectionSearchResults';
+import WorkSectionPicker from '@alexandria/components/notes/modals/WorkSectionPicker';
+import type { SectionTarget } from '@alexandria/components/notes/modals/WorkSectionPicker';
 import Modal from '@alexandria/components/ui/Modal';
 import useT from '@alexandria/hooks/useT';
+import { useState, useEffect } from 'react';
+import type { CSSProperties } from 'react';
 
 interface LinkTarget {
     type: string;
@@ -18,10 +32,13 @@ interface LinkMoveModalProps {
     action: 'link' | 'move' | 'copy';
     onComplete: () => void;
     apiOverride?: string;
+    /**
+     * Offer work rows and their section drill-down. The notebook link
+     * endpoint only stores project / blueprint / entry targets, so its
+     * caller turns this off instead of showing a destination that fails.
+     */
+    allowWorkTargets?: boolean;
 }
-
-const microText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 30%, transparent)' };
-const muteText: CSSProperties = { color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)' };
 
 const sectionBorderStyle: CSSProperties = {
     borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
@@ -31,29 +48,7 @@ const sectionBorderTopStyle: CSSProperties = {
     borderTop: '1px solid color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
 };
 
-const inputStyle: CSSProperties = {
-    background: 'var(--theme-base-surface)',
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
-    borderRadius: 'var(--theme-radius-input)',
-    color: 'var(--theme-base-content)',
-    padding: '0.375rem 0.75rem',
-};
-
-const selectedChipStyle: CSSProperties = {
-    border: '1px solid color-mix(in srgb, var(--theme-brand-primary-500) 30%, transparent)',
-    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 5%, transparent)',
-    borderRadius: 'var(--theme-radius-card)',
-};
-
-const listWrapperStyle: CSSProperties = {
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
-    borderRadius: 'var(--theme-radius-card)',
-    overflow: 'hidden',
-};
-
-const rowDivider = '1px solid color-mix(in srgb, var(--theme-base-content) 5%, transparent)';
-
-export default function LinkMoveModal({ open, onClose, projectId, noteId, noteIds, action, onComplete, apiOverride }: LinkMoveModalProps) {
+export default function LinkMoveModal({ open, onClose, projectId, noteId, noteIds, action, onComplete, apiOverride, allowWorkTargets = true }: LinkMoveModalProps) {
     const t = useT();
     const [targets, setTargets] = useState<LinkTarget[]>([]);
     const [targetSearch, setTargetSearch] = useState('');
@@ -62,6 +57,7 @@ export default function LinkMoveModal({ open, onClose, projectId, noteId, noteId
     const [entries, setEntries] = useState<Array<{ id: number; name: string }>>([]);
     const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
     const [selectedEntryName, setSelectedEntryName] = useState('');
+    const [selectedSection, setSelectedSection] = useState<SectionTarget | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     const actionTitle = t(`notes.link_move.action.${action}.title`);
@@ -81,6 +77,7 @@ export default function LinkMoveModal({ open, onClose, projectId, noteId, noteId
         setEntries([]);
         setSelectedEntryId(null);
         setSelectedEntryName('');
+        setSelectedSection(null);
 
         fetch(`/api/v1/projects/${projectId}/targets`, {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
@@ -110,14 +107,39 @@ export default function LinkMoveModal({ open, onClose, projectId, noteId, noteId
     }, [entrySearch, selectedTarget, projectId]);
 
     const filteredTargets = targets.filter((tg) =>
-        !targetSearch || tg.title.toLowerCase().includes(targetSearch.toLowerCase())
+        (allowWorkTargets || tg.type !== 'work')
+        && (!targetSearch || tg.title.toLowerCase().includes(targetSearch.toLowerCase()))
     );
+
+    function clearTarget() {
+        setSelectedTarget(null);
+        setSelectedEntryId(null);
+        setSelectedEntryName('');
+        setEntries([]);
+        setSelectedSection(null);
+    }
+
+    /**
+     * A section found from the destination search lands both steps at once:
+     * its work becomes the destination and the section the narrowed pick.
+     * The work row normally comes from the targets list; the fallback only
+     * matters if that list hasn't loaded yet.
+     */
+    function pickSectionHit(hit: SectionSearchHit) {
+        setSelectedTarget(
+            targets.find((tg) => tg.type === 'work' && tg.id === hit.work_id)
+                ?? { type: 'work', id: hit.work_id, title: hit.work_title, description: '' },
+        );
+        setSelectedSection(hit);
+    }
 
     async function submit() {
         if (!selectedTarget) return;
         setSubmitting(true);
-        const targetType = selectedEntryId ? 'entry' : selectedTarget.type;
-        const targetId = selectedEntryId ?? selectedTarget.id;
+        // The narrowest pick wins: an entry inside a blueprint, a section
+        // inside a work, else the top-level destination itself.
+        const targetType = selectedEntryId ? 'entry' : selectedSection ? 'work_section' : selectedTarget.type;
+        const targetId = selectedEntryId ?? selectedSection?.id ?? selectedTarget.id;
 
         if (noteIds && noteIds.length > 0) {
             await fetch(`/api/v1/projects/${projectId}/notes/batch-move`, {
@@ -176,9 +198,9 @@ export default function LinkMoveModal({ open, onClose, projectId, noteId, noteId
                                     <span className="ml-2 text-xs" style={microText}>{selectedTarget.type}</span>
                                 </div>
                                 <button
-                                    onClick={() => { setSelectedTarget(null); setSelectedEntryId(null); setSelectedEntryName(''); setEntries([]); }}
+                                    onClick={clearTarget}
                                     className="alex-btn alex-btn--ghost"
-                                    style={{ borderRadius: 'var(--theme-radius-button)', padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                                    style={changeButtonStyle}
                                 >
                                     {t('notes.link_move.destination.change')}
                                 </button>
@@ -213,6 +235,13 @@ export default function LinkMoveModal({ open, onClose, projectId, noteId, noteId
                                         </button>
                                     ))}
                                 </div>
+                                {allowWorkTargets && (
+                                    <SectionSearchResults
+                                        projectId={projectId}
+                                        query={targetSearch}
+                                        onPick={pickSectionHit}
+                                    />
+                                )}
                             </>
                         )}
                     </div>
@@ -233,7 +262,7 @@ export default function LinkMoveModal({ open, onClose, projectId, noteId, noteId
                                     <button
                                         onClick={() => { setSelectedEntryId(null); setSelectedEntryName(''); }}
                                         className="alex-btn alex-btn--ghost"
-                                        style={{ borderRadius: 'var(--theme-radius-button)', padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                                        style={changeButtonStyle}
                                     >
                                         {t('notes.link_move.destination.change')}
                                     </button>
@@ -266,6 +295,18 @@ export default function LinkMoveModal({ open, onClose, projectId, noteId, noteId
                                 </>
                             )}
                         </div>
+                    )}
+
+                    {/* Step 2: Optionally select a section within a work */}
+                    {selectedTarget?.type === 'work' && (
+                        <WorkSectionPicker
+                            key={selectedTarget.id}
+                            projectId={projectId}
+                            workId={selectedTarget.id}
+                            workTitle={selectedTarget.title}
+                            selected={selectedSection}
+                            onSelect={setSelectedSection}
+                        />
                     )}
                 </div>
 

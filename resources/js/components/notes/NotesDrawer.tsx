@@ -3079,6 +3079,7 @@ export default function NotesDrawer() {
                     noteId={notebookLinkAction.notebookId}
                     action={notebookLinkAction.action}
                     onComplete={() => setNotebookLinkAction(null)}
+                    allowWorkTargets={false}
                     apiOverride={`/api/v1/projects/${context?.projectId ?? 0}/notebooks/${notebookLinkAction.notebookId}/link`}
                 />
             )}

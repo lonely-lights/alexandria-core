@@ -381,12 +381,17 @@ return [
     'link_move.action.move.button' => 'Move Note',
     'link_move.action.copy.button' => 'Copy Note',
     'link_move.destination.label' => 'Destination',
-    'link_move.destination.hint' => 'Select a project or blueprint to :action this note to',
+    'link_move.destination.hint' => 'Select a project, blueprint, or work to :action this note to',
     'link_move.destination.search' => 'Search destinations…',
     'link_move.destination.change' => 'Change',
     'link_move.entry.label' => 'Specific Entry (optional)',
     'link_move.entry.hint' => 'Narrow down to a specific entry within :target',
     'link_move.entry.search' => 'Search entries (min 2 chars)…',
+    'link_move.section.label' => 'Specific Section (optional)',
+    'link_move.section.hint' => 'Narrow down to a section within :target',
+    'link_move.section.search' => 'Filter sections…',
+    'link_move.section.empty' => 'No matching sections',
+    'link_move.section.results' => 'Matching sections',
     'link_move.cancel' => 'Cancel',
 
     // ── ContextSwitchModal (drawer header context switcher) ──────────
