@@ -139,6 +139,19 @@ export function useNoteActions(projectId: number) {
         return res.ok;
     }, [projectId]);
 
+    /**
+     * Move a note to the trash. The destroy endpoint soft-deletes, so the
+     * note stays restorable from the trashed views until it is purged.
+     */
+    const trash = useCallback(async (noteId: number): Promise<boolean> => {
+        const res = await fetch(`/api/v1/projects/${projectId}/notes/${noteId}`, {
+            method: 'DELETE',
+            headers: csrfHeaders(),
+            credentials: 'same-origin',
+        });
+        return res.ok;
+    }, [projectId]);
+
     return {
         togglePin,
         setColor,
@@ -149,5 +162,6 @@ export function useNoteActions(projectId: number) {
         fetchHistory,
         addTag,
         removeTag,
+        trash,
     };
 }

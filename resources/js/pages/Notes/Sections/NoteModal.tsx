@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/react';
 import Modal, { ModalFooter } from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
+import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
 import TagPickerModal from '@alexandria/components/notes/modals/TagPickerModal';
 import LinkMoveModal from '@alexandria/components/notes/modals/LinkMoveModal';
 import HistoryModal from '@alexandria/components/notes/modals/HistoryModal';
@@ -109,6 +110,8 @@ export default function NoteModal({ open, onClose, note, projectId, mode, onSave
     const [historyLoading, setHistoryLoading] = useState(false);
     const [showNotebook, setShowNotebook] = useState(false);
     const [modalNotebooks, setModalNotebooks] = useState<NotebookData[]>([]);
+    const [confirmTrash, setConfirmTrash] = useState(false);
+    const [trashing, setTrashing] = useState(false);
 
     useEffect(() => {
         if (!open) return;
@@ -186,6 +189,27 @@ export default function NoteModal({ open, onClose, note, projectId, mode, onSave
         setPinned((p) => !p);
         needsRefresh.current = true;
         await noteActions.togglePin(note.id);
+    }
+
+    /**
+     * Soft-delete through the same endpoint the drawer and list use.
+     * Pending edits are dropped rather than auto-saved, since the writer
+     * just chose to discard the note. onSaved refetches the caller's list
+     * (every view-mode caller refreshes there) and onClose dismisses the
+     * modal. A failed request leaves the modal open on the note.
+     */
+    async function trashNote() {
+        if (!note) return;
+        setTrashing(true);
+        const trashed = await noteActions.trash(note.id).catch(() => false);
+        setTrashing(false);
+        setConfirmTrash(false);
+        if (!trashed) {
+            console.error('[NoteModal] trashNote failed', note.id);
+            return;
+        }
+        onSaved();
+        onClose();
     }
 
     async function generateTitle() {
@@ -374,6 +398,10 @@ export default function NoteModal({ open, onClose, note, projectId, mode, onSave
                                         { label: t('notes.modal.menu.link_to'), icon: 'fa-link', onClick: () => setLinkAction('link') },
                                         { label: t('notes.modal.menu.move_to'), icon: 'fa-right-from-bracket', onClick: () => setLinkAction('move') },
                                         { label: t('notes.modal.menu.copy_to'), icon: 'fa-copy', onClick: () => setLinkAction('copy') },
+                                        ...(note.deleted_at ? [] : [
+                                            { divider: true as const },
+                                            { label: t('notes.modal.menu.move_to_trash'), icon: 'fa-trash', danger: true, onClick: () => setConfirmTrash(true) },
+                                        ]),
                                     ]}
                                 />
                             </>
@@ -751,6 +779,17 @@ export default function NoteModal({ open, onClose, note, projectId, mode, onSave
                         }}
                         onLinkNotebook={(nbId) => void addToNotebook(nbId)}
                         onMoveNotebook={(nbId) => void addToNotebook(nbId)}
+                    />
+
+                    <ConfirmModal
+                        open={confirmTrash}
+                        onClose={() => setConfirmTrash(false)}
+                        onConfirm={() => void trashNote()}
+                        title={t('notes.modal.confirm.trash.title')}
+                        message={t('notes.modal.confirm.trash.message')}
+                        confirmLabel={t('notes.modal.confirm.trash.action')}
+                        variant="danger"
+                        loading={trashing}
                     />
                 </>
             )}

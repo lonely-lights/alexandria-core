@@ -233,6 +233,12 @@ return [
     'modal.menu.link_to' => 'Link to…',
     'modal.menu.move_to' => 'Move to…',
     'modal.menu.copy_to' => 'Copy to…',
+    'modal.menu.move_to_trash' => 'Move to Trash',
+
+    // Trash confirmation
+    'modal.confirm.trash.title' => 'Move to Trash?',
+    'modal.confirm.trash.message' => 'This note will be moved to the trash. You can restore it later.',
+    'modal.confirm.trash.action' => 'Move to Trash',
 
     // Status / location / pinned badges
     'modal.badge.archived' => 'Archived',
