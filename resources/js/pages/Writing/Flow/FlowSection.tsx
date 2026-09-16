@@ -267,6 +267,7 @@ export default function FlowSection({
                             onAddComment={onAddComment}
                             enableMarkThread={canUpdate}
                             onMarkThread={onMarkThread}
+                            showSelectionActions={isActive}
                         />
                     ) : (
                         <ManuscriptEditor
@@ -288,6 +289,7 @@ export default function FlowSection({
                             onAddComment={onAddComment}
                             enableMarkThread={canUpdate}
                             onMarkThread={onMarkThread}
+                            showSelectionActions={isActive}
                         />
                     )}
                 </div>

@@ -91,6 +91,8 @@ export interface ManuscriptEditorProps {
     enableMarkThread?: boolean;
     /** Fires with selected range + snapshotted text when the user clicks "Mark device". */
     onMarkThread?: (anchor: { from: number; to: number; text: string }) => void;
+    /** False once the reader has moved to another section — hides the selection bubbles. */
+    showSelectionActions?: boolean;
 }
 
 export const PRINT_LAYOUT_STORAGE_KEY = 'alexandria.writing.print_layout';
@@ -125,6 +127,7 @@ export default function ManuscriptEditor({
     onAddComment,
     enableMarkThread,
     onMarkThread,
+    showSelectionActions,
 }: ManuscriptEditorProps) {
     const { noteChange, initialContent } =
         useSectionAutosave({ projectSlug, workSlug, section, onCounts });
@@ -194,6 +197,7 @@ export default function ManuscriptEditor({
                     onAddComment={onAddComment}
                     enableMarkThread={enableMarkThread}
                     onMarkThread={onMarkThread}
+                    showSelectionActions={showSelectionActions}
                 />
             </ThreadHighlightContext>
         </SectionChrome>

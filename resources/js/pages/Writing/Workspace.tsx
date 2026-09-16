@@ -328,8 +328,14 @@ export default function Workspace() {
     // re-fetches the section's server-synced mentions.
     const [saveSignal, setSaveSignal] = useState(0);
 
-    // Comment rail state (Stage 11.5 Task 3) — includes snapshotted text for anchor_text (F1)
-    const [pendingCommentAnchor, setPendingCommentAnchor] = useState<{ from: number; to: number; text: string } | null>(null);
+    // Comment rail state (Stage 11.5 Task 3) — includes snapshotted text for anchor_text (F1).
+    // Tagged with the section it was captured in: the rail only receives it
+    // while that section is still current, so switching sections drops a
+    // half-started comment instead of anchoring it into the wrong scene.
+    const [pendingCommentAnchor, setPendingCommentAnchor] = useState<{
+        sectionId: number | null;
+        anchor: { from: number; to: number; text: string };
+    } | null>(null);
     const [highlightCommentId, setHighlightCommentId] = useState<number | null>(null);
 
     // Subscribe to sidebar mode registry — re-renders when packages register
@@ -706,7 +712,7 @@ export default function Workspace() {
     // Fired by editor floating button — opens the sidebar in comments mode.
     const handleAddComment = useCallback((anchor: { from: number; to: number; text: string }) => {
         setTransientCompanionOpen(true);
-        setPendingCommentAnchor(anchor);
+        setPendingCommentAnchor({ sectionId: effectiveSectionId, anchor });
         setPanelOpen(true);
         setPanelMode('comments');
         writePanelMode(work.id, 'comments');
@@ -715,7 +721,7 @@ export default function Workspace() {
         } catch {
             // Best-effort.
         }
-    }, [work.id]);
+    }, [work.id, effectiveSectionId]);
 
     // Listen for mark-click events from the editor (click on a comment-mark
     // span) → open comment rail and highlight the matching card.
@@ -1619,7 +1625,11 @@ export default function Workspace() {
                                         editorTick={editorTick}
                                         currentUserId={currentUserId}
                                         canUpdate={can.update}
-                                        pendingAnchor={pendingCommentAnchor}
+                                        pendingAnchor={
+                                            pendingCommentAnchor !== null && pendingCommentAnchor.sectionId === effectiveSectionId
+                                                ? pendingCommentAnchor.anchor
+                                                : null
+                                        }
                                         onComposerDismiss={() => setPendingCommentAnchor(null)}
                                         highlightCommentId={highlightCommentId}
                                         onHighlightHandled={() => setHighlightCommentId(null)}

@@ -57,6 +57,13 @@ interface DropdownMenuProps {
      * number to force a specific delay.
      */
     autoDismissMs?: number | null;
+    /**
+     * Activate rows on mousedown (with preventDefault) instead of click.
+     * For a menu anchored to an editor selection: a click blurs the editor
+     * first, and the selection it collapses is what the action needs to
+     * capture. Off everywhere else — click is the right default.
+     */
+    activateOnMouseDown?: boolean;
 }
 
 function DropdownRow({
@@ -64,11 +71,13 @@ function DropdownRow({
     onClose,
     density,
     labelAlign,
+    activateOnMouseDown,
 }: {
     item: DropdownMenuItem;
     onClose: () => void;
     density: 'default' | 'compact';
     labelAlign: 'left' | 'right';
+    activateOnMouseDown: boolean;
 }) {
     const [hovered, setHovered] = useState(false);
 
@@ -124,11 +133,11 @@ function DropdownRow({
 
     const content = (
         <>
-            {iconClass && <i className={`${iconClass} w-5 flex-shrink-0 text-center text-xs`} style={iconStyle} />}
+            {iconClass && <i className={`${iconClass} w-5 shrink-0 text-center text-xs`} style={iconStyle} />}
             <span className={`flex-1 ${labelAlign === 'right' ? 'text-right' : ''}`}>{item.label}</span>
             {item.badge != null && (
                 <span
-                    className="ml-4 flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium"
+                    className="ml-4 shrink-0 px-1.5 py-0.5 text-[10px] font-medium"
                     style={badgeStyle}
                 >
                     {item.badge}
@@ -153,10 +162,18 @@ function DropdownRow({
         );
     }
 
+    const activate = () => {
+        item.onClick?.();
+        onClose();
+    };
+
     return (
         <button
             type="button"
-            onClick={() => { item.onClick?.(); onClose(); }}
+            onClick={activateOnMouseDown ? undefined : activate}
+            onMouseDown={activateOnMouseDown
+                ? (event) => { event.preventDefault(); activate(); }
+                : undefined}
             className={rowClass}
             style={rowStyle}
             {...handlers}
@@ -176,6 +193,7 @@ export default function DropdownMenu({
     menuClassName = '',
     inheritCssVariables = [],
     autoDismissMs,
+    activateOnMouseDown = false,
 }: DropdownMenuProps) {
     const [open, setOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -333,7 +351,7 @@ export default function DropdownMenu({
             {mounted && createPortal(
                 <div
                     ref={menuRef}
-                    className={`fixed z-[9999] overflow-hidden ${menuClassName || 'w-60'}`}
+                    className={`fixed z-9999 overflow-hidden ${menuClassName || 'w-60'}`}
                     data-open={visible ? 'true' : 'false'}
                     style={menuStyle}
                     onMouseEnter={handleHoverOffEnter}
@@ -359,6 +377,7 @@ export default function DropdownMenu({
                                 onClose={() => setOpen(false)}
                                 density={density}
                                 labelAlign={labelAlign}
+                                activateOnMouseDown={activateOnMouseDown}
                             />
                         );
                     })}

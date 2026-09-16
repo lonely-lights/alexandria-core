@@ -13,9 +13,9 @@ import ManuscriptRuler from "@alexandria/components/editor/ManuscriptRuler";
 import EntryHoverCard from "@alexandria/components/entries/EntryHoverCard";
 import { startEntryLinkSearch } from "@alexandria/components/tiptap-bio-editor/extensions/entry-link";
 import Modal, { ModalHeader } from "@alexandria/components/ui/Modal";
-import AddCommentBubble from "@alexandria/editor/extensions/AddCommentBubble";
 import * as bridge from "@alexandria/editor/extensions/commentBridgeHelpers";
-import MarkDeviceBubble from "@alexandria/editor/extensions/MarkDeviceBubble";
+import SelectionActionsMenu from "@alexandria/editor/extensions/SelectionActionsMenu";
+import { selectionActionRange } from "@alexandria/editor/extensions/selectionActions";
 import { ThreadHighlightContext, useThreadHighlights } from "../Threads/useThreadHighlights";
 import {
     findWritingMatches,
@@ -159,6 +159,8 @@ interface ScreenplaySurfaceProps {
     enableMarkThread?: boolean;
     /** Fires with the selected range + snapshotted text when the user clicks "Mark device". */
     onMarkThread?: (anchor: { from: number; to: number; text: string }) => void;
+    /** False once the reader has moved to another section — hides the selection bubbles. */
+    showSelectionActions?: boolean;
 }
 
 /**
@@ -180,6 +182,7 @@ function ScreenplaySurface({
     onAddComment,
     enableMarkThread = false,
     onMarkThread,
+    showSelectionActions = true,
 }: ScreenplaySurfaceProps) {
     const t = useT();
     const template = useScreenplayTemplate();
@@ -297,20 +300,17 @@ function ScreenplaySurface({
         onStateChangeRef.current?.();
     }, [currentElement]);
 
-    // Comment selection state (Stage 11.5 Task 3) — mirrors
-    // RichTextEditor's commentSelectionRange; must run before early return.
+    // Comment selection state (Stage 11.5 Task 3) — shares RichTextEditor's
+    // selectionActionRange rule (focused, current section, non-empty);
+    // must run before early return.
     const commentSelectionRange =
         useEditorState({
             editor,
-            selector: ({ editor: e }): { from: number; to: number } | null => {
-                if (!e || (!enableComments && !enableMarkThread)) {
-                    return null;
-                }
-
-                const { from, to } = e.state.selection;
-
-                return from !== to ? { from, to } : null;
-            },
+            selector: ({ editor: e }) =>
+                selectionActionRange(e, {
+                    enabled: enableComments || enableMarkThread,
+                    visible: showSelectionActions,
+                }),
         }) ?? null;
 
     // Ribbon editor bridge (Ribbon Plan 2 Task 2) — recreated per
@@ -682,22 +682,14 @@ function ScreenplaySurface({
             )}
 
             {commentSelectionRange !== null && (
-                <>
-                    {enableComments && (
-                        <AddCommentBubble
-                            editor={editor}
-                            range={commentSelectionRange}
-                            onAddComment={onAddComment}
-                        />
-                    )}
-                    {enableMarkThread && (
-                        <MarkDeviceBubble
-                            editor={editor}
-                            range={commentSelectionRange}
-                            onMarkThread={onMarkThread}
-                        />
-                    )}
-                </>
+                <SelectionActionsMenu
+                    editor={editor}
+                    range={commentSelectionRange}
+                    enableComments={enableComments}
+                    onAddComment={onAddComment}
+                    enableMarkThread={enableMarkThread}
+                    onMarkThread={onMarkThread}
+                />
             )}
 
             {/* Keyboard-flow help — opened via bridge.openHelp() */}
@@ -777,6 +769,7 @@ export default function ScreenplayEditor({
     onAddComment,
     enableMarkThread,
     onMarkThread,
+    showSelectionActions,
 }: ManuscriptEditorProps) {
     const { noteChange, initialContent } = useSectionAutosave({
         projectSlug,
@@ -813,6 +806,7 @@ export default function ScreenplayEditor({
                     onAddComment={onAddComment}
                     enableMarkThread={enableMarkThread}
                     onMarkThread={onMarkThread}
+                    showSelectionActions={showSelectionActions}
                 />
             </ThreadHighlightContext>
         </SectionChrome>

@@ -806,6 +806,7 @@ return [
     'comments.title' => 'Comments',
     'comments.toggle_button' => 'Comments',
     'comments.add_comment' => 'Add comment',
+    'comments.selection_menu' => 'Text actions',
     'comments.save' => 'Save',
     'comments.cancel' => 'Cancel',
     'comments.edit' => 'Edit',

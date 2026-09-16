@@ -23,8 +23,8 @@ import {
 } from '@alexandria/editor/extensions/pageBreakDecorations';
 import { ProseTabKeymap, canChangeListLevel, changeListLevel } from './proseTabKeymap';
 import { CommentMark } from '@alexandria/editor/extensions/commentMark';
-import AddCommentBubble from '@alexandria/editor/extensions/AddCommentBubble';
-import MarkDeviceBubble from '@alexandria/editor/extensions/MarkDeviceBubble';
+import { selectionActionRange } from '@alexandria/editor/extensions/selectionActions';
+import SelectionActionsMenu from '@alexandria/editor/extensions/SelectionActionsMenu';
 import { useThreadHighlights } from '@alexandria/pages/Writing/Threads/useThreadHighlights';
 import * as bridge from '@alexandria/editor/extensions/commentBridgeHelpers';
 import { WritingSearch, findWritingMatches, searchWriting, replaceWriting, selectWritingMatch } from '@alexandria/editor/extensions/writingSearch';
@@ -173,6 +173,14 @@ interface RichTextEditorProps {
      *  clicks "Mark device". `text`/the range become the mark's
      *  anchor_text/anchor_offset_hint. */
     onMarkThread?: (anchor: { from: number; to: number; text: string }) => void;
+    /**
+     * Whether this editor's section is still the one the reader is on.
+     * The continuous flow passes its active-row flag so the comment and
+     * mark-device bubbles leave with the reader; defaults to true for
+     * single-section mounts. Unlike `enableComments`, flipping this never
+     * changes the editor's extensions.
+     */
+    showSelectionActions?: boolean;
 }
 
 /* ── Toolbar button definitions ── */
@@ -337,6 +345,7 @@ export default function RichTextEditor({
     onAddComment,
     enableMarkThread = false,
     onMarkThread,
+    showSelectionActions = true,
 }: RichTextEditorProps) {
     const t = useT();
     const [showLinkModal, setShowLinkModal] = useState(false);
@@ -524,17 +533,16 @@ export default function RichTextEditor({
         },
     }) ?? ({} as Record<string, boolean>);
 
-    // Selection-bubble range — non-null when text is selected and either
-    // the comment bubble or the mark-device bubble is active. Read here
-    // (before the early return) so the hook runs unconditionally per
-    // Rules of Hooks.
+    // Selection-bubble range — non-null only while text is selected in this
+    // focused editor, its section is current, and either the comment or
+    // the mark-device bubble is enabled. Read here (before the early
+    // return) so the hook runs unconditionally per Rules of Hooks.
     const commentSelectionRange = useEditorState({
         editor,
-        selector: ({ editor: e }): { from: number; to: number } | null => {
-            if (!e || (!enableComments && !enableMarkThread)) return null;
-            const { from, to } = e.state.selection;
-            return from !== to ? { from, to } : null;
-        },
+        selector: ({ editor: e }) => selectionActionRange(e, {
+            enabled: enableComments || enableMarkThread,
+            visible: showSelectionActions,
+        }),
     }) ?? null;
 
     // Sync external value changes back to editor
@@ -1267,22 +1275,14 @@ export default function RichTextEditor({
             )}
 
             {commentSelectionRange !== null && (
-                <>
-                    {enableComments && (
-                        <AddCommentBubble
-                            editor={editor}
-                            range={commentSelectionRange}
-                            onAddComment={onAddComment}
-                        />
-                    )}
-                    {enableMarkThread && (
-                        <MarkDeviceBubble
-                            editor={editor}
-                            range={commentSelectionRange}
-                            onMarkThread={onMarkThread}
-                        />
-                    )}
-                </>
+                <SelectionActionsMenu
+                    editor={editor}
+                    range={commentSelectionRange}
+                    enableComments={enableComments}
+                    onAddComment={onAddComment}
+                    enableMarkThread={enableMarkThread}
+                    onMarkThread={onMarkThread}
+                />
             )}
         </div>
     );
