@@ -9,13 +9,11 @@ import { worksBase, workUrl } from '@alexandria/lib/urls';
 import Tooltip from '@alexandria/components/ui/Tooltip';
 import type { ReactNode } from 'react';
 
-import type { CurrentSection, SectionNode } from '../Workspace';
+import type { SectionNode } from '../Workspace';
 import MoveSectionModal from './MoveSectionModal';
 import TransferSectionModal from './TransferSectionModal';
 import RenameSectionModal from './RenameSectionModal';
 import type { SectionOutlineItem } from './sectionOutline';
-import { getStructureGuidance, type StructureGuidanceState } from './structureGuidance';
-import type { WorkStructure } from './structureTemplates';
 
 /**
  * Workspace section Navigator — Stage 8g.1 (Plan 2 Task 6; drag-reorder
@@ -41,19 +39,7 @@ import type { WorkStructure } from './structureTemplates';
 interface NavigatorProps {
     projectSlug: string;
     workSlug: string;
-    work: {
-        type: string;
-        format: string;
-        target_pages: number | null;
-        length_plan: {
-            target_lines?: number | null;
-            target_pages?: number | null;
-            preset?: string | null;
-            structure?: WorkStructure | null;
-        } | null;
-    };
     sections: SectionNode[];
-    currentSection: CurrentSection | null;
     currentSlug: string | null;
     canUpdate: boolean;
     onSelect: (slug: string) => void;
@@ -131,30 +117,6 @@ const panelActionStyle: CSSProperties = {
     color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 58%, transparent))',
 };
 
-const guidanceCardStyle: CSSProperties = {
-    background: 'var(--alex-writing-section-pane-bg, var(--theme-base-surface))',
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-    borderRadius: 'var(--theme-radius-card)',
-    boxShadow: '0 10px 28px rgb(0 0 0 / 0.16)',
-};
-
-const guidanceItemStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
-    borderRadius: 'var(--theme-radius-button)',
-};
-
-const guidanceStateStyle: Record<StructureGuidanceState, CSSProperties> = {
-    complete: {
-        color: 'var(--theme-success, var(--theme-brand-primary-500))',
-    },
-    current: {
-        color: 'var(--theme-brand-primary-500)',
-    },
-    open: {
-        color: 'var(--alex-writing-section-muted, color-mix(in srgb, var(--theme-base-content) 50%, transparent))',
-    },
-};
-
 /** Collect the ids of every node that has children (default-expanded set). */
 function collectParentIds(nodes: SectionNode[], into: Set<number>): Set<number> {
     for (const node of nodes) {
@@ -188,9 +150,7 @@ function isSelfOrDescendant(nodes: SectionNode[], nodeId: number, candidateId: n
 export default function Navigator({
     projectSlug,
     workSlug,
-    work,
     sections,
-    currentSection,
     currentSlug,
     canUpdate,
     onSelect,
@@ -212,7 +172,6 @@ export default function Navigator({
     const [renameTarget, setRenameTarget] = useState<SectionNode | null>(null);
     const [moveTarget, setMoveTarget] = useState<SectionNode | null>(null);
     const [transferTarget, setTransferTarget] = useState<SectionNode | null>(null);
-    const guidance = getStructureGuidance({ work, sections, currentSection });
 
     function toggle(id: number) {
         setExpanded((prev) => {
@@ -360,48 +319,6 @@ export default function Navigator({
                 className="writing-workspace-section-scroll writing-workspace-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2"
                 data-writing-section-scroll
             >
-                {guidance !== null && (
-                    <section
-                        className="mb-2 grid gap-2 px-2 py-2.5"
-                        data-writing-structure-guidance={guidance.id}
-                        style={guidanceCardStyle}
-                    >
-                        <div className="grid gap-1">
-                            <h3 className="text-xs font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                                {t(guidance.titleKey)}
-                            </h3>
-                            <p className="text-[11px] leading-relaxed" style={wordCountStyle}>
-                                {t(guidance.bodyKey)}
-                            </p>
-                        </div>
-                        <div className="grid gap-1">
-                            {guidance.items.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="flex items-center gap-2 px-2 py-1.5 text-[11px]"
-                                    data-writing-structure-guidance-item={item.id}
-                                    data-state={item.state}
-                                    style={guidanceItemStyle}
-                                >
-                                    <i
-                                        className={`fa-solid ${item.icon} w-3 text-center text-[10px]`}
-                                        aria-hidden="true"
-                                        style={guidanceStateStyle[item.state]}
-                                    />
-                                    <span className="min-w-0 flex-1 truncate" style={wordCountStyle}>
-                                        {t(item.labelKey)}
-                                    </span>
-                                    <span
-                                        className="shrink-0 font-mono text-[10px] font-semibold tabular-nums"
-                                        style={guidanceStateStyle[item.state]}
-                                    >
-                                        {item.valueKey !== undefined ? t(item.valueKey) : item.value}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                )}
                 <SiblingGroup nodes={sections} parentId={null} depth={0} shared={shared} />
             </div>
             {renameTarget !== null && (

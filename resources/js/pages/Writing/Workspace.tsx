@@ -44,6 +44,7 @@ import ManuscriptEditor, {
 } from './Sections/ManuscriptEditor';
 import KanbanView from './Kanban/KanbanView';
 import OutlineSidebar from './Outline/OutlineSidebar';
+import { getStructureGuidance } from './Sections/structureGuidance';
 import OutlineView from './Outline/OutlineView';
 import type { OutlineBeat } from './Outline/outlineTypes';
 import { readShowPlan, writeShowPlan } from './Outline/planPrefs';
@@ -710,6 +711,11 @@ export default function Workspace() {
     );
 
     // Fired by editor floating button — opens the sidebar in comments mode.
+    // The structure plan rides with the outline in the right rail rather
+    // than over the section tree (owner ruling 2026-09-16). Computed here
+    // because the Workspace already holds every input it needs.
+    const structureGuidance = getStructureGuidance({ work, sections, currentSection: effectiveSection });
+
     const handleAddComment = useCallback((anchor: { from: number; to: number; text: string }) => {
         setTransientCompanionOpen(true);
         setPendingCommentAnchor({ sectionId: effectiveSectionId, anchor });
@@ -1396,9 +1402,7 @@ export default function Workspace() {
                                     }
                                     projectSlug={project.slug}
                                     workSlug={work.slug}
-                                    work={work}
                                     sections={sections}
-                                    currentSection={effectiveSection}
                                     currentSlug={effectiveSection?.slug ?? null}
                                     canUpdate={can.update}
                                     onSelect={selectSection}
@@ -1591,6 +1595,7 @@ export default function Workspace() {
                                         currentSectionId={effectiveSectionId}
                                         canUpdate={can.update}
                                         onNavigate={selectSection}
+                                        guidance={structureGuidance}
                                     />
                                 )}
                                 {panelMode === 'history' && (
@@ -1714,8 +1719,8 @@ export default function Workspace() {
                 <div style={{ height: 'min(75dvh, 44rem)' }} className="flex min-h-0 flex-col">
                     <Navigator headerTitle={t('writing.tools.structure')}
                         headerTrailing={<button type="button" className="writing-touch-button" aria-label={t('writing.tools.close')} onClick={() => setMobileStructureOpen(false)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>}
-                        projectSlug={project.slug} workSlug={work.slug} work={work} sections={sections}
-                        currentSection={effectiveSection} currentSlug={effectiveSection?.slug ?? null}
+                        projectSlug={project.slug} workSlug={work.slug} sections={sections}
+                        currentSlug={effectiveSection?.slug ?? null}
                         canUpdate={can.update} onSelect={(slug) => { selectSection(slug); setMobileStructureOpen(false); }}
                         onRequestAdd={(parentId) => { setMobileStructureOpen(false); setAddTarget({ parentId }); }}
                         onRequestDelete={(node) => { setMobileStructureOpen(false); setDeleteTarget(node); }}

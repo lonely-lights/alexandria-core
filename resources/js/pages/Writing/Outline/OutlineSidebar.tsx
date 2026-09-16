@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import useT from '@alexandria/hooks/useT';
 import { worksBase } from '@alexandria/lib/urls';
 
+import StructureGuidanceCard from '../Sections/StructureGuidanceCard';
+import type { StructureGuidance } from '../Sections/structureGuidance';
 import { planCollapsed } from './PlanBlock';
 import type { OutlineBeat, OutlineProjection, ServerOutlineRow } from './outlineTypes';
 
@@ -35,6 +37,13 @@ export interface OutlineSidebarProps {
     currentSectionId: number | null;
     canUpdate: boolean;
     onNavigate: (slug: string) => void;
+    /**
+     * The work's structure plan, computed by the Workspace. Rendered above
+     * the outline rows so the plan and the shape it measures share one
+     * column (owner ruling 2026-09-16 — it used to sit over the section
+     * tree). Null when the work has no structure template chosen.
+     */
+    guidance?: StructureGuidance | null;
 }
 
 function csrfToken(): string {
@@ -183,6 +192,7 @@ export default function OutlineSidebar({
     currentSectionId,
     canUpdate,
     onNavigate,
+    guidance = null,
 }: OutlineSidebarProps) {
     const t = useT();
     const [rows, setRows] = useState<ServerOutlineRow[]>([]);
@@ -295,6 +305,8 @@ export default function OutlineSidebar({
             </div>
 
             <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 py-2">
+                {guidance !== null && <StructureGuidanceCard guidance={guidance} />}
+
                 {loading && (
                     <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
                         {t('writing.outline.sidebar_loading')}
