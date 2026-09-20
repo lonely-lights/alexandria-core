@@ -26,30 +26,31 @@
  * subtree-walk needs duplicating here.
  */
 
-import { useEffect, useRef, useState } from "react";
+import useT from '@alexandria/hooks/useT';
+import { useEffect, useRef, useState } from 'react';
 
-import { worksBase } from "@alexandria/lib/urls";
+import { worksBase } from '@alexandria/lib/urls';
 
-import { outlineApiHeaders as apiHeaders } from "./outlineApi";
-import { outlineReducer } from "./outlineReducer";
+import { outlineApiHeaders as apiHeaders } from './outlineApi';
+import { outlineReducer } from './outlineReducer';
 import {
     buildOutlinePayload,
     reconcileTempIds,
     rowsFromProjection,
-} from "./outlinePayload";
+} from './outlinePayload';
 import type {
     OutlineProjection,
     OutlineRow,
     OutlineTier,
-} from "./outlineTypes";
+} from './outlineTypes';
 
 export type OutlineSyncStatus =
-    | "idle"
-    | "dirty"
-    | "saving"
-    | "saved"
-    | "error"
-    | "conflict";
+    | 'idle'
+    | 'dirty'
+    | 'saving'
+    | 'saved'
+    | 'error'
+    | 'conflict';
 
 export interface BlockedOutlineRow {
     sectionId: number;
@@ -93,9 +94,10 @@ export default function useOutlineSync({
     projectSlug,
     workSlug,
 }: UseOutlineSyncArgs): UseOutlineSyncResult {
+    const t = useT();
     const [rows, setRowsState] = useState<OutlineRow[]>([]);
     const [hierarchy, setHierarchy] = useState<OutlineTier[]>([]);
-    const [status, setStatus] = useState<OutlineSyncStatus>("idle");
+    const [status, setStatus] = useState<OutlineSyncStatus>('idle');
     const [blocked, setBlocked] = useState<BlockedOutlineRow[]>([]);
 
     const url = `${worksBase(projectSlug, workSlug)}/outline`;
@@ -104,7 +106,7 @@ export default function useOutlineSync({
     // fetch callbacks always see the latest values without becoming
     // stale closures across renders.
     const rowsRef = useRef<OutlineRow[]>(rows);
-    const baseVersionRef = useRef<string>("");
+    const baseVersionRef = useRef<string>('');
     const deletedRef = useRef<Set<number>>(new Set());
     const forceRef = useRef<Set<number>>(new Set());
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -116,7 +118,7 @@ export default function useOutlineSync({
 
     function fetchProjection(): Promise<OutlineProjection> {
         return fetch(url, {
-            credentials: "same-origin",
+            credentials: 'same-origin',
             headers: apiHeaders(),
         }).then((response) =>
             response.ok
@@ -142,9 +144,9 @@ export default function useOutlineSync({
                 forceRef.current = new Set();
                 applyProjection(projection);
                 setBlocked([]);
-                setStatus("idle");
+                setStatus('idle');
             })
-            .catch(() => setStatus("error"));
+            .catch(() => setStatus('error'));
     }
 
     /** (Re)start the idle-debounce timer, WITHOUT touching `status` — the
@@ -179,18 +181,19 @@ export default function useOutlineSync({
     function fireSave(keepalive = false) {
         pendingRef.current = false;
         savingRef.current = true;
-        setStatus("saving");
+        setStatus('saving');
 
         const payload = buildOutlinePayload(
             rowsRef.current,
             Array.from(deletedRef.current),
             Array.from(forceRef.current),
             baseVersionRef.current,
+            t('writing.outline.title_placeholder'),
         );
 
         fetch(url, {
-            method: "PUT",
-            credentials: "same-origin",
+            method: 'PUT',
+            credentials: 'same-origin',
             headers: apiHeaders(true),
             body: JSON.stringify(payload),
             // The page-teardown path (refresh/close mid-debounce) needs
@@ -223,7 +226,7 @@ export default function useOutlineSync({
                     baseVersionRef.current = conflictBody.baseVersion;
                     rowsRef.current = merged;
                     setRowsState(merged);
-                    setStatus("conflict");
+                    setStatus('conflict');
                     // Re-arm the debounce so the merged tree still gets
                     // saved, without immediately clobbering the
                     // 'conflict' status this render just set.
@@ -232,7 +235,7 @@ export default function useOutlineSync({
                 }
 
                 if (!response.ok) {
-                    setStatus("error");
+                    setStatus('error');
                     return;
                 }
 
@@ -275,20 +278,20 @@ export default function useOutlineSync({
                     fetchProjection()
                         .then((projection) => {
                             applyProjection(projection);
-                            setStatus("saved");
+                            setStatus('saved');
                         })
-                        .catch(() => setStatus("error"));
+                        .catch(() => setStatus('error'));
                     return;
                 }
 
-                setStatus("saved");
+                setStatus('saved');
             })
             .catch(() => {
                 // The edit never reached the server — it is still
                 // unsaved work: re-raise the flag so the unload guard
                 // and the next flush both cover it.
                 pendingRef.current = true;
-                setStatus("error");
+                setStatus('error');
             })
             .finally(() => {
                 savingRef.current = false;
@@ -296,7 +299,7 @@ export default function useOutlineSync({
     }
 
     function scheduleSave() {
-        setStatus("dirty");
+        setStatus('dirty');
         armTimer();
     }
 
@@ -305,7 +308,7 @@ export default function useOutlineSync({
     ) {
         setRowsState((prev) => {
             const next =
-                typeof updater === "function" ? updater(prev) : updater;
+                typeof updater === 'function' ? updater(prev) : updater;
             rowsRef.current = next;
             return next;
         });
@@ -317,7 +320,7 @@ export default function useOutlineSync({
      *  the tree, and queue those for the next save's `deleted` list. */
     function removeRowAndTrackDeletion(key: string) {
         const before = rowsRef.current;
-        const { rows: after } = outlineReducer(before, { type: "delete", key });
+        const { rows: after } = outlineReducer(before, { type: 'delete', key });
 
         if (after === before) {
             return;
@@ -378,7 +381,7 @@ export default function useOutlineSync({
                 fireSave(true);
             }
         };
-        window.addEventListener("pagehide", onPageHide);
+        window.addEventListener('pagehide', onPageHide);
 
         // Unsaved-work guard (owner, 2026-08-28): typing raises the
         // flag; a refresh/close attempt while it's up pauses on the
@@ -391,14 +394,14 @@ export default function useOutlineSync({
             if (pendingRef.current || savingRef.current) {
                 flush();
                 event.preventDefault();
-                event.returnValue = "";
+                event.returnValue = '';
             }
         };
-        window.addEventListener("beforeunload", onBeforeUnload);
+        window.addEventListener('beforeunload', onBeforeUnload);
 
         return () => {
-            window.removeEventListener("beforeunload", onBeforeUnload);
-            window.removeEventListener("pagehide", onPageHide);
+            window.removeEventListener('beforeunload', onBeforeUnload);
+            window.removeEventListener('pagehide', onPageHide);
 
             if (timerRef.current !== null) {
                 clearTimeout(timerRef.current);

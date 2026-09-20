@@ -1,3 +1,4 @@
+import { prepareOutlineDraft } from './outlineDraft';
 /**
  * Outline projection / payload helpers — spec 2026-08-28 outline-mode
  * Task 4.
@@ -10,7 +11,7 @@
  * succeeds.
  */
 
-import type { OutlineProjection, OutlineRow } from "./outlineTypes";
+import type { OutlineProjection, OutlineRow } from './outlineTypes';
 
 /** Build the client tree from a freshly loaded outline projection. */
 export function rowsFromProjection(
@@ -76,7 +77,9 @@ export function buildOutlinePayload(
     deleted: number[],
     force: number[],
     baseVersion: string,
+    untitled: string,
 ): object {
+    rows = prepareOutlineDraft(rows, untitled).rows;
     const rowsByKey = new Map(rows.map((row) => [row.key, row]));
 
     return {
@@ -102,42 +105,14 @@ export function buildOutlinePayload(
 /**
  * Fold a successful save's `tempIds` map back into the client tree:
  * every row whose `tempId` appears in the map becomes a persisted row
- * (`sectionId` set, `tempId` cleared, `key` rewritten to `s-<id>`), and
- * every other row's `parentKey` is rewritten if it pointed at one of the
- * temp keys that just resolved.
+ * with its stable key/parentKey retained and sectionId filled.
  */
 export function reconcileTempIds(
     rows: OutlineRow[],
     tempIds: Record<string, number>,
 ): OutlineRow[] {
-    const keyRemap = new Map<string, string>();
-
-    for (const row of rows) {
-        if (row.tempId !== null && row.tempId in tempIds) {
-            keyRemap.set(row.key, `s-${tempIds[row.tempId]}`);
-        }
-    }
-
     return rows.map((row) => {
-        const resolvedSectionId =
-            row.tempId !== null ? tempIds[row.tempId] : undefined;
-        const newParentKey =
-            row.parentKey !== null
-                ? (keyRemap.get(row.parentKey) ?? row.parentKey)
-                : null;
-
-        if (resolvedSectionId === undefined) {
-            return newParentKey === row.parentKey
-                ? row
-                : { ...row, parentKey: newParentKey };
-        }
-
-        return {
-            ...row,
-            key: `s-${resolvedSectionId}`,
-            sectionId: resolvedSectionId,
-            tempId: null,
-            parentKey: newParentKey,
-        };
+        const id = row.tempId !== null ? tempIds[row.tempId] : undefined;
+        return id === undefined ? row : { ...row, sectionId: id, tempId: null };
     });
 }

@@ -17,24 +17,24 @@
  * a beat sub-row's controls.
  */
 
-import type { ParsedOutlineLine } from "./parseOutlinePaste";
+import type { ParsedOutlineLine } from './parseOutlinePaste';
 import type {
     OutlineBeat,
     OutlineRow,
     OutlineReducerContext,
     OutlineTier,
-} from "./outlineTypes";
+} from './outlineTypes';
 
 export type OutlineAction =
-    | { type: "enter"; key: string }
-    | { type: "indent"; key: string }
-    | { type: "outdent"; key: string }
-    | { type: "move"; key: string; dir: "up" | "down" }
-    | { type: "edit"; key: string; title: string; synopsis: string | null }
-    | { type: "paste"; anchorKey: string; lines: ParsedOutlineLine[] }
-    | { type: "toggle-beat"; key: string; beatId: string }
-    | { type: "edit-beat"; key: string; beatId: string; text: string }
-    | { type: "delete"; key: string };
+    | { type: 'enter'; key: string }
+    | { type: 'indent'; key: string }
+    | { type: 'outdent'; key: string }
+    | { type: 'move'; key: string; dir: 'up' | 'down' }
+    | { type: 'edit'; key: string; title: string; synopsis: string | null }
+    | { type: 'paste'; anchorKey: string; lines: ParsedOutlineLine[] }
+    | { type: 'toggle-beat'; key: string; beatId: string }
+    | { type: 'edit-beat'; key: string; beatId: string; text: string }
+    | { type: 'delete'; key: string };
 
 export interface OutlineReducerResult {
     rows: OutlineRow[];
@@ -48,7 +48,7 @@ export interface OutlineReducerResult {
     focusKey: string | null;
 }
 
-const BEAT_KEY_SEP = "::beat::";
+const BEAT_KEY_SEP = '::beat::';
 
 /** Build the synthetic key that addresses one row's beat as a keyboard target. */
 export function beatKey(rowKey: string, beatId: string): string {
@@ -88,7 +88,7 @@ function inferredHierarchy(rows: OutlineRow[]): OutlineTier[] {
                 row.isStructural ?? rows.some((r) => r.parentKey === row.key),
         };
     }
-    return tiers.length ? tiers : [{ label: "Section", isStructural: false }];
+    return tiers.length ? tiers : [{ label: 'Section', isStructural: false }];
 }
 
 function tierAt(
@@ -109,7 +109,7 @@ function tierAt(
                   false,
           }
         : (context.hierarchy[depth] ?? {
-              label: "Section",
+              label: 'Section',
               isStructural: false,
           });
 }
@@ -132,7 +132,7 @@ function newTempKey(): string {
 
 /** A beat's single `text` field — fold title + synopsis when both are present. */
 function beatTextFrom(title: string, synopsis: string | null): string {
-    return synopsis !== null && synopsis.trim() !== ""
+    return synopsis !== null && synopsis.trim() !== ''
         ? `${title} — ${synopsis}`
         : title;
 }
@@ -157,7 +157,7 @@ function enter(rows: OutlineRow[], key: string): OutlineReducerResult {
 
         const newBeat: OutlineBeat = {
             id: `b-${crypto.randomUUID()}`,
-            text: "",
+            text: '',
             done: false,
         };
         const beats = [
@@ -189,7 +189,7 @@ function enter(rows: OutlineRow[], key: string): OutlineReducerResult {
         depth: row.depth,
         label: row.label,
         isStructural: row.isStructural,
-        title: "",
+        title: '',
         slug: null,
         synopsis: null,
         beats: [],
@@ -355,31 +355,24 @@ function outdent(
             remaining,
             remaining.findIndex((r) => r.key === parent.key),
         ) + 1;
-    const moved = rows
-        .slice(idx, end + 1)
-        .map((r, i) =>
-            i === 0
-                ? {
-                      ...r,
-                      depth: r.depth - 1,
-                      parentKey: parent.parentKey,
-                      ...tierAt(
-                          remaining,
-                          context,
-                          r.depth - 1,
-                          parent.parentKey,
-                      ),
-                      isStructural: r.hasContent
-                          ? false
-                          : tierAt(
-                                remaining,
-                                context,
-                                r.depth - 1,
-                                parent.parentKey,
-                            ).isStructural,
-                  }
-                : { ...r, depth: r.depth - 1 },
-        );
+    const moved = rows.slice(idx, end + 1).map((r, i) =>
+        i === 0
+            ? {
+                  ...r,
+                  depth: r.depth - 1,
+                  parentKey: parent.parentKey,
+                  ...tierAt(remaining, context, r.depth - 1, parent.parentKey),
+                  isStructural: r.hasContent
+                      ? false
+                      : tierAt(
+                            remaining,
+                            context,
+                            r.depth - 1,
+                            parent.parentKey,
+                        ).isStructural,
+              }
+            : { ...r, depth: r.depth - 1 },
+    );
     return ok([
         ...remaining.slice(0, insertAt),
         ...moved,
@@ -390,7 +383,7 @@ function outdent(
 function move(
     rows: OutlineRow[],
     key: string,
-    dir: "up" | "down",
+    dir: 'up' | 'down',
 ): OutlineReducerResult {
     const idx = rows.findIndex((row) => row.key === key);
 
@@ -404,7 +397,7 @@ function move(
         .map((r) => r.key);
     const pos = siblingKeys.indexOf(key);
     const targetKey =
-        dir === "up" ? siblingKeys[pos - 1] : siblingKeys[pos + 1];
+        dir === 'up' ? siblingKeys[pos - 1] : siblingKeys[pos + 1];
 
     if (targetKey === undefined) {
         return ok(rows);
@@ -630,23 +623,23 @@ export function outlineReducer(
     context: OutlineReducerContext = { hierarchy: inferredHierarchy(rows) },
 ): OutlineReducerResult {
     switch (action.type) {
-        case "enter":
+        case 'enter':
             return enter(rows, action.key);
-        case "indent":
+        case 'indent':
             return indent(rows, action.key, context);
-        case "outdent":
+        case 'outdent':
             return outdent(rows, action.key, context);
-        case "move":
+        case 'move':
             return move(rows, action.key, action.dir);
-        case "edit":
+        case 'edit':
             return edit(rows, action.key, action.title, action.synopsis);
-        case "paste":
+        case 'paste':
             return paste(rows, action.anchorKey, action.lines, context);
-        case "toggle-beat":
+        case 'toggle-beat':
             return toggleBeat(rows, action.key, action.beatId);
-        case "edit-beat":
+        case 'edit-beat':
             return editBeat(rows, action.key, action.beatId, action.text);
-        case "delete":
+        case 'delete':
             return deleteAction(rows, action.key);
         default:
             return ok(rows);
