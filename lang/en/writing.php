@@ -373,6 +373,12 @@ return [
     // Ghost layer plan block (Stage — outline mode, Task 6)
     'plan.synopsis_placeholder' => 'Add a synopsis…',
     'plan.done_line' => ':count beats done',
+    'plan.open' => 'View section plan',
+    'plan.title' => 'Section plan',
+    'plan.synopsis_label' => 'Synopsis',
+    'plan.edit' => 'Edit',
+    'plan.close' => 'Close',
+    'plan.save_failed' => 'The plan could not be saved. Your edits are still here; please try again.',
 
     // Kanban board scene card (spec 2026-08-28 beat-board, renamed Kanban 2026-08-28)
     'kanban.title_placeholder' => 'Untitled',

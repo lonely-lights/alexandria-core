@@ -1,352 +1,255 @@
-import { router } from '@inertiajs/react';
-import { useEffect, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { FocusTrap } from "@headlessui/react";
+import { router } from "@inertiajs/react";
+import { useEffect, useId, useRef, useState } from "react";
+import Button from "@alexandria/components/ui/Button";
+import Modal, {
+    ModalFooter,
+    ModalHeader,
+} from "@alexandria/components/ui/Modal";
+import useT from "@alexandria/hooks/useT";
+import { worksBase } from "@alexandria/lib/urls";
+import PlanBeats from "./PlanBeats";
+import type { OutlineBeat } from "./outlineTypes";
 
-import useT from '@alexandria/hooks/useT';
-import { worksBase } from '@alexandria/lib/urls';
-
-import type { OutlineBeat } from './outlineTypes';
-
-/**
- * Ghost layer — outline-mode Task 6.
- *
- * A dimmed plan block (synopsis + beat checklist) that sits above a
- * section's editor: the writer's own outline surfacing back up while
- * they draft, without leaving the manuscript. Mounted by
- * `ManuscriptEditor` (focus mode) and `FlowSection` (continuous mode) —
- * both gated on the `showPlan` preference (`planPrefs.ts`) — never by
- * `ScreenplayEditor`, which shares `ManuscriptEditorProps` but doesn't
- * consume the prop.
- *
- * Authoring a synopsis or beats from scratch is OutlineView's job
- * (Task 5); this is a read-mostly companion, so it renders nothing for
- * a section with neither yet — there's no "add your first beat" empty
- * state here even when `canUpdate`.
- */
+export { planCollapsed } from "./PlanBeats";
 
 export interface PlanBlockSection {
     id: number;
-    /** Required alongside `synopsis` by the works.sections.update PUT
-     *  (`title` is a required field on that route) — see saveSynopsis. */
     title: string;
     synopsis: string | null;
     beats: OutlineBeat[];
 }
-
 export interface PlanBlockProps {
     section: PlanBlockSection;
     projectSlug: string;
     workSlug: string;
     canUpdate: boolean;
-    /** Override how a synopsis edit is persisted. When omitted (every
-     *  current caller), PlanBlock saves it itself via the section's
-     *  existing update route — see the module doc for why. */
     onSynopsisEdit?: (value: string) => void;
 }
 
-/** True once every beat is checked off — the trigger for the collapsed
- *  "N beats done" line. An empty checklist never collapses: there's
- *  nothing to tuck away, and empty reads as "no beats," not "done." */
-export function planCollapsed(beats: OutlineBeat[]): boolean {
-    return beats.length > 0 && beats.every((beat) => beat.done);
+/** Section-title note icon. Selecting the plan never starts an edit. */
+export default function PlanBlock(props: PlanBlockProps) {
+    return <SectionPlan key={props.section.id} {...props} />;
 }
 
-function csrfToken(): string {
-    return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
-}
-
-function apiHeaders(withBody = false): HeadersInit {
-    const headers: Record<string, string> = {
-        Accept: 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-TOKEN': csrfToken(),
-    };
-
-    if (withBody) {
-        headers['Content-Type'] = 'application/json';
-    }
-
-    return headers;
-}
-
-const wrapperStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
-    borderColor: 'color-mix(in srgb, var(--theme-base-content) 18%, transparent)',
-};
-
-const synopsisTextStyle: CSSProperties = {
-    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
-    fontSize: '0.875rem',
-    fontStyle: 'italic',
-    lineHeight: 1.5,
-    margin: 0,
-};
-
-const synopsisTextareaStyle: CSSProperties = {
-    width: '100%',
-    display: 'block',
-    border: 'none',
-    outline: 'none',
-    resize: 'vertical',
-    background: 'transparent',
-    color: 'var(--theme-base-content)',
-    fontFamily: 'inherit',
-    fontSize: '0.875rem',
-    fontStyle: 'italic',
-    lineHeight: 1.5,
-    minHeight: '3.5rem',
-};
-
-const beatsWrapStyle: CSSProperties = {
-    marginTop: '0.625rem',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.25rem',
-};
-
-const beatRowStyle: CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-};
-
-function beatCheckStyle(done: boolean, canUpdate: boolean): CSSProperties {
-    return {
-        width: '0.8125rem',
-        height: '0.8125rem',
-        borderRadius: '999px',
-        border: `1.5px solid ${done ? 'var(--theme-brand-primary-500)' : 'color-mix(in srgb, var(--theme-base-content) 35%, transparent)'}`,
-        background: done ? 'var(--theme-brand-primary-500)' : 'transparent',
-        cursor: canUpdate ? 'pointer' : 'default',
-        flexShrink: 0,
-        padding: 0,
-    };
-}
-
-function beatTextStyle(done: boolean): CSSProperties {
-    return {
-        fontSize: '0.8125rem',
-        color: done
-            ? 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)'
-            : 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
-        textDecoration: done ? 'line-through' : 'none',
-        flex: 1,
-    };
-}
-
-const collapsedLineStyle: CSSProperties = {
-    marginTop: '0.625rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.375rem',
-    border: 'none',
-    background: 'none',
-    padding: 0,
-    cursor: 'pointer',
-    color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)',
-    fontSize: '0.8125rem',
-};
-
-export default function PlanBlock({ section, projectSlug, workSlug, canUpdate, onSynopsisEdit }: PlanBlockProps) {
+function SectionPlan({
+    section,
+    projectSlug,
+    workSlug,
+    canUpdate,
+    onSynopsisEdit,
+}: PlanBlockProps) {
     const t = useT();
+    const titleId = useId();
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const [open, setOpen] = useState(false);
+    const [synopsis, setSynopsis] = useState(section.synopsis ?? "");
+    const [beats, setBeats] = useState(section.beats);
+    const [draft, setDraft] = useState("");
+    const [editing, setEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
 
-    const [synopsis, setSynopsis] = useState(section.synopsis ?? '');
-    const [beats, setBeats] = useState<OutlineBeat[]>(section.beats);
-    const [editingSynopsis, setEditingSynopsis] = useState(false);
-    const [draftSynopsis, setDraftSynopsis] = useState('');
-    const [expanded, setExpanded] = useState(false);
-
-    // Resync from the server payload only on a section SWITCH, not every
-    // parent re-render — the same pattern ManuscriptEditor's content
-    // reset uses ([section.id]) — so our own optimistic beat/synopsis
-    // edits aren't stomped by an unrelated prop refresh mid-edit.
+    // Refresh the reading copy without replacing an in-progress draft.
     useEffect(() => {
-        setSynopsis(section.synopsis ?? '');
+        setSynopsis(section.synopsis ?? "");
+    }, [section.synopsis]);
+    useEffect(() => {
         setBeats(section.beats);
-        setEditingSynopsis(false);
-        setExpanded(false);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [section.id]);
+    }, [section.beats]);
 
-    if (!editingSynopsis && synopsis.trim() === '' && beats.length === 0) {
-        return null;
+    function close() {
+        if (saving) return;
+        setOpen(false);
+        setEditing(false);
+        setError("");
     }
 
     function startEditing() {
-        if (!canUpdate) {
-            return;
-        }
-
-        setDraftSynopsis(synopsis);
-        setEditingSynopsis(true);
+        setDraft(synopsis);
+        setError("");
+        setEditing(true);
     }
 
-    function cancelEditing() {
-        // Unmounting a focused textarea can still fire a native blur (and
-        // hence onBlur/commitSynopsis) on the way out in some browsers.
-        // Resetting the draft back to the saved value first makes that a
-        // guaranteed no-op via the `value === synopsis` guard below,
-        // instead of a race that could silently save a discarded edit.
-        setDraftSynopsis(synopsis);
-        setEditingSynopsis(false);
-    }
-
-    /**
-     * The spec's ghost layer was drafted against "the outline PUT
-     * carrying only that section's row," but Task 3 locked the outline
-     * PUT to full-row-set semantics — sending one row would look like
-     * deleting every other section. `works.sections.update` is the
-     * pre-existing, lighter route: it already validates `synopsis`
-     * identically and only touches keys present in the request. Spec
-     * deviation, pre-approved in the task brief; recorded here as the
-     * ledger entry.
-     *
-     * That route's validation requires `title`, so it rides along
-     * unchanged (ReferencePanel.saveReference uses the same trick for
-     * pov/setting fields) — `$model->update($data)` then only touches
-     * title + synopsis, leaving every other section attribute alone.
-     */
-    function commitSynopsis() {
-        const value = draftSynopsis.trim();
-
-        setEditingSynopsis(false);
-
-        if (value === synopsis) {
+    function save() {
+        if (!canUpdate || saving) return;
+        if (draft === synopsis) {
+            setEditing(false);
             return;
         }
-
-        setSynopsis(value);
-
+        setError("");
         if (onSynopsisEdit) {
-            onSynopsisEdit(value);
-
+            onSynopsisEdit(draft);
+            setSynopsis(draft);
+            setEditing(false);
             return;
         }
-
+        setSaving(true);
+        let saved = false;
+        // The outline endpoint replaces the entire tree; use the single-section route.
         router.put(
             `${worksBase(projectSlug, workSlug)}/sections/${section.id}`,
-            { title: section.title, synopsis: value === '' ? null : value },
+            { title: section.title, synopsis: draft === "" ? null : draft },
             {
                 preserveScroll: true,
                 preserveState: true,
-                only: ['currentSection', 'sections'],
+                only: ["currentSection", "sections"],
+                onSuccess: () => {
+                    saved = true;
+                    setSynopsis(draft);
+                    setEditing(false);
+                },
+                onError: (errors) =>
+                    setError(errors.synopsis ?? t("writing.plan.save_failed")),
+                onFinish: () => {
+                    setSaving(false);
+                    if (!saved)
+                        setError(
+                            (previous) =>
+                                previous || t("writing.plan.save_failed"),
+                        );
+                },
             },
         );
     }
 
-    function handleSynopsisKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-        if (event.key === 'Escape') {
-            event.preventDefault();
-            cancelEditing();
-
-            return;
-        }
-
-        if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-            event.preventDefault();
-            (event.target as HTMLTextAreaElement).blur();
-        }
-    }
-
-    async function toggleBeat(beat: OutlineBeat) {
-        if (!canUpdate) {
-            return;
-        }
-
-        const previous = beats;
-
-        setBeats((prev) => prev.map((b) => (b.id === beat.id ? { ...b, done: !b.done } : b)));
-
-        try {
-            const response = await fetch(
-                `${worksBase(projectSlug, workSlug)}/sections/${section.id}/beats/${beat.id}`,
-                {
-                    method: 'PATCH',
-                    credentials: 'same-origin',
-                    headers: apiHeaders(true),
-                    body: JSON.stringify({ done: !beat.done }),
-                },
-            );
-
-            if (!response.ok) {
-                setBeats(previous);
-
-                return;
-            }
-
-            const body = (await response.json()) as { beats: OutlineBeat[] };
-            setBeats(body.beats);
-        } catch {
-            setBeats(previous);
-        }
-    }
-
-    const showSynopsis = editingSynopsis || synopsis.trim() !== '' || canUpdate;
-    const collapsed = planCollapsed(beats) && !expanded;
+    if (!open && synopsis.trim() === "" && beats.length === 0) return null;
 
     return (
-        <div
-            data-plan-block=""
-            className="alex-sheet-footprint mx-auto my-4 rounded-lg border border-dashed px-6 py-4"
-            style={wrapperStyle}
-        >
-            {showSynopsis &&
-                (editingSynopsis ? (
-                    <textarea
-                        autoFocus
-                        value={draftSynopsis}
-                        onChange={(event) => setDraftSynopsis(event.target.value)}
-                        onBlur={commitSynopsis}
-                        onKeyDown={handleSynopsisKeyDown}
-                        placeholder={t('writing.plan.synopsis_placeholder')}
-                        style={synopsisTextareaStyle}
+        <>
+            <button
+                type="button"
+                data-plan-trigger={section.id}
+                className="alex-toolbar-btn inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm"
+                aria-label={t("writing.plan.open")}
+                title={t("writing.plan.open")}
+                aria-haspopup="dialog"
+                aria-expanded={open}
+                onClick={() => setOpen(true)}
+            >
+                <i className="fa-regular fa-note-sticky" aria-hidden="true" />
+            </button>
+            <Modal
+                open={open}
+                onClose={close}
+                dismissible={!saving}
+                maxWidth="max-w-3xl"
+            >
+                <FocusTrap
+                    ref={dialogRef}
+                    initialFocus={dialogRef}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby={titleId}
+                    tabIndex={-1}
+                    className="flex min-h-0 flex-col"
+                    data-plan-block=""
+                >
+                    <ModalHeader
+                        title={
+                            <span id={titleId}>
+                                {t("writing.plan.title")} · {section.title}
+                            </span>
+                        }
+                        onClose={close}
                     />
-                ) : (
-                    <p
-                        data-plan-synopsis=""
-                        role={canUpdate ? 'button' : undefined}
-                        tabIndex={canUpdate ? 0 : undefined}
-                        onClick={startEditing}
-                        onKeyDown={(event) => {
-                            if (canUpdate && (event.key === 'Enter' || event.key === ' ')) {
-                                event.preventDefault();
-                                startEditing();
-                            }
-                        }}
-                        style={canUpdate ? { ...synopsisTextStyle, cursor: 'text' } : synopsisTextStyle}
-                    >
-                        {synopsis.trim() !== '' ? synopsis : t('writing.plan.synopsis_placeholder')}
-                    </p>
-                ))}
-
-            {beats.length > 0 &&
-                (collapsed ? (
-                    <button
-                        type="button"
-                        data-plan-collapsed=""
-                        onClick={() => setExpanded(true)}
-                        style={collapsedLineStyle}
-                    >
-                        <i className="fa-solid fa-circle-check" aria-hidden="true" />
-                        {t('writing.plan.done_line').replace(':count', String(beats.length))}
-                    </button>
-                ) : (
-                    <div style={beatsWrapStyle}>
-                        {beats.map((beat) => (
-                            <div key={beat.id} style={beatRowStyle}>
-                                <button
-                                    type="button"
-                                    role="checkbox"
-                                    aria-checked={beat.done}
-                                    aria-label={beat.text}
-                                    disabled={!canUpdate}
-                                    style={beatCheckStyle(beat.done, canUpdate)}
-                                    onClick={() => toggleBeat(beat)}
-                                />
-                                <span style={beatTextStyle(beat.done)}>{beat.text}</span>
+                    <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 text-left text-sm font-normal tracking-normal">
+                        {editing ? (
+                            <textarea
+                                autoFocus
+                                aria-label={t("writing.plan.synopsis_label")}
+                                value={draft}
+                                disabled={saving}
+                                onChange={(event) =>
+                                    setDraft(event.target.value)
+                                }
+                                onKeyDown={(event) => {
+                                    if (
+                                        event.key === "Enter" &&
+                                        (event.ctrlKey || event.metaKey)
+                                    ) {
+                                        event.preventDefault();
+                                        save();
+                                    }
+                                }}
+                                className="w-full resize-y rounded-md border p-3"
+                                style={{
+                                    minHeight: "18rem",
+                                    background: "var(--theme-base-surface)",
+                                    color: "var(--theme-base-content)",
+                                    borderColor: "var(--theme-base-400)",
+                                    lineHeight: 1.65,
+                                }}
+                            />
+                        ) : (
+                            <div
+                                data-plan-synopsis=""
+                                style={{
+                                    whiteSpace: "pre-wrap",
+                                    overflowWrap: "anywhere",
+                                    userSelect: "text",
+                                    lineHeight: 1.65,
+                                }}
+                            >
+                                {synopsis ||
+                                    t("writing.plan.synopsis_placeholder")}
                             </div>
-                        ))}
+                        )}
+                        {error && (
+                            <p
+                                role="alert"
+                                className="mt-3"
+                                style={{
+                                    color: "var(--theme-status-error-stroke)",
+                                }}
+                            >
+                                {error}
+                            </p>
+                        )}
+                        <PlanBeats
+                            section={{ id: section.id, beats }}
+                            onChange={setBeats}
+                            projectSlug={projectSlug}
+                            workSlug={workSlug}
+                            canUpdate={canUpdate}
+                        />
                     </div>
-                ))}
-        </div>
+                    <ModalFooter>
+                        {editing ? (
+                            <>
+                                <Button
+                                    variant="ghost"
+                                    disabled={saving}
+                                    onClick={() => {
+                                        setEditing(false);
+                                        setError("");
+                                    }}
+                                >
+                                    {t("writing.form.cancel")}
+                                </Button>
+                                <Button loading={saving} onClick={save}>
+                                    {t("writing.settings.save")}
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button variant="ghost" onClick={close}>
+                                    {t("writing.plan.close")}
+                                </Button>
+                                {canUpdate && (
+                                    <Button
+                                        onClick={startEditing}
+                                        icon="fa-solid fa-pen"
+                                        iconPosition="before"
+                                    >
+                                        {t("writing.plan.edit")}
+                                    </Button>
+                                )}
+                            </>
+                        )}
+                    </ModalFooter>
+                </FocusTrap>
+            </Modal>
+        </>
     );
 }

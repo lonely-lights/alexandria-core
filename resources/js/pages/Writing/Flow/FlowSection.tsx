@@ -182,6 +182,11 @@ export default function FlowSection({
     }, [engaged]);
 
     const noop = useCallback(() => {}, []);
+    const planButton = showPlan && section !== null ? (
+        <span className="ml-2 inline-flex align-middle">
+            <PlanBlock section={section} projectSlug={projectSlug} workSlug={workSlug} canUpdate={canUpdate} />
+        </span>
+    ) : null;
 
     return (
         <div
@@ -197,6 +202,7 @@ export default function FlowSection({
                     style={{ ...headingText, fontSize: depth === 0 ? '1.5rem' : '1.25rem' }}
                 >
                     {node.title}
+                    {planButton}
                 </h2>
             ) : (
                 showOrnament && (
@@ -226,24 +232,17 @@ export default function FlowSection({
                 already print their heading, and doubling it would stutter.
                 Read-only viewers still get nothing over an empty section
                 (no ghost, nothing to attribute). */}
-            {!isContainer && !isStructural && section !== null && (showEditor || canUpdate) && (
+            {!isContainer && section !== null && (showEditor || canUpdate || (showPlan && (section.synopsis || section.beats.length > 0))) && (
                 <h3
                     data-flow-section-title=""
                     className="pt-2 pb-1 text-center text-sm font-semibold tracking-wide select-none"
                     style={headingText}
                 >
                     {node.title}
+                    {planButton}
                 </h3>
             )}
 
-            {showPlan && section !== null && (
-                <PlanBlock
-                    section={section}
-                    projectSlug={projectSlug}
-                    workSlug={workSlug}
-                    canUpdate={canUpdate}
-                />
-            )}
 
             {showEditor ? (
                 <div style={engaged && !hasText ? { minHeight: ENGAGED_MIN_HEIGHT_PX } : undefined}>

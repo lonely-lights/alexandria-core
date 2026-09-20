@@ -46,6 +46,7 @@ import KanbanView from './Kanban/KanbanView';
 import OutlineSidebar from './Outline/OutlineSidebar';
 import { getStructureGuidance } from './Sections/structureGuidance';
 import OutlineView from './Outline/OutlineView';
+import PlanBlock from './Outline/PlanBlock';
 import type { OutlineBeat } from './Outline/outlineTypes';
 import { readShowPlan, writeShowPlan } from './Outline/planPrefs';
 import { clampFontSize, readFontSize, writeFontSize } from './fontSize';
@@ -1430,6 +1431,12 @@ export default function Workspace() {
                         own scrollport (continuous mode) does. The view
                         toggle floats over whichever is mounted. */}
                     <section className="writing-workspace-editor relative flex min-w-0 flex-1 flex-col overflow-hidden">
+                        {viewMode === 'focus' && currentSection !== null && (
+                            <div className="flex shrink-0 items-center justify-center gap-2 px-6 py-3" data-section-plan-heading="">
+                                <h2 className="text-sm font-semibold">{currentSection.title}</h2>
+                                {showPlan && <PlanBlock section={currentSection} projectSlug={project.slug} workSlug={work.slug} canUpdate={can.update && !readingMode} />}
+                            </div>
+                        )}
                         {viewMode === 'outline' ? (
                             <OutlineView
                                 projectSlug={project.slug}
@@ -1493,7 +1500,6 @@ export default function Workspace() {
                                     onCounts={handleCounts}
                                     chrome="none"
                                     printLayout={!viewport.compact && printLayout}
-                                    showPlan={showPlan}
                                     marginXIn={marginXIn}
                                     bridgeRef={bridgeRef}
                                     onStateChange={handleEditorStateChange}
@@ -1515,7 +1521,6 @@ export default function Workspace() {
                                     onCounts={handleCounts}
                                     chrome="none"
                                     printLayout={!viewport.compact && printLayout}
-                                    showPlan={showPlan}
                                     pageDisplay={pageDisplay}
                                     marginXIn={marginXIn}
                                     bridgeRef={bridgeRef}
