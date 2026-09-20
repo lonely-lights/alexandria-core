@@ -9,12 +9,20 @@ import {
 import useT from '@alexandria/hooks/useT';
 
 import type { ThreadSectionRef } from '../Threads/MarkThreadModal';
-import { stanceAccent, stanceInitial, type PatternChip } from '../Threads/patternChips';
+import {
+    stanceAccent,
+    stanceInitial,
+    type PatternChip,
+} from '../Threads/patternChips';
 import { fetchThreads } from '../Threads/threadApi';
-import { applyCardDrop, buildKanbanColumns, type KanbanColumn } from './kanbanModel';
+import {
+    applyCardDrop,
+    buildKanbanColumns,
+    type KanbanColumn,
+} from './kanbanModel';
 import KanbanCard from './KanbanCard';
-import { patchBeatDone } from '../Outline/outlineApi';
 import { moodAccent } from './moodPalette';
+import OutlineConflictNotice from '../Outline/OutlineConflictNotice';
 import useOutlineSync from '../Outline/useOutlineSync';
 import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
 
@@ -175,9 +183,7 @@ function gapStyle(active: boolean): CSSProperties {
         height: active ? '0.5rem' : '0.375rem',
         margin: '0.0625rem 0',
         borderRadius: '999px',
-        background: active
-            ? 'var(--theme-brand-secondary-500)'
-            : 'transparent',
+        background: active ? 'var(--theme-brand-secondary-500)' : 'transparent',
         transition: 'background 0.1s ease',
     };
 }
@@ -199,7 +205,18 @@ export default function KanbanView({
     onRequestMarkThread,
 }: KanbanViewProps) {
     const t = useT();
-    const { rows, setRows, flush, status } = useOutlineSync({ projectSlug, workSlug });
+    const {
+        rows,
+        setRows,
+        flush,
+        status,
+        conflict,
+        base,
+        draft,
+        ambiguous,
+        resolveConflict,
+        discardConflict,
+    } = useOutlineSync({ projectSlug, workSlug });
 
     const [draggingKey, setDraggingKey] = useState<string | null>(null);
     const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
@@ -213,7 +230,9 @@ export default function KanbanView({
     // common case — MarkThreadModal defaults a brand-new thread's scope
     // to the section it was marked from), coloured by stance rather than
     // labelled by role.
-    const [sectionChips, setSectionChips] = useState<Map<number, PatternChip[]>>(new Map());
+    const [sectionChips, setSectionChips] = useState<
+        Map<number, PatternChip[]>
+    >(new Map());
 
     useEffect(() => {
         let cancelled = false;
@@ -254,19 +273,24 @@ export default function KanbanView({
     const columns = buildKanbanColumns(rows);
 
     function handleRowEdit(key: string, patch: Partial<OutlineRow>) {
-        setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+        setRows((prev) =>
+            prev.map((r) => (r.key === key ? { ...r, ...patch } : r)),
+        );
     }
 
-    async function handleBeatToggle(row: OutlineRow, beat: OutlineBeat) {
-        if (row.sectionId === null) {
-            return;
-        }
-
-        const beats = await patchBeatDone(projectSlug, workSlug, row.sectionId, beat.id, !beat.done);
-
-        if (beats !== null) {
-            setRows((prev) => prev.map((r) => (r.key === row.key ? { ...r, beats } : r)));
-        }
+    function handleBeatToggle(row: OutlineRow, beat: OutlineBeat) {
+        setRows((prev) =>
+            prev.map((r) =>
+                r.key === row.key
+                    ? {
+                          ...r,
+                          beats: r.beats.map((b) =>
+                              b.id === beat.id ? { ...b, done: !b.done } : b,
+                          ),
+                      }
+                    : r,
+            ),
+        );
     }
 
     /** Shared by drag-drop and the keyboard fallback: a same-position drop
@@ -275,12 +299,20 @@ export default function KanbanView({
      *  A drop — mouse or Alt-arrow — is a deliberate commit gesture exactly
      *  like Enter in the outline view, so `flush()` follows `setRows`
      *  immediately rather than waiting on the 800ms debounce. */
-    function applyDrop(cardKey: string, targetColumnKey: string, beforeCardKey: string | null) {
+    function applyDrop(
+        cardKey: string,
+        targetColumnKey: string,
+        beforeCardKey: string | null,
+    ) {
         if (!canUpdate || cardKey === beforeCardKey) {
             return;
         }
 
-        const next = applyCardDrop(rows, { cardKey, targetColumnKey, beforeCardKey });
+        const next = applyCardDrop(rows, {
+            cardKey,
+            targetColumnKey,
+            beforeCardKey,
+        });
 
         if (next !== rows) {
             setRows(next);
@@ -288,7 +320,10 @@ export default function KanbanView({
         }
     }
 
-    function handleDragStart(event: DragEvent<HTMLDivElement>, cardKey: string) {
+    function handleDragStart(
+        event: DragEvent<HTMLDivElement>,
+        cardKey: string,
+    ) {
         if (!canUpdate) {
             return;
         }
@@ -303,7 +338,10 @@ export default function KanbanView({
         setDropTarget(null);
     }
 
-    function handleGapDragOver(event: DragEvent<HTMLDivElement>, target: DropTarget) {
+    function handleGapDragOver(
+        event: DragEvent<HTMLDivElement>,
+        target: DropTarget,
+    ) {
         if (!canUpdate || draggingKey === null) {
             return;
         }
@@ -314,7 +352,10 @@ export default function KanbanView({
         setDropTarget(target);
     }
 
-    function handleGapDrop(event: DragEvent<HTMLDivElement>, target: DropTarget) {
+    function handleGapDrop(
+        event: DragEvent<HTMLDivElement>,
+        target: DropTarget,
+    ) {
         event.preventDefault();
         event.stopPropagation();
 
@@ -327,7 +368,10 @@ export default function KanbanView({
         handleDragEnd();
     }
 
-    function handleColumnDragOver(event: DragEvent<HTMLDivElement>, columnKey: string) {
+    function handleColumnDragOver(
+        event: DragEvent<HTMLDivElement>,
+        columnKey: string,
+    ) {
         if (!canUpdate || draggingKey === null) {
             return;
         }
@@ -337,7 +381,10 @@ export default function KanbanView({
         setDropTarget({ columnKey, beforeCardKey: null });
     }
 
-    function handleColumnDrop(event: DragEvent<HTMLDivElement>, columnKey: string) {
+    function handleColumnDrop(
+        event: DragEvent<HTMLDivElement>,
+        columnKey: string,
+    ) {
         event.preventDefault();
 
         const cardKey = event.dataTransfer.getData('text/plain') || draggingKey;
@@ -366,18 +413,32 @@ export default function KanbanView({
         const midpointY = rect.top + rect.height / 2;
 
         if (event.clientY < midpointY) {
-            return { columnKey: column.key, beforeCardKey: column.cards[cardIndex].row.key };
+            return {
+                columnKey: column.key,
+                beforeCardKey: column.cards[cardIndex].row.key,
+            };
         }
 
         const next = column.cards[cardIndex + 1];
-        return { columnKey: column.key, beforeCardKey: next ? next.row.key : null };
+        return {
+            columnKey: column.key,
+            beforeCardKey: next ? next.row.key : null,
+        };
     }
 
-    function handleCardDragOver(event: DragEvent<HTMLDivElement>, column: KanbanColumn, cardIndex: number) {
+    function handleCardDragOver(
+        event: DragEvent<HTMLDivElement>,
+        column: KanbanColumn,
+        cardIndex: number,
+    ) {
         // A card can't be its own drop target — self-hover during a drag
         // (a slight tremor over the dragged card itself) shouldn't light
         // up an indicator or claim the event from whatever's underneath.
-        if (!canUpdate || draggingKey === null || column.cards[cardIndex].row.key === draggingKey) {
+        if (
+            !canUpdate ||
+            draggingKey === null ||
+            column.cards[cardIndex].row.key === draggingKey
+        ) {
             return;
         }
 
@@ -387,7 +448,11 @@ export default function KanbanView({
         setDropTarget(cardMidpointTarget(event, column, cardIndex));
     }
 
-    function handleCardDrop(event: DragEvent<HTMLDivElement>, column: KanbanColumn, cardIndex: number) {
+    function handleCardDrop(
+        event: DragEvent<HTMLDivElement>,
+        column: KanbanColumn,
+        cardIndex: number,
+    ) {
         if (column.cards[cardIndex].row.key === draggingKey) {
             return;
         }
@@ -409,8 +474,16 @@ export default function KanbanView({
      *  card in the same column. Bound via `dragHandleProps.onKeyDown` on the
      *  card's outer div, so a keydown inside KanbanCard's nested title input
      *  bubbles up and reaches it. */
-    function handleCardKeyDown(event: KeyboardEvent<HTMLDivElement>, column: KanbanColumn, cardIndex: number) {
-        if (!canUpdate || !event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) {
+    function handleCardKeyDown(
+        event: KeyboardEvent<HTMLDivElement>,
+        column: KanbanColumn,
+        cardIndex: number,
+    ) {
+        if (
+            !canUpdate ||
+            !event.altKey ||
+            (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')
+        ) {
             return;
         }
 
@@ -436,7 +509,10 @@ export default function KanbanView({
         applyDrop(cardKey, column.key, afterNext ? afterNext.row.key : null);
     }
 
-    function isGapActive(columnKey: string, beforeCardKey: string | null): boolean {
+    function isGapActive(
+        columnKey: string,
+        beforeCardKey: string | null,
+    ): boolean {
         return (
             dropTarget !== null &&
             dropTarget.columnKey === columnKey &&
@@ -446,15 +522,42 @@ export default function KanbanView({
 
     return (
         <div style={paneStyle} data-kanban-view="">
+            {conflict && (
+                <OutlineConflictNotice
+                    base={base}
+                    draft={draft}
+                    projection={conflict}
+                    ambiguous={ambiguous}
+                    onResolve={resolveConflict}
+                    onDiscard={discardConflict}
+                />
+            )}
             <div style={headerRowStyle}>
-                <h2 className="text-sm font-semibold" style={{ color: 'var(--theme-base-content)' }}>
+                <h2
+                    className="text-sm font-semibold"
+                    style={{ color: 'var(--theme-base-content)' }}
+                >
                     {t('writing.kanban.title')}
                 </h2>
-                {status === 'saving' && <span style={statusChipStyle}>{t('writing.workspace.saving')}</span>}
-                {status === 'saved' && <span style={statusChipStyle}>{t('writing.workspace.saved')}</span>}
-                {status === 'error' && <span style={errorChipStyle}>{t('writing.workspace.save_error')}</span>}
+                {status === 'saving' && (
+                    <span style={statusChipStyle}>
+                        {t('writing.workspace.saving')}
+                    </span>
+                )}
+                {status === 'saved' && (
+                    <span style={statusChipStyle}>
+                        {t('writing.workspace.saved')}
+                    </span>
+                )}
+                {status === 'error' && (
+                    <span style={errorChipStyle}>
+                        {t('writing.workspace.save_error')}
+                    </span>
+                )}
                 {status === 'conflict' && (
-                    <span style={conflictChipStyle}>{t('writing.outline.status_conflict')}</span>
+                    <span style={conflictChipStyle}>
+                        {t('writing.outline.status_conflict')}
+                    </span>
                 )}
             </div>
 
@@ -463,10 +566,16 @@ export default function KanbanView({
             ) : (
                 <div style={boardScrollStyle}>
                     {columns.map((column) => (
-                        <div key={column.key} style={columnStyle} data-board-column={column.key}>
+                        <div
+                            key={column.key}
+                            style={columnStyle}
+                            data-board-column={column.key}
+                        >
                             <div style={columnHeaderStyle}>
                                 <span style={columnTitleStyle}>
-                                    {column.title !== '' ? column.title : t('writing.kanban.untitled_column')}
+                                    {column.title !== ''
+                                        ? column.title
+                                        : t('writing.kanban.untitled_column')}
                                 </span>
                                 <span style={columnCountStyle}>
                                     {t('writing.kanban.column_count').replace(
@@ -478,58 +587,101 @@ export default function KanbanView({
 
                             <div
                                 style={columnBodyStyle}
-                                onDragOver={(event) => handleColumnDragOver(event, column.key)}
-                                onDrop={(event) => handleColumnDrop(event, column.key)}
+                                onDragOver={(event) =>
+                                    handleColumnDragOver(event, column.key)
+                                }
+                                onDrop={(event) =>
+                                    handleColumnDrop(event, column.key)
+                                }
                             >
                                 {column.cards.map((cardModel, cardIndex) => (
                                     <div key={cardModel.row.key}>
                                         <div
-                                            style={gapStyle(isGapActive(column.key, cardModel.row.key))}
+                                            style={gapStyle(
+                                                isGapActive(
+                                                    column.key,
+                                                    cardModel.row.key,
+                                                ),
+                                            )}
                                             onDragOver={(event) =>
                                                 handleGapDragOver(event, {
                                                     columnKey: column.key,
-                                                    beforeCardKey: cardModel.row.key,
+                                                    beforeCardKey:
+                                                        cardModel.row.key,
                                                 })
                                             }
                                             onDrop={(event) =>
                                                 handleGapDrop(event, {
                                                     columnKey: column.key,
-                                                    beforeCardKey: cardModel.row.key,
+                                                    beforeCardKey:
+                                                        cardModel.row.key,
                                                 })
                                             }
                                         />
 
                                         {cardModel.dividerTitle !== null && (
-                                            <div style={dividerStyle}>{cardModel.dividerTitle}</div>
+                                            <div style={dividerStyle}>
+                                                {cardModel.dividerTitle}
+                                            </div>
                                         )}
 
                                         <div
-                                            style={cardWrapStyle(draggingKey === cardModel.row.key)}
-                                            onDragOver={(event) => handleCardDragOver(event, column, cardIndex)}
-                                            onDrop={(event) => handleCardDrop(event, column, cardIndex)}
+                                            style={cardWrapStyle(
+                                                draggingKey ===
+                                                    cardModel.row.key,
+                                            )}
+                                            onDragOver={(event) =>
+                                                handleCardDragOver(
+                                                    event,
+                                                    column,
+                                                    cardIndex,
+                                                )
+                                            }
+                                            onDrop={(event) =>
+                                                handleCardDrop(
+                                                    event,
+                                                    column,
+                                                    cardIndex,
+                                                )
+                                            }
                                         >
                                             <KanbanCard
                                                 card={cardModel}
                                                 projectSlug={projectSlug}
                                                 workSlug={workSlug}
                                                 canUpdate={canUpdate}
-                                                accent={moodAccent(cardModel.row.mood)}
+                                                accent={moodAccent(
+                                                    cardModel.row.mood,
+                                                )}
                                                 chips={
-                                                    cardModel.row.sectionId !== null
-                                                        ? (sectionChips.get(cardModel.row.sectionId) ?? [])
+                                                    cardModel.row.sectionId !==
+                                                    null
+                                                        ? (sectionChips.get(
+                                                              cardModel.row
+                                                                  .sectionId,
+                                                          ) ?? [])
                                                         : []
                                                 }
                                                 onRowEdit={handleRowEdit}
                                                 onBeatToggle={handleBeatToggle}
                                                 onOpen={onNavigate}
-                                                onRequestMarkThread={onRequestMarkThread}
+                                                onRequestMarkThread={
+                                                    onRequestMarkThread
+                                                }
                                                 dragHandleProps={{
                                                     draggable: canUpdate,
                                                     onDragStart: (event) =>
-                                                        handleDragStart(event, cardModel.row.key),
+                                                        handleDragStart(
+                                                            event,
+                                                            cardModel.row.key,
+                                                        ),
                                                     onDragEnd: handleDragEnd,
                                                     onKeyDown: (event) =>
-                                                        handleCardKeyDown(event, column, cardIndex),
+                                                        handleCardKeyDown(
+                                                            event,
+                                                            column,
+                                                            cardIndex,
+                                                        ),
                                                 }}
                                             />
                                         </div>
@@ -537,12 +689,20 @@ export default function KanbanView({
                                 ))}
 
                                 <div
-                                    style={gapStyle(isGapActive(column.key, null))}
+                                    style={gapStyle(
+                                        isGapActive(column.key, null),
+                                    )}
                                     onDragOver={(event) =>
-                                        handleGapDragOver(event, { columnKey: column.key, beforeCardKey: null })
+                                        handleGapDragOver(event, {
+                                            columnKey: column.key,
+                                            beforeCardKey: null,
+                                        })
                                     }
                                     onDrop={(event) =>
-                                        handleGapDrop(event, { columnKey: column.key, beforeCardKey: null })
+                                        handleGapDrop(event, {
+                                            columnKey: column.key,
+                                            beforeCardKey: null,
+                                        })
                                     }
                                 />
                             </div>

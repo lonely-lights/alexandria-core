@@ -1,11 +1,24 @@
 import { router, usePage } from '@inertiajs/react';
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    useSyncExternalStore,
+    type CSSProperties,
+} from 'react';
 
 import useT from '@alexandria/hooks/useT';
 import { useBrowserChrome } from '@alexandria/hooks/useBrowserChrome';
 import useEntitlements from '@alexandria/hooks/useEntitlements';
 import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
-import { ScreenplayTemplateContext, STANDARD_SCREENPLAY_TEMPLATE, screenplayTemplateCss, type ScreenplayTemplate } from '@alexandria/editor/screenplay/template';
+import {
+    ScreenplayTemplateContext,
+    STANDARD_SCREENPLAY_TEMPLATE,
+    screenplayTemplateCss,
+    type ScreenplayTemplate,
+} from '@alexandria/editor/screenplay/template';
 import ScreenplayElementsModal from './Sections/ScreenplayElementsModal';
 import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
 import Ribbon from '@alexandria/ribbon/Ribbon';
@@ -26,15 +39,25 @@ import { patchCachedPreferences } from '@alexandria/pages/Settings/settingsCache
 import ContinuousFlow, { type ActiveScene } from './Flow/ContinuousFlow';
 import ViewModeMenu from './Flow/ViewModeMenu';
 import { flowUrl, parseSceneFragment } from './Flow/flowUrl';
-import { readViewMode, writeViewMode, type WorkspaceViewMode } from './Flow/viewMode';
+import {
+    readViewMode,
+    writeViewMode,
+    type WorkspaceViewMode,
+} from './Flow/viewMode';
 import ExportFdxModal from './Fdx/ExportFdxModal';
 import { importFdx } from './Fdx/importFdx';
 import HistoryPanel from './Revisions/HistoryPanel';
 import MarkRevisionModal from './Revisions/MarkRevisionModal';
-import MarkThreadModal, { type ThreadAnchor, type ThreadSectionRef } from './Threads/MarkThreadModal';
+import MarkThreadModal, {
+    type ThreadAnchor,
+    type ThreadSectionRef,
+} from './Threads/MarkThreadModal';
 import ThreadsPanel from './Threads/ThreadsPanel';
 import ThreadHighlightDetails from './Threads/ThreadHighlightDetails';
-import { THREAD_HIGHLIGHT_OPEN, type ThreadHighlightOpen } from './Threads/threadHighlightEvents';
+import {
+    THREAD_HIGHLIGHT_OPEN,
+    type ThreadHighlightOpen,
+} from './Threads/threadHighlightEvents';
 import { findSectionInTree } from './Threads/scopeChoice';
 import type { PatternThread } from './Threads/threadApi';
 import AddSectionModal from './Sections/AddSectionModal';
@@ -66,9 +89,14 @@ import {
 } from './pageMargins';
 import Navigator from './Sections/Navigator';
 import SectionSettingsModal from './Sections/SectionSettingsModal';
-import { readStructureOpen, writeStructureOpen } from './Sections/structureOpen';
+import {
+    readStructureOpen,
+    writeStructureOpen,
+} from './Sections/structureOpen';
 import CommentRail from './Sections/CommentRail';
-import PanelModeSwitcher, { BUILTIN_PANEL_MODES } from './Sections/PanelModeSwitcher';
+import PanelModeSwitcher, {
+    BUILTIN_PANEL_MODES,
+} from './Sections/PanelModeSwitcher';
 import MobileWritingHeader from './mobile/MobileWritingHeader';
 import WritingTools from './mobile/WritingTools';
 import { WritingToolButtons, WritingToolModal } from './RegisteredWritingTools';
@@ -79,7 +107,10 @@ import MobileEditingStrip from './mobile/MobileEditingStrip';
 import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
 import SidebarNotesPanel from './Sections/SidebarNotesPanel';
 import ScreenplayEditor from './Sections/ScreenplayEditor';
-import { extractSectionOutline, type SectionOutlineItem } from './Sections/sectionOutline';
+import {
+    extractSectionOutline,
+    type SectionOutlineItem,
+} from './Sections/sectionOutline';
 import WorkSettingsModal, {
     type LengthPlanOption,
     type WorkLengthPlan,
@@ -87,7 +118,10 @@ import WorkSettingsModal, {
 import WorkspaceStatusBar from './Sections/WorkspaceStatusBar';
 import WritingSaveProvider from './Sections/WritingSaveContext';
 import { WritingSaveCoordinator } from './Sections/SectionSaveQueue';
-import type { WritingEditorBridge, WritingRibbonContext } from './ribbon/writingRibbonContext';
+import type {
+    WritingEditorBridge,
+    WritingRibbonContext,
+} from './ribbon/writingRibbonContext';
 import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
 import { type PanelMode, readPanelMode, writePanelMode } from './panelMode';
 import { getSidebarModes, subscribeSidebarModes } from './sidebarModeRegistry';
@@ -192,7 +226,13 @@ const LEGACY_NEUTRAL_CHROME_STORAGE_KEY = 'alexandria.writing.neutral_chrome';
 const DEFAULT_ZOOM = '100';
 const ZOOM_VALUES = new Set(['75', '90', '100', '110', '125', '150']);
 const DEFAULT_PAPER_COLOR = 'white';
-const PAPER_COLOR_VALUES = new Set(['theme', 'white', 'ivory', 'cream', 'gray']);
+const PAPER_COLOR_VALUES = new Set([
+    'theme',
+    'white',
+    'ivory',
+    'cream',
+    'gray',
+]);
 
 function readPanelOpenPreference(): boolean {
     try {
@@ -210,13 +250,16 @@ function readPaperColorPreference(): string {
             return stored;
         }
 
-        const legacyPaper = localStorage.getItem(LEGACY_NEUTRAL_PAPER_STORAGE_KEY);
+        const legacyPaper = localStorage.getItem(
+            LEGACY_NEUTRAL_PAPER_STORAGE_KEY,
+        );
 
         if (legacyPaper !== null && PAPER_COLOR_VALUES.has(legacyPaper)) {
             return legacyPaper;
         }
 
-        return localStorage.getItem(LEGACY_NEUTRAL_CHROME_STORAGE_KEY) === 'false'
+        return localStorage.getItem(LEGACY_NEUTRAL_CHROME_STORAGE_KEY) ===
+            'false'
             ? 'theme'
             : DEFAULT_PAPER_COLOR;
     } catch {
@@ -228,7 +271,9 @@ function readZoomPreference(): string {
     try {
         const stored = localStorage.getItem(ZOOM_STORAGE_KEY);
 
-        return stored !== null && ZOOM_VALUES.has(stored) ? stored : DEFAULT_ZOOM;
+        return stored !== null && ZOOM_VALUES.has(stored)
+            ? stored
+            : DEFAULT_ZOOM;
     } catch {
         return DEFAULT_ZOOM;
     }
@@ -257,7 +302,8 @@ function findSectionNode(nodes: SectionNode[], id: number): SectionNode | null {
 // row starts at the viewport top. The background matches .ribbon's
 // bar tint so shell and ribbon read as one surface.
 const ribbonShellStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 4%, var(--theme-base-page))',
+    background:
+        'color-mix(in srgb, var(--theme-base-content) 4%, var(--theme-base-page))',
 };
 
 const mutedText: CSSProperties = {
@@ -278,7 +324,8 @@ const statusChipStyle: CSSProperties = {
 };
 
 const typeChipStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)',
+    background:
+        'color-mix(in srgb, var(--theme-brand-primary-500) 10%, transparent)',
     color: 'var(--theme-brand-primary-500)',
     borderRadius: 'var(--theme-radius-badge)',
     padding: '0.125rem 0.5rem',
@@ -293,7 +340,17 @@ export default function Workspace() {
     const t = useT();
     const entitlements = useEntitlements();
     const pageProps = usePage<WorkspaceProps>().props;
-    const { project, work, structureBlueprint, sections, currentSection, pins, types, lengthPlans, can } = pageProps;
+    const {
+        project,
+        work,
+        structureBlueprint,
+        sections,
+        currentSection,
+        pins,
+        types,
+        lengthPlans,
+        can,
+    } = pageProps;
     const workTypeLabel = t(`writing.types.${work.type}`, work.type);
 
     // WorkspaceProps uses `[key: string]: unknown` for the Inertia shared
@@ -302,8 +359,11 @@ export default function Workspace() {
         (pageProps as { auth?: { user?: { id: number } } }).auth?.user?.id ?? 0;
 
     const sharedShowSectionTypeLabels =
-        (pageProps as { auth?: { preferences?: { show_section_type_labels?: boolean } } })
-            .auth?.preferences?.show_section_type_labels ?? true;
+        (
+            pageProps as {
+                auth?: { preferences?: { show_section_type_labels?: boolean } };
+            }
+        ).auth?.preferences?.show_section_type_labels ?? true;
 
     // Build ribbon gates: permission map from the page `can` prop +
     // entitlement keys normalised by useEntitlements() (truthy keys only).
@@ -318,12 +378,17 @@ export default function Workspace() {
     const [liveWorkWords, setLiveWorkWords] = useState<number | null>(null);
     // The work id intentionally invalidates queues when this page changes works.
     // It is a lifecycle key, not a missing read inside the factory.
-    const saveCoordinator = useMemo(() => new WritingSaveCoordinator(), [work.id]);
+    const saveCoordinator = useMemo(
+        () => new WritingSaveCoordinator(),
+        [work.id],
+    );
 
     // Server-confirmed page estimates per section (null until the
     // section's first confirmed save — same freshness the old
     // SectionChrome footer had reading the autosave hook directly).
-    const [livePages, setLivePages] = useState<Record<number, number | null>>({});
+    const [livePages, setLivePages] = useState<Record<number, number | null>>(
+        {},
+    );
     const headerRef = useBrowserChrome<HTMLDivElement>();
 
     // Bumped after each confirmed autosave so the reference panel
@@ -338,13 +403,23 @@ export default function Workspace() {
         sectionId: number | null;
         anchor: { from: number; to: number; text: string };
     } | null>(null);
-    const [highlightCommentId, setHighlightCommentId] = useState<number | null>(null);
+    const [highlightCommentId, setHighlightCommentId] = useState<number | null>(
+        null,
+    );
 
     // Subscribe to sidebar mode registry — re-renders when packages register
     // new modes at boot (useSyncExternalStore is safe for concurrent mode).
-    const registeredModes = useSyncExternalStore(subscribeSidebarModes, getSidebarModes);
+    const registeredModes = useSyncExternalStore(
+        subscribeSidebarModes,
+        getSidebarModes,
+    );
     const [toolModalId, setToolModalId] = useState<string | null>(null);
-    const activeTool = registeredModes.find((mode) => mode.id === toolModalId && mode.presentation === 'modal' && resolveGate(mode.requires, writingGates) === 'visible');
+    const activeTool = registeredModes.find(
+        (mode) =>
+            mode.id === toolModalId &&
+            mode.presentation === 'modal' &&
+            resolveGate(mode.requires, writingGates) === 'visible',
+    );
 
     const [panelOpen, setPanelOpen] = useState(readPanelOpenPreference);
     const viewport = useWritingViewport();
@@ -362,45 +437,68 @@ export default function Workspace() {
     // a stored id that is unknown or locked falls back to 'linked'.
     const [panelMode, setPanelMode] = useState<PanelMode>(() => {
         const initAllowedIds = getSidebarModes()
-            .filter((m) => m.presentation !== 'modal' && resolveGate(m.requires, writingGates) === 'visible')
+            .filter(
+                (m) =>
+                    m.presentation !== 'modal' &&
+                    resolveGate(m.requires, writingGates) === 'visible',
+            )
             .map((m) => m.id);
         return readPanelMode(work.id, initAllowedIds);
     });
     const [linkedPanelTab, setLinkedPanelTab] = useState(() =>
         work.format === 'screenplay' ? 'scene-links' : 'browse',
     );
-    const [structureOpen, setStructureOpen] = useState(() => readStructureOpen(work.id));
+    const [structureOpen, setStructureOpen] = useState(() =>
+        readStructureOpen(work.id),
+    );
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const openWorkSettings = useCallback(async () => {
+        if ((await saveCoordinator.flush()).every(Boolean))
+            setSettingsOpen(true);
+    }, [saveCoordinator]);
     const [elementsOpen, setElementsOpen] = useState(false);
     const [sectionSettingsOpen, setSectionSettingsOpen] = useState(false);
-    const [showSectionTypeLabels, setShowSectionTypeLabels] = useState(sharedShowSectionTypeLabels);
+    const [showSectionTypeLabels, setShowSectionTypeLabels] = useState(
+        sharedShowSectionTypeLabels,
+    );
     const [sectionSettingsSaving, setSectionSettingsSaving] = useState(false);
-    const [sectionSettingsError, setSectionSettingsError] = useState<string | null>(null);
+    const [sectionSettingsError, setSectionSettingsError] = useState<
+        string | null
+    >(null);
     const [printLayout, setPrintLayout] = useState(readPrintLayoutPreference);
     const [showPlan, setShowPlan] = useState(readShowPlan);
-    const [pageDisplay, setPageDisplayState] = useState<PageDisplayMode>(readPageDisplay);
+    const [pageDisplay, setPageDisplayState] =
+        useState<PageDisplayMode>(readPageDisplay);
     const [paperColor, setPaperColor] = useState(readPaperColorPreference);
     const [zoom, setZoom] = useState(readZoomPreference);
     const [fontSize, setFontSize] = useState(readFontSize);
     const [marginXIn, setMarginXIn] = useState<number>(readMarginXIn);
-    const [currentOutline, setCurrentOutline] = useState<SectionOutlineItem[]>(() =>
-        currentSection?.format === 'prose' ? extractSectionOutline(currentSection.content) : [],
+    const [currentOutline, setCurrentOutline] = useState<SectionOutlineItem[]>(
+        () =>
+            currentSection?.format === 'prose'
+                ? extractSectionOutline(currentSection.content)
+                : [],
     );
-    const [screenplaySceneLinks, setScreenplaySceneLinks] = useState<ScreenplaySceneLink[]>([]);
+    const [screenplaySceneLinks, setScreenplaySceneLinks] = useState<
+        ScreenplaySceneLink[]
+    >([]);
     const [sceneLinksFocusSignal, setSceneLinksFocusSignal] = useState(0);
 
     // Section add/delete modal triggers — shared between the ribbon's
     // Structure tab and the Navigator's hover affordances.
-    const [addTarget, setAddTarget] = useState<{ parentId: number | null } | null>(null);
+    const [addTarget, setAddTarget] = useState<{
+        parentId: number | null;
+    } | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<SectionNode | null>(null);
     const [deleting, setDeleting] = useState(false);
 
     // Named delete-impact (Devices & Tropes rework-6) — fetched fresh
     // each time the confirm modal opens so the counts can never go stale
     // between opening the modal and clicking confirm.
-    const deleteImpactUrl = deleteTarget !== null
-        ? `${worksBase(project.slug, work.slug)}/sections/${deleteTarget.id}/delete-impact`
-        : null;
+    const deleteImpactUrl =
+        deleteTarget !== null
+            ? `${worksBase(project.slug, work.slug)}/sections/${deleteTarget.id}/delete-impact`
+            : null;
     const { data: deleteImpact, loading: deleteImpactLoading } = useJsonFetch<{
         title: string;
         descendant_sections: number;
@@ -419,7 +517,9 @@ export default function Workspace() {
     // entry point (scope picker unlocked); a SectionNode is the Navigator
     // row menu's entry point (scope locked to that row). `historyRefreshSignal`
     // bumps after a successful mark so an already-open History panel refetches.
-    const [markRevisionRequest, setMarkRevisionRequest] = useState<{ lockedSection: SectionNode | null } | null>(null);
+    const [markRevisionRequest, setMarkRevisionRequest] = useState<{
+        lockedSection: SectionNode | null;
+    } | null>(null);
     // Mutes the account tooltip while its dropdown is open (the menu
     // renders inside the tooltip trigger subtree).
     const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -442,11 +542,16 @@ export default function Workspace() {
     // any entry point) so an already-open Threads panel/detail modal
     // refetches.
     const [threadsRefreshSignal, setThreadsRefreshSignal] = useState(0);
-    const [highlightedThreads, setHighlightedThreads] = useState<ThreadHighlightOpen | null>(null);
+    const [highlightedThreads, setHighlightedThreads] =
+        useState<ThreadHighlightOpen | null>(null);
     useEffect(() => {
         function open(event: Event) {
             const detail = (event as CustomEvent<ThreadHighlightOpen>).detail;
-            if (detail?.projectSlug === project.slug && detail.threads.length > 0 && findSectionInTree(sections, detail.sectionId)) {
+            if (
+                detail?.projectSlug === project.slug &&
+                detail.threads.length > 0 &&
+                findSectionInTree(sections, detail.sectionId)
+            ) {
                 setHighlightedThreads(detail);
             }
         }
@@ -486,7 +591,9 @@ export default function Workspace() {
     );
 
     const effectiveSection =
-        viewMode === 'continuous' ? (activeScene?.section ?? currentSection) : currentSection;
+        viewMode === 'continuous'
+            ? (activeScene?.section ?? currentSection)
+            : currentSection;
 
     useEffect(() => {
         setShowSectionTypeLabels(sharedShowSectionTypeLabels);
@@ -501,9 +608,16 @@ export default function Workspace() {
             }
         }
 
-        window.addEventListener(VIEW_PREFERENCES_CHANGED_EVENT, handleViewPreferenceChange);
+        window.addEventListener(
+            VIEW_PREFERENCES_CHANGED_EVENT,
+            handleViewPreferenceChange,
+        );
 
-        return () => window.removeEventListener(VIEW_PREFERENCES_CHANGED_EVENT, handleViewPreferenceChange);
+        return () =>
+            window.removeEventListener(
+                VIEW_PREFERENCES_CHANGED_EVENT,
+                handleViewPreferenceChange,
+            );
     }, []);
 
     /* Margin drags arrive as window events from the ruler (six layers
@@ -532,7 +646,8 @@ export default function Workspace() {
        open/closed preferences — continuous (and outline) restore them
        as they were. */
     const chromeVisible = viewMode !== 'focus';
-    const companionVisible = viewport.compact || !chromeVisible ? transientCompanionOpen : panelOpen;
+    const companionVisible =
+        viewport.compact || !chromeVisible ? transientCompanionOpen : panelOpen;
 
     /* Narrowed dependency values, extracted to plain identifiers so the
        hook dep arrays stay simple expressions. These MUST stay in the
@@ -553,13 +668,16 @@ export default function Workspace() {
     // scene's, held in a ref so a bridge report never has to invalidate
     // the callback the editors are subscribed through.
     const bridgesRef = useRef(new Map<number, WritingEditorBridge | null>());
-    const activeSectionIdRef = useRef<number | null>(currentSection?.id ?? null);
+    const activeSectionIdRef = useRef<number | null>(
+        currentSection?.id ?? null,
+    );
 
     const handleActiveSceneChange = useCallback(
         (active: ActiveScene) => {
             setActiveScene(active);
             activeSectionIdRef.current = active.section.id;
-            bridgeRef.current = bridgesRef.current.get(active.section.id) ?? null;
+            bridgeRef.current =
+                bridgesRef.current.get(active.section.id) ?? null;
 
             // A bridge swap IS a state change for every editorTick
             // consumer: without this, tick-gated panels (craft's
@@ -583,7 +701,12 @@ export default function Workspace() {
             window.history.replaceState(
                 window.history.state,
                 '',
-                flowUrl(project.slug, work.slug, active.section.slug, active.sceneIndex),
+                flowUrl(
+                    project.slug,
+                    work.slug,
+                    active.section.slug,
+                    active.sceneIndex,
+                ),
             );
         },
         [project.slug, work.slug, handleEditorStateChange],
@@ -603,11 +726,12 @@ export default function Workspace() {
     );
 
     const switchViewMode = useCallback(
-        (next: WorkspaceViewMode) => {
+        async (next: WorkspaceViewMode) => {
             if (next === viewMode) {
                 return;
             }
 
+            if ((await saveCoordinator.flush()).some((saved) => !saved)) return;
             writeViewMode(work.id, next);
             setViewMode(next);
             setTransientCompanionOpen(false);
@@ -631,11 +755,15 @@ export default function Workspace() {
             // hears about them. Leaving either structural view is the
             // one moment that MUST catch it up.
             const leavingStructuralView =
-                (viewMode === 'outline' || viewMode === 'kanban') && next !== 'outline' && next !== 'kanban';
+                (viewMode === 'outline' || viewMode === 'kanban') &&
+                next !== 'outline' &&
+                next !== 'kanban';
 
             if (next === 'focus' && slug !== null) {
                 router.visit(flowUrl(project.slug, work.slug, slug), {
-                    only: leavingStructuralView ? ['currentSection', 'sections'] : ['currentSection'],
+                    only: leavingStructuralView
+                        ? ['currentSection', 'sections']
+                        : ['currentSection'],
                     preserveState: true,
                     preserveScroll: true,
                 });
@@ -643,7 +771,16 @@ export default function Workspace() {
                 router.reload({ only: ['sections', 'currentSection'] });
             }
         },
-        [viewMode, work.id, activeSceneSlug, currentSectionId, currentSectionSlug, project.slug, work.slug],
+        [
+            viewMode,
+            work.id,
+            activeSceneSlug,
+            currentSectionId,
+            currentSectionSlug,
+            project.slug,
+            work.slug,
+            saveCoordinator,
+        ],
     );
 
     const handleEntryLinkSelect = useCallback(() => {
@@ -669,7 +806,10 @@ export default function Workspace() {
             return;
         }
         setPanelOpen((prev) => {
-            const shouldClose = prev && panelMode === 'linked' && linkedPanelTab === 'scene-links';
+            const shouldClose =
+                prev &&
+                panelMode === 'linked' &&
+                linkedPanelTab === 'scene-links';
             const next = !shouldClose;
 
             if (next) {
@@ -703,8 +843,14 @@ export default function Workspace() {
             }
 
             setMarkThreadRequest({
-                lockedSection: { id: effectiveSectionId, title: effectiveSectionTitle },
-                anchor: { text: selectionAnchor.text, offsetHint: selectionAnchor.from },
+                lockedSection: {
+                    id: effectiveSectionId,
+                    title: effectiveSectionTitle,
+                },
+                anchor: {
+                    text: selectionAnchor.text,
+                    offsetHint: selectionAnchor.from,
+                },
                 lockedThread: null,
             });
         },
@@ -715,26 +861,34 @@ export default function Workspace() {
     // The structure plan rides with the outline in the right rail rather
     // than over the section tree (owner ruling 2026-09-16). Computed here
     // because the Workspace already holds every input it needs.
-    const structureGuidance = getStructureGuidance({ work, sections, currentSection: effectiveSection });
+    const structureGuidance = getStructureGuidance({
+        work,
+        sections,
+        currentSection: effectiveSection,
+    });
 
-    const handleAddComment = useCallback((anchor: { from: number; to: number; text: string }) => {
-        setTransientCompanionOpen(true);
-        setPendingCommentAnchor({ sectionId: effectiveSectionId, anchor });
-        setPanelOpen(true);
-        setPanelMode('comments');
-        writePanelMode(work.id, 'comments');
-        try {
-            localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
-        } catch {
-            // Best-effort.
-        }
-    }, [work.id, effectiveSectionId]);
+    const handleAddComment = useCallback(
+        (anchor: { from: number; to: number; text: string }) => {
+            setTransientCompanionOpen(true);
+            setPendingCommentAnchor({ sectionId: effectiveSectionId, anchor });
+            setPanelOpen(true);
+            setPanelMode('comments');
+            writePanelMode(work.id, 'comments');
+            try {
+                localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
+            } catch {
+                // Best-effort.
+            }
+        },
+        [work.id, effectiveSectionId],
+    );
 
     // Listen for mark-click events from the editor (click on a comment-mark
     // span) → open comment rail and highlight the matching card.
     useEffect(() => {
         function handleCommentAnchorClick(e: Event) {
-            const detail = (e as CustomEvent<{ commentId: number } | null>).detail;
+            const detail = (e as CustomEvent<{ commentId: number } | null>)
+                .detail;
             if (!detail) return;
             const id = detail.commentId;
             if (isFinite(id)) {
@@ -749,8 +903,15 @@ export default function Workspace() {
                 }
             }
         }
-        window.addEventListener('alexandria:comment-anchor-click', handleCommentAnchorClick);
-        return () => window.removeEventListener('alexandria:comment-anchor-click', handleCommentAnchorClick);
+        window.addEventListener(
+            'alexandria:comment-anchor-click',
+            handleCommentAnchorClick,
+        );
+        return () =>
+            window.removeEventListener(
+                'alexandria:comment-anchor-click',
+                handleCommentAnchorClick,
+            );
     }, [work.id]);
 
     useEffect(() => {
@@ -761,11 +922,20 @@ export default function Workspace() {
         );
         if (effectiveSection?.format !== 'screenplay') {
             setScreenplaySceneLinks([]);
-            if (work.format !== 'screenplay' && linkedPanelTab === 'scene-links') {
+            if (
+                work.format !== 'screenplay' &&
+                linkedPanelTab === 'scene-links'
+            ) {
                 setLinkedPanelTab('browse');
             }
         }
-    }, [effectiveSection?.id, effectiveSection?.content, effectiveSection?.format, linkedPanelTab, work.format]);
+    }, [
+        effectiveSection?.id,
+        effectiveSection?.content,
+        effectiveSection?.format,
+        linkedPanelTab,
+        work.format,
+    ]);
 
     /* Clear transient comment state when the active section changes. */
     useEffect(() => {
@@ -785,10 +955,17 @@ export default function Workspace() {
         const previousBodyWidth = document.body.style.width;
         const previousBodyScrollbarGutter = document.body.style.scrollbarGutter;
         const previousHtmlMaxHeight = document.documentElement.style.maxHeight;
-        const previousHtmlScrollbarGutter = document.documentElement.style.scrollbarGutter;
-        const htmlHadLock = document.documentElement.classList.contains('alex-writing-workspace-lock');
-        const bodyHadLock = document.body.classList.contains('alex-writing-workspace-lock');
-        const main = document.querySelector<HTMLElement>('main[data-theme-target="content"]');
+        const previousHtmlScrollbarGutter =
+            document.documentElement.style.scrollbarGutter;
+        const htmlHadLock = document.documentElement.classList.contains(
+            'alex-writing-workspace-lock',
+        );
+        const bodyHadLock = document.body.classList.contains(
+            'alex-writing-workspace-lock',
+        );
+        const main = document.querySelector<HTMLElement>(
+            'main[data-theme-target="content"]',
+        );
         const previousMainOverflow = main?.style.overflow ?? '';
         const previousMainHeight = main?.style.height ?? '';
         const previousMainMinHeight = main?.style.minHeight ?? '';
@@ -818,7 +995,8 @@ export default function Workspace() {
             document.documentElement.style.overflow = previousHtmlOverflow;
             document.documentElement.style.height = previousHtmlHeight;
             document.documentElement.style.maxHeight = previousHtmlMaxHeight;
-            document.documentElement.style.scrollbarGutter = previousHtmlScrollbarGutter;
+            document.documentElement.style.scrollbarGutter =
+                previousHtmlScrollbarGutter;
             document.body.style.overflow = previousBodyOverflow;
             document.body.style.height = previousBodyHeight;
             document.body.style.maxHeight = previousBodyMaxHeight;
@@ -829,7 +1007,9 @@ export default function Workspace() {
             document.body.style.scrollbarGutter = previousBodyScrollbarGutter;
 
             if (!htmlHadLock) {
-                document.documentElement.classList.remove('alex-writing-workspace-lock');
+                document.documentElement.classList.remove(
+                    'alex-writing-workspace-lock',
+                );
             }
 
             if (!bodyHadLock) {
@@ -881,7 +1061,9 @@ export default function Workspace() {
                 applyViewPreferences({
                     show_section_type_labels: previous,
                 });
-                setSectionSettingsError(t('writing.workspace.section_settings_save_failed'));
+                setSectionSettingsError(
+                    t('writing.workspace.section_settings_save_failed'),
+                );
             };
 
             setSectionSettingsError(null);
@@ -947,7 +1129,9 @@ export default function Workspace() {
     }, []);
 
     const updatePaperColor = useCallback((value: string) => {
-        const next = PAPER_COLOR_VALUES.has(value) ? value : DEFAULT_PAPER_COLOR;
+        const next = PAPER_COLOR_VALUES.has(value)
+            ? value
+            : DEFAULT_PAPER_COLOR;
         setPaperColor(next);
         try {
             localStorage.setItem(PAPER_COLOR_STORAGE_KEY, next);
@@ -992,7 +1176,12 @@ export default function Workspace() {
         });
     }
 
-    function handleCounts(sectionId: number, words: number, workWords: number, pages: number | null) {
+    function handleCounts(
+        sectionId: number,
+        words: number,
+        workWords: number,
+        pages: number | null,
+    ) {
         setLiveCounts((prev) => ({ ...prev, [sectionId]: words }));
         setLivePages((prev) => ({ ...prev, [sectionId]: pages }));
         setLiveWorkWords(workWords);
@@ -1004,14 +1193,17 @@ export default function Workspace() {
             return;
         }
 
-        router.delete(`${worksBase(project.slug, work.slug)}/sections/${deleteTarget.id}`, {
-            preserveScroll: true,
-            onStart: () => setDeleting(true),
-            onFinish: () => {
-                setDeleting(false);
-                setDeleteTarget(null);
+        router.delete(
+            `${worksBase(project.slug, work.slug)}/sections/${deleteTarget.id}`,
+            {
+                preserveScroll: true,
+                onStart: () => setDeleting(true),
+                onFinish: () => {
+                    setDeleting(false);
+                    setDeleteTarget(null);
+                },
             },
-        });
+        );
     }
 
     const ribbonCtx = useMemo<WritingRibbonContext>(() => {
@@ -1019,10 +1211,16 @@ export default function Workspace() {
         const workSlug = work.slug;
 
         return {
-            format: (effectiveSectionFormat ?? work.format) === 'screenplay' ? 'screenplay' : 'prose',
+            format:
+                (effectiveSectionFormat ?? work.format) === 'screenplay'
+                    ? 'screenplay'
+                    : 'prose',
             canUpdate: can.update && !readingMode,
             panelOpen: companionVisible,
-            sceneLinksPanelOpen: companionVisible && panelMode === 'linked' && linkedPanelTab === 'scene-links',
+            sceneLinksPanelOpen:
+                companionVisible &&
+                panelMode === 'linked' &&
+                linkedPanelTab === 'scene-links',
             viewMode,
             printLayout,
             showPlan,
@@ -1040,8 +1238,13 @@ export default function Workspace() {
                 return bridgeRef.current;
             },
             actions: {
-                saveNow: () => { void saveCoordinator.flush(); },
-                openFind: (replace = false) => { setReplaceInitially(replace); setFindOpen(true); },
+                saveNow: () => {
+                    void saveCoordinator.flush();
+                },
+                openFind: (replace = false) => {
+                    setReplaceInitially(replace);
+                    setFindOpen(true);
+                },
                 togglePanel,
                 toggleSceneLinksPanel,
                 setViewMode: switchViewMode,
@@ -1052,9 +1255,12 @@ export default function Workspace() {
                 setZoom: updateZoom,
                 setFontSize: updateFontSize,
                 openSectionSettings,
-                openSettings: () => setSettingsOpen(true),
+                openSettings: () => {
+                    void openWorkSettings();
+                },
                 openScreenplayElements: () => setElementsOpen(true),
-                openReports: () => router.visit(`${worksBase(projectSlug, workSlug)}/reports`),
+                openReports: () =>
+                    router.visit(`${worksBase(projectSlug, workSlug)}/reports`),
                 addSection: () => setAddTarget({ parentId: null }),
                 addInside: () => {
                     if (effectiveSectionId !== null) {
@@ -1085,14 +1291,59 @@ export default function Workspace() {
                 openExportFdx: () => setFdxExportOpen(true),
                 importFdx: () => {
                     setFdxImportError(null);
-                    importFdx(projectSlug, (message) => setFdxImportError(message ?? t('writing.fdx.import_failed')));
+                    importFdx(projectSlug, (message) =>
+                        setFdxImportError(
+                            message ?? t('writing.fdx.import_failed'),
+                        ),
+                    );
                 },
-                openMarkRevision: () => setMarkRevisionRequest({ lockedSection: null }),
-                openMarkThread: () => setMarkThreadRequest({ lockedSection: null, anchor: null, lockedThread: null }),
+                openMarkRevision: () =>
+                    setMarkRevisionRequest({ lockedSection: null }),
+                openMarkThread: () =>
+                    setMarkThreadRequest({
+                        lockedSection: null,
+                        anchor: null,
+                        lockedThread: null,
+                    }),
             },
             workStatus: work.status,
         };
-    }, [project.slug, work.slug, work.format, work.title, work.status, can.update, readingMode, companionVisible, panelMode, linkedPanelTab, viewMode, printLayout, showPlan, pageDisplay, paperColor, zoom, fontSize, effectiveSectionFormat, effectiveSectionId, sections, editorTick, togglePanel, toggleSceneLinksPanel, switchViewMode, togglePrintLayout, toggleShowPlan, updatePageDisplay, updatePaperColor, updateZoom, updateFontSize, openSectionSettings, saveCoordinator, t]);
+    }, [
+        project.slug,
+        work.slug,
+        work.format,
+        work.title,
+        work.status,
+        can.update,
+        readingMode,
+        companionVisible,
+        panelMode,
+        linkedPanelTab,
+        viewMode,
+        printLayout,
+        showPlan,
+        pageDisplay,
+        paperColor,
+        zoom,
+        fontSize,
+        effectiveSectionFormat,
+        effectiveSectionId,
+        sections,
+        editorTick,
+        togglePanel,
+        toggleSceneLinksPanel,
+        switchViewMode,
+        togglePrintLayout,
+        toggleShowPlan,
+        updatePageDisplay,
+        updatePaperColor,
+        updateZoom,
+        updateFontSize,
+        openSectionSettings,
+        saveCoordinator,
+        openWorkSettings,
+        t,
+    ]);
 
     useEffect(() => {
         const openTools = (event: KeyboardEvent) => {
@@ -1102,7 +1353,14 @@ export default function Workspace() {
                 setTransientCompanionOpen(false);
                 setToolsPage('');
             }
-            if ((event.ctrlKey || event.metaKey) && !event.altKey && ['f', 'h'].includes(event.key.toLowerCase()) && !event.isComposing && !document.querySelector('dialog[open]') && !bridgeRef.current?.isCodeView()) {
+            if (
+                (event.ctrlKey || event.metaKey) &&
+                !event.altKey &&
+                ['f', 'h'].includes(event.key.toLowerCase()) &&
+                !event.isComposing &&
+                !document.querySelector('dialog[open]') &&
+                !bridgeRef.current?.isCodeView()
+            ) {
                 event.preventDefault();
                 setReplaceInitially(event.key.toLowerCase() === 'h');
                 setFindOpen(true);
@@ -1113,9 +1371,11 @@ export default function Workspace() {
     }, []);
 
     function toggleReading() {
-        if (!readingMode && bridgeRef.current?.isCodeView()) bridgeRef.current.toggleCodeView();
+        if (!readingMode && bridgeRef.current?.isCodeView())
+            bridgeRef.current.toggleCodeView();
         setReadingMode((value) => !value);
-        if (viewMode === 'outline' || viewMode === 'kanban') switchViewMode('continuous');
+        if (viewMode === 'outline' || viewMode === 'kanban')
+            switchViewMode('continuous');
     }
 
     const workWords = liveWorkWords ?? work.word_count;
@@ -1129,7 +1389,9 @@ export default function Workspace() {
             ? (liveCounts[effectiveSection.id] ?? effectiveSection.word_count)
             : 0;
     const sectionPages =
-        effectiveSection !== null ? (livePages[effectiveSection.id] ?? null) : null;
+        effectiveSection !== null
+            ? (livePages[effectiveSection.id] ?? null)
+            : null;
 
     return (
         // navbar={false}: the merged header — the ribbon's tab row IS
@@ -1143,191 +1405,303 @@ export default function Workspace() {
         // collapsed Writing handle cannot navigate, while one deliberate
         // reveal exposes Settings and the other global destinations. Peek
         // mode overlays rather than re-growing this viewport-exact surface.
-        <ScreenplayTemplateContext value={work.screenplay_template ?? STANDARD_SCREENPLAY_TEMPLATE}>
-        <WritingSaveProvider coordinator={saveCoordinator} workPath={worksBase(project.slug, work.slug)}>
-        <style>{screenplayTemplateCss(work.screenplay_template ?? STANDARD_SCREENPLAY_TEMPLATE)}</style>
-        <AppLayout
-            title={`${work.title} - ${project.name}`}
-            navbar={false}
-            immersive
-            fabActions={null}
-            bottomNavPresentation="peek"
-            bottomNavActiveTabId="writing"
+        <ScreenplayTemplateContext
+            value={work.screenplay_template ?? STANDARD_SCREENPLAY_TEMPLATE}
         >
-            {/* The workspace IS the viewport — only the editor desk
+            <WritingSaveProvider
+                coordinator={saveCoordinator}
+                workPath={worksBase(project.slug, work.slug)}
+            >
+                <style>
+                    {screenplayTemplateCss(
+                        work.screenplay_template ??
+                            STANDARD_SCREENPLAY_TEMPLATE,
+                    )}
+                </style>
+                <AppLayout
+                    title={`${work.title} - ${project.name}`}
+                    navbar={false}
+                    immersive
+                    fabActions={null}
+                    bottomNavPresentation="peek"
+                    bottomNavActiveTabId="writing"
+                >
+                    {/* The workspace IS the viewport — only the editor desk
                 (and the side rails internally) scroll, so the window
                 never grows a second scrollbar. Height/overflow are
                 INLINE on purpose: `h-dvh` was a first-use utility in
                 the vendor path and Tailwind's source scan missed it in
                 some dev pipelines (vendor/ is .gitignored) — inline
                 styles can't be skipped by a CSS generator. */}
-            <div
-                className="writing-workspace-shell safe-x safe-bottom flex flex-col"
-                data-writing-paper-color={paperColor}
-                data-writing-compact={viewport.compact || undefined}
-                data-writing-reading={readingMode || undefined}
-                data-writing-keyboard={viewport.compact && viewport.keyboard || undefined}
-                style={{
-                    height: '100dvh',
-                    // Clip without creating a scroll container: scene landing
-                    // must never shift the frame's border under the header.
-                    overflow: 'clip',
-                    '--alex-writing-zoom': `${Number(zoom) / 100}`,
-                    '--alex-writing-font-size': `${fontSize}pt`,
-                    '--writing-visible-height': `${viewport.height}px`,
-                } as CSSProperties}
-            >
-                {/* Writing ribbon — the Docs-style split header. Left column:
+                    <div
+                        className="writing-workspace-shell safe-x safe-bottom flex flex-col"
+                        data-writing-paper-color={paperColor}
+                        data-writing-compact={viewport.compact || undefined}
+                        data-writing-reading={readingMode || undefined}
+                        data-writing-keyboard={
+                            (viewport.compact && viewport.keyboard) || undefined
+                        }
+                        style={
+                            {
+                                height: '100dvh',
+                                // Clip without creating a scroll container: scene landing
+                                // must never shift the frame's border under the header.
+                                overflow: 'clip',
+                                '--alex-writing-zoom': `${Number(zoom) / 100}`,
+                                '--alex-writing-font-size': `${fontSize}pt`,
+                                '--writing-visible-height': `${viewport.height}px`,
+                            } as CSSProperties
+                        }
+                    >
+                        {/* Writing ribbon — the Docs-style split header. Left column:
                     logo mark spanning both rows; main column: title + status
                     chip over the tab strip; right column: search + avatar
                     spanning both rows (breadcrumb + counts/progress live in
                     the status bar). */}
-                <div ref={headerRef} className="alex-writing-header shrink-0" style={ribbonShellStyle}>
-                    {viewport.compact ? <MobileWritingHeader title={work.title} reading={readingMode}
-                        tools={<WritingToolButtons modes={registeredModes} gates={writingGates} compact onOpen={setToolModalId} />}
-                        onDesk={() => setToolsPage('')} onTools={() => setToolsPage('edit')} onReading={toggleReading} /> :
-                    <Ribbon
-                        setKey="writing"
-                        context={ribbonCtx}
-                        gates={writingGates}
-                        bandTabId="edit"
-                        showQuickActions={false}
-                        leading={
-                            /* The logo doubles as the hamburger here — the
+                        <div
+                            ref={headerRef}
+                            className="alex-writing-header shrink-0"
+                            style={ribbonShellStyle}
+                        >
+                            {viewport.compact ? (
+                                <MobileWritingHeader
+                                    title={work.title}
+                                    reading={readingMode}
+                                    tools={
+                                        <WritingToolButtons
+                                            modes={registeredModes}
+                                            gates={writingGates}
+                                            compact
+                                            onOpen={setToolModalId}
+                                        />
+                                    }
+                                    onDesk={() => setToolsPage('')}
+                                    onTools={() => setToolsPage('edit')}
+                                    onReading={toggleReading}
+                                />
+                            ) : (
+                                <Ribbon
+                                    setKey="writing"
+                                    context={ribbonCtx}
+                                    gates={writingGates}
+                                    bandTabId="edit"
+                                    showQuickActions={false}
+                                    leading={
+                                        /* The logo doubles as the hamburger here — the
                                workspace runs navbar-less, so clicking it
                                slides out the same app sidebar the navbar
                                menu button opens everywhere else. */
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    window.dispatchEvent(
-                                        new CustomEvent(SIDEBAR_TOGGLE_EVENT),
-                                    )
-                                }
-                                aria-label={t('ribbon.menu')}
-                                className="inline-flex shrink-0 cursor-pointer items-center justify-center self-stretch"
-                                style={{ color: 'var(--theme-base-content)' }}
-                            >
-                                {/* Same interactive lockup as the navbar
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                window.dispatchEvent(
+                                                    new CustomEvent(
+                                                        SIDEBAR_TOGGLE_EVENT,
+                                                    ),
+                                                )
+                                            }
+                                            aria-label={t('ribbon.menu')}
+                                            className="inline-flex shrink-0 cursor-pointer items-center justify-center self-stretch"
+                                            style={{
+                                                color: 'var(--theme-base-content)',
+                                            }}
+                                        >
+                                            {/* Same interactive lockup as the navbar
                                     (owner, 2026-08-31): wave on hover,
                                     one-shot jump on click — the click
                                     still opens the sidebar via the
                                     wrapping button. Mark-only, sized to
                                     the corner's negative space. */}
-                                <LogoLockup
-                                    size="md"
-                                    markSize={44}
-                                    showWordmark={false}
-                                    wordmarkText="Alexandria"
-                                    interactive
-                                />
-                            </button>
-                        }
-                        headerRow={
-                            <>
-                                <span data-writing-work-title className="max-w-48 truncate text-base font-semibold md:max-w-[24rem]">
-                                    {workHeaderTitle(work.title, work.type, workTypeLabel)}
-                                </span>
-                                <span
-                                    className="hidden shrink-0 capitalize sm:inline-block"
-                                    data-writing-work-type
-                                    style={typeChipStyle}
-                                >
-                                    {workTypeLabel}
-                                </span>
-                                {/* Chip hides below md — the mobile header keeps
-                                    to logo · title / tabs, search · avatar. */}
-                                <span
-                                    className="hidden shrink-0 md:inline-block"
-                                    data-writing-work-status
-                                    style={statusChipStyle}
-                                >
-                                    {t(`writing.statuses.${work.status}`, work.status)}
-                                </span>
-                            </>
-                        }
-                        trailing={
-                            <>
-                                <Tooltip content={t('writing.tools.desk')}>
-                                    <button type="button" data-writing-desk className="alex-toolbar-btn writing-header-tool inline-flex items-center transition-colors" onClick={() => setToolsPage('')} aria-label={t('writing.header.desk')}>
-                                        <i className="fa-solid fa-feather-pointed" aria-hidden="true" />
-                                    </button>
-                                </Tooltip>
-                                <WritingToolButtons modes={registeredModes} gates={writingGates} onOpen={setToolModalId} />
-                                <Tooltip content={t('ribbon.search')}>
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            window.dispatchEvent(
-                                                new CustomEvent('alexandria-core:command-palette-toggle'),
-                                            )
-                                        }
-                                        aria-label={t('ribbon.search')}
-                                        className="alex-toolbar-btn writing-header-tool inline-flex items-center transition-colors"
-                                    >
-                                        <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
-                                    </button>
-                                </Tooltip>
-                                {can.update && (
-                                    <Tooltip content={t('writing.settings.title')}>
-                                        <button
-                                            type="button"
-                                            onClick={() => setSettingsOpen(true)}
-                                            aria-label={t('writing.header.settings')}
-                                            data-writing-work-settings
-                                            className="alex-toolbar-btn writing-header-tool inline-flex items-center transition-colors"
-                                        >
-                                            <i className="fa-solid fa-gear" aria-hidden="true" />
+                                            <LogoLockup
+                                                size="md"
+                                                markSize={44}
+                                                showWordmark={false}
+                                                wordmarkText="Alexandria"
+                                                interactive
+                                            />
                                         </button>
-                                    </Tooltip>
-                                )}
-                                <Tooltip content={t('ribbon.account')} disabled={accountMenuOpen}>
-                                    <span className="inline-flex">
-                                        <CompactUserMenu
-                                            ariaLabel={t('ribbon.account')}
-                                            size={44}
-                                            onOpenChange={setAccountMenuOpen}
-                                        />
-                                    </span>
-                                </Tooltip>
-                            </>
-                        }
-                    />}
-                </div>
+                                    }
+                                    headerRow={
+                                        <>
+                                            <span
+                                                data-writing-work-title
+                                                className="max-w-48 truncate text-base font-semibold md:max-w-[24rem]"
+                                            >
+                                                {workHeaderTitle(
+                                                    work.title,
+                                                    work.type,
+                                                    workTypeLabel,
+                                                )}
+                                            </span>
+                                            <span
+                                                className="hidden shrink-0 capitalize sm:inline-block"
+                                                data-writing-work-type
+                                                style={typeChipStyle}
+                                            >
+                                                {workTypeLabel}
+                                            </span>
+                                            {/* Chip hides below md — the mobile header keeps
+                                    to logo · title / tabs, search · avatar. */}
+                                            <span
+                                                className="hidden shrink-0 md:inline-block"
+                                                data-writing-work-status
+                                                style={statusChipStyle}
+                                            >
+                                                {t(
+                                                    `writing.statuses.${work.status}`,
+                                                    work.status,
+                                                )}
+                                            </span>
+                                        </>
+                                    }
+                                    trailing={
+                                        <>
+                                            <Tooltip
+                                                content={t(
+                                                    'writing.tools.desk',
+                                                )}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    data-writing-desk
+                                                    className="alex-toolbar-btn writing-header-tool inline-flex items-center transition-colors"
+                                                    onClick={() =>
+                                                        setToolsPage('')
+                                                    }
+                                                    aria-label={t(
+                                                        'writing.header.desk',
+                                                    )}
+                                                >
+                                                    <i
+                                                        className="fa-solid fa-feather-pointed"
+                                                        aria-hidden="true"
+                                                    />
+                                                </button>
+                                            </Tooltip>
+                                            <WritingToolButtons
+                                                modes={registeredModes}
+                                                gates={writingGates}
+                                                onOpen={setToolModalId}
+                                            />
+                                            <Tooltip
+                                                content={t('ribbon.search')}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        window.dispatchEvent(
+                                                            new CustomEvent(
+                                                                'alexandria-core:command-palette-toggle',
+                                                            ),
+                                                        )
+                                                    }
+                                                    aria-label={t(
+                                                        'ribbon.search',
+                                                    )}
+                                                    className="alex-toolbar-btn writing-header-tool inline-flex items-center transition-colors"
+                                                >
+                                                    <i
+                                                        className="fa-solid fa-magnifying-glass"
+                                                        aria-hidden="true"
+                                                    />
+                                                </button>
+                                            </Tooltip>
+                                            {can.update && (
+                                                <Tooltip
+                                                    content={t(
+                                                        'writing.settings.title',
+                                                    )}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            void openWorkSettings();
+                                                        }}
+                                                        aria-label={t(
+                                                            'writing.header.settings',
+                                                        )}
+                                                        data-writing-work-settings
+                                                        className="alex-toolbar-btn writing-header-tool inline-flex items-center transition-colors"
+                                                    >
+                                                        <i
+                                                            className="fa-solid fa-gear"
+                                                            aria-hidden="true"
+                                                        />
+                                                    </button>
+                                                </Tooltip>
+                                            )}
+                                            <Tooltip
+                                                content={t('ribbon.account')}
+                                                disabled={accountMenuOpen}
+                                            >
+                                                <span className="inline-flex">
+                                                    <CompactUserMenu
+                                                        ariaLabel={t(
+                                                            'ribbon.account',
+                                                        )}
+                                                        size={44}
+                                                        onOpenChange={
+                                                            setAccountMenuOpen
+                                                        }
+                                                    />
+                                                </span>
+                                            </Tooltip>
+                                        </>
+                                    }
+                                />
+                            )}
+                        </div>
 
-                {findOpen && <FindReplaceBar key={effectiveSectionId} editor={bridgeRef.current} editorTick={editorTick}
-                    canUpdate={can.update && !readingMode} sectionTitle={effectiveSection?.title ?? work.title}
-                    replaceInitially={replaceInitially} onClose={() => setFindOpen(false)} />}
+                        {findOpen && (
+                            <FindReplaceBar
+                                key={effectiveSectionId}
+                                editor={bridgeRef.current}
+                                editorTick={editorTick}
+                                canUpdate={can.update && !readingMode}
+                                sectionTitle={
+                                    effectiveSection?.title ?? work.title
+                                }
+                                replaceInitially={replaceInitially}
+                                onClose={() => setFindOpen(false)}
+                            />
+                        )}
 
-                {/* FDX import error — Task 5. No toast idiom exists in this
+                        {/* FDX import error — Task 5. No toast idiom exists in this
                     desk (see the fdxImportError declaration above), so this
                     mirrors WorkSettingsModal's entryLinkError pattern: a
                     dismissible inline notice instead of a global toast. */}
-                {fdxImportError && (
-                    <div
-                        className="shrink-0 flex items-center justify-between gap-3 px-4 py-2 text-sm"
-                        style={{
-                            background: 'var(--theme-status-error-subtle)',
-                            color: 'var(--theme-status-error-stroke)',
-                        }}
-                    >
-                        <span className="flex items-center gap-2">
-                            <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
-                            {fdxImportError}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => setFdxImportError(null)}
-                            aria-label="Dismiss"
-                            className="inline-flex h-5 w-5 shrink-0 items-center justify-center"
-                        >
-                            <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
-                        </button>
-                    </div>
-                )}
+                        {fdxImportError && (
+                            <div
+                                className="flex shrink-0 items-center justify-between gap-3 px-4 py-2 text-sm"
+                                style={{
+                                    background:
+                                        'var(--theme-status-error-subtle)',
+                                    color: 'var(--theme-status-error-stroke)',
+                                }}
+                            >
+                                <span className="flex items-center gap-2">
+                                    <i
+                                        className="fa-solid fa-circle-exclamation"
+                                        aria-hidden="true"
+                                    />
+                                    {fdxImportError}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setFdxImportError(null)}
+                                    aria-label="Dismiss"
+                                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center"
+                                >
+                                    <i
+                                        className="fa-solid fa-xmark text-xs"
+                                        aria-hidden="true"
+                                    />
+                                </button>
+                            </div>
+                        )}
 
-                <div className="writing-workspace-body relative flex min-h-0 flex-1">
-                    {/* Sections binder — pushed back entirely in focus mode:
+                        <div className="writing-workspace-body relative flex min-h-0 flex-1">
+                            {/* Sections binder — pushed back entirely in focus mode:
                         focus is "just the text" (owner ruling 2026-08-09).
                         Also absent in outline and board mode: each of
                         those panes IS the section map at full width, so
@@ -1351,547 +1725,1001 @@ export default function Workspace() {
                         mounted (only the rail button unmounts) so its
                         expand/collapse tree state survives a collapse
                         toggle. */}
-                    {!viewport.compact && chromeVisible && viewMode !== 'outline' && viewMode !== 'kanban' && (
-                    <div
-                        className="writing-workspace-binder hidden md:flex md:min-h-0 md:shrink-0"
-                        data-open={structureOpen ? 'true' : 'false'}
-                    >
-                        {/* Rail + panel both stay mounted; data-open on the
+                            {!viewport.compact &&
+                                chromeVisible &&
+                                viewMode !== 'outline' &&
+                                viewMode !== 'kanban' && (
+                                    <div
+                                        className="writing-workspace-binder hidden md:flex md:min-h-0 md:shrink-0"
+                                        data-open={
+                                            structureOpen ? 'true' : 'false'
+                                        }
+                                    >
+                                        {/* Rail + panel both stay mounted; data-open on the
                             root drives the CSS width/fade animation between
                             them (owner ruling, 2026-08-31 review). */}
-                        <div className="writing-workspace-binder-rail flex flex-col items-center gap-2 py-2">
-                                <Tooltip content={t('writing.workspace.show_sections')} placement="right">
-                                    <button
-                                        type="button"
-                                        className="writing-workspace-structure-toggle alex-toolbar-btn"
-                                        data-writing-structure-toggle
-                                        aria-label={t('writing.workspace.show_sections')}
-                                        aria-expanded={structureOpen}
-                                        onClick={toggleStructure}
-                                    >
-                                        <i className="fa-solid fa-list-ul" aria-hidden="true" />
-                                    </button>
-                                </Tooltip>
-                                <ViewModeMenu mode={viewMode} onChange={switchViewMode} />
-                            </div>
-                        <div
-                            className="writing-workspace-binder-panel flex w-72 min-h-0 flex-col"
-                            data-open={structureOpen ? 'true' : 'false'}
-                        >
-                            {/* Navigator owns the single SECTIONS header
+                                        <div className="writing-workspace-binder-rail flex flex-col items-center gap-2 py-2">
+                                            <Tooltip
+                                                content={t(
+                                                    'writing.workspace.show_sections',
+                                                )}
+                                                placement="right"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    className="writing-workspace-structure-toggle alex-toolbar-btn"
+                                                    data-writing-structure-toggle
+                                                    aria-label={t(
+                                                        'writing.workspace.show_sections',
+                                                    )}
+                                                    aria-expanded={
+                                                        structureOpen
+                                                    }
+                                                    onClick={toggleStructure}
+                                                >
+                                                    <i
+                                                        className="fa-solid fa-list-ul"
+                                                        aria-hidden="true"
+                                                    />
+                                                </button>
+                                            </Tooltip>
+                                            <ViewModeMenu
+                                                mode={viewMode}
+                                                onChange={switchViewMode}
+                                            />
+                                        </div>
+                                        <div
+                                            className="writing-workspace-binder-panel flex min-h-0 w-72 flex-col"
+                                            data-open={
+                                                structureOpen ? 'true' : 'false'
+                                            }
+                                        >
+                                            {/* Navigator owns the single SECTIONS header
                                 row now (owner review, 2026-08-31 — the
                                 doubled label is gone); the collapse toggle
                                 rides in as its headerTrailing so it sits
                                 right of the tree actions. */}
-                            <nav className="writing-workspace-section-pane min-h-0 flex-1 overflow-hidden">
+                                            <nav className="writing-workspace-section-pane min-h-0 flex-1 overflow-hidden">
+                                                <Navigator
+                                                    headerTrailing={
+                                                        <>
+                                                            <ViewModeMenu
+                                                                mode={viewMode}
+                                                                onChange={
+                                                                    switchViewMode
+                                                                }
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                className="writing-workspace-structure-toggle alex-toolbar-btn"
+                                                                data-writing-structure-toggle
+                                                                aria-label={t(
+                                                                    'writing.workspace.hide_sections',
+                                                                )}
+                                                                title={t(
+                                                                    'writing.workspace.hide_sections',
+                                                                )}
+                                                                aria-expanded={
+                                                                    structureOpen
+                                                                }
+                                                                onClick={
+                                                                    toggleStructure
+                                                                }
+                                                            >
+                                                                <i
+                                                                    className="fa-solid fa-angles-left"
+                                                                    aria-hidden="true"
+                                                                />
+                                                            </button>
+                                                        </>
+                                                    }
+                                                    projectSlug={project.slug}
+                                                    workSlug={work.slug}
+                                                    sections={sections}
+                                                    currentSlug={
+                                                        effectiveSection?.slug ??
+                                                        null
+                                                    }
+                                                    canUpdate={can.update}
+                                                    onSelect={selectSection}
+                                                    onRequestAdd={(parentId) =>
+                                                        setAddTarget({
+                                                            parentId,
+                                                        })
+                                                    }
+                                                    onRequestDelete={
+                                                        setDeleteTarget
+                                                    }
+                                                    onRequestSettings={
+                                                        openSectionSettings
+                                                    }
+                                                    onRequestMarkRevision={(
+                                                        node,
+                                                    ) =>
+                                                        setMarkRevisionRequest({
+                                                            lockedSection: node,
+                                                        })
+                                                    }
+                                                    liveCounts={liveCounts}
+                                                    currentOutline={
+                                                        currentOutline
+                                                    }
+                                                    showSectionTypeLabels={
+                                                        showSectionTypeLabels
+                                                    }
+                                                />
+                                            </nav>
+                                        </div>
+                                    </div>
+                                )}
+
+                            {!viewport.compact &&
+                                (!chromeVisible ||
+                                    viewMode === 'outline' ||
+                                    viewMode === 'kanban') && (
+                                    <div className="writing-workspace-view-rail flex shrink-0 flex-col items-center py-2">
+                                        <ViewModeMenu
+                                            mode={viewMode}
+                                            onChange={switchViewMode}
+                                        />
+                                    </div>
+                                )}
+
+                            {/* Editor pane — the frame itself never scrolls; the
+                        editor's content wrapper (focus mode) or the flow's
+                        own scrollport (continuous mode) does. The view
+                        toggle floats over whichever is mounted. */}
+                            <section className="writing-workspace-editor relative flex min-w-0 flex-1 flex-col overflow-hidden">
+                                {viewMode === 'focus' &&
+                                    currentSection !== null && (
+                                        <div
+                                            className="flex shrink-0 items-center justify-center gap-2 px-6 py-3"
+                                            data-section-plan-heading=""
+                                        >
+                                            <h2 className="text-sm font-semibold">
+                                                {currentSection.title}
+                                            </h2>
+                                            {showPlan && (
+                                                <PlanBlock
+                                                    section={currentSection}
+                                                    projectSlug={project.slug}
+                                                    workSlug={work.slug}
+                                                    canUpdate={
+                                                        can.update &&
+                                                        !readingMode
+                                                    }
+                                                />
+                                            )}
+                                        </div>
+                                    )}
+                                {viewMode === 'outline' ? (
+                                    <OutlineView
+                                        projectSlug={project.slug}
+                                        workSlug={work.slug}
+                                        canUpdate={can.update}
+                                        onNavigate={selectSection}
+                                        onRequestMarkThread={(row) =>
+                                            setMarkThreadRequest({
+                                                lockedSection: row,
+                                                anchor: null,
+                                                lockedThread: null,
+                                            })
+                                        }
+                                    />
+                                ) : viewMode === 'kanban' ? (
+                                    <KanbanView
+                                        projectSlug={project.slug}
+                                        workSlug={work.slug}
+                                        workId={work.id}
+                                        canUpdate={can.update}
+                                        onNavigate={selectSection}
+                                        onRequestMarkThread={(row) =>
+                                            setMarkThreadRequest({
+                                                lockedSection: row,
+                                                anchor: null,
+                                                lockedThread: null,
+                                            })
+                                        }
+                                    />
+                                ) : viewMode === 'continuous' &&
+                                  sections.length > 0 ? (
+                                    <ContinuousFlow
+                                        project={project}
+                                        work={work}
+                                        sections={sections}
+                                        initialSection={currentSection}
+                                        canUpdate={can.update && !readingMode}
+                                        printLayout={
+                                            !viewport.compact && printLayout
+                                        }
+                                        showPlan={showPlan}
+                                        pageDisplay={pageDisplay}
+                                        marginXIn={marginXIn}
+                                        onCounts={handleCounts}
+                                        onActiveSceneChange={
+                                            handleActiveSceneChange
+                                        }
+                                        onBridgeChange={handleBridgeChange}
+                                        onEditorStateChange={
+                                            handleEditorStateChange
+                                        }
+                                        onOutlineChange={setCurrentOutline}
+                                        onSceneLinksChange={
+                                            setScreenplaySceneLinks
+                                        }
+                                        onEntryLinkSelect={
+                                            handleEntryLinkSelect
+                                        }
+                                        onAddComment={handleAddComment}
+                                        onMarkThread={
+                                            handleMarkThreadFromSelection
+                                        }
+                                        scrollToSlugRef={scrollToSlugRef}
+                                    />
+                                ) : currentSection !== null &&
+                                  currentSection.is_structural ? (
+                                    <div
+                                        data-structural-notice=""
+                                        className="flex flex-1 items-center justify-center px-6 text-center text-sm italic"
+                                        style={mutedText}
+                                    >
+                                        {t(
+                                            'writing.workspace.structural_notice',
+                                        )}
+                                    </div>
+                                ) : currentSection !== null ? (
+                                    currentSection.format === 'screenplay' ? (
+                                        <ScreenplayEditor
+                                            key={currentSection.id}
+                                            projectId={project.id}
+                                            projectSlug={project.slug}
+                                            workSlug={work.slug}
+                                            section={currentSection}
+                                            canUpdate={
+                                                can.update && !readingMode
+                                            }
+                                            onCounts={handleCounts}
+                                            chrome="none"
+                                            printLayout={
+                                                !viewport.compact && printLayout
+                                            }
+                                            marginXIn={marginXIn}
+                                            bridgeRef={bridgeRef}
+                                            onStateChange={
+                                                handleEditorStateChange
+                                            }
+                                            onOutlineChange={setCurrentOutline}
+                                            onSceneLinksChange={
+                                                setScreenplaySceneLinks
+                                            }
+                                            onEntryLinkSelect={
+                                                handleEntryLinkSelect
+                                            }
+                                            enableComments={
+                                                can.update && !readingMode
+                                            }
+                                            onAddComment={handleAddComment}
+                                            enableMarkThread={
+                                                can.update && !readingMode
+                                            }
+                                            onMarkThread={
+                                                handleMarkThreadFromSelection
+                                            }
+                                        />
+                                    ) : (
+                                        <ManuscriptEditor
+                                            projectId={project.id}
+                                            projectSlug={project.slug}
+                                            workSlug={work.slug}
+                                            section={currentSection}
+                                            canUpdate={
+                                                can.update && !readingMode
+                                            }
+                                            onCounts={handleCounts}
+                                            chrome="none"
+                                            printLayout={
+                                                !viewport.compact && printLayout
+                                            }
+                                            pageDisplay={pageDisplay}
+                                            marginXIn={marginXIn}
+                                            bridgeRef={bridgeRef}
+                                            onStateChange={
+                                                handleEditorStateChange
+                                            }
+                                            onOutlineChange={setCurrentOutline}
+                                            enableComments={
+                                                can.update && !readingMode
+                                            }
+                                            onAddComment={handleAddComment}
+                                            enableMarkThread={
+                                                can.update && !readingMode
+                                            }
+                                            onMarkThread={
+                                                handleMarkThreadFromSelection
+                                            }
+                                        />
+                                    )
+                                ) : (
+                                    <div
+                                        className="flex flex-1 items-center justify-center px-6 text-center text-sm italic"
+                                        style={mutedText}
+                                    >
+                                        {t('writing.workspace.no_section')}
+                                    </div>
+                                )}
+                            </section>
+
+                            {/* Right rail — multi-purpose sidebar (Stage 11.5 Task 4).
+                        Mode switcher (Linked items · Notes · Comments) sits at
+                        the top; content below is keyed by panelMode. The xl:
+                        responsive gate stays on top of the user toggle. */}
+                            {(!viewport.compact || companionVisible) && (
+                                <WritingCompanion
+                                    compact={viewport.compact}
+                                    open={companionVisible}
+                                    title={t(
+                                        [
+                                            ...BUILTIN_PANEL_MODES,
+                                            ...registeredModes,
+                                        ].find((mode) => mode.id === panelMode)
+                                            ?.labelKey ??
+                                            'writing.tools.companions',
+                                    )}
+                                    onClose={() =>
+                                        setTransientCompanionOpen(false)
+                                    }
+                                    persistentTools={chromeVisible}
+                                    tools={
+                                        <PanelModeSwitcher
+                                            mode={panelMode}
+                                            open={companionVisible}
+                                            tooltipPlacement={
+                                                viewport.compact
+                                                    ? 'top'
+                                                    : 'left'
+                                            }
+                                            onChange={(mode) => {
+                                                if (
+                                                    !viewport.compact &&
+                                                    mode === panelMode &&
+                                                    companionVisible
+                                                ) {
+                                                    togglePanel();
+                                                    return;
+                                                }
+                                                setPanelMode(mode);
+                                                writePanelMode(work.id, mode);
+                                                if (!companionVisible) {
+                                                    togglePanel();
+                                                }
+                                            }}
+                                            can={{ 'work.update': can.update }}
+                                        />
+                                    }
+                                >
+                                    <div className="min-h-0 flex-1">
+                                        {panelMode === 'linked' && (
+                                            <ReferencePanel
+                                                project={project}
+                                                work={work}
+                                                currentSection={
+                                                    effectiveSection
+                                                }
+                                                pins={pins}
+                                                canUpdate={can.update}
+                                                saveSignal={saveSignal}
+                                                sceneLinks={
+                                                    screenplaySceneLinks
+                                                }
+                                                sceneLinksFocusSignal={
+                                                    sceneLinksFocusSignal
+                                                }
+                                                activeTab={linkedPanelTab}
+                                                onActiveTabChange={
+                                                    setLinkedPanelTab
+                                                }
+                                                onSelect={selectSection}
+                                            />
+                                        )}
+                                        {panelMode === 'notes' && (
+                                            <SidebarNotesPanel
+                                                projectId={project.id}
+                                                projectSlug={project.slug}
+                                                work={work}
+                                                currentSection={
+                                                    effectiveSection
+                                                }
+                                                sections={sections}
+                                            />
+                                        )}
+                                        {panelMode === 'outline' && (
+                                            <OutlineSidebar
+                                                projectSlug={project.slug}
+                                                workSlug={work.slug}
+                                                currentSectionId={
+                                                    effectiveSectionId
+                                                }
+                                                canUpdate={can.update}
+                                                onNavigate={selectSection}
+                                                guidance={structureGuidance}
+                                            />
+                                        )}
+                                        {panelMode === 'history' && (
+                                            <HistoryPanel
+                                                projectSlug={project.slug}
+                                                workSlug={work.slug}
+                                                currentSection={
+                                                    effectiveSection
+                                                }
+                                                canUpdate={can.update}
+                                                refreshSignal={
+                                                    historyRefreshSignal
+                                                }
+                                            />
+                                        )}
+                                        {panelMode === 'threads' && (
+                                            <ThreadsPanel
+                                                projectSlug={project.slug}
+                                                workId={work.id}
+                                                workSlug={work.slug}
+                                                sections={sections}
+                                                currentSection={
+                                                    effectiveSection
+                                                }
+                                                canUpdate={can.update}
+                                                refreshSignal={
+                                                    threadsRefreshSignal
+                                                }
+                                                onRequestAddMark={(thread) =>
+                                                    setMarkThreadRequest({
+                                                        lockedSection: null,
+                                                        anchor: null,
+                                                        lockedThread: thread,
+                                                    })
+                                                }
+                                            />
+                                        )}
+                                        {panelMode === 'comments' && (
+                                            <CommentRail
+                                                workSlug={work.slug}
+                                                projectSlug={project.slug}
+                                                sectionId={
+                                                    effectiveSection?.id ?? null
+                                                }
+                                                editorBridge={bridgeRef.current}
+                                                editorTick={editorTick}
+                                                currentUserId={currentUserId}
+                                                canUpdate={can.update}
+                                                pendingAnchor={
+                                                    pendingCommentAnchor !==
+                                                        null &&
+                                                    pendingCommentAnchor.sectionId ===
+                                                        effectiveSectionId
+                                                        ? pendingCommentAnchor.anchor
+                                                        : null
+                                                }
+                                                onComposerDismiss={() =>
+                                                    setPendingCommentAnchor(
+                                                        null,
+                                                    )
+                                                }
+                                                highlightCommentId={
+                                                    highlightCommentId
+                                                }
+                                                onHighlightHandled={() =>
+                                                    setHighlightCommentId(null)
+                                                }
+                                            />
+                                        )}
+                                        {registeredModes.map((m) =>
+                                            m.presentation !== 'modal' &&
+                                            m.id === panelMode ? (
+                                                <m.component
+                                                    key={m.id}
+                                                    project={project}
+                                                    work={work}
+                                                    currentSection={
+                                                        effectiveSection
+                                                    }
+                                                    editorBridge={
+                                                        bridgeRef.current
+                                                    }
+                                                    bridgeSectionId={
+                                                        viewMode ===
+                                                        'continuous'
+                                                            ? effectiveSectionId !==
+                                                                  null &&
+                                                              bridgesRef.current.get(
+                                                                  effectiveSectionId,
+                                                              )
+                                                                ? effectiveSectionId
+                                                                : null
+                                                            : bridgeRef.current !==
+                                                                null
+                                                              ? currentSectionId
+                                                              : null
+                                                    }
+                                                    editorTick={editorTick}
+                                                    canUpdate={can.update}
+                                                />
+                                            ) : null,
+                                        )}
+                                    </div>
+                                </WritingCompanion>
+                            )}
+                        </div>
+
+                        {/* Bottom-attached status bar — full workspace width */}
+                        <WorkspaceStatusBar
+                            project={project}
+                            work={work}
+                            workWords={workWords}
+                            hasSection={effectiveSection !== null}
+                            sectionWords={sectionWords}
+                            onOpenStatistics={
+                                effectiveSection !== null &&
+                                (viewMode === 'focus' ||
+                                    viewMode === 'continuous') &&
+                                !ribbonCtx.editor?.isCodeView()
+                                    ? () => ribbonCtx.editor?.openStatistics?.()
+                                    : undefined
+                            }
+                            selectedWords={
+                                effectiveSection !== null &&
+                                (viewMode === 'focus' ||
+                                    viewMode === 'continuous')
+                                    ? (ribbonCtx.editor?.selectedWordCount?.() ??
+                                      null)
+                                    : null
+                            }
+                            sectionTarget={
+                                effectiveSection?.target_words ?? null
+                            }
+                            sectionPages={sectionPages}
+                            sectionFormat={effectiveSection?.format ?? null}
+                        />
+                    </div>
+
+                    {toolsPage !== null && (
+                        <WritingTools
+                            context={ribbonCtx}
+                            gates={writingGates}
+                            initialPage={toolsPage}
+                            onClose={() => setToolsPage(null)}
+                            destinations={[
+                                {
+                                    id: 'structure',
+                                    label: t('writing.tools.structure'),
+                                    icon: 'fa-solid fa-list-tree',
+                                    onSelect: () => {
+                                        if (viewport.compact)
+                                            setMobileStructureOpen(true);
+                                        else if (!structureOpen)
+                                            toggleStructure();
+                                    },
+                                },
+                                {
+                                    id: 'reading',
+                                    label: t(
+                                        readingMode
+                                            ? 'writing.tools.edit'
+                                            : 'writing.tools.read',
+                                    ),
+                                    icon: 'fa-solid fa-book-open',
+                                    onSelect: toggleReading,
+                                },
+                                {
+                                    id: 'reports',
+                                    label: t('writing.rail.reports'),
+                                    icon: 'fa-solid fa-chart-simple',
+                                    onSelect: () =>
+                                        router.visit(
+                                            `${worksBase(project.slug, work.slug)}/reports`,
+                                        ),
+                                },
+                                ...registeredModes
+                                    .filter(
+                                        (mode) =>
+                                            mode.presentation === 'modal' &&
+                                            resolveGate(
+                                                mode.requires,
+                                                writingGates,
+                                            ) !== 'hidden',
+                                    )
+                                    .map((mode) => ({
+                                        id: `tool-${mode.id}`,
+                                        label: t(mode.labelKey),
+                                        icon: mode.icon,
+                                        disabled:
+                                            resolveGate(
+                                                mode.requires,
+                                                writingGates,
+                                            ) === 'locked',
+                                        onSelect: () => setToolModalId(mode.id),
+                                    })),
+                                ...[
+                                    ...BUILTIN_PANEL_MODES,
+                                    ...registeredModes.filter(
+                                        (mode) => mode.presentation !== 'modal',
+                                    ),
+                                ]
+                                    .filter(
+                                        (mode) =>
+                                            !('requires' in mode) ||
+                                            resolveGate(
+                                                mode.requires,
+                                                writingGates,
+                                            ) !== 'hidden',
+                                    )
+                                    .map((mode) => ({
+                                        id: `panel-${mode.id}`,
+                                        label: t(mode.labelKey),
+                                        icon: mode.icon,
+                                        category: 'companions' as const,
+                                        disabled:
+                                            'requires' in mode &&
+                                            resolveGate(
+                                                mode.requires,
+                                                writingGates,
+                                            ) === 'locked',
+                                        onSelect: () => {
+                                            setPanelMode(mode.id);
+                                            writePanelMode(work.id, mode.id);
+                                            setPanelOpen(true);
+                                            setTransientCompanionOpen(true);
+                                        },
+                                    })),
+                                {
+                                    id: 'project-search',
+                                    label: t('writing.tools.project_search'),
+                                    icon: 'fa-solid fa-magnifying-glass',
+                                    onSelect: () =>
+                                        window.dispatchEvent(
+                                            new CustomEvent(
+                                                'alexandria-core:command-palette-toggle',
+                                            ),
+                                        ),
+                                },
+                                {
+                                    id: 'section-settings',
+                                    category: 'workspace',
+                                    label: t(
+                                        'writing.workspace.section_settings_menu',
+                                    ),
+                                    icon: 'fa-solid fa-list-ul',
+                                    onSelect: openSectionSettings,
+                                },
+                                {
+                                    id: 'work-settings',
+                                    category: 'workspace',
+                                    label: t('writing.settings.title'),
+                                    icon: 'fa-solid fa-gear',
+                                    disabled: !can.update,
+                                    onSelect: () => {
+                                        void openWorkSettings();
+                                    },
+                                },
+                            ]}
+                        />
+                    )}
+
+                    {activeTool && (
+                        <WritingToolModal
+                            mode={activeTool}
+                            onClose={() => setToolModalId(null)}
+                            context={{
+                                project,
+                                work,
+                                currentSection: effectiveSection,
+                                editorBridge: ribbonCtx.editor ?? null,
+                                bridgeSectionId:
+                                    viewMode === 'continuous'
+                                        ? effectiveSectionId !== null &&
+                                          bridgesRef.current.get(
+                                              effectiveSectionId,
+                                          )
+                                            ? effectiveSectionId
+                                            : null
+                                        : bridgeRef.current !== null
+                                          ? currentSectionId
+                                          : null,
+                                editorTick,
+                                canUpdate: can.update,
+                            }}
+                        />
+                    )}
+
+                    {viewport.compact && (
+                        <Modal
+                            open={mobileStructureOpen}
+                            onClose={() => setMobileStructureOpen(false)}
+                            maxWidth="max-w-lg"
+                        >
+                            <div
+                                style={{ height: 'min(75dvh, 44rem)' }}
+                                className="flex min-h-0 flex-col"
+                            >
                                 <Navigator
+                                    headerTitle={t('writing.tools.structure')}
                                     headerTrailing={
-                                        <>
-                                        <ViewModeMenu mode={viewMode} onChange={switchViewMode} />
                                         <button
                                             type="button"
-                                            className="writing-workspace-structure-toggle alex-toolbar-btn"
-                                            data-writing-structure-toggle
-                                            aria-label={t('writing.workspace.hide_sections')}
-                                            title={t('writing.workspace.hide_sections')}
-                                            aria-expanded={structureOpen}
-                                            onClick={toggleStructure}
+                                            className="writing-touch-button"
+                                            aria-label={t(
+                                                'writing.tools.close',
+                                            )}
+                                            onClick={() =>
+                                                setMobileStructureOpen(false)
+                                            }
                                         >
-                                            <i className="fa-solid fa-angles-left" aria-hidden="true" />
+                                            <i
+                                                className="fa-solid fa-xmark"
+                                                aria-hidden="true"
+                                            />
                                         </button>
-                                        </>
                                     }
                                     projectSlug={project.slug}
                                     workSlug={work.slug}
                                     sections={sections}
                                     currentSlug={effectiveSection?.slug ?? null}
                                     canUpdate={can.update}
-                                    onSelect={selectSection}
-                                    onRequestAdd={(parentId) => setAddTarget({ parentId })}
-                                    onRequestDelete={setDeleteTarget}
-                                    onRequestSettings={openSectionSettings}
-                                    onRequestMarkRevision={(node) => setMarkRevisionRequest({ lockedSection: node })}
+                                    onSelect={(slug) => {
+                                        selectSection(slug);
+                                        setMobileStructureOpen(false);
+                                    }}
+                                    onRequestAdd={(parentId) => {
+                                        setMobileStructureOpen(false);
+                                        setAddTarget({ parentId });
+                                    }}
+                                    onRequestDelete={(node) => {
+                                        setMobileStructureOpen(false);
+                                        setDeleteTarget(node);
+                                    }}
+                                    onRequestSettings={() => {
+                                        setMobileStructureOpen(false);
+                                        openSectionSettings();
+                                    }}
+                                    onRequestMarkRevision={(node) => {
+                                        setMobileStructureOpen(false);
+                                        setMarkRevisionRequest({
+                                            lockedSection: node,
+                                        });
+                                    }}
                                     liveCounts={liveCounts}
                                     currentOutline={currentOutline}
-                                    showSectionTypeLabels={showSectionTypeLabels}
+                                    showSectionTypeLabels={
+                                        showSectionTypeLabels
+                                    }
                                 />
-                            </nav>
-                        </div>
-                    </div>
-                    )}
-
-                    {!viewport.compact && (!chromeVisible || viewMode === 'outline' || viewMode === 'kanban') && (
-                        <div className="writing-workspace-view-rail flex shrink-0 flex-col items-center py-2">
-                            <ViewModeMenu mode={viewMode} onChange={switchViewMode} />
-                        </div>
-                    )}
-
-                    {/* Editor pane — the frame itself never scrolls; the
-                        editor's content wrapper (focus mode) or the flow's
-                        own scrollport (continuous mode) does. The view
-                        toggle floats over whichever is mounted. */}
-                    <section className="writing-workspace-editor relative flex min-w-0 flex-1 flex-col overflow-hidden">
-                        {viewMode === 'focus' && currentSection !== null && (
-                            <div className="flex shrink-0 items-center justify-center gap-2 px-6 py-3" data-section-plan-heading="">
-                                <h2 className="text-sm font-semibold">{currentSection.title}</h2>
-                                {showPlan && <PlanBlock section={currentSection} projectSlug={project.slug} workSlug={work.slug} canUpdate={can.update && !readingMode} />}
                             </div>
+                        </Modal>
+                    )}
+
+                    {viewport.compact &&
+                        viewport.keyboard &&
+                        viewport.editing &&
+                        can.update &&
+                        !readingMode &&
+                        toolsPage === null &&
+                        toolModalId === null &&
+                        !transientCompanionOpen &&
+                        !mobileStructureOpen && (
+                            <MobileEditingStrip
+                                context={ribbonCtx}
+                                gates={writingGates}
+                                top={viewport.top + viewport.height - 48}
+                                onTools={() => setToolsPage('edit')}
+                            />
                         )}
-                        {viewMode === 'outline' ? (
-                            <OutlineView
-                                projectSlug={project.slug}
-                                workSlug={work.slug}
-                                canUpdate={can.update}
-                                onNavigate={selectSection}
-                                onRequestMarkThread={(row) =>
-                                    setMarkThreadRequest({ lockedSection: row, anchor: null, lockedThread: null })
-                                }
-                            />
-                        ) : viewMode === 'kanban' ? (
-                            <KanbanView
-                                projectSlug={project.slug}
-                                workSlug={work.slug}
-                                workId={work.id}
-                                canUpdate={can.update}
-                                onNavigate={selectSection}
-                                onRequestMarkThread={(row) =>
-                                    setMarkThreadRequest({ lockedSection: row, anchor: null, lockedThread: null })
-                                }
-                            />
-                        ) : viewMode === 'continuous' && sections.length > 0 ? (
-                            <ContinuousFlow
-                                project={project}
-                                work={work}
-                                sections={sections}
-                                initialSection={currentSection}
-                                canUpdate={can.update && !readingMode}
-                                printLayout={!viewport.compact && printLayout}
-                                showPlan={showPlan}
-                                pageDisplay={pageDisplay}
-                                marginXIn={marginXIn}
-                                onCounts={handleCounts}
-                                onActiveSceneChange={handleActiveSceneChange}
-                                onBridgeChange={handleBridgeChange}
-                                onEditorStateChange={handleEditorStateChange}
-                                onOutlineChange={setCurrentOutline}
-                                onSceneLinksChange={setScreenplaySceneLinks}
-                                onEntryLinkSelect={handleEntryLinkSelect}
-                                onAddComment={handleAddComment}
-                                onMarkThread={handleMarkThreadFromSelection}
-                                scrollToSlugRef={scrollToSlugRef}
-                            />
-                        ) : currentSection !== null && currentSection.is_structural ? (
-                            <div
-                                data-structural-notice=""
-                                className="flex flex-1 items-center justify-center px-6 text-center text-sm italic"
-                                style={mutedText}
-                            >
-                                {t('writing.workspace.structural_notice')}
-                            </div>
-                        ) : currentSection !== null ? (
-                            currentSection.format === 'screenplay' ? (
-                                <ScreenplayEditor
-                                    key={currentSection.id}
-                                    projectId={project.id}
-                                    projectSlug={project.slug}
-                                    workSlug={work.slug}
-                                    section={currentSection}
-                                    canUpdate={can.update && !readingMode}
-                                    onCounts={handleCounts}
-                                    chrome="none"
-                                    printLayout={!viewport.compact && printLayout}
-                                    marginXIn={marginXIn}
-                                    bridgeRef={bridgeRef}
-                                    onStateChange={handleEditorStateChange}
-                                    onOutlineChange={setCurrentOutline}
-                                    onSceneLinksChange={setScreenplaySceneLinks}
-                                    onEntryLinkSelect={handleEntryLinkSelect}
-                                    enableComments={can.update && !readingMode}
-                                    onAddComment={handleAddComment}
-                                    enableMarkThread={can.update && !readingMode}
-                                    onMarkThread={handleMarkThreadFromSelection}
-                                />
-                            ) : (
-                                <ManuscriptEditor
-                                    projectId={project.id}
-                                    projectSlug={project.slug}
-                                    workSlug={work.slug}
-                                    section={currentSection}
-                                    canUpdate={can.update && !readingMode}
-                                    onCounts={handleCounts}
-                                    chrome="none"
-                                    printLayout={!viewport.compact && printLayout}
-                                    pageDisplay={pageDisplay}
-                                    marginXIn={marginXIn}
-                                    bridgeRef={bridgeRef}
-                                    onStateChange={handleEditorStateChange}
-                                    onOutlineChange={setCurrentOutline}
-                                    enableComments={can.update && !readingMode}
-                                    onAddComment={handleAddComment}
-                                    enableMarkThread={can.update && !readingMode}
-                                    onMarkThread={handleMarkThreadFromSelection}
-                                />
+
+                    {settingsOpen && (
+                        <WorkSettingsModal
+                            project={project}
+                            work={work}
+                            types={types}
+                            lengthPlans={lengthPlans}
+                            structureBlueprint={structureBlueprint}
+                            canDelete={can.delete}
+                            onClose={() => setSettingsOpen(false)}
+                        />
+                    )}
+
+                    {elementsOpen && (
+                        <ScreenplayElementsModal
+                            template={
+                                work.screenplay_template ??
+                                STANDARD_SCREENPLAY_TEMPLATE
+                            }
+                            workUrl={`${workUrl(project.slug, work.slug)}/screenplay-template`}
+                            beforeApply={() => saveCoordinator.flush()}
+                            onClose={() => setElementsOpen(false)}
+                        />
+                    )}
+
+                    <SectionSettingsModal
+                        open={sectionSettingsOpen}
+                        showSectionTypeLabels={showSectionTypeLabels}
+                        saving={sectionSettingsSaving}
+                        error={sectionSettingsError}
+                        onShowSectionTypeLabelsChange={(value) => {
+                            void updateShowSectionTypeLabels(value);
+                        }}
+                        onClose={() => setSectionSettingsOpen(false)}
+                    />
+
+                    {addTarget !== null && (
+                        <AddSectionModal
+                            projectSlug={project.slug}
+                            workSlug={work.slug}
+                            parentId={addTarget.parentId}
+                            onClose={() => setAddTarget(null)}
+                        />
+                    )}
+
+                    {fdxExportOpen && (
+                        <ExportFdxModal
+                            projectSlug={project.slug}
+                            workSlug={work.slug}
+                            onClose={() => setFdxExportOpen(false)}
+                        />
+                    )}
+
+                    {markRevisionRequest !== null && (
+                        <MarkRevisionModal
+                            projectSlug={project.slug}
+                            workSlug={work.slug}
+                            sections={sections}
+                            currentSection={effectiveSection}
+                            lockedSection={markRevisionRequest.lockedSection}
+                            onClose={() => setMarkRevisionRequest(null)}
+                            onMarked={() =>
+                                setHistoryRefreshSignal((n) => n + 1)
+                            }
+                        />
+                    )}
+
+                    {highlightedThreads !== null && (
+                        <ThreadHighlightDetails
+                            key={`${highlightedThreads.sectionId}:${highlightedThreads.threads.map((thread) => thread.id).join(',')}`}
+                            projectSlug={project.slug}
+                            workId={work.id}
+                            sections={sections}
+                            threads={highlightedThreads.threads}
+                            canUpdate={can.update}
+                            refreshSignal={threadsRefreshSignal}
+                            onClose={() => setHighlightedThreads(null)}
+                            onChanged={() =>
+                                setThreadsRefreshSignal((n) => n + 1)
+                            }
+                            onRequestAddMark={(thread) =>
+                                setMarkThreadRequest({
+                                    lockedSection: findSectionInTree(
+                                        sections,
+                                        highlightedThreads.sectionId,
+                                    ),
+                                    anchor: null,
+                                    lockedThread: thread,
+                                })
+                            }
+                        />
+                    )}
+
+                    {markThreadRequest !== null && (
+                        <MarkThreadModal
+                            projectSlug={project.slug}
+                            workId={work.id}
+                            sections={sections}
+                            currentSection={
+                                effectiveSection !== null
+                                    ? {
+                                          id: effectiveSection.id,
+                                          title: effectiveSection.title,
+                                      }
+                                    : null
+                            }
+                            lockedSection={markThreadRequest.lockedSection}
+                            lockedThread={markThreadRequest.lockedThread}
+                            anchor={markThreadRequest.anchor}
+                            onClose={() => setMarkThreadRequest(null)}
+                            onMarked={() =>
+                                setThreadsRefreshSignal((n) => n + 1)
+                            }
+                        />
+                    )}
+
+                    <ConfirmModal
+                        open={deleteTarget !== null}
+                        onClose={() => setDeleteTarget(null)}
+                        onConfirm={confirmDelete}
+                        title={t('writing.workspace.delete_confirm_title')}
+                        message={
+                            deleteTarget !== null && (
+                                <div className="flex flex-col gap-2">
+                                    <p>
+                                        <strong>{deleteTarget.title}</strong>
+                                        {deleteTarget.label &&
+                                            ` · ${deleteTarget.label}`}
+                                    </p>
+                                    <p>
+                                        {t(
+                                            'writing.workspace.delete_confirm_body',
+                                        )}
+                                    </p>
+                                    {deleteImpactLoading ? (
+                                        <p
+                                            className="italic"
+                                            style={{
+                                                color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                                            }}
+                                        >
+                                            {t(
+                                                'writing.workspace.delete_impact_loading',
+                                            )}
+                                        </p>
+                                    ) : (
+                                        deleteImpact !== null && (
+                                            <ul className="list-disc pl-4">
+                                                {deleteImpact.descendant_sections >
+                                                    0 && (
+                                                    <li>
+                                                        {(deleteImpact.descendant_sections ===
+                                                        1
+                                                            ? t(
+                                                                  'writing.workspace.delete_impact_sections.singular',
+                                                              )
+                                                            : t(
+                                                                  'writing.workspace.delete_impact_sections.plural',
+                                                              )
+                                                        ).replace(
+                                                            ':count',
+                                                            String(
+                                                                deleteImpact.descendant_sections,
+                                                            ),
+                                                        )}
+                                                    </li>
+                                                )}
+                                                {deleteImpact.notes > 0 && (
+                                                    <li>
+                                                        {(deleteImpact.notes ===
+                                                        1
+                                                            ? t(
+                                                                  'writing.workspace.delete_impact_notes.singular',
+                                                              )
+                                                            : t(
+                                                                  'writing.workspace.delete_impact_notes.plural',
+                                                              )
+                                                        ).replace(
+                                                            ':count',
+                                                            String(
+                                                                deleteImpact.notes,
+                                                            ),
+                                                        )}
+                                                    </li>
+                                                )}
+                                            </ul>
+                                        )
+                                    )}
+                                    <p
+                                        className="text-xs"
+                                        style={{
+                                            color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)',
+                                        }}
+                                    >
+                                        {t(
+                                            'writing.workspace.delete_confirm_recycle_note',
+                                        )}
+                                    </p>
+                                </div>
                             )
-                        ) : (
-                            <div
-                                className="flex flex-1 items-center justify-center px-6 text-center text-sm italic"
-                                style={mutedText}
-                            >
-                                {t('writing.workspace.no_section')}
-                            </div>
+                        }
+                        confirmLabel={t(
+                            'writing.workspace.delete_confirm_action',
                         )}
-                    </section>
-
-                    {/* Right rail — multi-purpose sidebar (Stage 11.5 Task 4).
-                        Mode switcher (Linked items · Notes · Comments) sits at
-                        the top; content below is keyed by panelMode. The xl:
-                        responsive gate stays on top of the user toggle. */}
-                    {(!viewport.compact || companionVisible) && (
-                        <WritingCompanion compact={viewport.compact} open={companionVisible}
-                            title={t([...BUILTIN_PANEL_MODES, ...registeredModes].find((mode) => mode.id === panelMode)?.labelKey ?? 'writing.tools.companions')}
-                            onClose={() => setTransientCompanionOpen(false)}
-                            persistentTools={chromeVisible}
-                            tools={<PanelModeSwitcher
-                                mode={panelMode}
-                                open={companionVisible}
-                                tooltipPlacement={viewport.compact ? 'top' : 'left'}
-                                onChange={(mode) => {
-                                    if (!viewport.compact && mode === panelMode && companionVisible) {
-                                        togglePanel();
-                                        return;
-                                    }
-                                    setPanelMode(mode);
-                                    writePanelMode(work.id, mode);
-                                    if (!companionVisible) {
-                                        togglePanel();
-                                    }
-                                }}
-                                can={{ 'work.update': can.update }}
-                            />}>
-                            <div className="min-h-0 flex-1">
-                                {panelMode === 'linked' && (
-                                    <ReferencePanel
-                                        project={project}
-                                        work={work}
-                                        currentSection={effectiveSection}
-                                        pins={pins}
-                                        canUpdate={can.update}
-                                        saveSignal={saveSignal}
-                                        sceneLinks={screenplaySceneLinks}
-                                        sceneLinksFocusSignal={sceneLinksFocusSignal}
-                                        activeTab={linkedPanelTab}
-                                        onActiveTabChange={setLinkedPanelTab}
-                                        onSelect={selectSection}
-                                    />
-                                )}
-                                {panelMode === 'notes' && (
-                                    <SidebarNotesPanel
-                                        projectId={project.id}
-                                        projectSlug={project.slug}
-                                        work={work}
-                                        currentSection={effectiveSection}
-                                        sections={sections}
-                                    />
-                                )}
-                                {panelMode === 'outline' && (
-                                    <OutlineSidebar
-                                        projectSlug={project.slug}
-                                        workSlug={work.slug}
-                                        currentSectionId={effectiveSectionId}
-                                        canUpdate={can.update}
-                                        onNavigate={selectSection}
-                                        guidance={structureGuidance}
-                                    />
-                                )}
-                                {panelMode === 'history' && (
-                                    <HistoryPanel
-                                        projectSlug={project.slug}
-                                        workSlug={work.slug}
-                                        currentSection={effectiveSection}
-                                        canUpdate={can.update}
-                                        refreshSignal={historyRefreshSignal}
-                                    />
-                                )}
-                                {panelMode === 'threads' && (
-                                    <ThreadsPanel
-                                        projectSlug={project.slug}
-                                        workId={work.id}
-                                        workSlug={work.slug}
-                                        sections={sections}
-                                        currentSection={effectiveSection}
-                                        canUpdate={can.update}
-                                        refreshSignal={threadsRefreshSignal}
-                                        onRequestAddMark={(thread) =>
-                                            setMarkThreadRequest({ lockedSection: null, anchor: null, lockedThread: thread })
-                                        }
-                                    />
-                                )}
-                                {panelMode === 'comments' && (
-                                    <CommentRail
-                                        workSlug={work.slug}
-                                        projectSlug={project.slug}
-                                        sectionId={effectiveSection?.id ?? null}
-                                        editorBridge={bridgeRef.current}
-                                        editorTick={editorTick}
-                                        currentUserId={currentUserId}
-                                        canUpdate={can.update}
-                                        pendingAnchor={
-                                            pendingCommentAnchor !== null && pendingCommentAnchor.sectionId === effectiveSectionId
-                                                ? pendingCommentAnchor.anchor
-                                                : null
-                                        }
-                                        onComposerDismiss={() => setPendingCommentAnchor(null)}
-                                        highlightCommentId={highlightCommentId}
-                                        onHighlightHandled={() => setHighlightCommentId(null)}
-                                    />
-                                )}
-                                {registeredModes.map((m) =>
-                                    m.presentation !== 'modal' && m.id === panelMode ? (
-                                        <m.component
-                                            key={m.id}
-                                            project={project}
-                                            work={work}
-                                            currentSection={effectiveSection}
-                                            editorBridge={bridgeRef.current}
-                                            bridgeSectionId={
-                                                viewMode === 'continuous'
-                                                    ? effectiveSectionId !== null &&
-                                                      bridgesRef.current.get(effectiveSectionId)
-                                                        ? effectiveSectionId
-                                                        : null
-                                                    : bridgeRef.current !== null
-                                                      ? currentSectionId
-                                                      : null
-                                            }
-                                            editorTick={editorTick}
-                                            canUpdate={can.update}
-                                        />
-                                    ) : null,
-                                )}
-                            </div>
-                        </WritingCompanion>
-                    )}
-
-                </div>
-
-                {/* Bottom-attached status bar — full workspace width */}
-                <WorkspaceStatusBar
-                    project={project}
-                    work={work}
-                    workWords={workWords}
-                    hasSection={effectiveSection !== null}
-                    sectionWords={sectionWords}
-                    onOpenStatistics={effectiveSection !== null && (viewMode === 'focus' || viewMode === 'continuous') && !ribbonCtx.editor?.isCodeView()
-                        ? () => ribbonCtx.editor?.openStatistics?.()
-                        : undefined}
-                    selectedWords={effectiveSection !== null && (viewMode === 'focus' || viewMode === 'continuous')
-                        ? ribbonCtx.editor?.selectedWordCount?.() ?? null
-                        : null}
-                    sectionTarget={effectiveSection?.target_words ?? null}
-                    sectionPages={sectionPages}
-                    sectionFormat={effectiveSection?.format ?? null}
-                />
-            </div>
-
-            {toolsPage !== null && <WritingTools context={ribbonCtx} gates={writingGates} initialPage={toolsPage} onClose={() => setToolsPage(null)} destinations={[
-                { id: 'structure', label: t('writing.tools.structure'), icon: 'fa-solid fa-list-tree', onSelect: () => { if (viewport.compact) setMobileStructureOpen(true); else if (!structureOpen) toggleStructure(); } },
-                { id: 'reading', label: t(readingMode ? 'writing.tools.edit' : 'writing.tools.read'), icon: 'fa-solid fa-book-open', onSelect: toggleReading },
-                { id: 'reports', label: t('writing.rail.reports'), icon: 'fa-solid fa-chart-simple', onSelect: () => router.visit(`${worksBase(project.slug, work.slug)}/reports`) },
-                ...registeredModes.filter((mode) => mode.presentation === 'modal' && resolveGate(mode.requires, writingGates) !== 'hidden').map((mode) => ({
-                    id: `tool-${mode.id}`, label: t(mode.labelKey), icon: mode.icon,
-                    disabled: resolveGate(mode.requires, writingGates) === 'locked',
-                    onSelect: () => setToolModalId(mode.id),
-                })),
-                ...[...BUILTIN_PANEL_MODES, ...registeredModes.filter((mode) => mode.presentation !== 'modal')].filter((mode) => !('requires' in mode) || resolveGate(mode.requires, writingGates) !== 'hidden').map((mode) => ({
-                    id: `panel-${mode.id}`, label: t(mode.labelKey), icon: mode.icon, category: 'companions' as const,
-                    disabled: 'requires' in mode && resolveGate(mode.requires, writingGates) === 'locked',
-                    onSelect: () => { setPanelMode(mode.id); writePanelMode(work.id, mode.id); setPanelOpen(true); setTransientCompanionOpen(true); },
-                })),
-                { id: 'project-search', label: t('writing.tools.project_search'), icon: 'fa-solid fa-magnifying-glass', onSelect: () => window.dispatchEvent(new CustomEvent('alexandria-core:command-palette-toggle')) },
-                { id: 'section-settings', category: 'workspace', label: t('writing.workspace.section_settings_menu'), icon: 'fa-solid fa-list-ul', onSelect: openSectionSettings },
-                { id: 'work-settings', category: 'workspace', label: t('writing.settings.title'), icon: 'fa-solid fa-gear', disabled: !can.update, onSelect: () => setSettingsOpen(true) },
-            ]} />}
-
-            {activeTool && <WritingToolModal mode={activeTool} onClose={() => setToolModalId(null)} context={{
-                project, work, currentSection: effectiveSection, editorBridge: ribbonCtx.editor ?? null,
-                bridgeSectionId: viewMode === 'continuous'
-                    ? effectiveSectionId !== null && bridgesRef.current.get(effectiveSectionId) ? effectiveSectionId : null
-                    : bridgeRef.current !== null ? currentSectionId : null,
-                editorTick, canUpdate: can.update,
-            }} />}
-
-            {viewport.compact && <Modal open={mobileStructureOpen} onClose={() => setMobileStructureOpen(false)} maxWidth="max-w-lg">
-                <div style={{ height: 'min(75dvh, 44rem)' }} className="flex min-h-0 flex-col">
-                    <Navigator headerTitle={t('writing.tools.structure')}
-                        headerTrailing={<button type="button" className="writing-touch-button" aria-label={t('writing.tools.close')} onClick={() => setMobileStructureOpen(false)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>}
-                        projectSlug={project.slug} workSlug={work.slug} sections={sections}
-                        currentSlug={effectiveSection?.slug ?? null}
-                        canUpdate={can.update} onSelect={(slug) => { selectSection(slug); setMobileStructureOpen(false); }}
-                        onRequestAdd={(parentId) => { setMobileStructureOpen(false); setAddTarget({ parentId }); }}
-                        onRequestDelete={(node) => { setMobileStructureOpen(false); setDeleteTarget(node); }}
-                        onRequestSettings={() => { setMobileStructureOpen(false); openSectionSettings(); }}
-                        onRequestMarkRevision={(node) => { setMobileStructureOpen(false); setMarkRevisionRequest({ lockedSection: node }); }}
-                        liveCounts={liveCounts} currentOutline={currentOutline} showSectionTypeLabels={showSectionTypeLabels} />
-                </div>
-            </Modal>}
-
-            {viewport.compact && viewport.keyboard && viewport.editing && can.update && !readingMode && toolsPage === null && toolModalId === null && !transientCompanionOpen && !mobileStructureOpen && (
-                <MobileEditingStrip context={ribbonCtx} gates={writingGates} top={viewport.top + viewport.height - 48} onTools={() => setToolsPage('edit')} />
-            )}
-
-            {settingsOpen && (
-                <WorkSettingsModal
-                    project={project}
-                    work={work}
-                    types={types}
-                    lengthPlans={lengthPlans}
-                    structureBlueprint={structureBlueprint}
-                    canDelete={can.delete}
-                    onClose={() => setSettingsOpen(false)}
-                />
-            )}
-
-            {elementsOpen && <ScreenplayElementsModal
-                template={work.screenplay_template ?? STANDARD_SCREENPLAY_TEMPLATE}
-                workUrl={`${workUrl(project.slug, work.slug)}/screenplay-template`}
-                beforeApply={() => saveCoordinator.flush()}
-                onClose={() => setElementsOpen(false)}
-            />}
-
-            <SectionSettingsModal
-                open={sectionSettingsOpen}
-                showSectionTypeLabels={showSectionTypeLabels}
-                saving={sectionSettingsSaving}
-                error={sectionSettingsError}
-                onShowSectionTypeLabelsChange={(value) => {
-                    void updateShowSectionTypeLabels(value);
-                }}
-                onClose={() => setSectionSettingsOpen(false)}
-            />
-
-            {addTarget !== null && (
-                <AddSectionModal
-                    projectSlug={project.slug}
-                    workSlug={work.slug}
-                    parentId={addTarget.parentId}
-                    onClose={() => setAddTarget(null)}
-                />
-            )}
-
-            {fdxExportOpen && (
-                <ExportFdxModal
-                    projectSlug={project.slug}
-                    workSlug={work.slug}
-                    onClose={() => setFdxExportOpen(false)}
-                />
-            )}
-
-            {markRevisionRequest !== null && (
-                <MarkRevisionModal
-                    projectSlug={project.slug}
-                    workSlug={work.slug}
-                    sections={sections}
-                    currentSection={effectiveSection}
-                    lockedSection={markRevisionRequest.lockedSection}
-                    onClose={() => setMarkRevisionRequest(null)}
-                    onMarked={() => setHistoryRefreshSignal((n) => n + 1)}
-                />
-            )}
-
-            {highlightedThreads !== null && (
-                <ThreadHighlightDetails
-                    key={`${highlightedThreads.sectionId}:${highlightedThreads.threads.map((thread) => thread.id).join(',')}`}
-                    projectSlug={project.slug}
-                    workId={work.id}
-                    sections={sections}
-                    threads={highlightedThreads.threads}
-                    canUpdate={can.update}
-                    refreshSignal={threadsRefreshSignal}
-                    onClose={() => setHighlightedThreads(null)}
-                    onChanged={() => setThreadsRefreshSignal((n) => n + 1)}
-                    onRequestAddMark={(thread) => setMarkThreadRequest({
-                        lockedSection: findSectionInTree(sections, highlightedThreads.sectionId),
-                        anchor: null,
-                        lockedThread: thread,
-                    })}
-                />
-            )}
-
-            {markThreadRequest !== null && (
-                <MarkThreadModal
-                    projectSlug={project.slug}
-                    workId={work.id}
-                    sections={sections}
-                    currentSection={
-                        effectiveSection !== null
-                            ? { id: effectiveSection.id, title: effectiveSection.title }
-                            : null
-                    }
-                    lockedSection={markThreadRequest.lockedSection}
-                    lockedThread={markThreadRequest.lockedThread}
-                    anchor={markThreadRequest.anchor}
-                    onClose={() => setMarkThreadRequest(null)}
-                    onMarked={() => setThreadsRefreshSignal((n) => n + 1)}
-                />
-            )}
-
-            <ConfirmModal
-                open={deleteTarget !== null}
-                onClose={() => setDeleteTarget(null)}
-                onConfirm={confirmDelete}
-                title={t('writing.workspace.delete_confirm_title')}
-                message={
-                    deleteTarget !== null && (
-                        <div className="flex flex-col gap-2">
-                            <p>
-                                <strong>{deleteTarget.title}</strong>
-                                {deleteTarget.label && ` · ${deleteTarget.label}`}
-                            </p>
-                            <p>{t('writing.workspace.delete_confirm_body')}</p>
-                            {deleteImpactLoading ? (
-                                <p
-                                    className="italic"
-                                    style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}
-                                >
-                                    {t('writing.workspace.delete_impact_loading')}
-                                </p>
-                            ) : (
-                                deleteImpact !== null && (
-                                    <ul className="list-disc pl-4">
-                                        {deleteImpact.descendant_sections > 0 && (
-                                            <li>
-                                                {(deleteImpact.descendant_sections === 1
-                                                    ? t('writing.workspace.delete_impact_sections.singular')
-                                                    : t('writing.workspace.delete_impact_sections.plural')
-                                                ).replace(':count', String(deleteImpact.descendant_sections))}
-                                            </li>
-                                        )}
-                                        {deleteImpact.notes > 0 && (
-                                            <li>
-                                                {(deleteImpact.notes === 1
-                                                    ? t('writing.workspace.delete_impact_notes.singular')
-                                                    : t('writing.workspace.delete_impact_notes.plural')
-                                                ).replace(':count', String(deleteImpact.notes))}
-                                            </li>
-                                        )}
-                                    </ul>
-                                )
-                            )}
-                            <p
-                                className="text-xs"
-                                style={{ color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)' }}
-                            >
-                                {t('writing.workspace.delete_confirm_recycle_note')}
-                            </p>
-                        </div>
-                    )
-                }
-                confirmLabel={t('writing.workspace.delete_confirm_action')}
-                variant="danger"
-                loading={deleting || deleteImpactLoading}
-            />
-        </AppLayout>
-        </WritingSaveProvider>
+                        variant="danger"
+                        loading={deleting || deleteImpactLoading}
+                    />
+                </AppLayout>
+            </WritingSaveProvider>
         </ScreenplayTemplateContext>
     );
 }

@@ -19,8 +19,8 @@ import {
     visibleOutlineRows,
     writeCollapsedKeys,
 } from './outlineCollapse';
-import { patchBeatDone } from './outlineApi';
 import { parseOutlinePaste } from './parseOutlinePaste';
+import OutlineConflictNotice from './OutlineConflictNotice';
 import useOutlineSync, { type BlockedOutlineRow } from './useOutlineSync';
 import type { OutlineBeat, OutlineRow } from './outlineTypes';
 
@@ -279,16 +279,24 @@ export default function OutlineView({
     const {
         rows,
         hierarchy,
+        ready,
         setRows,
         deleteRow,
         forceDelete,
         convertRow,
         undoConversion,
         hasConversions,
+        conflict,
+        base,
+        draft,
+        ambiguous,
+        resolveConflict,
+        discardConflict,
+        error,
         flush,
         status,
         blocked,
-        reload,
+        keepBlocked,
     } = useOutlineSync({
         projectSlug,
         workSlug,
@@ -367,25 +375,8 @@ export default function OutlineView({
         }
     }
 
-    async function toggleBeat(row: OutlineRow, beat: OutlineBeat) {
-        if (row.sectionId === null) {
-            dispatch({ type: 'toggle-beat', key: row.key, beatId: beat.id });
-            return;
-        }
-
-        const beats = await patchBeatDone(
-            projectSlug,
-            workSlug,
-            row.sectionId,
-            beat.id,
-            !beat.done,
-        );
-
-        if (beats !== null) {
-            setRows((prev) =>
-                prev.map((r) => (r.key === row.key ? { ...r, beats } : r)),
-            );
-        }
+    function toggleBeat(row: OutlineRow, beat: OutlineBeat) {
+        dispatch({ type: 'toggle-beat', key: row.key, beatId: beat.id });
     }
 
     function handleKeyDown(
@@ -554,6 +545,29 @@ export default function OutlineView({
 
     return (
         <div style={paneStyle} data-outline-view="">
+            {conflict && (
+                <OutlineConflictNotice
+                    base={base}
+                    draft={draft}
+                    projection={conflict}
+                    ambiguous={ambiguous}
+                    onResolve={resolveConflict}
+                    onDiscard={discardConflict}
+                />
+            )}
+            {status === 'error' && (
+                <div role="alert">
+                    <span>{error ?? t('writing.workspace.save_error')}</span>{' '}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            void flush();
+                        }}
+                    >
+                        {t('writing.outline.retry_save')}
+                    </button>
+                </div>
+            )}
             {status === 'error' && hasConversions && (
                 <button type="button" onClick={undoConversion}>
                     {t('writing.outline.undo_conversion')}
@@ -596,6 +610,7 @@ export default function OutlineView({
                             type="button"
                             style={addFirstBtnStyle}
                             onClick={handleAddFirstRow}
+                            disabled={ready === false}
                         >
                             {t('writing.outline.add_first')}
                         </button>
@@ -781,7 +796,9 @@ export default function OutlineView({
                                     <button
                                         type="button"
                                         style={keepBtnStyle}
-                                        onClick={() => reload()}
+                                        onClick={() =>
+                                            keepBlocked(blockedEntry.sectionId)
+                                        }
                                     >
                                         {t('writing.outline.keep_row')}
                                     </button>

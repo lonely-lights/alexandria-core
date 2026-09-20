@@ -42,6 +42,13 @@ export default function WritingSaveProvider({
                 return;
             }
 
+            if (coordinator.hasPendingStructure) {
+                event.preventDefault();
+                void coordinator.flush().then((results) => {
+                    if (results.every(Boolean)) router.visit(visit.url, visit);
+                });
+                return;
+            }
             if (coordinator.hasUnsaved) {
                 void coordinator.flush();
 

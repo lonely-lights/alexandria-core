@@ -169,7 +169,21 @@ export class SectionSaveQueue {
 }
 
 /** Lives for one mounted workspace; preserves failed drafts across section/view switches. */
+export interface WritingSaveParticipant {
+    readonly hasUnsaved: boolean;
+    flush(keepalive?: boolean): Promise<boolean>;
+}
 export class WritingSaveCoordinator {
+    private readonly participants = new Set<WritingSaveParticipant>();
+    register(participant: WritingSaveParticipant): () => void {
+        this.participants.add(participant);
+        return () => {
+            this.participants.delete(participant);
+        };
+    }
+    get hasPendingStructure(): boolean {
+        return [...this.participants].some((p) => p.hasUnsaved);
+    }
     private readonly sessions = new Map<number, SectionSaveQueue>();
     private readonly listeners = new Set<() => void>();
     private snapshot: readonly SectionSaveQueue[] = [];
@@ -189,8 +203,9 @@ export class WritingSaveCoordinator {
     }
 
     get hasUnsaved(): boolean {
-        return [...this.sessions.values()].some(
-            (session) => session.hasUnsaved,
+        return (
+            this.hasPendingStructure ||
+            [...this.sessions.values()].some((session) => session.hasUnsaved)
         );
     }
     getSnapshot = (): readonly SectionSaveQueue[] => this.snapshot;
@@ -203,7 +218,7 @@ export class WritingSaveCoordinator {
     };
     flush = (keepalive = false): Promise<boolean[]> =>
         Promise.all(
-            [...this.sessions.values()].map((session) =>
+            [...this.sessions.values(), ...this.participants].map((session) =>
                 session.flush(keepalive),
             ),
         );

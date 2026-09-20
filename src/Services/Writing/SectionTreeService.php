@@ -8,7 +8,6 @@ use Alexandria\Core\Models\Writing\Work;
 use Alexandria\Core\Models\Writing\WorkSection;
 use Alexandria\Core\Models\Writing\WorkSectionEntryMention;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Throwable;
 
@@ -31,7 +30,7 @@ class SectionTreeService
      */
     public function duplicateSubtree(WorkSection $section, string $rootTitle): WorkSection
     {
-        return DB::transaction(function () use ($section, $rootTitle): WorkSection {
+        return app(WorkMutationLock::class)->run([$section->work_id], function () use ($section, $rootTitle): WorkSection {
             $copy = $this->copyBranch(
                 $section,
                 $section->parent_id,
@@ -63,7 +62,7 @@ class SectionTreeService
             }
         }
 
-        DB::transaction(function () use ($section, $newParentId, $position): void {
+        app(WorkMutationLock::class)->run([$section->work_id], function () use ($section, $newParentId, $position): void {
             $oldParentId = $section->parent_id;
 
             $section->forceFill(['parent_id' => $newParentId, 'position' => $position])->save();
@@ -83,7 +82,7 @@ class SectionTreeService
      */
     public function reorder(Work $work, ?int $parentId, array $orderedIds): void
     {
-        DB::transaction(function () use ($work, $parentId, $orderedIds): void {
+        app(WorkMutationLock::class)->run([$work->id], function () use ($work, $parentId, $orderedIds): void {
             foreach (array_values($orderedIds) as $index => $id) {
                 WorkSection::query()
                     ->where('work_id', $work->id)
@@ -127,7 +126,7 @@ class SectionTreeService
      */
     public function deleteSubtree(WorkSection $section): void
     {
-        DB::transaction(function () use ($section): void {
+        app(WorkMutationLock::class)->run([$section->work_id], function () use ($section): void {
             $ids = $this->subtreeIds($section);
 
             // Per-model deletes are deliberate (model-event fidelity
@@ -148,7 +147,7 @@ class SectionTreeService
      */
     public function deleteAllForWork(Work $work): void
     {
-        DB::transaction(function () use ($work): void {
+        app(WorkMutationLock::class)->run([$work->id], function () use ($work): void {
             // Per-model deletes, same rationale as deleteSubtree.
             $work->sections()->get()->each->delete();
         });
@@ -166,7 +165,7 @@ class SectionTreeService
      */
     public function restoreWithAncestors(WorkSection $section): void
     {
-        DB::transaction(function () use ($section): void {
+        app(WorkMutationLock::class)->run([$section->work_id], function () use ($section): void {
             $work = Work::withTrashed()->findOrFail($section->work_id);
 
             if ($work->trashed()) {
@@ -220,7 +219,7 @@ class SectionTreeService
      */
     public function restoreAllForWork(Work $work): void
     {
-        DB::transaction(function () use ($work): void {
+        app(WorkMutationLock::class)->run([$work->id], function () use ($work): void {
             if ($work->trashed()) {
                 $work->restore();
             }

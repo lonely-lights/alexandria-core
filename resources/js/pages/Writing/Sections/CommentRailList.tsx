@@ -37,7 +37,10 @@ interface CommentRailListProps {
 
 const cardStyle: CSSProperties = {
     borderRadius: 'var(--theme-radius-card)',
-    padding: '0.5rem 0.625rem',
+    paddingTop: '0.5rem',
+    paddingRight: '0.625rem',
+    paddingBottom: '0.5rem',
+    paddingLeft: '0.625rem',
     background: 'color-mix(in srgb, var(--theme-base-content) 3%, transparent)',
     border: '1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
     cursor: 'pointer',
@@ -46,9 +49,9 @@ const cardStyle: CSSProperties = {
 
 const cardHighlightStyle: CSSProperties = {
     ...cardStyle,
-    background: 'color-mix(in srgb, var(--theme-brand-secondary-500) 10%, transparent)',
-    borderLeft: '3px solid var(--theme-brand-secondary-500)',
-    paddingLeft: '0.375rem',
+    background:
+        'color-mix(in srgb, var(--theme-brand-secondary-500) 10%, transparent)',
+    boxShadow: 'inset 2px 0 var(--theme-brand-secondary-500)',
 };
 
 const authorStyle: CSSProperties = {
@@ -131,7 +134,13 @@ interface CommentCardProps {
     callbacks: CommentRailListCallbacks;
 }
 
-function CommentCard({ comment, currentUserId, canUpdate, highlighted, callbacks }: CommentCardProps) {
+function CommentCard({
+    comment,
+    currentUserId,
+    canUpdate,
+    highlighted,
+    callbacks,
+}: CommentCardProps) {
     const t = useT();
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(comment.body);
@@ -166,9 +175,17 @@ function CommentCard({ comment, currentUserId, canUpdate, highlighted, callbacks
             onClick={() => !editing && callbacks.onAnchorClick(comment.id)}
         >
             {/* Header row */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.375rem' }}>
+            <div
+                style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    gap: '0.375rem',
+                }}
+            >
                 <span style={authorStyle}>{comment.author.name}</span>
-                <span style={timeStyle}>{relativeDate(comment.created_at)}</span>
+                <span style={timeStyle}>
+                    {relativeDate(comment.created_at)}
+                </span>
             </div>
 
             {editing ? (
@@ -178,7 +195,11 @@ function CommentCard({ comment, currentUserId, canUpdate, highlighted, callbacks
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                         onKeyDown={(e) => {
-                            if (e.key === 'Escape') { e.stopPropagation(); setEditing(false); setDraft(comment.body); }
+                            if (e.key === 'Escape') {
+                                e.stopPropagation();
+                                setEditing(false);
+                                setDraft(comment.body);
+                            }
                         }}
                         autoFocus
                         style={{
@@ -198,15 +219,30 @@ function CommentCard({ comment, currentUserId, canUpdate, highlighted, callbacks
                             boxSizing: 'border-box',
                         }}
                     />
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.375rem', marginTop: '0.375rem' }}>
-                        <button type="button" onMouseDown={cancelEdit} style={actionBtnStyle}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: '0.375rem',
+                            marginTop: '0.375rem',
+                        }}
+                    >
+                        <button
+                            type="button"
+                            onMouseDown={cancelEdit}
+                            style={actionBtnStyle}
+                        >
                             {t('writing.comments.cancel')}
                         </button>
                         <button
                             type="button"
                             onMouseDown={saveEdit}
                             disabled={!draft.trim()}
-                            style={{ ...actionBtnStyle, color: 'var(--theme-brand-secondary-500)', fontWeight: 600 }}
+                            style={{
+                                ...actionBtnStyle,
+                                color: 'var(--theme-brand-secondary-500)',
+                                fontWeight: 600,
+                            }}
                         >
                             {t('writing.comments.save')}
                         </button>
@@ -215,7 +251,10 @@ function CommentCard({ comment, currentUserId, canUpdate, highlighted, callbacks
             ) : (
                 <>
                     <p style={bodyStyle}>{comment.body}</p>
-                    <div style={actionRowStyle} onClick={(e) => e.stopPropagation()}>
+                    <div
+                        style={actionRowStyle}
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         {canResolve && (
                             <button
                                 type="button"
@@ -226,18 +265,27 @@ function CommentCard({ comment, currentUserId, canUpdate, highlighted, callbacks
                                         : callbacks.onResolve(comment.id)
                                 }
                             >
-                                {isResolved ? t('writing.comments.unresolve') : t('writing.comments.resolve')}
+                                {isResolved
+                                    ? t('writing.comments.unresolve')
+                                    : t('writing.comments.resolve')}
                             </button>
                         )}
                         {isOwn && (
                             <>
-                                <button type="button" style={actionBtnStyle} onClick={startEdit}>
+                                <button
+                                    type="button"
+                                    style={actionBtnStyle}
+                                    onClick={startEdit}
+                                >
                                     {t('writing.comments.edit')}
                                 </button>
                                 <button
                                     type="button"
                                     style={deleteBtnStyle}
-                                    onClick={(e) => { e.stopPropagation(); callbacks.onDelete(comment.id); }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        callbacks.onDelete(comment.id);
+                                    }}
                                 >
                                     {t('writing.comments.delete')}
                                 </button>
@@ -265,7 +313,9 @@ export default function CommentRailList({
     const hasAny = active.length > 0 || resolved.length > 0;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div
+            style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+        >
             {/* Active comments */}
             {active.map((c) => (
                 <CommentCard
@@ -279,9 +329,7 @@ export default function CommentRailList({
             ))}
 
             {/* Empty state */}
-            {!hasAny && (
-                <p style={emptyStyle}>{t('writing.comments.empty')}</p>
-            )}
+            {!hasAny && <p style={emptyStyle}>{t('writing.comments.empty')}</p>}
 
             {/* Resolved collapse group */}
             {resolved.length > 0 && (
@@ -297,7 +345,10 @@ export default function CommentRailList({
                             style={{ fontSize: '0.625rem' }}
                             aria-hidden="true"
                         />
-                        {t('writing.comments.resolved_group').replace(':count', String(resolved.length))}
+                        {t('writing.comments.resolved_group').replace(
+                            ':count',
+                            String(resolved.length),
+                        )}
                     </button>
 
                     {resolvedOpen && (
