@@ -10,10 +10,12 @@
  * succeeds.
  */
 
-import type { OutlineProjection, OutlineRow } from './outlineTypes';
+import type { OutlineProjection, OutlineRow } from "./outlineTypes";
 
 /** Build the client tree from a freshly loaded outline projection. */
-export function rowsFromProjection(projection: OutlineProjection): OutlineRow[] {
+export function rowsFromProjection(
+    projection: OutlineProjection,
+): OutlineRow[] {
     return projection.rows.map((row) => ({
         key: `s-${row.sectionId}`,
         sectionId: row.sectionId,
@@ -25,6 +27,10 @@ export function rowsFromProjection(projection: OutlineProjection): OutlineRow[] 
         slug: row.slug,
         synopsis: row.synopsis,
         beats: row.beats,
+        isStructural: row.is_structural,
+        hasContent: row.has_content,
+        canBecomeBeat: row.canBecomeBeat,
+        conversionBlockedReason: row.conversionBlockedReason,
         beatType: row.beat_type,
         goal: row.goal,
         conflict: row.conflict,
@@ -83,6 +89,9 @@ export function buildOutlinePayload(
             parentId: resolveParentId(rowsByKey, row.parentKey),
             depth: row.depth,
             label: row.label,
+            ...(row.isStructural !== undefined
+                ? { is_structural: row.isStructural }
+                : {}),
             title: row.title,
             synopsis: row.synopsis,
             beats: row.beats,
@@ -110,7 +119,8 @@ export function reconcileTempIds(
     }
 
     return rows.map((row) => {
-        const resolvedSectionId = row.tempId !== null ? tempIds[row.tempId] : undefined;
+        const resolvedSectionId =
+            row.tempId !== null ? tempIds[row.tempId] : undefined;
         const newParentKey =
             row.parentKey !== null
                 ? (keyRemap.get(row.parentKey) ?? row.parentKey)

@@ -5,23 +5,23 @@ import {
     type ClipboardEvent,
     type CSSProperties,
     type KeyboardEvent,
-} from 'react';
+} from "react";
 
-import useT from '@alexandria/hooks/useT';
-import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
+import useT from "@alexandria/hooks/useT";
+import DropdownMenu from "@alexandria/components/ui/DropdownMenu";
 
-import type { ThreadSectionRef } from '../Threads/MarkThreadModal';
-import { beatKey, outlineReducer, type OutlineAction } from './outlineReducer';
+import type { ThreadSectionRef } from "../Threads/MarkThreadModal";
+import { beatKey, outlineReducer, type OutlineAction } from "./outlineReducer";
 import {
     readCollapsedKeys,
     rowHasNested,
     visibleOutlineRows,
     writeCollapsedKeys,
-} from './outlineCollapse';
-import { patchBeatDone } from './outlineApi';
-import { parseOutlinePaste } from './parseOutlinePaste';
-import useOutlineSync, { type BlockedOutlineRow } from './useOutlineSync';
-import type { OutlineBeat, OutlineRow } from './outlineTypes';
+} from "./outlineCollapse";
+import { patchBeatDone } from "./outlineApi";
+import { parseOutlinePaste } from "./parseOutlinePaste";
+import useOutlineSync, { type BlockedOutlineRow } from "./useOutlineSync";
+import type { OutlineBeat, OutlineRow } from "./outlineTypes";
 
 /**
  * Full-pane outline editor — spec 2026-08-28 outline-mode Task 5.
@@ -51,179 +51,180 @@ export interface OutlineViewProps {
 }
 
 const paneStyle: CSSProperties = {
-    height: '100%',
-    overflowY: 'auto',
-    padding: '1rem 1.5rem 3rem',
+    height: "100%",
+    overflowY: "auto",
+    padding: "1rem 1.5rem 3rem",
 };
 
 const headerRowStyle: CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '0.75rem',
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: "0.75rem",
 };
 
 const statusChipStyle: CSSProperties = {
-    fontSize: '0.75rem',
-    color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)',
+    fontSize: "0.75rem",
+    color: "color-mix(in srgb, var(--theme-base-content) 45%, transparent)",
 };
 
 const conflictChipStyle: CSSProperties = {
     ...statusChipStyle,
-    color: 'var(--theme-brand-secondary-500)',
+    color: "var(--theme-brand-secondary-500)",
     fontWeight: 600,
 };
 
 const errorChipStyle: CSSProperties = {
     ...statusChipStyle,
-    color: 'var(--theme-status-error-stroke)',
+    color: "var(--theme-status-error-stroke)",
     fontWeight: 600,
 };
 
 const rowStyle: CSSProperties = {
-    marginBottom: '0.375rem',
+    marginBottom: "0.375rem",
 };
 
 const rowLineStyle: CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    borderRadius: 'var(--theme-radius-button)',
-    padding: '0.1875rem 0.375rem',
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    borderRadius: "var(--theme-radius-button)",
+    padding: "0.1875rem 0.375rem",
 };
 
 const labelChipStyle: CSSProperties = {
-    background: 'color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
-    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
-    borderRadius: 'var(--theme-radius-badge)',
-    padding: '0 0.375rem',
-    fontSize: '0.625rem',
+    background: "color-mix(in srgb, var(--theme-base-content) 8%, transparent)",
+    color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
+    borderRadius: "var(--theme-radius-badge)",
+    padding: "0 0.375rem",
+    fontSize: "0.625rem",
     fontWeight: 600,
     lineHeight: 1.6,
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-    whiteSpace: 'nowrap',
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    whiteSpace: "nowrap",
     flexShrink: 0,
 };
 
 const titleInputStyle: CSSProperties = {
-    border: 'none',
-    outline: 'none',
-    background: 'transparent',
-    color: 'var(--theme-base-content)',
-    fontFamily: 'inherit',
-    fontSize: '0.9375rem',
+    border: "none",
+    outline: "none",
+    background: "transparent",
+    color: "var(--theme-base-content)",
+    fontFamily: "inherit",
+    fontSize: "0.9375rem",
     fontWeight: 600,
-    padding: '0.125rem 0',
-    minWidth: '6rem',
+    padding: "0.125rem 0",
+    minWidth: "6rem",
     // Columnar layout (owner, 2026-08-28 walkthrough): titles on the
     // left, synopses aligned in their own column — with NO separator
     // glyph between them.
-    flex: '1 1 40%',
+    flex: "1 1 40%",
 };
 
 const synopsisInputStyle: CSSProperties = {
-    border: 'none',
-    outline: 'none',
-    background: 'transparent',
-    color: 'color-mix(in srgb, var(--theme-base-content) 60%, transparent)',
-    fontFamily: 'inherit',
-    fontSize: '0.8125rem',
-    fontStyle: 'italic',
-    padding: '0.125rem 0',
-    flex: '1 1 60%',
-    minWidth: '4rem',
+    border: "none",
+    outline: "none",
+    background: "transparent",
+    color: "color-mix(in srgb, var(--theme-base-content) 60%, transparent)",
+    fontFamily: "inherit",
+    fontSize: "0.8125rem",
+    fontStyle: "italic",
+    padding: "0.125rem 0",
+    flex: "1 1 60%",
+    minWidth: "4rem",
 };
 
 /** Chevron on any row with something nested; the spacer twin keeps
  *  chevron-less rows aligned. */
 const collapseBtnStyle: CSSProperties = {
-    width: '1.125rem',
+    width: "1.125rem",
     flexShrink: 0,
-    background: 'transparent',
-    border: 'none',
+    background: "transparent",
+    border: "none",
     padding: 0,
-    cursor: 'pointer',
-    color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)',
-    fontSize: '0.6875rem',
+    cursor: "pointer",
+    color: "color-mix(in srgb, var(--theme-base-content) 45%, transparent)",
+    fontSize: "0.6875rem",
 };
 
 const collapseSpacerStyle: CSSProperties = {
-    width: '1.125rem',
+    width: "1.125rem",
     flexShrink: 0,
 };
 
 const iconBtnStyle: CSSProperties = {
-    border: 'none',
-    background: 'none',
-    cursor: 'pointer',
-    color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
-    fontSize: '0.75rem',
-    padding: '0.125rem 0.25rem',
+    border: "none",
+    background: "none",
+    cursor: "pointer",
+    color: "color-mix(in srgb, var(--theme-base-content) 40%, transparent)",
+    fontSize: "0.75rem",
+    padding: "0.125rem 0.25rem",
     flexShrink: 0,
 };
 
 const blockedHintStyle: CSSProperties = {
-    color: 'var(--theme-status-error-stroke)',
-    fontSize: '0.75rem',
-    marginTop: '0.125rem',
+    color: "var(--theme-status-error-stroke)",
+    fontSize: "0.75rem",
+    marginTop: "0.125rem",
 };
 
 const blockedConfirmStyle: CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    marginTop: '0.1875rem',
-    padding: '0.25rem 0.5rem',
-    borderRadius: 'var(--theme-radius-button)',
-    background: 'color-mix(in srgb, var(--theme-status-error-stroke) 10%, transparent)',
-    color: 'var(--theme-status-error-stroke)',
-    fontSize: '0.75rem',
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    marginTop: "0.1875rem",
+    padding: "0.25rem 0.5rem",
+    borderRadius: "var(--theme-radius-button)",
+    background:
+        "color-mix(in srgb, var(--theme-status-error-stroke) 10%, transparent)",
+    color: "var(--theme-status-error-stroke)",
+    fontSize: "0.75rem",
 };
 
 const confirmBtnStyle: CSSProperties = {
-    border: 'none',
-    borderRadius: 'var(--theme-radius-button)',
-    background: 'var(--theme-status-error-stroke)',
-    color: '#fff',
-    fontSize: '0.75rem',
+    border: "none",
+    borderRadius: "var(--theme-radius-button)",
+    background: "var(--theme-status-error-stroke)",
+    color: "#fff",
+    fontSize: "0.75rem",
     fontWeight: 600,
-    padding: '0.125rem 0.5rem',
-    cursor: 'pointer',
+    padding: "0.125rem 0.5rem",
+    cursor: "pointer",
 };
 
 const keepBtnStyle: CSSProperties = {
-    border: 'none',
-    background: 'none',
-    color: 'inherit',
-    fontSize: '0.75rem',
-    textDecoration: 'underline',
-    cursor: 'pointer',
+    border: "none",
+    background: "none",
+    color: "inherit",
+    fontSize: "0.75rem",
+    textDecoration: "underline",
+    cursor: "pointer",
     padding: 0,
 };
 
 const beatsWrapStyle: CSSProperties = {
-    marginTop: '0.125rem',
+    marginTop: "0.125rem",
     // 1.75rem to sit under the title + 1.125rem for the collapse
     // chevron/spacer column the row line now carries before it.
-    marginLeft: '2.875rem',
+    marginLeft: "2.875rem",
 };
 
 const beatRowStyle: CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.0625rem 0',
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    padding: "0.0625rem 0",
 };
 
 function beatCheckStyle(done: boolean): CSSProperties {
     return {
-        width: '0.8125rem',
-        height: '0.8125rem',
-        borderRadius: '999px',
-        border: `1.5px solid ${done ? 'var(--theme-brand-primary-500)' : 'color-mix(in srgb, var(--theme-base-content) 35%, transparent)'}`,
-        background: done ? 'var(--theme-brand-primary-500)' : 'transparent',
-        cursor: 'pointer',
+        width: "0.8125rem",
+        height: "0.8125rem",
+        borderRadius: "999px",
+        border: `1.5px solid ${done ? "var(--theme-brand-primary-500)" : "color-mix(in srgb, var(--theme-base-content) 35%, transparent)"}`,
+        background: done ? "var(--theme-brand-primary-500)" : "transparent",
+        cursor: "pointer",
         flexShrink: 0,
         padding: 0,
     };
@@ -231,35 +232,40 @@ function beatCheckStyle(done: boolean): CSSProperties {
 
 function beatTextStyle(done: boolean): CSSProperties {
     return {
-        fontSize: '0.8125rem',
+        fontSize: "0.8125rem",
         color: done
-            ? 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)'
-            : 'color-mix(in srgb, var(--theme-base-content) 80%, transparent)',
-        textDecoration: done ? 'line-through' : 'none',
+            ? "color-mix(in srgb, var(--theme-base-content) 40%, transparent)"
+            : "color-mix(in srgb, var(--theme-base-content) 80%, transparent)",
+        textDecoration: done ? "line-through" : "none",
         flex: 1,
     };
 }
 
 const emptyStateStyle: CSSProperties = {
-    textAlign: 'center',
-    padding: '3rem 1rem',
-    color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)',
-    fontSize: '0.875rem',
+    textAlign: "center",
+    padding: "3rem 1rem",
+    color: "color-mix(in srgb, var(--theme-base-content) 45%, transparent)",
+    fontSize: "0.875rem",
 };
 
 const addFirstBtnStyle: CSSProperties = {
-    marginTop: '0.75rem',
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)',
-    borderRadius: 'var(--theme-radius-button)',
-    background: 'none',
-    color: 'var(--theme-base-content)',
-    padding: '0.375rem 0.875rem',
-    fontSize: '0.8125rem',
-    cursor: 'pointer',
+    marginTop: "0.75rem",
+    border: "1px solid color-mix(in srgb, var(--theme-base-content) 15%, transparent)",
+    borderRadius: "var(--theme-radius-button)",
+    background: "none",
+    color: "var(--theme-base-content)",
+    padding: "0.375rem 0.875rem",
+    fontSize: "0.8125rem",
+    cursor: "pointer",
 };
 
-function blockedFor(row: OutlineRow, blocked: BlockedOutlineRow[]): BlockedOutlineRow | undefined {
-    return row.sectionId === null ? undefined : blocked.find((b) => b.sectionId === row.sectionId);
+function blockedFor(
+    row: OutlineRow,
+    blocked: BlockedOutlineRow[],
+): BlockedOutlineRow | undefined {
+    return row.sectionId === null
+        ? undefined
+        : blocked.find((b) => b.sectionId === row.sectionId);
 }
 
 export default function OutlineView({
@@ -269,11 +275,20 @@ export default function OutlineView({
     onRequestMarkThread,
 }: OutlineViewProps) {
     const t = useT();
-    const { rows, setRows, deleteRow, forceDelete, flush, status, blocked, reload } =
-        useOutlineSync({
-            projectSlug,
-            workSlug,
-        });
+    const {
+        rows,
+        hierarchy,
+        setRows,
+        deleteRow,
+        forceDelete,
+        flush,
+        status,
+        blocked,
+        reload,
+    } = useOutlineSync({
+        projectSlug,
+        workSlug,
+    });
 
     const inputRefs = useRef(new Map<string, HTMLInputElement>());
     const pendingFocusRef = useRef<string | null>(null);
@@ -320,7 +335,7 @@ export default function OutlineView({
      *  mounted. */
     function dispatch(action: OutlineAction) {
         const before = rows;
-        const result = outlineReducer(before, action);
+        const result = outlineReducer(before, action, { hierarchy });
 
         if (result.blockedHint !== null) {
             flashBlockedHint(result.blockedHint);
@@ -334,7 +349,9 @@ export default function OutlineView({
                 pendingFocusRef.current = result.focusKey;
             } else {
                 const beforeKeys = new Set(before.map((row) => row.key));
-                const created = result.rows.find((row) => !beforeKeys.has(row.key));
+                const created = result.rows.find(
+                    (row) => !beforeKeys.has(row.key),
+                );
 
                 if (created !== undefined) {
                     pendingFocusRef.current = created.key;
@@ -347,69 +364,84 @@ export default function OutlineView({
 
     async function toggleBeat(row: OutlineRow, beat: OutlineBeat) {
         if (row.sectionId === null) {
-            dispatch({ type: 'toggle-beat', key: row.key, beatId: beat.id });
+            dispatch({ type: "toggle-beat", key: row.key, beatId: beat.id });
             return;
         }
 
-        const beats = await patchBeatDone(projectSlug, workSlug, row.sectionId, beat.id, !beat.done);
+        const beats = await patchBeatDone(
+            projectSlug,
+            workSlug,
+            row.sectionId,
+            beat.id,
+            !beat.done,
+        );
 
         if (beats !== null) {
-            setRows((prev) => prev.map((r) => (r.key === row.key ? { ...r, beats } : r)));
+            setRows((prev) =>
+                prev.map((r) => (r.key === row.key ? { ...r, beats } : r)),
+            );
         }
     }
 
-    function handleKeyDown(event: KeyboardEvent<HTMLInputElement>, row: OutlineRow) {
+    function handleKeyDown(
+        event: KeyboardEvent<HTMLInputElement>,
+        row: OutlineRow,
+    ) {
         if (!canUpdate) {
             return;
         }
 
-        if (event.key === 'Enter') {
+        if (event.key === "Enter") {
             event.preventDefault();
-            dispatch({ type: 'enter', key: row.key });
+            dispatch({ type: "enter", key: row.key });
             // Enter is a natural commit point — don't leave the new
             // line's predecessors sitting in the debounce window.
             flush();
             return;
         }
 
-        if (event.key === 'Tab' && !event.shiftKey) {
+        if (event.key === "Tab" && !event.shiftKey) {
             event.preventDefault();
-            dispatch({ type: 'indent', key: row.key });
+            dispatch({ type: "indent", key: row.key });
             return;
         }
 
-        if (event.key === 'Tab' && event.shiftKey) {
+        if (event.key === "Tab" && event.shiftKey) {
             event.preventDefault();
-            dispatch({ type: 'outdent', key: row.key });
+            dispatch({ type: "outdent", key: row.key });
             return;
         }
 
-        if (event.altKey && event.key === 'ArrowUp') {
+        if (event.altKey && event.key === "ArrowUp") {
             event.preventDefault();
-            dispatch({ type: 'move', key: row.key, dir: 'up' });
+            dispatch({ type: "move", key: row.key, dir: "up" });
             return;
         }
 
-        if (event.altKey && event.key === 'ArrowDown') {
+        if (event.altKey && event.key === "ArrowDown") {
             event.preventDefault();
-            dispatch({ type: 'move', key: row.key, dir: 'down' });
+            dispatch({ type: "move", key: row.key, dir: "down" });
             return;
         }
 
-        if (event.key === 'Backspace' && row.title === '') {
+        if (event.key === "Backspace" && row.title === "") {
             event.preventDefault();
             deleteRow(row.key);
         }
     }
 
-    function handleBeatKeyDown(event: KeyboardEvent<HTMLButtonElement>, row: OutlineRow, beat: OutlineBeat) {
+    function handleBeatKeyDown(
+        event: KeyboardEvent<HTMLButtonElement>,
+        row: OutlineRow,
+        beat: OutlineBeat,
+    ) {
         if (!canUpdate) {
             return;
         }
 
-        if (event.key === 'Tab' && event.shiftKey) {
+        if (event.key === "Tab" && event.shiftKey) {
             event.preventDefault();
-            dispatch({ type: 'outdent', key: beatKey(row.key, beat.id) });
+            dispatch({ type: "outdent", key: beatKey(row.key, beat.id) });
         }
     }
 
@@ -422,46 +454,53 @@ export default function OutlineView({
             return;
         }
 
-        if (event.key === 'Enter') {
+        if (event.key === "Enter") {
             event.preventDefault();
-            dispatch({ type: 'enter', key: beatKey(row.key, beat.id) });
+            dispatch({ type: "enter", key: beatKey(row.key, beat.id) });
             flush();
             return;
         }
 
-        if (event.key === 'Tab' && event.shiftKey) {
+        if (event.key === "Tab" && event.shiftKey) {
             event.preventDefault();
-            dispatch({ type: 'outdent', key: beatKey(row.key, beat.id) });
+            dispatch({ type: "outdent", key: beatKey(row.key, beat.id) });
             return;
         }
 
-        if (event.key === 'Tab') {
+        if (event.key === "Tab") {
             // Beats are the deepest tier — swallow Tab so focus doesn't
             // wander off mid-outline.
             event.preventDefault();
             return;
         }
 
-        if (event.key === 'Backspace' && beat.text === '') {
+        if (event.key === "Backspace" && beat.text === "") {
             event.preventDefault();
-            dispatch({ type: 'delete', key: beatKey(row.key, beat.id) });
+            dispatch({ type: "delete", key: beatKey(row.key, beat.id) });
         }
     }
 
-    function handlePaste(event: ClipboardEvent<HTMLInputElement>, row: OutlineRow) {
+    function handlePaste(
+        event: ClipboardEvent<HTMLInputElement>,
+        row: OutlineRow,
+    ) {
         if (!canUpdate) {
             return;
         }
 
-        const text = event.clipboardData.getData('text/plain');
+        const text = event.clipboardData.getData("text/plain");
 
-        if (!text.includes('\n')) {
+        if (!text.includes("\n")) {
             // A single line pastes into the field normally.
             return;
         }
 
         event.preventDefault();
-        dispatch({ type: 'paste', anchorKey: row.key, lines: parseOutlinePaste(text) });
+        dispatch({
+            type: "paste",
+            anchorKey: row.key,
+            lines: parseOutlinePaste(text),
+        });
     }
 
     function handleAddFirstRow() {
@@ -473,8 +512,9 @@ export default function OutlineView({
                 tempId: key,
                 parentKey: null,
                 depth: 0,
-                label: 'Act',
-                title: '',
+                label: hierarchy[0]?.label ?? "Section",
+                isStructural: hierarchy[0]?.isStructural ?? false,
+                title: "",
                 slug: null,
                 synopsis: null,
                 beats: [],
@@ -486,23 +526,44 @@ export default function OutlineView({
     return (
         <div style={paneStyle} data-outline-view="">
             <div style={headerRowStyle}>
-                <h2 className="text-sm font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                    {t('writing.outline.title')}
+                <h2
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--theme-base-content)" }}
+                >
+                    {t("writing.outline.title")}
                 </h2>
-                {status === 'saving' && <span style={statusChipStyle}>{t('writing.workspace.saving')}</span>}
-                {status === 'saved' && <span style={statusChipStyle}>{t('writing.workspace.saved')}</span>}
-                {status === 'error' && <span style={errorChipStyle}>{t('writing.workspace.save_error')}</span>}
-                {status === 'conflict' && (
-                    <span style={conflictChipStyle}>{t('writing.outline.status_conflict')}</span>
+                {status === "saving" && (
+                    <span style={statusChipStyle}>
+                        {t("writing.workspace.saving")}
+                    </span>
+                )}
+                {status === "saved" && (
+                    <span style={statusChipStyle}>
+                        {t("writing.workspace.saved")}
+                    </span>
+                )}
+                {status === "error" && (
+                    <span style={errorChipStyle}>
+                        {t("writing.workspace.save_error")}
+                    </span>
+                )}
+                {status === "conflict" && (
+                    <span style={conflictChipStyle}>
+                        {t("writing.outline.status_conflict")}
+                    </span>
                 )}
             </div>
 
             {rows.length === 0 ? (
                 <div style={emptyStateStyle}>
-                    <p>{t('writing.outline.empty')}</p>
+                    <p>{t("writing.outline.empty")}</p>
                     {canUpdate && (
-                        <button type="button" style={addFirstBtnStyle} onClick={handleAddFirstRow}>
-                            {t('writing.outline.add_first')}
+                        <button
+                            type="button"
+                            style={addFirstBtnStyle}
+                            onClick={handleAddFirstRow}
+                        >
+                            {t("writing.outline.add_first")}
                         </button>
                     )}
                 </div>
@@ -513,7 +574,13 @@ export default function OutlineView({
                     const isCollapsed = collapsedKeys.has(row.key);
 
                     return (
-                        <div key={row.key} style={{ ...rowStyle, paddingLeft: `${row.depth * 1.5}rem` }}>
+                        <div
+                            key={row.key}
+                            style={{
+                                ...rowStyle,
+                                paddingLeft: `${row.depth * 1.5}rem`,
+                            }}
+                        >
                             <div style={rowLineStyle}>
                                 {hasNested ? (
                                     <button
@@ -522,20 +589,27 @@ export default function OutlineView({
                                         aria-expanded={!isCollapsed}
                                         aria-label={
                                             isCollapsed
-                                                ? t('writing.outline.expand')
-                                                : t('writing.outline.collapse')
+                                                ? t("writing.outline.expand")
+                                                : t("writing.outline.collapse")
                                         }
                                         onClick={() => toggleCollapsed(row.key)}
                                     >
                                         <i
-                                            className={`fa-solid ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'}`}
+                                            className={`fa-solid ${isCollapsed ? "fa-chevron-right" : "fa-chevron-down"}`}
                                             aria-hidden="true"
                                         />
                                     </button>
                                 ) : (
-                                    <span style={collapseSpacerStyle} aria-hidden="true" />
+                                    <span
+                                        style={collapseSpacerStyle}
+                                        aria-hidden="true"
+                                    />
                                 )}
-                                {row.label !== '' && <span style={labelChipStyle}>{row.label}</span>}
+                                {row.label !== "" && (
+                                    <span style={labelChipStyle}>
+                                        {row.label}
+                                    </span>
+                                )}
                                 <input
                                     ref={(el) => {
                                         if (el) {
@@ -547,79 +621,110 @@ export default function OutlineView({
                                     type="text"
                                     value={row.title}
                                     disabled={!canUpdate}
-                                    placeholder={t('writing.outline.title_placeholder')}
+                                    placeholder={t(
+                                        "writing.outline.title_placeholder",
+                                    )}
                                     style={titleInputStyle}
                                     onChange={(event) =>
                                         dispatch({
-                                            type: 'edit',
+                                            type: "edit",
                                             key: row.key,
                                             title: event.target.value,
                                             synopsis: row.synopsis,
                                         })
                                     }
-                                    onKeyDown={(event) => handleKeyDown(event, row)}
+                                    onKeyDown={(event) =>
+                                        handleKeyDown(event, row)
+                                    }
                                     onPaste={(event) => handlePaste(event, row)}
                                     onBlur={() => flush()}
                                 />
                                 <input
                                     type="text"
-                                    value={row.synopsis ?? ''}
+                                    value={row.synopsis ?? ""}
                                     disabled={!canUpdate}
-                                    placeholder={t('writing.outline.synopsis_placeholder')}
+                                    placeholder={t(
+                                        "writing.outline.synopsis_placeholder",
+                                    )}
                                     style={synopsisInputStyle}
                                     onChange={(event) =>
                                         dispatch({
-                                            type: 'edit',
+                                            type: "edit",
                                             key: row.key,
                                             title: row.title,
-                                            synopsis: event.target.value === '' ? null : event.target.value,
+                                            synopsis:
+                                                event.target.value === ""
+                                                    ? null
+                                                    : event.target.value,
                                         })
                                     }
-                                    onKeyDown={(event) => handleKeyDown(event, row)}
+                                    onKeyDown={(event) =>
+                                        handleKeyDown(event, row)
+                                    }
                                     onBlur={() => flush()}
                                 />
-                                {canUpdate && row.sectionId !== null && onRequestMarkThread !== undefined && (
-                                    <DropdownMenu
-                                        align="right"
-                                        density="compact"
-                                        menuClassName="w-48"
-                                        trigger={
-                                            <button
-                                                type="button"
-                                                style={iconBtnStyle}
-                                                aria-label={t('writing.workspace.section_options')}
-                                                title={t('writing.workspace.section_options')}
-                                            >
-                                                <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true" />
-                                            </button>
-                                        }
-                                        items={[
-                                            {
-                                                label: t('writing.threads.mark_action'),
-                                                icon: 'fa-book-bookmark',
-                                                onClick: () =>
-                                                    onRequestMarkThread({
-                                                        id: row.sectionId as number,
-                                                        title: row.title,
-                                                    }),
-                                            },
-                                        ]}
-                                    />
-                                )}
+                                {canUpdate &&
+                                    row.sectionId !== null &&
+                                    onRequestMarkThread !== undefined && (
+                                        <DropdownMenu
+                                            align="right"
+                                            density="compact"
+                                            menuClassName="w-48"
+                                            trigger={
+                                                <button
+                                                    type="button"
+                                                    style={iconBtnStyle}
+                                                    aria-label={t(
+                                                        "writing.workspace.section_options",
+                                                    )}
+                                                    title={t(
+                                                        "writing.workspace.section_options",
+                                                    )}
+                                                >
+                                                    <i
+                                                        className="fa-solid fa-ellipsis-vertical"
+                                                        aria-hidden="true"
+                                                    />
+                                                </button>
+                                            }
+                                            items={[
+                                                {
+                                                    label: t(
+                                                        "writing.threads.mark_action",
+                                                    ),
+                                                    icon: "fa-book-bookmark",
+                                                    onClick: () =>
+                                                        onRequestMarkThread({
+                                                            id: row.sectionId as number,
+                                                            title: row.title,
+                                                        }),
+                                                },
+                                            ]}
+                                        />
+                                    )}
                                 {canUpdate && (
                                     <button
                                         type="button"
                                         style={iconBtnStyle}
-                                        aria-label={t('writing.outline.delete_row')}
+                                        aria-label={t(
+                                            "writing.outline.delete_row",
+                                        )}
                                         onClick={() => deleteRow(row.key)}
                                     >
-                                        <i className="fa-solid fa-trash" aria-hidden="true" />
+                                        <i
+                                            className="fa-solid fa-trash"
+                                            aria-hidden="true"
+                                        />
                                     </button>
                                 )}
                             </div>
 
                             {blockedHintKey === row.key && (
-                                <div style={blockedHintStyle}>{t('writing.outline.beat_conversion_blocked')}</div>
+                                <div style={blockedHintStyle}>
+                                    {t(
+                                        "writing.outline.beat_conversion_blocked",
+                                    )}
+                                </div>
                             )}
 
                             {blockedEntry !== undefined && (
@@ -627,7 +732,9 @@ export default function OutlineView({
                                     <span>
                                         {t(
                                             `writing.outline.blocked_${blockedEntry.reason}`,
-                                            t('writing.outline.blocked_generic'),
+                                            t(
+                                                "writing.outline.blocked_generic",
+                                            ),
                                         )}
                                     </span>
                                     <button
@@ -635,10 +742,14 @@ export default function OutlineView({
                                         style={confirmBtnStyle}
                                         onClick={() => forceDelete(row.key)}
                                     >
-                                        {t('writing.outline.force_delete')}
+                                        {t("writing.outline.force_delete")}
                                     </button>
-                                    <button type="button" style={keepBtnStyle} onClick={() => reload()}>
-                                        {t('writing.outline.keep_row')}
+                                    <button
+                                        type="button"
+                                        style={keepBtnStyle}
+                                        onClick={() => reload()}
+                                    >
+                                        {t("writing.outline.keep_row")}
                                     </button>
                                 </div>
                             )}
@@ -653,58 +764,95 @@ export default function OutlineView({
                                                 aria-checked={beat.done}
                                                 aria-label={beat.text}
                                                 disabled={!canUpdate}
-                                                style={beatCheckStyle(beat.done)}
-                                                onClick={() => toggleBeat(row, beat)}
-                                                onKeyDown={(event) => handleBeatKeyDown(event, row, beat)}
+                                                style={beatCheckStyle(
+                                                    beat.done,
+                                                )}
+                                                onClick={() =>
+                                                    toggleBeat(row, beat)
+                                                }
+                                                onKeyDown={(event) =>
+                                                    handleBeatKeyDown(
+                                                        event,
+                                                        row,
+                                                        beat,
+                                                    )
+                                                }
                                             />
                                             <input
                                                 type="text"
                                                 value={beat.text}
                                                 readOnly={!canUpdate}
-                                                placeholder={t('writing.outline.beat_placeholder')}
-                                                aria-label={t('writing.outline.beat_placeholder')}
+                                                placeholder={t(
+                                                    "writing.outline.beat_placeholder",
+                                                )}
+                                                aria-label={t(
+                                                    "writing.outline.beat_placeholder",
+                                                )}
                                                 ref={(el) => {
-                                                    const k = beatKey(row.key, beat.id);
+                                                    const k = beatKey(
+                                                        row.key,
+                                                        beat.id,
+                                                    );
                                                     if (el) {
-                                                        inputRefs.current.set(k, el);
+                                                        inputRefs.current.set(
+                                                            k,
+                                                            el,
+                                                        );
                                                     } else {
-                                                        inputRefs.current.delete(k);
+                                                        inputRefs.current.delete(
+                                                            k,
+                                                        );
                                                     }
                                                 }}
                                                 style={{
                                                     ...beatTextStyle(beat.done),
                                                     flex: 1,
                                                     minWidth: 0,
-                                                    background: 'transparent',
-                                                    border: 'none',
-                                                    outline: 'none',
-                                                    font: 'inherit',
+                                                    background: "transparent",
+                                                    border: "none",
+                                                    outline: "none",
+                                                    font: "inherit",
                                                     padding: 0,
                                                 }}
                                                 onChange={(event) =>
                                                     dispatch({
-                                                        type: 'edit-beat',
+                                                        type: "edit-beat",
                                                         key: row.key,
                                                         beatId: beat.id,
-                                                        text: event.target.value,
+                                                        text: event.target
+                                                            .value,
                                                     })
                                                 }
-                                                onKeyDown={(event) => handleBeatInputKeyDown(event, row, beat)}
+                                                onKeyDown={(event) =>
+                                                    handleBeatInputKeyDown(
+                                                        event,
+                                                        row,
+                                                        beat,
+                                                    )
+                                                }
                                                 onBlur={() => flush()}
                                             />
                                             {canUpdate && (
                                                 <button
                                                     type="button"
                                                     style={iconBtnStyle}
-                                                    aria-label={t('writing.outline.delete_beat')}
+                                                    aria-label={t(
+                                                        "writing.outline.delete_beat",
+                                                    )}
                                                     onClick={() =>
                                                         dispatch({
-                                                            type: 'delete',
-                                                            key: beatKey(row.key, beat.id),
+                                                            type: "delete",
+                                                            key: beatKey(
+                                                                row.key,
+                                                                beat.id,
+                                                            ),
                                                         })
                                                     }
                                                 >
-                                                    <i className="fa-solid fa-xmark" aria-hidden="true" />
+                                                    <i
+                                                        className="fa-solid fa-xmark"
+                                                        aria-hidden="true"
+                                                    />
                                                 </button>
                                             )}
                                         </div>

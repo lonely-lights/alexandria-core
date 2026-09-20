@@ -26,16 +26,30 @@
  * subtree-walk needs duplicating here.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
-import { worksBase } from '@alexandria/lib/urls';
+import { worksBase } from "@alexandria/lib/urls";
 
-import { outlineApiHeaders as apiHeaders } from './outlineApi';
-import { outlineReducer } from './outlineReducer';
-import { buildOutlinePayload, reconcileTempIds, rowsFromProjection } from './outlinePayload';
-import type { OutlineProjection, OutlineRow } from './outlineTypes';
+import { outlineApiHeaders as apiHeaders } from "./outlineApi";
+import { outlineReducer } from "./outlineReducer";
+import {
+    buildOutlinePayload,
+    reconcileTempIds,
+    rowsFromProjection,
+} from "./outlinePayload";
+import type {
+    OutlineProjection,
+    OutlineRow,
+    OutlineTier,
+} from "./outlineTypes";
 
-export type OutlineSyncStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error' | 'conflict';
+export type OutlineSyncStatus =
+    | "idle"
+    | "dirty"
+    | "saving"
+    | "saved"
+    | "error"
+    | "conflict";
 
 export interface BlockedOutlineRow {
     sectionId: number;
@@ -58,7 +72,10 @@ interface UseOutlineSyncArgs {
 
 export interface UseOutlineSyncResult {
     rows: OutlineRow[];
-    setRows: (updater: OutlineRow[] | ((rows: OutlineRow[]) => OutlineRow[])) => void;
+    hierarchy: OutlineTier[];
+    setRows: (
+        updater: OutlineRow[] | ((rows: OutlineRow[]) => OutlineRow[]),
+    ) => void;
     deleteRow: (key: string) => void;
     forceDelete: (key: string) => void;
     /** Fire any pending debounced save immediately — wired to Enter and
@@ -77,7 +94,8 @@ export default function useOutlineSync({
     workSlug,
 }: UseOutlineSyncArgs): UseOutlineSyncResult {
     const [rows, setRowsState] = useState<OutlineRow[]>([]);
-    const [status, setStatus] = useState<OutlineSyncStatus>('idle');
+    const [hierarchy, setHierarchy] = useState<OutlineTier[]>([]);
+    const [status, setStatus] = useState<OutlineSyncStatus>("idle");
     const [blocked, setBlocked] = useState<BlockedOutlineRow[]>([]);
 
     const url = `${worksBase(projectSlug, workSlug)}/outline`;
@@ -86,7 +104,7 @@ export default function useOutlineSync({
     // fetch callbacks always see the latest values without becoming
     // stale closures across renders.
     const rowsRef = useRef<OutlineRow[]>(rows);
-    const baseVersionRef = useRef<string>('');
+    const baseVersionRef = useRef<string>("");
     const deletedRef = useRef<Set<number>>(new Set());
     const forceRef = useRef<Set<number>>(new Set());
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -97,7 +115,10 @@ export default function useOutlineSync({
     const savingRef = useRef(false);
 
     function fetchProjection(): Promise<OutlineProjection> {
-        return fetch(url, { credentials: 'same-origin', headers: apiHeaders() }).then((response) =>
+        return fetch(url, {
+            credentials: "same-origin",
+            headers: apiHeaders(),
+        }).then((response) =>
             response.ok
                 ? (response.json() as Promise<OutlineProjection>)
                 : Promise.reject(new Error(`HTTP ${response.status}`)),
@@ -106,6 +127,7 @@ export default function useOutlineSync({
 
     function applyProjection(projection: OutlineProjection) {
         baseVersionRef.current = projection.baseVersion;
+        setHierarchy(projection.hierarchy ?? []);
         const next = rowsFromProjection(projection);
         rowsRef.current = next;
         setRowsState(next);
@@ -120,9 +142,9 @@ export default function useOutlineSync({
                 forceRef.current = new Set();
                 applyProjection(projection);
                 setBlocked([]);
-                setStatus('idle');
+                setStatus("idle");
             })
-            .catch(() => setStatus('error'));
+            .catch(() => setStatus("error"));
     }
 
     /** (Re)start the idle-debounce timer, WITHOUT touching `status` — the
@@ -157,7 +179,7 @@ export default function useOutlineSync({
     function fireSave(keepalive = false) {
         pendingRef.current = false;
         savingRef.current = true;
-        setStatus('saving');
+        setStatus("saving");
 
         const payload = buildOutlinePayload(
             rowsRef.current,
@@ -167,8 +189,8 @@ export default function useOutlineSync({
         );
 
         fetch(url, {
-            method: 'PUT',
-            credentials: 'same-origin',
+            method: "PUT",
+            credentials: "same-origin",
             headers: apiHeaders(true),
             body: JSON.stringify(payload),
             // The page-teardown path (refresh/close mid-debounce) needs
@@ -177,9 +199,12 @@ export default function useOutlineSync({
         })
             .then(async (response) => {
                 if (response.status === 409) {
-                    const conflictBody = (await response.json()) as OutlineConflictResponse;
+                    const conflictBody =
+                        (await response.json()) as OutlineConflictResponse;
                     const serverRows = rowsFromProjection(conflictBody);
-                    const localByKey = new Map(rowsRef.current.map((row) => [row.key, row]));
+                    const localByKey = new Map(
+                        rowsRef.current.map((row) => [row.key, row]),
+                    );
 
                     // Adopt the server's structure but keep local title/
                     // synopsis edits for any row that survived on both sides.
@@ -188,13 +213,17 @@ export default function useOutlineSync({
 
                         return local === undefined
                             ? row
-                            : { ...row, title: local.title, synopsis: local.synopsis };
+                            : {
+                                  ...row,
+                                  title: local.title,
+                                  synopsis: local.synopsis,
+                              };
                     });
 
                     baseVersionRef.current = conflictBody.baseVersion;
                     rowsRef.current = merged;
                     setRowsState(merged);
-                    setStatus('conflict');
+                    setStatus("conflict");
                     // Re-arm the debounce so the merged tree still gets
                     // saved, without immediately clobbering the
                     // 'conflict' status this render just set.
@@ -203,19 +232,24 @@ export default function useOutlineSync({
                 }
 
                 if (!response.ok) {
-                    setStatus('error');
+                    setStatus("error");
                     return;
                 }
 
                 const body = (await response.json()) as OutlineUpdateResponse;
-                const reconciled = reconcileTempIds(rowsRef.current, body.tempIds ?? {});
+                const reconciled = reconcileTempIds(
+                    rowsRef.current,
+                    body.tempIds ?? {},
+                );
 
                 baseVersionRef.current = body.baseVersion;
                 rowsRef.current = reconciled;
                 setRowsState(reconciled);
 
                 const blockedRows = body.blocked ?? [];
-                const blockedIds = new Set(blockedRows.map((row) => row.sectionId));
+                const blockedIds = new Set(
+                    blockedRows.map((row) => row.sectionId),
+                );
 
                 // Anything requested for deletion that ISN'T blocked was
                 // actually removed server-side — forget it so a later
@@ -241,20 +275,20 @@ export default function useOutlineSync({
                     fetchProjection()
                         .then((projection) => {
                             applyProjection(projection);
-                            setStatus('saved');
+                            setStatus("saved");
                         })
-                        .catch(() => setStatus('error'));
+                        .catch(() => setStatus("error"));
                     return;
                 }
 
-                setStatus('saved');
+                setStatus("saved");
             })
             .catch(() => {
                 // The edit never reached the server — it is still
                 // unsaved work: re-raise the flag so the unload guard
                 // and the next flush both cover it.
                 pendingRef.current = true;
-                setStatus('error');
+                setStatus("error");
             })
             .finally(() => {
                 savingRef.current = false;
@@ -262,13 +296,16 @@ export default function useOutlineSync({
     }
 
     function scheduleSave() {
-        setStatus('dirty');
+        setStatus("dirty");
         armTimer();
     }
 
-    function setRows(updater: OutlineRow[] | ((rows: OutlineRow[]) => OutlineRow[])) {
+    function setRows(
+        updater: OutlineRow[] | ((rows: OutlineRow[]) => OutlineRow[]),
+    ) {
         setRowsState((prev) => {
-            const next = typeof updater === 'function' ? updater(prev) : updater;
+            const next =
+                typeof updater === "function" ? updater(prev) : updater;
             rowsRef.current = next;
             return next;
         });
@@ -280,17 +317,21 @@ export default function useOutlineSync({
      *  the tree, and queue those for the next save's `deleted` list. */
     function removeRowAndTrackDeletion(key: string) {
         const before = rowsRef.current;
-        const { rows: after } = outlineReducer(before, { type: 'delete', key });
+        const { rows: after } = outlineReducer(before, { type: "delete", key });
 
         if (after === before) {
             return;
         }
 
         const beforeIds = new Set(
-            before.map((row) => row.sectionId).filter((id): id is number => id !== null),
+            before
+                .map((row) => row.sectionId)
+                .filter((id): id is number => id !== null),
         );
         const afterIds = new Set(
-            after.map((row) => row.sectionId).filter((id): id is number => id !== null),
+            after
+                .map((row) => row.sectionId)
+                .filter((id): id is number => id !== null),
         );
 
         for (const id of beforeIds) {
@@ -337,7 +378,7 @@ export default function useOutlineSync({
                 fireSave(true);
             }
         };
-        window.addEventListener('pagehide', onPageHide);
+        window.addEventListener("pagehide", onPageHide);
 
         // Unsaved-work guard (owner, 2026-08-28): typing raises the
         // flag; a refresh/close attempt while it's up pauses on the
@@ -350,14 +391,14 @@ export default function useOutlineSync({
             if (pendingRef.current || savingRef.current) {
                 flush();
                 event.preventDefault();
-                event.returnValue = '';
+                event.returnValue = "";
             }
         };
-        window.addEventListener('beforeunload', onBeforeUnload);
+        window.addEventListener("beforeunload", onBeforeUnload);
 
         return () => {
-            window.removeEventListener('beforeunload', onBeforeUnload);
-            window.removeEventListener('pagehide', onPageHide);
+            window.removeEventListener("beforeunload", onBeforeUnload);
+            window.removeEventListener("pagehide", onPageHide);
 
             if (timerRef.current !== null) {
                 clearTimeout(timerRef.current);
@@ -371,5 +412,15 @@ export default function useOutlineSync({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url]);
 
-    return { rows, setRows, deleteRow, forceDelete, flush, status, blocked, reload: load };
+    return {
+        rows,
+        hierarchy,
+        setRows,
+        deleteRow,
+        forceDelete,
+        flush,
+        status,
+        blocked,
+        reload: load,
+    };
 }

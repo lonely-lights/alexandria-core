@@ -164,6 +164,8 @@ return [
 
         // Starter structures per work type. label is the user-facing level name;
         // children nest one level here but the tree itself supports any depth.
+        'outline_hierarchies' => [],
+
         'templates' => [
             'novel' => [
                 'format' => 'prose',

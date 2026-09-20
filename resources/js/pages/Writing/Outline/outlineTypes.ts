@@ -11,6 +11,14 @@
  * between the two.
  */
 
+export interface OutlineTier {
+    label: string;
+    isStructural: boolean;
+}
+export interface OutlineReducerContext {
+    hierarchy: OutlineTier[];
+}
+
 /** One outline beat — a short planning note attached to a section. */
 export interface OutlineBeat {
     id: string;
@@ -40,6 +48,10 @@ export interface OutlineRow {
     slug: string | null;
     synopsis: string | null;
     beats: OutlineBeat[];
+    isStructural?: boolean;
+    hasContent?: boolean;
+    canBecomeBeat?: boolean;
+    conversionBlockedReason?: string | null;
     /**
      * Beat Board craft fields — optional, client-side only. Populated
      * from the server's snake_case projection fields (see
@@ -59,6 +71,10 @@ export interface OutlineRow {
 
 /** One row as the server represents it — always has a real `sectionId`. */
 export interface ServerOutlineRow {
+    is_structural?: boolean;
+    has_content?: boolean;
+    canBecomeBeat?: boolean;
+    conversionBlockedReason?: string | null;
     sectionId: number;
     parentId: number | null;
     depth: number;
@@ -88,4 +104,5 @@ export interface ServerOutlineRow {
 export interface OutlineProjection {
     rows: ServerOutlineRow[];
     baseVersion: string;
+    hierarchy?: OutlineTier[];
 }
