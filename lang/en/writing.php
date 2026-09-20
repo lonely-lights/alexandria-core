@@ -346,6 +346,12 @@ return [
     'flow.kanban' => 'Kanban',
 
     // Outline view (Stage — outline mode, Task 5)
+    'outline.undo_conversion' => 'Undo conversion',
+    'outline.conversion_structure' => 'This section contains structure that a beat cannot hold.',
+    'outline.conversion_content' => 'This section contains writing or beats. Keep it as a section.',
+    'outline.conversion_metadata' => 'This section contains planning data that a beat cannot hold.',
+    'outline.conversion_attached' => 'This section has attached notes, references, or history.',
+    'outline.conversion_length' => 'This plan is too long to fit in one beat.',
     'outline.title' => 'Outline',
     'outline.empty' => 'No sections yet.',
     'outline.add_first' => 'Start the outline',
@@ -356,7 +362,7 @@ return [
     'outline.expand' => 'Expand',
     'outline.delete_row' => 'Delete',
     'outline.delete_beat' => 'Remove beat',
-    'outline.beat_conversion_blocked' => "This section is already saved — it can't fold into a beat.",
+    'outline.beat_conversion_blocked' => "This section contains information that a beat cannot hold.",
     'outline.blocked_content' => 'Has written content — delete anyway?',
     'outline.blocked_notes' => 'Has notes attached — delete anyway?',
     'outline.blocked_comments' => 'Has comments — delete anyway?',

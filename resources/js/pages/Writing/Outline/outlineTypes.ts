@@ -11,6 +11,11 @@
  * between the two.
  */
 
+export interface OutlineConversion {
+    sourceSectionId: number;
+    targetKey: string;
+    beatId: string;
+}
 export interface OutlineTier {
     label: string;
     isStructural: boolean;

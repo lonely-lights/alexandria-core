@@ -282,6 +282,9 @@ export default function OutlineView({
         setRows,
         deleteRow,
         forceDelete,
+        convertRow,
+        undoConversion,
+        hasConversions,
         flush,
         status,
         blocked,
@@ -359,7 +362,8 @@ export default function OutlineView({
                 }
             }
 
-            setRows(result.rows);
+            if (result.conversion) convertRow(result.conversion, result.rows);
+            else setRows(result.rows);
         }
     }
 
@@ -550,6 +554,11 @@ export default function OutlineView({
 
     return (
         <div style={paneStyle} data-outline-view="">
+            {status === 'error' && hasConversions && (
+                <button type="button" onClick={undoConversion}>
+                    {t('writing.outline.undo_conversion')}
+                </button>
+            )}
             <div style={headerRowStyle}>
                 <h2
                     className="text-sm font-semibold"

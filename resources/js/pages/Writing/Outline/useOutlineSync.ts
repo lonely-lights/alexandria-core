@@ -42,6 +42,7 @@ import type {
     OutlineProjection,
     OutlineRow,
     OutlineTier,
+    OutlineConversion,
 } from './outlineTypes';
 
 export type OutlineSyncStatus =
@@ -79,6 +80,9 @@ export interface UseOutlineSyncResult {
     ) => void;
     deleteRow: (key: string) => void;
     forceDelete: (key: string) => void;
+    convertRow: (conversion: OutlineConversion, next: OutlineRow[]) => void;
+    undoConversion: () => void;
+    hasConversions: boolean;
     /** Fire any pending debounced save immediately — wired to Enter and
      *  input blur so quick captures survive an instant refresh. */
     flush: () => void;
@@ -109,6 +113,8 @@ export default function useOutlineSync({
     const baseVersionRef = useRef<string>('');
     const deletedRef = useRef<Set<number>>(new Set());
     const forceRef = useRef<Set<number>>(new Set());
+    const conversionsRef = useRef<OutlineConversion[]>([]);
+    const conversionRowsRef = useRef(new Map<number, OutlineRow>());
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingRef = useRef(false);
     // Raised the instant an edit exists that the server hasn't
@@ -189,6 +195,7 @@ export default function useOutlineSync({
             Array.from(forceRef.current),
             baseVersionRef.current,
             t('writing.outline.title_placeholder'),
+            conversionsRef.current,
         );
 
         fetch(url, {
@@ -240,12 +247,33 @@ export default function useOutlineSync({
                 }
 
                 const body = (await response.json()) as OutlineUpdateResponse;
-                const reconciled = reconcileTempIds(
+                const resolved = reconcileTempIds(
                     rowsRef.current,
                     body.tempIds ?? {},
                 );
 
+                const serverById = new Map(
+                    body.rows.map((row) => [row.sectionId, row]),
+                );
+                const reconciled = resolved.map((row) => {
+                    const server =
+                        row.sectionId === null
+                            ? undefined
+                            : serverById.get(row.sectionId);
+                    return server
+                        ? {
+                              ...row,
+                              slug: server.slug,
+                              canBecomeBeat: server.canBecomeBeat,
+                              conversionBlockedReason:
+                                  server.conversionBlockedReason,
+                              hasContent: server.has_content,
+                          }
+                        : row;
+                });
                 baseVersionRef.current = body.baseVersion;
+                conversionsRef.current = [];
+                conversionRowsRef.current.clear();
                 rowsRef.current = reconciled;
                 setRowsState(reconciled);
 
@@ -352,6 +380,40 @@ export default function useOutlineSync({
         removeRowAndTrackDeletion(key);
     }
 
+    function convertRow(conversion: OutlineConversion, next: OutlineRow[]) {
+        const source = rowsRef.current.find(
+            (r) => r.sectionId === conversion.sourceSectionId,
+        );
+        if (!source) return;
+        conversionRowsRef.current.set(conversion.sourceSectionId, source);
+        conversionsRef.current.push(conversion);
+        deletedRef.current.add(conversion.sourceSectionId);
+        setRows(next);
+    }
+
+    function undoConversion() {
+        const conversion = conversionsRef.current.pop();
+        if (!conversion) return;
+        const source = conversionRowsRef.current.get(
+            conversion.sourceSectionId,
+        );
+        if (!source) return;
+        conversionRowsRef.current.delete(conversion.sourceSectionId);
+        deletedRef.current.delete(conversion.sourceSectionId);
+        const next = rowsRef.current.map((r) =>
+            r.key === conversion.targetKey
+                ? {
+                      ...r,
+                      beats: r.beats.filter((b) => b.id !== conversion.beatId),
+                  }
+                : r,
+        );
+        let index = next.findIndex((r) => r.key === conversion.targetKey) + 1;
+        while (index < next.length && next[index].depth > source.depth) index++;
+        next.splice(index, 0, source);
+        setRows(next);
+    }
+
     function forceDelete(key: string) {
         const row = rowsRef.current.find((r) => r.key === key);
 
@@ -421,6 +483,9 @@ export default function useOutlineSync({
         setRows,
         deleteRow,
         forceDelete,
+        convertRow,
+        undoConversion,
+        hasConversions: conversionsRef.current.length > 0,
         flush,
         status,
         blocked,

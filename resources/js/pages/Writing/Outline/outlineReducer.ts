@@ -20,6 +20,7 @@
 import type { ParsedOutlineLine } from './parseOutlinePaste';
 import type {
     OutlineBeat,
+    OutlineConversion,
     OutlineRow,
     OutlineReducerContext,
     OutlineTier,
@@ -37,6 +38,7 @@ export type OutlineAction =
     | { type: 'delete'; key: string };
 
 export interface OutlineReducerResult {
+    conversion?: OutlineConversion;
     rows: OutlineRow[];
     /** The key of a row that refused a beat conversion, else null. */
     blockedHint: string | null;
@@ -223,7 +225,20 @@ function indent(
     if (newDepth > deepest) {
         // Beat conversion — only a contentless (temp-only) row may
         // fold itself into a beat; a persisted section refuses.
-        if (row.sectionId !== null) {
+        if (
+            (row.sectionId !== null && !row.canBecomeBeat) ||
+            row.hasContent ||
+            row.isStructural ||
+            row.beats.length > 0 ||
+            row.goal ||
+            row.conflict ||
+            row.stakes ||
+            row.mood ||
+            row.tone ||
+            row.beatType ||
+            row.status ||
+            beatTextFrom(row.title, row.synopsis).length > 500
+        ) {
             return blockedResult(rows, key);
         }
 
@@ -240,12 +255,25 @@ function indent(
         };
         const withoutRow = rows.filter((_, i) => i !== idx);
 
-        return ok(
-            withoutRow.map((r) =>
-                r.key === target.key ? { ...r, beats: [...r.beats, beat] } : r,
+        return {
+            ...ok(
+                withoutRow.map((r) =>
+                    r.key === target.key
+                        ? { ...r, beats: [...r.beats, beat] }
+                        : r,
+                ),
+                beatKey(target.key, beat.id),
             ),
-            beatKey(target.key, beat.id),
-        );
+            ...(row.sectionId !== null
+                ? {
+                      conversion: {
+                          sourceSectionId: row.sectionId,
+                          targetKey: target.key,
+                          beatId: beat.id,
+                      },
+                  }
+                : {}),
+        };
     }
 
     // Normal indent: reparent under `target`; the whole subtree's

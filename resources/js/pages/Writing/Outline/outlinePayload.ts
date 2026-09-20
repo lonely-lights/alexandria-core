@@ -11,7 +11,11 @@ import { prepareOutlineDraft } from './outlineDraft';
  * succeeds.
  */
 
-import type { OutlineProjection, OutlineRow } from './outlineTypes';
+import type {
+    OutlineProjection,
+    OutlineRow,
+    OutlineConversion,
+} from './outlineTypes';
 
 /** Build the client tree from a freshly loaded outline projection. */
 export function rowsFromProjection(
@@ -47,7 +51,7 @@ export function rowsFromProjection(
  * Resolve a row's `parentKey` to the id the server understands: the
  * referenced row's `sectionId` if it has one, else its `tempId` (a new,
  * not-yet-saved parent). An unresolvable key — a dangling reference —
- * falls back to `null` rather than throwing.
+ * is rejected rather than silently changing the tree.
  */
 function resolveParentId(
     rowsByKey: Map<string, OutlineRow>,
@@ -60,7 +64,7 @@ function resolveParentId(
     const parent = rowsByKey.get(parentKey);
 
     if (parent === undefined) {
-        return null;
+        throw new Error('Outline parent is missing.');
     }
 
     return parent.sectionId ?? parent.tempId;
@@ -78,12 +82,18 @@ export function buildOutlinePayload(
     force: number[],
     baseVersion: string,
     untitled: string,
+    conversions: OutlineConversion[] = [],
 ): object {
     rows = prepareOutlineDraft(rows, untitled).rows;
     const rowsByKey = new Map(rows.map((row) => [row.key, row]));
 
     return {
         baseVersion,
+        conversions: conversions.map((c) => ({
+            sourceSectionId: c.sourceSectionId,
+            targetId: resolveParentId(rowsByKey, c.targetKey),
+            beatId: c.beatId,
+        })),
         force,
         deleted,
         rows: rows.map((row) => ({
