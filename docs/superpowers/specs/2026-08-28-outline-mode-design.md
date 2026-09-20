@@ -1,5 +1,7 @@
 # Outline Mode + Ghost Layer — Design
 
+> **2026-09-20 follow-up:** This document records the original shipped design. The [combined rapid-outline and pacing design](2026-09-20-rapid-outline-and-pacing-design.md) now governs keyboard/save corrections and integration with authored timing. Its [reliability plan](../plans/2026-09-20-rapid-outline-1-reliability.md) precedes the [timing plan](../plans/2026-09-20-rapid-outline-2-pacing.md). The ghost box is superseded by the shipped title-adjacent note button and read-only modal with explicit Edit; do not restore click-to-edit manuscript boxes.
+
 **Status:** Ratified 2026-08-28 (owner: "Make it so"). Design agreed in chat; decisions below are owner rulings.
 **Repos:** `alexandria-core` (all UI + endpoints), `alexandria-app` (feature tests against the host app, live DB DDL).
 **Branch:** `feat/outline-mode` (both repos). DB snapshot taken before work: `alexandria-2026-08-28_060217`.

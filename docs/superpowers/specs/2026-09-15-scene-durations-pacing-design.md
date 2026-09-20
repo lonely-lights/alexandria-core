@@ -1,5 +1,7 @@
 # Scene Durations & Pacing Markers — Design
 
+> **2026-09-20 decision:** Andrew approved the combined outline-and-pacing direction. Read the [combined design supplement](2026-09-20-rapid-outline-and-pacing-design.md) and its [reliability](../plans/2026-09-20-rapid-outline-1-reliability.md) → [timing](../plans/2026-09-20-rapid-outline-2-pacing.md) plans as the execution source of truth. They resolve boundary anchors, incomplete timing, bulk-save integration, range preservation, and lifecycle behavior. The draft below remains the historical source; implementation has not started.
+
 **Status:** DRAFT for owner review 2026-09-15. Owner rulings from the brainstorm: duration is **authored, never derived** ("a block that describes a slow action could make a single page more than 3 minutes… whatever is set for that time in a scene (or chapter…), that's what it reads"); markers carry a **target plus an optional anchor**; surfaces are the **outline, the Navigator, and a dedicated pacing view** (Kanban deliberately not selected); existing synopsis estimates are **migrated, not retyped**; unestimated scenes stay **visible, never zero-filled**.
 **Repos:** `alexandria-core` (migrations, model cast, pacing model, outline/Navigator/pacing UI), `alexandria-app` (validation, payloads, backfill command, tests).
 **Branch:** `feat/scene-durations` (both repos).
