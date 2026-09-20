@@ -47,6 +47,7 @@ use Illuminate\Support\Str;
  * @property string|null $setting_period
  * @property array<string, mixed>|null $length_plan
  * @property array<string, mixed>|null $screenplay_template
+ * @property int|null $target_runtime_seconds
  * @property int|null $target_words
  * @property int $word_count
  * @property int $line_count

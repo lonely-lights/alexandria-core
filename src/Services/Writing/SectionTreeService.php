@@ -177,7 +177,8 @@ class SectionTreeService
             $current = $section;
 
             while ($current->parent_id !== null) {
-                $parent = WorkSection::withTrashed()->find($current->parent_id);
+                /** @var WorkSection|null $parent */
+                $parent = WorkSection::query()->withTrashed()->find($current->parent_id);
 
                 if ($parent === null) {
                     break;
@@ -192,7 +193,9 @@ class SectionTreeService
                     ->whereIn('id', $ancestorIds)
                     ->whereNotNull('deleted_at')
                     ->get()
-                    ->each->restore();
+                    ->each(static function (WorkSection $trashedSection): void {
+                        $trashedSection->restore();
+                    });
             }
 
             if ($section->trashed()) {
@@ -229,7 +232,9 @@ class SectionTreeService
                 ->where('work_id', $work->id)
                 ->whereNotNull('deleted_at')
                 ->get()
-                ->each->restore();
+                ->each(static function (WorkSection $trashedSection): void {
+                    $trashedSection->restore();
+                });
         });
     }
 

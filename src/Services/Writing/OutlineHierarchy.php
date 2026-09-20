@@ -12,9 +12,9 @@ final class OutlineHierarchy
     /** @return list<array{label: string, isStructural: bool}> */
     public function resolve(Work $work, Collection $sections): array
     {
-        $tiers = config("alexandria.writing.outline_hierarchies.{$work->type}", []);
+        $tiers = config("alexandria.writing.outline_hierarchies.$work->type", []);
         if ($tiers === []) {
-            $template = config("alexandria.writing.templates.{$work->type}")
+            $template = config("alexandria.writing.templates.$work->type")
                 ?? config('alexandria.writing.templates.other', []);
             $walkTemplate = function (array $nodes, int $depth) use (&$walkTemplate, &$tiers): void {
                 foreach ($nodes as $node) {

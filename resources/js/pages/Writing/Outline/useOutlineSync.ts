@@ -61,7 +61,7 @@ export default function useOutlineSync({
                 throw new Error('HTTP ' + response.status);
             }
 
-            return response.json();
+            return await response.json();
         };
 
         return new OutlineSaveQueue(
@@ -112,7 +112,7 @@ export default function useOutlineSync({
                     );
                 }
 
-                return response.json() as Promise<OutlineSaveReply>;
+                return (await response.json()) as OutlineSaveReply;
             },
             untitled,
             load,
@@ -136,7 +136,9 @@ export default function useOutlineSync({
             });
 
             if (!response.ok) {
-                throw new Error('Load failed');
+                setLoadFailed(true);
+
+                return;
             }
 
             const projection: OutlineProjection = await response.json();
@@ -153,7 +155,7 @@ export default function useOutlineSync({
         const mayReload = !queue.hasUnsaved;
 
         if (mayReload) {
-            fetch(url, {
+            void fetch(url, {
                 credentials: 'same-origin',
                 headers: outlineApiHeaders(),
             })
@@ -186,7 +188,6 @@ export default function useOutlineSync({
 
             void queue.flush();
             event.preventDefault();
-            event.returnValue = '';
         };
         const hide = () => {
             void queue.flush(true);

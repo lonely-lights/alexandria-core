@@ -1,30 +1,19 @@
-import {
-    useEffect,
-    useState,
-    type CSSProperties,
-    type DragEvent,
-    type KeyboardEvent,
-} from 'react';
+import { useEffect, useState } from 'react';
+import type { CSSProperties, DragEvent, KeyboardEvent } from 'react';
 
 import useT from '@alexandria/hooks/useT';
 
-import type { ThreadSectionRef } from '../Threads/MarkThreadModal';
-import {
-    stanceAccent,
-    stanceInitial,
-    type PatternChip,
-} from '../Threads/patternChips';
-import { fetchThreads } from '../Threads/threadApi';
-import {
-    applyCardDrop,
-    buildKanbanColumns,
-    type KanbanColumn,
-} from './kanbanModel';
-import KanbanCard from './KanbanCard';
-import { moodAccent } from './moodPalette';
 import OutlineConflictNotice from '../Outline/OutlineConflictNotice';
-import useOutlineSync from '../Outline/useOutlineSync';
 import type { OutlineBeat, OutlineRow } from '../Outline/outlineTypes';
+import useOutlineSync from '../Outline/useOutlineSync';
+import type { ThreadSectionRef } from '../Threads/MarkThreadModal';
+import { stanceAccent, stanceInitial } from '../Threads/patternChips';
+import type { PatternChip } from '../Threads/patternChips';
+import { fetchThreads } from '../Threads/threadApi';
+import KanbanCard from './KanbanCard';
+import { applyCardDrop, buildKanbanColumns } from './kanbanModel';
+import type { KanbanColumn } from './kanbanModel';
+import { moodAccent } from './moodPalette';
 
 const MAX_CHIPS_PER_CARD = 3;
 
@@ -316,7 +305,7 @@ export default function KanbanView({
 
         if (next !== rows) {
             setRows(next);
-            flush();
+            void flush();
         }
     }
 
@@ -420,6 +409,7 @@ export default function KanbanView({
         }
 
         const next = column.cards[cardIndex + 1];
+
         return {
             columnKey: column.key,
             beforeCardKey: next ? next.row.key : null,
@@ -498,6 +488,7 @@ export default function KanbanView({
             }
 
             applyDrop(cardKey, column.key, cards[cardIndex - 1].row.key);
+
             return;
         }
 

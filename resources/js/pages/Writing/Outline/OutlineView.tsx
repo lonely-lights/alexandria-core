@@ -313,7 +313,7 @@ export default function OutlineView({
     });
 
     useEffect(() => {
-        if (ready !== false) {
+        if (ready) {
             onDraftChange?.(rows);
         }
     }, [rows, ready, onDraftChange]);
@@ -514,7 +514,7 @@ export default function OutlineView({
             dispatch({ type: 'enter', key: row.key });
             // Enter is a natural commit point — don't leave the new
             // line's predecessors sitting in the debounce window.
-            flush();
+            void flush();
 
             return;
         }
@@ -595,7 +595,7 @@ export default function OutlineView({
         if (event.key === 'Enter') {
             event.preventDefault();
             dispatch({ type: 'enter', key: beatKey(row.key, beat.id) });
-            flush();
+            void flush();
 
             return;
         }
@@ -742,7 +742,7 @@ export default function OutlineView({
                             type="button"
                             style={addFirstBtnStyle}
                             onClick={handleAddFirstRow}
-                            disabled={ready === false}
+                            disabled={!ready}
                         >
                             {t('writing.outline.add_first')}
                         </button>
