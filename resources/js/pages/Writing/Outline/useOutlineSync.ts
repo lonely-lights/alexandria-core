@@ -10,15 +10,14 @@ import useT from '@alexandria/hooks/useT';
 import { worksBase } from '@alexandria/lib/urls';
 import { WritingSaveContext } from '../Sections/WritingSaveContext';
 import { outlineApiHeaders } from './outlineApi';
-import { outlineReducer } from './outlineReducer';
 import { buildOutlinePayload } from './outlinePayload';
+import { outlineReducer } from './outlineReducer';
 import {
     OutlineSaveQueue,
     OutlineConflictError,
     OutlineValidationError,
-    type OutlineSaveReply,
-    type OutlineSaveSnapshot,
 } from './OutlineSaveQueue';
+import type { OutlineSaveReply, OutlineSaveSnapshot } from './OutlineSaveQueue';
 import type {
     OutlineProjection,
     OutlineRow,
@@ -31,6 +30,7 @@ export interface BlockedOutlineRow {
     reason: string;
 }
 interface UseOutlineSyncArgs {
+    refreshKey?: string;
     projectSlug: string;
     workSlug: string;
 }
@@ -38,13 +38,16 @@ interface UseOutlineSyncArgs {
 export default function useOutlineSync({
     projectSlug,
     workSlug,
+    refreshKey,
 }: UseOutlineSyncArgs) {
     const t = useT();
     const coordinator = useContext(WritingSaveContext);
     const url = worksBase(projectSlug, workSlug) + '/outline';
     const untitled = t('writing.outline.title_placeholder');
     const [hierarchy, setHierarchy] = useState<OutlineTier[]>([]);
-    const [ready, setReady] = useState(false);
+    const [loadedQueue, setLoadedQueue] = useState<OutlineSaveQueue | null>(
+        null,
+    );
     const [loadFailed, setLoadFailed] = useState(false);
     const originals = useRef(new Map<number, OutlineRow>());
     const queue = useMemo(() => {
@@ -53,9 +56,14 @@ export default function useOutlineSync({
                 credentials: 'same-origin',
                 headers: outlineApiHeaders(),
             });
-            if (!response.ok) throw new Error('HTTP ' + response.status);
+
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+
             return response.json();
         };
+
         return new OutlineSaveQueue(
             {
                 rows: [],
@@ -81,14 +89,20 @@ export default function useOutlineSync({
                     ),
                     keepalive,
                 });
-                if (response.status === 409)
+
+                if (response.status === 409) {
                     throw new OutlineConflictError(await response.json());
+                }
+
                 if (!response.ok) {
                     const data = await response.json().catch(() => ({}));
-                    if (response.status >= 500)
+
+                    if (response.status >= 500) {
                         throw new Error(
                             data.message ?? 'HTTP ' + response.status,
                         );
+                    }
+
                     throw new OutlineValidationError(
                         Object.values(data.errors ?? {})
                             .flat()
@@ -97,29 +111,38 @@ export default function useOutlineSync({
                             'HTTP ' + response.status,
                     );
                 }
+
                 return response.json() as Promise<OutlineSaveReply>;
             },
             untitled,
             load,
         );
     }, [url, untitled]);
+    const ready = loadedQueue === queue;
     const state = useSyncExternalStore(
         queue.subscribe,
         queue.getSnapshot,
         queue.getSnapshot,
     );
     const load = async (discard = false) => {
-        if (queue.hasUnsaved && !discard) return;
+        if (queue.hasUnsaved && !discard) {
+            return;
+        }
+
         try {
             const response = await fetch(url, {
                 credentials: 'same-origin',
                 headers: outlineApiHeaders(),
             });
-            if (!response.ok) throw new Error('Load failed');
+
+            if (!response.ok) {
+                throw new Error('Load failed');
+            }
+
             const projection: OutlineProjection = await response.json();
             queue.reset(projection);
             setHierarchy(projection.hierarchy ?? []);
-            setReady(true);
+            setLoadedQueue(queue);
             setLoadFailed(false);
         } catch {
             setLoadFailed(true);
@@ -127,24 +150,40 @@ export default function useOutlineSync({
     };
     useEffect(() => {
         let active = true;
-        setReady(false);
-        fetch(url, { credentials: 'same-origin', headers: outlineApiHeaders() })
-            .then(async (response) => {
-                if (!response.ok) throw new Error('Load failed');
-                const projection: OutlineProjection = await response.json();
-                if (active) {
-                    queue.reset(projection);
-                    setHierarchy(projection.hierarchy ?? []);
-                    setReady(true);
-                    setLoadFailed(false);
-                }
+        const mayReload = !queue.hasUnsaved;
+
+        if (mayReload) {
+            fetch(url, {
+                credentials: 'same-origin',
+                headers: outlineApiHeaders(),
             })
-            .catch(() => {
-                if (active) setLoadFailed(true);
-            });
+                .then(async (response) => {
+                    if (!response.ok) {
+                        throw new Error('Load failed');
+                    }
+
+                    const projection: OutlineProjection = await response.json();
+
+                    if (active && !queue.hasUnsaved) {
+                        queue.reset(projection);
+                        setHierarchy(projection.hierarchy ?? []);
+                        setLoadedQueue(queue);
+                        setLoadFailed(false);
+                    }
+                })
+                .catch(() => {
+                    if (active) {
+                        setLoadFailed(true);
+                    }
+                });
+        }
+
         const unregister = coordinator?.register(queue);
         const unload = (event: BeforeUnloadEvent) => {
-            if (!queue.hasUnsaved) return;
+            if (!queue.hasUnsaved) {
+                return;
+            }
+
             void queue.flush();
             event.preventDefault();
             event.returnValue = '';
@@ -152,11 +191,13 @@ export default function useOutlineSync({
         const hide = () => {
             void queue.flush(true);
         };
+
         // The shared provider owns these when mounted; standalone consumers retain protection.
         if (!coordinator) {
             window.addEventListener('beforeunload', unload);
             window.addEventListener('pagehide', hide);
         }
+
         return () => {
             active = false;
             unregister?.();
@@ -164,11 +205,14 @@ export default function useOutlineSync({
             window.removeEventListener('beforeunload', unload);
             window.removeEventListener('pagehide', hide);
         };
-    }, [queue, url, coordinator]);
+    }, [queue, url, coordinator, refreshKey]);
     function setRows(
         updater: OutlineRow[] | ((rows: OutlineRow[]) => OutlineRow[]),
     ) {
-        if (!ready) return;
+        if (!ready) {
+            return;
+        }
+
         const draft = queue.getSnapshot().draft;
         queue.update({
             ...draft,
@@ -203,7 +247,11 @@ export default function useOutlineSync({
         const source = draft.rows.find(
             (r) => r.sectionId === conversion.sourceSectionId,
         );
-        if (!source) return;
+
+        if (!source) {
+            return;
+        }
+
         originals.current.set(source.sectionId!, source);
         queue.update({
             ...draft,
@@ -215,9 +263,17 @@ export default function useOutlineSync({
     function undoConversion() {
         const draft = queue.getSnapshot().draft;
         const conversion = draft.conversions.at(-1);
-        if (!conversion) return;
+
+        if (!conversion) {
+            return;
+        }
+
         const source = originals.current.get(conversion.sourceSectionId);
-        if (!source) return;
+
+        if (!source) {
+            return;
+        }
+
         const rows = draft.rows.map((r) =>
             r.key === conversion.targetKey
                 ? {
@@ -227,7 +283,11 @@ export default function useOutlineSync({
                 : r,
         );
         let index = rows.findIndex((r) => r.key === conversion.targetKey) + 1;
-        while (index < rows.length && rows[index].depth > source.depth) index++;
+
+        while (index < rows.length && rows[index].depth > source.depth) {
+            index++;
+        }
+
         rows.splice(index, 0, source);
         queue.update({
             ...draft,
@@ -238,6 +298,7 @@ export default function useOutlineSync({
     }
     function resolveConflict(draft: OutlineSaveSnapshot) {
         const projection = queue.getSnapshot().conflict;
+
         if (projection) {
             queue.resolve(projection, draft);
             setHierarchy(projection.hierarchy ?? hierarchy);
@@ -245,11 +306,13 @@ export default function useOutlineSync({
     }
     function discardConflict() {
         const projection = queue.getSnapshot().conflict;
+
         if (projection) {
             queue.reset(projection);
             setHierarchy(projection.hierarchy ?? hierarchy);
         }
     }
+
     return {
         rows: state.draft.rows,
         hierarchy,

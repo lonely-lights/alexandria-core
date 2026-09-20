@@ -8,6 +8,14 @@ declare(strict_types=1);
  * lookup inside the group bag.
  */
 return [
+    'pacing.invalid' => 'Use m:ss or h:mm:ss, up to 24:00:00. Escape discards this edit.',
+    'pacing.duration' => 'Duration', 'pacing.budget' => 'Budget', 'pacing.running_time' => 'Running time', 'pacing.position' => 'Position',
+    'pacing.target' => 'Target', 'pacing.runtime_target' => 'Target running time', 'pacing.remaining' => 'Remaining', 'pacing.untimed' => 'untimed',
+    'pacing.empty-container' => 'Empty container: timing unknown', 'pacing.container-content' => 'Writing in this container is untimed',
+    'pacing.start' => 'Start', 'pacing.end' => 'End', 'pacing.landing' => 'Lands at', 'pacing.before' => 'Before in container', 'pacing.after' => 'After in container',
+    'pacing.budget_after' => 'Budget after boundary', 'pacing.on-target' => 'On target', 'pacing.early' => 'Early', 'pacing.late' => 'Late', 'pacing.unknown' => 'Timing incomplete',
+    'pacing.unanchored' => 'Choose a boundary', 'pacing.unavailable' => 'Section unavailable', 'pacing.anchor' => 'Anchor section', 'pacing.edge' => 'Boundary',
+    'pacing.help' => 'Set durations in the outline. Container values are budgets; blanks remain unknown. Negative remaining time means over budget.',
     'transfer.title' => 'Move to another work',
     'transfer.help' => 'Move this section and its nested sections to another work in this project. Notes, comments, linked items, revision history, and device marks come with it. Its current editor format is preserved.',
     'transfer.work' => 'Destination work',

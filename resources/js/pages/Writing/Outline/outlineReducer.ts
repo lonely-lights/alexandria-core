@@ -17,7 +17,6 @@
  * a beat sub-row's controls.
  */
 
-import type { ParsedOutlineLine } from './parseOutlinePaste';
 import type {
     OutlineBeat,
     OutlineConversion,
@@ -25,6 +24,7 @@ import type {
     OutlineReducerContext,
     OutlineTier,
 } from './outlineTypes';
+import type { ParsedOutlineLine } from './parseOutlinePaste';
 
 export type OutlineAction =
     | { type: 'enter'; key: string }
@@ -83,6 +83,7 @@ function blockedResult(rows: OutlineRow[], key: string): OutlineReducerResult {
 
 function inferredHierarchy(rows: OutlineRow[]): OutlineTier[] {
     const tiers: OutlineTier[] = [];
+
     for (const row of rows) {
         tiers[row.depth] ??= {
             label: row.label,
@@ -90,6 +91,7 @@ function inferredHierarchy(rows: OutlineRow[]): OutlineTier[] {
                 row.isStructural ?? rows.some((r) => r.parentKey === row.key),
         };
     }
+
     return tiers.length ? tiers : [{ label: 'Section', isStructural: false }];
 }
 
@@ -102,6 +104,7 @@ function tierAt(
     const sibling = rows.find(
         (r) => r.parentKey === parentKey && r.depth === depth,
     );
+
     return sibling
         ? {
               label: sibling.label,
@@ -218,7 +221,11 @@ function indent(
         .findLast(
             (r) => r.parentKey === row.parentKey && r.depth === row.depth,
         );
-    if (!target) return ok(rows);
+
+    if (!target) {
+        return ok(rows);
+    }
+
     const newDepth = row.depth + 1;
     const deepest = context.hierarchy.length - 1;
 
@@ -227,6 +234,7 @@ function indent(
         // fold itself into a beat; a persisted section refuses.
         if (
             (row.sectionId !== null && !row.canBecomeBeat) ||
+            row.durationSeconds != null ||
             row.hasContent ||
             row.isStructural ||
             row.beats.length > 0 ||
@@ -375,7 +383,11 @@ function outdent(
     }
 
     const parent = rows.find((r) => r.key === row.parentKey);
-    if (!parent) return ok(rows);
+
+    if (!parent) {
+        return ok(rows);
+    }
+
     const end = subtreeEnd(rows, idx);
     const remaining = [...rows.slice(0, idx), ...rows.slice(end + 1)];
     const insertAt =
@@ -401,6 +413,7 @@ function outdent(
               }
             : { ...r, depth: r.depth - 1 },
     );
+
     return ok([
         ...remaining.slice(0, insertAt),
         ...moved,
@@ -593,6 +606,8 @@ function paste(
         }
 
         const parentKey = stack[stack.length - 1].key;
+        const parentDepth =
+            inserted.find((r) => r.key === parentKey)?.depth ?? anchor.depth;
 
         if (line.depth > maxRelDepth) {
             addBeat(parentKey, {
@@ -610,8 +625,8 @@ function paste(
             sectionId: null,
             tempId: key,
             parentKey,
-            depth: anchor.depth + 1 + line.depth,
-            ...tierAt(rows, context, anchor.depth + 1 + line.depth, parentKey),
+            depth: parentDepth + 1,
+            ...tierAt(rows, context, parentDepth + 1, parentKey),
             title: line.title,
             slug: null,
             synopsis: line.synopsis,

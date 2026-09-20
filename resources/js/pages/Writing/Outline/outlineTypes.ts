@@ -1,3 +1,4 @@
+import type { StructureBeat } from '../Sections/structureTemplates';
 /**
  * Outline row types — spec 2026-08-28 outline-mode Task 4.
  *
@@ -53,6 +54,7 @@ export interface OutlineRow {
     slug: string | null;
     synopsis: string | null;
     beats: OutlineBeat[];
+    durationSeconds?: number | null;
     isStructural?: boolean;
     hasContent?: boolean;
     canBecomeBeat?: boolean;
@@ -76,6 +78,7 @@ export interface OutlineRow {
 
 /** One row as the server represents it — always has a real `sectionId`. */
 export interface ServerOutlineRow {
+    duration_seconds?: number | null;
     is_structural?: boolean;
     has_content?: boolean;
     canBecomeBeat?: boolean;
@@ -107,6 +110,8 @@ export interface ServerOutlineRow {
 
 /** The GET /{work}/outline response body. */
 export interface OutlineProjection {
+    target_runtime_seconds?: number | null;
+    markers?: StructureBeat[];
     rows: ServerOutlineRow[];
     baseVersion: string;
     hierarchy?: OutlineTier[];

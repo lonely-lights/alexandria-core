@@ -1,15 +1,15 @@
 import { useMemo, useRef, useState } from 'react';
 import useT from '@alexandria/hooks/useT';
-import type { OutlineProjection, OutlineRow } from './outlineTypes';
-import type { OutlineSaveSnapshot } from './OutlineSaveQueue';
-import { rowsFromProjection } from './outlinePayload';
 import {
     invalidOutlineParents,
     mergeOutlineDraft,
     orderOutlineRows,
     resolveOutlineMerge,
-    type OutlineMergeConflict,
 } from './outlineMerge';
+import type { OutlineMergeConflict } from './outlineMerge';
+import { rowsFromProjection } from './outlinePayload';
+import type { OutlineSaveSnapshot } from './OutlineSaveQueue';
+import type { OutlineProjection, OutlineRow } from './outlineTypes';
 
 interface Props {
     base: OutlineSaveSnapshot;
@@ -54,6 +54,9 @@ function ConflictEditor({
             (row) =>
                 '  '.repeat(row.depth) +
                 row.title +
+                (row.durationSeconds != null
+                    ? ' [' + row.durationSeconds + 's]'
+                    : '') +
                 (row.synopsis ? ' — ' + row.synopsis : '') +
                 row.beats
                     .map(
@@ -71,12 +74,16 @@ function ConflictEditor({
         side: 'local' | 'server',
     ): string {
         const value = conflict[side];
-        if (conflict.field === 'deleted')
+
+        if (conflict.field === 'deleted') {
             return value
                 ? (value as OutlineRow).title
                 : t('writing.outline.deleted_elsewhere');
+        }
+
         if (conflict.field === 'structure') {
             const shape = value as { key: string; parentKey: string | null }[];
+
             return shape
                 .map((item) => {
                     const row = [...draft.rows, ...server].find(
@@ -85,6 +92,7 @@ function ConflictEditor({
                     const parent = [...draft.rows, ...server].find(
                         (r) => r.key === item.parentKey,
                     );
+
                     return (
                         (row?.title || t('writing.outline.title_placeholder')) +
                         (parent ? ' → ' + parent.title : '')
@@ -92,10 +100,13 @@ function ConflictEditor({
                 })
                 .join('\n');
         }
-        if (conflict.field === 'beats')
+
+        if (conflict.field === 'beats') {
             return (value as OutlineRow['beats'])
                 .map((b) => (b.done ? '[x] ' : '[ ] ') + b.text)
                 .join('\n');
+        }
+
         return value === null || value === undefined
             ? t('writing.outline.empty_value')
             : String(value);
@@ -110,12 +121,31 @@ function ConflictEditor({
         const ids = rows.flatMap((r) =>
             r.sectionId === null ? [] : [r.sectionId],
         );
+
         if (problems.length || new Set(ids).size !== ids.length) {
             setInvalid(problems.length ? problems : rows.map((r) => r.key));
+
             return;
         }
+
         rows = orderOutlineRows(rows, rows);
         const retained = new Set(ids);
+
+        for (const conversion of draft.conversions) {
+            if (retained.has(conversion.sourceSectionId)) {
+                rows = rows.map((row) =>
+                    row.key === conversion.targetKey
+                        ? {
+                              ...row,
+                              beats: row.beats.filter(
+                                  (beat) => beat.id !== conversion.beatId,
+                              ),
+                          }
+                        : row,
+                );
+            }
+        }
+
         const deleted = server
             .filter((r) => !retained.has(r.sectionId!))
             .map((r) => r.sectionId!);
@@ -129,6 +159,7 @@ function ConflictEditor({
             baseVersion: projection.baseVersion,
         });
     }
+
     return (
         <section
             aria-label={t('writing.outline.conflict_title')}
@@ -162,8 +193,9 @@ function ConflictEditor({
                 type="button"
                 className="underline"
                 onClick={() => {
-                    if (window.confirm(t('writing.outline.discard_confirm')))
+                    if (window.confirm(t('writing.outline.discard_confirm'))) {
                         onDiscard();
+                    }
                 }}
             >
                 {t('writing.outline.reload_server')}

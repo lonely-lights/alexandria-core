@@ -103,6 +103,7 @@ class WorkSection extends Model
     protected function casts(): array
     {
         return [
+            'duration_seconds' => 'integer',
             'beats' => 'array',
             'is_structural' => 'boolean',
         ];

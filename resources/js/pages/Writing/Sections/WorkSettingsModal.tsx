@@ -1,24 +1,27 @@
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-import useT from '@alexandria/hooks/useT';
-import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
-import { useJsonFetch } from '@alexandria/lib/fetchJson';
-import { worksBase, workUrl } from '@alexandria/lib/urls';
-import Button from '@alexandria/components/ui/Button';
-import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
-import Modal, { ModalHeader, ModalFooter } from '@alexandria/components/ui/Modal';
-import Tooltip from '@alexandria/components/ui/Tooltip';
 import CheckboxField from '@alexandria/components/form/CheckboxField';
 import Input from '@alexandria/components/form/Input';
 import Select from '@alexandria/components/form/Select';
 import Textarea from '@alexandria/components/form/Textarea';
-import LinkedEntryField, { type LinkedEntryOption } from './LinkedEntryField';
-import {
-    STRUCTURE_TEMPLATES,
-    type StructureBeat,
-    type WorkStructure,
-} from './structureTemplates';
+import Button from '@alexandria/components/ui/Button';
+import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
+import Modal, {
+    ModalHeader,
+    ModalFooter,
+} from '@alexandria/components/ui/Modal';
+import Tooltip from '@alexandria/components/ui/Tooltip';
+import useT from '@alexandria/hooks/useT';
+import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
+import { worksBase, workUrl } from '@alexandria/lib/urls';
+import LinkedEntryField from './LinkedEntryField';
+import type { LinkedEntryOption } from './LinkedEntryField';
+import { STRUCTURE_TEMPLATES } from './structureTemplates';
+import type { StructureBeat, WorkStructure } from './structureTemplates';
+import WorkTimingSettings from './WorkTimingSettings';
+import type { TimingSectionChoice } from './WorkTimingSettings';
 
 /**
  * WorkSettingsModal — Stage 8g.1 (Plan 4 Task 2) + Stage 11 Slice 3 (structure).
@@ -51,6 +54,7 @@ export interface LengthPlanOption {
 }
 
 export interface WorkSettingsWork {
+    target_runtime_seconds?: number | null;
     id: number;
     title: string;
     slug: string;
@@ -66,7 +70,12 @@ export interface WorkSettingsWork {
 
 const WORK_STATUSES = ['concept', 'drafting', 'revising', 'complete'] as const;
 
-const NUMBER_FIELDS = ['target_words', 'per_section_words', 'target_lines', 'target_pages'] as const;
+const NUMBER_FIELDS = [
+    'target_words',
+    'per_section_words',
+    'target_lines',
+    'target_pages',
+] as const;
 
 type NumberField = (typeof NUMBER_FIELDS)[number];
 
@@ -90,7 +99,9 @@ export default function WorkSettingsModal({
     structureBlueprint = null,
     canDelete = false,
     onClose,
+    sections,
 }: {
+    sections?: TimingSectionChoice[];
     project: { id: number; slug: string };
     work: WorkSettingsWork;
     types: string[];
@@ -104,16 +115,31 @@ export default function WorkSettingsModal({
 }) {
     const t = useT();
 
+    const { data: timingOutline } = useJsonFetch<{
+        rows: { sectionId: number; title: string }[];
+    }>(
+        sections === undefined
+            ? worksBase(project.slug, work.slug) + '/outline'
+            : null,
+    );
+    const timingChoices =
+        sections ??
+        timingOutline?.rows.map((r) => ({ id: r.sectionId, title: r.title })) ??
+        [];
+    const choicesLoaded = sections !== undefined || timingOutline != null;
     const existingStructure = work.length_plan?.structure;
 
     const form = useForm({
+        target_runtime_seconds:
+            work.target_runtime_seconds ?? (null as number | null),
         title: work.title,
         type: work.type,
         status: work.status,
         logline: work.logline ?? '',
         preset: work.length_plan?.preset ?? '',
         target_words: work.length_plan?.target_words?.toString() ?? '',
-        per_section_words: work.length_plan?.per_section_words?.toString() ?? '',
+        per_section_words:
+            work.length_plan?.per_section_words?.toString() ?? '',
         target_lines: work.length_plan?.target_lines?.toString() ?? '',
         target_pages: work.length_plan?.target_pages?.toString() ?? '',
         apply_section_targets: false,
@@ -133,13 +159,27 @@ export default function WorkSettingsModal({
             target_pages: parseCount(data.target_pages),
         };
         const hasPreset = data.preset !== '';
-        const hasNumbers = Object.values(numbers).some((value) => value !== null);
+        const hasNumbers = Object.values(numbers).some(
+            (value) => value !== null,
+        );
         const hasStructure = data.structure_template !== '';
         const structurePayload: WorkStructure | undefined = hasStructure
-            ? { template: data.structure_template, beats: data.structure_beats }
+            ? {
+                  template: data.structure_template,
+                  beats: data.structure_beats.map((marker) =>
+                      choicesLoaded &&
+                      marker.anchor_section_id != null &&
+                      !timingChoices.some(
+                          (s) => s.id === marker.anchor_section_id,
+                      )
+                          ? { ...marker, anchor_section_id: null }
+                          : marker,
+                  ),
+              }
             : undefined;
 
         return {
+            target_runtime_seconds: data.target_runtime_seconds,
             title: data.title,
             type: data.type,
             status: data.status,
@@ -147,13 +187,16 @@ export default function WorkSettingsModal({
             // Explicit nulls ride along so a cleared field beats the
             // preset's config seed server-side; all-empty + no preset
             // + no structure clears the plan entirely.
-            length_plan: !hasPreset && !hasNumbers && !hasStructure
-                ? null
-                : {
-                    ...(hasPreset ? { preset: data.preset } : {}),
-                    ...numbers,
-                    ...(structurePayload !== undefined ? { structure: structurePayload } : {}),
-                  },
+            length_plan:
+                !hasPreset && !hasNumbers && !hasStructure
+                    ? null
+                    : {
+                          ...(hasPreset ? { preset: data.preset } : {}),
+                          ...numbers,
+                          ...(structurePayload !== undefined
+                              ? { structure: structurePayload }
+                              : {}),
+                      },
             apply_section_targets: data.apply_section_targets,
         };
     });
@@ -171,20 +214,28 @@ export default function WorkSettingsModal({
     // Per-beat touched tracking: mirrors the number-field pattern.
     // Picking a template seeds untouched beats from defaults; once a
     // beat is edited it retains its value across template switches.
-    const [touchedBeats, setTouchedBeats] = useState<Record<number, boolean>>({});
+    const [touchedBeats, setTouchedBeats] = useState<Record<number, boolean>>(
+        {},
+    );
 
     // Linked entry lives outside Inertia's `form` — its own PUT (Task
     // 6's works.entry_link) fires ahead of the settings save, only
     // when the selection actually changed.
-    const [linkedEntry, setLinkedEntry] = useState<LinkedEntryOption | null>(work.linked_entry ?? null);
-    const [entryLinkError, setEntryLinkError] = useState<string | undefined>(undefined);
+    const [linkedEntry, setLinkedEntry] = useState<LinkedEntryOption | null>(
+        work.linked_entry ?? null,
+    );
+    const [entryLinkError, setEntryLinkError] = useState<string | undefined>(
+        undefined,
+    );
     const [savingLink, setSavingLink] = useState(false);
 
     // Danger zone — named delete-impact confirm (Devices & Tropes
     // rework-6). Impact is fetched fresh each time the confirm opens.
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deletingWork, setDeletingWork] = useState(false);
-    const deleteImpactUrl = deleteConfirmOpen ? `${worksBase(project.slug, work.slug)}/delete-impact` : null;
+    const deleteImpactUrl = deleteConfirmOpen
+        ? `${worksBase(project.slug, work.slug)}/delete-impact`
+        : null;
     const { data: deleteImpact, loading: deleteImpactLoading } = useJsonFetch<{
         title: string;
         sections: number;
@@ -203,7 +254,10 @@ export default function WorkSettingsModal({
     const allErrors = form.errors as Record<string, string | undefined>;
 
     function handlePresetChange(key: string) {
-        const plan = key === '' ? undefined : lengthPlans.find((option) => option.key === key);
+        const plan =
+            key === ''
+                ? undefined
+                : lengthPlans.find((option) => option.key === key);
 
         form.setData((data) => {
             const next = { ...data, preset: key };
@@ -240,7 +294,8 @@ export default function WorkSettingsModal({
                 // any beats the user has already edited in this session.
                 next.structure_beats = template.beats.map(
                     (defaultBeat, i): StructureBeat =>
-                        touchedBeats[i] !== undefined && i < data.structure_beats.length
+                        touchedBeats[i] !== undefined &&
+                        i < data.structure_beats.length
                             ? data.structure_beats[i]
                             : { ...defaultBeat },
                 );
@@ -255,21 +310,35 @@ export default function WorkSettingsModal({
         }
     }
 
-    function handleBeatChange(index: number, field: keyof StructureBeat, raw: string) {
+    function handleBeatChange(
+        index: number,
+        field: keyof StructureBeat,
+        raw: string,
+    ) {
         const value: string | number =
-            field === 'name' ? raw : Number.isFinite(Number(raw)) ? Number(raw) : 0;
+            field === 'name'
+                ? raw
+                : Number.isFinite(Number(raw))
+                  ? Number(raw)
+                  : 0;
 
         form.setData((data) => {
             const newBeats = data.structure_beats.map((beat, i) =>
                 i === index ? { ...beat, [field]: value } : beat,
             );
+
             return { ...data, structure_beats: newBeats };
         });
 
         setTouchedBeats((prev) => ({ ...prev, [index]: true }));
     }
 
+    const [timingValid, setTimingValid] = useState(true);
     async function submit() {
+        if (!timingValid) {
+            return;
+        }
+
         const nextEntryId = linkedEntry?.id ?? null;
         const previousEntryId = work.linked_entry?.id ?? null;
 
@@ -278,19 +347,32 @@ export default function WorkSettingsModal({
             setSavingLink(true);
 
             try {
-                const res = await fetch(`${worksBase(project.slug, work.slug)}/entry-link`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders() },
-                    body: JSON.stringify({ entry_id: nextEntryId }),
-                });
+                const res = await fetch(
+                    `${worksBase(project.slug, work.slug)}/entry-link`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Accept: 'application/json',
+                            ...csrfHeaders(),
+                        },
+                        body: JSON.stringify({ entry_id: nextEntryId }),
+                    },
+                );
 
                 if (!res.ok) {
                     const data = await res.json().catch(() => null);
-                    setEntryLinkError(data?.errors?.entry_id?.[0] ?? data?.message ?? t('writing.structure.link_failed'));
+                    setEntryLinkError(
+                        data?.errors?.entry_id?.[0] ??
+                            data?.message ??
+                            t('writing.structure.link_failed'),
+                    );
+
                     return;
                 }
             } catch {
                 setEntryLinkError(t('writing.structure.link_failed'));
+
                 return;
             } finally {
                 setSavingLink(false);
@@ -303,374 +385,590 @@ export default function WorkSettingsModal({
         });
     }
 
-    const sectionHeadingColor = 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)';
-    const columnLabelColor = 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)';
+    const sectionHeadingColor =
+        'color-mix(in srgb, var(--theme-base-content) 45%, transparent)';
+    const columnLabelColor =
+        'color-mix(in srgb, var(--theme-base-content) 50%, transparent)';
 
     return (
         <>
-        <Modal open onClose={onClose} maxWidth="max-w-3xl">
-            <ModalHeader title={t('writing.settings.title')} onClose={onClose} />
-            {/* noValidate: the server validates `required`; without it
+            <Modal open onClose={onClose} maxWidth="max-w-3xl">
+                <ModalHeader
+                    title={t('writing.settings.title')}
+                    onClose={onClose}
+                />
+                {/* noValidate: the server validates `required`; without it
                 Chrome's native constraint bubble fires before submit and
                 the error poppers never get a chance. */}
-            <form
-                noValidate
-                className="flex flex-1 flex-col overflow-hidden"
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    void submit();
-                }}
-            >
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-5">
-                    {/* ── md+: two-column grid — Basics left, Length Plan right ── */}
-                    <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
-                        {/* Left column: Basics */}
-                        <div className="flex flex-col gap-4">
-                            <Tooltip
-                                content={form.errors.title}
-                                open={!!form.errors.title}
-                                tone="error"
-                                placement="top-end"
-                            >
-                                <Input
-                                    label={t('writing.form.title')}
-                                    name="title"
-                                    value={form.data.title}
-                                    onChange={(e) => {
-                                        form.setData('title', e.target.value);
-                                        if (form.errors.title) {
-                                            form.clearErrors('title');
-                                        }
-                                    }}
-                                    error={form.errors.title}
-                                    hideErrorText
-                                    autoFocus
-                                    required
+                <form
+                    noValidate
+                    className="flex flex-1 flex-col overflow-hidden"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void submit();
+                    }}
+                >
+                    <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-5">
+                        <WorkTimingSettings
+                            target={form.data.target_runtime_seconds}
+                            markers={form.data.structure_beats}
+                            sections={timingChoices}
+                            onTargetChange={(value) =>
+                                form.setData('target_runtime_seconds', value)
+                            }
+                            onValidityChange={setTimingValid}
+                            errors={allErrors}
+                            disabled={form.processing}
+                            onMarkerChange={(index, patch) => {
+                                form.setData(
+                                    'structure_beats',
+                                    form.data.structure_beats.map((m, i) =>
+                                        i === index ? { ...m, ...patch } : m,
+                                    ),
+                                );
+                                setTouchedBeats((prev) => ({
+                                    ...prev,
+                                    [index]: true,
+                                }));
+                            }}
+                        />
+                        {/* ── md+: two-column grid — Basics left, Length Plan right ── */}
+                        <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+                            {/* Left column: Basics */}
+                            <div className="flex flex-col gap-4">
+                                <Tooltip
+                                    content={form.errors.title}
+                                    open={!!form.errors.title}
+                                    tone="error"
+                                    placement="top-end"
+                                >
+                                    <Input
+                                        label={t('writing.form.title')}
+                                        name="title"
+                                        value={form.data.title}
+                                        onChange={(e) => {
+                                            form.setData(
+                                                'title',
+                                                e.target.value,
+                                            );
+
+                                            if (form.errors.title) {
+                                                form.clearErrors('title');
+                                            }
+                                        }}
+                                        error={form.errors.title}
+                                        hideErrorText
+                                        autoFocus
+                                        required
+                                        size="md"
+                                    />
+                                </Tooltip>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Select
+                                        label={t('writing.form.type')}
+                                        name="type"
+                                        value={form.data.type}
+                                        onChange={(e) => {
+                                            form.setData(
+                                                'type',
+                                                e.target.value,
+                                            );
+
+                                            if (form.errors.type) {
+                                                form.clearErrors('type');
+                                            }
+                                        }}
+                                        error={form.errors.type}
+                                        options={types.map((type) => ({
+                                            value: type,
+                                            label: t(
+                                                `writing.types.${type}`,
+                                                type,
+                                            ),
+                                        }))}
+                                        size="md"
+                                    />
+                                    <Select
+                                        label={t('writing.form.status')}
+                                        name="status"
+                                        value={form.data.status}
+                                        onChange={(e) => {
+                                            form.setData(
+                                                'status',
+                                                e.target.value,
+                                            );
+
+                                            if (form.errors.status) {
+                                                form.clearErrors('status');
+                                            }
+                                        }}
+                                        error={form.errors.status}
+                                        options={WORK_STATUSES.map(
+                                            (status) => ({
+                                                value: status,
+                                                label: t(
+                                                    `writing.statuses.${status}`,
+                                                    status,
+                                                ),
+                                            }),
+                                        )}
+                                        size="md"
+                                    />
+                                </div>
+                                <Textarea
+                                    label={t('writing.form.logline')}
+                                    name="logline"
+                                    value={form.data.logline}
+                                    onChange={(e) =>
+                                        form.setData('logline', e.target.value)
+                                    }
+                                    error={form.errors.logline}
+                                    rows={2}
                                     size="md"
                                 />
-                            </Tooltip>
-                            <div className="grid grid-cols-2 gap-3">
-                                <Select
-                                    label={t('writing.form.type')}
-                                    name="type"
-                                    value={form.data.type}
-                                    onChange={(e) => {
-                                        form.setData('type', e.target.value);
-                                        if (form.errors.type) {
-                                            form.clearErrors('type');
-                                        }
-                                    }}
-                                    error={form.errors.type}
-                                    options={types.map((type) => ({
-                                        value: type,
-                                        label: t(`writing.types.${type}`, type),
-                                    }))}
-                                    size="md"
-                                />
-                                <Select
-                                    label={t('writing.form.status')}
-                                    name="status"
-                                    value={form.data.status}
-                                    onChange={(e) => {
-                                        form.setData('status', e.target.value);
-                                        if (form.errors.status) {
-                                            form.clearErrors('status');
-                                        }
-                                    }}
-                                    error={form.errors.status}
-                                    options={WORK_STATUSES.map((status) => ({
-                                        value: status,
-                                        label: t(`writing.statuses.${status}`, status),
-                                    }))}
-                                    size="md"
-                                />
+                                {structureBlueprint && (
+                                    <LinkedEntryField
+                                        projectId={project.id}
+                                        blueprintId={structureBlueprint.id}
+                                        value={linkedEntry}
+                                        onChange={setLinkedEntry}
+                                        error={entryLinkError}
+                                    />
+                                )}
                             </div>
-                            <Textarea
-                                label={t('writing.form.logline')}
-                                name="logline"
-                                value={form.data.logline}
-                                onChange={(e) => form.setData('logline', e.target.value)}
-                                error={form.errors.logline}
-                                rows={2}
-                                size="md"
-                            />
-                            {structureBlueprint && (
-                                <LinkedEntryField
-                                    projectId={project.id}
-                                    blueprintId={structureBlueprint.id}
-                                    value={linkedEntry}
-                                    onChange={setLinkedEntry}
-                                    error={entryLinkError}
+
+                            {/* Right column: Length plan */}
+                            <div className="flex flex-col gap-4">
+                                <div>
+                                    <div
+                                        className="text-xs font-semibold uppercase tracking-wide"
+                                        style={{ color: sectionHeadingColor }}
+                                    >
+                                        {t('writing.settings.length_heading')}
+                                    </div>
+                                    <p
+                                        className="mt-0.5 text-xs"
+                                        style={{ color: columnLabelColor }}
+                                    >
+                                        {t('writing.settings.length_help')}
+                                    </p>
+                                </div>
+                                <Select
+                                    label={t('writing.settings.preset')}
+                                    name="preset"
+                                    value={form.data.preset}
+                                    onChange={(e) =>
+                                        handlePresetChange(e.target.value)
+                                    }
+                                    error={allErrors['length_plan.preset']}
+                                    options={[
+                                        {
+                                            value: '',
+                                            label: t(
+                                                'writing.settings.preset_none',
+                                            ),
+                                        },
+                                        ...lengthPlans.map((plan) => ({
+                                            value: plan.key,
+                                            // Key fallback keeps future presets usable
+                                            // before their label lands.
+                                            label: t(
+                                                `writing.settings.preset_${plan.key}`,
+                                                plan.key,
+                                            ),
+                                        })),
+                                    ]}
+                                    size="md"
                                 />
-                            )}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Input
+                                        label={t(
+                                            'writing.settings.target_words',
+                                        )}
+                                        name="target_words"
+                                        type="number"
+                                        min={0}
+                                        value={form.data.target_words}
+                                        onChange={(e) =>
+                                            handleNumberChange(
+                                                'target_words',
+                                                e.target.value,
+                                            )
+                                        }
+                                        error={
+                                            allErrors[
+                                                'length_plan.target_words'
+                                            ]
+                                        }
+                                        size="md"
+                                    />
+                                    <Input
+                                        label={t(
+                                            'writing.settings.per_section_words',
+                                        )}
+                                        name="per_section_words"
+                                        type="number"
+                                        min={0}
+                                        value={form.data.per_section_words}
+                                        onChange={(e) =>
+                                            handleNumberChange(
+                                                'per_section_words',
+                                                e.target.value,
+                                            )
+                                        }
+                                        error={
+                                            allErrors[
+                                                'length_plan.per_section_words'
+                                            ]
+                                        }
+                                        size="md"
+                                    />
+                                    <Input
+                                        label={t(
+                                            'writing.settings.target_lines',
+                                        )}
+                                        name="target_lines"
+                                        type="number"
+                                        min={0}
+                                        value={form.data.target_lines}
+                                        onChange={(e) =>
+                                            handleNumberChange(
+                                                'target_lines',
+                                                e.target.value,
+                                            )
+                                        }
+                                        error={
+                                            allErrors[
+                                                'length_plan.target_lines'
+                                            ]
+                                        }
+                                        size="md"
+                                    />
+                                    <Input
+                                        label={t(
+                                            'writing.settings.target_pages',
+                                        )}
+                                        name="target_pages"
+                                        type="number"
+                                        min={0}
+                                        value={form.data.target_pages}
+                                        onChange={(e) =>
+                                            handleNumberChange(
+                                                'target_pages',
+                                                e.target.value,
+                                            )
+                                        }
+                                        error={
+                                            allErrors[
+                                                'length_plan.target_pages'
+                                            ]
+                                        }
+                                        size="md"
+                                    />
+                                </div>
+                                <div>
+                                    <CheckboxField
+                                        label={t(
+                                            'writing.settings.apply_targets',
+                                        )}
+                                        name="apply_section_targets"
+                                        align="start"
+                                        checked={
+                                            form.data.apply_section_targets
+                                        }
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'apply_section_targets',
+                                                e.target.checked,
+                                            )
+                                        }
+                                    />
+                                    <p
+                                        className="mt-1 pl-7 text-xs"
+                                        style={{
+                                            color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)',
+                                        }}
+                                    >
+                                        {t(
+                                            'writing.settings.apply_targets_help',
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Right column: Length plan */}
+                        {/* ── Structure (full width) ── */}
                         <div className="flex flex-col gap-4">
                             <div>
                                 <div
                                     className="text-xs font-semibold uppercase tracking-wide"
                                     style={{ color: sectionHeadingColor }}
                                 >
-                                    {t('writing.settings.length_heading')}
+                                    {t('writing.settings.structure_heading')}
                                 </div>
                                 <p
                                     className="mt-0.5 text-xs"
                                     style={{ color: columnLabelColor }}
                                 >
-                                    {t('writing.settings.length_help')}
+                                    {t('writing.settings.structure_help')}
                                 </p>
                             </div>
                             <Select
-                                label={t('writing.settings.preset')}
-                                name="preset"
-                                value={form.data.preset}
-                                onChange={(e) => handlePresetChange(e.target.value)}
-                                error={allErrors['length_plan.preset']}
+                                label={t('writing.settings.structure_template')}
+                                name="structure_template"
+                                value={form.data.structure_template}
+                                onChange={(e) =>
+                                    handleStructureTemplateChange(
+                                        e.target.value,
+                                    )
+                                }
                                 options={[
-                                    { value: '', label: t('writing.settings.preset_none') },
-                                    ...lengthPlans.map((plan) => ({
-                                        value: plan.key,
-                                        // Key fallback keeps future presets usable
-                                        // before their label lands.
-                                        label: t(`writing.settings.preset_${plan.key}`, plan.key),
+                                    {
+                                        value: '',
+                                        label: t(
+                                            'writing.settings.structure_none',
+                                        ),
+                                    },
+                                    ...STRUCTURE_TEMPLATES.map((template) => ({
+                                        value: template.slug,
+                                        label: t(
+                                            template.labelKey,
+                                            template.slug,
+                                        ),
                                     })),
                                 ]}
                                 size="md"
                             />
-                            <div className="grid grid-cols-2 gap-3">
-                                <Input
-                                    label={t('writing.settings.target_words')}
-                                    name="target_words"
-                                    type="number"
-                                    min={0}
-                                    value={form.data.target_words}
-                                    onChange={(e) => handleNumberChange('target_words', e.target.value)}
-                                    error={allErrors['length_plan.target_words']}
-                                    size="md"
-                                />
-                                <Input
-                                    label={t('writing.settings.per_section_words')}
-                                    name="per_section_words"
-                                    type="number"
-                                    min={0}
-                                    value={form.data.per_section_words}
-                                    onChange={(e) => handleNumberChange('per_section_words', e.target.value)}
-                                    error={allErrors['length_plan.per_section_words']}
-                                    size="md"
-                                />
-                                <Input
-                                    label={t('writing.settings.target_lines')}
-                                    name="target_lines"
-                                    type="number"
-                                    min={0}
-                                    value={form.data.target_lines}
-                                    onChange={(e) => handleNumberChange('target_lines', e.target.value)}
-                                    error={allErrors['length_plan.target_lines']}
-                                    size="md"
-                                />
-                                <Input
-                                    label={t('writing.settings.target_pages')}
-                                    name="target_pages"
-                                    type="number"
-                                    min={0}
-                                    value={form.data.target_pages}
-                                    onChange={(e) => handleNumberChange('target_pages', e.target.value)}
-                                    error={allErrors['length_plan.target_pages']}
-                                    size="md"
-                                />
-                            </div>
-                            <div>
-                                <CheckboxField
-                                    label={t('writing.settings.apply_targets')}
-                                    name="apply_section_targets"
-                                    align="start"
-                                    checked={form.data.apply_section_targets}
-                                    onChange={(e) => form.setData('apply_section_targets', e.target.checked)}
-                                />
-                                <p
-                                    className="mt-1 pl-7 text-xs"
-                                    style={{ color: 'color-mix(in srgb, var(--theme-base-content) 40%, transparent)' }}
-                                >
-                                    {t('writing.settings.apply_targets_help')}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ── Structure (full width) ── */}
-                    <div className="flex flex-col gap-4">
-                        <div>
-                            <div
-                                className="text-xs font-semibold uppercase tracking-wide"
-                                style={{ color: sectionHeadingColor }}
-                            >
-                                {t('writing.settings.structure_heading')}
-                            </div>
-                            <p
-                                className="mt-0.5 text-xs"
-                                style={{ color: columnLabelColor }}
-                            >
-                                {t('writing.settings.structure_help')}
-                            </p>
-                        </div>
-                        <Select
-                            label={t('writing.settings.structure_template')}
-                            name="structure_template"
-                            value={form.data.structure_template}
-                            onChange={(e) => handleStructureTemplateChange(e.target.value)}
-                            options={[
-                                { value: '', label: t('writing.settings.structure_none') },
-                                ...STRUCTURE_TEMPLATES.map((template) => ({
-                                    value: template.slug,
-                                    label: t(template.labelKey, template.slug),
-                                })),
-                            ]}
-                            size="md"
-                        />
-                        {form.data.structure_template !== '' && form.data.structure_beats.length > 0 && (
-                            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2">
-                                {/* Column headers — repeated for the right column on md+ */}
-                                <div
-                                    className="grid grid-cols-[1fr_5rem_5rem] gap-2 text-xs"
-                                    style={{ color: columnLabelColor }}
-                                >
-                                    <span>{t('writing.settings.structure_col_beat')}</span>
-                                    <span>{t('writing.settings.structure_col_target')}</span>
-                                    <span>{t('writing.settings.structure_col_tolerance')}</span>
-                                </div>
-                                <div
-                                    className="hidden md:grid grid-cols-[1fr_5rem_5rem] gap-2 text-xs"
-                                    style={{ color: columnLabelColor }}
-                                >
-                                    <span>{t('writing.settings.structure_col_beat')}</span>
-                                    <span>{t('writing.settings.structure_col_target')}</span>
-                                    <span>{t('writing.settings.structure_col_tolerance')}</span>
-                                </div>
-                                {form.data.structure_beats.map((beat, i) => (
-                                    <div key={i} className="grid grid-cols-[1fr_5rem_5rem] gap-2">
-                                        <Input
-                                            name={`structure_beat_${i}_name`}
-                                            value={beat.name}
-                                            onChange={(e) => handleBeatChange(i, 'name', e.target.value)}
-                                            error={allErrors[`length_plan.structure.beats.${i}.name`]}
-                                            size="sm"
-                                        />
-                                        <Input
-                                            name={`structure_beat_${i}_target`}
-                                            type="number"
-                                            min={0}
-                                            max={100}
-                                            value={beat.target.toString()}
-                                            onChange={(e) => handleBeatChange(i, 'target', e.target.value)}
-                                            error={allErrors[`length_plan.structure.beats.${i}.target`]}
-                                            size="sm"
-                                        />
-                                        <Input
-                                            name={`structure_beat_${i}_tolerance`}
-                                            type="number"
-                                            min={0}
-                                            max={50}
-                                            value={beat.tolerance.toString()}
-                                            onChange={(e) => handleBeatChange(i, 'tolerance', e.target.value)}
-                                            error={allErrors[`length_plan.structure.beats.${i}.tolerance`]}
-                                            size="sm"
-                                        />
+                            {form.data.structure_template !== '' &&
+                                form.data.structure_beats.length > 0 && (
+                                    <div className="grid gap-x-4 gap-y-2 md:grid-cols-2">
+                                        {/* Column headers — repeated for the right column on md+ */}
+                                        <div
+                                            className="grid grid-cols-[1fr_5rem_5rem] gap-2 text-xs"
+                                            style={{ color: columnLabelColor }}
+                                        >
+                                            <span>
+                                                {t(
+                                                    'writing.settings.structure_col_beat',
+                                                )}
+                                            </span>
+                                            <span>
+                                                {t(
+                                                    'writing.settings.structure_col_target',
+                                                )}
+                                            </span>
+                                            <span>
+                                                {t(
+                                                    'writing.settings.structure_col_tolerance',
+                                                )}
+                                            </span>
+                                        </div>
+                                        <div
+                                            className="hidden grid-cols-[1fr_5rem_5rem] gap-2 text-xs md:grid"
+                                            style={{ color: columnLabelColor }}
+                                        >
+                                            <span>
+                                                {t(
+                                                    'writing.settings.structure_col_beat',
+                                                )}
+                                            </span>
+                                            <span>
+                                                {t(
+                                                    'writing.settings.structure_col_target',
+                                                )}
+                                            </span>
+                                            <span>
+                                                {t(
+                                                    'writing.settings.structure_col_tolerance',
+                                                )}
+                                            </span>
+                                        </div>
+                                        {form.data.structure_beats.map(
+                                            (beat, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="grid grid-cols-[1fr_5rem_5rem] gap-2"
+                                                >
+                                                    <Input
+                                                        name={`structure_beat_${i}_name`}
+                                                        value={beat.name}
+                                                        onChange={(e) =>
+                                                            handleBeatChange(
+                                                                i,
+                                                                'name',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={
+                                                            allErrors[
+                                                                `length_plan.structure.beats.${i}.name`
+                                                            ]
+                                                        }
+                                                        size="sm"
+                                                    />
+                                                    <Input
+                                                        name={`structure_beat_${i}_target`}
+                                                        type="number"
+                                                        min={0}
+                                                        max={100}
+                                                        value={beat.target.toString()}
+                                                        onChange={(e) =>
+                                                            handleBeatChange(
+                                                                i,
+                                                                'target',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={
+                                                            allErrors[
+                                                                `length_plan.structure.beats.${i}.target`
+                                                            ]
+                                                        }
+                                                        size="sm"
+                                                    />
+                                                    <Input
+                                                        name={`structure_beat_${i}_tolerance`}
+                                                        type="number"
+                                                        min={0}
+                                                        max={50}
+                                                        value={beat.tolerance.toString()}
+                                                        onChange={(e) =>
+                                                            handleBeatChange(
+                                                                i,
+                                                                'tolerance',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={
+                                                            allErrors[
+                                                                `length_plan.structure.beats.${i}.tolerance`
+                                                            ]
+                                                        }
+                                                        size="sm"
+                                                    />
+                                                </div>
+                                            ),
+                                        )}
                                     </div>
-                                ))}
+                                )}
+                        </div>
+
+                        {/* ── Danger zone (full width) ── */}
+                        {canDelete && (
+                            <div
+                                className="flex flex-col gap-2 rounded-md p-4"
+                                style={{
+                                    border: '1px solid color-mix(in srgb, var(--theme-status-error-stroke) 30%, transparent)',
+                                    background:
+                                        'color-mix(in srgb, var(--theme-status-error-fill) 30%, transparent)',
+                                }}
+                            >
+                                <div
+                                    className="text-xs font-semibold uppercase tracking-wide"
+                                    style={{
+                                        color: 'var(--theme-status-error-stroke)',
+                                    }}
+                                >
+                                    {t('writing.settings.danger_heading')}
+                                </div>
+                                <div>
+                                    <Button
+                                        type="button"
+                                        variant="danger"
+                                        onClick={() =>
+                                            setDeleteConfirmOpen(true)
+                                        }
+                                    >
+                                        {t('writing.settings.delete_work')}
+                                    </Button>
+                                </div>
                             </div>
                         )}
                     </div>
-
-                    {/* ── Danger zone (full width) ── */}
-                    {canDelete && (
-                        <div
-                            className="flex flex-col gap-2 rounded-md p-4"
+                    <ModalFooter>
+                        <Button variant="ghost" onClick={onClose}>
+                            {t('writing.form.cancel')}
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={!timingValid}
+                            loading={form.processing || savingLink}
+                        >
+                            {t('writing.settings.save')}
+                        </Button>
+                    </ModalFooter>
+                </form>
+            </Modal>
+            <ConfirmModal
+                open={deleteConfirmOpen}
+                onClose={() => setDeleteConfirmOpen(false)}
+                onConfirm={confirmDeleteWork}
+                title={t('writing.settings.delete_confirm_title')}
+                message={
+                    <div className="flex flex-col gap-2">
+                        <p>
+                            <strong>{work.title}</strong>
+                        </p>
+                        <p>{t('writing.settings.delete_confirm_body')}</p>
+                        {deleteImpactLoading ? (
+                            <p
+                                className="italic"
+                                style={{
+                                    color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)',
+                                }}
+                            >
+                                {t('writing.settings.delete_impact_loading')}
+                            </p>
+                        ) : (
+                            deleteImpact !== null && (
+                                <ul className="list-disc pl-4">
+                                    {deleteImpact.sections > 0 && (
+                                        <li>
+                                            {(deleteImpact.sections === 1
+                                                ? t(
+                                                      'writing.settings.delete_impact_sections.singular',
+                                                  )
+                                                : t(
+                                                      'writing.settings.delete_impact_sections.plural',
+                                                  )
+                                            ).replace(
+                                                ':count',
+                                                String(deleteImpact.sections),
+                                            )}
+                                        </li>
+                                    )}
+                                    {deleteImpact.notes > 0 && (
+                                        <li>
+                                            {(deleteImpact.notes === 1
+                                                ? t(
+                                                      'writing.settings.delete_impact_notes.singular',
+                                                  )
+                                                : t(
+                                                      'writing.settings.delete_impact_notes.plural',
+                                                  )
+                                            ).replace(
+                                                ':count',
+                                                String(deleteImpact.notes),
+                                            )}
+                                        </li>
+                                    )}
+                                </ul>
+                            )
+                        )}
+                        <p
+                            className="text-xs"
                             style={{
-                                border: '1px solid color-mix(in srgb, var(--theme-status-error-stroke) 30%, transparent)',
-                                background: 'color-mix(in srgb, var(--theme-status-error-fill) 30%, transparent)',
+                                color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)',
                             }}
                         >
-                            <div
-                                className="text-xs font-semibold uppercase tracking-wide"
-                                style={{ color: 'var(--theme-status-error-stroke)' }}
-                            >
-                                {t('writing.settings.danger_heading')}
-                            </div>
-                            <div>
-                                <Button
-                                    type="button"
-                                    variant="danger"
-                                    onClick={() => setDeleteConfirmOpen(true)}
-                                >
-                                    {t('writing.settings.delete_work')}
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-                <ModalFooter>
-                    <Button variant="ghost" onClick={onClose}>
-                        {t('writing.form.cancel')}
-                    </Button>
-                    <Button type="submit" loading={form.processing || savingLink}>
-                        {t('writing.settings.save')}
-                    </Button>
-                </ModalFooter>
-            </form>
-        </Modal>
-        <ConfirmModal
-            open={deleteConfirmOpen}
-            onClose={() => setDeleteConfirmOpen(false)}
-            onConfirm={confirmDeleteWork}
-            title={t('writing.settings.delete_confirm_title')}
-            message={
-                <div className="flex flex-col gap-2">
-                    <p>
-                        <strong>{work.title}</strong>
-                    </p>
-                    <p>{t('writing.settings.delete_confirm_body')}</p>
-                    {deleteImpactLoading ? (
-                        <p
-                            className="italic"
-                            style={{ color: 'color-mix(in srgb, var(--theme-base-content) 50%, transparent)' }}
-                        >
-                            {t('writing.settings.delete_impact_loading')}
+                            {t('writing.settings.delete_confirm_recycle_note')}
                         </p>
-                    ) : (
-                        deleteImpact !== null && (
-                            <ul className="list-disc pl-4">
-                                {deleteImpact.sections > 0 && (
-                                    <li>
-                                        {(deleteImpact.sections === 1
-                                            ? t('writing.settings.delete_impact_sections.singular')
-                                            : t('writing.settings.delete_impact_sections.plural')
-                                        ).replace(':count', String(deleteImpact.sections))}
-                                    </li>
-                                )}
-                                {deleteImpact.notes > 0 && (
-                                    <li>
-                                        {(deleteImpact.notes === 1
-                                            ? t('writing.settings.delete_impact_notes.singular')
-                                            : t('writing.settings.delete_impact_notes.plural')
-                                        ).replace(':count', String(deleteImpact.notes))}
-                                    </li>
-                                )}
-                            </ul>
-                        )
-                    )}
-                    <p
-                        className="text-xs"
-                        style={{ color: 'color-mix(in srgb, var(--theme-base-content) 45%, transparent)' }}
-                    >
-                        {t('writing.settings.delete_confirm_recycle_note')}
-                    </p>
-                </div>
-            }
-            confirmLabel={t('writing.settings.delete_confirm_action')}
-            variant="danger"
-            loading={deletingWork || deleteImpactLoading}
-        />
+                    </div>
+                }
+                confirmLabel={t('writing.settings.delete_confirm_action')}
+                variant="danger"
+                loading={deletingWork || deleteImpactLoading}
+            />
         </>
     );
 }

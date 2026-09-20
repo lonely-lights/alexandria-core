@@ -3,6 +3,7 @@ import type { OutlineRow } from './outlineTypes';
 /** Data whose disappearance would lose author intent. Identity alone is not content. */
 export function hasOutlineData(row: OutlineRow): boolean {
     return Boolean(
+        row.durationSeconds != null ||
         row.title.trim() ||
         row.synopsis?.trim() ||
         row.beats.some((b) => b.text.trim() || b.done) ||
@@ -32,15 +33,18 @@ export function prepareOutlineDraft(
             .map((r) => r.key),
     );
     const byKey = new Map(rows.map((r) => [r.key, r]));
+
     for (const key of [...keep]) {
         let parent = byKey.get(key)?.parentKey;
         const visited = new Set<string>();
+
         while (parent && !visited.has(parent)) {
             visited.add(parent);
             keep.add(parent);
             parent = byKey.get(parent)?.parentKey;
         }
     }
+
     return {
         rows: rows
             .filter((r) => keep.has(r.key))

@@ -1,19 +1,23 @@
 import { router } from '@inertiajs/react';
-import { useRef, useState, type CSSProperties } from 'react';
+import { useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 
+import type { ReactNode } from 'react';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
 import { useToastContext } from '@alexandria/components/ui/ToastProvider';
-import useT, { type Translator } from '@alexandria/hooks/useT';
-import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
-import { worksBase, workUrl } from '@alexandria/lib/urls';
 import Tooltip from '@alexandria/components/ui/Tooltip';
-import type { ReactNode } from 'react';
+import { useSortableReorder } from '@alexandria/hooks/useSortableReorder';
+import useT from '@alexandria/hooks/useT';
+import type { Translator } from '@alexandria/hooks/useT';
+import { worksBase, workUrl } from '@alexandria/lib/urls';
+import type { PacingResult } from '../pacing/pacingTypes';
+import SectionTiming from '../pacing/SectionTiming';
 
 import type { SectionNode } from '../Workspace';
 import MoveSectionModal from './MoveSectionModal';
-import TransferSectionModal from './TransferSectionModal';
 import RenameSectionModal from './RenameSectionModal';
 import type { SectionOutlineItem } from './sectionOutline';
+import TransferSectionModal from './TransferSectionModal';
 
 /**
  * Workspace section Navigator — Stage 8g.1 (Plan 2 Task 6; drag-reorder
@@ -57,6 +61,7 @@ interface NavigatorProps {
     headerTitle?: string;
     /** Autosave-confirmed word counts (by section id) overlaying the prop tree. */
     liveCounts?: Record<number, number>;
+    pacing?: PacingResult;
     /** Headings extracted from the current prose section, rendered as an in-section outline. */
     currentOutline?: SectionOutlineItem[];
     /**
@@ -109,7 +114,8 @@ const hoverActionStyle: CSSProperties = {
 };
 
 const panelHeaderStyle: CSSProperties = {
-    borderBottom: '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
+    borderBottom:
+        '1px solid var(--alex-manuscript-ruler-border, color-mix(in srgb, var(--theme-base-content) 10%, transparent))',
 };
 
 const panelActionStyle: CSSProperties = {
@@ -118,32 +124,55 @@ const panelActionStyle: CSSProperties = {
 };
 
 /** Collect the ids of every node that has children (default-expanded set). */
-function collectParentIds(nodes: SectionNode[], into: Set<number>): Set<number> {
+function collectParentIds(
+    nodes: SectionNode[],
+    into: Set<number>,
+): Set<number> {
     for (const node of nodes) {
         if (node.children.length > 0) {
             into.add(node.id);
             collectParentIds(node.children, into);
         }
     }
+
     return into;
 }
 
 function findNodeById(nodes: SectionNode[], id: number): SectionNode | null {
     for (const node of nodes) {
-        if (node.id === id) return node;
+        if (node.id === id) {
+            return node;
+        }
+
         const found = findNodeById(node.children, id);
-        if (found !== null) return found;
+
+        if (found !== null) {
+            return found;
+        }
     }
+
     return null;
 }
 
 /** True when `candidateId` is `nodeId` itself or inside its subtree. */
-function isSelfOrDescendant(nodes: SectionNode[], nodeId: number, candidateId: number | null): boolean {
-    if (candidateId === null) return false;
+function isSelfOrDescendant(
+    nodes: SectionNode[],
+    nodeId: number,
+    candidateId: number | null,
+): boolean {
+    if (candidateId === null) {
+        return false;
+    }
+
     const node = findNodeById(nodes, nodeId);
-    if (node === null) return false;
+
+    if (node === null) {
+        return false;
+    }
+
     const walk = (n: SectionNode): boolean =>
         n.id === candidateId || n.children.some(walk);
+
     return walk(node);
 }
 
@@ -161,26 +190,31 @@ export default function Navigator({
     headerTrailing,
     headerTitle,
     liveCounts,
+    pacing,
     currentOutline = [],
     showSectionTypeLabels = true,
 }: NavigatorProps) {
     const t = useT();
     const toast = useToastContext();
-    const [expanded, setExpanded] = useState<Set<number>>(
-        () => collectParentIds(sections, new Set()),
+    const [expanded, setExpanded] = useState<Set<number>>(() =>
+        collectParentIds(sections, new Set()),
     );
     const [renameTarget, setRenameTarget] = useState<SectionNode | null>(null);
     const [moveTarget, setMoveTarget] = useState<SectionNode | null>(null);
-    const [transferTarget, setTransferTarget] = useState<SectionNode | null>(null);
+    const [transferTarget, setTransferTarget] = useState<SectionNode | null>(
+        null,
+    );
 
     function toggle(id: number) {
         setExpanded((prev) => {
             const next = new Set(prev);
+
             if (next.has(id)) {
                 next.delete(id);
             } else {
                 next.add(id);
             }
+
             return next;
         });
     }
@@ -192,13 +226,19 @@ export default function Navigator({
         onRequestAdd(node.id);
     }
 
-    function moveSection(sectionId: number, toParentId: number | null, position: number) {
+    function moveSection(
+        sectionId: number,
+        toParentId: number | null,
+        position: number,
+    ) {
         if (isSelfOrDescendant(sections, sectionId, toParentId)) {
             return; // dropping a parent into its own subtree — ignore
         }
+
         if (toParentId !== null) {
             setExpanded((prev) => new Set(prev).add(toParentId));
         }
+
         router.put(
             `${worksBase(projectSlug, workSlug)}/sections/${sectionId}/move`,
             { parent_id: toParentId, position },
@@ -239,9 +279,10 @@ export default function Navigator({
                     only: ['sections', 'currentSection'],
                     onSuccess: () => {
                         toast.show(
-                            t(makeStructural
-                                ? 'writing.workspace.structural_on_toast'
-                                : 'writing.workspace.structural_off_toast',
+                            t(
+                                makeStructural
+                                    ? 'writing.workspace.structural_on_toast'
+                                    : 'writing.workspace.structural_off_toast',
                             ).replace(':title', node.title),
                             { type: 'success' },
                         );
@@ -250,7 +291,8 @@ export default function Navigator({
                     // fall back to a generic failure when it doesn't.
                     onError: (errors) => {
                         toast.show(
-                            errors.is_structural ?? t('writing.workspace.structural_toggle_failed'),
+                            errors.is_structural ??
+                                t('writing.workspace.structural_toggle_failed'),
                             { type: 'danger', duration: 7000 },
                         );
                     },
@@ -263,6 +305,7 @@ export default function Navigator({
         onMarkRevision: onRequestMarkRevision,
         onDelete: onRequestDelete,
         liveCounts,
+        pacing,
         currentOutline,
         showSectionTypeLabels,
         t,
@@ -281,7 +324,10 @@ export default function Navigator({
                 style={panelHeaderStyle}
             >
                 <div className="flex items-center gap-1">
-                    <span className="pl-1 text-xs font-semibold uppercase tracking-[0.04em]" style={wordCountStyle}>
+                    <span
+                        className="pl-1 text-xs font-semibold uppercase tracking-[0.04em]"
+                        style={wordCountStyle}
+                    >
                         {headerTitle ?? t('writing.workspace.sections')}
                     </span>
                     {canUpdate && (
@@ -294,7 +340,10 @@ export default function Navigator({
                                 aria-label={t('writing.workspace.add_section')}
                                 onClick={() => onRequestAdd(null)}
                             >
-                                <i className="fa-solid fa-plus" aria-hidden="true" />
+                                <i
+                                    className="fa-solid fa-plus"
+                                    aria-hidden="true"
+                                />
                             </button>
                         </Tooltip>
                     )}
@@ -307,7 +356,10 @@ export default function Navigator({
                             aria-label={t('writing.workspace.section_settings')}
                             onClick={onRequestSettings}
                         >
-                            <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true" />
+                            <i
+                                className="fa-solid fa-ellipsis-vertical"
+                                aria-hidden="true"
+                            />
                         </button>
                     </Tooltip>
                 </div>
@@ -319,7 +371,12 @@ export default function Navigator({
                 className="writing-workspace-section-scroll writing-workspace-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2"
                 data-writing-section-scroll
             >
-                <SiblingGroup nodes={sections} parentId={null} depth={0} shared={shared} />
+                <SiblingGroup
+                    nodes={sections}
+                    parentId={null}
+                    depth={0}
+                    shared={shared}
+                />
             </div>
             {renameTarget !== null && (
                 <RenameSectionModal
@@ -329,7 +386,14 @@ export default function Navigator({
                     onClose={() => setRenameTarget(null)}
                 />
             )}
-            {transferTarget !== null && <TransferSectionModal section={transferTarget} projectSlug={projectSlug} workSlug={workSlug} onClose={() => setTransferTarget(null)} />}
+            {transferTarget !== null && (
+                <TransferSectionModal
+                    section={transferTarget}
+                    projectSlug={projectSlug}
+                    workSlug={workSlug}
+                    onClose={() => setTransferTarget(null)}
+                />
+            )}
             {moveTarget !== null && (
                 <MoveSectionModal
                     section={moveTarget}
@@ -356,12 +420,17 @@ interface TreeShared {
     onRename: (node: SectionNode) => void;
     /** Flip the section between structure only and writable. */
     onToggleStructural: (node: SectionNode) => void;
-    onMove: (sectionId: number, toParentId: number | null, position: number) => void;
+    onMove: (
+        sectionId: number,
+        toParentId: number | null,
+        position: number,
+    ) => void;
     onMoveTo: (node: SectionNode) => void;
     onTransfer: (node: SectionNode) => void;
     onMarkRevision: (node: SectionNode) => void;
     onDelete: (node: SectionNode) => void;
     liveCounts?: Record<number, number>;
+    pacing?: PacingResult;
     currentOutline: SectionOutlineItem[];
     showSectionTypeLabels: boolean;
     t: Translator;
@@ -404,8 +473,15 @@ function SiblingGroup({
 
                 router.put(
                     `${worksBase(shared.projectSlug, shared.workSlug)}/sections/reorder`,
-                    { parent_id: parentId, ids: next.map((sibling) => sibling.id) },
-                    { preserveScroll: true, preserveState: true, only: ['sections'] },
+                    {
+                        parent_id: parentId,
+                        ids: next.map((sibling) => sibling.id),
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        only: ['sections'],
+                    },
                 );
 
                 return next;
@@ -420,9 +496,18 @@ function SiblingGroup({
     );
 
     return (
-        <div ref={groupRef} data-sortable-parent={parentId ?? 'root'} className="flex flex-col gap-0.5">
+        <div
+            ref={groupRef}
+            data-sortable-parent={parentId ?? 'root'}
+            className="flex flex-col gap-0.5"
+        >
             {ordered.map((node) => (
-                <NavigatorRow key={node.id} node={node} depth={depth} shared={shared} />
+                <NavigatorRow
+                    key={node.id}
+                    node={node}
+                    depth={depth}
+                    shared={shared}
+                />
             ))}
         </div>
     );
@@ -437,8 +522,27 @@ function NavigatorRow({
     depth: number;
     shared: TreeShared;
 }) {
-    const { projectSlug, workSlug, currentSlug, expanded, canUpdate, onSelect, onToggle, onAddChild, onDuplicate, onRename, onToggleStructural, onMoveTo, onTransfer, onMarkRevision, onDelete, liveCounts, showSectionTypeLabels, t } =
-        shared;
+    const {
+        projectSlug,
+        workSlug,
+        currentSlug,
+        expanded,
+        canUpdate,
+        onSelect,
+        onToggle,
+        onAddChild,
+        onDuplicate,
+        onRename,
+        onToggleStructural,
+        onMoveTo,
+        onTransfer,
+        onMarkRevision,
+        onDelete,
+        liveCounts,
+        pacing,
+        showSectionTypeLabels,
+        t,
+    } = shared;
 
     const isSelected = node.slug === currentSlug;
     const hasChildren = node.children.length > 0;
@@ -476,6 +580,7 @@ function NavigatorRow({
                     className="flex h-5 w-5 shrink-0 items-center justify-center"
                     onClick={(e) => {
                         e.stopPropagation();
+
                         if (hasChildren) {
                             onToggle(node.id);
                         }
@@ -489,7 +594,10 @@ function NavigatorRow({
                             style={chevronStyle}
                         />
                     ) : (
-                        <span className="h-1 w-1 rounded-full" style={leafDotStyle} />
+                        <span
+                            className="h-1 w-1 rounded-full"
+                            style={leafDotStyle}
+                        />
                     )}
                 </button>
 
@@ -499,21 +607,33 @@ function NavigatorRow({
                     </span>
                 )}
 
-                <span className={`min-w-0 flex-1 truncate ${isSelected ? 'font-medium' : ''}`}>
+                <span
+                    className={`min-w-0 flex-1 truncate ${isSelected ? 'font-medium' : ''}`}
+                >
                     {node.title}
                 </span>
 
                 {/* Hover actions */}
                 {canUpdate && (
-                    <span className={`flex shrink-0 items-center gap-0.5 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
-                        <Tooltip content={t('writing.workspace.drag_to_reorder')} placement="top">
+                    <span
+                        className={`flex shrink-0 items-center gap-0.5 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${isSelected ? 'opacity-100' : 'opacity-0'}`}
+                    >
+                        <Tooltip
+                            content={t('writing.workspace.drag_to_reorder')}
+                            placement="top"
+                        >
                             <span
                                 className="drag-handle flex h-5 w-5 cursor-grab items-center justify-center active:cursor-grabbing"
                                 style={hoverActionStyle}
-                                aria-label={t('writing.workspace.drag_to_reorder')}
+                                aria-label={t(
+                                    'writing.workspace.drag_to_reorder',
+                                )}
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <i className="fa-solid fa-grip-vertical text-[10px]" aria-hidden="true" />
+                                <i
+                                    className="fa-solid fa-grip-vertical text-[10px]"
+                                    aria-hidden="true"
+                                />
                             </span>
                         </Tooltip>
                         <span onClick={(e) => e.stopPropagation()}>
@@ -534,50 +654,79 @@ function NavigatorRow({
                                     '--theme-radius-card',
                                 ]}
                                 menuStyle={{
-                                    background: 'var(--alex-writing-section-pane-bg, var(--theme-base-surface))',
-                                    borderColor: 'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
+                                    background:
+                                        'var(--alex-writing-section-pane-bg, var(--theme-base-surface))',
+                                    borderColor:
+                                        'color-mix(in srgb, var(--theme-base-content) 12%, transparent)',
                                     color: 'var(--theme-base-content)',
                                 }}
                                 trigger={
-                                    <Tooltip content={t('writing.workspace.section_options')} placement="right">
+                                    <Tooltip
+                                        content={t(
+                                            'writing.workspace.section_options',
+                                        )}
+                                        placement="right"
+                                    >
                                         <button
                                             type="button"
                                             className="flex h-5 w-5 items-center justify-center rounded-full"
                                             data-writing-section-menu={node.id}
                                             style={hoverActionStyle}
-                                            aria-label={t('writing.workspace.section_options')}
+                                            aria-label={t(
+                                                'writing.workspace.section_options',
+                                            )}
                                         >
-                                            <i className="fa-solid fa-ellipsis-vertical text-[10px]" aria-hidden="true" />
+                                            <i
+                                                className="fa-solid fa-ellipsis-vertical text-[10px]"
+                                                aria-hidden="true"
+                                            />
                                         </button>
                                     </Tooltip>
                                 }
                                 items={[
                                     {
-                                        label: t('writing.workspace.add_subsection'),
+                                        label: t(
+                                            'writing.workspace.add_subsection',
+                                        ),
                                         icon: 'fa-plus',
                                         onClick: () => onAddChild(node),
                                     },
                                     {
-                                        label: t('writing.workspace.duplicate_section'),
+                                        label: t(
+                                            'writing.workspace.duplicate_section',
+                                        ),
                                         icon: 'fa-copy',
                                         onClick: () => onDuplicate(node),
                                     },
                                     {
-                                        label: t('writing.workspace.rename_section'),
+                                        label: t(
+                                            'writing.workspace.rename_section',
+                                        ),
                                         icon: 'fa-pen',
                                         onClick: () => onRename(node),
                                     },
                                     // Only offered while there is no writing to lose;
                                     // the server refuses the flag on a section with words.
                                     ...(node.is_structural || !node.has_content
-                                        ? [{
-                                            label: t(node.is_structural ? 'writing.workspace.allow_writing' : 'writing.workspace.make_structural'),
-                                            icon: node.is_structural ? 'fa-pen-nib' : 'fa-sitemap',
-                                            onClick: () => onToggleStructural(node),
-                                        }]
+                                        ? [
+                                              {
+                                                  label: t(
+                                                      node.is_structural
+                                                          ? 'writing.workspace.allow_writing'
+                                                          : 'writing.workspace.make_structural',
+                                                  ),
+                                                  icon: node.is_structural
+                                                      ? 'fa-pen-nib'
+                                                      : 'fa-sitemap',
+                                                  onClick: () =>
+                                                      onToggleStructural(node),
+                                              },
+                                          ]
                                         : []),
                                     {
-                                        label: t('writing.workspace.move_section'),
+                                        label: t(
+                                            'writing.workspace.move_section',
+                                        ),
                                         icon: 'fa-arrows-up-down-left-right',
                                         onClick: () => onMoveTo(node),
                                     },
@@ -588,18 +737,24 @@ function NavigatorRow({
                                     },
                                     { divider: true },
                                     {
-                                        label: t('writing.revisions.mark_action'),
+                                        label: t(
+                                            'writing.revisions.mark_action',
+                                        ),
                                         icon: 'fa-clock-rotate-left',
                                         onClick: () => onMarkRevision(node),
                                     },
                                     {
-                                        label: t('writing.workspace.copy_section_link'),
+                                        label: t(
+                                            'writing.workspace.copy_section_link',
+                                        ),
                                         icon: 'fa-link',
                                         onClick: copyLink,
                                     },
                                     { divider: true },
                                     {
-                                        label: t('writing.workspace.delete_section'),
+                                        label: t(
+                                            'writing.workspace.delete_section',
+                                        ),
                                         icon: 'fa-trash-can',
                                         danger: true,
                                         onClick: () => onDelete(node),
@@ -610,11 +765,20 @@ function NavigatorRow({
                     </span>
                 )}
 
+                {pacing?.rows.find((r) => r.sectionId === node.id) && (
+                    <SectionTiming
+                        compact
+                        row={pacing.rows.find((r) => r.sectionId === node.id)!}
+                    />
+                )}
                 {wordCount > 0 && (
                     <span
                         className="shrink-0 text-[11px] tabular-nums"
                         style={wordCountStyle}
-                        title={t('writing.workspace.words').replace(':count', wordCount.toLocaleString())}
+                        title={t('writing.workspace.words').replace(
+                            ':count',
+                            wordCount.toLocaleString(),
+                        )}
                     >
                         {wordCount.toLocaleString()}
                     </span>
@@ -622,7 +786,10 @@ function NavigatorRow({
             </div>
 
             {outline.length > 0 && (
-                <div className="flex flex-col gap-0.5" data-writing-section-outline={node.id}>
+                <div
+                    className="flex flex-col gap-0.5"
+                    data-writing-section-outline={node.id}
+                >
                     {outline.map((item) => (
                         <div
                             key={item.id}
@@ -638,7 +805,9 @@ function NavigatorRow({
                                 aria-hidden="true"
                                 style={chevronStyle}
                             />
-                            <span className="min-w-0 truncate">{item.title}</span>
+                            <span className="min-w-0 truncate">
+                                {item.title}
+                            </span>
                         </div>
                     ))}
                 </div>

@@ -1,28 +1,31 @@
-import {
-    useEffect,
-    useRef,
-    useState,
-    type ClipboardEvent,
-    type CSSProperties,
-    type KeyboardEvent,
-} from 'react';
-
-import { hasOutlineData } from './outlineDraft';
-import useT from '@alexandria/hooks/useT';
+import { useEffect, useRef, useState } from 'react';
+import type { ClipboardEvent, CSSProperties, KeyboardEvent } from 'react';
 import DropdownMenu from '@alexandria/components/ui/DropdownMenu';
+import useT from '@alexandria/hooks/useT';
+import DurationInput from '../pacing/DurationInput';
+import MarkerReadout from '../pacing/MarkerReadout';
+import { pacingNodesFromOutline } from '../pacing/pacingAdapters';
+import { buildPacingModel } from '../pacing/pacingModel';
+import PacingSummary from '../pacing/PacingSummary';
+import type { PacingMarkerInput } from '../pacing/pacingTypes';
+import SectionTiming from '../pacing/SectionTiming';
 
 import type { ThreadSectionRef } from '../Threads/MarkThreadModal';
-import { beatKey, outlineReducer, type OutlineAction } from './outlineReducer';
 import {
     readCollapsedKeys,
     rowHasNested,
     visibleOutlineRows,
     writeCollapsedKeys,
 } from './outlineCollapse';
-import { parseOutlinePaste } from './parseOutlinePaste';
 import OutlineConflictNotice from './OutlineConflictNotice';
-import useOutlineSync, { type BlockedOutlineRow } from './useOutlineSync';
+import { hasOutlineData } from './outlineDraft';
+
+import { beatKey, outlineReducer } from './outlineReducer';
+import type { OutlineAction } from './outlineReducer';
 import type { OutlineBeat, OutlineRow } from './outlineTypes';
+import { parseOutlinePaste } from './parseOutlinePaste';
+import useOutlineSync from './useOutlineSync';
+import type { BlockedOutlineRow } from './useOutlineSync';
 
 /**
  * Full-pane outline editor — spec 2026-08-28 outline-mode Task 5.
@@ -42,6 +45,9 @@ import type { OutlineBeat, OutlineRow } from './outlineTypes';
  */
 
 export interface OutlineViewProps {
+    onDraftChange?: (rows: OutlineRow[]) => void;
+    targetRuntimeSeconds?: number | null;
+    markers?: PacingMarkerInput[];
     projectSlug: string;
     workSlug: string;
     canUpdate: boolean;
@@ -274,6 +280,9 @@ export default function OutlineView({
     workSlug,
     canUpdate,
     onRequestMarkThread,
+    onDraftChange,
+    targetRuntimeSeconds = null,
+    markers = [],
 }: OutlineViewProps) {
     const t = useT();
     const {
@@ -298,10 +307,22 @@ export default function OutlineView({
         blocked,
         keepBlocked,
     } = useOutlineSync({
+        refreshKey: JSON.stringify([targetRuntimeSeconds, markers]),
         projectSlug,
         workSlug,
     });
 
+    useEffect(() => {
+        if (ready !== false) {
+            onDraftChange?.(rows);
+        }
+    }, [rows, ready, onDraftChange]);
+    const pacing = buildPacingModel(
+        pacingNodesFromOutline(rows),
+        targetRuntimeSeconds,
+        markers,
+    );
+    const timingByKey = new Map(pacing.rows.map((r) => [r.key, r]));
     const inputRefs = useRef(new Map<string, HTMLInputElement>());
     const pendingFocusRef = useRef<string | null>(null);
     const [blockedHintKey, setBlockedHintKey] = useState<string | null>(null);
@@ -309,7 +330,56 @@ export default function OutlineView({
         readCollapsedKeys(workSlug),
     );
 
+    const invalidDurationKeys = useRef(new Set<string>());
+    function endMarkerHost(sectionId: number | null): string | null {
+        const index = rows.findIndex(
+            (r) => r.sectionId === sectionId && sectionId !== null,
+        );
+
+        if (index < 0) {
+            return null;
+        }
+
+        const visible = new Set(
+            visibleOutlineRows(rows, collapsedKeys).map((r) => r.key),
+        );
+        let host = rows[index].key;
+
+        for (
+            let i = index + 1;
+            i < rows.length && rows[i].depth > rows[index].depth;
+            i++
+        ) {
+            if (visible.has(rows[i].key)) {
+                host = rows[i].key;
+            }
+        }
+
+        return host;
+    }
     function toggleCollapsed(key: string) {
+        if (!collapsedKeys.has(key)) {
+            const start = rows.findIndex((r) => r.key === key);
+
+            for (
+                let i = start + 1;
+                i < rows.length && rows[i].depth > rows[start].depth;
+                i++
+            ) {
+                if (invalidDurationKeys.current.has(rows[i].key)) {
+                    document
+                        .querySelector<HTMLInputElement>(
+                            '[data-outline-row="' +
+                                CSS.escape(rows[i].key) +
+                                '"] input[aria-invalid="true"]',
+                        )
+                        ?.focus();
+
+                    return;
+                }
+            }
+        }
+
         setCollapsedKeys((prev) => {
             const next = new Set(prev);
 
@@ -346,6 +416,28 @@ export default function OutlineView({
      *  row (Enter, or Shift-Tab promoting a beat) — focus it once it's
      *  mounted. */
     function dispatch(action: OutlineAction) {
+        if (
+            ['indent', 'outdent', 'move', 'paste', 'enter', 'delete'].includes(
+                action.type,
+            )
+        ) {
+            const invalid = rows.find((row) =>
+                invalidDurationKeys.current.has(row.key),
+            );
+
+            if (invalid) {
+                document
+                    .querySelector<HTMLInputElement>(
+                        '[data-outline-row="' +
+                            CSS.escape(invalid.key) +
+                            '"] input[aria-invalid="true"]',
+                    )
+                    ?.focus();
+
+                return;
+            }
+        }
+
         const before = rows;
         const result = outlineReducer(before, action, { hierarchy });
 
@@ -354,6 +446,28 @@ export default function OutlineView({
         }
 
         if (result.rows !== before) {
+            if (action.type === 'indent' || action.type === 'outdent') {
+                const nextRow = result.rows.find(
+                    (row) => row.key === (result.focusKey ?? action.key),
+                );
+                const parents = new Set<string>();
+                let parent = nextRow?.parentKey;
+
+                while (parent && !parents.has(parent)) {
+                    parents.add(parent);
+                    parent = result.rows.find(
+                        (row) => row.key === parent,
+                    )?.parentKey;
+                }
+
+                setCollapsedKeys(
+                    (previous) =>
+                        new Set(
+                            [...previous].filter((key) => !parents.has(key)),
+                        ),
+                );
+            }
+
             if (result.focusKey !== null) {
                 // The reducer knows exactly where the cursor moves next
                 // (beat conversions/insertions) — trust it over the
@@ -370,8 +484,11 @@ export default function OutlineView({
                 }
             }
 
-            if (result.conversion) convertRow(result.conversion, result.rows);
-            else setRows(result.rows);
+            if (result.conversion) {
+                convertRow(result.conversion, result.rows);
+            } else {
+                setRows(result.rows);
+            }
         }
     }
 
@@ -398,35 +515,41 @@ export default function OutlineView({
             // Enter is a natural commit point — don't leave the new
             // line's predecessors sitting in the debounce window.
             flush();
+
             return;
         }
 
         if (event.key === 'Tab' && !event.shiftKey) {
             event.preventDefault();
             dispatch({ type: 'indent', key: row.key });
+
             return;
         }
 
         if (event.key === 'Tab' && event.shiftKey) {
             event.preventDefault();
             dispatch({ type: 'outdent', key: row.key });
+
             return;
         }
 
         if (event.altKey && event.key === 'ArrowUp') {
             event.preventDefault();
             dispatch({ type: 'move', key: row.key, dir: 'up' });
+
             return;
         }
 
         if (event.altKey && event.key === 'ArrowDown') {
             event.preventDefault();
             dispatch({ type: 'move', key: row.key, dir: 'down' });
+
             return;
         }
 
         if (
             event.key === 'Backspace' &&
+            !invalidDurationKeys.current.has(row.key) &&
             !hasOutlineData(row) &&
             !rows.some((r) => r.parentKey === row.key)
         ) {
@@ -473,12 +596,14 @@ export default function OutlineView({
             event.preventDefault();
             dispatch({ type: 'enter', key: beatKey(row.key, beat.id) });
             flush();
+
             return;
         }
 
         if (event.key === 'Tab' && event.shiftKey) {
             event.preventDefault();
             dispatch({ type: 'outdent', key: beatKey(row.key, beat.id) });
+
             return;
         }
 
@@ -486,6 +611,7 @@ export default function OutlineView({
             // Beats are the deepest tier — swallow Tab so focus doesn't
             // wander off mid-outline.
             event.preventDefault();
+
             return;
         }
 
@@ -602,6 +728,12 @@ export default function OutlineView({
                 )}
             </div>
 
+            <PacingSummary totals={pacing.totals} empty={rows.length === 0} />
+            {pacing.markers
+                .filter((m) => m.landing === null)
+                .map((m, i) => (
+                    <MarkerReadout key={i} marker={m} />
+                ))}
             {rows.length === 0 ? (
                 <div style={emptyStateStyle}>
                     <p>{t('writing.outline.empty')}</p>
@@ -625,11 +757,22 @@ export default function OutlineView({
                     return (
                         <div
                             key={row.key}
+                            data-outline-row={row.key}
                             style={{
                                 ...rowStyle,
                                 paddingLeft: `${row.depth * 1.5}rem`,
                             }}
                         >
+                            {pacing.markers
+                                .filter(
+                                    (m) =>
+                                        m.anchorSectionId === row.sectionId &&
+                                        row.sectionId !== null &&
+                                        m.anchorEdge === 'start',
+                                )
+                                .map((m, i) => (
+                                    <MarkerReadout key={i} marker={m} />
+                                ))}
                             <div style={rowLineStyle}>
                                 {hasNested ? (
                                     <button
@@ -768,6 +911,86 @@ export default function OutlineView({
                                 )}
                             </div>
 
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.6rem',
+                                    flexWrap: 'wrap',
+                                    padding: '0.25rem 0 0.5rem',
+                                }}
+                            >
+                                <label
+                                    style={{
+                                        fontSize: '0.75rem',
+                                        display: 'flex',
+                                        gap: '0.4rem',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    {t(
+                                        'writing.pacing.' +
+                                            (timingByKey.get(row.key)!
+                                                .isContainer
+                                                ? 'budget'
+                                                : 'duration'),
+                                    )}
+                                    <DurationInput
+                                        onValidityChange={(valid) => {
+                                            if (valid) {
+                                                invalidDurationKeys.current.delete(
+                                                    row.key,
+                                                );
+                                            } else {
+                                                invalidDurationKeys.current.add(
+                                                    row.key,
+                                                );
+                                            }
+                                        }}
+                                        value={row.durationSeconds ?? null}
+                                        label={
+                                            t(
+                                                'writing.pacing.' +
+                                                    (timingByKey.get(row.key)!
+                                                        .isContainer
+                                                        ? 'budget'
+                                                        : 'duration'),
+                                            ) +
+                                            ' — ' +
+                                            (row.title ||
+                                                t(
+                                                    'writing.outline.title_placeholder',
+                                                ))
+                                        }
+                                        disabled={!canUpdate}
+                                        onCommit={(seconds) =>
+                                            setRows((current) =>
+                                                current.map((r) =>
+                                                    r.key === row.key
+                                                        ? {
+                                                              ...r,
+                                                              durationSeconds:
+                                                                  seconds,
+                                                          }
+                                                        : r,
+                                                ),
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <SectionTiming
+                                    row={timingByKey.get(row.key)!}
+                                />
+                            </div>
+                            {pacing.markers
+                                .filter(
+                                    (m) =>
+                                        endMarkerHost(m.anchorSectionId) ===
+                                            row.key && m.anchorEdge === 'end',
+                                )
+                                .map((m, i) => (
+                                    <MarkerReadout key={i} marker={m} />
+                                ))}
                             {blockedHintKey === row.key && (
                                 <div style={blockedHintStyle}>
                                     {t(
@@ -844,6 +1067,7 @@ export default function OutlineView({
                                                         row.key,
                                                         beat.id,
                                                     );
+
                                                     if (el) {
                                                         inputRefs.current.set(
                                                             k,

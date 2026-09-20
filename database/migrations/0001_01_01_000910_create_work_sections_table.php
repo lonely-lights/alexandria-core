@@ -37,6 +37,7 @@ return new class extends Migration
             $table->unsignedInteger('word_count')->default(0);
             $table->unsignedInteger('line_count')->default(0);
             $table->unsignedInteger('target_words')->nullable();
+            $table->unsignedInteger('duration_seconds')->nullable();
             $table->timestamps();
             $table->softDeletes();
             $table->unique(['work_id', 'slug']);

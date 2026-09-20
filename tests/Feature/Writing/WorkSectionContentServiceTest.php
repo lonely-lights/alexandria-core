@@ -9,7 +9,9 @@ use Alexandria\Core\Models\Writing\Work;
 use Alexandria\Core\Models\Writing\WorkSection;
 use Alexandria\Core\Models\Writing\WorkSectionEntryMention;
 use Alexandria\Core\Services\Writing\WorkSectionContentService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -114,4 +116,26 @@ it('caches the section line count and rolls it up across sections', function () 
     expect($section->fresh()->line_count)->toBe(3)
         ->and($second->fresh()->line_count)->toBe(1)
         ->and($work->fresh()->line_count)->toBe(4);
+});
+
+it('rejects a stale section after deletion or transfer instead of saving into it', function (string $change) {
+    $section = WorkSection::factory()->create(['content' => 'Original']);
+    $stale = $section->fresh();
+    if ($change === 'delete') {
+        $section->delete();
+    } else {
+        $section->update(['work_id' => Work::factory()->create()->id]);
+    }
+    expect(fn () => app(WorkSectionContentService::class)->persist($stale, 'Lost update'))
+        ->toThrow(ModelNotFoundException::class);
+    expect(WorkSection::withTrashed()->findOrFail($section->id)->content)->toBe('Original');
+})->with(['delete', 'transfer']);
+
+it('checks structural state again after acquiring the work lock', function () {
+    $section = WorkSection::factory()->create(['content' => null, 'is_structural' => false]);
+    $stale = $section->fresh();
+    $section->update(['is_structural' => true]);
+    expect(fn () => app(WorkSectionContentService::class)->persist($stale, 'New writing'))
+        ->toThrow(ValidationException::class);
+    expect($section->fresh()->content)->toBeNull();
 });

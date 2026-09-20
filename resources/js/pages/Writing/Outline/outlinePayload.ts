@@ -32,6 +32,7 @@ export function rowsFromProjection(
         slug: row.slug,
         synopsis: row.synopsis,
         beats: row.beats,
+        durationSeconds: row.duration_seconds,
         isStructural: row.is_structural,
         hasContent: row.has_content,
         canBecomeBeat: row.canBecomeBeat,
@@ -101,6 +102,9 @@ export function buildOutlinePayload(
             tempId: row.tempId,
             parentId: resolveParentId(rowsByKey, row.parentKey),
             depth: row.depth,
+            ...(row.durationSeconds !== undefined
+                ? { duration_seconds: row.durationSeconds }
+                : {}),
             label: row.label,
             ...(row.isStructural !== undefined
                 ? { is_structural: row.isStructural }
@@ -123,6 +127,7 @@ export function reconcileTempIds(
 ): OutlineRow[] {
     return rows.map((row) => {
         const id = row.tempId !== null ? tempIds[row.tempId] : undefined;
+
         return id === undefined ? row : { ...row, sectionId: id, tempId: null };
     });
 }

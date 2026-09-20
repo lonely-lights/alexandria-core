@@ -6,129 +6,131 @@ import {
     useRef,
     useState,
     useSyncExternalStore,
-    type CSSProperties,
 } from 'react';
+import type { CSSProperties } from 'react';
 
-import useT from '@alexandria/hooks/useT';
-import { useBrowserChrome } from '@alexandria/hooks/useBrowserChrome';
-import useEntitlements from '@alexandria/hooks/useEntitlements';
-import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
-import {
-    ScreenplayTemplateContext,
-    STANDARD_SCREENPLAY_TEMPLATE,
-    screenplayTemplateCss,
-    type ScreenplayTemplate,
-} from '@alexandria/editor/screenplay/template';
-import ScreenplayElementsModal from './Sections/ScreenplayElementsModal';
-import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
-import Ribbon from '@alexandria/ribbon/Ribbon';
-import type { RibbonGates } from '@alexandria/ribbon/types';
 import LogoLockup from '@alexandria/components/brand/LogoLockup';
 import CompactUserMenu from '@alexandria/components/navigation/CompactUserMenu';
 import ConfirmModal from '@alexandria/components/ui/ConfirmModal';
 import Modal from '@alexandria/components/ui/Modal';
 import Tooltip from '@alexandria/components/ui/Tooltip';
-import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
+import type { ScreenplaySceneLink } from '@alexandria/editor/screenplay/sceneLinks';
+import {
+    ScreenplayTemplateContext,
+    STANDARD_SCREENPLAY_TEMPLATE,
+    screenplayTemplateCss,
+} from '@alexandria/editor/screenplay/template';
+import type { ScreenplayTemplate } from '@alexandria/editor/screenplay/template';
+import { useBrowserChrome } from '@alexandria/hooks/useBrowserChrome';
+import useEntitlements from '@alexandria/hooks/useEntitlements';
+import useT from '@alexandria/hooks/useT';
+import AppLayout, { SIDEBAR_TOGGLE_EVENT } from '@alexandria/layouts/AppLayout';
 import {
     applyViewPreferences,
     VIEW_PREFERENCES_CHANGED_EVENT,
-    type ViewPreferences,
 } from '@alexandria/lib/applyViewPreferences';
-import { patchCachedPreferences } from '@alexandria/pages/Settings/settingsCache';
+import type { ViewPreferences } from '@alexandria/lib/applyViewPreferences';
+import { csrfHeaders } from '@alexandria/lib/csrfHeaders';
 
-import ContinuousFlow, { type ActiveScene } from './Flow/ContinuousFlow';
-import ViewModeMenu from './Flow/ViewModeMenu';
-import { flowUrl, parseSceneFragment } from './Flow/flowUrl';
-import {
-    readViewMode,
-    writeViewMode,
-    type WorkspaceViewMode,
-} from './Flow/viewMode';
+import { useJsonFetch } from '@alexandria/lib/fetchJson';
+import { worksBase, workUrl } from '@alexandria/lib/urls';
+import { patchCachedPreferences } from '@alexandria/pages/Settings/settingsCache';
+import Ribbon from '@alexandria/ribbon/Ribbon';
+import { resolveGate } from '@alexandria/ribbon/ribbonGates';
+import type { RibbonGates } from '@alexandria/ribbon/types';
 import ExportFdxModal from './Fdx/ExportFdxModal';
 import { importFdx } from './Fdx/importFdx';
-import HistoryPanel from './Revisions/HistoryPanel';
-import MarkRevisionModal from './Revisions/MarkRevisionModal';
-import MarkThreadModal, {
-    type ThreadAnchor,
-    type ThreadSectionRef,
-} from './Threads/MarkThreadModal';
-import ThreadsPanel from './Threads/ThreadsPanel';
-import ThreadHighlightDetails from './Threads/ThreadHighlightDetails';
-import {
-    THREAD_HIGHLIGHT_OPEN,
-    type ThreadHighlightOpen,
-} from './Threads/threadHighlightEvents';
-import { findSectionInTree } from './Threads/scopeChoice';
-import type { PatternThread } from './Threads/threadApi';
-import AddSectionModal from './Sections/AddSectionModal';
-import ManuscriptEditor, {
-    PRINT_LAYOUT_STORAGE_KEY,
-    readPrintLayoutPreference,
-} from './Sections/ManuscriptEditor';
+import ContinuousFlow from './Flow/ContinuousFlow';
+import type { ActiveScene } from './Flow/ContinuousFlow';
+import { flowUrl, parseSceneFragment } from './Flow/flowUrl';
+import { readViewMode, writeViewMode } from './Flow/viewMode';
+import type { WorkspaceViewMode } from './Flow/viewMode';
+import ViewModeMenu from './Flow/ViewModeMenu';
+import { clampFontSize, readFontSize, writeFontSize } from './fontSize';
 import KanbanView from './Kanban/KanbanView';
+import MobileEditingStrip from './mobile/MobileEditingStrip';
+import MobileWritingHeader from './mobile/MobileWritingHeader';
+import useWritingViewport from './mobile/useWritingViewport';
+import WritingCompanion from './mobile/WritingCompanion';
+import WritingTools from './mobile/WritingTools';
 import OutlineSidebar from './Outline/OutlineSidebar';
-import { getStructureGuidance } from './Sections/structureGuidance';
+import type { OutlineBeat } from './Outline/outlineTypes';
+import type { OutlineRow } from './Outline/outlineTypes';
 import OutlineView from './Outline/OutlineView';
 import PlanBlock from './Outline/PlanBlock';
-import type { OutlineBeat } from './Outline/outlineTypes';
 import { readShowPlan, writeShowPlan } from './Outline/planPrefs';
-import { clampFontSize, readFontSize, writeFontSize } from './fontSize';
-import { workHeaderTitle } from './workTitle';
+import {
+    pacingNodesFromOutline,
+    pacingNodesFromSections,
+    timingIsActive,
+} from './pacing/pacingAdapters';
+import { buildPacingModel } from './pacing/pacingModel';
 import {
     normalizePageDisplay,
     readPageDisplay,
     writePageDisplay,
-    type PageDisplayMode,
 } from './pageDisplay';
+import type { PageDisplayMode } from './pageDisplay';
 import {
     MARGIN_X_EVENT,
     normalizeMarginXIn,
     readMarginXIn,
     writeMarginXIn,
-    type MarginXEventDetail,
 } from './pageMargins';
-import Navigator from './Sections/Navigator';
-import SectionSettingsModal from './Sections/SectionSettingsModal';
-import {
-    readStructureOpen,
-    writeStructureOpen,
-} from './Sections/structureOpen';
-import CommentRail from './Sections/CommentRail';
-import PanelModeSwitcher, {
-    BUILTIN_PANEL_MODES,
-} from './Sections/PanelModeSwitcher';
-import MobileWritingHeader from './mobile/MobileWritingHeader';
-import WritingTools from './mobile/WritingTools';
+import type { MarginXEventDetail } from './pageMargins';
+import { readPanelMode, writePanelMode } from './panelMode';
+import type { PanelMode } from './panelMode';
 import { WritingToolButtons, WritingToolModal } from './RegisteredWritingTools';
-import WritingCompanion from './mobile/WritingCompanion';
-import useWritingViewport from './mobile/useWritingViewport';
-import FindReplaceBar from './Sections/FindReplaceBar';
-import MobileEditingStrip from './mobile/MobileEditingStrip';
-import ReferencePanel, { type EntryCard } from './Sections/ReferencePanel';
-import SidebarNotesPanel from './Sections/SidebarNotesPanel';
-import ScreenplayEditor from './Sections/ScreenplayEditor';
-import {
-    extractSectionOutline,
-    type SectionOutlineItem,
-} from './Sections/sectionOutline';
-import WorkSettingsModal, {
-    type LengthPlanOption,
-    type WorkLengthPlan,
-} from './Sections/WorkSettingsModal';
-import WorkspaceStatusBar from './Sections/WorkspaceStatusBar';
-import WritingSaveProvider from './Sections/WritingSaveContext';
-import { WritingSaveCoordinator } from './Sections/SectionSaveQueue';
+import HistoryPanel from './Revisions/HistoryPanel';
+import MarkRevisionModal from './Revisions/MarkRevisionModal';
 import type {
     WritingEditorBridge,
     WritingRibbonContext,
 } from './ribbon/writingRibbonContext';
 import { registerWritingRibbon } from './ribbon/writingRibbonTabs';
-import { type PanelMode, readPanelMode, writePanelMode } from './panelMode';
+import AddSectionModal from './Sections/AddSectionModal';
+import CommentRail from './Sections/CommentRail';
+import FindReplaceBar from './Sections/FindReplaceBar';
+import ManuscriptEditor, {
+    PRINT_LAYOUT_STORAGE_KEY,
+    readPrintLayoutPreference,
+} from './Sections/ManuscriptEditor';
+import Navigator from './Sections/Navigator';
+import PanelModeSwitcher, {
+    BUILTIN_PANEL_MODES,
+} from './Sections/PanelModeSwitcher';
+import ReferencePanel from './Sections/ReferencePanel';
+import type { EntryCard } from './Sections/ReferencePanel';
+import ScreenplayEditor from './Sections/ScreenplayEditor';
+import ScreenplayElementsModal from './Sections/ScreenplayElementsModal';
+import { extractSectionOutline } from './Sections/sectionOutline';
+import type { SectionOutlineItem } from './Sections/sectionOutline';
+import { WritingSaveCoordinator } from './Sections/SectionSaveQueue';
+import SectionSettingsModal from './Sections/SectionSettingsModal';
+import SidebarNotesPanel from './Sections/SidebarNotesPanel';
+import { getStructureGuidance } from './Sections/structureGuidance';
+import {
+    readStructureOpen,
+    writeStructureOpen,
+} from './Sections/structureOpen';
+import WorkSettingsModal from './Sections/WorkSettingsModal';
+import type {
+    LengthPlanOption,
+    WorkLengthPlan,
+} from './Sections/WorkSettingsModal';
+import WorkspaceStatusBar from './Sections/WorkspaceStatusBar';
+import WritingSaveProvider from './Sections/WritingSaveContext';
 import { getSidebarModes, subscribeSidebarModes } from './sidebarModeRegistry';
+import MarkThreadModal from './Threads/MarkThreadModal';
+import type { ThreadAnchor, ThreadSectionRef } from './Threads/MarkThreadModal';
+import { findSectionInTree } from './Threads/scopeChoice';
+import type { PatternThread } from './Threads/threadApi';
+import ThreadHighlightDetails from './Threads/ThreadHighlightDetails';
+import { THREAD_HIGHLIGHT_OPEN } from './Threads/threadHighlightEvents';
+import type { ThreadHighlightOpen } from './Threads/threadHighlightEvents';
+import ThreadsPanel from './Threads/ThreadsPanel';
+import { workHeaderTitle } from './workTitle';
 import { enableWritingHistoryRefresh } from './writingHistory';
-import { resolveGate } from '@alexandria/ribbon/ribbonGates';
-import { worksBase, workUrl } from '@alexandria/lib/urls';
-import { useJsonFetch } from '@alexandria/lib/fetchJson';
 
 /**
  * Writing dashboard → workspace — Stage 8g.1 (ribbon-driven since
@@ -156,6 +158,7 @@ import { useJsonFetch } from '@alexandria/lib/fetchJson';
 registerWritingRibbon();
 
 export interface SectionNode {
+    duration_seconds?: number | null;
     id: number;
     title: string;
     slug: string;
@@ -170,6 +173,7 @@ export interface SectionNode {
 }
 
 export interface CurrentSection {
+    duration_seconds?: number | null;
     id: number;
     title: string;
     slug: string;
@@ -201,6 +205,7 @@ interface WorkspaceProps {
         word_count: number;
         line_count: number;
         target_words: number | null;
+        target_runtime_seconds?: number | null;
         target_pages: number | null;
         page_estimate: number;
         length_plan: WorkLengthPlan | null;
@@ -443,6 +448,7 @@ export default function Workspace() {
                     resolveGate(m.requires, writingGates) === 'visible',
             )
             .map((m) => m.id);
+
         return readPanelMode(work.id, initAllowedIds);
     });
     const [linkedPanelTab, setLinkedPanelTab] = useState(() =>
@@ -453,8 +459,12 @@ export default function Workspace() {
     );
     const [settingsOpen, setSettingsOpen] = useState(false);
     const openWorkSettings = useCallback(async () => {
-        if ((await saveCoordinator.flush()).every(Boolean))
-            setSettingsOpen(true);
+        if ((await saveCoordinator.flush()).every(Boolean)) {
+            router.reload({
+                only: ['sections', 'work'],
+                onSuccess: () => setSettingsOpen(true),
+            });
+        }
     }, [saveCoordinator]);
     const [elementsOpen, setElementsOpen] = useState(false);
     const [sectionSettingsOpen, setSectionSettingsOpen] = useState(false);
@@ -547,6 +557,7 @@ export default function Workspace() {
     useEffect(() => {
         function open(event: Event) {
             const detail = (event as CustomEvent<ThreadHighlightOpen>).detail;
+
             if (
                 detail?.projectSlug === project.slug &&
                 detail.threads.length > 0 &&
@@ -556,6 +567,7 @@ export default function Workspace() {
             }
         }
         window.addEventListener(THREAD_HIGHLIGHT_OPEN, open);
+
         return () => window.removeEventListener(THREAD_HIGHLIGHT_OPEN, open);
     }, [project.slug, sections]);
 
@@ -731,7 +743,10 @@ export default function Workspace() {
                 return;
             }
 
-            if ((await saveCoordinator.flush()).some((saved) => !saved)) return;
+            if ((await saveCoordinator.flush()).some((saved) => !saved)) {
+                return;
+            }
+
             writeViewMode(work.id, next);
             setViewMode(next);
             setTransientCompanionOpen(false);
@@ -790,6 +805,7 @@ export default function Workspace() {
         writePanelMode(work.id, 'linked');
         setLinkedPanelTab('scene-links');
         setSceneLinksFocusSignal((signal) => signal + 1);
+
         try {
             localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
         } catch {
@@ -803,8 +819,10 @@ export default function Workspace() {
             writePanelMode(work.id, 'linked');
             setLinkedPanelTab('scene-links');
             setTransientCompanionOpen(true);
+
             return;
         }
+
         setPanelOpen((prev) => {
             const shouldClose =
                 prev &&
@@ -861,7 +879,34 @@ export default function Workspace() {
     // The structure plan rides with the outline in the right rail rather
     // than over the section tree (owner ruling 2026-09-16). Computed here
     // because the Workspace already holds every input it needs.
+    const [outlineTimingDraft, setOutlineTimingDraft] = useState<
+        OutlineRow[] | null
+    >(null);
+    const timingNodes =
+        viewMode === 'outline' && outlineTimingDraft !== null
+            ? pacingNodesFromOutline(outlineTimingDraft)
+            : pacingNodesFromSections(sections);
+    const timingMarkers = work.length_plan?.structure?.beats ?? [];
+    const timingActive = timingIsActive(
+        work.format,
+        work.target_runtime_seconds ?? null,
+        timingNodes,
+        timingMarkers,
+    );
+    const pacing = buildPacingModel(
+        timingNodes,
+        work.target_runtime_seconds ?? null,
+        timingMarkers,
+    );
+    const timingSections = (
+        nodes: SectionNode[],
+    ): { id: number; title: string }[] =>
+        nodes.flatMap((n) => [
+            { id: n.id, title: n.title },
+            ...timingSections(n.children),
+        ]);
     const structureGuidance = getStructureGuidance({
+        pacing: timingActive ? pacing : undefined,
         work,
         sections,
         currentSection: effectiveSection,
@@ -874,6 +919,7 @@ export default function Workspace() {
             setPanelOpen(true);
             setPanelMode('comments');
             writePanelMode(work.id, 'comments');
+
             try {
                 localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
             } catch {
@@ -889,13 +935,19 @@ export default function Workspace() {
         function handleCommentAnchorClick(e: Event) {
             const detail = (e as CustomEvent<{ commentId: number } | null>)
                 .detail;
-            if (!detail) return;
+
+            if (!detail) {
+                return;
+            }
+
             const id = detail.commentId;
+
             if (isFinite(id)) {
                 setPanelOpen(true);
                 setPanelMode('comments');
                 writePanelMode(work.id, 'comments');
                 setHighlightCommentId(id);
+
                 try {
                     localStorage.setItem(PANEL_OPEN_STORAGE_KEY, 'true');
                 } catch {
@@ -907,6 +959,7 @@ export default function Workspace() {
             'alexandria:comment-anchor-click',
             handleCommentAnchorClick,
         );
+
         return () =>
             window.removeEventListener(
                 'alexandria:comment-anchor-click',
@@ -920,8 +973,10 @@ export default function Workspace() {
                 ? extractSectionOutline(effectiveSection.content)
                 : [],
         );
+
         if (effectiveSection?.format !== 'screenplay') {
             setScreenplaySceneLinks([]);
+
             if (
                 work.format !== 'screenplay' &&
                 linkedPanelTab === 'scene-links'
@@ -1027,15 +1082,19 @@ export default function Workspace() {
     const togglePanel = useCallback(() => {
         if (viewport.compact || viewMode === 'focus') {
             setTransientCompanionOpen((value) => !value);
+
             return;
         }
+
         setPanelOpen((prev) => {
             const next = !prev;
+
             try {
                 localStorage.setItem(PANEL_OPEN_STORAGE_KEY, String(next));
             } catch {
                 // Persistence is best-effort; private-mode failures are fine.
             }
+
             return next;
         });
     }, [viewport.compact, viewMode]);
@@ -1044,6 +1103,7 @@ export default function Workspace() {
         setStructureOpen((prev) => {
             const next = !prev;
             writeStructureOpen(work.id, next);
+
             return next;
         });
     }, [work.id]);
@@ -1105,11 +1165,13 @@ export default function Workspace() {
     const togglePrintLayout = useCallback(() => {
         setPrintLayout((prev) => {
             const next = !prev;
+
             try {
                 localStorage.setItem(PRINT_LAYOUT_STORAGE_KEY, String(next));
             } catch {
                 // Persistence is best-effort; private-mode failures are fine.
             }
+
             return next;
         });
     }, []);
@@ -1118,6 +1180,7 @@ export default function Workspace() {
         setShowPlan((prev) => {
             const next = !prev;
             writeShowPlan(next);
+
             return next;
         });
     }, []);
@@ -1133,6 +1196,7 @@ export default function Workspace() {
             ? value
             : DEFAULT_PAPER_COLOR;
         setPaperColor(next);
+
         try {
             localStorage.setItem(PAPER_COLOR_STORAGE_KEY, next);
             localStorage.removeItem(LEGACY_NEUTRAL_PAPER_STORAGE_KEY);
@@ -1153,6 +1217,7 @@ export default function Workspace() {
     const updateZoom = useCallback((value: string) => {
         const next = ZOOM_VALUES.has(value) ? value : DEFAULT_ZOOM;
         setZoom(next);
+
         try {
             localStorage.setItem(ZOOM_STORAGE_KEY, next);
         } catch {
@@ -1353,6 +1418,7 @@ export default function Workspace() {
                 setTransientCompanionOpen(false);
                 setToolsPage('');
             }
+
             if (
                 (event.ctrlKey || event.metaKey) &&
                 !event.altKey &&
@@ -1367,15 +1433,20 @@ export default function Workspace() {
             }
         };
         document.addEventListener('keydown', openTools);
+
         return () => document.removeEventListener('keydown', openTools);
     }, []);
 
     function toggleReading() {
-        if (!readingMode && bridgeRef.current?.isCodeView())
+        if (!readingMode && bridgeRef.current?.isCodeView()) {
             bridgeRef.current.toggleCodeView();
+        }
+
         setReadingMode((value) => !value);
-        if (viewMode === 'outline' || viewMode === 'kanban')
+
+        if (viewMode === 'outline' || viewMode === 'kanban') {
             switchViewMode('continuous');
+        }
     }
 
     const workWords = liveWorkWords ?? work.word_count;
@@ -1781,6 +1852,11 @@ export default function Workspace() {
                                 right of the tree actions. */}
                                             <nav className="writing-workspace-section-pane min-h-0 flex-1 overflow-hidden">
                                                 <Navigator
+                                                    pacing={
+                                                        timingActive
+                                                            ? pacing
+                                                            : undefined
+                                                    }
                                                     headerTrailing={
                                                         <>
                                                             <ViewModeMenu
@@ -1894,6 +1970,11 @@ export default function Workspace() {
                                     )}
                                 {viewMode === 'outline' ? (
                                     <OutlineView
+                                        onDraftChange={setOutlineTimingDraft}
+                                        targetRuntimeSeconds={
+                                            work.target_runtime_seconds ?? null
+                                        }
+                                        markers={timingMarkers}
                                         projectSlug={project.slug}
                                         workSlug={work.slug}
                                         canUpdate={can.update}
@@ -2085,10 +2166,13 @@ export default function Workspace() {
                                                     companionVisible
                                                 ) {
                                                     togglePanel();
+
                                                     return;
                                                 }
+
                                                 setPanelMode(mode);
                                                 writePanelMode(work.id, mode);
+
                                                 if (!companionVisible) {
                                                     togglePanel();
                                                 }
@@ -2292,10 +2376,11 @@ export default function Workspace() {
                                     label: t('writing.tools.structure'),
                                     icon: 'fa-solid fa-list-tree',
                                     onSelect: () => {
-                                        if (viewport.compact)
+                                        if (viewport.compact) {
                                             setMobileStructureOpen(true);
-                                        else if (!structureOpen)
+                                        } else if (!structureOpen) {
                                             toggleStructure();
+                                        }
                                     },
                                 },
                                 {
@@ -2440,6 +2525,7 @@ export default function Workspace() {
                                 className="flex min-h-0 flex-col"
                             >
                                 <Navigator
+                                    pacing={timingActive ? pacing : undefined}
                                     headerTitle={t('writing.tools.structure')}
                                     headerTrailing={
                                         <button
@@ -2514,6 +2600,7 @@ export default function Workspace() {
 
                     {settingsOpen && (
                         <WorkSettingsModal
+                            sections={timingSections(sections)}
                             project={project}
                             work={work}
                             types={types}

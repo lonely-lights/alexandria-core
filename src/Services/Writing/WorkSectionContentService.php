@@ -9,6 +9,7 @@ use Alexandria\Core\Models\Writing\Work;
 use Alexandria\Core\Models\Writing\WorkSection;
 use Alexandria\Core\Models\Writing\WorkSectionEntryMention;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
@@ -27,9 +28,16 @@ readonly class WorkSectionContentService
      */
     public function persist(WorkSection $section, ?string $content): WorkSection
     {
-        $analysis = $this->analyzer->analyze($content, $section->effectiveFormat());
-
-        DB::transaction(function () use ($section, $content, $analysis): void {
+        app(WorkMutationLock::class)->run([$section->work_id], function () use ($section, $content): void {
+            $live = WorkSection::query()->where('work_id', $section->work_id)->lockForUpdate()->findOrFail($section->id);
+            $section->setRawAttributes($live->getAttributes(), true);
+            $section->unsetRelations();
+            if ($section->is_structural && filled($content)) {
+                throw ValidationException::withMessages([
+                    'content' => __('alexandria::writing.workspace.structural_rejects_content'),
+                ]);
+            }
+            $analysis = $this->analyzer->analyze($content, $section->effectiveFormat());
             $section->forceFill([
                 'content' => $content,
                 'word_count' => $analysis->wordCount,

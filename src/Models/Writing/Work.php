@@ -104,6 +104,7 @@ class Work extends Model
     protected function casts(): array
     {
         return [
+            'target_runtime_seconds' => 'integer',
             'length_plan' => 'array',
             'screenplay_template' => 'array',
         ];

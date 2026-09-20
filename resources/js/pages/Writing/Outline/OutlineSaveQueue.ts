@@ -75,6 +75,7 @@ export class OutlineSaveQueue {
     getSnapshot = (): OutlineQueueState => this.state;
     subscribe = (listener: () => void): (() => void) => {
         this.listeners.add(listener);
+
         return () => {
             this.listeners.delete(listener);
         };
@@ -88,6 +89,7 @@ export class OutlineSaveQueue {
             this.untitled,
             draft.conversions,
         );
+
         return JSON.stringify(payload);
     }
     get hasUnsaved(): boolean {
@@ -102,10 +104,23 @@ export class OutlineSaveQueue {
         this.listeners.forEach((listener) => listener());
     }
     private clearTimer(): void {
-        if (this.timer !== null) clearTimeout(this.timer);
+        if (this.timer !== null) {
+            clearTimeout(this.timer);
+        }
+
         this.timer = null;
     }
     update(draft: OutlineSaveSnapshot): void {
+        draft = {
+            ...draft,
+            conversions: draft.conversions.filter((c) =>
+                draft.rows.some(
+                    (r) =>
+                        r.key === c.targetKey &&
+                        r.beats.some((b) => b.id === c.beatId),
+                ),
+            ),
+        };
         this.generation++;
         this.clearTimer();
         this.publish({
@@ -116,21 +131,28 @@ export class OutlineSaveQueue {
                   ? 'saving'
                   : 'dirty',
         });
+
         if (!this.hasUnsaved) {
             this.publish({ status: 'idle' });
+
             return;
         }
-        if (!this.state.conflict && this.state.error === null)
+
+        if (!this.state.conflict && this.state.error === null) {
             this.timer = setTimeout(() => {
                 void this.flush();
             }, 800);
+        }
     }
     /** Replace a draft only after a deliberate reload/merge choice. */
     reset(
         projection: OutlineProjection,
         rows = rowsFromProjection(projection),
     ): void {
-        if (this.inFlight) return;
+        if (this.inFlight) {
+            return;
+        }
+
         const base = {
             rows: rowsFromProjection(projection),
             deleted: [],
@@ -156,9 +178,19 @@ export class OutlineSaveQueue {
     }
     flush = (keepalive = false): Promise<boolean> => {
         this.clearTimer();
-        if (this.inFlight) return this.inFlight;
-        if (this.state.conflict) return Promise.resolve(false);
-        if (!this.hasUnsaved) return Promise.resolve(true);
+
+        if (this.inFlight) {
+            return this.inFlight;
+        }
+
+        if (this.state.conflict) {
+            return Promise.resolve(false);
+        }
+
+        if (!this.hasUnsaved) {
+            return Promise.resolve(true);
+        }
+
         // Assign before notifying listeners, which may synchronously request another flush.
         this.inFlight = Promise.resolve()
             .then(() => this.drain(keepalive))
@@ -167,22 +199,27 @@ export class OutlineSaveQueue {
                 this.publish({});
             });
         this.publish({ status: 'saving', error: null });
+
         return this.inFlight;
     };
     private async drain(keepalive: boolean): Promise<boolean> {
         try {
             if (this.uncertain && this.load) {
                 const projection = await this.load();
+
                 if (projection.baseVersion !== this.state.draft.baseVersion) {
                     this.publish({
                         conflict: projection,
                         ambiguous: true,
                         status: 'conflict',
                     });
+
                     return false;
                 }
             }
+
             this.uncertain = false;
+
             while (
                 this.signature(this.state.draft) !==
                 this.signature(this.state.base)
@@ -191,10 +228,18 @@ export class OutlineSaveQueue {
                 const generation = this.generation;
                 const reply = await this.send(submitted, keepalive);
                 this.acknowledge(submitted, reply);
-                if (this.state.blocked.length) return false;
-                if (generation === this.generation) break;
+
+                if (this.state.blocked.length) {
+                    return false;
+                }
+
+                if (generation === this.generation) {
+                    break;
+                }
             }
+
             this.publish({ status: 'saved', error: null });
+
             return true;
         } catch (error) {
             if (error instanceof OutlineConflictError) {
@@ -210,6 +255,7 @@ export class OutlineSaveQueue {
                         error instanceof Error ? error.message : 'Save failed',
                 });
             }
+
             return false;
         }
     }
@@ -224,10 +270,15 @@ export class OutlineSaveQueue {
                     row.sectionId === null
                         ? undefined
                         : server.get(row.sectionId);
+
                 return remote
                     ? {
                           ...row,
                           slug: remote.slug,
+                          durationSeconds:
+                              row.durationSeconds === undefined
+                                  ? remote.duration_seconds
+                                  : row.durationSeconds,
                           canBecomeBeat: remote.canBecomeBeat,
                           conversionBlockedReason:
                               remote.conversionBlockedReason,
@@ -240,21 +291,28 @@ export class OutlineSaveQueue {
         const deleted = this.state.draft.deleted.filter(
             (id) => !submitted.deleted.includes(id) || blockedIds.has(id),
         );
+
         // A just-created row may have been removed locally before its ID arrived.
         for (const row of submitted.rows) {
             if (
                 row.tempId &&
                 reply.tempIds[row.tempId] !== undefined &&
                 !rows.some((r) => r.key === row.key)
-            )
+            ) {
                 deleted.push(reply.tempIds[row.tempId]);
+            }
         }
+
         if (blockedIds.size) {
             const savedRows = rowsFromProjection(reply);
+
             for (const row of savedRows.filter((r) =>
                 blockedIds.has(r.sectionId!),
             )) {
-                if (rows.some((r) => r.sectionId === row.sectionId)) continue;
+                if (rows.some((r) => r.sectionId === row.sectionId)) {
+                    continue;
+                }
+
                 const preceding = savedRows
                     .slice(0, savedRows.indexOf(row))
                     .reverse()
@@ -276,6 +334,7 @@ export class OutlineSaveQueue {
                 ];
             }
         }
+
         const conversions = this.state.draft.conversions.filter(
             (c) =>
                 !submitted.conversions.some(

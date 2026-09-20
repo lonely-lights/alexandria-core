@@ -50,19 +50,20 @@ class SectionTreeService
      */
     public function move(WorkSection $section, ?int $newParentId, int $position): void
     {
-        if ($newParentId !== null) {
-            $parent = WorkSection::query()->findOrFail($newParentId);
-
-            if ($parent->work_id !== $section->work_id) {
-                throw new InvalidArgumentException('Target parent belongs to another work.');
-            }
-
-            if ($parent->id === $section->id || $this->isDescendantOf($parent, $section)) {
-                throw new InvalidArgumentException('A section cannot become its own descendant.');
-            }
-        }
-
         app(WorkMutationLock::class)->run([$section->work_id], function () use ($section, $newParentId, $position): void {
+            $section->refresh();
+            if ($newParentId !== null) {
+                $parent = WorkSection::query()->findOrFail($newParentId);
+
+                if ($parent->work_id !== $section->work_id) {
+                    throw new InvalidArgumentException('Target parent belongs to another work.');
+                }
+
+                if ($parent->id === $section->id || $this->isDescendantOf($parent, $section)) {
+                    throw new InvalidArgumentException('A section cannot become its own descendant.');
+                }
+            }
+
             $oldParentId = $section->parent_id;
 
             $section->forceFill(['parent_id' => $newParentId, 'position' => $position])->save();

@@ -8,6 +8,8 @@
 
 /** One structural marker in a work (e.g. end of Act 1). */
 export interface StructureBeat {
+    anchor_section_id?: number | null;
+    anchor_edge?: 'start' | 'end';
     /** Human label shown in the UI (editable per-work). */
     name: string;
     /** Position as a percentage of total length (0–100). */
@@ -18,7 +20,11 @@ export interface StructureBeat {
 
 /** A named collection of beats describing a work's structure shape. */
 export interface StructureTemplate {
-    slug: 'three-act-screenplay' | 'five-act-screenplay' | 'three-act-prose' | string;
+    slug:
+        | 'three-act-screenplay'
+        | 'five-act-screenplay'
+        | 'three-act-prose'
+        | string;
     /** Translation key for the template's display name. */
     labelKey: string;
     /** Whether the template's length unit is pages or words. */
