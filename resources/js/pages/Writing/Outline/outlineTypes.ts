@@ -12,6 +12,12 @@ import type { StructureBeat } from '../Sections/structureTemplates';
  * between the two.
  */
 
+export interface OutlineMarkerPlacement {
+    index: number;
+    sectionKey: string | null;
+    edge: 'start' | 'end';
+}
+
 export interface OutlineConversion {
     sourceSectionId: number;
     targetKey: string;

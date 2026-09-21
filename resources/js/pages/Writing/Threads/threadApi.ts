@@ -162,6 +162,7 @@ export interface ThreadInput {
 }
 
 export interface ThreadFilters {
+    includeMarks?: boolean;
     workId?: number;
     sectionId?: number;
     cardId?: number;
@@ -213,6 +214,10 @@ function threadsQuery(filters: ThreadFilters): string {
 
     if (filters.status !== undefined) {
         params.set('status', filters.status);
+    }
+
+    if (filters.includeMarks) {
+        params.set('include_marks', '1');
     }
 
     const qs = params.toString();

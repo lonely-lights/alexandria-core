@@ -65,6 +65,7 @@ import {
     timingIsActive,
 } from './pacing/pacingAdapters';
 import { buildPacingModel } from './pacing/pacingModel';
+import type { PacingMarkerInput } from './pacing/pacingTypes';
 import {
     normalizePageDisplay,
     readPageDisplay,
@@ -125,6 +126,7 @@ import MarkThreadModal from './Threads/MarkThreadModal';
 import type { ThreadAnchor, ThreadSectionRef } from './Threads/MarkThreadModal';
 import { findSectionInTree } from './Threads/scopeChoice';
 import type { PatternThread } from './Threads/threadApi';
+import ThreadDetailModal from './Threads/ThreadDetailModal';
 import ThreadHighlightDetails from './Threads/ThreadHighlightDetails';
 import { THREAD_HIGHLIGHT_OPEN } from './Threads/threadHighlightEvents';
 import type { ThreadHighlightOpen } from './Threads/threadHighlightEvents';
@@ -777,13 +779,13 @@ export default function Workspace() {
             if (next === 'focus' && slug !== null) {
                 router.visit(flowUrl(project.slug, work.slug, slug), {
                     only: leavingStructuralView
-                        ? ['currentSection', 'sections']
+                        ? ['currentSection', 'sections', 'work']
                         : ['currentSection'],
                     preserveState: true,
                     preserveScroll: true,
                 });
             } else if (leavingStructuralView) {
-                router.reload({ only: ['sections', 'currentSection'] });
+                router.reload({ only: ['sections', 'currentSection', 'work'] });
             }
         },
         [
@@ -879,6 +881,13 @@ export default function Workspace() {
     // The structure plan rides with the outline in the right rail rather
     // than over the section tree (owner ruling 2026-09-16). Computed here
     // because the Workspace already holds every input it needs.
+    const [outlineMarkers, setOutlineMarkers] = useState<
+        PacingMarkerInput[] | null
+    >(null);
+    const [outlineMarkerRequest, setOutlineMarkerRequest] = useState<
+        number | null
+    >(null);
+    const [outlineThreadId, setOutlineThreadId] = useState<number | null>(null);
     const [outlineTimingDraft, setOutlineTimingDraft] = useState<
         OutlineRow[] | null
     >(null);
@@ -886,7 +895,10 @@ export default function Workspace() {
         viewMode === 'outline' && outlineTimingDraft !== null
             ? pacingNodesFromOutline(outlineTimingDraft)
             : pacingNodesFromSections(sections);
-    const timingMarkers = work.length_plan?.structure?.beats ?? [];
+    const timingMarkers =
+        viewMode === 'outline' && outlineMarkers !== null
+            ? outlineMarkers
+            : (work.length_plan?.structure?.beats ?? []);
     const timingActive = timingIsActive(
         work.format,
         work.target_runtime_seconds ?? null,
@@ -1445,7 +1457,7 @@ export default function Workspace() {
         setReadingMode((value) => !value);
 
         if (viewMode === 'outline' || viewMode === 'kanban') {
-            switchViewMode('continuous');
+            void switchViewMode('continuous');
         }
     }
 
@@ -1974,7 +1986,20 @@ export default function Workspace() {
                                         targetRuntimeSeconds={
                                             work.target_runtime_seconds ?? null
                                         }
-                                        markers={timingMarkers}
+                                        markers={
+                                            work.length_plan?.structure
+                                                ?.beats ?? []
+                                        }
+                                        workId={work.id}
+                                        threadsRefreshSignal={
+                                            threadsRefreshSignal
+                                        }
+                                        onOpenThread={setOutlineThreadId}
+                                        markerRequest={outlineMarkerRequest}
+                                        onMarkerRequestHandled={() =>
+                                            setOutlineMarkerRequest(null)
+                                        }
+                                        onMarkersChange={setOutlineMarkers}
                                         projectSlug={project.slug}
                                         workSlug={work.slug}
                                         canUpdate={can.update}
@@ -2226,6 +2251,14 @@ export default function Workspace() {
                                                 canUpdate={can.update}
                                                 onNavigate={selectSection}
                                                 guidance={structureGuidance}
+                                                onPlaceMarker={(index) => {
+                                                    setOutlineMarkerRequest(
+                                                        index,
+                                                    );
+                                                    void switchViewMode(
+                                                        'outline',
+                                                    );
+                                                }}
                                             />
                                         )}
                                         {panelMode === 'history' && (
@@ -2691,6 +2724,28 @@ export default function Workspace() {
                         />
                     )}
 
+                    {outlineThreadId !== null && (
+                        <ThreadDetailModal
+                            projectSlug={project.slug}
+                            workId={work.id}
+                            sections={sections}
+                            threadId={outlineThreadId}
+                            canUpdate={can.update}
+                            refreshSignal={threadsRefreshSignal}
+                            onClose={() => setOutlineThreadId(null)}
+                            onChanged={() =>
+                                setThreadsRefreshSignal((v) => v + 1)
+                            }
+                            onRequestAddMark={(thread) => {
+                                setOutlineThreadId(null);
+                                setMarkThreadRequest({
+                                    lockedSection: null,
+                                    anchor: null,
+                                    lockedThread: thread,
+                                });
+                            }}
+                        />
+                    )}
                     {markThreadRequest !== null && (
                         <MarkThreadModal
                             projectSlug={project.slug}

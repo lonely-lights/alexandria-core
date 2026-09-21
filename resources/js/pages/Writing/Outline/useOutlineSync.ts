@@ -23,6 +23,7 @@ import type {
     OutlineRow,
     OutlineTier,
     OutlineConversion,
+    OutlineMarkerPlacement,
 } from './outlineTypes';
 export type { OutlineSyncStatus } from './OutlineSaveQueue';
 export interface BlockedOutlineRow {
@@ -85,6 +86,7 @@ export default function useOutlineSync({
                             draft.baseVersion,
                             untitled,
                             draft.conversions,
+                            draft.markerPlacements,
                         ),
                     ),
                     keepalive,
@@ -315,6 +317,27 @@ export default function useOutlineSync({
     }
 
     return {
+        markers: state.markers,
+        placeMarker: async (
+            placement: OutlineMarkerPlacement,
+        ): Promise<boolean> => {
+            if (!ready || queue.getSnapshot().conflict) {
+                return false;
+            }
+
+            const draft = queue.getSnapshot().draft;
+            queue.update({
+                ...draft,
+                markerPlacements: [
+                    ...(draft.markerPlacements ?? []).filter(
+                        (p) => p.index !== placement.index,
+                    ),
+                    placement,
+                ],
+            });
+
+            return await queue.flush();
+        },
         rows: state.draft.rows,
         hierarchy,
         ready,

@@ -15,6 +15,7 @@ import type {
     OutlineProjection,
     OutlineRow,
     OutlineConversion,
+    OutlineMarkerPlacement,
 } from './outlineTypes';
 
 /** Build the client tree from a freshly loaded outline projection. */
@@ -84,12 +85,22 @@ export function buildOutlinePayload(
     baseVersion: string,
     untitled: string,
     conversions: OutlineConversion[] = [],
+    markerPlacements: OutlineMarkerPlacement[] = [],
 ): object {
     rows = prepareOutlineDraft(rows, untitled).rows;
     const rowsByKey = new Map(rows.map((row) => [row.key, row]));
 
     return {
         baseVersion,
+        ...(markerPlacements.length
+            ? {
+                  markerPlacements: markerPlacements.map((p) => ({
+                      index: p.index,
+                      sectionId: resolveParentId(rowsByKey, p.sectionKey),
+                      edge: p.edge,
+                  })),
+              }
+            : {}),
         conversions: conversions.map((c) => ({
             sourceSectionId: c.sourceSectionId,
             targetId: resolveParentId(rowsByKey, c.targetKey),

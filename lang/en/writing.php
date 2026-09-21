@@ -8,6 +8,19 @@ declare(strict_types=1);
  * lookup inside the group bag.
  */
 return [
+    'pacing.place_marker' => 'Place structure marker…',
+    'pacing.marker' => 'Structure marker',
+    'pacing.scene_section' => 'Scene or section',
+    'pacing.choose_section' => 'Choose a scene or section',
+    'pacing.apply_placement' => 'Apply placement',
+    'pacing.unassign' => 'Unassign',
+    'pacing.go_to_section' => 'Go to current placement',
+    'pacing.placement_help' => 'The marker follows this section when it moves. Timing is guidance; it does not change your outline.',
+    'pacing.placement_conflict' => 'The work changed before your marker placement saved. Resolve the outline changes, then choose the placement again against the updated structure.',
+    'threads.follow_outline' => 'Follow in outline',
+    'threads.stop_following' => 'Stop following',
+    'threads.outline_load_failed' => 'Device marks could not be loaded.',
+    'threads.outline_retry' => 'Retry',
     'pacing.invalid' => 'Use m:ss or h:mm:ss, up to 24:00:00. Escape discards this edit.',
     'pacing.duration' => 'Duration', 'pacing.budget' => 'Budget', 'pacing.running_time' => 'Running time', 'pacing.position' => 'Position',
     'pacing.target' => 'Target', 'pacing.runtime_target' => 'Target running time', 'pacing.remaining' => 'Remaining', 'pacing.untimed' => 'untimed',
@@ -406,6 +419,7 @@ return [
 
     // Sidebar outline mode (Stage — outline mode, Task 7)
     'outline.sidebar_label' => 'Outline',
+    'outline.sidebar_structure' => 'Work structure',
     'outline.sidebar_loading' => 'Loading outline…',
     'outline.sidebar_error' => 'Could not load the outline.',
 

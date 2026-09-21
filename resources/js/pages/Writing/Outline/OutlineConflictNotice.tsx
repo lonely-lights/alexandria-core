@@ -166,6 +166,9 @@ function ConflictEditor({
             className="border-current/20 mb-4 rounded border p-3 text-sm"
         >
             <p role="status">{t('writing.outline.conflict_help')}</p>
+            {!!draft.markerPlacements?.length && (
+                <p className="mt-2">{t('writing.pacing.placement_conflict')}</p>
+            )}
             <label className="mt-2 block">
                 {t('writing.outline.local_copy')}
                 <textarea

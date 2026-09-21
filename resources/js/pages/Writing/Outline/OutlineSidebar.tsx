@@ -5,8 +5,13 @@ import { worksBase } from '@alexandria/lib/urls';
 
 import StructureGuidanceCard from '../Sections/StructureGuidanceCard';
 import type { StructureGuidance } from '../Sections/structureGuidance';
+import OutlineSidebarGroup from './OutlineSidebarGroup';
 import { planCollapsed } from './PlanBlock';
-import type { OutlineBeat, OutlineProjection, ServerOutlineRow } from './outlineTypes';
+import type {
+    OutlineBeat,
+    OutlineProjection,
+    ServerOutlineRow,
+} from './outlineTypes';
 
 /**
  * Read-mostly sidebar outline mode — spec 2026-08-28 outline-mode Task 7.
@@ -44,10 +49,14 @@ export interface OutlineSidebarProps {
      * tree). Null when the work has no structure template chosen.
      */
     guidance?: StructureGuidance | null;
+    onPlaceMarker?: (index: number) => void;
 }
 
 function csrfToken(): string {
-    return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+    return (
+        document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+            ?.content ?? ''
+    );
 }
 
 function apiHeaders(withBody = false): HeadersInit {
@@ -79,7 +88,8 @@ const headerStyle: CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     padding: '0.5rem 0.75rem 0.375rem',
-    borderBottom: '1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
+    borderBottom:
+        '1px solid color-mix(in srgb, var(--theme-base-content) 8%, transparent)',
     flexShrink: 0,
 };
 
@@ -107,7 +117,8 @@ const rowHeadStyle: CSSProperties = {
 
 const rowHeadActiveStyle: CSSProperties = {
     ...rowHeadStyle,
-    background: 'color-mix(in srgb, var(--theme-brand-secondary-500) 14%, transparent)',
+    background:
+        'color-mix(in srgb, var(--theme-brand-secondary-500) 14%, transparent)',
 };
 
 const rowTitleStyle: CSSProperties = {
@@ -193,6 +204,7 @@ export default function OutlineSidebar({
     canUpdate,
     onNavigate,
     guidance = null,
+    onPlaceMarker,
 }: OutlineSidebarProps) {
     const t = useT();
     const [rows, setRows] = useState<ServerOutlineRow[]>([]);
@@ -252,7 +264,12 @@ export default function OutlineSidebar({
         setRows((prev) =>
             prev.map((row) =>
                 row.sectionId === sectionId
-                    ? { ...row, beats: row.beats.map((b) => (b.id === beat.id ? { ...b, done: !b.done } : b)) }
+                    ? {
+                          ...row,
+                          beats: row.beats.map((b) =>
+                              b.id === beat.id ? { ...b, done: !b.done } : b,
+                          ),
+                      }
                     : row,
             ),
         );
@@ -275,7 +292,13 @@ export default function OutlineSidebar({
             }
 
             const body = (await response.json()) as { beats: OutlineBeat[] };
-            setRows((prev) => prev.map((row) => (row.sectionId === sectionId ? { ...row, beats: body.beats } : row)));
+            setRows((prev) =>
+                prev.map((row) =>
+                    row.sectionId === sectionId
+                        ? { ...row, beats: body.beats }
+                        : row,
+                ),
+            );
         } catch {
             setRows(previous);
         }
@@ -298,96 +321,179 @@ export default function OutlineSidebar({
     return (
         <div
             data-outline-sidebar=""
-            style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                minHeight: 0,
+            }}
         >
             <div style={headerStyle}>
-                <span style={titleStyle}>{t('writing.outline.sidebar_label')}</span>
+                <span style={titleStyle}>
+                    {t('writing.outline.sidebar_label')}
+                </span>
             </div>
 
             <div className="writing-workspace-scroll min-h-0 flex-1 overflow-y-auto px-1 py-2">
-                {guidance !== null && <StructureGuidanceCard guidance={guidance} />}
-
-                {loading && (
-                    <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
-                        {t('writing.outline.sidebar_loading')}
-                    </p>
+                {guidance !== null && (
+                    <StructureGuidanceCard
+                        guidance={guidance}
+                        onPlaceMarker={canUpdate ? onPlaceMarker : undefined}
+                    />
                 )}
 
-                {failed && (
-                    <p className="px-4 py-6 text-center text-xs" style={{ color: 'var(--theme-status-error-stroke)' }}>
-                        {t('writing.outline.sidebar_error')}
-                    </p>
-                )}
+                <OutlineSidebarGroup
+                    title={t('writing.outline.sidebar_structure')}
+                    data-outline-sidebar-structure
+                >
+                    {loading && (
+                        <p
+                            className="px-4 py-6 text-center text-xs"
+                            style={hintStyle}
+                        >
+                            {t('writing.outline.sidebar_loading')}
+                        </p>
+                    )}
 
-                {!loading && !failed && rows.length === 0 && (
-                    <p className="px-4 py-6 text-center text-xs" style={hintStyle}>
-                        {t('writing.outline.empty')}
-                    </p>
-                )}
+                    {failed && (
+                        <p
+                            className="px-4 py-6 text-center text-xs"
+                            style={{
+                                color: 'var(--theme-status-error-stroke)',
+                            }}
+                        >
+                            {t('writing.outline.sidebar_error')}
+                        </p>
+                    )}
 
-                {!loading &&
-                    !failed &&
-                    rows.map((row) => {
-                        const synopsis = synopsisPreview(row.synopsis);
-                        const isCurrent = row.sectionId === currentSectionId;
-                        const expanded = expandedKeys.has(row.sectionId);
-                        const collapsed = planCollapsed(row.beats) && !expanded;
+                    {!loading && !failed && rows.length === 0 && (
+                        <p
+                            className="px-4 py-6 text-center text-xs"
+                            style={hintStyle}
+                        >
+                            {t('writing.outline.empty')}
+                        </p>
+                    )}
 
-                        return (
-                            <div
-                                key={row.sectionId}
-                                style={{ ...rowWrapStyle, paddingLeft: `${row.depth * 0.875}rem` }}
-                            >
+                    {!loading &&
+                        !failed &&
+                        rows.map((row) => {
+                            const synopsis = synopsisPreview(row.synopsis);
+                            const isCurrent =
+                                row.sectionId === currentSectionId;
+                            const expanded = expandedKeys.has(row.sectionId);
+                            const collapsed =
+                                planCollapsed(row.beats) && !expanded;
+
+                            return (
                                 <div
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-current={isCurrent ? 'true' : undefined}
-                                    className="alex-row px-3 py-1.5"
-                                    style={isCurrent ? rowHeadActiveStyle : rowHeadStyle}
-                                    onClick={() => onNavigate(row.slug)}
-                                    onKeyDown={(event) => {
-                                        if (event.key === 'Enter' || event.key === ' ') {
-                                            event.preventDefault();
-                                            onNavigate(row.slug);
-                                        }
+                                    key={row.sectionId}
+                                    style={{
+                                        ...rowWrapStyle,
+                                        paddingLeft: `${row.depth * 0.875}rem`,
                                     }}
                                 >
-                                    <span style={rowTitleStyle}>{row.title}</span>
-                                    {synopsis !== null && <span style={rowSynopsisStyle}>{synopsis}</span>}
-                                </div>
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-current={
+                                            isCurrent ? 'true' : undefined
+                                        }
+                                        className="alex-row px-3 py-1.5"
+                                        style={
+                                            isCurrent
+                                                ? rowHeadActiveStyle
+                                                : rowHeadStyle
+                                        }
+                                        onClick={() => onNavigate(row.slug)}
+                                        onKeyDown={(event) => {
+                                            if (
+                                                event.key === 'Enter' ||
+                                                event.key === ' '
+                                            ) {
+                                                event.preventDefault();
+                                                onNavigate(row.slug);
+                                            }
+                                        }}
+                                    >
+                                        <span style={rowTitleStyle}>
+                                            {row.title}
+                                        </span>
+                                        {synopsis !== null && (
+                                            <span style={rowSynopsisStyle}>
+                                                {synopsis}
+                                            </span>
+                                        )}
+                                    </div>
 
-                                {row.beats.length > 0 &&
-                                    (collapsed ? (
-                                        <button
-                                            type="button"
-                                            data-outline-sidebar-collapsed=""
-                                            onClick={() => toggleExpanded(row.sectionId)}
-                                            style={collapsedLineStyle}
-                                        >
-                                            <i className="fa-solid fa-circle-check" aria-hidden="true" />
-                                            {t('writing.plan.done_line').replace(':count', String(row.beats.length))}
-                                        </button>
-                                    ) : (
-                                        <div style={beatsWrapStyle}>
-                                            {row.beats.map((beat) => (
-                                                <div key={beat.id} style={beatRowStyle}>
-                                                    <button
-                                                        type="button"
-                                                        role="checkbox"
-                                                        aria-checked={beat.done}
-                                                        aria-label={beat.text}
-                                                        disabled={!canUpdate}
-                                                        style={beatDotStyle(beat.done, canUpdate)}
-                                                        onClick={() => toggleBeat(row.sectionId, beat)}
-                                                    />
-                                                    <span style={beatTextStyle(beat.done)}>{beat.text}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ))}
-                            </div>
-                        );
-                    })}
+                                    {row.beats.length > 0 &&
+                                        (collapsed ? (
+                                            <button
+                                                type="button"
+                                                data-outline-sidebar-collapsed=""
+                                                onClick={() =>
+                                                    toggleExpanded(
+                                                        row.sectionId,
+                                                    )
+                                                }
+                                                style={collapsedLineStyle}
+                                            >
+                                                <i
+                                                    className="fa-solid fa-circle-check"
+                                                    aria-hidden="true"
+                                                />
+                                                {t(
+                                                    'writing.plan.done_line',
+                                                ).replace(
+                                                    ':count',
+                                                    String(row.beats.length),
+                                                )}
+                                            </button>
+                                        ) : (
+                                            <div style={beatsWrapStyle}>
+                                                {row.beats.map((beat) => (
+                                                    <div
+                                                        key={beat.id}
+                                                        style={beatRowStyle}
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            role="checkbox"
+                                                            aria-checked={
+                                                                beat.done
+                                                            }
+                                                            aria-label={
+                                                                beat.text
+                                                            }
+                                                            disabled={
+                                                                !canUpdate
+                                                            }
+                                                            style={beatDotStyle(
+                                                                beat.done,
+                                                                canUpdate,
+                                                            )}
+                                                            onClick={() =>
+                                                                toggleBeat(
+                                                                    row.sectionId,
+                                                                    beat,
+                                                                )
+                                                            }
+                                                        />
+                                                        <span
+                                                            style={beatTextStyle(
+                                                                beat.done,
+                                                            )}
+                                                        >
+                                                            {beat.text}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
+                                </div>
+                            );
+                        })}
+                </OutlineSidebarGroup>
             </div>
         </div>
     );

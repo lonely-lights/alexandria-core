@@ -15,6 +15,7 @@ export type StructureGuidanceState = 'complete' | 'current' | 'open';
 
 export interface StructureGuidanceItem {
     id: string;
+    markerIndex?: number;
     labelKey: string;
     icon: string;
     state: StructureGuidanceState;
@@ -242,6 +243,7 @@ export function getStructureGuidance({
         model.markers.forEach((marker, i) =>
             items.push({
                 id: 'runtime-marker-' + i,
+                markerIndex: i,
                 labelKey:
                     'writing.pacing.' +
                     (marker.anchorUnavailable ? 'unavailable' : marker.status),
@@ -296,6 +298,9 @@ export function getStructureGuidance({
 
         const items: StructureGuidanceItem[] = diagnostics.map((d) => ({
             id: d.id,
+            ...(d.id.startsWith('beat-')
+                ? { markerIndex: Number(d.id.slice(5)) - 1 }
+                : {}),
             labelKey: d.labelKey,
             icon:
                 d.severity === 'warn'

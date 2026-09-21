@@ -5,11 +5,13 @@ import {
 } from './outlinePayload';
 import type {
     OutlineConversion,
+    OutlineMarkerPlacement,
     OutlineProjection,
     OutlineRow,
 } from './outlineTypes';
 
 export interface OutlineSaveSnapshot {
+    markerPlacements?: OutlineMarkerPlacement[];
     rows: OutlineRow[];
     deleted: number[];
     force: number[];
@@ -28,6 +30,7 @@ export type OutlineSyncStatus =
     | 'error'
     | 'conflict';
 export interface OutlineQueueState {
+    markers: NonNullable<OutlineProjection['markers']>;
     draft: OutlineSaveSnapshot;
     base: OutlineSaveSnapshot;
     status: OutlineSyncStatus;
@@ -63,6 +66,7 @@ export class OutlineSaveQueue {
         private load?: () => Promise<OutlineProjection>,
     ) {
         this.state = {
+            markers: [],
             draft: initial,
             base: initial,
             status: 'idle',
@@ -88,6 +92,7 @@ export class OutlineSaveQueue {
             '',
             this.untitled,
             draft.conversions,
+            draft.markerPlacements,
         );
 
         return JSON.stringify(payload);
@@ -113,6 +118,12 @@ export class OutlineSaveQueue {
     update(draft: OutlineSaveSnapshot): void {
         draft = {
             ...draft,
+            markerPlacements: (draft.markerPlacements ?? []).map((p) =>
+                p.sectionKey !== null &&
+                !draft.rows.some((r) => r.key === p.sectionKey)
+                    ? { ...p, sectionKey: null }
+                    : p,
+            ),
             conversions: draft.conversions.filter((c) =>
                 draft.rows.some(
                     (r) =>
@@ -164,6 +175,7 @@ export class OutlineSaveQueue {
         this.uncertain = false;
         this.publish({
             base,
+            markers: projection.markers ?? [],
             draft: { ...base, rows },
             conflict: null,
             ambiguous: false,
@@ -343,6 +355,15 @@ export class OutlineSaveQueue {
         );
         const draft = {
             ...this.state.draft,
+            markerPlacements: (this.state.draft.markerPlacements ?? []).filter(
+                (p) =>
+                    !(submitted.markerPlacements ?? []).some(
+                        (sent) =>
+                            sent.index === p.index &&
+                            sent.sectionKey === p.sectionKey &&
+                            sent.edge === p.edge,
+                    ),
+            ),
             rows,
             deleted: [...new Set(deleted)].filter((id) => !blockedIds.has(id)),
             force: this.state.draft.force.filter(
@@ -378,6 +399,7 @@ export class OutlineSaveQueue {
         this.publish({
             draft,
             base,
+            markers: reply.markers ?? this.state.markers,
             blocked: reply.blocked,
             status: reply.blocked.length ? 'error' : 'saving',
         });

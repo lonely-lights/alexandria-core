@@ -2,7 +2,15 @@ import useT from '@alexandria/hooks/useT';
 import { formatDuration } from './durationValue';
 import type { MarkerTiming } from './pacingTypes';
 import { timeText, remainingText } from './SectionTiming';
-export default function MarkerReadout({ marker }: { marker: MarkerTiming }) {
+export default function MarkerReadout({
+    marker,
+    sectionTitle,
+    onPlace,
+}: {
+    marker: MarkerTiming;
+    sectionTitle?: string;
+    onPlace?: () => void;
+}) {
     const t = useT();
 
     return (
@@ -16,7 +24,25 @@ export default function MarkerReadout({ marker }: { marker: MarkerTiming }) {
                 fontVariantNumeric: 'tabular-nums',
             }}
         >
-            <strong>{marker.name}</strong> ·{' '}
+            {onPlace ? (
+                <button
+                    type="button"
+                    className="font-semibold underline decoration-dotted underline-offset-4"
+                    onClick={onPlace}
+                    aria-label={
+                        t('writing.pacing.place_marker') + ' — ' + marker.name
+                    }
+                >
+                    {marker.name}
+                    <i
+                        className="fa-solid fa-location-dot ml-2"
+                        aria-hidden="true"
+                    />
+                </button>
+            ) : (
+                <strong>{marker.name}</strong>
+            )}
+            {sectionTitle && <> · {sectionTitle}</>} ·{' '}
             {t('writing.pacing.' + marker.anchorEdge)} ·{' '}
             {t(
                 'writing.pacing.' +

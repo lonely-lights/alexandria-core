@@ -1,7 +1,11 @@
-import useT from '@alexandria/hooks/useT';
 import type { CSSProperties } from 'react';
+import useT from '@alexandria/hooks/useT';
+import OutlineSidebarGroup from '../Outline/OutlineSidebarGroup';
 
-import type { StructureGuidance, StructureGuidanceState } from './structureGuidance';
+import type {
+    StructureGuidance,
+    StructureGuidanceState,
+} from './structureGuidance';
 
 /**
  * The structure-plan card: a work's beat markers and how the current
@@ -13,13 +17,6 @@ import type { StructureGuidance, StructureGuidanceState } from './structureGuida
  * reading the plan. Purely presentational — the caller computes the
  * guidance and decides where it hangs.
  */
-
-const cardStyle: CSSProperties = {
-    background: 'var(--alex-writing-section-pane-bg, var(--theme-base-surface))',
-    border: '1px solid color-mix(in srgb, var(--theme-base-content) 10%, transparent)',
-    borderRadius: 'var(--theme-radius-card)',
-    boxShadow: '0 10px 28px rgb(0 0 0 / 0.16)',
-};
 
 const itemStyle: CSSProperties = {
     background: 'color-mix(in srgb, var(--theme-base-content) 4%, transparent)',
@@ -38,19 +35,21 @@ const stateStyle: Record<StructureGuidanceState, CSSProperties> = {
     },
 };
 
-export default function StructureGuidanceCard({ guidance }: { guidance: StructureGuidance }) {
+export default function StructureGuidanceCard({
+    guidance,
+    onPlaceMarker,
+}: {
+    guidance: StructureGuidance;
+    onPlaceMarker?: (index: number) => void;
+}) {
     const t = useT();
 
     return (
-        <section
-            className="mb-2 grid gap-2 px-2 py-2.5"
+        <OutlineSidebarGroup
+            title={t(guidance.titleKey)}
             data-writing-structure-guidance={guidance.id}
-            style={cardStyle}
         >
-            <div className="grid gap-1">
-                <h3 className="text-xs font-semibold" style={{ color: 'var(--theme-base-content)' }}>
-                    {t(guidance.titleKey)}
-                </h3>
+            <div className="mb-2">
                 <p className="text-[11px] leading-relaxed" style={mutedStyle}>
                     {t(guidance.bodyKey)}
                 </p>
@@ -69,18 +68,42 @@ export default function StructureGuidanceCard({ guidance }: { guidance: Structur
                             aria-hidden="true"
                             style={stateStyle[item.state]}
                         />
-                        <span className="min-w-0 flex-1 truncate" style={mutedStyle}>
+                        <span
+                            className="min-w-0 flex-1 truncate"
+                            style={mutedStyle}
+                        >
                             {t(item.labelKey)}
                         </span>
                         <span
-                            className="shrink-0 font-mono text-[10px] font-semibold tabular-nums"
+                            className="min-w-0 break-words text-right font-mono text-[10px] font-semibold tabular-nums"
                             style={stateStyle[item.state]}
                         >
-                            {item.valueKey !== undefined ? t(item.valueKey) : item.value}
+                            {item.valueKey !== undefined
+                                ? t(item.valueKey)
+                                : item.value}
                         </span>
+                        {item.markerIndex !== undefined && onPlaceMarker && (
+                            <button
+                                type="button"
+                                className="hover:bg-current/10 shrink-0 rounded p-1"
+                                data-place-structure-marker={item.markerIndex}
+                                aria-label={
+                                    t('writing.pacing.place_marker') +
+                                    ' — ' +
+                                    item.value
+                                }
+                                title={t('writing.pacing.place_marker')}
+                                onClick={() => onPlaceMarker(item.markerIndex!)}
+                            >
+                                <i
+                                    className="fa-solid fa-location-dot"
+                                    aria-hidden="true"
+                                />
+                            </button>
+                        )}
                     </div>
                 ))}
             </div>
-        </section>
+        </OutlineSidebarGroup>
     );
 }

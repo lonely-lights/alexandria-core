@@ -11,6 +11,7 @@ import type { PacingMarkerInput } from '../pacing/pacingTypes';
 import SectionTiming from '../pacing/SectionTiming';
 
 import type { ThreadSectionRef } from '../Threads/MarkThreadModal';
+import MarkerPlacementModal from './MarkerPlacementModal';
 import {
     readCollapsedKeys,
     rowHasNested,
@@ -18,6 +19,7 @@ import {
     writeCollapsedKeys,
 } from './outlineCollapse';
 import OutlineConflictNotice from './OutlineConflictNotice';
+import OutlineDeviceLabels from './OutlineDeviceLabels';
 import { hasOutlineData } from './outlineDraft';
 
 import { beatKey, outlineReducer } from './outlineReducer';
@@ -26,6 +28,7 @@ import type { OutlineBeat, OutlineRow } from './outlineTypes';
 import { parseOutlinePaste } from './parseOutlinePaste';
 import useOutlineSync from './useOutlineSync';
 import type { BlockedOutlineRow } from './useOutlineSync';
+import useOutlineThreads from './useOutlineThreads';
 
 /**
  * Full-pane outline editor — spec 2026-08-28 outline-mode Task 5.
@@ -45,6 +48,12 @@ import type { BlockedOutlineRow } from './useOutlineSync';
  */
 
 export interface OutlineViewProps {
+    workId: number;
+    threadsRefreshSignal?: number;
+    onOpenThread?: (id: number) => void;
+    markerRequest?: number | null;
+    onMarkerRequestHandled?: () => void;
+    onMarkersChange?: (markers: PacingMarkerInput[]) => void;
     onDraftChange?: (rows: OutlineRow[]) => void;
     targetRuntimeSeconds?: number | null;
     markers?: PacingMarkerInput[];
@@ -276,6 +285,12 @@ function blockedFor(
 }
 
 export default function OutlineView({
+    workId,
+    threadsRefreshSignal = 0,
+    onOpenThread,
+    markerRequest = null,
+    onMarkerRequestHandled,
+    onMarkersChange,
     projectSlug,
     workSlug,
     canUpdate,
@@ -287,6 +302,8 @@ export default function OutlineView({
     const t = useT();
     const {
         rows,
+        markers: savedMarkers,
+        placeMarker,
         hierarchy,
         ready,
         setRows,
@@ -317,10 +334,34 @@ export default function OutlineView({
             onDraftChange?.(rows);
         }
     }, [rows, ready, onDraftChange]);
+    useEffect(() => {
+        if (ready) {
+            onMarkersChange?.(savedMarkers);
+        }
+    }, [ready, savedMarkers, onMarkersChange]);
+    const [placement, setPlacement] = useState<{
+        index: number;
+        sectionKey?: string;
+    } | null>(null);
+    const [followThreadId, setFollowThreadId] = useState<number | null>(null);
+    const devices = useOutlineThreads(
+        projectSlug,
+        workId,
+        threadsRefreshSignal,
+    );
+    const followedThread = devices.threads.find(
+        (thread) => thread.id === followThreadId,
+    );
+    const activePlacement =
+        placement ?? (markerRequest === null ? null : { index: markerRequest });
+    const closePlacement = () => {
+        setPlacement(null);
+        onMarkerRequestHandled?.();
+    };
     const pacing = buildPacingModel(
         pacingNodesFromOutline(rows),
         targetRuntimeSeconds,
-        markers,
+        ready ? savedMarkers : markers,
     );
     const timingByKey = new Map(pacing.rows.map((r) => [r.key, r]));
     const inputRefs = useRef(new Map<string, HTMLInputElement>());
@@ -330,6 +371,58 @@ export default function OutlineView({
         readCollapsedKeys(workSlug),
     );
 
+    function jumpToRow(key: string) {
+        const row = rows.find((r) => r.key === key);
+
+        if (!row) {
+            return;
+        }
+
+        const ancestors = new Set<string>();
+        let parent = row.parentKey;
+
+        while (parent) {
+            ancestors.add(parent);
+            parent = rows.find((r) => r.key === parent)?.parentKey ?? null;
+        }
+
+        setCollapsedKeys(
+            (previous) =>
+                new Set([...previous].filter((k) => !ancestors.has(k))),
+        );
+        pendingFocusRef.current = key;
+        requestAnimationFrame(() => {
+            const input = inputRefs.current.get(key);
+            input?.scrollIntoView({ block: 'center' });
+            input?.focus({ preventScroll: true });
+        });
+    }
+    function followThread(id: number) {
+        setFollowThreadId((current) => (current === id ? null : id));
+        // Expose every appearance while preserving unrelated collapsed sections.
+        const marked = new Set(
+            (
+                devices.threads.find((thread) => thread.id === id)?.marks ?? []
+            ).map((m) => m.work_section_id),
+        );
+        const ancestors = new Set<string>();
+
+        for (const row of rows.filter(
+            (r) => r.sectionId !== null && marked.has(r.sectionId),
+        )) {
+            let parent = row.parentKey;
+
+            while (parent) {
+                ancestors.add(parent);
+                parent = rows.find((r) => r.key === parent)?.parentKey ?? null;
+            }
+        }
+
+        setCollapsedKeys(
+            (previous) =>
+                new Set([...previous].filter((k) => !ancestors.has(k))),
+        );
+    }
     const invalidDurationKeys = useRef(new Set<string>());
     function endMarkerHost(sectionId: number | null): string | null {
         const index = rows.findIndex(
@@ -728,11 +821,74 @@ export default function OutlineView({
                 )}
             </div>
 
+            {devices.failed && (
+                <p role="status" className="mb-3 text-sm">
+                    {t('writing.threads.outline_load_failed')}{' '}
+                    <button
+                        type="button"
+                        className="underline"
+                        onClick={devices.retry}
+                    >
+                        {t('writing.threads.outline_retry')}
+                    </button>
+                </p>
+            )}
+            {followedThread && (
+                <div
+                    className="border-current/20 sticky top-0 z-10 mb-3 flex flex-wrap items-center gap-2 rounded border p-2 text-xs"
+                    style={{ background: 'var(--theme-base-surface)' }}
+                    data-outline-following
+                >
+                    <strong>{followedThread.title}</strong>
+                    {rows
+                        .filter(
+                            (r) =>
+                                r.sectionId !== null &&
+                                devices.bySection
+                                    .get(r.sectionId)
+                                    ?.some(
+                                        (m) => m.thread.id === followThreadId,
+                                    ),
+                        )
+                        .map((r) => (
+                            <button
+                                type="button"
+                                className="border-current/20 rounded border px-2 py-1"
+                                key={r.key}
+                                onClick={() => jumpToRow(r.key)}
+                            >
+                                {r.title}
+                            </button>
+                        ))}
+                    <button
+                        type="button"
+                        className="ml-auto underline"
+                        onClick={() => setFollowThreadId(null)}
+                    >
+                        {t('writing.threads.stop_following')}
+                    </button>
+                </div>
+            )}
             <PacingSummary totals={pacing.totals} empty={rows.length === 0} />
             {pacing.markers
                 .filter((m) => m.landing === null)
                 .map((m, i) => (
-                    <MarkerReadout key={i} marker={m} />
+                    <MarkerReadout
+                        key={i}
+                        marker={m}
+                        sectionTitle={
+                            rows.find((r) => r.sectionId === m.anchorSectionId)
+                                ?.title
+                        }
+                        onPlace={
+                            canUpdate
+                                ? () =>
+                                      setPlacement({
+                                          index: pacing.markers.indexOf(m),
+                                      })
+                                : undefined
+                        }
+                    />
                 ))}
             {rows.length === 0 ? (
                 <div style={emptyStateStyle}>
@@ -758,8 +914,30 @@ export default function OutlineView({
                         <div
                             key={row.key}
                             data-outline-row={row.key}
+                            data-outline-thread-match={
+                                followThreadId !== null &&
+                                row.sectionId !== null &&
+                                devices.bySection
+                                    .get(row.sectionId)
+                                    ?.some(
+                                        (m) => m.thread.id === followThreadId,
+                                    )
+                                    ? 'true'
+                                    : undefined
+                            }
                             style={{
                                 ...rowStyle,
+                                background:
+                                    followThreadId !== null &&
+                                    row.sectionId !== null &&
+                                    devices.bySection
+                                        .get(row.sectionId)
+                                        ?.some(
+                                            (m) =>
+                                                m.thread.id === followThreadId,
+                                        )
+                                        ? 'color-mix(in srgb, var(--theme-brand-primary-500) 7%, transparent)'
+                                        : undefined,
                                 paddingLeft: `${row.depth * 1.5}rem`,
                             }}
                         >
@@ -771,7 +949,27 @@ export default function OutlineView({
                                         m.anchorEdge === 'start',
                                 )
                                 .map((m, i) => (
-                                    <MarkerReadout key={i} marker={m} />
+                                    <MarkerReadout
+                                        key={i}
+                                        marker={m}
+                                        sectionTitle={
+                                            rows.find(
+                                                (r) =>
+                                                    r.sectionId ===
+                                                    m.anchorSectionId,
+                                            )?.title
+                                        }
+                                        onPlace={
+                                            canUpdate
+                                                ? () =>
+                                                      setPlacement({
+                                                          index: pacing.markers.indexOf(
+                                                              m,
+                                                          ),
+                                                      })
+                                                : undefined
+                                        }
+                                    />
                                 ))}
                             <div style={rowLineStyle}>
                                 {hasNested ? (
@@ -855,45 +1053,66 @@ export default function OutlineView({
                                     }
                                     onBlur={() => flush()}
                                 />
-                                {canUpdate &&
-                                    row.sectionId !== null &&
-                                    onRequestMarkThread !== undefined && (
-                                        <DropdownMenu
-                                            align="right"
-                                            density="compact"
-                                            menuClassName="w-48"
-                                            trigger={
-                                                <button
-                                                    type="button"
-                                                    style={iconBtnStyle}
-                                                    aria-label={t(
-                                                        'writing.workspace.section_options',
-                                                    )}
-                                                    title={t(
-                                                        'writing.workspace.section_options',
-                                                    )}
-                                                >
-                                                    <i
-                                                        className="fa-solid fa-ellipsis-vertical"
-                                                        aria-hidden="true"
-                                                    />
-                                                </button>
-                                            }
-                                            items={[
-                                                {
-                                                    label: t(
-                                                        'writing.threads.mark_action',
-                                                    ),
-                                                    icon: 'fa-book-bookmark',
-                                                    onClick: () =>
-                                                        onRequestMarkThread({
-                                                            id: row.sectionId as number,
-                                                            title: row.title,
-                                                        }),
-                                                },
-                                            ]}
-                                        />
-                                    )}
+                                {canUpdate && (
+                                    <DropdownMenu
+                                        align="right"
+                                        density="compact"
+                                        menuClassName="w-48"
+                                        trigger={
+                                            <button
+                                                type="button"
+                                                style={iconBtnStyle}
+                                                aria-label={t(
+                                                    'writing.workspace.section_options',
+                                                )}
+                                                title={t(
+                                                    'writing.workspace.section_options',
+                                                )}
+                                            >
+                                                <i
+                                                    className="fa-solid fa-ellipsis-vertical"
+                                                    aria-hidden="true"
+                                                />
+                                            </button>
+                                        }
+                                        items={[
+                                            ...(savedMarkers.length
+                                                ? [
+                                                      {
+                                                          label: t(
+                                                              'writing.pacing.place_marker',
+                                                          ),
+                                                          icon: 'fa-location-dot',
+                                                          onClick: () =>
+                                                              setPlacement({
+                                                                  index: 0,
+                                                                  sectionKey:
+                                                                      row.key,
+                                                              }),
+                                                      },
+                                                  ]
+                                                : []),
+                                            ...(row.sectionId !== null &&
+                                            onRequestMarkThread
+                                                ? [
+                                                      {
+                                                          label: t(
+                                                              'writing.threads.mark_action',
+                                                          ),
+                                                          icon: 'fa-book-bookmark',
+                                                          onClick: () =>
+                                                              onRequestMarkThread(
+                                                                  {
+                                                                      id: row.sectionId as number,
+                                                                      title: row.title,
+                                                                  },
+                                                              ),
+                                                      },
+                                                  ]
+                                                : []),
+                                        ]}
+                                    />
+                                )}
                                 {canUpdate && (
                                     <button
                                         type="button"
@@ -989,8 +1208,40 @@ export default function OutlineView({
                                             row.key && m.anchorEdge === 'end',
                                 )
                                 .map((m, i) => (
-                                    <MarkerReadout key={i} marker={m} />
+                                    <MarkerReadout
+                                        key={i}
+                                        marker={m}
+                                        sectionTitle={
+                                            rows.find(
+                                                (r) =>
+                                                    r.sectionId ===
+                                                    m.anchorSectionId,
+                                            )?.title
+                                        }
+                                        onPlace={
+                                            canUpdate
+                                                ? () =>
+                                                      setPlacement({
+                                                          index: pacing.markers.indexOf(
+                                                              m,
+                                                          ),
+                                                      })
+                                                : undefined
+                                        }
+                                    />
                                 ))}
+                            <OutlineDeviceLabels
+                                marks={
+                                    row.sectionId === null
+                                        ? []
+                                        : (devices.bySection.get(
+                                              row.sectionId,
+                                          ) ?? [])
+                                }
+                                selectedThreadId={followThreadId}
+                                onOpen={(id) => onOpenThread?.(id)}
+                                onFollow={followThread}
+                            />
                             {blockedHintKey === row.key && (
                                 <div style={blockedHintStyle}>
                                     {t(
@@ -1138,6 +1389,31 @@ export default function OutlineView({
                     );
                 })
             )}
+            {canUpdate &&
+                ready &&
+                activePlacement &&
+                savedMarkers[activePlacement.index] && (
+                    <MarkerPlacementModal
+                        key={
+                            String(activePlacement.index) +
+                            ('sectionKey' in activePlacement
+                                ? activePlacement.sectionKey
+                                : '')
+                        }
+                        rows={rows}
+                        markers={savedMarkers}
+                        initialIndex={activePlacement.index}
+                        initialSectionKey={
+                            'sectionKey' in activePlacement
+                                ? activePlacement.sectionKey
+                                : undefined
+                        }
+                        target={targetRuntimeSeconds}
+                        onSave={placeMarker}
+                        onClose={closePlacement}
+                        onJump={jumpToRow}
+                    />
+                )}
         </div>
     );
 }
