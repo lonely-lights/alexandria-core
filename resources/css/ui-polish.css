@@ -304,51 +304,92 @@ button:not(:disabled),
     @apply decoration-solid;
 }
 
+/* MediaWiki-style tables from the app's TableProcessor: a card-shaped
+   surface with a primary-tinted header band (same family as the blueprint
+   entries table below), a row-label first column, and hairline row rules
+   instead of a full grid. Scrolls sideways on narrow screens. Cell text
+   arrives wrapped in a <p> (the paragraph pass runs inside cells so inline
+   links/bold still render); inline it and drop its margins. */
 .wiki-table-wrapper {
-    @apply rounded-xl overflow-hidden my-8;
+    @apply my-8 overflow-x-auto;
+    border-radius: var(--theme-radius-card);
     border: 1px solid
         color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+    background-color: color-mix(
+        in srgb,
+        var(--theme-base-100) 60%,
+        transparent
+    );
 }
 .wiki-table {
-    @apply w-full border-collapse text-sm;
+    @apply m-0 w-full border-collapse text-sm leading-relaxed;
 }
-.wiki-table th {
-    @apply px-4 py-2.5 text-left text-xs font-semibold;
+.wiki-table thead th {
+    @apply px-4 py-3 text-left align-bottom text-xs font-semibold uppercase tracking-wider whitespace-nowrap;
     background-color: color-mix(
         in srgb,
-        var(--theme-base-200) 70%,
+        var(--theme-brand-primary-500) 9%,
         transparent
     );
-    color: color-mix(in srgb, var(--theme-base-content) 70%, transparent);
+    color: color-mix(
+        in srgb,
+        var(--theme-brand-primary-500) 55%,
+        var(--theme-base-content)
+    );
+    border-bottom: 2px solid
+        color-mix(in srgb, var(--theme-brand-primary-500) 35%, transparent);
+}
+.wiki-table td,
+.wiki-table tbody th {
+    @apply px-4 py-3 text-left align-top text-sm;
+    color: color-mix(in srgb, var(--theme-base-content) 80%, transparent);
     border-bottom: 1px solid
-        color-mix(in srgb, var(--theme-base-content) 10%, transparent);
+        color-mix(in srgb, var(--theme-base-content) 7%, transparent);
+    transition: background-color var(--theme-motion-duration-fast)
+        var(--theme-motion-easing-standard);
 }
-.wiki-table td {
-    @apply px-4 py-2 text-sm;
-    border-bottom: 1px solid
-        color-mix(in srgb, var(--theme-base-content) 5%, transparent);
+.wiki-table tbody td:first-child,
+.wiki-table tbody th {
+    @apply font-semibold;
+    color: var(--theme-base-content);
 }
-.wiki-table tbody tr:nth-child(even) td {
+.wiki-table th p,
+.wiki-table td p {
+    display: inline;
+    margin: 0;
+}
+.wiki-table tbody tr:nth-child(even) td,
+.wiki-table tbody tr:nth-child(even) th {
     background-color: color-mix(
         in srgb,
-        var(--theme-base-200) 20%,
+        var(--theme-base-200) 30%,
         transparent
     );
 }
-.wiki-table tbody tr:hover td {
+.wiki-table tbody tr:hover td,
+.wiki-table tbody tr:hover th {
     background-color: color-mix(
         in srgb,
-        var(--theme-base-200) 40%,
+        var(--theme-brand-primary-500) 6%,
         transparent
     );
 }
-.wiki-table tbody tr:last-child td {
+.wiki-table tbody tr:hover td:first-child {
+    box-shadow: inset 3px 0 0
+        color-mix(in srgb, var(--theme-brand-primary-500) 60%, transparent);
+}
+.wiki-table tbody tr:last-child td,
+.wiki-table tbody tr:last-child th {
     border-bottom: 0;
 }
-.wiki-table th:not(:last-child),
-.wiki-table td:not(:last-child) {
-    border-right: 1px solid
-        color-mix(in srgb, var(--theme-base-content) 5%, transparent);
+.prose .wiki-table a {
+    @apply font-medium decoration-1;
+}
+@media (prefers-reduced-motion: reduce) {
+    .wiki-table td,
+    .wiki-table tbody th {
+        transition: none;
+    }
 }
 
 /* Blueprint entries table — primary-tinted headers, subtle base-200 row hover.
